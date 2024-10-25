@@ -40,6 +40,7 @@
             </div>
           </div>
         </ReleasedGroupViewer>
+        <VersionApproveStatus ref="verAppStatus" @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
           :app-id="props.appId"
@@ -52,13 +53,21 @@
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
+          :approve-data="approveData"
           @confirm="refreshVesionList" />
         <ModifyGroupPublish
           :bk-biz-id="props.bkBizId"
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
+          :approve-data="approveData"
           @confirm="refreshVesionList" />
+        <!-- 更多选项 -->
+        <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->
+        <HeaderMoreOptions
+          :approve-status="approveData.status"
+          :creator="creator"
+          @handle-undo="verAppStatus.loadStatus()" />
       </section>
     </template>
   </div>
@@ -77,6 +86,8 @@
   import PublishVersion from './publish-version/index.vue';
   import CreateVersion from './create-version/index.vue';
   import ModifyGroupPublish from './modify-group-publish.vue';
+  import HeaderMoreOptions from './header-more-options.vue';
+  import VersionApproveStatus from './version-approve-status.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -91,6 +102,7 @@
     create: false,
     publish: false,
   });
+  const verAppStatus = ref();
 
   const props = defineProps<{
     bkBizId: string;
@@ -102,6 +114,18 @@
     { name: 'config', label: t('配置管理'), routeName: 'service-config' },
     { name: 'script', label: t('前/后置脚本'), routeName: 'init-script' },
   ]);
+
+  const approveData = ref<{
+    status: string;
+    time: string;
+    type: string;
+  }>({
+    status: '',
+    time: '',
+    type: '',
+  });
+
+  const creator = ref('');
 
   const getDefaultTab = () => {
     const tab = tabs.value.find((item) => item.routeName === route.name);
@@ -164,6 +188,11 @@
   onMounted(() => {
     getVersionPerms();
   });
+
+  const getVerApproveStatus = (approveStatusData: any, creatorData: string) => {
+    approveData.value = approveStatusData;
+    creator.value = creatorData;
+  };
 
   const getVersionPerms = async () => {
     permCheckLoading.value = true;
