@@ -534,7 +534,9 @@ export default {
   '因此需要在 Sidecar容器中创建相应的用户（UID）、用户组（GID）。如果无需使用容器客户端可不配置 UID 和 GID。': 'you need to create the corresponding user (UID), user group (GID) in the Sidecar container. If you do not need to use the container client, you can configure UID and GID',
   '为确保最佳用户体验，此服务的配置文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config files for this service is limited to {n}. There are currently {m} and you can add {p} more',
   '为确保最佳用户体验，此服务的配置项数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config items for this service is limited to {n}. There are currently {m} and you can add {p} more',
-  '为确保最佳用户体验，此服务的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of template files for this service is limited to {n}. There are currently {m} and you can add {p} more',
+  '为确保最佳用户体验，此套餐的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of template files for this packages is limited to {n}. There are currently {m} and you can add {p} more',
+  批量设置UID: 'Batch set UID',
+  批量设置GID: 'Batch set GID',
 
   // 分组管理
   新增分组: 'New group',

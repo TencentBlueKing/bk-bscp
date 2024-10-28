@@ -25,7 +25,7 @@
             </template>
           </customSelector>
         </bk-form-item>
-        <bk-form-item :label="'UID'" :required="true">
+        <bk-form-item :label="'UID'" property="uid" :required="true">
           <bk-input
             v-model="localVal.uid"
             :disabled="selectUser?.read_only"
@@ -50,7 +50,7 @@
             </template>
           </customSelector>
         </bk-form-item>
-        <bk-form-item :label="'GID'" :required="true">
+        <bk-form-item :label="'GID'" property="gid" :required="true">
           <bk-input
             v-model="localVal.gid"
             :disabled="selectUserGroup?.read_only"
@@ -173,7 +173,6 @@
     }
     .user-settings {
       display: flex;
-      align-items: center;
       justify-content: space-between;
       :deep(.bk-input) {
         width: 114px;
