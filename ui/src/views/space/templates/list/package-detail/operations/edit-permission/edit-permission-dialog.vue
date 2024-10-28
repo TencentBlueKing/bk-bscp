@@ -10,59 +10,12 @@
       {{ `${t('已选')} ` }} <span class="count">{{ props.configsLength }}</span> {{ `${t('个配置项')}` }}
     </div>
     <bk-form form-type="vertical" class="user-settings">
-      <bk-form-item :label="t('文件权限')">
-        <div class="perm-input">
-          <bk-popover
-            ext-cls="privilege-tips-wrap"
-            theme="light"
-            trigger="manual"
-            placement="top"
-            :is-show="showPrivilegeErrorTips">
-            <bk-input
-              v-model="privilegeInputVal"
-              type="number"
-              :placeholder="t('保持不变')"
-              :disabled="loading"
-              @blur="handlePrivilegeInputBlur" />
-            <template #content>
-              <div>{{ t('只能输入三位 0~7 数字') }}</div>
-              <div class="privilege-tips-btn-area">
-                <bk-button text theme="primary" @click="showPrivilegeErrorTips = false">{{ t('我知道了') }}</bk-button>
-              </div>
-            </template>
-          </bk-popover>
-          <bk-popover ext-cls="privilege-select-popover" theme="light" trigger="click" placement="bottom">
-            <div class="perm-panel-trigger">
-              <i class="bk-bscp-icon icon-configuration-line"></i>
-            </div>
-            <template #content>
-              <div class="privilege-select-panel">
-                <div v-for="(item, index) in PRIVILEGE_GROUPS" class="group-item" :key="index" :label="item">
-                  <div class="header">{{ item }}</div>
-                  <div class="checkbox-area">
-                    <bk-checkbox-group
-                      class="group-checkboxs"
-                      :model-value="privilegeGroupsValue[index]"
-                      @change="handleSelectPrivilege(index, $event)">
-                      <bk-checkbox size="small" :label="4" :disabled="loading">
-                        {{ t('读') }}
-                      </bk-checkbox>
-                      <bk-checkbox size="small" :label="2" :disabled="loading">{{ t('写') }}</bk-checkbox>
-                      <bk-checkbox size="small" :label="1" :disabled="loading">{{ t('执行') }}</bk-checkbox>
-                    </bk-checkbox-group>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </bk-popover>
-        </div>
-      </bk-form-item>
-      <bk-form-item :label="t('用户')">
-        <bk-input v-model="localVal.user" :disabled="loading" :placeholder="t('保持不变')"></bk-input>
-      </bk-form-item>
-      <bk-form-item :label="t('用户组')">
-        <bk-input v-model="localVal.user_group" :disabled="loading" :placeholder="t('保持不变')"></bk-input>
-      </bk-form-item>
+      <userSetting
+        :bk-biz-id="props.bkBizId"
+        :id="props.id"
+        :form="localVal"
+        :is-batch-edit="true"
+        @change="localVal = $event" />
     </bk-form>
     <template v-if="currentPkg && currentPkg !== 'no_specified'">
       <p class="tips">{{ t('以下服务配置的未命名版本中引用此套餐的内容也将更新') }}</p>
@@ -88,7 +41,7 @@
         style="margin-right: 8px"
         :loading="loading"
         :disabled="loading"
-        @click="emits('confirm', { permission: localVal, appIds: citeByAppIds })">
+        @click="handleConfirm">
         {{ t('保存') }}
       </bk-button>
       <bk-button @click="emits('update:show', false)">{{ t('取消') }}</bk-button>
@@ -106,6 +59,8 @@
   import useGlobalStore from '../../../../../../../store/global';
   import useTemplateStore from '../../../../../../../store/template';
   import LinkToApp from '../../../components/link-to-app.vue';
+  import userSetting from '../../../../../service/detail/config/components/user-setting.vue';
+  import { isEqual } from 'lodash';
 
   const { spaceId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace, currentPkg } = storeToRefs(useTemplateStore());
@@ -113,6 +68,8 @@
   const router = useRouter();
 
   const props = defineProps<{
+    bkBizId: string;
+    id: number;
     show: boolean;
     configsLength: number;
     loading: boolean;
@@ -121,23 +78,12 @@
 
   const emits = defineEmits(['update:show', 'confirm']);
 
-  const PRIVILEGE_GROUPS = [t('属主（own）'), t('属组（group）'), t('其他人（other）')];
-  const PRIVILEGE_VALUE_MAP = {
-    0: [],
-    1: [1],
-    2: [2],
-    3: [1, 2],
-    4: [4],
-    5: [1, 4],
-    6: [2, 4],
-    7: [1, 2, 4],
-  };
-  const privilegeInputVal = ref('');
-  const showPrivilegeErrorTips = ref(false);
   const localVal = ref({
     privilege: '',
     user: '',
     user_group: '',
+    uid: undefined,
+    gid: undefined,
   });
   const citedList = ref<IPackagesCitedByApps[]>([]);
   const tableLoading = ref(false);
@@ -152,8 +98,9 @@
           privilege: '',
           user: '',
           user_group: '',
+          uid: undefined,
+          gid: undefined,
         };
-        privilegeInputVal.value = '';
         if (currentPkg.value && currentPkg.value !== 'no_specified') {
           getCitedData();
         }
@@ -161,56 +108,10 @@
     },
   );
 
-  // 将权限数字拆分成三个分组配置
-  const privilegeGroupsValue = computed(() => {
-    const data: { [index: string]: number[] } = { 0: [], 1: [], 2: [] };
-    if (typeof localVal.value.privilege === 'string' && localVal.value.privilege.length > 0) {
-      const valArr = localVal.value.privilege.split('').map((i) => parseInt(i, 10));
-      valArr.forEach((item, index) => {
-        data[index as keyof typeof data] = PRIVILEGE_VALUE_MAP[item as keyof typeof PRIVILEGE_VALUE_MAP];
-      });
-    }
-    return data;
-  });
-
   const maxTableHeight = computed(() => {
     const windowHeight = window.innerHeight;
     return windowHeight * 0.6 - 200;
   });
-
-  // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
-  const handlePrivilegeInputBlur = () => {
-    const val = String(privilegeInputVal.value);
-    if (/^[0-7]{3}$/.test(val) || val === '') {
-      localVal.value.privilege = val;
-      showPrivilegeErrorTips.value = false;
-    } else {
-      privilegeInputVal.value = String(localVal.value.privilege);
-      showPrivilegeErrorTips.value = true;
-    }
-  };
-
-  // 选择文件权限
-  const handleSelectPrivilege = (index: number, val: number[]) => {
-    const groupsValue = { ...privilegeGroupsValue.value };
-    groupsValue[index] = val;
-    const digits: number[] = [];
-    for (let i = 0; i < 3; i++) {
-      let sum = 0;
-      if (groupsValue[i].length > 0) {
-        sum = groupsValue[i].reduce((acc, crt) => acc + crt, 0);
-      }
-      digits.push(sum);
-    }
-
-    // 选择其他权限 自动选择own的读取权限
-    if (digits[0] < 4 && digits.some((item) => item > 0)) {
-      digits[0] += 4;
-    }
-    const newVal = digits.every((item) => item === 0) ? '' : digits.join('');
-    privilegeInputVal.value = newVal;
-    localVal.value.privilege = newVal;
-  };
 
   // 配置项被套餐引用数据
   const loadCiteByPkgsCountList = async () => {
@@ -253,15 +154,24 @@
     });
     window.open(href, '_blank');
   };
+
+  const handleConfirm = () => {
+    const defaultVal = {
+      privilege: '',
+      user: '',
+      user_group: '',
+      uid: undefined,
+      gid: undefined,
+    };
+    if (isEqual(localVal.value, defaultVal)) {
+      emits('update:show', false);
+    } else {
+      emits('confirm', { permission: localVal.value, appIds: citeByAppIds.value });
+    }
+  };
 </script>
 
 <style scoped lang="scss">
-  .user-settings {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-  }
   .perm-input {
     display: flex;
     align-items: center;

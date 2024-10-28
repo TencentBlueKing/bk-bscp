@@ -38,6 +38,8 @@ export interface IConfigItem {
       privilege: string;
       user: string;
       user_group: string;
+      gid: number;
+      uid: number;
     };
   };
   commit_spec: {
@@ -85,6 +87,8 @@ export interface IConfigEditParams {
   fileAP?: string;
   revision_name?: string;
   template_revision_id?: number;
+  uid?: number;
+  gid?: number;
 }
 
 // kv配置文件编辑表单参数
@@ -220,6 +224,8 @@ export interface IConfigImportItem {
   file_name?: string;
   is_exist: boolean;
   fileAP?: string;
+  uid?: number;
+  gid?: number;
 }
 
 // kv类型
@@ -271,4 +277,23 @@ export interface ITemplatePkgs {
   template_space_name: string;
   template_space_id: number;
   template_show_title: string;
+}
+
+// 权限用户或用户组列表
+export interface IUserPrivilege {
+  id: number;
+  name: string;
+  privilege_type: string;
+  read_only: boolean;
+  pid: number;
+}
+
+// 权限设置表单内容
+
+export interface IConfigPrivilegeForm {
+  user: string;
+  user_group: string;
+  privilege: string;
+  uid: number | undefined;
+  gid: number | undefined;
 }

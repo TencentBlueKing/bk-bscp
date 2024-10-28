@@ -17,6 +17,7 @@
         :bk-biz-id="spaceId"
         :id="currentTemplateSpace"
         :file-size-limit="spaceFeatureFlags.RESOURCE_LIMIT.maxFileSize"
+        :is-edit="false"
         @change="handleFormChange" />
     </div>
     <div class="action-btns">

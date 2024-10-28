@@ -12,10 +12,14 @@
             <div>
               <span class="label">{{ `${t('用户')}：` }}</span>
               <span class="value">{{ props.basePermission.user }}</span>
+              <span class="label">UID: </span>
+              <span class="value">{{ props.basePermission.uid }}</span>
             </div>
             <div>
               <span class="label">{{ `${t('用户组')}：` }}</span>
               <span class="value">{{ props.basePermission.user_group }}</span>
+              <span class="label">GID: </span>
+              <span class="value">{{ props.basePermission.gid }}</span>
             </div>
           </div>
         </div>
@@ -49,12 +53,21 @@
               <span :class="['value', { diff: props.currentPermission.user !== props.basePermission.user }]">
                 {{ props.currentPermission.user }}
               </span>
+              <span class="label">UID：</span>
+              <span :class="['value', { diff: props.currentPermission.user !== props.basePermission.user }]">
+                {{ props.currentPermission.uid }}
+              </span>
             </div>
             <div>
               <span class="label">{{ `${t('用户组')}：` }}</span>
               <span
                 :class="['value', { diff: props.currentPermission.user_group !== props.basePermission.user_group }]">
                 {{ props.currentPermission.user_group }}
+              </span>
+              <span class="label">GID：</span>
+              <span
+                :class="['value', { diff: props.currentPermission.user_group !== props.basePermission.user_group }]">
+                {{ props.currentPermission.gid }}
               </span>
             </div>
           </div>
@@ -91,6 +104,8 @@
     privilege: string;
     user: string;
     user_group: string;
+    uid: number;
+    gid: number;
   }
 
   const { t } = useI18n();

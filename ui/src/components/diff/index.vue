@@ -38,18 +38,18 @@
           <File
             v-if="props.diff.contentType === 'file'"
             :downloadable="false"
-            :current="props.diff.current.content as IFileConfigContentSummary"
-            :base="props.diff.base.content as IFileConfigContentSummary"
-            :current-permission="props.diff.current.permission as IPermissionType"
-            :base-permission="props.diff.base.permission as IPermissionType"
+            :current="(props.diff.current.content as IFileConfigContentSummary)"
+            :base="(props.diff.base.content as IFileConfigContentSummary)"
+            :current-permission="(props.diff.current.permission as IPermissionType)"
+            :base-permission="(props.diff.base.permission as IPermissionType)"
             :id="props.id" />
           <Text
             v-else-if="props.diff.contentType === 'text'"
             :language="props.diff.current.language"
-            :current="props.diff.current.content as string"
+            :current="(props.diff.current.content as string)"
             :current-variables="props.diff.current.variables"
             :current-permission="currentPermission"
-            :base="props.diff.base.content as string"
+            :base="(props.diff.base.content as string)"
             :base-variables="props.diff.base.variables"
             :base-permission="basePermission"
             :is-secret="props.diff.is_secret"
@@ -81,6 +81,8 @@
     privilege: string;
     user: string;
     user_group: string;
+    uid: number;
+    gid: number;
   }
 
   const { t } = useI18n();
@@ -99,14 +101,14 @@
   const currentPermission = computed(() => {
     if (!props.diff.base.permission) return;
     return `${t('权限')}:${props.diff.current.permission?.privilege}
-${t('用户')}:${props.diff.current.permission?.user}
-${t('用户组')}:${props.diff.current.permission?.user_group}`;
+${t('用户')}:${props.diff.current.permission?.user} UID:${props.diff.current.permission?.uid}
+${t('用户组')}:${props.diff.current.permission?.user_group} GID:${props.diff.current.permission?.gid}`;
   });
   const basePermission = computed(() => {
     if (!props.diff.base.permission) return;
     return `${t('权限')}:${props.diff.base.permission?.privilege}
-${t('用户')}:${props.diff.base.permission?.user}
-${t('用户组')}:${props.diff.base.permission?.user_group}`;
+${t('用户')}:${props.diff.base.permission?.user} UID:${props.diff.current.permission?.uid}
+${t('用户组')}:${props.diff.base.permission?.user_group} GID:${props.diff.current.permission?.gid}`;
   });
 
   // 打开全屏

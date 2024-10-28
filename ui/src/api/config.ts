@@ -669,9 +669,48 @@ export const createVersionNameCheck = (bizId: string, appId: number, name: strin
  * 从配置模板导入配置文件
  * @param bizId 业务ID
  * @param appId 应用ID
- * @param bindingId 模板和服务绑定关系ID
  * @param params 更新参数
  * @returns
  */
 export const importConfigFromTemplate = (bizId: string, appId: number, query: any) =>
   http.post(`/config/biz/${bizId}/apps/${appId}/template_bindings/import_template_set`, query);
+
+/**
+ * 获取权限设置用户列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param params 更新参数
+ * @returns
+ */
+export const getUserPrivileges = (bizId: string, appId: number, params: ICommonQuery) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/user_privileges`, { params });
+
+/**
+ * 获取权限设置用户组列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param params 更新参数
+ * @returns
+ */
+export const getUserGroupPrivileges = (bizId: string, appId: number, params: ICommonQuery) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/user_group_privileges`, { params });
+
+/**
+ * 删除权限设置用户组列表项
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param id 列表项ID
+ * @returns
+ */
+export const deleteUserGroupPrivilege = (bizId: string, appId: number, id: number) =>
+  http.delete(`/config/biz/${bizId}/apps/${appId}/user_group_privileges/${id}`);
+
+/**
+ * 删除权限设置用户列表项
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param id 列表项ID
+ * @returns
+ */
+export const deleteUserPrivilege = (bizId: string, appId: number, id: number) =>
+  http.delete(`/config/biz/${bizId}/apps/${appId}/user_privileges/${id}`);
