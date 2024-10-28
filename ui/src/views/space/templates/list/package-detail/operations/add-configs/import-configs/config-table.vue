@@ -23,7 +23,7 @@
               :is-show="batchSet.isShowMemoPop">
               <edit-line class="edit-line" @click="batchSet.isShowMemoPop = true" />
               <template #content>
-                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowMemoPop = false)">
+                <div class="pop-wrap memo-wrap" v-click-outside="() => (batchSet.isShowMemoPop = false)">
                   <div class="pop-content">
                     <div class="pop-title">{{ t('批量设置配置文件描述') }}</div>
                     <bk-input v-model="batchSet.memo" :placeholder="t('请输入')"></bk-input>
@@ -114,7 +114,22 @@
                 <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserPop = false)">
                   <div class="pop-content">
                     <div class="pop-title">{{ t('批量设置用户') }}</div>
-                    <bk-input v-model="batchSet.user" :placeholder="t('请输入')"></bk-input>
+                    <customSelector
+                      :value="batchSet.user"
+                      :list="userList"
+                      :input-width="114"
+                      @change="batchSet.user = $event"
+                      @select="batchSet.user = $event.name">
+                      <template #item="{ item }">
+                        <div class="option-item">
+                          <span>{{ item.name }}</span>
+                          <span
+                            v-if="!item.read_only"
+                            class="bk-bscp-icon icon-close-line close"
+                            @click.stop="handleDeleteUserOrGroup('user', item.id)" />
+                        </div>
+                      </template>
+                    </customSelector>
                   </div>
                   <div class="pop-footer">
                     <div class="button">
@@ -123,6 +138,39 @@
                         style="margin-right: 8px; width: 80px"
                         size="small"
                         @click="handleConfirmPop('user')">
+                        {{ t('确定') }}
+                      </bk-button>
+                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </bk-popover>
+          </div>
+        </div>
+        <div class="th-cell uid">
+          <div class="th-cell-edit">
+            <span class="required">UID</span>
+            <bk-popover
+              ext-cls="popover-wrap"
+              theme="light"
+              trigger="manual"
+              placement="bottom"
+              :is-show="batchSet.isShowUidPop">
+              <edit-line class="edit-line" @click="batchSet.isShowUidPop = true" />
+              <template #content>
+                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUidPop = false)">
+                  <div class="pop-content">
+                    <div class="pop-title">{{ t('批量设置UID') }}</div>
+                    <bk-input v-model="batchSet.uid" style="width: 114px"></bk-input>
+                  </div>
+                  <div class="pop-footer">
+                    <div class="button">
+                      <bk-button
+                        theme="primary"
+                        style="margin-right: 8px; width: 80px"
+                        size="small"
+                        @click="handleConfirmPop('uid')">
                         {{ t('确定') }}
                       </bk-button>
                       <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
@@ -147,7 +195,22 @@
                 <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserGroupPop = false)">
                   <div class="pop-content">
                     <div class="pop-title">{{ t('批量设置用户组') }}</div>
-                    <bk-input v-model="batchSet.user_group" :placeholder="t('请输入')"></bk-input>
+                    <customSelector
+                      :value="batchSet.user_group"
+                      :list="userList"
+                      :input-width="114"
+                      @change="batchSet.user_group = $event"
+                      @select="batchSet.user_group = $event.name">
+                      <template #item="{ item }">
+                        <div class="option-item">
+                          <span>{{ item.name }}</span>
+                          <span
+                            v-if="!item.read_only"
+                            class="bk-bscp-icon icon-close-line close"
+                            @click.stop="handleDeleteUserOrGroup('group', item.id)" />
+                        </div>
+                      </template>
+                    </customSelector>
                   </div>
                   <div class="pop-footer">
                     <div class="button">
@@ -156,6 +219,39 @@
                         style="margin-right: 8px; width: 80px"
                         size="small"
                         @click="handleConfirmPop('user_group')">
+                        {{ t('确定') }}
+                      </bk-button>
+                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </bk-popover>
+          </div>
+        </div>
+        <div class="th-cell gid">
+          <div class="th-cell-edit">
+            <span class="required"> GID </span>
+            <bk-popover
+              ext-cls="popover-wrap"
+              theme="light"
+              trigger="manual"
+              placement="bottom"
+              :is-show="batchSet.isShowGidPop">
+              <edit-line class="edit-line" @click="batchSet.isShowGidPop = true" />
+              <template #content>
+                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowGidPop = false)">
+                  <div class="pop-content">
+                    <div class="pop-title">{{ t('批量设置GID') }}</div>
+                    <bk-input v-model="batchSet.gid" style="width: 114px"></bk-input>
+                  </div>
+                  <div class="pop-footer">
+                    <div class="button">
+                      <bk-button
+                        theme="primary"
+                        style="margin-right: 8px; width: 80px"
+                        size="small"
+                        @click="handleConfirmPop('gid')">
                         {{ t('确定') }}
                       </bk-button>
                       <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
@@ -179,11 +275,11 @@
             {{ item.file_type === 'text' ? t('文本') : t('二进制') }}
           </div>
           <div class="td-cell-editable td-cell memo" :class="{ change: isContentChange(item.id, 'memo') }">
-            <bk-input v-model="item.memo" :placeholder="t('请输入')"></bk-input>
+            <bk-input v-model="item.memo"></bk-input>
           </div>
           <div class="td-cell-editable td-cell privilege" :class="{ change: isContentChange(item.id, 'privilege') }">
             <div class="perm-input">
-              <bk-input v-model="item.privilege" :placeholder="t('请输入')" @blur="handlePrivilegeInputBlur(item)" />
+              <bk-input v-model="item.privilege" @blur="handlePrivilegeInputBlur(item)" />
               <bk-popover ext-cls="privilege-select-popover" theme="light" trigger="click" placement="bottom">
                 <div class="perm-panel-trigger">
                   <i class="bk-bscp-icon icon-configuration-line"></i>
@@ -209,10 +305,84 @@
             </div>
           </div>
           <div class="td-cell-editable td-cell user" :class="{ change: isContentChange(item.id, 'user') }">
-            <bk-input v-model="item.user" :placeholder="t('请输入')"></bk-input>
+            <customSelector
+              :value="item.user"
+              :list="userList"
+              :input-width="114"
+              @change="item.user = $event"
+              @select="handleSelectUserOrGroup('user', $event, item)">
+              <template #item="{ item: customItem }">
+                <div class="option-item">
+                  <span>{{ customItem.name }}</span>
+                  <span
+                    v-if="!customItem.read_only"
+                    class="bk-bscp-icon icon-close-line close"
+                    @click.stop="handleDeleteUserOrGroup('user', customItem.id)" />
+                </div>
+              </template>
+            </customSelector>
+          </div>
+          <div class="td-cell-editable td-cell uid" :class="{ change: isContentChange(item.id, 'user') }">
+            <bk-input v-model="item.uid" :disabled="gidOrUidReadOnly('uid', item)">
+              <template v-if="!(gidOrUidReadOnly('uid', item))" #suffix>
+                <bk-popover theme="light" placement="top">
+                  <span class="bk-bscp-icon icon-warning-circle warn-icon"></span>
+                  <template #content>
+                    <p class="tips">
+                      {{ t('若需在') }}<span>{{ $t('容器') }} </span>{{ t('中拉取配置文件并设置权限，') }}
+                      <span>{{ t('请配置 UID 和 GID。') }} </span><br />
+                      {{ t(`因为设置文件权限操作不是在业务容器中执行，而是在 Sidecar 容器中执行,`) }}
+                      <br />
+                      {{
+                        t(
+                          '因此需要在 Sidecar容器中创建相应的用户（UID）、用户组（GID）。如果无需使用容器客户端可不配置 UID 和 GID。',
+                        )
+                      }}
+                    </p>
+                  </template>
+                </bk-popover>
+              </template>
+            </bk-input>
           </div>
           <div class="td-cell-editable td-cell user-group" :class="{ change: isContentChange(item.id, 'user_group') }">
-            <bk-input v-model="item.user_group" :placeholder="t('请输入')"></bk-input>
+            <customSelector
+              :value="item.user_group"
+              :list="userGroupList"
+              :input-width="114"
+              @change="item.user_group = $event"
+              @select="handleSelectUserOrGroup('group', $event, item)">
+              <template #item="{ item: customItem }">
+                <div class="option-item">
+                  <span>{{ customItem.name }}</span>
+                  <span
+                    v-if="!customItem.read_only"
+                    class="bk-bscp-icon icon-close-line close"
+                    @click.stop="handleDeleteUserOrGroup('user', customItem.id)" />
+                </div>
+              </template>
+            </customSelector>
+          </div>
+          <div class="td-cell-editable td-cell gid" :class="{ change: isContentChange(item.id, 'user') }">
+            <bk-input v-model="item.gid" :disabled="gidOrUidReadOnly('gid', item)">
+              <template v-if="!(gidOrUidReadOnly('gid', item))" #suffix>
+                <bk-popover theme="light" placement="top">
+                  <span class="bk-bscp-icon icon-warning-circle warn-icon"></span>
+                  <template #content>
+                    <p class="tips">
+                      {{ t('若需在') }}<span>{{ $t('容器') }} </span>{{ t('中拉取配置文件并设置权限，') }}
+                      <span>{{ t('请配置 UID 和 GID。') }} </span><br />
+                      {{ t(`因为设置文件权限操作不是在业务容器中执行，而是在 Sidecar 容器中执行,`) }}
+                      <br />
+                      {{
+                        t(
+                          '因此需要在 Sidecar容器中创建相应的用户（UID）、用户组（GID）。如果无需使用容器客户端可不配置 UID 和 GID',
+                        )
+                      }}
+                    </p>
+                  </template>
+                </bk-popover>
+              </template>
+            </bk-input>
           </div>
           <div class="td-cell-delete delete td-cell">
             <i class="bk-bscp-icon icon-reduce delete-icon" @click="handleDeleteConfig(index)"></i>
@@ -224,12 +394,19 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { DownShape, EditLine } from 'bkui-vue/lib/icon';
-  import { IConfigImportItem } from '../../../../../../../../../types/config';
+  import { IConfigImportItem, IUserPrivilege } from '../../../../../../../../../types/config';
   import { cloneDeep, isEqual } from 'lodash';
+  import {
+    getUserGroupPrivileges,
+    getUserPrivileges,
+    deleteUserPrivilege,
+    deleteUserGroupPrivilege,
+  } from '../../../../../../../../api/config';
   import Message from 'bkui-vue/lib/message';
+  import customSelector from '../../../../../../../../components/custom-selector.vue';
 
   const { t } = useI18n();
   const PRIVILEGE_GROUPS = [t('属主（own）'), t('属组（group）'), t('其他人（other）')];
@@ -248,13 +425,18 @@
     privilege: '644',
     user: '',
     user_group: '',
+    uid: '',
+    gid: '',
     isShowMemoPop: false,
     isShowUserPop: false,
     isShowUserGroupPop: false,
     isShowPrivilege: false,
+    isShowUidPop: false,
+    isShowGidPop: false,
     isShowPrivilegeError: false,
   });
-
+  const userList = ref<IUserPrivilege[]>([]);
+  const userGroupList = ref<IUserPrivilege[]>([]);
   const data = ref<IConfigImportItem[]>([]);
   const initData = ref<IConfigImportItem[]>([]);
   const expand = ref(true);
@@ -263,6 +445,8 @@
     defineProps<{
       tableData: IConfigImportItem[];
       isExsitTable: boolean;
+      bkBizId: string;
+      appId: number;
     }>(),
     {},
   );
@@ -301,6 +485,10 @@
     },
     { deep: true },
   );
+
+  onMounted(() => {
+    handleGetPrivilegesList();
+  });
 
   // 将权限数字拆分成三个分组配置
   const privilegeGroupsValue = computed(() => (privilege: string) => {
@@ -362,6 +550,11 @@
       data.value.forEach((item) => {
         item.user = batchSet.value.user;
       });
+      const val = userList.value.find((user) => user.name === batchSet.value.user)?.pid;
+      data.value.forEach((item) => {
+        item.uid = val;
+        item.user = batchSet.value.user;
+      });
     }
     if (prop === 'privilege') {
       if (batchSet.value.isShowPrivilegeError) return;
@@ -370,8 +563,21 @@
       });
     }
     if (prop === 'user_group') {
+      const val = userGroupList.value.find((group) => group.name === batchSet.value.user_group)?.pid;
       data.value.forEach((item) => {
+        item.gid = val;
         item.user_group = batchSet.value.user_group;
+      });
+    }
+    if (prop === 'uid') {
+      console.log(batchSet.value.uid);
+      data.value.forEach((item) => {
+        item.uid = parseInt(batchSet.value.uid, 10);
+      });
+    }
+    if (prop === 'gid') {
+      data.value.forEach((item) => {
+        item.gid = parseInt(batchSet.value.gid, 10);
       });
     }
     handleCancelPop();
@@ -383,10 +589,14 @@
       privilege: '644',
       user: '',
       user_group: '',
+      uid: '',
+      gid: '',
       isShowMemoPop: false,
       isShowUserPop: false,
       isShowUserGroupPop: false,
       isShowPrivilege: false,
+      isShowUidPop: false,
+      isShowGidPop: false,
       isShowPrivilegeError: false,
     };
   };
@@ -414,6 +624,45 @@
     const newConfig = data.value.find((config) => config.id === id);
     const oldConfig = initData.value.find((config) => config.id === id);
     return newConfig![key as keyof IConfigImportItem] !== oldConfig![key as keyof IConfigImportItem];
+  };
+
+  // 获取用户和用户组列表
+  const handleGetPrivilegesList = async () => {
+    try {
+      const userGroupListRes = await getUserGroupPrivileges(props.bkBizId, props.appId, { all: true, start: 0 });
+      const userListRes = await getUserPrivileges(props.bkBizId, props.appId, { all: true, start: 0 });
+      userGroupList.value = userGroupListRes.data.details;
+      userList.value = userListRes.data.details;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDeleteUserOrGroup = (type: 'user' | 'group', id: number) => {
+    if (type === 'user') {
+      deleteUserPrivilege(props.bkBizId, props.appId, id);
+    } else {
+      deleteUserGroupPrivilege(props.bkBizId, props.appId, id);
+    }
+    handleGetPrivilegesList();
+  };
+
+  // 选择用户或用户组
+  const handleSelectUserOrGroup = (type: 'user' | 'group', val: IUserPrivilege, item: IConfigImportItem) => {
+    if (type === 'user') {
+      item.user = val.name;
+      item.uid = val.pid;
+    } else {
+      item.user_group = val.name;
+      item.gid = val.pid;
+    }
+  };
+
+  const gidOrUidReadOnly = (type: 'gid' | 'uid', item: IConfigImportItem) => {
+    if (type === 'gid') {
+      return userGroupList.value.find((group) => group.name === item.user_group)?.read_only;
+    }
+    return userList.value.find((user) => user.name === item.user)?.read_only;
   };
 </script>
 
@@ -449,31 +698,37 @@
     }
   }
   .table-container {
-    width: 100%;
     font-size: 12px;
     line-height: 20px;
     border: 1px solid #dcdee5;
+    overflow-x: auto;
     .table-head {
+      width: 1210px;
       display: flex;
     }
     .table-row {
       display: flex;
+      width: 1210px;
     }
     .table-body {
       max-height: 400px;
+      width: 1210px;
     }
     .th-cell {
+      display: flex;
+      align-items: center;
       padding-left: 16px;
       height: 42px;
       color: #313238;
       background: #fafbfd;
       border-bottom: none;
       text-align: left;
-      line-height: 42px;
       .th-cell-edit {
         display: flex;
         justify-content: space-between;
         padding-right: 16px;
+        align-items: center;
+        width: 100%;
         .edit-line {
           color: #3a84ff;
           cursor: pointer;
@@ -506,16 +761,28 @@
       width: 188px;
     }
     .privilege {
-      width: 100px;
+      width: 120px;
     }
     .user {
-      width: 78px;
+      width: 114px;
     }
+    .uid,
+    .gid {
+      width: 114px;
+      .warn-icon {
+        font-size: 14px;
+        color: #ff9c01;
+        line-height: 42px;
+        margin-right: 8px;
+        cursor: pointer;
+      }
+    }
+    .user,
     .user-group {
-      width: 91px;
+      width: 114px;
     }
     .delete {
-      flex: 1;
+      width: 48px;
       margin: 0;
     }
     .not-editable {
@@ -556,11 +823,14 @@
         cursor: pointer;
         font-size: 14px;
         color: gray;
+        &:hover {
+          color: #3a84ff;
+        }
       }
     }
   }
   .pop-wrap {
-    width: 300px;
+    width: 200px;
     .pop-content {
       padding: 16px;
       .pop-title {
@@ -647,6 +917,28 @@
   }
   .privilege-wrap {
     width: auto;
+  }
+  .memo-wrap {
+    width: 300px;
+  }
+
+  .option-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .bk-bscp-icon:hover {
+      color: #3a84ff;
+    }
+  }
+
+  .tips {
+    color: #979ba5;
+    font-size: 12px;
+    line-height: 20px;
+    margin: 8px 0 0 0;
+    span {
+      color: #ff9c01;
+    }
   }
 </style>
 

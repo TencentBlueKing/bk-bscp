@@ -18,74 +18,22 @@
     </bk-form-item>
     <bk-form-item :label="t('配置文件格式')">
       <bk-radio-group v-model="localVal.file_type" :required="true" @change="change">
-        <bk-radio v-for="typeItem in CONFIG_FILE_TYPE" :key="typeItem.id" :label="typeItem.id" :disabled="isEdit">{{
-          typeItem.name
-        }}</bk-radio>
+        <bk-radio v-for="typeItem in CONFIG_FILE_TYPE" :key="typeItem.id" :label="typeItem.id" :disabled="isEdit">
+          {{ typeItem.name }}
+        </bk-radio>
       </bk-radio-group>
     </bk-form-item>
-    <div class="user-settings">
-      <div class="user-content">
-        <bk-form-item :label="t('文件权限')" property="privilege" required>
-          <div class="perm-input">
-            <bk-popover
-              ext-cls="privilege-tips-wrap"
-              theme="light"
-              trigger="manual"
-              placement="top"
-              :is-show="showPrivilegeErrorTips">
-              <bk-input
-                v-model="privilegeInputVal"
-                type="number"
-                :placeholder="t('请输入三位权限数字')"
-                @blur="handlePrivilegeInputBlur" />
-              <template #content>
-                <div>{{ t('只能输入三位 0~7 数字') }}</div>
-                <div class="privilege-tips-btn-area">
-                  <bk-button text theme="primary" @click="showPrivilegeErrorTips = false">{{
-                    t('我知道了')
-                  }}</bk-button>
-                </div>
-              </template>
-            </bk-popover>
-            <bk-popover ext-cls="privilege-select-popover" theme="light" trigger="click" placement="bottom">
-              <div :class="['perm-panel-trigger']">
-                <i class="bk-bscp-icon icon-configuration-line"></i>
-              </div>
-              <template #content>
-                <div class="privilege-select-panel">
-                  <div v-for="(item, index) in PRIVILEGE_GROUPS" class="group-item" :key="index" :label="item">
-                    <div class="header">{{ item }}</div>
-                    <div class="checkbox-area">
-                      <bk-checkbox-group
-                        class="group-checkboxs"
-                        :model-value="privilegeGroupsValue[index]"
-                        @change="handleSelectPrivilege(index, $event)">
-                        <bk-checkbox size="small" :label="4" :disabled="index === 0">
-                          {{ t('读') }}
-                        </bk-checkbox>
-                        <bk-checkbox size="small" :label="2">{{ t('写') }}</bk-checkbox>
-                        <bk-checkbox size="small" :label="1">{{ t('执行') }}</bk-checkbox>
-                      </bk-checkbox-group>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
-          </div>
-        </bk-form-item>
-        <bk-form-item :label="t('用户')" property="user" :required="true">
-          <bk-input v-model="localVal.user" :placeholder="t('请输入')" @input="change"></bk-input>
-        </bk-form-item>
-        <bk-form-item :label="t('用户组')" :placeholder="t('请输入')" property="user_group" :required="true">
-          <bk-input v-model="localVal.user_group" @input="change"></bk-input>
-        </bk-form-item>
-      </div>
-      <div v-if="isWindowsAgent" class="user-tips">
-        <info-line class="icon" />
-        <span>{{ t('对于Windows客户端，以上文件权限、用户及用户组设置不生效，可在后置脚本中处理文件权限') }}</span>
-      </div>
+    <UserSetting
+      :bk-biz-id="props.bkBizId"
+      :id="props.id"
+      :is-tpl="props.isTpl"
+      :form="privilegeForm as IConfigPrivilegeForm"
+      @change="handlePrivilegeChange" />
+    <div v-if="isWindowsAgent" class="user-tips">
+      <info-line class="icon" />
+      <span>{{ t('对于Windows客户端，以上文件权限、用户及用户组设置不生效，可在后置脚本中处理文件权限') }}</span>
     </div>
-    <bk-form-item v-if="localVal.file_type === 'binary'" :label="t('配置内容')" :required="true">
+    <bk-form-item class="config-content" v-if="localVal.file_type === 'binary'" :label="t('配置内容')" :required="true">
       <bk-upload
         class="config-uploader"
         url=""
@@ -136,11 +84,11 @@
         </div>
       </bk-loading>
     </bk-form-item>
-    <bk-form-item v-else>
+    <bk-form-item class="config-content" v-else>
       <template #label>
         <div class="config-content-label">
           <span>{{ t('配置内容') }}</span>
-          <info v-bk-tooltips="{ content: t('tips.createConfig'), placement: 'top' }" fill="#3a84ff" />
+          <info v-bk-tooltips="{ content: t('tips.createConfig'), placement: 'top' }" fill="#3a84ff" class="icon" />
         </div>
       </template>
       <ConfigContentEditor
@@ -153,7 +101,7 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, watch, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import SHA256 from 'crypto-js/sha256';
   import WordArray from 'crypto-js/lib-typedarrays';
@@ -161,7 +109,11 @@
   import { TextFill, Done, Info, Error, Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import BkMessage from 'bkui-vue/lib/message';
   import { cloneDeep } from 'lodash';
-  import { IConfigEditParams, IFileConfigContentSummary } from '../../../../../../../../types/config';
+  import {
+    IConfigEditParams,
+    IFileConfigContentSummary,
+    IConfigPrivilegeForm,
+  } from '../../../../../../../../types/config';
   import { IVariableEditParams } from '../../../../../../../../types/variable';
   import {
     updateConfigContent,
@@ -177,6 +129,7 @@
   import { fileDownload } from '../../../../../../../utils/file';
   import { CONFIG_FILE_TYPE } from '../../../../../../../constants/config';
   import ConfigContentEditor from '../../components/config-content-editor.vue';
+  import UserSetting from '../../components/user-setting.vue';
 
   interface IUploadFile {
     file: any;
@@ -186,18 +139,6 @@
   }
 
   const { t } = useI18n();
-
-  const PRIVILEGE_GROUPS = [t('属主（own）'), t('属组（group）'), t('其他人（other）')];
-  const PRIVILEGE_VALUE_MAP = {
-    0: [],
-    1: [1],
-    2: [2],
-    3: [1, 2],
-    4: [4],
-    5: [1, 4],
-    6: [2, 4],
-    7: [1, 2, 4],
-  };
 
   const props = withDefaults(
     defineProps<{
@@ -219,8 +160,6 @@
 
   const emits = defineEmits(['change', 'update:fileUploading']);
   const localVal = ref({ ...props.config, fileAP: '' });
-  const privilegeInputVal = ref('');
-  const showPrivilegeErrorTips = ref(false);
   const stringContent = ref('');
   const fileContent = ref<IFileConfigContentSummary | File>();
   const uploadFileSignature = ref(''); // 新上传文件的sha256
@@ -246,15 +185,15 @@
       {
         required: true,
         validator: () => {
-          const type = typeof privilegeInputVal.value;
-          return type === 'number' || (type === 'string' && privilegeInputVal.value.length > 0);
+          const type = typeof localVal.value.privilege;
+          return type === 'number' || (type === 'string' && localVal.value.privilege!.length > 0);
         },
         message: t('文件权限 不能为空'),
         trigger: 'change',
       },
       {
         validator: () => {
-          const privilege = parseInt(privilegeInputVal.value[0], 10);
+          const privilege = parseInt(localVal.value.privilege![0], 10);
           return privilege >= 4;
         },
         message: t('文件own必须有读取权限'),
@@ -284,28 +223,16 @@
     ],
   };
 
-  // 传入到bk-upload组件的文件对象
-  // const fileList = computed(() => (fileContent.value ? [transFileToObject(fileContent.value as File)] : []));
-
-  // 将权限数字拆分成三个分组配置
-  const privilegeGroupsValue = computed(() => {
-    const data: { [index: string]: number[] } = { 0: [], 1: [], 2: [] };
-    if (typeof localVal.value.privilege === 'string' && localVal.value.privilege.length > 0) {
-      const valArr = localVal.value.privilege.split('').map((i) => parseInt(i, 10));
-      valArr.forEach((item, index) => {
-        data[index as keyof typeof data] = PRIVILEGE_VALUE_MAP[item as keyof typeof PRIVILEGE_VALUE_MAP];
-      });
-    }
-    return data;
+  const privilegeForm = computed(() => {
+    const { privilege, user, user_group, uid, gid } = localVal.value;
+    return {
+      privilege,
+      user,
+      user_group,
+      uid,
+      gid,
+    };
   });
-
-  watch(
-    () => props.config.privilege,
-    (val) => {
-      privilegeInputVal.value = val as string;
-    },
-    { immediate: true },
-  );
 
   watch(
     () => props.config,
@@ -335,38 +262,6 @@
     }
     isWindowsAgent.value = navigator.userAgent.indexOf('Windows') !== -1;
   });
-
-  // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
-  const handlePrivilegeInputBlur = () => {
-    const val = String(privilegeInputVal.value);
-    if (/^[0-7]{3}$/.test(val)) {
-      localVal.value.privilege = val;
-      showPrivilegeErrorTips.value = false;
-      change();
-    } else {
-      privilegeInputVal.value = String(localVal.value.privilege);
-      showPrivilegeErrorTips.value = true;
-    }
-  };
-
-  // 选择文件权限
-  const handleSelectPrivilege = (index: number, val: number[]) => {
-    const groupsValue = { ...privilegeGroupsValue.value };
-    groupsValue[index] = val;
-    const digits = [];
-    for (let i = 0; i < 3; i++) {
-      let sum = 0;
-      if (groupsValue[i].length > 0) {
-        sum = groupsValue[i].reduce((acc, crt) => acc + crt, 0);
-      }
-      digits.push(sum);
-    }
-    const newVal = digits.join('');
-    privilegeInputVal.value = newVal;
-    localVal.value.privilege = newVal;
-    showPrivilegeErrorTips.value = false;
-    change();
-  };
 
   const handleStringContentChange = (val: string) => {
     stringContent.value = val;
@@ -561,6 +456,12 @@
     change();
   };
 
+  // 权限内容修改
+  const handlePrivilegeChange = (privilegeForm: IConfigPrivilegeForm) => {
+    localVal.value = { ...localVal.value, ...privilegeForm };
+    change();
+  };
+
   defineExpose({
     getSignature: () => {
       if (localVal.value.file_type === 'binary') {
@@ -572,101 +473,20 @@
   });
 </script>
 <style lang="scss" scoped>
-  .user-settings {
-    margin-bottom: 24px;
-    .user-content {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      :deep(.bk-form-item) {
-        margin-bottom: 0px;
-        .bk-form-error {
-          position: inherit;
-        }
-      }
-    }
-    .user-tips {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #63656e;
-      .icon {
-        font-size: 14px;
-      }
-    }
-  }
-  .perm-input {
+  .user-tips {
     display: flex;
     align-items: center;
-    width: 172px;
-    :deep(.bk-input) {
-      width: 140px;
-      border-right: none;
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-      .bk-input--number-control {
-        display: none;
-      }
-    }
-    .perm-panel-trigger {
-      width: 32px;
-      height: 32px;
-      text-align: center;
-      background: #fafcfe;
-      color: #3a84ff;
-      border: 1px solid #3a84ff;
-      cursor: pointer;
-      &.disabled {
-        color: #dcdee5;
-        border-color: #dcdee5;
-        cursor: not-allowed;
-      }
-    }
-  }
-
-  .privilege-tips-btn-area {
+    gap: 8px;
     margin-top: 8px;
-    text-align: right;
+    font-size: 12px;
+    color: #63656e;
+    .icon {
+      font-size: 14px;
+      color: #979ba5;
+    }
   }
-  .privilege-select-panel {
-    display: flex;
-    align-items: top;
-    border: 1px solid #dcdee5;
-    .group-item {
-      .header {
-        padding: 0 16px;
-        height: 42px;
-        line-height: 42px;
-        color: #313238;
-        font-size: 12px;
-        background: #fafbfd;
-        border-bottom: 1px solid #dcdee5;
-      }
-      &:not(:last-of-type) {
-        .header,
-        .checkbox-area {
-          border-right: 1px solid #dcdee5;
-        }
-      }
-    }
-    .checkbox-area {
-      padding: 10px 16px 12px;
-      background: #ffffff;
-      &:not(:last-child) {
-        border-right: 1px solid #dcdee5;
-      }
-    }
-    .group-checkboxs {
-      font-size: 12px;
-      .bk-checkbox ~ .bk-checkbox {
-        margin-left: 16px;
-      }
-      :deep(.bk-checkbox-label) {
-        font-size: 12px;
-      }
-    }
+  .config-content {
+    margin-top: 24px;
   }
   :deep(.config-uploader) {
     .bk-upload-list {
@@ -740,6 +560,9 @@
     span {
       margin-right: 5px;
     }
+    .icon {
+      font-size: 14px;
+    }
   }
   .file-down-loading {
     width: 100%;
@@ -752,6 +575,11 @@
         color: #979ba5;
         font-size: 12px;
       }
+    }
+  }
+  .type-group {
+    :deep(.bk-radio-label) {
+      font-size: 12px;
     }
   }
 </style>

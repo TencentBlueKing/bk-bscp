@@ -31,7 +31,7 @@
 
   const tips = computed(() => {
     if (props.isTemp) {
-      return '为确保最佳用户体验，此服务的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个';
+      return '为确保最佳用户体验，此套餐的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个';
     }
     if (props.isFileType) {
       return '为确保最佳用户体验，此服务的配置文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个';

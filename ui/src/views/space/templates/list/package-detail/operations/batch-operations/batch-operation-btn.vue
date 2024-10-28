@@ -38,6 +38,8 @@
   <EditPermissionDialg
     v-model:show="isEditPermissionShow"
     :loading="editLoading"
+    :bk-biz-id="props.spaceId"
+    :id="currentTemplateSpace"
     :configs-length="props.isAcrossChecked ? props.dataCount - props.configs.length : props.configs.length"
     :configs="props.configs"
     @confirm="handleConfirmEditPermission($event)" />
@@ -80,6 +82,8 @@
     privilege: string;
     user: string;
     user_group: string;
+    uid: number;
+    gid: number;
   }
 
   const { t } = useI18n();
@@ -140,11 +144,13 @@
   }) => {
     try {
       editLoading.value = true;
-      const { privilege, user, user_group } = permission;
+      const { privilege, user, user_group, uid, gid } = permission;
       const query = {
         privilege,
         user,
         user_group,
+        uid,
+        gid,
         template_ids: props.configs.map((item) => item.id),
         app_ids: appIds,
         template_space_id: props.currentTemplateSpace,

@@ -48,6 +48,8 @@
     v-model:show="isBatchEditPermDialogShow"
     :loading="editLoading"
     :configs-length="props.selectedIds.length"
+    :bk-biz-id="props.bkBizId"
+    :id="props.appId"
     @confirm="handleConfimEditPermission" />
 </template>
 <script lang="ts" setup>
@@ -66,6 +68,8 @@
     privilege: string;
     user: string;
     user_group: string;
+    uid: number;
+    gid: number;
   }
 
   const props = defineProps<{
@@ -118,7 +122,7 @@
   const handleConfimEditPermission = async ({ permission }: { permission: IPermissionType }) => {
     try {
       editLoading.value = true;
-      const { privilege, user, user_group } = permission;
+      const { privilege, user, user_group, uid, gid } = permission;
       const editConfigList = props.selectedItems.map((item) => {
         const { id, spec, commit_spec } = item;
         return {
@@ -127,6 +131,8 @@
           privilege: privilege || spec.permission.privilege,
           user: user || spec.permission.user,
           user_group: user_group || spec.permission.user_group,
+          uid: isNaN(uid) ? spec.permission.uid : uid,
+          gid: isNaN(gid) ? spec.permission.gid : gid,
           byte_size: commit_spec.content.byte_size,
           sign: commit_spec.content.signature,
         };

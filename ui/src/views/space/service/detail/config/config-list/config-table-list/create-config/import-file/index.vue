@@ -135,6 +135,8 @@
           v-if="nonExistConfigList.length"
           :table-data="nonExistConfigList"
           :is-exsit-table="false"
+          :bk-biz-id="bkBizId"
+          :app-id="appId"
           @change="handleConfigTableChange($event, true)" />
         <TemplateConfigTable
           v-if="nonExistTemplateConfigList.length"
@@ -145,6 +147,8 @@
           v-if="existConfigList.length"
           :table-data="existConfigList"
           :is-exsit-table="true"
+          :bk-biz-id="bkBizId"
+          :app-id="appId"
           @change="handleConfigTableChange($event, false)" />
         <TemplateConfigTable
           v-if="existTemplateConfigList.length"
@@ -395,6 +399,8 @@
           ...item,
           ...item.config_item_spec,
           ...item.config_item_spec.permission,
+          gid: 0,
+          uid: 0,
           sign: item.signature,
         };
         delete config.config_item_spec;
@@ -457,6 +463,10 @@
 
   // 上传文件获取表格数据
   const handleUploadFile = (exist: IConfigImportItem[], nonExist: IConfigImportItem[]) => {
+    nonExist.forEach((item) => {
+      item.uid = 0;
+      item.gid = 0;
+    });
     isFormChange.value = true;
     existConfigList.value = [...existConfigList.value, ...exist];
     nonExistConfigList.value = [...nonExistConfigList.value, ...nonExist];

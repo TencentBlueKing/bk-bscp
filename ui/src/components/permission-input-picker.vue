@@ -9,7 +9,7 @@
       <bk-input
         v-model="privilegeInputVal"
         type="number"
-        :placeholder="t('请输入三位权限数字')"
+        :placeholder="isBatchEdit ? t('保持不变') : t('请输入三位权限数字')"
         :disabled="props.disabled"
         @blur="handleInputBlur" />
       <template #content>
@@ -32,7 +32,9 @@
                 class="group-checkboxs"
                 :model-value="privilegeGroupsValue[index]"
                 @change="handleSelect(index, $event)">
-                <bk-checkbox size="small" :label="4">{{ t('读') }}</bk-checkbox>
+                <bk-checkbox size="small" :label="4" :disabled="index === 0 && parseInt(localVal[0], 10) >= 4">
+                  {{ t('读') }}
+                </bk-checkbox>
                 <bk-checkbox size="small" :label="2">{{ t('写') }}</bk-checkbox>
                 <bk-checkbox size="small" :label="1">{{ t('执行') }}</bk-checkbox>
               </bk-checkbox-group>
@@ -63,6 +65,7 @@
   const props = defineProps<{
     disabled?: boolean;
     modelValue: string;
+    isBatchEdit?: boolean;
   }>();
 
   const emits = defineEmits(['update:modelValue', 'change']);

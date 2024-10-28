@@ -38,6 +38,8 @@ export interface IDiffDetail {
       privilege: string;
       user: string;
       user_group: string;
+      uid: number;
+      gid: number;
     };
   };
   current: {
@@ -48,6 +50,8 @@ export interface IDiffDetail {
       privilege: string;
       user: string;
       user_group: string;
+      uid: number;
+      gid: number;
     };
   };
   singleLineKVDiff?: ISingleLineKVDIffItem[];
