@@ -349,9 +349,6 @@ func (s *Service) DownloadFile(w http.ResponseWriter, r *http.Request) {
 		Labels: labelsMap,
 	}
 
-	cancel := kt.CtxWithTimeoutMS(1500)
-	defer cancel()
-
 	metas, err := s.bll.Release().ListAppLatestReleaseMeta(kt, meta)
 	if err != nil {
 		render.Render(w, r, rest.BadRequest(err))
