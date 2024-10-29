@@ -528,6 +528,13 @@ export default {
   '为确保最佳用户体验，此服务的配置文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config files for this service is limited to {n}. There are currently {m} and you can add {p} more',
   '为确保最佳用户体验，此服务的配置项数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config items for this service is limited to {n}. There are currently {m} and you can add {p} more',
   '为确保最佳用户体验，此服务的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of template files for this service is limited to {n}. There are currently {m} and you can add {p} more',
+  批量恢复: 'Batch restore',
+  批量恢复配置文件成功: 'Batch restore configuration file successfully',
+  批量恢复配置项成功: 'Batch restore configuration item successfully',
+  '确认恢复所选的 {n} 个配置文件？': 'Confirm to restore the selected {n} configuration files?',
+  '确认恢复所选的 {n} 个配置项？': 'Confirm to restore the selected {n} configuration items?',
+  '如果所选待恢复的配置文件已存在，那么现有配置文件将被覆盖。': 'If the selected configuration file to be restored already exists, the existing configuration file will be overwritten.',
+  '如果所选待恢复的配置项已存在，那么现有配置项将被覆盖。': 'If the selected configuration item to be restored already exists, the existing configuration item will be overwritten.',
 
   // 分组管理
   新增分组: 'New group',

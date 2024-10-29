@@ -25,10 +25,7 @@
         :label="renderSelection"
         :show-overflow-tooltip="false">
         <template #default="{ row }">
-          <across-check-box
-            :checked="isChecked(row)"
-            :disabled="row.kv_state === 'DELETE'"
-            :handle-change="() => handleSelectionChange(row)" />
+          <across-check-box :checked="isChecked(row)" :handle-change="() => handleSelectionChange(row)" />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('配置项名称')" prop="spec.key" :min-width="240">
@@ -215,7 +212,7 @@
     searchStr: string;
   }>();
 
-  const emits = defineEmits(['clearStr', 'updateSelectedIds', 'sendTableDataCount']);
+  const emits = defineEmits(['clearStr', 'sendTableDataCount', 'updateSelectedItems']);
 
   const loading = ref(false);
   const configList = ref<IConfigKvType[]>([]);
@@ -225,6 +222,7 @@
   const activeConfig = ref<IConfigKvType>(getDefaultKvItem());
   const deleteConfig = ref<IConfigKvType>();
   const selectedConfigIds = ref<number[]>([]);
+  const selectedConfigKeys = ref<string[]>([]);
   const isDiffPanelShow = ref(false);
   const diffConfig = ref(0);
   const isSearchEmpty = ref(false);
@@ -236,6 +234,8 @@
   const isRecoverConfigDialogShow = ref(false);
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
+  const allDeleteConfigCount = ref(0);
+  const allExistConfigCount = ref(0);
 
   const typeFilterList = computed(() =>
     CONFIG_KV_TYPE.map((item) => ({
@@ -274,14 +274,13 @@
   });
 
   // 跨页全选
-  const selecTableData = computed(() => configList.value.filter((item) => item.kv_state !== 'DELETE'));
   const crossPageSelect = computed(
     () => pagination.value.limit < pagination.value.count && selecTableDataCount.value !== 0,
   );
   const { selectType, selections, renderSelection, renderTableTip, handleRowCheckChange, handleClearSelection } =
     useTableAcrossCheck({
-      dataCount: selecTableDataCount, // 总数，不含禁用row
-      curPageData: selecTableData, // 当前页数据，不含禁用row
+      dataCount: selecTableDataCount, // 总数
+      curPageData: configList, // 当前页数据
       rowKey: ['id'],
       crossPageSelect, // 是否提供跨页全选功能
     });
@@ -290,9 +289,6 @@
     () => versionData.value.id,
     () => {
       refresh();
-      selectedConfigIds.value = [];
-      // emits('updateSelectedIds', []);
-      emits('updateSelectedIds', { selectedConfigIds, isAcrossChecked: false });
     },
   );
 
@@ -318,10 +314,27 @@
     selections,
     () => {
       isAcrossChecked.value = [CheckType.HalfAcrossChecked, CheckType.AcrossChecked].includes(selectType.value);
+      let selectedDeleteCount = 0;
+      let selectedExistCount = 0;
+      if (isAcrossChecked.value) {
+        // 全选状态 selections为排除项
+        selectedDeleteCount =
+          allDeleteConfigCount.value - selections.value.filter((item) => item.kv_state === 'DELETE').length;
+        selectedExistCount =
+          allExistConfigCount.value - selections.value.filter((item) => item.kv_state !== 'DELETE').length;
+      } else {
+        // 非全选状态 selections为选中项
+        selectedDeleteCount = selections.value.filter((item) => item.kv_state === 'DELETE').length;
+        selectedExistCount = selections.value.filter((item) => item.kv_state !== 'DELETE').length;
+      }
       selectedConfigIds.value = selections.value.map((item) => item.id);
-      emits('updateSelectedIds', {
+      selectedConfigKeys.value = selections.value.map((item) => item.spec.key);
+      emits('updateSelectedItems', {
         selectedConfigIds: selectedConfigIds.value,
+        selectedConfigKeys: selectedConfigKeys.value,
         isAcrossChecked: isAcrossChecked.value,
+        selectedDeleteCount,
+        selectedExistCount,
       });
     },
     {
@@ -375,11 +388,13 @@
         return 0;
       });
       configsCount.value = res.count;
+      allExistConfigCount.value = res.exclusion_count;
+      allDeleteConfigCount.value = res.count - res.exclusion_count;
       configStore.$patch((state) => {
         state.allConfigCount = res.count;
         state.allExistConfigCount = res.exclusion_count;
       });
-      selecTableDataCount.value = Number(res.exclusion_count);
+      selecTableDataCount.value = Number(res.count);
       emits('sendTableDataCount', selecTableDataCount.value);
       pagination.value.count = res.count;
     } catch (e) {
@@ -522,8 +537,12 @@
     }
 
     selectedConfigIds.value = [];
-    // emits('updateSelectedIds', []);
-    emits('updateSelectedIds', { selectedConfigIds, isAcrossChecked: false });
+    selectedConfigKeys.value = [];
+    emits('updateSelectedItems', {
+      selectedConfigIds: selectedConfigIds.value,
+      selectedConfigKeys: selectedConfigKeys.value,
+      isAcrossChecked: false,
+    });
     refresh(pagination.value.current);
   };
 

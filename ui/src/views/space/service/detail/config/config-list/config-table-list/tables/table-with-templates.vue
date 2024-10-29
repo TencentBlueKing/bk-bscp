@@ -65,7 +65,7 @@
                           <div :class="getRowCls(item)">
                             <td v-if="isUnNamedVersion" class="selection">
                               <bk-checkbox
-                                :disabled="group.id > 0 || item.file_state === 'DELETE'"
+                                :disabled="group.id > 0"
                                 :model-value="selectedConfigItems.some((config) => item.id === config.id)"
                                 @change="handleRowSelectionChange($event, item.id)" />
                             </td>
@@ -377,7 +377,7 @@
     searchStr: string;
   }>();
 
-  const emits = defineEmits(['clearStr', 'deleteConfig', 'updateSelectedIds', 'updateSelectedItems']);
+  const emits = defineEmits(['clearStr', 'deleteConfig', 'updateSelectedItems']);
 
   const loading = ref(false);
   const commonConfigListLoading = ref(false);
@@ -508,7 +508,6 @@
       await getBindingId();
       getAllConfigList();
       selectedConfigItems.value = [];
-      emits('updateSelectedIds', []);
     },
   );
 
@@ -517,6 +516,13 @@
     () => {
       props.searchStr ? (isSearchEmpty.value = true) : (isSearchEmpty.value = false);
       getAllConfigList();
+    },
+  );
+
+  watch(
+    () => selectedConfigItems.value,
+    () => {
+      emits('updateSelectedItems', selectedConfigItems.value);
     },
   );
 
@@ -716,15 +722,10 @@
   // 全选
   const handleSelectAll = (val: boolean) => {
     if (val) {
-      selectedConfigItems.value = configList.value.filter((item) => item.file_state !== 'DELETE');
+      selectedConfigItems.value = [...configList.value];
     } else {
       selectedConfigItems.value = [];
     }
-    emits(
-      'updateSelectedIds',
-      selectedConfigItems.value.map((item) => item.id),
-    );
-    emits('updateSelectedItems', selectedConfigItems.value);
   };
 
   // 非模板配置选择/取消选择
@@ -735,11 +736,6 @@
     } else {
       index > -1 && selectedConfigItems.value.splice(index, 1);
     }
-    emits(
-      'updateSelectedIds',
-      selectedConfigItems.value.map((item) => item.id),
-    );
-    emits('updateSelectedItems', selectedConfigItems.value);
   };
 
   const handleEditOpen = (config: IConfigTableItem) => {
@@ -864,6 +860,7 @@
       message: t('删除配置文件成功'),
     });
     await getAllConfigList();
+    selectedConfigItems.value = [];
     emits('deleteConfig');
     isDeleteConfigDialogShow.value = false;
   };
@@ -913,6 +910,7 @@
     } else {
       isRecoverConfigDialogShow.value = true;
     }
+    selectedConfigItems.value = [];
   };
 
   const handleRecoverConfigConfirm = async () => {
@@ -954,8 +952,6 @@
   // 批量操作配置项后刷新配置项列表
   const refreshAfterBatchSet = () => {
     selectedConfigItems.value = [];
-    emits('updateSelectedIds', []);
-    emits('updateSelectedItems', []);
     getAllConfigList();
   };
 

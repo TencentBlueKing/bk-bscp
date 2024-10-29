@@ -43,7 +43,10 @@
           :is-file-type="isFileType"
           :selected-items="selectedItems"
           :is-across-checked="isAcrossChecked"
+          :selected-keys="selectedKeys"
           :data-count="selecTableDataCount"
+          :selected-delete-count="selectedDeleteCount"
+          :selected-exist-count="selectedExistCount"
           @deleted="handleBatchDeleted" />
       </div>
       <SearchInput
@@ -62,8 +65,7 @@
         :search-str="searchStr"
         @clear-str="clearStr"
         @delete-config="refreshVariable"
-        @update-selected-ids="selectedIds = $event"
-        @update-selected-items="selectedItems = $event" />
+        @update-selected-items="handleTmpSelectedItems" />
       <TableWithKv
         v-else
         ref="tableRef"
@@ -72,10 +74,13 @@
         :search-str="searchStr"
         @send-table-data-count="selecTableDataCount = $event"
         @clear-str="clearStr"
-        @update-selected-ids="
+        @update-selected-items="
           (data) => {
+            selectedKeys = data.selectedConfigKeys;
             selectedIds = data.selectedConfigIds;
             isAcrossChecked = data.isAcrossChecked;
+            selectedExistCount = data.selectedExistCount;
+            selectedDeleteCount = data.selectedDeleteCount;
           }
         " />
     </section>
@@ -117,6 +122,9 @@
   const selectedItems = ref<any[]>([]);
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
+  const selectedKeys = ref<string[]>([]);
+  const selectedExistCount = ref(0); // 选中的删除项个数
+  const selectedDeleteCount = ref(0); // 选中的恢复项个数
 
   const refreshConfigList = (createConfig = false) => {
     if (isFileType.value) {
@@ -144,6 +152,13 @@
     configStore.$patch((state) => {
       state.onlyViewConflict = !state.onlyViewConflict;
     });
+  };
+
+  const handleTmpSelectedItems = (items: any[]) => {
+    selectedItems.value = items;
+    selectedIds.value = items.map((item) => item.id);
+    selectedExistCount.value = items.filter((item) => item.file_state !== 'DELETE').length;
+    selectedDeleteCount.value = selectedIds.value.length - selectedExistCount.value;
   };
 
   defineExpose({

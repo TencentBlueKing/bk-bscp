@@ -675,3 +675,23 @@ export const createVersionNameCheck = (bizId: string, appId: number, name: strin
  */
 export const importConfigFromTemplate = (bizId: string, appId: number, query: any) =>
   http.post(`/config/biz/${bizId}/apps/${appId}/template_bindings/import_template_set`, query);
+
+/**
+ * 批量恢复kv配置项
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param ids 恢复的id列表
+ * @returns
+ */
+export const batchUndeleteKv = (bizId: string, appId: number, keys: string[], exclusion_operation: boolean) =>
+  http.post(`config/biz/${bizId}/apps/${appId}/kvs/batch_undelete`, { keys, exclusion_operation });
+
+/**
+ * 批量恢复服务型配置项
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param ids 恢复的id列表
+ * @returns
+ */
+export const batchUndeleteFile = (bizId: string, appId: number, ids: number[]) =>
+  http.post(`config/biz_id/${bizId}/app_id/${appId}/config_items/batch_undelete`, { ids });
