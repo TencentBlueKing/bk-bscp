@@ -33,9 +33,9 @@
 <script lang="ts" setup>
   import { ref, onMounted, inject, Ref } from 'vue';
   import { useRoute } from 'vue-router';
-  import { getConfigList, getKvList } from '../../../../../api/config';
+  import { getConfigList, getBoundTemplates, getKvList } from '../../../../../api/config';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
-  import { IConfigItem, IConfigKvType } from '../../../../../../types/config';
+  import { IConfigItem, IBoundTemplateGroup, IConfigKvType } from '../../../../../../types/config';
 
   const emits = defineEmits(['select-config']);
 
@@ -62,27 +62,43 @@
         start: 0,
         all: true,
       };
-      let res;
       if (basicInfo?.serviceType.value === 'file') {
         // 文件型配置项
-        res = await getConfigList(bizId.value, Number(appId.value), query);
-      } else {
-        // 键值型配置项
-        res = await getKvList(bizId.value, Number(appId.value), query);
-      }
-      configList.value = res.details.map((item: IConfigItem | IConfigKvType) => {
-        if ('path' in item.spec) {
+        const [configRes, boundTempRes] = await Promise.all([
+          getConfigList(bizId.value, Number(appId.value), query), // 非模板配置
+          getBoundTemplates(bizId.value, Number(appId.value), query), // 套餐
+        ]);
+        // 提取非模板配置的信息
+        const configResult = configRes.details.map((item: IConfigItem) => {
           const { path, name } = item.spec;
           return {
             id: item.id,
             config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
           };
-        }
-        return {
-          id: item.id,
-          config: item.spec.key,
-        };
-      });
+        });
+        // 提取套餐配置信息
+        const boundTempResult = boundTempRes.details.map((group: IBoundTemplateGroup) => {
+          // 遍历套餐
+          return group.template_revisions.map((item) => {
+            const { template_id, path, name } = item;
+            return {
+              id: template_id,
+              config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
+            };
+          });
+        });
+        // 合并配置信息
+        configList.value = [...configResult, ...boundTempResult].flat();
+      } else {
+        // 键值型配置项
+        const res = await getKvList(bizId.value, Number(appId.value), query);
+        configList.value = res.details.map((item: IConfigKvType) => {
+          return {
+            id: item.id,
+            config: item.spec.key,
+          };
+        });
+      }
     } catch (e) {
       console.error(e);
     } finally {
