@@ -16,13 +16,18 @@
     <template #trigger>
       <div class="selector-trigger">
         <bk-overflow-title v-if="configName" class="config-name" type="tips">
-          {{ configName }}
+          {{ originalConfigName }}
         </bk-overflow-title>
         <span v-else class="empty">{{ $t('请选择') }}</span>
         <AngleUpFill class="arrow-icon arrow-fill" />
       </div>
     </template>
-    <bk-option v-for="item in configList" :key="item.id" :value="item.config" :label="item.config">
+    <!-- 非模板配置和套餐合并后的数据（configList），配置项名称（文件名）可能一样，这里添加/index做唯一区分，后续使用删除/index -->
+    <bk-option
+      v-for="(item, index) in configList"
+      :key="item.id + index"
+      :value="`${item.config}/${index}`"
+      :label="item.config">
       <div class="config-option-item">
         <div class="name-text">{{ item.config }}</div>
       </div>
@@ -31,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, inject, Ref } from 'vue';
+  import { ref, onMounted, inject, Ref, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { getConfigList, getBoundTemplates, getKvList } from '../../../../../api/config';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
@@ -49,6 +54,9 @@
   const bizId = ref(String(route.params.spaceId));
   const appId = ref(route.params.appId);
   const configList = ref<{ id: number; config: string }[]>([]);
+
+  // 选中的配置项（文件名）原始名称
+  const originalConfigName = computed(() => configName.value.replace(/\/[^\\/]*$/, ''));
 
   onMounted(async () => {
     await loadConfigList();
@@ -107,9 +115,8 @@
   };
 
   // 下拉列表操作
-  const handleConfigChange = async (name: string) => {
-    configName.value = name;
-    emits('select-config', name);
+  const handleConfigChange = async () => {
+    emits('select-config', originalConfigName);
     validateConfig();
   };
 
