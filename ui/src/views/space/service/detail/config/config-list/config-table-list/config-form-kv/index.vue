@@ -10,7 +10,11 @@
           :placeholder="t('请输入')" />
       </bk-form-item>
       <bk-form-item :label="t('数据类型')" property="kv_type" :required="true" :description="typeDescription">
-        <bk-select v-model="localVal.kv_type" class="type-select" :disabled="selectDisabled">
+        <bk-select
+          v-model="localVal.kv_type"
+          class="type-select"
+          :popover-options="{ theme: 'light bk-select-popover type-selector-popover' }"
+          :disabled="selectDisabled">
           <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
         </bk-select>
       </bk-form-item>
@@ -193,5 +197,11 @@
   }
   .value-input {
     width: 428px;
+  }
+</style>
+
+<style>
+  .type-selector-popover .bk-select-dropdown{
+    max-height: none !important;
   }
 </style>
