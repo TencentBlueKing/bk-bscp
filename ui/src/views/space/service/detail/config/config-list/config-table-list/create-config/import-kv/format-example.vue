@@ -13,7 +13,7 @@
     </div>
     <div class="content">
       <template v-if="format === 'text'">
-        <template v-for="item in textFormat" :key="item.formatTite">
+        <template v-for="item in textFormat" :key="item.formatTitle">
           <div class="format">
             <div>{{ item.formatTitle }}</div>
             <div>{{ item.formatContent }}</div>
@@ -32,38 +32,13 @@
           </div>
         </template>
       </template>
-      <div v-else-if="format === 'json'" class="format">
-        <div>JSON {{ $t('格式') }}:</div>
-        <div>
-          {{
-            `{“key”:
-              {
-                “kv_type”: ${$t('数据类型')},
-                “value”: ${$t('配置项值')},
-                "secret_hidden": ${$t('是否可见')},
-                "secret_type": ${$t('密钥类型')}
-                “memo”: ${$t('描述')},
-              \}
-            \}`
-          }}
-        </div>
-      </div>
       <div v-else class="format">
-        <div>YAML {{ $t('格式') }}:</div>
-        <div>
-          {{
-            `key:
-              “kv_type”: ${$t('数据类型')},
-              “value”: ${$t('配置项值')},
-              "secret_hidden": ${$t('是否可见')},
-              "secret_type": ${$t('密钥类型')}
-              “memo”: ${$t('描述')},`
-          }}
-        </div>
+        <div>{{ props.format === 'json' ? $t('字段说明') : $t('格式说明') }}:</div>
+        <div class="description">{{ fieldsDescription }}</div>
       </div>
       <div v-if="format !== 'text'" class="example">
         <div>{{ $t('示例') }}:</div>
-        <bk-input v-model="copyContent" type="textarea" :read-only="true" :resize="false" />
+        <div class="description">{{ copyContent }}</div>
       </div>
     </div>
   </div>
@@ -278,6 +253,26 @@ user_name:
   });
   /* eslint-enable */
 
+  const fieldsDescription = computed(() => {
+    if (props.format === 'json') {
+      return ` {
+      "配置项名称": {
+          "kv_type": "数据类型，支持以下类型：string、number、text、json、xml、yaml、secret",
+          "value": "配置项的具体值",
+          "secret_type": "密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token",
+          "secret_hidden": "指示配置项值是否可见，仅在kv_type为secret时有效",
+          "memo": "对配置项的描述"
+      }
+  }`;
+    }
+    return `    配置项名称:
+        kv_type: 数据类型，支持以下类型：string、number、text、json、xml、yaml、secret
+        value: 配置项的具体值
+        secret_type: 密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token
+        secret_hidden: 指示配置项值是否可见，仅在kv_type为secret时有效
+        memo: 对配置项的描述`;
+  });
+
   // 复制
   const handleCopyText = () => {
     copyToClipBoard(copyContent.value);
@@ -309,8 +304,9 @@ user_name:
     }
     .content {
       color: #c4c6cc;
-      font-size: 13px;
-
+      font-size: 12px;
+      overflow: auto;
+      max-height: calc(100% - 42px);
       .text-example {
         display: flex;
         gap: 8px;
@@ -326,16 +322,9 @@ user_name:
       margin-top: 16px;
     }
   }
-  :deep(.bk-textarea) {
-    border: none;
-    box-shadow: none !important;
-    height: 270px;
-    color: #c4c6cc;
-    textarea {
-      height: 100%;
-      background-color: #2e2e2e;
-      font-size: 13px;
-    }
+
+  .description {
+    white-space: pre-wrap;
   }
 </style>
 

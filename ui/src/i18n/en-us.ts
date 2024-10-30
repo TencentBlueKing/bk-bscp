@@ -535,6 +535,9 @@ export default {
   '确认恢复所选的 {n} 个配置项？': 'Confirm to restore the selected {n} configuration items?',
   '如果所选待恢复的配置文件已存在，那么现有配置文件将被覆盖。': 'If the selected configuration file to be restored already exists, the existing configuration file will be overwritten.',
   '如果所选待恢复的配置项已存在，那么现有配置项将被覆盖。': 'If the selected configuration item to be restored already exists, the existing configuration item will be overwritten.',
+  字段说明: 'Field description',
+  格式说明: 'Format description',
+  '示例：': 'Example:',
 
   // 分组管理
   新增分组: 'New group',
@@ -588,7 +591,6 @@ export default {
   变量内容: 'variable content',
   变量必须以bk_bscp_或BK_BSCP_开头: 'Variable must start with bk_bscp_ or BK_BSCP_',
   导入变量成功: 'Import variables successfully',
-  '示例：': 'Example:',
   '变量名 变量类型 变量值 变量描述（可选）': 'Variable name Variable type Variable value Variable Description (optional)',
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx port',
   导出变量: 'Export variables',
