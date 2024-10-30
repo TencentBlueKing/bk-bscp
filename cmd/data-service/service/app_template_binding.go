@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
 	pbatb "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/app-template-binding"
 	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
+	pbci "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/config-item"
 	pbrci "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/released-ci"
 	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/search"
@@ -168,11 +169,9 @@ func (s *Service) DeleteAppTemplateBinding(ctx context.Context, req *pbds.Delete
 }
 
 // ListAppBoundTmplRevisions list app bound template revisions.
-//
-//nolint:funlen,gocyclo
+// nolint:funlen,gocyclo
 func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 	req *pbds.ListAppBoundTmplRevisionsReq) (*pbds.ListAppBoundTmplRevisionsResp, error) {
-
 	kt := kit.FromGrpcContext(ctx)
 
 	// validate the page params
@@ -238,7 +237,14 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 		logs.Errorf("list app bound template revisions failed err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
-	for _, t := range tmplRevisions {
+
+	// 获取模板文件版本的权限
+	data, err := s.listTplRevPerms(kt, kt.BizID, tmplRevisions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range data {
 		tmplRevisionMap[t.ID] = t
 	}
 
@@ -261,14 +267,12 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 				TemplateRevisionMemo: d.Spec.RevisionMemo,
 				FileType:             string(d.Spec.FileType),
 				FileMode:             string(d.Spec.FileMode),
-				User:                 d.Spec.Permission.User,
-				UserGroup:            d.Spec.Permission.UserGroup,
-				Privilege:            d.Spec.Permission.Privilege,
 				Signature:            d.Spec.ContentSpec.Signature,
 				Md5:                  d.Spec.ContentSpec.Md5,
 				ByteSize:             d.Spec.ContentSpec.ByteSize,
 				Creator:              d.Revision.Creator,
 				CreateAt:             d.Revision.CreatedAt.Format(time.RFC3339),
+				Permission:           pbci.PbFilePermission(d.Spec.Permission),
 			})
 		}
 	}
@@ -590,13 +594,13 @@ func (s *Service) getConflictDetailsOfATB(kt *kit.Kit, pbs *parsedBindings, tmpl
 // CascadeUpdateATB update app template binding in cascaded way.
 // Only called by bscp system itself, no need to validate the input, but need the uniqueness verification.
 /*
-在模版/套餐有被服务引用的情况下，如下场景需要级联更新应用模版绑定数据：
-1.对套餐添加/移出模板 （更新套餐接口、添加模版到套餐接口、从套餐移出模版接口）
-2.删除套餐（删除套餐接口）
-3.创建模版时指定了套餐（创建模版接口）
-4.删除模版（删除模版接口、批量删除模版接口）
-5.创建模版版本（创建模版版本接口）
-6.删除模版版本（删除模版版本接口，暂不开放该接口）
+ 在模版/套餐有被服务引用的情况下，如下场景需要级联更新应用模版绑定数据：
+ 1.对套餐添加/移出模板 （更新套餐接口、添加模版到套餐接口、从套餐移出模版接口）
+ 2.删除套餐（删除套餐接口）
+ 3.创建模版时指定了套餐（创建模版接口）
+ 4.删除模版（删除模版接口、批量删除模版接口）
+ 5.创建模版版本（创建模版版本接口）
+ 6.删除模版版本（删除模版版本接口，暂不开放该接口）
 */
 func (s *Service) CascadeUpdateATB(kt *kit.Kit, tx *gen.QueryTx, atb *table.AppTemplateBinding) error {
 	if err := s.genFinalATBForCascade(kt, tx, atb); err != nil {
@@ -1197,7 +1201,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 		for _, v := range tId {
 			if !existsTemplateIds[v] {
 				return errors.New(i18n.T(kit, `the template file %s in the template set 
-				%s has been removed. Please import the set again`,
+				 %s has been removed. Please import the set again`,
 					validatedTemplateSetNames[sId], templateNames[v]))
 			}
 		}
@@ -1217,7 +1221,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 		for _, v := range rId {
 			if !existsRevisionsIds[v] {
 				return errors.New(i18n.T(kit, `template version %s in template file %s 
-				has been removed. Please import the set again`,
+				 has been removed. Please import the set again`,
 					revisionNames[v], templateNames[tId]))
 			}
 		}
@@ -1233,7 +1237,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 			continue
 		}
 		return errors.New(i18n.T(kit, `the version number %s in the template file %s is not the 
-		latest version. Please import the set again`,
+		 latest version. Please import the set again`,
 			templateNames[v.Attachment.TemplateID], revisionNames[v.ID]))
 	}
 

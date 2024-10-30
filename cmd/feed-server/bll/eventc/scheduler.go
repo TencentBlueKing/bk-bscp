@@ -357,6 +357,8 @@ func (sch *Scheduler) buildEvent(inst *sfs.InstanceSpec, ciList []*types.Release
 					User:      cis.Permission.User,
 					UserGroup: cis.Permission.UserGroup,
 					Privilege: cis.Permission.Privilege,
+					Uid:       cis.Permission.Uid,
+					Gid:       cis.Permission.Gid,
 				},
 			},
 			ConfigItemAttachment: &pbci.ConfigItemAttachment{

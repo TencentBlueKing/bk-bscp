@@ -36,6 +36,8 @@ type TemplateItem struct {
 	Sign      string `json:"sign"`
 	ByteSize  uint64 `json:"byte_size"`
 	Md5       string `json:"md5"`
+	Uid       uint32 `json:"uid"`
+	Gid       uint32 `json:"gid"`
 }
 
 // TemplatesImportResp Import template return

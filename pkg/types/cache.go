@@ -124,6 +124,8 @@ type FilePermissionCache struct {
 	User      string `json:"user"`
 	UserGroup string `json:"group"`
 	Privilege string `json:"priv"`
+	Uid       uint32 `json:"uid"`
+	Gid       uint32 `json:"gid"`
 }
 
 // CredentialCache cache struct.
@@ -231,6 +233,8 @@ func ReleaseCICaches(rs []*table.ReleasedConfigItem, releaseName string) []*Rele
 					User:      one.ConfigItemSpec.Permission.User,
 					UserGroup: one.ConfigItemSpec.Permission.UserGroup,
 					Privilege: one.ConfigItemSpec.Permission.Privilege,
+					Uid:       one.ConfigItemSpec.Permission.Uid,
+					Gid:       one.ConfigItemSpec.Permission.Gid,
 				},
 			},
 			Attachment: one.Attachment,
