@@ -36,6 +36,7 @@ type Audits struct {
 	Status      string `gorm:"column:status;type:varchar(20);default:'';NOT NULL"`
 	StrategyId  uint   `gorm:"column:strategy_id;type:bigint(1) unsigned;default:NULL;index:idx_strategyID,priority:1"`
 	IsCompare   uint   `gorm:"column:is_compare;type:tinyint(1) unsigned;default:0;NOT NULL"`
+	Action      string `gorm:"column:action;type:varchar(50);default:'';NOT NULL"`
 }
 
 // mig20240930182341Up for up migration
@@ -71,6 +72,12 @@ func mig20240930182341Up(tx *gorm.DB) error {
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "is_compare") {
 		if err := tx.Migrator().AddColumn(&Audits{}, "is_compare"); err != nil {
+			return err
+		}
+	}
+
+	if tx.Migrator().HasColumn(&Audits{}, "action") {
+		if err := tx.Migrator().AlterColumn(&Audits{}, "action"); err != nil {
 			return err
 		}
 	}
@@ -111,6 +118,12 @@ func mig20240930182341Down(tx *gorm.DB) error {
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "is_compare") {
 		if err := tx.Migrator().AddColumn(&Audits{}, "is_compare"); err != nil {
+			return err
+		}
+	}
+
+	if tx.Migrator().HasColumn(&Audits{}, "action") {
+		if err := tx.Migrator().AlterColumn(&Audits{}, "action"); err != nil {
 			return err
 		}
 	}

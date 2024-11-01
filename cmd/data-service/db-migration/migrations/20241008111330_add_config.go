@@ -24,20 +24,18 @@ func init() {
 	// add current migration to migrator
 	migrator.GetMigrator().AddMigration(&migrator.Migration{
 		Version: "20241008111330",
-		Name:    "20241008111330_add_itsm_config",
+		Name:    "20241008111330_add_config",
 		Mode:    migrator.GormMode,
 		Up:      mig20241008111330Up,
 		Down:    mig20241008111330Down,
 	})
 }
 
-// ItsmConfigs : ItsmConfigs
-type ItsmConfigs struct {
-	ID             uint   `gorm:"column:id;type:bigint(1) unsigned;primary_key"`
-	Key            string `gorm:"column:key;type:varchar(256);default:'';NOT NULL;index:idx_key,priority:1"`
-	Value          uint   `gorm:"column:value;type:bigint(1) unsigned;default:0;NOT NULL"`
-	WorkflowId     uint   `gorm:"column:workflow_id;type:bigint(1) unsigned;default:0;NOT NULL"`
-	StateApproveId uint   `gorm:"column:state_approve_id;type:bigint(1) unsigned;default:0;NOT NULL;"`
+// Configs : Configs
+type Configs struct {
+	ID    uint   `gorm:"column:id;type:bigint(1) unsigned;primary_key"`
+	Key   string `gorm:"column:key;type:varchar(256);default:'';NOT NULL;index:idx_key,priority:1"`
+	Value string `gorm:"column:value;type:varchar(20);default:'';NOT NULL"`
 }
 
 // IDGenerators : ID生成器
@@ -52,14 +50,14 @@ type IDGenerators struct {
 func mig20241008111330Up(tx *gorm.DB) error {
 
 	if err := tx.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4").
-		AutoMigrate(&ItsmConfigs{}); err != nil {
+		AutoMigrate(&Configs{}); err != nil {
 		return err
 	}
 
 	now := time.Now()
 
 	if result := tx.Create([]IDGenerators{
-		{Resource: "itsm_configs", MaxID: 0, UpdatedAt: now},
+		{Resource: "configs", MaxID: 0, UpdatedAt: now},
 	}); result.Error != nil {
 		return result.Error
 	}
@@ -69,12 +67,12 @@ func mig20241008111330Up(tx *gorm.DB) error {
 
 // mig20241008111330Down for down migration
 func mig20241008111330Down(tx *gorm.DB) error {
-	if err := tx.Migrator().DropTable(ItsmConfigs{}); err != nil {
+	if err := tx.Migrator().DropTable(Configs{}); err != nil {
 		return err
 	}
 
 	var resources = []string{
-		"itsm_configs",
+		"configs",
 	}
 	if result := tx.Where("resource IN ?", resources).Delete(&IDGenerators{}); result.Error != nil {
 		return result.Error

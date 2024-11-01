@@ -221,11 +221,6 @@ var migrateInitITSMCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if !cc.DataService().ITSM.Enable || !cc.DataService().ITSM.AutoRegister {
-			fmt.Println("itsm is disabled or auto register is disabled, skip migration")
-			return
-		}
-
 		if err := itsm.InitServices(); err != nil {
 			fmt.Printf("init itsm services failed, err: %s\n", err.Error())
 			os.Exit(1)

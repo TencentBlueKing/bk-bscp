@@ -12,18 +12,16 @@
 
 package table
 
-// ItsmConfig defines a itsm_config model
-type ItsmConfig struct {
+// Config defines a config model
+type Config struct {
 	// ID is an auto-increased value, which is a unique identity
 	// of a itsm_config.
-	ID             uint32 `db:"id" json:"id" gorm:"primaryKey"`
-	Key            string `db:"key" json:"key" gorm:"column:key"`
-	Value          int    `db:"value" json:"value" gorm:"column:value"`
-	WorkflowId     int    `db:"workflow_id" json:"workflow_id" gorm:"column:workflow_id"`
-	StateApproveId int    `db:"state_approve_id" json:"state_approve_id" gorm:"column:state_approve_id"`
+	ID    uint32 `db:"id" json:"id" gorm:"primaryKey"`
+	Key   string `db:"key" json:"key" gorm:"column:key"`
+	Value string `db:"value" json:"value" gorm:"column:value"`
 }
 
 // TableName is the strategy's database table name.
-func (i *ItsmConfig) TableName() string {
-	return "itsm_configs"
+func (i *Config) TableName() string {
+	return "configs"
 }

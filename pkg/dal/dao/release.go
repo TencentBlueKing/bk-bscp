@@ -200,7 +200,8 @@ func (dao *releaseDao) ListReleaseStrategies(
 	var publishRecords []*types.ListReleasesStrategies
 	r := dao.genQ.Release
 	s := dao.genQ.Strategy
-	err := r.WithContext(kit.Ctx).Select(s.PublishTime, r.Name, s.Scope, r.Creator, r.FullyReleased).
+	err := r.WithContext(kit.Ctx).
+		Select(s.PublishTime, r.Name, s.Scope, r.Creator, r.FullyReleased, s.FinalApprovalTime).
 		Join(s, s.ReleaseID.EqCol(r.ID), s.AppID.EqCol(r.AppID), s.BizID.EqCol(r.BizID)).
 		Where(s.PublishStatus.Eq(string(table.AlreadyPublish)), s.AppID.Eq(appID), s.BizID.Eq(bizID)).
 		Order(s.PublishTime.Desc()).Limit(3).Offset(0).

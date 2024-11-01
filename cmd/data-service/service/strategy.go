@@ -67,7 +67,7 @@ func (s *Service) GetLastSelect(ctx context.Context, req *pbds.GetLastSelectReq)
 
 	// if approval is not required, it will only be immediately and periodical publish
 	if !app.Spec.IsApprove && (strategyRecord.Spec.PublishType == table.Immediately ||
-		strategyRecord.Spec.PublishType == table.Periodically) {
+		strategyRecord.Spec.PublishType == table.Scheduled) {
 		// default value
 		resp.PublishType = string(table.Immediately)
 	}
@@ -94,8 +94,8 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbds.GetLastPublishRe
 	}
 
 	// the current service has publishing tasks
-	if strategyRecord.Spec.PublishStatus == table.PendApproval ||
-		strategyRecord.Spec.PublishStatus == table.PendPublish {
+	if strategyRecord.Spec.PublishStatus == table.PendingApproval ||
+		strategyRecord.Spec.PublishStatus == table.PendingPublish {
 		resp.IsPublishing = true
 	}
 
@@ -106,7 +106,7 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbds.GetLastPublishRe
 	}
 
 	resp.VersionName = releaseRecord.Spec.Name
-	resp.UpdatedAt = strategyRecord.Revision.UpdatedAt.Format(time.DateTime)
+	resp.FinalApprovalTime = strategyRecord.Spec.FinalApprovalTime.Format(time.DateTime)
 
 	lrs, err := s.dao.Release().ListReleaseStrategies(grpcKit, req.BizId, req.AppId)
 	if err != nil {
@@ -120,11 +120,12 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbds.GetLastPublishRe
 	var publishRecords []*release.PublishRecord
 	for _, v := range lrs {
 		publishRecords = append(publishRecords, &release.PublishRecord{
-			PublishTime:   v.PublishTime,
-			Name:          v.Name,
-			Scope:         pbstrategy.PbScope(&v.Scope),
-			Creator:       v.Creator,
-			FullyReleased: v.FullyReleased,
+			PublishTime:       v.PublishTime,
+			Name:              v.Name,
+			Scope:             pbstrategy.PbScope(&v.Scope),
+			Creator:           v.Creator,
+			FullyReleased:     v.FullyReleased,
+			FinalApprovalTime: v.FinalApprovalTime.Format(time.DateTime),
 		})
 	}
 	resp.PublishRecord = publishRecords

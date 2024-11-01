@@ -71,8 +71,9 @@ type WorkflowDetail struct {
 
 // States ITSM get workflow detail item states
 type States struct {
-	Id   int    `json:"id"`
-	Type string `json:"type"`
+	Id      int    `json:"id"`
+	Type    string `json:"type"`
+	IsMulti bool   `json:"is_multi"`
 }
 
 // ListServices list itsm services by catalog id
@@ -132,7 +133,7 @@ func GetWorkflowByService(ctx context.Context, serviceID int) (int, error) {
 }
 
 // GetStateApproveByWorkfolw get itsm state approve by workflow id
-func GetStateApproveByWorkfolw(ctx context.Context, workflowID int) (int, error) {
+func GetStateApproveByWorkfolw(ctx context.Context, workflowID int) (map[string]int, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	// 暂时使用外部地址测试，后面废除
@@ -147,25 +148,30 @@ func GetStateApproveByWorkfolw(ctx context.Context, workflowID int) (int, error)
 	body, err := ItsmRequest(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		logs.Errorf("request get itsm workflow detail in workflow %d failed, %s", workflowID, err.Error())
-		return 0, fmt.Errorf("request get itsm workflow detail in workflow %d failed, %s", workflowID, err.Error())
+		return nil, fmt.Errorf("request get itsm workflow detail in workflow %d failed, %s", workflowID, err.Error())
 	}
 	// 解析返回的body
 	resp := &GetWorkflowDetailResp{}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		logs.Errorf("parse itsm body error, body: %v", body)
-		return 0, fmt.Errorf("parse itsm body error, body: %v", body)
+		return nil, fmt.Errorf("parse itsm body error, body: %v", body)
 	}
 	if resp.Code != 0 {
 		logs.Errorf("request get itsm workflow in workflow %d failed, msg: %s", workflowID, resp.Message)
-		return 0, errors.New(resp.Message)
+		return nil, errors.New(resp.Message)
 	}
+	rsp := make(map[string]int)
 	for _, v := range resp.Data.States {
 		// 来自于创建的配置节点名称
 		if v.Type == constant.ItsmApproveType {
-			return v.Id, nil
+			if v.IsMulti {
+				rsp[constant.ItsmApproveCountSignType] = v.Id
+			} else {
+				rsp[constant.ItsmApproveOrSignType] = v.Id
+			}
 		}
 	}
-	return 0, fmt.Errorf("workflow %d approve node not found", workflowID)
+	return rsp, nil
 }
 
 // ImportServiceReq itsm import service req

@@ -67,7 +67,7 @@ func (dao *strategyDao) ListStrategyByItsm(kit *kit.Kit) ([]*table.Strategy, err
 	m := dao.genQ.Strategy
 	return m.WithContext(kit.Ctx).Where(m.ItsmTicketStatus.Eq(constant.ItsmTicketStatusCreated),
 		m.ItsmTicketStateID.Neq(0), m.ItsmTicketSn.Neq(""),
-		m.PublishStatus.In(string(table.PendApproval), string(table.PendPublish))).Find()
+		m.PublishStatus.In(string(table.PendingApproval), string(table.PendingPublish))).Find()
 }
 
 // UpdateByID update strategy kv by id

@@ -122,18 +122,18 @@ func (cm *Publish) updateStrategy(kt *kit.Kit) {
 
 	for _, v := range strategies {
 		// 类型必须是定时上线
-		if v.Spec.PublishType == table.Periodically {
+		if v.Spec.PublishType == table.Scheduled {
 
 			// 刚好到上线时间未审批的情况，更新为手动上线
-			if v.Spec.PublishStatus == table.PendApproval {
+			if v.Spec.PublishStatus == table.PendingApproval {
 				manulStrategies = append(manulStrategies, v.ID)
 				continue
 			}
 
 			// 因环境问题未上线的，要么刚好到上线时间未审批的情况，要么刚好要上线没上线
-			if v.Spec.PublishStatus == table.PendPublish {
-				// 更新为手动上线
-				if v.Revision.UpdatedAt.Unix() > publishInfos[v.ID].PublishTime {
+			if v.Spec.PublishStatus == table.PendingPublish {
+				// 需要审批的更新为手动上线
+				if v.Spec.FinalApprovalTime.Unix() > publishInfos[v.ID].PublishTime && v.Spec.Approver != "" {
 					manulStrategies = append(manulStrategies, v.ID)
 					continue
 				}
@@ -151,6 +151,7 @@ func (cm *Publish) updateStrategy(kt *kit.Kit) {
 					opt.All = true
 				}
 
+				kt.User = v.Revision.Creator
 				err = cm.set.Publish().UpsertPublishWithTx(kt, tx, &opt, v)
 				if err != nil {
 					logs.Errorf("update publish with tx failed, err: %s, rid: %s", err.Error(), kt.Rid)

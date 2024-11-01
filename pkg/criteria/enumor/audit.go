@@ -87,7 +87,7 @@ var ActionMap = map[AuditAction]AuditResourceType{
 	CreateApp:            ResAppConfig,
 	UpdateApp:            ResAppConfig,
 	DeleteApp:            ResAppConfig,
-	PublishVersionConfig: ResAppConfig, // 上线配置版本
+	PublishReleaseConfig: ResAppConfig, // 上线配置版本
 }
 
 // Exist judge enum value exist.
@@ -116,13 +116,13 @@ const (
 	Reload AuditAction = "Reload"
 
 	// CreateApp 创建服务
-	CreateApp AuditAction = "CreateApp"
+	CreateApp AuditAction = "create_app"
 	// UpdateApp 更新服务
-	UpdateApp AuditAction = "UpdateApp"
+	UpdateApp AuditAction = "update_app"
 	// DeleteApp 删除服务
-	DeleteApp AuditAction = "DeleteApp"
-	// PublishVersionConfig 上线版本配置
-	PublishVersionConfig AuditAction = "PublishVersionConfig"
+	DeleteApp AuditAction = "delete_app"
+	// PublishReleaseConfig 上线版本配置
+	PublishReleaseConfig AuditAction = "publish_release_config"
 )
 
 // AuditActionEnums op type map.
@@ -147,19 +147,19 @@ type AuditStatus string
 
 const (
 	// Success audit status
-	Success AuditStatus = "Success"
+	Success AuditStatus = "success"
 	// Failure audit status
-	Failure AuditStatus = "Failure"
-	// PendApproval means this strategy audit status is pending.
-	PendApproval AuditStatus = "PendApproval"
-	// PendPublish means this strategy audit status is pending.
-	PendPublish AuditStatus = "PendPublish"
+	Failure AuditStatus = "failure"
+	// PendingApproval means this strategy audit status is pending.
+	PendingApproval AuditStatus = "pending_approval"
+	// PendingPublish means this strategy audit status is pending.
+	PendingPublish AuditStatus = "pending_publish"
 	// RevokedPublish means this strategy audit status is revoked.
-	RevokedPublish AuditStatus = "RevokedPublish"
+	RevokedPublish AuditStatus = "revoked_publish"
 	// RejectedApproval means this strategy audit status is rejected.
-	RejectedApproval AuditStatus = "RejectedApproval"
+	RejectedApproval AuditStatus = "rejected_approval"
 	// AlreadyPublish means this strategy audit status is already publish.
-	AlreadyPublish AuditStatus = "AlreadyPublish"
+	AlreadyPublish AuditStatus = "already_publish"
 )
 
 // AuditOperateWay audit operate way.

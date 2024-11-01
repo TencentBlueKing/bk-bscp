@@ -13,6 +13,8 @@
 package migrations
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
@@ -31,17 +33,18 @@ func init() {
 
 // Strategies  : strategies
 type Strategies struct {
-	PublishType       string `gorm:"column:publish_type;type:varchar(20);default:'';NOT NULL"`
-	PublishTime       string `gorm:"column:publish_time;type:varchar(20);default:NULL"`
-	PublishStatus     string `gorm:"column:publish_status;type:varchar(20);default:'';NOT NULL"`
-	RejectReason      string `gorm:"column:reject_reason;type:varchar(256);default:NULL"`
-	Approver          string `gorm:"column:approver;type:varchar(256);default:NULL"`
-	ApproverProgress  string `gorm:"column:approver_progress;type:varchar(256);default:NULL"`
-	ItsmTicketType    string `gorm:"column:itsm_ticket_type;type:varchar(256);default:NULL"`
-	ItsmTicketUrl     string `gorm:"column:itsm_ticket_url;type:varchar(256);default:NULL"`
-	ItsmTicketSn      string `gorm:"column:itsm_ticket_sn;type:varchar(256);default:NULL"`
-	ItsmTicketStatus  string `gorm:"column:itsm_ticket_status;type:varchar(256);default:NULL"`
-	ItsmTicketStateId int    `gorm:"column:itsm_ticket_state_id;type:int(11);default:NULL"`
+	PublishType       string    `gorm:"column:publish_type;type:varchar(20);default:'';NOT NULL"`
+	PublishTime       string    `gorm:"column:publish_time;type:varchar(20);default:NULL"`
+	PublishStatus     string    `gorm:"column:publish_status;type:varchar(20);default:'';NOT NULL"`
+	RejectReason      string    `gorm:"column:reject_reason;type:varchar(256);default:NULL"`
+	Approver          string    `gorm:"column:approver;type:varchar(256);default:NULL"`
+	ApproverProgress  string    `gorm:"column:approver_progress;type:varchar(256);default:NULL"`
+	FinalApprovalTime time.Time `gorm:"column:final_approval_time;type:datetime(6);default:NULL"`
+	ItsmTicketType    string    `gorm:"column:itsm_ticket_type;type:varchar(256);default:NULL"`
+	ItsmTicketUrl     string    `gorm:"column:itsm_ticket_url;type:varchar(256);default:NULL"`
+	ItsmTicketSn      string    `gorm:"column:itsm_ticket_sn;type:varchar(256);default:NULL"`
+	ItsmTicketStatus  string    `gorm:"column:itsm_ticket_status;type:varchar(256);default:NULL"`
+	ItsmTicketStateId int       `gorm:"column:itsm_ticket_state_id;type:int(11);default:NULL"`
 }
 
 // mig20240930182339Up for up migration
@@ -84,6 +87,13 @@ func mig20240930182339Up(tx *gorm.DB) error {
 	// Strategies add new column
 	if !tx.Migrator().HasColumn(&Strategies{}, "approver_progress") {
 		if err := tx.Migrator().AddColumn(&Strategies{}, "approver_progress"); err != nil {
+			return err
+		}
+	}
+
+	// Strategies add new column
+	if !tx.Migrator().HasColumn(&Strategies{}, "final_approval_time") {
+		if err := tx.Migrator().AddColumn(&Strategies{}, "final_approval_time"); err != nil {
 			return err
 		}
 	}
@@ -165,6 +175,13 @@ func mig20240930182339Down(tx *gorm.DB) error {
 	// Strategies add new column
 	if !tx.Migrator().HasColumn(&Strategies{}, "approver_progress") {
 		if err := tx.Migrator().AddColumn(&Strategies{}, "approver_progress"); err != nil {
+			return err
+		}
+	}
+
+	// Strategies add new column
+	if !tx.Migrator().HasColumn(&Strategies{}, "final_approval_time") {
+		if err := tx.Migrator().AddColumn(&Strategies{}, "final_approval_time"); err != nil {
 			return err
 		}
 	}

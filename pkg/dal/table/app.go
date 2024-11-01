@@ -325,9 +325,13 @@ type ApproveType string
 
 const (
 	// CountSign counter sign
-	CountSign ApproveType = "CountSign"
+	CountSign ApproveType = "count_sign"
 	// OrSign or sign
-	OrSign ApproveType = "OrSign"
+	OrSign ApproveType = "or_sign"
+	// CountSignCH counter sign
+	CountSignCH ApproveType = "会签"
+	// OrSignCH or sign
+	OrSignCH ApproveType = "或签"
 )
 
 // ValidateApproveType validate approve type

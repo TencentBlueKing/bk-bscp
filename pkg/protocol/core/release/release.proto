@@ -56,4 +56,5 @@ message PublishRecord {
   string creator = 4;
   bool fully_released = 5;
   string updated_at = 6;
+  string final_approval_time = 7;
 }

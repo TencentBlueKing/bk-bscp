@@ -81,10 +81,10 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbcs.GetLastPublishRe
 	}
 
 	resp := &pbcs.GetLastPublishResp{
-		IsPublishing:  rp.IsPublishing,
-		VersionName:   rp.VersionName,
-		UpdatedAt:     rp.UpdatedAt,
-		PublishRecord: rp.PublishRecord,
+		IsPublishing:      rp.IsPublishing,
+		VersionName:       rp.VersionName,
+		FinalApprovalTime: rp.FinalApprovalTime,
+		PublishRecord:     rp.PublishRecord,
 	}
 	return resp, nil
 }

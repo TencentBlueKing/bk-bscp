@@ -127,7 +127,7 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 				BizId:         strategyMap[ticket.SN].Attachment.BizID,
 				AppId:         strategyMap[ticket.SN].Attachment.AppID,
 				ReleaseId:     strategyMap[ticket.SN].Spec.ReleaseID,
-				PublishStatus: string(table.PendPublish),
+				PublishStatus: string(table.PendingPublish),
 				StrategyId:    strategyMap[ticket.SN].ID,
 			}
 			// 正常通过或者驳回的单据
@@ -156,7 +156,7 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 					continue
 				}
 
-				req.PublishStatus = string(table.PendApproval)
+				req.PublishStatus = string(table.PendingApproval)
 				req.ApprovedBy = passApprover
 			}
 			ctx := metadata.NewIncomingContext(kt.Ctx, metadata.MD{

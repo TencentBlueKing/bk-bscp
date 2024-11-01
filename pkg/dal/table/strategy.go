@@ -231,6 +231,7 @@ type StrategySpec struct {
 	RejectReason      string        `db:"reject_reason" json:"reject_reason" gorm:"column:reject_reason"`
 	Approver          string        `db:"approver" json:"approver" approver:"column:approver"`
 	ApproverProgress  string        `db:"approver_progress" json:"approver_progress" gorm:"column:approver_progress"`
+	FinalApprovalTime time.Time     `db:"final_approval_time" json:"final_approval_time" gorm:"column:final_approval_time"` // nolint
 	ItsmTicketType    string        `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
 	ItsmTicketUrl     string        `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
 	ItsmTicketSn      string        `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
@@ -624,13 +625,13 @@ type PublishType string
 
 const (
 	// Manually means this strategy publish type is manual.
-	Manually PublishType = "Manually"
+	Manually PublishType = "manually"
 	// Automatically means this strategy publish type is automatical.
-	Automatically PublishType = "Automatically"
-	// Periodically means this strategy publish type is periodical.
-	Periodically PublishType = "Periodically"
+	Automatically PublishType = "automatically"
+	// Scheduled means this strategy publish type is ccheduled.
+	Scheduled PublishType = "scheduled"
 	// Immediately means this strategy publish type is immediate.
-	Immediately PublishType = "Immediately"
+	Immediately PublishType = "immediately"
 )
 
 // ValidatePublishType validate publish type
@@ -638,7 +639,7 @@ func (p PublishType) ValidatePublishType() error {
 	switch p {
 	case Manually:
 	case Automatically:
-	case Periodically:
+	case Scheduled:
 	case Immediately:
 	default:
 		return fmt.Errorf("unsupported publish type: %s", p)
@@ -650,23 +651,23 @@ func (p PublishType) ValidatePublishType() error {
 type PublishStatus string
 
 const (
-	// PendApproval means this strategy publish status is pending.
-	PendApproval PublishStatus = "PendApproval"
-	// PendPublish means this strategy publish status is pending.
-	PendPublish PublishStatus = "PendPublish"
+	// PendingApproval means this strategy publish status is pending.
+	PendingApproval PublishStatus = "pending_approval"
+	// PendingPublish means this strategy publish status is pending.
+	PendingPublish PublishStatus = "pending_publish"
 	// RevokedPublish means this strategy publish status is revoked.
-	RevokedPublish PublishStatus = "RevokedPublish"
+	RevokedPublish PublishStatus = "revoked_publish"
 	// RejectedApproval means this strategy publish status is rejected.
-	RejectedApproval PublishStatus = "RejectedApproval"
+	RejectedApproval PublishStatus = "rejected_approval"
 	// AlreadyPublish means this strategy publish status is already publish.
-	AlreadyPublish PublishStatus = "AlreadyPublish"
+	AlreadyPublish PublishStatus = "already_publish"
 )
 
 // ValidatePublishStatus validate publish status
 func (p PublishStatus) ValidatePublishStatus() error {
 	switch p {
-	case PendApproval:
-	case PendPublish:
+	case PendingApproval:
+	case PendingPublish:
 	case RevokedPublish:
 	case RejectedApproval:
 	case AlreadyPublish:

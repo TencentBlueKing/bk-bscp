@@ -30,6 +30,7 @@ message StrategySpec {
   string approver = 10;
   string approver_progress = 11;
   string memo = 12;
+  string final_approval_time = 13;
 }
 
 // Scope defines the scope
@@ -70,6 +71,7 @@ message AuditStrategy {
   uint32 release_id = 9;
   Scope scope = 10;
   string creator = 11;
+  string final_approval_time = 12;
 }
 
 // AppSpec app relate

@@ -50,18 +50,19 @@ func PbStrategySpec(s *table.StrategySpec) *StrategySpec {
 	}
 
 	return &StrategySpec{
-		Name:             s.Name,
-		ReleaseId:        s.ReleaseID,
-		AsDefault:        s.AsDefault,
-		Scope:            PbScope(s.Scope),
-		Namespace:        s.Namespace,
-		PublishType:      string(s.PublishType),
-		PublishTime:      s.PublishTime,
-		PublishStatus:    string(s.PublishStatus),
-		RejectReason:     s.RejectReason,
-		Approver:         s.Approver,
-		ApproverProgress: s.ApproverProgress,
-		Memo:             s.Memo,
+		Name:              s.Name,
+		ReleaseId:         s.ReleaseID,
+		AsDefault:         s.AsDefault,
+		Scope:             PbScope(s.Scope),
+		Namespace:         s.Namespace,
+		PublishType:       string(s.PublishType),
+		PublishTime:       s.PublishTime,
+		PublishStatus:     string(s.PublishStatus),
+		RejectReason:      s.RejectReason,
+		Approver:          s.Approver,
+		ApproverProgress:  s.ApproverProgress,
+		Memo:              s.Memo,
+		FinalApprovalTime: s.FinalApprovalTime.Format(time.DateTime),
 	}
 }
 

@@ -154,35 +154,43 @@ const (
 
 // itsm相关
 const (
-	// CreateCountSignApproveItsmServiceID used to create an itsm ticket
-	// when creating a count sign approve in a shared cluster
-	CreateCountSignApproveItsmServiceID = "create_count_sign_approve__itsm_service_id"
-	// CreateOrSignApproveItsmServiceID used to create an itsm ticket
+	// CreateApproveItsmServiceID used to create an itsm ticket
+	// when creating an approve in a shared cluster
+	CreateApproveItsmServiceID = "create_approve_itsm_service_id"
+	// CreateApproveItsmWorkflowID used to create an itsm ticket
 	// when creating an or sign approve in a shared cluster
-	CreateOrSignApproveItsmServiceID = "create_or_sign_approve__itsm_service_id"
+	CreateApproveItsmWorkflowID = "create_approve_itsm_workflow_id"
+	// CreateOrSignApproveItsmStateID used to create an itsm ticket
+	// when creating an or sign approve in a shared cluster
+	CreateOrSignApproveItsmStateID = "create_or_sign_approve_itsm_state_id"
+	// CreateApproveItsmWorkflowID used to create an itsm ticket
+	// when creating an count sign approve in a shared cluster
+	CreateCountSignApproveItsmStateID = "create_count_sign_approve_itsm_state_id"
 
 	// ItsmTicketStatusCreated enum string for created status
-	ItsmTicketStatusCreated = "CREATED"
+	ItsmTicketStatusCreated = "created"
 	// ItsmTicketStatusRevoked enum string for revoked status
-	ItsmTicketStatusRevoked = "REVOKED"
+	ItsmTicketStatusRevoked = "revoked"
 	// ItsmTicketStatusRejected enum string for rejected status
-	ItsmTicketStatusRejected = "REJECTED"
+	ItsmTicketStatusRejected = "rejected"
 	// ItsmTicketStatusPassed enum string for passed status
-	ItsmTicketStatusPassed = "PASSED"
+	ItsmTicketStatusPassed = "passed"
 
 	// ItsmTicketTypeCreate enum string for itsm ticket type create
-	ItsmTicketTypeCreate = "CREATE"
+	ItsmTicketTypeCreate = "create"
 	// ItsmTicketTypeUpdate enum string for itsm ticket type update
-	ItsmTicketTypeUpdate = "UPDATE"
+	ItsmTicketTypeUpdate = "update"
 	// ItsmTicketTypeDelete enum string for itsm ticket type delete
-	ItsmTicketTypeDelete = "DELETE"
+	ItsmTicketTypeDelete = "delete"
 
-	// ItsmApproveType 负责人审批workflow 节点类型
+	// ItsmApproveOrSignType 或签负责人审批
+	ItsmApproveOrSignType = "或签负责人审批"
+	// ItsmApproveCountSingType 会签负责人审批
+	ItsmApproveCountSignType = "会签负责人审批"
+	// 负责人审批类型
 	ItsmApproveType = "APPROVAL"
-	// ItsmCountSignServiceName 服务名称
-	ItsmCountSignServiceName = "创建上线会签审批"
-	// ItsmOrSignServiceName 服务名称
-	ItsmOrSignServiceName = "创建上线或签审批"
+	// ItsmApproveServiceName 服务名称
+	ItsmApproveServiceName = "创建上线审批"
 	// ItsmApproveResult itsm已处理人的结果
 	ItsmApproveResult = "已处理【负责人审批】(通过)"
 

@@ -142,7 +142,7 @@ func (au *audit) ListAuditsAppStrategy(
 	}
 
 	// priority display publish version config
-	publishCount, err := query.Where(audit.Action.Eq(string(enumor.PublishVersionConfig))).
+	publishCount, err := query.Where(audit.Action.Eq(string(enumor.PublishReleaseConfig))).
 		Order(audit.CreatedAt.Desc()).
 		ScanByPage(&publishs, int(req.Start), int(req.Limit))
 	if err != nil {
@@ -159,7 +159,7 @@ func (au *audit) ListAuditsAppStrategy(
 	if err != nil {
 		return nil, 0, err
 	}
-	noPublishCount, err := query2.Not(audit.Action.Eq(string(enumor.PublishVersionConfig))).
+	noPublishCount, err := query2.Not(audit.Action.Eq(string(enumor.PublishReleaseConfig))).
 		Order(audit.CreatedAt.Desc()).
 		ScanByPage(&noPublishs, int(residueOffset), int(req.Limit)-len(publishs))
 	if err != nil {
@@ -181,7 +181,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		audit.BizID, audit.AppID, audit.Operator, audit.CreatedAt, audit.ResInstance, audit.OperateWay, audit.Status,
 		audit.IsCompare,
 		app.Name, app.Creator,
-		strategy.PublishType, strategy.PublishTime, strategy.PublishTime,
+		strategy.PublishType, strategy.PublishTime, strategy.PublishTime, strategy.FinalApprovalTime,
 		strategy.PublishStatus, strategy.RejectReason, strategy.Approver, strategy.ApproverProgress,
 		strategy.UpdatedAt, strategy.Reviser, strategy.Creator, strategy.ReleaseID, strategy.Scope).
 		LeftJoin(app, app.ID.EqCol(audit.AppID)).
@@ -218,7 +218,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 	}
 
 	// 仅看上线操作
-	if req.Operate == string(enumor.PublishVersionConfig) {
+	if req.Operate == string(enumor.PublishReleaseConfig) {
 		result = result.Where(audit.Action.Eq(req.Operate))
 	}
 

@@ -2904,7 +2904,7 @@ message GetLastPublishReq {
 message GetLastPublishResp {
   bool is_publishing = 1;
   string version_name = 2;
-  string updated_at = 3;
+  string final_approval_time = 3;
   repeated pbrelease.PublishRecord publish_record = 4;
 }
 

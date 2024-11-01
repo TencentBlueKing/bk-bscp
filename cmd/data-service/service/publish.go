@@ -101,8 +101,8 @@ func (s *Service) SubmitPublishApprove(
 	}
 
 	// 有在上线的版本则提示不能上线
-	if strategy.Spec.PublishStatus == table.PendApproval || strategy.Spec.PublishStatus == table.PendPublish {
-		return nil, errors.New("there is a version in publishing currently")
+	if strategy.Spec.PublishStatus == table.PendingApproval || strategy.Spec.PublishStatus == table.PendingPublish {
+		return nil, errors.New("there is a release in publishing currently")
 	}
 
 	isRollback := true
@@ -147,7 +147,7 @@ func (s *Service) SubmitPublishApprove(
 	// audit this to create strategy details
 	ad := s.dao.AuditDao().DecoratorV3(grpcKit, opt.BizID, &table.AuditField{
 		OperateWay:       grpcKit.OperateWay,
-		Action:           enumor.PublishVersionConfig,
+		Action:           enumor.PublishReleaseConfig,
 		ResourceInstance: resInstance,
 		Status:           enumor.AuditStatus(opt.PublishStatus),
 		AppId:            app.AppID(),
@@ -285,7 +285,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 			"action":   "false",
 			"remark":   req.Reason,
 		}
-	case string(table.PendPublish):
+	case string(table.PendingPublish):
 		updateContent, err = s.passApprove(grpcKit, tx, req, strategy)
 		if err != nil {
 			return nil, err
@@ -306,6 +306,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 	}
 
 	updateContent["reviser"] = grpcKit.User
+	updateContent["final_approval_time"] = time.Now().UTC()
 	err = s.dao.Strategy().UpdateByID(grpcKit, tx, strategy.ID, updateContent)
 	if err != nil {
 		return nil, err
@@ -329,7 +330,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 			}
 		}
 
-		if req.PublishStatus == string(table.RejectedApproval) || req.PublishStatus == string(table.PendPublish) {
+		if req.PublishStatus == string(table.RejectedApproval) || req.PublishStatus == string(table.PendingPublish) {
 			err = itsm.UpdateTicketByApporver(grpcKit.Ctx, itsmUpdata)
 			if err != nil {
 				return nil, err
@@ -387,8 +388,8 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	// 有在上线的版本则提示不能上线
-	if strategy.Spec.PublishStatus == table.PendApproval || strategy.Spec.PublishStatus == table.PendPublish {
-		return nil, errors.New("there is a version in publishing currently")
+	if strategy.Spec.PublishStatus == table.PendingApproval || strategy.Spec.PublishStatus == table.PendingPublish {
+		return nil, errors.New("there is a release in publishing currently")
 	}
 
 	// 默认要回滚，除非已经提交
@@ -488,7 +489,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	// if approval required, current approver required, pub_state unpublished
 	if app.Spec.IsApprove {
 		opt.PublishType = table.Automatically
-		opt.PublishStatus = table.PendApproval
+		opt.PublishStatus = table.PendingApproval
 		opt.Approver = app.Spec.Approver
 		opt.ApproverProgress = app.Spec.Approver
 		opt.PubState = string(table.Unpublished)
@@ -516,7 +517,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	// audit this to create strategy details
 	ad := s.dao.AuditDao().DecoratorV3(grpcKit, opt.BizID, &table.AuditField{
 		OperateWay:       grpcKit.OperateWay,
-		Action:           enumor.PublishVersionConfig,
+		Action:           enumor.PublishReleaseConfig,
 		ResourceInstance: resInstance,
 		Status:           enumor.AuditStatus(opt.PublishStatus),
 		AppId:            app.AppID(),
@@ -568,7 +569,7 @@ func (s *Service) revokeApprove(
 	}
 
 	// 只有待上线以及待审批的类型才允许撤回
-	if strategy.Spec.PublishStatus != table.PendPublish && strategy.Spec.PublishStatus != table.PendApproval {
+	if strategy.Spec.PublishStatus != table.PendingPublish && strategy.Spec.PublishStatus != table.PendingApproval {
 		return nil, fmt.Errorf("revoked not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
 	}
 
@@ -584,7 +585,7 @@ func (s *Service) revokeApprove(
 func (s *Service) rejectApprove(
 	kit *kit.Kit, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
-	if strategy.Spec.PublishStatus != table.PendApproval {
+	if strategy.Spec.PublishStatus != table.PendingApproval {
 		return nil, fmt.Errorf("rejected not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
 	}
 
@@ -625,7 +626,7 @@ func (s *Service) rejectApprove(
 func (s *Service) passApprove(
 	kit *kit.Kit, tx *gen.QueryTx, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
-	if strategy.Spec.PublishStatus != table.PendApproval {
+	if strategy.Spec.PublishStatus != table.PendingApproval {
 		return nil, fmt.Errorf("pass not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
 	}
 
@@ -661,17 +662,17 @@ func (s *Service) passApprove(
 	}
 
 	result := make(map[string]interface{})
-	publishStatus := table.PendApproval
+	publishStatus := table.PendingApproval
 	// 或签通过或者是只有一个审批人的情况
 	if strings.Contains(strategy.Spec.Approver, "|") || strategy.Spec.Approver == kit.User {
-		publishStatus = table.PendPublish
+		publishStatus = table.PendingPublish
 		result["approver_progress"] = kit.User // 需要更新下给前端展示
 		result["itsm_ticket_status"] = constant.ItsmTicketStatusPassed
 	} else {
 		// 会签通过
 		// 最后一个的情况下，直接待上线
 		if len(newProgressUsers) == 0 || kit.OperateWay == "" {
-			publishStatus = table.PendPublish
+			publishStatus = table.PendingPublish
 			result["approver_progress"] = strategy.Spec.Approver
 			result["itsm_ticket_status"] = constant.ItsmTicketStatusPassed
 		} else {
@@ -681,7 +682,7 @@ func (s *Service) passApprove(
 	}
 
 	// 自动上线则直接上线
-	if publishStatus == table.PendPublish && strategy.Spec.PublishType == table.Automatically {
+	if publishStatus == table.PendingPublish && strategy.Spec.PublishType == table.Automatically {
 		opt := types.PublishOption{
 			BizID:     req.BizId,
 			AppID:     req.AppId,
@@ -709,7 +710,7 @@ func (s *Service) passApprove(
 func (s *Service) publishApprove(
 	kit *kit.Kit, tx *gen.QueryTx, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
-	if strategy.Spec.PublishStatus != table.PendPublish {
+	if strategy.Spec.PublishStatus != table.PendingPublish {
 		return nil, fmt.Errorf("publish not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
 	}
 
@@ -749,13 +750,13 @@ func (s *Service) parsePublishOption(req *pbds.SubmitPublishApproveReq, app *tab
 		Memo:          req.Memo,
 		PublishType:   table.PublishType(req.PublishType),
 		PublishTime:   req.PublishTime,
-		PublishStatus: table.PendPublish,
+		PublishStatus: table.PendingPublish,
 		PubState:      string(table.Publishing),
 	}
 
 	// if approval required, current approver required, pub_state unpublished
 	if app.Spec.IsApprove {
-		opt.PublishStatus = table.PendApproval
+		opt.PublishStatus = table.PendingApproval
 		opt.Approver = app.Spec.Approver
 		opt.ApproverProgress = app.Spec.Approver
 		opt.PubState = string(table.Unpublished)
@@ -955,15 +956,23 @@ func (s *Service) createReleasedHook(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, a
 }
 
 // submitCreateApproveTicket create new itsm create approve ticket
+// nolint: funlen
 func (s *Service) submitCreateApproveTicket(
 	kt *kit.Kit, app *table.App, releaseName, scope string, aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
 
 	// 或签和会签是不同的模板
-	getConfigKey := constant.CreateOrSignApproveItsmServiceID
+	stateIDKey := constant.CreateOrSignApproveItsmStateID
+	approveType := table.OrSignCH
 	if app.Spec.ApproveType == table.CountSign {
-		getConfigKey = constant.CreateCountSignApproveItsmServiceID
+		stateIDKey = constant.CreateCountSignApproveItsmStateID
+		approveType = table.CountSignCH
 	}
-	itsmConfig, err := s.dao.ItsmConfig().GetConfig(kt, getConfigKey)
+	itsmSign, err := s.dao.Config().GetConfig(kt, stateIDKey)
+	if err != nil {
+		return nil, err
+	}
+
+	itsmService, err := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
 	if err != nil {
 		return nil, err
 	}
@@ -997,14 +1006,14 @@ func (s *Service) submitCreateApproveTicket(
 			"key":   "APP",
 			"value": app.Spec.Name,
 		}, {
-			"key":   "VERSION_NAME",
+			"key":   "RELEASE_NAME",
 			"value": releaseName,
 		}, {
 			"key":   "SCOPE",
 			"value": scope,
 		}, {
 			"key":   "COMPARE",
-			"value": fmt.Sprintf("%s/space/2/records/all?id=%d", cc.DataService().Esb.BscpHost, aduitId),
+			"value": fmt.Sprintf("%s/space/2/records/all?id=%d", cc.DataService().ITSM.BscpPageUrl, aduitId),
 		}, {
 			"key":   "BIZ_ID",
 			"value": app.BizID,
@@ -1014,17 +1023,19 @@ func (s *Service) submitCreateApproveTicket(
 		}, {
 			"key":   "RELEASE_ID",
 			"value": releaseID,
+		}, {
+			"key":   "APPROVE_TYPE",
+			"value": approveType,
 		},
 	}
 
-	stateApproveId := strconv.Itoa(itsmConfig.StateApproveId)
 	reqData := map[string]interface{}{
 		"creator":    kt.User,
-		"service_id": itsmConfig.Value,
+		"service_id": itsmService.Value,
 		"fields":     fields,
 		"meta": map[string]interface{}{
 			"state_processors": map[string]interface{}{
-				stateApproveId: app.Spec.Approver,
+				itsmSign.Value: app.Spec.Approver,
 			}},
 	}
 
@@ -1033,13 +1044,17 @@ func (s *Service) submitCreateApproveTicket(
 		return nil, err
 	}
 
-	resp.StateID = itsmConfig.StateApproveId
+	stateID, err := strconv.Atoi(itsmSign.Value)
+	if err != nil {
+		return nil, err
+	}
+	resp.StateID = stateID
 	return resp, nil
 }
 
 // 定时上线
 func (s *Service) setPublishTime(kt *kit.Kit, pshID uint32, req *pbds.SubmitPublishApproveReq) error {
-	if req.PublishType == string(table.Periodically) {
+	if req.PublishType == string(table.Scheduled) {
 		publishTime, err := time.Parse(time.DateTime, req.PublishTime)
 		if err != nil {
 			logs.Errorf("parse time failed, err: %v, rid: %s", err, kt.Rid)
@@ -1130,7 +1145,7 @@ func checkTicketStatus(grpcKit *kit.Kit,
 			req.ApprovedBy = strings.Split(GetApproveNodeResultData.Data.Processeduser, ",")
 			// 审批通过，非待上线的情况
 			if GetApproveNodeResultData.Data.ApproveResult && req.PublishStatus != string(table.AlreadyPublish) {
-				req.PublishStatus = string(table.PendPublish)
+				req.PublishStatus = string(table.PendingPublish)
 				return req,
 					fmt.Sprintf("approval has been passed by itsm person: %s",
 						GetApproveNodeResultData.Data.Processeduser), nil

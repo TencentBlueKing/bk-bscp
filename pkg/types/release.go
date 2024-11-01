@@ -13,6 +13,8 @@
 package types
 
 import (
+	"time"
+
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
 )
@@ -55,9 +57,10 @@ type ListReleaseDetails struct {
 
 // ListReleasesStrategies defines model to list release strategie.
 type ListReleasesStrategies struct {
-	PublishTime   string      `gorm:"column:publish_time" json:"publish_time"`
-	Name          string      `gorm:"column:name" json:"name"`
-	Scope         table.Scope `gorm:"column:scope;type:json" json:"scope"`
-	Creator       string      `gorm:"column:creator" json:"creator"`
-	FullyReleased bool        `gorm:"column:fully_released" json:"fully_released"`
+	PublishTime       string      `gorm:"column:publish_time" json:"publish_time"`
+	Name              string      `gorm:"column:name" json:"name"`
+	Scope             table.Scope `gorm:"column:scope;type:json" json:"scope"`
+	Creator           string      `gorm:"column:creator" json:"creator"`
+	FullyReleased     bool        `gorm:"column:fully_released" json:"fully_released"`
+	FinalApprovalTime time.Time   `gorm:"column:final_approval_time" json:"final_approval_time"`
 }

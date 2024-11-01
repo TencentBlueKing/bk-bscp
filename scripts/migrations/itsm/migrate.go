@@ -17,12 +17,10 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
+	"strconv"
 	"strings"
-
-	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/components/itsm"
@@ -74,10 +72,7 @@ func InitApproveITSMServices() error {
 	}
 
 	// 3. import approve services
-	if err := importCountSignApproveService(kt, catalogID, services); err != nil {
-		return err
-	}
-	if err := importOrSignApproveService(kt, catalogID, services); err != nil {
+	if err := importApproveService(kt, catalogID, services); err != nil {
 		return err
 	}
 	return nil
@@ -133,20 +128,20 @@ func createITSMCatalog(ctx context.Context) (uint32, error) {
 	return catalogID, nil
 }
 
-func importCountSignApproveService(kt *kit.Kit, catalogID uint32, services []itsm.Service) error {
+func importApproveService(kt *kit.Kit, catalogID uint32, services []itsm.Service) error {
 	// check whether the service has been imported before
 	// if not, import it, else update it.
 
 	var serviceID int
 	for _, v := range services {
-		if v.Name == constant.ItsmCountSignServiceName {
+		if v.Name == constant.ItsmApproveServiceName {
 			serviceID = v.ID
 		}
 	}
 
 	// 自定义模板分隔符为 [[ ]]，例如 [[ .Name ]]，避免和 ITSM 模板变量格式冲突
-	tmpl, err := template.New("create_shared_count_sign_approve.json.tpl").Delims("[[", "]]").
-		ParseFS(WorkflowTemplates, "templates/create_shared_count_sign_approve.json.tpl")
+	tmpl, err := template.New("create_shared_approve.json.tpl").Delims("[[", "]]").
+		ParseFS(WorkflowTemplates, "templates/create_shared_approve.json.tpl")
 	if err != nil {
 		return err
 	}
@@ -164,8 +159,8 @@ func importCountSignApproveService(kt *kit.Kit, catalogID uint32, services []its
 	}
 	importReq := itsm.ImportServiceReq{
 		Key:             "request",
-		Name:            constant.ItsmCountSignServiceName,
-		Desc:            constant.ItsmCountSignServiceName,
+		Name:            constant.ItsmApproveServiceName,
+		Desc:            constant.ItsmApproveServiceName,
 		CatelogID:       catalogID,
 		Owners:          "admin",
 		CanTicketAgency: false,
@@ -203,118 +198,20 @@ func importCountSignApproveService(kt *kit.Kit, catalogID uint32, services []its
 		return err
 	}
 
-	_, err = daoSet.ItsmConfig().GetConfig(kt, constant.CreateCountSignApproveItsmServiceID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+	itsmConfigs := []*table.Config{
+		{
+			Key:   constant.CreateApproveItsmServiceID,
+			Value: strconv.Itoa(serviceID),
+		}, {
+			Key:   constant.CreateApproveItsmWorkflowID,
+			Value: strconv.Itoa(workflowId),
+		}, {
+			Key:   constant.CreateCountSignApproveItsmStateID,
+			Value: strconv.Itoa(stateApproveId[constant.ItsmApproveCountSignType]),
+		}, {
+			Key:   constant.CreateOrSignApproveItsmStateID,
+			Value: strconv.Itoa(stateApproveId[constant.ItsmApproveOrSignType]),
+		},
 	}
-
-	// 没有记录的情况下，新增
-	if err != nil {
-		return daoSet.ItsmConfig().SetConfig(kt, &table.ItsmConfig{
-			Key:            constant.CreateCountSignApproveItsmServiceID,
-			Value:          serviceID,
-			WorkflowId:     workflowId,
-			StateApproveId: stateApproveId,
-		})
-	}
-
-	return daoSet.ItsmConfig().UpdateConfig(kt, &table.ItsmConfig{
-		Key:            constant.CreateCountSignApproveItsmServiceID,
-		Value:          serviceID,
-		WorkflowId:     workflowId,
-		StateApproveId: stateApproveId,
-	})
-}
-
-func importOrSignApproveService(kt *kit.Kit, catalogID uint32, services []itsm.Service) error {
-	// check whether the service has been imported before
-	// if not, import it, else update it.
-
-	var serviceID int
-	for _, v := range services {
-		if v.Name == constant.ItsmOrSignServiceName {
-			serviceID = v.ID
-		}
-	}
-
-	// 自定义模板分隔符为 [[ ]]，例如 [[ .Name ]]，避免和 ITSM 模板变量格式冲突
-	tmpl, err := template.New("create_shared_or_sign_approve.json.tpl").Delims("[[", "]]").
-		ParseFS(WorkflowTemplates, "templates/create_shared_or_sign_approve.json.tpl")
-	if err != nil {
-		return err
-	}
-	stringBuffer := &strings.Builder{}
-	if err = tmpl.Execute(stringBuffer, map[string]string{
-		"BCSPGateway": cc.DataService().ITSM.BscpGateway,
-		"BkAppCode":   cc.DataService().Esb.AppCode,
-		"BkAppSecret": cc.DataService().Esb.AppSecret,
-	}); err != nil {
-		return err
-	}
-	mp := map[string]interface{}{}
-	if err = json.Unmarshal([]byte(stringBuffer.String()), &mp); err != nil {
-		return err
-	}
-	importReq := itsm.ImportServiceReq{
-		Key:             "request",
-		Name:            constant.ItsmOrSignServiceName,
-		Desc:            constant.ItsmOrSignServiceName,
-		CatelogID:       catalogID,
-		Owners:          "admin",
-		CanTicketAgency: false,
-		IsValid:         true,
-		DisplayType:     "OPEN",
-		DisplayRole:     "",
-		Source:          "custom",
-		ProjectKey:      "0",
-		Workflow:        mp,
-	}
-	// 在itsm不存在
-	if serviceID == 0 {
-		serviceID, err = itsm.ImportService(kt.Ctx, importReq)
-		if err != nil {
-			return err
-		}
-	} else {
-		// 在itsm存在则更新
-		err = itsm.UpdateService(kt.Ctx, itsm.UpdateServiceReq{
-			ID:               serviceID,
-			ImportServiceReq: importReq,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	workflowId, err := itsm.GetWorkflowByService(kt.Ctx, serviceID)
-	if err != nil {
-		return err
-	}
-
-	stateApproveId, err := itsm.GetStateApproveByWorkfolw(kt.Ctx, workflowId)
-	if err != nil {
-		return err
-	}
-
-	_, err = daoSet.ItsmConfig().GetConfig(kt, constant.CreateOrSignApproveItsmServiceID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-
-	// 没有记录的情况下，新增
-	if err != nil {
-		return daoSet.ItsmConfig().SetConfig(kt, &table.ItsmConfig{
-			Key:            constant.CreateOrSignApproveItsmServiceID,
-			Value:          serviceID,
-			WorkflowId:     workflowId,
-			StateApproveId: stateApproveId,
-		})
-	}
-
-	return daoSet.ItsmConfig().UpdateConfig(kt, &table.ItsmConfig{
-		Key:            constant.CreateOrSignApproveItsmServiceID,
-		Value:          serviceID,
-		WorkflowId:     workflowId,
-		StateApproveId: stateApproveId,
-	})
+	return daoSet.Config().UpsertConfig(kt, itsmConfigs)
 }

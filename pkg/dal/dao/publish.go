@@ -148,13 +148,14 @@ func genStrategy(kit *kit.Kit, opt *types.PublishOption, stgID uint32, groups []
 			Scope: &table.Scope{
 				Groups: groups,
 			},
-			Memo:             opt.Memo,
-			PublishType:      opt.PublishType,
-			PublishTime:      opt.PublishTime,
-			PublishStatus:    opt.PublishStatus,
-			RejectReason:     opt.RejectReason,
-			Approver:         opt.Approver,
-			ApproverProgress: opt.ApproverProgress,
+			Memo:              opt.Memo,
+			PublishType:       opt.PublishType,
+			PublishTime:       opt.PublishTime,
+			PublishStatus:     opt.PublishStatus,
+			RejectReason:      opt.RejectReason,
+			Approver:          opt.Approver,
+			ApproverProgress:  opt.ApproverProgress,
+			FinalApprovalTime: time.Now().UTC(),
 		},
 		State: &table.StrategyState{
 			PubState: state,
@@ -461,22 +462,21 @@ func (dao *pubDao) submit(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOptio
 			logs.Errorf("upsert group current releases failed, err: %v, rid: %s", err, kit.Rid)
 			return 0, err
 		}
-	}
-
-	// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-	one := types.Event{
-		Spec: &table.EventSpec{
-			Resource: table.Publish,
-			// use the published strategy history id, which represent a real publish operation.
-			ResourceID: opt.ReleaseID,
-			OpType:     table.InsertOp,
-		},
-		Attachment: &table.EventAttachment{BizID: opt.BizID, AppID: opt.AppID},
-		Revision:   &table.CreatedRevision{Creator: kit.User},
-	}
-	if err := eDecorator.FireWithTx(tx, one); err != nil {
-		logs.Errorf("fire publish strategy event failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, errors.New("fire event failed, " + err.Error())
+		// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
+		one := types.Event{
+			Spec: &table.EventSpec{
+				Resource: table.Publish,
+				// use the published strategy history id, which represent a real publish operation.
+				ResourceID: opt.ReleaseID,
+				OpType:     table.InsertOp,
+			},
+			Attachment: &table.EventAttachment{BizID: opt.BizID, AppID: opt.AppID},
+			Revision:   &table.CreatedRevision{Creator: kit.User},
+		}
+		if err := eDecorator.FireWithTx(tx, one); err != nil {
+			logs.Errorf("fire publish strategy event failed, err: %v, rid: %s", err, kit.Rid)
+			return 0, errors.New("fire event failed, " + err.Error())
+		}
 	}
 
 	return stgID, nil
@@ -494,6 +494,23 @@ func (dao *pubDao) UpsertPublishWithTx(
 	if err := dao.upsertReleasedGroups(kit, tx.Query, opt, stg); err != nil {
 		logs.Errorf("upsert group current releases failed, err: %v, rid: %s", err, kit.Rid)
 		return err
+	}
+
+	// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
+	one := types.Event{
+		Spec: &table.EventSpec{
+			Resource: table.Publish,
+			// use the published strategy history id, which represent a real publish operation.
+			ResourceID: opt.ReleaseID,
+			OpType:     table.InsertOp,
+		},
+		Attachment: &table.EventAttachment{BizID: opt.BizID, AppID: opt.AppID},
+		Revision:   &table.CreatedRevision{Creator: kit.User},
+	}
+	eDecorator := dao.event.Eventf(kit)
+	if err := eDecorator.FireWithTx(tx, one); err != nil {
+		logs.Errorf("fire publish strategy event failed, err: %v, rid: %s", err, kit.Rid)
+		return errors.New("fire event failed, " + err.Error())
 	}
 	return nil
 }
