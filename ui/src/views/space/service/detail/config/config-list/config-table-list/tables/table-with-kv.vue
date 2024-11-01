@@ -12,7 +12,7 @@
       :row-class="getRowCls"
       show-overflow-tooltip
       @page-limit-change="handlePageLimitChange"
-      @page-value-change="refresh($event, true)"
+      @page-value-change="refresh($event, true, true)"
       @column-sort="handleSort"
       @column-filter="handleFilter">
       <template #prepend v-if="versionData.id === 0">
@@ -348,7 +348,7 @@
     getListData();
   });
 
-  const getListData = async () => {
+  const getListData = async (createConfig = false) => {
     loading.value = true;
     try {
       const params: ICommonQuery = {
@@ -356,6 +356,11 @@
         limit: pagination.value.limit,
         with_status: true,
       };
+      if (!createConfig) {
+        serviceStore.$patch((state) => {
+          state.topIds = [];
+        });
+      }
       if (props.searchStr) {
         params.search_fields = 'key,revister,creator';
         params.search_key = props.searchStr;
@@ -368,9 +373,9 @@
         params.sort = 'updated_at';
         params.order = updateSortType.value.toUpperCase();
       }
-      if (topIds.value.length > 0) params.ids = topIds.value;
       let res;
       if (isUnNamedVersion.value) {
+        if (topIds.value.length > 0) params.top_ids = topIds.value;
         if (statusFilterChecked.value!.length > 0) {
           params.status = statusFilterChecked.value;
         }
@@ -552,13 +557,13 @@
     refresh();
   };
 
-  const refresh = (current = 1, pageChange = false) => {
+  const refresh = (current = 1, pageChange = false, createConfig = false) => {
     // 非跨页全选/半选 需要重置全选状态
     if (![CheckType.HalfAcrossChecked, CheckType.AcrossChecked].includes(selectType.value) || !pageChange) {
       handleClearSelection();
     }
     pagination.value.current = current;
-    getListData();
+    getListData(createConfig);
   };
 
   const handleFilter = ({ checked, index }: any) => {

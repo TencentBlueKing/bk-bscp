@@ -57,3 +57,8 @@
 .bk-popover .bk-table-head-filter .bk-input {
   display: none;
 }
+
+// 笔记本dialog兼容
+.bk-dialog-wrapper .bk-modal-wrapper .bk-modal-content {
+  max-height: none !important;
+}

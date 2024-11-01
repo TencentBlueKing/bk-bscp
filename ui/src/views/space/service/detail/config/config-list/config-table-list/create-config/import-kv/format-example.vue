@@ -65,17 +65,17 @@
           title: t('示例：'),
           list: [
             {
-              key: 'string_key',
-              type: 'string',
+              key: 'string_key ',
+              type: 'string ',
               secret_type: '',
-              value: 'string_value',
+              value: 'string_value ',
               secret_hidden: '',
             },
             {
-              key: 'number_key',
-              type: 'number',
+              key: 'number_key ',
+              type: 'number ',
               secret_type: '',
-              value: 100,
+              value: '100 ',
               secret_hidden: '',
             },
           ],
@@ -90,10 +90,10 @@
           title: t('密码示例：'),
           list: [
             {
-              key: 'user_name',
-              type: 'secret',
-              secret_type: 'password',
-              value: 'password_value',
+              key: 'user_name ',
+              type: 'secret ',
+              secret_type: 'password ',
+              value: 'password_value ',
               secret_hidden: 'visible',
             },
           ],
@@ -102,10 +102,10 @@
           title: t('API密钥示例：'),
           list: [
             {
-              key: 'api_key_name',
-              type: 'secret',
-              secret_type: 'secret_key',
-              value: 'api_key_value',
+              key: 'api_key_name ',
+              type: 'secret ',
+              secret_type: 'secret_key ',
+              value: 'api_key_value ',
               secret_hidden: 'invisible',
             },
           ],
@@ -114,10 +114,10 @@
           title: t('访问令牌示例：'),
           list: [
             {
-              key: 'access_token_name',
-              type: 'secret',
-              secret_type: 'token',
-              value: 'access_token_value',
+              key: 'access_token_name ',
+              type: 'secret ',
+              secret_type: 'token ',
+              value: 'access_token_value ',
               secret_hidden: 'invisible',
             },
           ],
@@ -308,8 +308,10 @@ user_name:
       overflow: auto;
       max-height: calc(100% - 42px);
       .text-example {
-        display: flex;
-        gap: 8px;
+        white-space: nowrap;
+        span {
+          margin-right: 4px;
+        }
       }
       .example {
         margin-top: 13px;

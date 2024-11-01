@@ -12,7 +12,7 @@
         v-model:file-uploading="fileUploading"
         :config="configForm"
         :content="content"
-        :editable="true"
+        :is-edit="false"
         :is-tpl="true"
         :bk-biz-id="spaceId"
         :id="currentTemplateSpace"

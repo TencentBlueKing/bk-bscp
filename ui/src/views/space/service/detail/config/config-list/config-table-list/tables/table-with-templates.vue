@@ -569,7 +569,11 @@
         start: 0,
         all: true,
       };
-      if (!createConfig) topIds.value = [];
+      if (!createConfig) {
+        serviceStore.$patch((state) => {
+          state.topIds = [];
+        });
+      }
       if (topIds.value.length > 0) params.ids = topIds.value;
       let res;
       if (isUnNamedVersion.value) {
