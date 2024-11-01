@@ -51,6 +51,7 @@
     secret_type: '',
     secret_hidden: false,
   });
+
   watch(
     () => props.show,
     (val) => {

@@ -18,9 +18,8 @@
 
   const codeEditorRef = ref();
   const localVal = ref(props.modelValue);
-  const isUpdating = ref(false);
 
-  const cipherText = computed(() => (localVal.value ? '************' : ''));
+  const cipherText = computed(() => localVal.value.replace(/./g, '*'));
 
   self.MonacoEnvironment = {
     getWorker() {
@@ -32,7 +31,7 @@
     () => props.modelValue,
     (val) => {
       localVal.value = val;
-      if (val !== localVal.value && !props.isCipher) {
+      if (!props.isCipher) {
         editor.setValue(val);
       } else {
         editor.setValue(cipherText.value);
@@ -63,22 +62,7 @@
     }
 
     editor.onDidChangeModelContent(() => {
-      if (props.isCipher) {
-        //  防止事件递归触发
-        if (isUpdating.value) {
-          return;
-        }
-        const newVal = editor.getValue().replace(/\*/g, '');
-        if (newVal) {
-          localVal.value = newVal;
-          emits('update:modelValue', newVal);
-        }
-        // 标记正在更新内容
-        isUpdating.value = true;
-        editor.setValue(cipherText.value);
-        // 重置标记
-        isUpdating.value = false;
-      } else {
+      if (props.editable) {
         localVal.value = editor.getValue();
         emits('update:modelValue', localVal.value);
       }

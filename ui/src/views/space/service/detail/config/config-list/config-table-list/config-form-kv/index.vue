@@ -46,7 +46,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, computed, nextTick } from 'vue';
+  import { ref, onMounted, computed, nextTick, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { CONFIG_KV_TYPE } from '../../../../../../../../constants/config';
   import KvConfigContentEditor from '../../../components/kv-config-content-editor.vue';
@@ -120,7 +120,7 @@
       },
       {
         validator: (value: string) => {
-          if (localVal.value.secret_type === 'token' && localVal.value.value) {
+          if (localVal.value.secret_type === 'token' && localVal.value.kv_type === 'secret' && localVal.value.value) {
             return /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value);
           }
           return true;
@@ -129,6 +129,13 @@
       },
     ],
   };
+
+  watch(
+    () => localVal.value.secret_type,
+    () => {
+      formRef.value.clearValidate();
+    },
+  );
 
   onMounted(() => {
     if (!props.editMode) {
@@ -201,7 +208,7 @@
 </style>
 
 <style>
-  .type-selector-popover .bk-select-dropdown{
+  .type-selector-popover .bk-select-dropdown {
     max-height: none !important;
   }
 </style>
