@@ -111,7 +111,7 @@
   import { fileDownload } from '../../../utils/file';
   import VariableCreate from './variable-create.vue';
   import VariableEdit from './variable-edit.vue';
-  import VariableImport from './variable-import.vue';
+  import VariableImport from './variable-import/index.vue';
   import BatchDeleteBtn from './batch-delete-btn.vue';
   import SearchInput from '../../../components/search-input.vue';
   import TableEmpty from '../../../components/table/table-empty.vue';

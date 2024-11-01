@@ -72,7 +72,7 @@
 <script lang="ts" setup>
   import { computed } from 'vue';
   import { CopyShape } from 'bkui-vue/lib/icon';
-  import { copyToClipBoard } from '../../../../../../../../../utils';
+  import { copyToClipBoard } from '../../../../utils';
   import { Message } from 'bkui-vue';
   import { useI18n } from 'vue-i18n';
 

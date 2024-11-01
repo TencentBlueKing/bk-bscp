@@ -22,6 +22,14 @@
               distance: 20,
             }"
             @click="codeEditorRef.openSearch()" />
+          <i
+            :class="['bk-bscp-icon', 'icon-terminal', { isOpen: modelValue }]"
+            v-bk-tooltips="{
+              content: t('示例面板'),
+              placement: 'top',
+              distance: 20,
+            }"
+            @click="emits('update:modelValue', !modelValue)" />
           <FilliscreenLine
             v-if="!isOpenFullScreen"
             v-bk-tooltips="{
@@ -45,26 +53,26 @@
           ref="codeEditorRef"
           v-model="variables"
           :error-line="errorLine"
-          :placeholder="editorPlaceholder"
           @paste="handlePaste"
           @enter="separatorShow = true"
           @validate="handleValidateEditor" />
         <div class="separator" v-show="separatorShow">
           <SeparatorSelect @closed="separatorShow = false" @confirm="handleSelectSeparator" />
         </div>
+        <slot name="sufContent" :fullscreen="isOpenFullScreen"></slot>
       </div>
     </div>
   </Teleport>
 </template>
 <script setup lang="ts">
-  import { ref, onBeforeUnmount, watch } from 'vue';
+  import { ref, onBeforeUnmount, watch, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import BkMessage from 'bkui-vue/lib/message';
   import { InfoLine, FilliscreenLine, UnfullScreen, Search } from 'bkui-vue/lib/icon';
-  import { batchImportTemplateVariables } from '../../../api/variable';
-  import CodeEditor from '../../../components/code-editor/index.vue';
+  import { batchImportTemplateVariables } from '../../../../api/variable';
+  import CodeEditor from '../../../../components/code-editor/index.vue';
   import SeparatorSelect from './separator-select.vue';
-  import useGlobalStore from '../../../store/global';
+  import useGlobalStore from '../../../../store/global';
   import { storeToRefs } from 'pinia';
 
   interface errorLineItem {
@@ -73,7 +81,13 @@
   }
 
   const { t } = useI18n();
-  const emits = defineEmits(['trigger']);
+
+  const props = defineProps<{
+    modelValue: boolean;
+    format: string;
+  }>();
+
+  const emits = defineEmits(['hasTextImportError', 'update:modelValue']);
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
@@ -82,6 +96,8 @@
   const separator = ref(' ');
   const shouldValidate = ref(false);
   const errorLine = ref<errorLineItem[]>([]);
+  const jsonContent = ref('');
+  const yamlContent = ref('');
   const editorPlaceholder = ref([
     `${t('示例')}：`,
     t('变量名 变量类型 变量值 变量描述（可选）'),
@@ -90,11 +106,17 @@
     'bk_bscp_nginx_access_log string ""（变量值为空的情况） nginx访问日志路径',
   ]);
 
+  const editorContent = computed(() => {
+    if (props.format === 'text') return variables.value;
+    if (props.format === 'json') return jsonContent.value;
+    return yamlContent.value;
+  });
+
   watch(
-    () => variables.value,
+    () => editorContent.value,
     (val) => {
       handleValidateEditor();
-      if (!val) emits('trigger', false);
+      if (!val) emits('hasTextImportError', false);
     },
   );
 
@@ -178,23 +200,28 @@
         });
       }
     });
-    emits('trigger', variables.value && errorLine.value.length === 0);
+    emits('hasTextImportError', variables.value && errorLine.value.length === 0);
     return hasSeparatorError;
   };
+
   // 导入变量
   const handleImport = async () => {
     handleValidateEditor();
     shouldValidate.value = true;
     if (errorLine.value.length > 0) return Promise.reject();
-    const params = {
-      separator: separator.value === ' ' ? 'white-space' : separator.value,
-      variables: variables.value,
-    };
-    await batchImportTemplateVariables(spaceId.value, params);
-    BkMessage({
-      theme: 'success',
-      message: t('导入变量成功'),
-    });
+    try {
+      const params = {
+        separator: separator.value === ' ' ? 'white-space' : separator.value,
+        variables: editorContent.value,
+      };
+      await batchImportTemplateVariables(spaceId.value, params);
+      BkMessage({
+        theme: 'success',
+        message: t('导入变量成功'),
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleSelectSeparator = (selectSeparator: string) => {
