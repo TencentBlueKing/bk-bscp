@@ -2879,6 +2879,8 @@ message ApproveReq {
   uint32 release_id = 3;
   string publish_status = 4;
   string reason = 5;
+  uint32 strategy_id = 6;           // 接口内部赋值使用
+  repeated string approved_by = 7;  // 接口内部赋值使用
 }
 
 message ApproveResp {
