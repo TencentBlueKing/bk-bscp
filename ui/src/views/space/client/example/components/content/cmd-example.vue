@@ -32,7 +32,7 @@
               ]"
               :code-val="replaceVal"
               :variables="variables"
-              :language="kvName"
+              :language="props.templateName"
               @change="(val: string) => (copyReplaceVal = val)" />
           </template>
           <template v-if="item.tips">
@@ -63,7 +63,7 @@
 
   const props = defineProps<{
     contentScrollTop: Function;
-    kvName: string;
+    templateName: string;
     selectedKeyData: newICredentialItem['spec'] | null;
   }>();
 

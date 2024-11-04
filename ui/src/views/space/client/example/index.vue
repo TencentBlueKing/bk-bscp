@@ -21,7 +21,7 @@
         <bk-loading style="height: 100%" :loading="loading">
           <component
             :is="currentTemplate"
-            :kv-name="renderComponent"
+            :template-name="renderComponent"
             :content-scroll-top="contentScrollTop"
             :selected-key-data="selectedClientKey"
             :key="renderComponent"
@@ -39,7 +39,7 @@
   import ContainerExample from './components/content/container-example.vue';
   import NodeManaExample from './components/content/node-mana-example.vue';
   import CmdExample from './components/content/cmd-example.vue';
-  import KvExample from './components/content/kv-example.vue';
+  import DefaultExample from './components/content/default-example.vue';
   import Exception from '../components/exception.vue';
 
   const { t } = useI18n();
@@ -85,8 +85,8 @@
           );
           return CmdExample;
         default:
-          // 键值类型模板都一样
-          return KvExample;
+          // 默认模板
+          return DefaultExample;
       }
     }
     // 无数据模板

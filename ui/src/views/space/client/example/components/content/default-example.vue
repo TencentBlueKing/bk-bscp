@@ -1,15 +1,15 @@
 <template>
-  <section class="kv-example-template">
+  <section class="default-example-template">
     <form-option
       ref="fileOptionRef"
       :directory-show="false"
-      :config-show="(['python', 'go'].includes(props.kvName) && activeTab === 0) || props.kvName === 'http'"
+      :config-show="(['python', 'go'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'"
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       @update-option-data="(data) => getOptionData(data)"
       @selected-key-data="emits('selected-key-data', $event)" />
     <div class="preview-container">
-      <div class="kv-handle-content">
+      <div class="template-content">
         <span class="preview-label">{{ $t('示例预览') }}</span>
         <div class="change-method">
           <div
@@ -26,16 +26,16 @@
           </div>
         </div>
         <bk-button theme="primary" class="copy-btn" @click="copyExample">{{ $t('复制示例') }}</bk-button>
-        <bk-alert class="alert-tips-wrap" v-show="topTipShow && kvConfig.topTip" theme="info">
+        <bk-alert class="alert-tips-wrap" v-show="topTipShow && templateConfig.topTip" theme="info">
           <div class="alert-tips">
-            <span v-html="kvConfig.topTip"></span>
+            <span v-html="templateConfig.topTip"></span>
             <close-line class="close-line" @click="topTipShow = false" />
           </div>
         </bk-alert>
       </div>
       <code-preview
         class="preview-component"
-        :style="{ height: `${kvConfig.codePreviewHeight}px` }"
+        :style="{ height: `${templateConfig.codePreviewHeight}px` }"
         :code-val="replaceVal"
         :variables="variables"
         :language="codeLanguage"
@@ -57,7 +57,7 @@
   import { useRoute } from 'vue-router';
 
   const props = defineProps<{
-    kvName: string;
+    templateName: string;
     selectedKeyData: newICredentialItem['spec'] | null;
   }>();
 
@@ -86,11 +86,11 @@
   });
 
   // 代码预览上方提示框
-  const kvConfig = computed(() => {
+  const templateConfig = computed(() => {
     // @ts-ignore
     // eslint-disable-next-line
     const url = (typeof BSCP_CONFIG !== 'undefined' && BSCP_CONFIG.python_sdk_dependency_doc) || '';
-    switch (props.kvName) {
+    switch (props.templateName) {
       case 'python':
         // get
         if (!activeTab.value) {
@@ -108,7 +108,7 @@
         if (!activeTab.value) {
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
-            codePreviewHeight: 1010,
+            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1724 : 1006,
           };
         }
         return {
@@ -165,27 +165,14 @@
   });
   // http分别使用shell和python高亮格式，其他保持原有
   const codeLanguage = computed(() => {
-    if (props.kvName === 'http') {
+    if (props.templateName === 'http') {
       return tabArr.value[activeTab.value].toLocaleLowerCase();
     }
-    return props.kvName;
+    return props.templateName;
   });
 
-  // const configShow = computed(()=>{
-  //   if (props.kvName === 'python' && activeTab.value === 0) {
-  //     return true;
-  //   }
-  //   if (props.kvName === 'go' && activeTab.value === 0) {
-  //     return true;
-  //   }
-  //   if (props.kvName === 'http') {
-  //     return true;
-  //   }
-  //   return false;
-  // });
-
   watch(
-    () => props.kvName,
+    () => props.templateName,
     (newV) => {
       tabArr.value = newV === 'http' ? ['Shell', 'Python'] : [t('Get方法'), t('Watch方法')];
       codeVal.value = '';
@@ -197,7 +184,7 @@
   const getOptionData = (data: any) => {
     // labels展示方式加工，并替换数据
     let labelArrType = '';
-    switch (props.kvName) {
+    switch (props.templateName) {
       case 'java':
         if (data.labelArr.length) {
           labelArrType = data.labelArr
@@ -242,7 +229,7 @@
   const updateReplaceVal = () => {
     let updateString = replaceVal.value;
     let feedAddrVal = (window as any).GRPC_ADDR;
-    if (props.kvName === 'http') {
+    if (props.templateName === 'http') {
       // http的host特殊处理
       feedAddrVal = (window as any).HTTP_ADDR;
     }
@@ -282,16 +269,16 @@
       let copyVal = copyReplaceVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
       let tempStr = '';
       // 键值型示例复制时，内容开头插入注释信息(http、命令行除外)；插入文案除python以外，其他都一样
-      if (props.kvName === 'python') {
+      if (props.templateName === 'python') {
         // watch
         tempStr = `'''\n${t('通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
         if (!activeTab.value) {
           // get
           tempStr = `'''\n${t('用于主动获取配置项值的场景，此方法不会监听服务器端的配置更改\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
         }
-      } else if (props.kvName === 'go') {
+      } else if (props.templateName === 'go') {
         tempStr = '';
-      } else if (props.kvName !== 'http') {
+      } else if (props.templateName !== 'http') {
         // watch
         tempStr = `// ${t('Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。')}\n`;
         if (!activeTab.value) {
@@ -313,7 +300,7 @@
   // tab禁用条件
   const tabDisabled = (index: number) => {
     // 文件型go sdk的watch禁用
-    if (props.kvName === 'go' && basicInfo?.serviceType.value === 'file' && index === 1) {
+    if (props.templateName === 'go' && basicInfo?.serviceType.value === 'file' && index === 1) {
       return true;
     }
     return false;
@@ -324,19 +311,19 @@
     if (tabDisabled(index)) return;
     if (index === activeTab.value && codeVal.value) return;
     activeTab.value = index;
-    const newKvData = await changeKvData(props.kvName, index);
-    codeVal.value = newKvData.default;
-    replaceVal.value = newKvData.default;
+    const newTemplateData = await changeTemData(props.templateName, index);
+    codeVal.value = newTemplateData.default;
+    replaceVal.value = newTemplateData.default;
     getOptionData(optionData.value);
   };
   // 键值型数据模板切换
   /**
    *
-   * @param kvName 数据模板名称
+   * @param templateName 数据模板名称
    * @param methods 方法，0: get，1: watch
    */
-  const changeKvData = (kvName = 'python', methods = 0) => {
-    switch (kvName) {
+  const changeTemData = (templateName = 'python', methods = 0) => {
+    switch (templateName) {
       case 'python':
         return !methods
           ? import('/src/assets/example-data/kv-python-get.yaml?raw')
@@ -374,7 +361,7 @@
 </script>
 
 <style scoped lang="scss">
-  .kv-example-template {
+  .default-example-template {
     display: flex;
     flex-direction: column;
     height: 100%;
