@@ -7,23 +7,31 @@
     </div>
   </div>
   <div class="upload-file-list">
-    <bk-upload
-      class="config-uploader"
-      theme="button"
-      :size="100000"
-      :multiple="true"
-      :limit="10"
-      :custom-request="handleFileUpload"
-      @exceed="handleExceed">
-      <template #trigger>
-        <bk-button class="upload-button">
-          <Upload class="icon" />
-          <span class="text">{{ $t('上传文件') }}</span>
-        </bk-button>
-      </template>
-    </bk-upload>
-
-    <div v-if="fileList.length > 0">
+    <div class="operation">
+      <bk-upload
+        class="config-uploader"
+        theme="button"
+        :size="100000"
+        :multiple="true"
+        :limit="10"
+        :custom-request="handleFileUpload"
+        @exceed="handleMultiFileImport">
+        <template #trigger>
+          <bk-button class="upload-button">
+            <Upload class="icon" />
+            <span class="text">{{ $t('上传文件') }}</span>
+          </bk-button>
+        </template>
+      </bk-upload>
+      <bk-button
+        v-if="fileList.length > 0"
+        :disabled="failFileList.length === 0"
+        class="retry-btn"
+        @click="handleBatchRetry">
+        <right-turn-line class="icon" />{{ $t('批量重试') }}
+      </bk-button>
+    </div>
+    <div v-if="fileList.length > 0" :key="fileList.length">
       <div :class="['open-btn', { 'is-open': isOpenFileList }]" @click="isOpenFileList = !isOpenFileList">
         <angle-double-up-line class="icon" />
         {{ isOpenFileList ? $t('收起上传列表') : $t('展开上传列表') }}
@@ -60,7 +68,7 @@
 
 <script lang="ts" setup>
   import { ref, computed, watch } from 'vue';
-  import { Upload, AngleDoubleUpLine, Done, TextFill, Error, Del } from 'bkui-vue/lib/icon';
+  import { Upload, AngleDoubleUpLine, Done, TextFill, Error, Del, RightTurnLine } from 'bkui-vue/lib/icon';
   import { importNonTemplateConfigFile } from '../../../../../../../../../api/config';
   import { useI18n } from 'vue-i18n';
   import { IConfigImportItem } from '../../../../../../../../../../types/config';
@@ -93,6 +101,7 @@
   const loading = ref(false);
   const isDecompression = ref(true);
   const isOpenFileList = ref(true);
+  const multifileUploading = ref(false);
   const fileList = ref<IUploadFileList[]>([]);
 
   const uploadTips = computed(() => {
@@ -104,10 +113,12 @@
     );
   });
 
+  const failFileList = computed(() => fileList.value.filter((item) => item.status === 'fail').map((item) => item.file));
+
   watch(
     () => fileList.value,
     () => {
-      if (fileList.value.some((fileItem) => fileItem.status === 'uploading')) {
+      if (fileList.value.some((fileItem) => fileItem.status === 'uploading') || multifileUploading.value) {
         emits('uploading', true);
       } else {
         emits('uploading', false);
@@ -217,6 +228,7 @@
       file!.status = 'fail';
       file!.errorMessage = e.response.data.error.message;
     } finally {
+      handleSortFileList();
       loading.value = false;
     }
   };
@@ -232,12 +244,13 @@
     return ['zip', 'rar', 'tar', 'gz', 'tgz'].includes(ext);
   };
 
-  const handleExceed = async (files: any) => {
+  const handleMultiFileImport = async (files: any) => {
+    multifileUploading.value = true;
     let index = 0;
     const uploadNext = async () => {
       if (index < files.length) {
-        index += 1;
         const file = files[index];
+        index += 1;
         await handleFileUpload({ file });
         await uploadNext();
       }
@@ -247,6 +260,23 @@
       uploadPromises.push(uploadNext());
     }
     await Promise.allSettled(uploadPromises);
+    multifileUploading.value = false;
+  };
+
+  const handleSortFileList = () => {
+    fileList.value.sort((a: IUploadFileList, b: IUploadFileList) => {
+      if (a.status !== 'success' && b.status === 'success') {
+        return -1;
+      }
+      if (a.status === 'success' && b.status !== 'success') {
+        return 1;
+      }
+      return 0;
+    });
+  };
+
+  const handleBatchRetry = () => {
+    handleMultiFileImport(failFileList.value);
   };
 </script>
 
@@ -389,5 +419,17 @@
 
   .decompression {
     font-size: 12px !important;
+  }
+
+  .operation {
+    display: flex;
+    gap: 8px;
+    .retry-btn {
+      font-size: 12px;
+      .icon {
+        font-size: 16px;
+        margin-right: 8px;
+      }
+    }
   }
 </style>

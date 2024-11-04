@@ -16,13 +16,18 @@
     <template #trigger>
       <div class="selector-trigger">
         <bk-overflow-title v-if="configName" class="config-name" type="tips">
-          {{ configName }}
+          {{ originalConfigName }}
         </bk-overflow-title>
         <span v-else class="empty">{{ $t('请选择') }}</span>
         <AngleUpFill class="arrow-icon arrow-fill" />
       </div>
     </template>
-    <bk-option v-for="item in configList" :key="item.id" :value="item.config" :label="item.config">
+    <!-- 非模板配置和套餐合并后的数据（configList），配置项名称（文件名）可能一样，这里添加/index做唯一区分，后续使用删除/index -->
+    <bk-option
+      v-for="(item, index) in configList"
+      :key="item.id + index"
+      :value="`${item.config}/${index}`"
+      :label="item.config">
       <div class="config-option-item">
         <div class="name-text">{{ item.config }}</div>
       </div>
@@ -31,11 +36,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, inject, Ref } from 'vue';
+  import { ref, onMounted, inject, Ref, computed } from 'vue';
   import { useRoute } from 'vue-router';
-  import { getConfigList, getKvList } from '../../../../../api/config';
+  import { getConfigList, getBoundTemplates, getKvList } from '../../../../../api/config';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
-  import { IConfigItem, IConfigKvType } from '../../../../../../types/config';
+  import { IConfigItem, IBoundTemplateGroup, IConfigKvType } from '../../../../../../types/config';
 
   const emits = defineEmits(['select-config']);
 
@@ -50,6 +55,9 @@
   const appId = ref(route.params.appId);
   const configList = ref<{ id: number; config: string }[]>([]);
 
+  // 选中的配置项（文件名）原始名称
+  const originalConfigName = computed(() => configName.value.replace(/\/[^\\/]*$/, ''));
+
   onMounted(async () => {
     await loadConfigList();
   });
@@ -62,27 +70,43 @@
         start: 0,
         all: true,
       };
-      let res;
       if (basicInfo?.serviceType.value === 'file') {
         // 文件型配置项
-        res = await getConfigList(bizId.value, Number(appId.value), query);
-      } else {
-        // 键值型配置项
-        res = await getKvList(bizId.value, Number(appId.value), query);
-      }
-      configList.value = res.details.map((item: IConfigItem | IConfigKvType) => {
-        if ('path' in item.spec) {
+        const [configRes, boundTempRes] = await Promise.all([
+          getConfigList(bizId.value, Number(appId.value), query), // 非模板配置
+          getBoundTemplates(bizId.value, Number(appId.value), query), // 套餐
+        ]);
+        // 提取非模板配置的信息
+        const configResult = configRes.details.map((item: IConfigItem) => {
           const { path, name } = item.spec;
           return {
             id: item.id,
             config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
           };
-        }
-        return {
-          id: item.id,
-          config: item.spec.key,
-        };
-      });
+        });
+        // 提取套餐配置信息
+        const boundTempResult = boundTempRes.details.map((group: IBoundTemplateGroup) => {
+          // 遍历套餐
+          return group.template_revisions.map((item) => {
+            const { template_id, path, name } = item;
+            return {
+              id: template_id,
+              config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
+            };
+          });
+        });
+        // 合并配置信息
+        configList.value = [...configResult, ...boundTempResult].flat();
+      } else {
+        // 键值型配置项
+        const res = await getKvList(bizId.value, Number(appId.value), query);
+        configList.value = res.details.map((item: IConfigKvType) => {
+          return {
+            id: item.id,
+            config: item.spec.key,
+          };
+        });
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -91,9 +115,8 @@
   };
 
   // 下拉列表操作
-  const handleConfigChange = async (name: string) => {
-    configName.value = name;
-    emits('select-config', name);
+  const handleConfigChange = async () => {
+    emits('select-config', originalConfigName);
     validateConfig();
   };
 

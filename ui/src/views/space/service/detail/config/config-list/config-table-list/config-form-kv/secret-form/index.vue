@@ -14,6 +14,7 @@
         :content="secretValue"
         :is-credential="selectType === 'certificate'"
         :height="400"
+        :is-edit="true"
         @change="handlSecretChange" />
       <div
         v-if="selectTypeContent!.infoList.length > 0"
@@ -89,6 +90,7 @@
   import { IConfigKvEditParams } from '../../../../../../../../../../types/config';
   import SecretContentEditor from './secret-content-editor.vue';
   import forge from 'node-forge';
+  import { datetimeFormat } from '../../../../../../../../../utils';
 
   const { t, locale } = useI18n();
 
@@ -117,7 +119,6 @@
   ];
 
   onMounted(() => {
-    if (!props.isEdit) return;
     const { secret_type, secret_hidden, value } = props.config;
     secretValue.value = secret_hidden ? '' : value;
     selectType.value = secret_type || 'password';
@@ -133,7 +134,7 @@
   });
 
   const inputPlaceholder = computed(() => {
-    return props.isEdit
+    return secretUnVisible.value && props.isEdit
       ? t('敏感数据不可见，无法查看实际内容；如需修改，请重新输入')
       : selectTypeContent.value?.placeholder;
   });
@@ -180,8 +181,8 @@
 
   const handleChangeCurrentType = (type: string) => {
     if (props.isEdit) return;
-    selectType.value = type;
     secretValue.value = '';
+    selectType.value = type;
     if (selectType.value === 'certificate') {
       selectTypeContent.value!.infoList = [];
     }
@@ -325,18 +326,23 @@
       const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(der));
 
       // 获取证书有效期
-      const notAfter: Date = cert.validity.notAfter;
+      const notAfter = cert.validity.notAfter;
 
       // 计算剩余天数
       const now = new Date();
-      const remainingDays = Math.floor((notAfter.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const remainingDays = Math.ceil((notAfter.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
       if (remainingDays > 0) {
         selectTypeContent.value!.infoList = [
-          { status: 'warn', text: t('证书将在 {n} 天后到期，请考虑更换新证书', { n: remainingDays }) },
+          {
+            status: 'warn',
+            text: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: datetimeFormat(notAfter), m: remainingDays }),
+          },
         ];
       } else {
-        selectTypeContent.value!.infoList = [{ status: 'warn', text: t('证书已过期，请更换证书后再进行提交') }];
+        selectTypeContent.value!.infoList = [
+          { status: 'error', text: t('此证书已于 {n} 过期，请更换其它证书', { n: datetimeFormat(notAfter) }) },
+        ];
       }
     } catch (e) {
       console.error(e);
@@ -346,6 +352,7 @@
 
   defineExpose({
     validate: () => {
+      console.log(1);
       return !selectTypeContent.value?.infoList.some((info) => info.status === 'error');
     },
   });

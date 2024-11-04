@@ -501,8 +501,8 @@ export default {
   '包含大写字母、小写字母和数字': 'Contains uppercase letters, lowercase letters, and numbers',
   访问令牌: 'Access Token',
   '请输入访问令牌，目前只支持 OAuth2.0 与 JWT 类型的访问令牌': 'Please enter the access token, currently only OAuth2.0 and JWT type access tokens are supported',
-  '证书将在 {n} 天后到期，请考虑更换新证书': 'The certificate will expire in {n} days, please consider replacing the new certificate',
-  '证书已过期，请更换证书后再进行提交': 'The certificate has expired, please replace the certificate before submitting',
+  '此证书将于 {n} 到期，距离到期仅剩 {m} 天': 'This certificate will expire on {n}, and there are only {m} days left until expiration',
+  '此证书已于 {n} 过期，请更换其它证书': 'This certificate has expired on {n}, please replace it with another certificate',
   '证书格式不正确（只支持 X.509 类型证书）': 'The certificate format is incorrect (only X.509 type certificates are supported)',
   '证书未经受信任的证书颁发机构签发，在生产环境中建议使用经权威证书颁发机构签发的证书': 'The certificate is not issued by a trusted certificate authority, and it is recommended to use a certificate issued by an authoritative certificate authority in a production environment',
   '目前只支持 X.509 类型证书': 'Currently only X.509 type certificates are supported',
@@ -535,6 +535,9 @@ export default {
   '确认恢复所选的 {n} 个配置项？': 'Confirm to restore the selected {n} configuration items?',
   '如果所选待恢复的配置文件已存在，那么现有配置文件将被覆盖。': 'If the selected configuration file to be restored already exists, the existing configuration file will be overwritten.',
   '如果所选待恢复的配置项已存在，那么现有配置项将被覆盖。': 'If the selected configuration item to be restored already exists, the existing configuration item will be overwritten.',
+  字段说明: 'Field description',
+  格式说明: 'Format description',
+  '示例：': 'Example:',
 
   // 分组管理
   新增分组: 'New group',
@@ -588,7 +591,6 @@ export default {
   变量内容: 'variable content',
   变量必须以bk_bscp_或BK_BSCP_开头: 'Variable must start with bk_bscp_ or BK_BSCP_',
   导入变量成功: 'Import variables successfully',
-  '示例：': 'Example:',
   '变量名 变量类型 变量值 变量描述（可选）': 'Variable name Variable type Variable value Variable Description (optional)',
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx port',
   导出变量: 'Export variables',

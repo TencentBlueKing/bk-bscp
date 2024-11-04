@@ -44,8 +44,14 @@
           @clear="handleClearTable" />
       </div>
     </div>
-    <div v-if="importType !== 'text' && allConfigList.length" class="content">
-      <bk-loading :loading="tableLoading">
+    <bk-loading
+      :loading="tableLoading"
+      class="config-table-loading"
+      mode="spin"
+      theme="primary"
+      size="small"
+      :opacity="0.7">
+      <div v-if="importType !== 'text' && allConfigList.length > 0" class="content">
         <div class="head">
           <bk-checkbox style="margin-left: 24px" v-model="isClearDraft"> {{ $t('导入前清空草稿区') }} </bk-checkbox>
           <div v-if="!isClearDraft" class="tips">
@@ -98,8 +104,8 @@
           :is-exsit-table="true"
           @change-expand="expandExistTable = !expandExistTable"
           @change="handleTableChange($event, false)" />
-      </bk-loading>
-    </div>
+      </div>
+    </bk-loading>
     <template #footer>
       <bk-button
         theme="primary"
@@ -284,6 +290,7 @@
   const handleClearTable = () => {
     nonExistConfigList.value = [];
     existConfigList.value = [];
+    allConfigList.value = [];
   };
 
   const handleConfirmSelect = () => {
@@ -292,7 +299,6 @@
       const findConfig = importConfigList.value.find((item) => item.key === key);
       if (!findConfig) {
         const addConfig = allConfigList.value.find((item) => item.key === key);
-        console.log(addConfig);
         if (addConfig?.is_exist) {
           existConfigList.value.push(addConfig!);
         } else {
@@ -424,6 +430,14 @@
     width: 100%;
     height: 100%;
     background: #fafbfd;
+  }
+
+  .config-table-loading {
+    min-height: 80px;
+    :deep(.bk-loading-primary) {
+      top: 60px;
+      align-items: center;
+    }
   }
 </style>
 

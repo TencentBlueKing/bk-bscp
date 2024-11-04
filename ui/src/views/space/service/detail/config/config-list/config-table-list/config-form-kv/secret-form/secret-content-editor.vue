@@ -9,8 +9,10 @@
           </div>
         </div>
         <div class="btns">
-          <Unvisible v-if="isCipherShowSecret" class="view-icon" @click="isCipherShowSecret = false" />
-          <Eye v-else class="view-icon" @click="isCipherShowSecret = true" />
+          <template v-if="!props.isEdit">
+            <Unvisible v-if="isCipherShowSecret" class="view-icon" @click="isCipherShowSecret = false" />
+            <Eye v-else class="view-icon" @click="isCipherShowSecret = true" />
+          </template>
           <ReadFileContent
             v-if="props.isEdit"
             v-bk-tooltips="{
@@ -75,7 +77,7 @@
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
-  const isCipherShowSecret = ref(true); // 密文展示敏感信息
+  const isCipherShowSecret = ref(!props.isEdit); // 密文展示敏感信息
   const secretValue = ref(props.content);
 
   const editorStyle = computed(() => {

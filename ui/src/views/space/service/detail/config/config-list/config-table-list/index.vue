@@ -131,7 +131,7 @@
       tableRef.value.refresh(createConfig);
       refreshVariable();
     } else {
-      tableRef.value.refresh();
+      tableRef.value.refresh(1, false, createConfig);
     }
   };
 
