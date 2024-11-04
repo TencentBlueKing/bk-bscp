@@ -3,7 +3,7 @@
     <form-option
       ref="fileOptionRef"
       :directory-show="false"
-      :config-show="props.kvName === 'http' || (props.kvName === 'python' && activeTab === 0)"
+      :config-show="(['python', 'go'].includes(props.kvName) && activeTab === 0) || props.kvName === 'http'"
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       @update-option-data="(data) => getOptionData(data)"
@@ -13,9 +13,14 @@
         <span class="preview-label">{{ $t('示例预览') }}</span>
         <div class="change-method">
           <div
-            :class="['tab-wrap', { 'is-active': activeTab === index }]"
             v-for="(item, index) in tabArr"
             :key="item"
+            v-bk-tooltips="{
+              disabled: !tabDisabled(index),
+              content: t('此SDK暂不支持method方法拉取配置文件', {method: item}),
+              placement: 'top',
+            }"
+            :class="['tab-wrap', { 'is-active': activeTab === index }, { 'is-disabled': tabDisabled(index) }]"
             @click="handleTab(index)">
             {{ item }}
           </div>
@@ -102,8 +107,8 @@
       case 'go':
         if (!activeTab.value) {
           return {
-            topTip: t('Get方法：用于一次性拉取最新的配置信息，适用于需要获取并更新配置的场景。'),
-            codePreviewHeight: 1002,
+            topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
+            codePreviewHeight: 1010,
           };
         }
         return {
@@ -115,7 +120,7 @@
       case 'java':
         if (!activeTab.value) {
           return {
-            topTip: t('Get方法：用于一次性拉取最新的配置信息，适用于需要获取并更新配置的场景。'),
+            topTip: t('Get 方法：用于一次性获取配置项信息，适合在需要主动获取指定配置项的场景下使用。'),
             codePreviewHeight: 1156,
           };
         }
@@ -128,7 +133,7 @@
       case 'cpp':
         if (!activeTab.value) {
           return {
-            topTip: t('Get方法：用于一次性拉取最新的配置信息，适用于需要获取并更新配置的场景。'),
+            topTip: t('Get 方法：用于一次性获取配置项信息，适合在需要主动获取指定配置项的场景下使用。'),
             codePreviewHeight: 1324,
           };
         }
@@ -166,6 +171,19 @@
     return props.kvName;
   });
 
+  // const configShow = computed(()=>{
+  //   if (props.kvName === 'python' && activeTab.value === 0) {
+  //     return true;
+  //   }
+  //   if (props.kvName === 'go' && activeTab.value === 0) {
+  //     return true;
+  //   }
+  //   if (props.kvName === 'http') {
+  //     return true;
+  //   }
+  //   return false;
+  // });
+
   watch(
     () => props.kvName,
     (newV) => {
@@ -202,7 +220,7 @@
           labelArrType =
             basicInfo?.serviceType.value === 'file'
               ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`
-                .replaceAll(' ', '',)
+                .replaceAll(' ', '')
               : `'${labelArrType}'`;
         }
         break;
@@ -246,12 +264,6 @@
         default_val: `"${optionData.value.privacyCredential}"`,
         memo: '',
       },
-      // {
-      //   name: 'Bk_Bscp_Variable_Python_Key',
-      //   type: '',
-      //   default_val: '{{ YOUR_KEY }}',
-      //   memo: '',
-      // },
       {
         name: 'Bk_Bscp_Variable_KeyName',
         type: '',
@@ -269,7 +281,7 @@
       const reg = /"(.{1}|.{3})\*{3}(.{1}|.{3})"/g;
       let copyVal = copyReplaceVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
       let tempStr = '';
-      // 键值型示例复制时，内容开头插入注释信息(http除外)；插入文案除python以外，其他都一样
+      // 键值型示例复制时，内容开头插入注释信息(http、命令行除外)；插入文案除python以外，其他都一样
       if (props.kvName === 'python') {
         // watch
         tempStr = `'''\n${t('通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
@@ -277,6 +289,8 @@
           // get
           tempStr = `'''\n${t('用于主动获取配置项值的场景，此方法不会监听服务器端的配置更改\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
         }
+      } else if (props.kvName === 'go') {
+        tempStr = '';
       } else if (props.kvName !== 'http') {
         // watch
         tempStr = `// ${t('Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。')}\n`;
@@ -295,8 +309,19 @@
       console.log(error);
     }
   };
+
+  // tab禁用条件
+  const tabDisabled = (index: number) => {
+    // 文件型go sdk的watch禁用
+    if (props.kvName === 'go' && basicInfo?.serviceType.value === 'file' && index === 1) {
+      return true;
+    }
+    return false;
+  };
+
   // 切换tab
   const handleTab = async (index = 0) => {
+    if (tabDisabled(index)) return;
     if (index === activeTab.value && codeVal.value) return;
     activeTab.value = index;
     const newKvData = await changeKvData(props.kvName, index);
@@ -317,6 +342,10 @@
           ? import('/src/assets/example-data/kv-python-get.yaml?raw')
           : import('/src/assets/example-data/kv-python-watch.yaml?raw');
       case 'go':
+        // go的file型(只有get)
+        if (basicInfo?.serviceType.value === 'file') {
+          return import('/src/assets/example-data/file-go-get.yaml?raw');
+        }
         return !methods
           ? import('/src/assets/example-data/kv-go-get.yaml?raw')
           : import('/src/assets/example-data/kv-go-watch.yaml?raw');
@@ -329,7 +358,7 @@
           ? import('/src/assets/example-data/kv-c++-get.yaml?raw')
           : import('/src/assets/example-data/kv-c++-watch.yaml?raw');
       case 'http':
-        // http独有的file型
+        // http的file型
         if (basicInfo?.serviceType.value === 'file') {
           return !methods
             ? import('/src/assets/example-data/file-http-shell.yaml?raw')
@@ -369,6 +398,11 @@
         color: #3a84ff;
         background-color: #fff;
       }
+      &.is-disabled {
+        color: #C4C6CC;
+        cursor: not-allowed;
+        background-color: #F0F1F5;
+      }
     }
   }
   .preview-container {
@@ -382,6 +416,9 @@
     letter-spacing: 0;
     line-height: 22px;
     color: #63656e;
+  }
+  .preview-label + .copy-btn {
+    margin-left: 16px;
   }
   .preview-component {
     margin-top: 8px;

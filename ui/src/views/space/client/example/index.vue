@@ -48,6 +48,7 @@
     { name: t('节点管理插件'), val: 'node' },
     { name: t('HTTP(S)接口调用'), val: 'http' }, // 文件型也有http(s)接口，页面结构和键值型一样，但脚本内容、部分文案不一样
     { name: t('命令行工具'), val: 'shell' },
+    { name: 'Go SDK', val: 'go' },
   ];
   const kvTypeArr = [
     { name: 'Python SDK', val: 'python' },

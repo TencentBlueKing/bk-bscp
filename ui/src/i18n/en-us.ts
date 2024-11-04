@@ -827,8 +827,9 @@ export default {
   '用于客户端拉取配置时身份验证，下拉列表只会展示关联过此服务且状态为启用的密钥': 'Used for client-side authentication when fetching configurations, \n the dropdown list will only display keys that have been associated \n with this service and are in the enabled state',
   Get方法: 'Get',
   Watch方法: 'Watch',
-  'Get方法：用于一次性拉取最新的配置信息，适用于需要获取并更新配置的场景。': 'Get method: Used for fetching the latest configuration information in a single request, suitable for scenarios requiring both retrieval and update of configurations',
+  'Get 方法：用于一次性获取配置项信息，适合在需要主动获取指定配置项的场景下使用。': 'Get Method: This method is used to retrieve configuration item information in a one-time manner, suitable for scenarios where there is a need to actively fetch specific configuration items',
   'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。': 'Shell method: Establish a long connection to monitor changes in the configuration version in real time. When the new configuration version is released, the callback method is automatically invoked to process the new configuration information. This method is applicable to scenarios that require real-time response to configuration changes.',
+  'Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。': 'Get Method: This method is used to pull the contents of a configuration file in a one-time manner, suitable for scenarios where there is a need to actively retrieve a specific configuration file',
   节点管理插件客户端需要在: 'Node management plug-in client needs to be in',
   节点管理平台: 'Node management platform',
   '部署“bkbscp (bscp服务配置分发和热更新)”插件，部署详情请参考产品白皮书：': 'Deploy the bkbscp (bscp Service Configuration Distribution and Hot Update) plug-in. For details, see the product white paper:',
@@ -910,6 +911,7 @@ export default {
   'LF（Linux换行符 \\n）': 'LF (Linux line break \\n)',
   'CRLF（Windows换行符 \\r\\n）': 'CRLF（Linux line break \\r\\n）',
   '客户端下载文件时可以选择将文件保存为Linux格式（使用LF换行符）或Windows格式（使用CRLF换行符）\n服务端默认使用Linux换行符进行保存，如果选择将文件保存为Windows格式，可能导致客户端文件的MD5值与服务端的MD5值不一致': 'When downloading files, you can choose to save them in Linux format (using LF line breaks) or Windows format (using CRLF line breaks). \nThe server defaults to saving in Linux line breaks. Choosing to save files in Windows format may result in a mismatch between the MD5 values of the client file and the server file',
+  此SDK暂不支持method方法拉取配置文件: 'This SDK does not currently support the {method} method for pulling configuration files',
 
   // 公共组件
   页面不存在: 'Page does not exist',
