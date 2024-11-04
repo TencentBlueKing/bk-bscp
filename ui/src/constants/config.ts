@@ -68,3 +68,11 @@ export const GET_UNNAMED_VERSION_DATA = (): IConfigVersion => ({
     fully_released: false,
   },
 });
+
+// 版本上线格式
+export enum APPROVE_TYPE {
+  pending_approval, // 0 待审批
+  pending_publish, // 1 审批通过
+  rejected_approval, // 2 驳回
+  revoked_publish, // 3 撤销
+}
