@@ -307,6 +307,7 @@ type DataServiceSetting struct {
 	Vault        Vault        `yaml:"vault"`
 	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 	Gorm         Gorm         `yaml:"gorm"`
+	ITSM         ITSMConfig   `yaml:"itsm"`
 }
 
 // trySetFlagBindIP try set flag bind ip.

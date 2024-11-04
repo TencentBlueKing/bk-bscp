@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
@@ -222,8 +223,20 @@ type StrategySpec struct {
 	// 3. if this strategy is set to default strategy and works at namespace mode,
 	//    then its namespace should be the reserved namespace DefaultNamespace(
 	//    'bscp_default_ns')
-	Namespace string `db:"namespace" json:"namespace" gorm:"column:namespace"`
-	Memo      string `db:"memo" json:"memo" gorm:"column:memo"`
+	Namespace         string        `db:"namespace" json:"namespace" gorm:"column:namespace"`
+	Memo              string        `db:"memo" json:"memo" gorm:"column:memo"`
+	PublishType       PublishType   `db:"publish_type" json:"publish_type" gorm:"column:publish_type"`
+	PublishTime       string        `db:"publish_time" json:"publish_time" gorm:"column:publish_time"`
+	PublishStatus     PublishStatus `db:"publish_status" json:"publish_status" gorm:"column:publish_status"`
+	RejectReason      string        `db:"reject_reason" json:"reject_reason" gorm:"column:reject_reason"`
+	Approver          string        `db:"approver" json:"approver" approver:"column:approver"`
+	ApproverProgress  string        `db:"approver_progress" json:"approver_progress" gorm:"column:approver_progress"`
+	FinalApprovalTime time.Time     `db:"final_approval_time" json:"final_approval_time" gorm:"column:final_approval_time"` // nolint
+	ItsmTicketType    string        `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
+	ItsmTicketUrl     string        `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
+	ItsmTicketSn      string        `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
+	ItsmTicketStatus  string        `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
+	ItsmTicketStateID int           `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
 }
 
 // ValidateCreate validate strategy spec when it is created.
@@ -249,6 +262,41 @@ func (s StrategySpec) ValidateCreate(kit *kit.Kit) error {
 
 	if err := validator.ValidateMemo(kit, s.Memo, false); err != nil {
 		return err
+	}
+
+	if err := s.ValidateSubmitPublishContent(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ValidateSubmitPublishContent validate strategy spec public content when it is submit.
+func (s StrategySpec) ValidateSubmitPublishContent() error {
+	if err := s.PublishType.ValidatePublishType(); err != nil {
+		return err
+	}
+
+	if err := s.PublishStatus.ValidatePublishStatus(); err != nil {
+		return err
+	}
+
+	if s.PublishTime != "" {
+		_, err := time.Parse(time.DateTime, s.PublishTime)
+		if err != nil {
+			return fmt.Errorf("publish time format invalid: %s, err: %s", s.PublishTime, err)
+		}
+	}
+
+	// validate publish_type
+	if s.Approver != "" && s.PublishType == Immediately {
+		return fmt.Errorf("app need approve, invalid publish_type: %s", s.PublishType)
+	}
+
+	// app donnot need approve
+	if s.Approver == "" &&
+		(s.PublishType == Automatically || s.PublishType == Manually) {
+		return fmt.Errorf("app donnot need approve, invalid publish_type: %s", s.PublishType)
 	}
 
 	return nil
@@ -569,5 +617,62 @@ func (s SubScopeSelector) Validate() error {
 		return ErrSelectorByteSizeIsOverMaxLimit
 	}
 
+	return nil
+}
+
+// PublishType defines an app's strategy publish type.
+type PublishType string
+
+const (
+	// Manually means this strategy publish type is manual.
+	Manually PublishType = "manually"
+	// Automatically means this strategy publish type is automatical.
+	Automatically PublishType = "automatically"
+	// Scheduled means this strategy publish type is ccheduled.
+	Scheduled PublishType = "scheduled"
+	// Immediately means this strategy publish type is immediate.
+	Immediately PublishType = "immediately"
+)
+
+// ValidatePublishType validate publish type
+func (p PublishType) ValidatePublishType() error {
+	switch p {
+	case Manually:
+	case Automatically:
+	case Scheduled:
+	case Immediately:
+	default:
+		return fmt.Errorf("unsupported publish type: %s", p)
+	}
+	return nil
+}
+
+// PublishStatus defines an app's strategy publish status.
+type PublishStatus string
+
+const (
+	// PendingApproval means this strategy publish status is pending.
+	PendingApproval PublishStatus = "pending_approval"
+	// PendingPublish means this strategy publish status is pending.
+	PendingPublish PublishStatus = "pending_publish"
+	// RevokedPublish means this strategy publish status is revoked.
+	RevokedPublish PublishStatus = "revoked_publish"
+	// RejectedApproval means this strategy publish status is rejected.
+	RejectedApproval PublishStatus = "rejected_approval"
+	// AlreadyPublish means this strategy publish status is already publish.
+	AlreadyPublish PublishStatus = "already_publish"
+)
+
+// ValidatePublishStatus validate publish status
+func (p PublishStatus) ValidatePublishStatus() error {
+	switch p {
+	case PendingApproval:
+	case PendingPublish:
+	case RevokedPublish:
+	case RejectedApproval:
+	case AlreadyPublish:
+	default:
+		return fmt.Errorf("unsupported publish status: %s", p)
+	}
 	return nil
 }

@@ -26,6 +26,7 @@ var (
 	ClientEvent                 *clientEvent
 	ClientQuery                 *clientQuery
 	Commit                      *commit
+	Config                      *config
 	ConfigItem                  *configItem
 	Content                     *content
 	Credential                  *credential
@@ -64,6 +65,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	ClientEvent = &Q.ClientEvent
 	ClientQuery = &Q.ClientQuery
 	Commit = &Q.Commit
+	Config = &Q.Config
 	ConfigItem = &Q.ConfigItem
 	Content = &Q.Content
 	Credential = &Q.Credential
@@ -103,6 +105,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		ClientEvent:                 newClientEvent(db, opts...),
 		ClientQuery:                 newClientQuery(db, opts...),
 		Commit:                      newCommit(db, opts...),
+		Config:                      newConfig(db, opts...),
 		ConfigItem:                  newConfigItem(db, opts...),
 		Content:                     newContent(db, opts...),
 		Credential:                  newCredential(db, opts...),
@@ -143,6 +146,7 @@ type Query struct {
 	ClientEvent                 clientEvent
 	ClientQuery                 clientQuery
 	Commit                      commit
+	Config                      config
 	ConfigItem                  configItem
 	Content                     content
 	Credential                  credential
@@ -184,6 +188,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		ClientEvent:                 q.ClientEvent.clone(db),
 		ClientQuery:                 q.ClientQuery.clone(db),
 		Commit:                      q.Commit.clone(db),
+		Config:                      q.Config.clone(db),
 		ConfigItem:                  q.ConfigItem.clone(db),
 		Content:                     q.Content.clone(db),
 		Credential:                  q.Credential.clone(db),
@@ -232,6 +237,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		ClientEvent:                 q.ClientEvent.replaceDB(db),
 		ClientQuery:                 q.ClientQuery.replaceDB(db),
 		Commit:                      q.Commit.replaceDB(db),
+		Config:                      q.Config.replaceDB(db),
 		ConfigItem:                  q.ConfigItem.replaceDB(db),
 		Content:                     q.Content.replaceDB(db),
 		Credential:                  q.Credential.replaceDB(db),
@@ -270,6 +276,7 @@ type queryCtx struct {
 	ClientEvent                 IClientEventDo
 	ClientQuery                 IClientQueryDo
 	Commit                      ICommitDo
+	Config                      IConfigDo
 	ConfigItem                  IConfigItemDo
 	Content                     IContentDo
 	Credential                  ICredentialDo
@@ -308,6 +315,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		ClientEvent:                 q.ClientEvent.WithContext(ctx),
 		ClientQuery:                 q.ClientQuery.WithContext(ctx),
 		Commit:                      q.Commit.WithContext(ctx),
+		Config:                      q.Config.WithContext(ctx),
 		ConfigItem:                  q.ConfigItem.WithContext(ctx),
 		Content:                     q.Content.WithContext(ctx),
 		Credential:                  q.Credential.WithContext(ctx),

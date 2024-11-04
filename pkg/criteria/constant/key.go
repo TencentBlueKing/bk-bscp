@@ -33,6 +33,9 @@ const (
 	// AppCodeKey is blueking application code header key.
 	AppCodeKey = "X-Bkapi-App-Code"
 
+	// OperateWayKey is approve operate way header key.
+	OperateWayKey = "X-Bscp-Operate-Way"
+
 	// Space
 	SpaceIDKey     = "X-Bkapi-Space-Id"
 	SpaceTypeIDKey = "X-Bkapi-Space-Type-Id"
@@ -147,4 +150,60 @@ const (
 const (
 	// LabelKeyAgentID is the key of agent id in bcs node labels.
 	LabelKeyAgentID = "bkcmdb.tencent.com/bk-agent-id"
+)
+
+// itsm相关
+const (
+	// CreateApproveItsmServiceID used to create an itsm ticket
+	// when creating an approve in a shared cluster
+	CreateApproveItsmServiceID = "create_approve_itsm_service_id"
+	// CreateApproveItsmWorkflowID used to create an itsm ticket
+	// when creating an or sign approve in a shared cluster
+	CreateApproveItsmWorkflowID = "create_approve_itsm_workflow_id"
+	// CreateOrSignApproveItsmStateID used to create an itsm ticket
+	// when creating an or sign approve in a shared cluster
+	CreateOrSignApproveItsmStateID = "create_or_sign_approve_itsm_state_id"
+	// CreateApproveItsmWorkflowID used to create an itsm ticket
+	// when creating an count sign approve in a shared cluster
+	CreateCountSignApproveItsmStateID = "create_count_sign_approve_itsm_state_id"
+
+	// ItsmTicketStatusCreated enum string for created status
+	ItsmTicketStatusCreated = "created"
+	// ItsmTicketStatusRevoked enum string for revoked status
+	ItsmTicketStatusRevoked = "revoked"
+	// ItsmTicketStatusRejected enum string for rejected status
+	ItsmTicketStatusRejected = "rejected"
+	// ItsmTicketStatusPassed enum string for passed status
+	ItsmTicketStatusPassed = "passed"
+
+	// ItsmTicketTypeCreate enum string for itsm ticket type create
+	ItsmTicketTypeCreate = "create"
+	// ItsmTicketTypeUpdate enum string for itsm ticket type update
+	ItsmTicketTypeUpdate = "update"
+	// ItsmTicketTypeDelete enum string for itsm ticket type delete
+	ItsmTicketTypeDelete = "delete"
+
+	// ItsmApproveOrSignType 或签负责人审批
+	ItsmApproveOrSignType = "或签负责人审批"
+	// ItsmApproveCountSingType 会签负责人审批
+	ItsmApproveCountSignType = "会签负责人审批"
+	// 负责人审批类型
+	ItsmApproveType = "APPROVAL"
+	// ItsmApproveServiceName 服务名称
+	ItsmApproveServiceName = "创建上线审批"
+	// ItsmApproveResult itsm已处理人的结果
+	ItsmApproveResult = "已处理【负责人审批】(通过)"
+
+	// 单据状态:
+
+	// TicketRunningStatu 处理中
+	TicketRunningStatu = "RUNNING"
+	// TicketFinishedStatu 已结束
+	TicketFinishedStatu = "FINISHED"
+	// TicketTerminatedStatu 被终止
+	TicketTerminatedStatu = "TERMINATED"
+	// TicketSuspendedStatu 被挂起
+	TicketSuspendedStatu = "SUSPENDED"
+	// TicketRevokedStatu 被撤销
+	TicketRevokedStatu = "REVOKED"
 )

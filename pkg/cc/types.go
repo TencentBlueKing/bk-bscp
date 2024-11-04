@@ -1444,3 +1444,12 @@ func (g *Gorm) trySetDefault() {
 		g.LogLevel = GormLogInfo
 	}
 }
+
+// ITSMConfig itsm操作需要的配置
+type ITSMConfig struct {
+	External    bool   `yaml:"external" usage:"use itsm as external"`
+	GatewayHost string `yaml:"gatewayHost" usage:"gateway host"`
+	Host        string `yaml:"host" usage:"itsm esb host"`
+	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
+	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
+}
