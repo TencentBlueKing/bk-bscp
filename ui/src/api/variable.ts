@@ -9,7 +9,7 @@ import { IVariableEditParams, IVariableImportParams } from '../../types/variable
  * @returns
  */
 export const getVariableList = (biz_id: string, params: ICommonQuery) =>
-  http.get(`/config/biz/${biz_id}/template_variables`, { params }).then((res) => res.data);
+  http.post(`/config/biz/${biz_id}/template_variables/list`, params).then((res) => res.data);
 
 /**
  * 创建变量
@@ -103,12 +103,31 @@ export const getReleasedAppVariablesCitedDetail = (biz_id: string, app_id: numbe
     .then((res) => res.data);
 
 /**
- * 批量导入变量
+ * 批量导入变量文本
  * @param biz_id 业务ID
  * @param app_id 应用ID
  * @param release_id 服务版本ID
  * @returns
  */
-export const batchImportTemplateVariables = (biz_id: string, params: IVariableImportParams) =>
+export const importVariablesText = (biz_id: string, params: IVariableImportParams) =>
   http.post(`config/biz/${biz_id}/template_variables/import`, params);
-// @todo 待接口支持
+
+/**
+ * 批量导入JSON
+ * @param biz_id 业务ID
+ * @param app_id 应用ID
+ * @param release_id 服务版本ID
+ * @returns
+ */
+export const importVariablesJSON = (biz_id: string, content: string) =>
+  http.post(`config/biz/${biz_id}/template_variables/json/import`, { data: content });
+
+/**
+ * 批量导入YAML
+ * @param biz_id 业务ID
+ * @param app_id 应用ID
+ * @param release_id 服务版本ID
+ * @returns
+ */
+export const importVariablesYaml = (biz_id: string, content: string) =>
+  http.post(`config/biz/${biz_id}/template_variables/yaml/import`, { data: content });

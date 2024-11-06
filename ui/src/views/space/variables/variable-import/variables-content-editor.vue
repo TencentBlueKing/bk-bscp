@@ -51,11 +51,13 @@
       <div class="editor-content">
         <CodeEditor
           ref="codeEditorRef"
-          v-model="variables"
+          :model-value="editorContent"
           :error-line="errorLine"
+          :language="format"
           @paste="handlePaste"
           @enter="separatorShow = true"
-          @validate="handleValidateEditor" />
+          @validate="handleValidateEditor"
+          @update:model-value="handleContentChange" />
         <div class="separator" v-show="separatorShow">
           <SeparatorSelect @closed="separatorShow = false" @confirm="handleSelectSeparator" />
         </div>
@@ -65,11 +67,11 @@
   </Teleport>
 </template>
 <script setup lang="ts">
-  import { ref, onBeforeUnmount, watch, computed } from 'vue';
+  import { ref, onBeforeUnmount, watch, computed, nextTick } from 'vue';
   import { useI18n } from 'vue-i18n';
   import BkMessage from 'bkui-vue/lib/message';
   import { InfoLine, FilliscreenLine, UnfullScreen, Search } from 'bkui-vue/lib/icon';
-  import { batchImportTemplateVariables } from '../../../../api/variable';
+  import { importVariablesText, importVariablesJSON, importVariablesYaml } from '../../../../api/variable';
   import CodeEditor from '../../../../components/code-editor/index.vue';
   import SeparatorSelect from './separator-select.vue';
   import useGlobalStore from '../../../../store/global';
@@ -82,32 +84,27 @@
 
   const { t } = useI18n();
 
+  const { spaceId } = storeToRefs(useGlobalStore());
+
   const props = defineProps<{
     modelValue: boolean;
     format: string;
   }>();
 
-  const emits = defineEmits(['hasTextImportError', 'update:modelValue']);
+  const emits = defineEmits(['hasError', 'update:modelValue']);
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
   const separatorShow = ref(false);
-  const variables = ref('');
+  const textContent = ref('');
   const separator = ref(' ');
   const shouldValidate = ref(false);
   const errorLine = ref<errorLineItem[]>([]);
   const jsonContent = ref('');
   const yamlContent = ref('');
-  const editorPlaceholder = ref([
-    `${t('示例')}：`,
-    t('变量名 变量类型 变量值 变量描述（可选）'),
-    'bk_bscp_nginx_ip string 1.1.1.1',
-    'bk_bscp_nginx_port number 8080 nginx端口',
-    'bk_bscp_nginx_access_log string ""（变量值为空的情况） nginx访问日志路径',
-  ]);
 
   const editorContent = computed(() => {
-    if (props.format === 'text') return variables.value;
+    if (props.format === 'text') return textContent.value;
     if (props.format === 'json') return jsonContent.value;
     return yamlContent.value;
   });
@@ -115,9 +112,17 @@
   watch(
     () => editorContent.value,
     (val) => {
-      handleValidateEditor();
-      if (!val) emits('hasTextImportError', false);
+      if (!val) {
+        emits('hasError', true);
+        return;
+      }
+      if (props.format === 'text') {
+        handleValidateEditor();
+      } else {
+        nextTick(() => emits('hasError', !codeEditorRef.value.validate(val)));
+      }
     },
+    { immediate: true },
   );
 
   watch(
@@ -127,21 +132,9 @@
     },
   );
 
-  watch(
-    () => separator.value,
-    (newVal, oldVal) => {
-      editorPlaceholder.value.forEach((item, index) => {
-        if (index > 1) {
-          editorPlaceholder.value[index] = item.replaceAll(oldVal, newVal);
-        }
-      });
-    },
-  );
-
   onBeforeUnmount(() => {
     codeEditorRef.value.destroy();
   });
-  const { spaceId } = storeToRefs(useGlobalStore());
   // 打开全屏
   const handleOpenFullScreen = () => {
     isOpenFullScreen.value = true;
@@ -164,20 +157,30 @@
     }
   };
 
+  const handleContentChange = (val: string) => {
+    if (props.format === 'text') {
+      textContent.value = val;
+    } else if (props.format === 'json') {
+      jsonContent.value = val;
+    } else {
+      yamlContent.value = val;
+    }
+  };
+
   // 校验编辑器内容
   const handleValidateEditor = () => {
-    const variablesArray = variables.value.split('\n').map((item) => item.trim());
+    const textContentArray = textContent.value.split('\n').map((item) => item.trim());
     errorLine.value = [];
     let hasSeparatorError = false;
-    variablesArray.forEach((item, index) => {
+    textContentArray.forEach((item, index) => {
       if (item === '') return;
       const regex = separator.value === ' ' ? /\s+/ : separator.value;
-      const variablesContent = item.split(regex).map((item) => item.trim());
-      const key = variablesContent[0];
-      const type = variablesContent[1];
-      const value = variablesContent[2];
-      value === '""' && (variablesContent[2] = ''); // "" 转空字符串 代表变量为空值
-      if (variablesContent.length < 3) {
+      const textContentContent = item.split(regex).map((item) => item.trim());
+      const key = textContentContent[0];
+      const type = textContentContent[1];
+      const value = textContentContent[2];
+      value === '""' && (textContentContent[2] = ''); // "" 转空字符串 代表变量为空值
+      if (textContentContent.length < 3) {
         errorLine.value.push({
           errorInfo: t('请检查是否已正确使用分隔符'),
           lineNumber: index + 1,
@@ -200,28 +203,25 @@
         });
       }
     });
-    emits('hasTextImportError', variables.value && errorLine.value.length === 0);
+    emits('hasError', textContent.value && errorLine.value.length > 0);
     return hasSeparatorError;
   };
 
-  // 导入变量
+  // 导入kv
   const handleImport = async () => {
-    handleValidateEditor();
-    shouldValidate.value = true;
-    if (errorLine.value.length > 0) return Promise.reject();
-    try {
+    let res;
+    if (props.format === 'text') {
       const params = {
         separator: separator.value === ' ' ? 'white-space' : separator.value,
         variables: editorContent.value,
       };
-      await batchImportTemplateVariables(spaceId.value, params);
-      BkMessage({
-        theme: 'success',
-        message: t('导入变量成功'),
-      });
-    } catch (error) {
-      console.error(error);
+      res = await importVariablesText(spaceId.value, params);
+    } else if (props.format === 'json') {
+      res = await importVariablesJSON(spaceId.value, editorContent.value);
+    } else {
+      res = await importVariablesYaml(spaceId.value, editorContent.value);
     }
+    return res.data.ids;
   };
 
   const handleSelectSeparator = (selectSeparator: string) => {

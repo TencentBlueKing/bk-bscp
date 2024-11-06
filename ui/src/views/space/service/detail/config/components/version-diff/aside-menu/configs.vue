@@ -565,7 +565,6 @@
         return res;
       });
       if (config) {
-        console.log(config, 'config');
         selected.value = selectedConfig;
         const data = await getConfigDiffDetail(config);
         emits('selected', data);

@@ -31,7 +31,12 @@
       </VariableContentEditor>
     </div>
     <template #footer>
-      <bk-button theme="primary" style="margin-right: 8px" :disabled="hasTextImportError" @click="handleConfirm">
+      <bk-button
+        theme="primary"
+        style="margin-right: 8px"
+        :disabled="hasTextImportError"
+        :loading="loading"
+        @click="handleConfirm">
         {{ t('导入') }}
       </bk-button>
       <bk-button @click="handleClose">{{ t('取消') }}</bk-button>
@@ -44,6 +49,7 @@
   import { useI18n } from 'vue-i18n';
   import VariableContentEditor from './variables-content-editor.vue';
   import FormatExample from './format-example.vue';
+  import { Message } from 'bkui-vue';
 
   const { t } = useI18n();
 
@@ -51,22 +57,23 @@
     show: boolean;
   }>();
   const editorRef = ref();
-  const emits = defineEmits(['update:show', 'edited']);
+  const emits = defineEmits(['update:show', 'imported', 'topIds']);
   const selectFormat = ref('text');
   const isShowFormateExample = ref(true);
   const hasTextImportError = ref(false);
+  const loading = ref(false);
 
   const tips = computed(() => {
     if (selectFormat.value === 'text') {
-      return t('每行表示一个变量，包含变量名称、变量类型和变量值，默认通过空格分隔');
+      return t('每行表示一个变量，包含变量名称、变量类型、默认值与描述（可选），默认使用空格分隔');
     }
     if (selectFormat.value === 'json') {
       return t(
-        '以 JSON 格式导入变量，变量名称作为 JSON 对象的 Key，而变量的变量类型和值组成一个嵌套对象，作为对应 Key 的 Value',
+        '以 JSON 格式批量导入变量，变量名称作为 JSON 对象的 Key，而变量类型、默认值、描述组成一个嵌套对象，作为对应 Key 的 Value',
       );
     }
     return t(
-      '以 YAML 格式导入变量，变量名称作为 YAML 对象的 Key，而变量的变量类型和值分别作为嵌套对象的子键，形成对应键的值',
+      '以 YAML 格式批量导入变量，变量名称作为 YAML 对象的 Key，而变量类型、默认值、描述分别作为嵌套对象的子键，形成对应键的值 ',
     );
   });
 
@@ -74,9 +81,21 @@
     emits('update:show', false);
   };
   const handleConfirm = async () => {
-    await editorRef.value.handleImport();
-    emits('update:show', false);
-    emits('edited');
+    try {
+      loading.value = true;
+      const topIds = await editorRef.value.handleImport();
+      emits('topIds', topIds);
+      emits('imported');
+      emits('update:show', false);
+      Message({
+        theme: 'success',
+        message: t('变量导入成功'),
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
   };
 </script>
 

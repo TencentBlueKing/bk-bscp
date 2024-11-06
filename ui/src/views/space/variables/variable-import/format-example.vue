@@ -24,46 +24,19 @@
               <div v-for="(example, index) in exampleList.list" :key="index" class="text-example">
                 <span>{{ example.key }}</span>
                 <span class="type">{{ example.type }}</span>
-                <span v-if="example.secret_type">{{ example.secret_type }}</span>
                 <span>{{ example.value }}</span>
-                <span>{{ example.secret_hidden }}</span>
               </div>
             </div>
           </div>
         </template>
       </template>
-      <div v-else-if="format === 'json'" class="format">
-        <div>JSON {{ $t('格式') }}:</div>
-        <div>
-          {{
-            `{“key”:
-              {
-                “kv_type”: ${$t('数据类型')},
-                “value”: ${$t('配置项值')},
-                "secret_hidden": ${$t('是否可见')},
-                "secret_type": ${$t('密钥类型')}
-                “memo”: ${$t('描述')},
-              \}
-            \}`
-          }}
-        </div>
-      </div>
       <div v-else class="format">
-        <div>YAML {{ $t('格式') }}:</div>
-        <div>
-          {{
-            `key:
-              “kv_type”: ${$t('数据类型')},
-              “value”: ${$t('配置项值')},
-              "secret_hidden": ${$t('是否可见')},
-              "secret_type": ${$t('密钥类型')}
-              “memo”: ${$t('描述')},`
-          }}
-        </div>
+        <div>{{ props.format === 'json' ? $t('字段说明') : $t('格式说明') }}:</div>
+        <div class="description">{{ fieldsDescription }}</div>
       </div>
       <div v-if="format !== 'text'" class="example">
         <div>{{ $t('示例') }}:</div>
-        <bk-input v-model="copyContent" type="textarea" :read-only="true" :resize="false" />
+        <div class="description">{{ copyContent }}</div>
       </div>
     </div>
   </div>
@@ -83,67 +56,23 @@
 
   const textFormat = [
     {
-      formatTitle: t('普通文本格式：'),
-      formatContent: t('key 数据类型 value 描述（可选）'),
+      formatTitle: t('简单文本格式：'),
+      formatContent: t('变量名称 变量类型 默认值 描述（可选）'),
       example: [
         {
           title: t('示例：'),
           list: [
             {
-              key: 'string_key',
+              key: 'nginx_listen',
               type: 'string',
-              secret_type: '',
-              value: 'string_value',
-              secret_hidden: '',
+              value: '0.0.0.0',
+              memo: '',
             },
             {
               key: 'number_key',
               type: 'number',
-              secret_type: '',
-              value: 100,
-              secret_hidden: '',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      formatTitle: t('敏感文本格式：'),
-      formatContent: t('key 数据类型 凭证类型 value 是否可见 描述（可选）'),
-      example: [
-        {
-          title: t('密码示例：'),
-          list: [
-            {
-              key: 'user_name',
-              type: 'secret',
-              secret_type: 'password',
-              value: 'password_value',
-              secret_hidden: 'visible',
-            },
-          ],
-        },
-        {
-          title: t('API密钥示例：'),
-          list: [
-            {
-              key: 'api_key_name',
-              type: 'secret',
-              secret_type: 'secret_key',
-              value: 'api_key_value',
-              secret_hidden: 'invisible',
-            },
-          ],
-        },
-        {
-          title: t('访问令牌示例：'),
-          list: [
-            {
-              key: 'access_token_name',
-              type: 'secret',
-              secret_type: 'token',
-              value: 'access_token_value',
-              secret_hidden: 'invisible',
+              value: 8080,
+              memo: 'Nginx监听端口',
             },
           ],
         },
@@ -151,130 +80,63 @@
     },
   ];
 
+  const fieldsDescription = computed(() => {
+    if (props.format === 'json') {
+      return ` {
+      "变量名称": {
+          "variable_type": "变量类型，暂时只支持string、number、text三种变量类型",
+          "value": "变量默认值",
+          "memo": "变量描述"
+      }
+  }`;
+    }
+    return `    变量名称:
+        variable_type: 变量类型，暂时只支持string、number、text三种变量类型
+        value: 变量默认值
+        memo: 变量描述`;
+  });
+
   /* eslint-disable */
   const copyContent = computed(() => {
     if (props.format === 'text') {
-      return `string_key string strign_value
-number_key number 100
-user_name secret password password_value visible
-api_key_name secret secret_key api_key_value invisible
-access_token_name secret token access_token_value invisible`;
+      return `bk_bscp_nginx_listen string 0.0.0.0
+bk_bscp_number_key number 8080`;
     }
     if (props.format === 'json') {
       return `{
-  "string_demo": {
-    "kv_type": "string",
-    "value": "blueking"
-  },
-  "number_demo": {
-    "kv_type": "number",
-    "value": 12345
-  },
-  "text_demo": {
-    "kv_type": "text",
-    "value": "text"
-  },
-  "json_demo": {
-    "kv_type": "json",
-    "value": "{\\"name\\": \\"John Doe\\", \\"age\\": 30, \\"city\\": \\"New York\\", \\"hobbies\\": [\\"reading\\", \\"travelling\\", \\"sports\\"]}"
-  },
-  "xml_demo": {
-    "kv_type": "xml",
-    "value": "<person>\\n  <name>John Doe</name>\\n  <age>30</age>\\n  <city>New York</city>\\n  <hobbies>\\n    <hobby>reading</hobby>\\n    <hobby>travelling</hobby>\\n    <hobby>sports</hobby>\\n  </hobbies>\\n</person>"
-  },
-  "yaml_demo": {
-    "kv_type": "yaml",
-    "value": "name: John Doe\\nage: 30\\ncity: New York\\nhobbies:\\n  - reading\\n  - travelling\\n  - sports"
-  },
- "access_token_name": {
-    "kv_type": "secret",
-    "memo": "",
-    "secret_hidden": true,
-    "secret_type": "secret_key",
-    "value": "1111"
-  },
-  "api_key_name": {
-    "kv_type": "secret",
-    "memo": "",
-    "secret_hidden": false,
-    "secret_type": "certificate",
-    "value": ""
-  },
-  "password": {
-    "kv_type": "secret",
-    "memo": "",
-    "secret_hidden": false,
-    "secret_type": "password",
-    "value": "123456789"
-  },
-  "token": {
-    "kv_type": "secret",
-    "memo": "",
-    "secret_hidden": false,
-    "secret_type": "token",
-    "value": "43aCW6xQaseokNwhJRRDqFXrtfvzQFdb"
-  },
-  "user_name": {
-    "kv_type": "secret",
-    "memo": "",
-    "secret_hidden": false,
-    "secret_type": "password",
-    "value": "password_value"
-  }
+    "bk_bscp_nginx_listen": {
+        "variable_type": "string",
+        "value": "0.0.0.0",
+        "memo": "Nginx监听地址"
+    },
+    "bk_bscp_nginx_port": {
+        "variable_type": "number",
+        "value": "8080",
+        "memo": "Nginx监听端口"
+    },
+    "bk_bscp_nginx_location": {
+        "variable_type": "text",
+        "value": "location /images/ {\\n       root /data;\\n       autoindex on;\\n   }",
+        "memo": "Nginx location"
+    }
 }`;
     }
-    return `string_key:
-    kv_type: string
-    value: string_value
-number_key:
-    kv_type: number
-    value: 100
-text_key:
-    kv_type: text
+    return `bk_bscp_nginx_listen:
+    variable_type: string
+    value: 0.0.0.0
+    memo: Nginx监听地址
+bk_bscp_nginx_port:
+    variable_type: number
+    value: '8080'
+    memo: Nginx监听端口
+bk_bscp_nginx_location:
+    variable_type: text
     value: |-
-       line1
-       line2
-json_key:
-    kv_type: json
-    value: |-
-       {
-          "name": "bk",
-          "aaa": 18
-       }
-xml_key:
-    kv_type: xml
-    value: |-
-       <xml> xml_value </xml>
-access_token_name:
-    kv_type: secret
-    memo: ""
-    secret_hidden: true
-    secret_type: secret_key
-    value: "1111"
-api_key_name:
-    kv_type: secret
-    memo: ""
-    secret_hidden: false
-    secret_type: certificate
-    value: ""
-password:
-    kv_type: secret
-    memo: ""
-    secret_hidden: false
-    secret_type: password
-    value: "123456789"
-token:
-    kv_type: secret
-    memo: ""
-    secret_hidden: false
-    secret_type: token
-    value: Z9AQpo3zoZ0DUG4pJX5C9A0QKQgLLlp5WpaeiE19hdtUCgqBtXIZlGXz5qMyDbFJ
-user_name:
-    kv_type: secret
-    memo: ""
-    secret_hidden: false
-    secret_type: password
-    value: password_value`;
+      location /images/ {
+            root /data;
+            autoindex on;
+        }
+    memo: Nginx location`;
   });
   /* eslint-enable */
 
@@ -309,11 +171,14 @@ user_name:
     }
     .content {
       color: #c4c6cc;
-      font-size: 13px;
-
+      font-size: 12px;
+      overflow: auto;
+      max-height: calc(100% - 42px);
       .text-example {
-        display: flex;
-        gap: 8px;
+        white-space: nowrap;
+        span {
+          margin-right: 4px;
+        }
       }
       .example {
         margin-top: 13px;
@@ -326,16 +191,9 @@ user_name:
       margin-top: 16px;
     }
   }
-  :deep(.bk-textarea) {
-    border: none;
-    box-shadow: none !important;
-    height: 270px;
-    color: #c4c6cc;
-    textarea {
-      height: 100%;
-      background-color: #2e2e2e;
-      font-size: 13px;
-    }
+
+  .description {
+    white-space: pre-wrap;
   }
 </style>
 

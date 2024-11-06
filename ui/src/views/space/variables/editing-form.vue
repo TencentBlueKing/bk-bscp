@@ -32,13 +32,13 @@
         :resize="true"
         @input="change" />
     </bk-form-item>
-    <bk-form-item :label="t('默认值')" property="default_val" :required="localVal.type === 'number'">
+    <bk-form-item :label="t('默认值')" property="default_val" :required="localVal.type !== 'string'">
       <varContentEditor
         v-if="localVal.type === 'text'"
         :content="localVal.default_val"
         :editable="true"
         :show-tips="false"
-        @change="localVal.default_val = $event" />
+        @change="handleDefaultValChange" />
       <bk-input v-else v-model="localVal.default_val" :placeholder="t('请输入')" @input="change" />
     </bk-form-item>
   </bk-form>
@@ -124,6 +124,11 @@
 
   const change = () => {
     emits('change', { ...localVal.value }, localPrefix.value);
+  };
+
+  const handleDefaultValChange = (value: string) => {
+    localVal.value.default_val = value;
+    change();
   };
 
   const validate = () => formRef.value.validate();

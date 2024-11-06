@@ -84,7 +84,7 @@
       :id="editSliderData.id"
       :data="editSliderData.data"
       @edited="refreshList" />
-    <VariableImport v-model:show="isImportVariableShow" @edited="refreshList" />
+    <VariableImport v-model:show="isImportVariableShow" @imported="refreshList" @top-ids="topIds = $event" />
   </section>
   <DeleteConfirmDialog
     v-model:is-show="isDeleteVariableDialogShow"
@@ -144,6 +144,7 @@
   });
   const isSearchEmpty = ref(false);
   const isAcrossChecked = ref(false);
+  const topIds = ref<number[]>([]);
 
   const crossPageSelect = computed(() => pagination.value.limit < pagination.value.count);
 
@@ -187,19 +188,27 @@
   };
 
   const getVariables = async () => {
-    loading.value = true;
-    const params: ICommonQuery = {
-      start: (pagination.value.current - 1) * pagination.value.limit,
-      limit: pagination.value.limit,
-    };
-    if (searchStr.value) {
-      params.search_fields = 'name';
-      params.search_value = searchStr.value;
+    try {
+      loading.value = true;
+      const params: ICommonQuery = {
+        start: (pagination.value.current - 1) * pagination.value.limit,
+        limit: pagination.value.limit,
+      };
+      if (searchStr.value) {
+        params.search_fields = 'name';
+        params.search_value = searchStr.value;
+      }
+      if (topIds.value.length > 0) {
+        params.top_ids = topIds.value;
+      }
+      const res = await getVariableList(spaceId.value, params);
+      list.value = res.details;
+      pagination.value.count = res.count;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
     }
-    const res = await getVariableList(spaceId.value, params);
-    list.value = res.details;
-    pagination.value.count = res.count;
-    loading.value = false;
   };
 
   // 导出变量

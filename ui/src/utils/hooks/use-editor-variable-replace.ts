@@ -34,19 +34,23 @@ class VariableReplace {
       variablesMap[v.name] = v.default_val;
     });
     const textList = this.model.getValue().split('\n');
+    let lineNumber = 1;
     textList.forEach((text, index) => {
-      const lineNumber = index + 1;
       const { replacedText, variablePos } = this.getReplacedData(text, variablesMap);
       textList[index] = replacedText;
       if (variablePos.length > 0) {
         variablePos.forEach((pos) => {
           const { name, start, end } = pos;
-          this.replacedList.push({
-            range: { startLineNumber: lineNumber, startColumn: start, endLineNumber: lineNumber, endColumn: end },
-            key: name,
+          const variableLines = this.splitVariableAcrossLines(start, end, replacedText, lineNumber);
+          variableLines.forEach((line) => {
+            this.replacedList.push({
+              range: line.range,
+              key: name,
+            });
           });
         });
       }
+      lineNumber += replacedText.split('\n').length;
     });
     this.model.setValue(textList.join('\n'));
     this.highlightVariables();
@@ -108,6 +112,43 @@ class VariableReplace {
         }
       },
     });
+  }
+
+  // 处理跨行变量的高亮：根据起始和结束位置，将跨行的变量拆分成多个
+  private splitVariableAcrossLines(start: number, end: number, text: string, lineNumber: number) {
+    const variableLines: { range: monaco.Range }[] = [];
+    const startLine = text.slice(0, start - 1).split('\n').length;
+    const endLine = text.slice(0, end - 1).split('\n').length;
+
+    if (startLine === endLine) {
+      // 变量只在当前行，创建一个
+      variableLines.push({
+        range: new monaco.Range(lineNumber, start, lineNumber, end),
+      });
+    } else {
+      // 第一行：从 startColumn 开始
+      const firstLineRange = new monaco.Range(lineNumber, start, lineNumber, text.length + 1);
+      variableLines.push({ range: firstLineRange });
+
+      // 末尾行：到 endColumn 结束
+      const endColumn = end - text.lastIndexOf('\n', end - 1) - 1;
+      const lastLineRange = new monaco.Range(
+        lineNumber + (endLine - startLine),
+        1,
+        lineNumber + (endLine - startLine),
+        endColumn,
+      );
+      variableLines.push({ range: lastLineRange });
+
+      // 中间行：整个行都高亮
+      for (let i = startLine; i < endLine - 1; i++) {
+        variableLines.push({
+          range: new monaco.Range(lineNumber + i, 1, lineNumber + i, text.length + 1),
+        });
+      }
+    }
+
+    return variableLines;
   }
 }
 
