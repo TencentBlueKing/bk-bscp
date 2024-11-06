@@ -127,6 +127,8 @@ func (rs *ReleasedService) ListAppLatestReleaseMeta(kt *kit.Kit, opts *types.App
 					User:      one.ConfigItemSpec.Permission.User,
 					UserGroup: one.ConfigItemSpec.Permission.UserGroup,
 					Privilege: one.ConfigItemSpec.Permission.Privilege,
+					Uid:       one.ConfigItemSpec.Permission.Uid,
+					Gid:       one.ConfigItemSpec.Permission.Gid,
 				},
 			},
 			ConfigItemAttachment: &pbci.ConfigItemAttachment{

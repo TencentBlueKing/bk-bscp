@@ -125,7 +125,6 @@ func (wh *watchHandler) eventReceiver(event *eventc.Event, sn uint64) bool {
 			wh.im.Meta.Fingerprint, err, rid)
 		return false
 	}
-
 	wm := &pbfs.FeedWatchMessage{
 		ApiVersion: sfs.CurrentAPIVersion,
 		Rid:        rid,

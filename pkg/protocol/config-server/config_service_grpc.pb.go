@@ -193,6 +193,10 @@ const (
 	Config_CompareConfigItemConflicts_FullMethodName        = "/pbcs.Config/CompareConfigItemConflicts"
 	Config_CompareKvConflicts_FullMethodName                = "/pbcs.Config/CompareKvConflicts"
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName  = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
+	Config_ListUserPrivileges_FullMethodName                = "/pbcs.Config/ListUserPrivileges"
+	Config_DeleteUserPrivilege_FullMethodName               = "/pbcs.Config/DeleteUserPrivilege"
+	Config_ListUserGroupPrivileges_FullMethodName           = "/pbcs.Config/ListUserGroupPrivileges"
+	Config_DeleteUserGroupPrivilege_FullMethodName          = "/pbcs.Config/DeleteUserGroupPrivilege"
 )
 
 // ConfigClient is the client API for Config service.
@@ -278,14 +282,14 @@ type ConfigClient interface {
 	ListTemplateRevisions(ctx context.Context, in *ListTemplateRevisionsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsResp, error)
 	GetTemplateRevision(ctx context.Context, in *GetTemplateRevisionReq, opts ...grpc.CallOption) (*GetTemplateRevisionResp, error)
 	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	// rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	// (DeleteTemplateRevisionResp) {
+	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
+	//(DeleteTemplateRevisionResp) {
 	//
-	// option (google.api.http) = {
-	// delete :
-	// "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	// };
-	// }
+	//option (google.api.http) = {
+	//delete :
+	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
+	//};
+	//}
 	ListTemplateRevisionsByIDs(ctx context.Context, in *ListTemplateRevisionsByIDsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsByIDsResp, error)
 	ListTmplRevisionNamesByTmplIDs(ctx context.Context, in *ListTmplRevisionNamesByTmplIDsReq, opts ...grpc.CallOption) (*ListTmplRevisionNamesByTmplIDsResp, error)
 	CreateTemplateSet(ctx context.Context, in *CreateTemplateSetReq, opts ...grpc.CallOption) (*CreateTemplateSetResp, error)
@@ -384,6 +388,12 @@ type ConfigClient interface {
 	CompareKvConflicts(ctx context.Context, in *CompareKvConflictsReq, opts ...grpc.CallOption) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(ctx context.Context, in *GetTemplateAndNonTemplateCICountReq, opts ...grpc.CallOption) (*GetTemplateAndNonTemplateCICountResp, error)
+	// user privileges related interface
+	ListUserPrivileges(ctx context.Context, in *ListUserPrivilegesReq, opts ...grpc.CallOption) (*ListUserPrivilegesResp, error)
+	DeleteUserPrivilege(ctx context.Context, in *DeleteUserPrivilegesReq, opts ...grpc.CallOption) (*DeleteUserPrivilegesResp, error)
+	// user group privileges related interface
+	ListUserGroupPrivileges(ctx context.Context, in *ListUserPrivilegesReq, opts ...grpc.CallOption) (*ListUserPrivilegesResp, error)
+	DeleteUserGroupPrivilege(ctx context.Context, in *DeleteUserPrivilegesReq, opts ...grpc.CallOption) (*DeleteUserPrivilegesResp, error)
 }
 
 type configClient struct {
@@ -1897,6 +1907,42 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *configClient) ListUserPrivileges(ctx context.Context, in *ListUserPrivilegesReq, opts ...grpc.CallOption) (*ListUserPrivilegesResp, error) {
+	out := new(ListUserPrivilegesResp)
+	err := c.cc.Invoke(ctx, Config_ListUserPrivileges_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) DeleteUserPrivilege(ctx context.Context, in *DeleteUserPrivilegesReq, opts ...grpc.CallOption) (*DeleteUserPrivilegesResp, error) {
+	out := new(DeleteUserPrivilegesResp)
+	err := c.cc.Invoke(ctx, Config_DeleteUserPrivilege_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ListUserGroupPrivileges(ctx context.Context, in *ListUserPrivilegesReq, opts ...grpc.CallOption) (*ListUserPrivilegesResp, error) {
+	out := new(ListUserPrivilegesResp)
+	err := c.cc.Invoke(ctx, Config_ListUserGroupPrivileges_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) DeleteUserGroupPrivilege(ctx context.Context, in *DeleteUserPrivilegesReq, opts ...grpc.CallOption) (*DeleteUserPrivilegesResp, error) {
+	out := new(DeleteUserPrivilegesResp)
+	err := c.cc.Invoke(ctx, Config_DeleteUserGroupPrivilege_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -1980,14 +2026,14 @@ type ConfigServer interface {
 	ListTemplateRevisions(context.Context, *ListTemplateRevisionsReq) (*ListTemplateRevisionsResp, error)
 	GetTemplateRevision(context.Context, *GetTemplateRevisionReq) (*GetTemplateRevisionResp, error)
 	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	// rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	// (DeleteTemplateRevisionResp) {
+	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
+	//(DeleteTemplateRevisionResp) {
 	//
-	// option (google.api.http) = {
-	// delete :
-	// "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	// };
-	// }
+	//option (google.api.http) = {
+	//delete :
+	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
+	//};
+	//}
 	ListTemplateRevisionsByIDs(context.Context, *ListTemplateRevisionsByIDsReq) (*ListTemplateRevisionsByIDsResp, error)
 	ListTmplRevisionNamesByTmplIDs(context.Context, *ListTmplRevisionNamesByTmplIDsReq) (*ListTmplRevisionNamesByTmplIDsResp, error)
 	CreateTemplateSet(context.Context, *CreateTemplateSetReq) (*CreateTemplateSetResp, error)
@@ -2086,6 +2132,12 @@ type ConfigServer interface {
 	CompareKvConflicts(context.Context, *CompareKvConflictsReq) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error)
+	// user privileges related interface
+	ListUserPrivileges(context.Context, *ListUserPrivilegesReq) (*ListUserPrivilegesResp, error)
+	DeleteUserPrivilege(context.Context, *DeleteUserPrivilegesReq) (*DeleteUserPrivilegesResp, error)
+	// user group privileges related interface
+	ListUserGroupPrivileges(context.Context, *ListUserPrivilegesReq) (*ListUserPrivilegesResp, error)
+	DeleteUserGroupPrivilege(context.Context, *DeleteUserPrivilegesReq) (*DeleteUserPrivilegesResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -2592,6 +2644,18 @@ func (UnimplementedConfigServer) CompareKvConflicts(context.Context, *CompareKvC
 }
 func (UnimplementedConfigServer) GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateAndNonTemplateCICount not implemented")
+}
+func (UnimplementedConfigServer) ListUserPrivileges(context.Context, *ListUserPrivilegesReq) (*ListUserPrivilegesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserPrivileges not implemented")
+}
+func (UnimplementedConfigServer) DeleteUserPrivilege(context.Context, *DeleteUserPrivilegesReq) (*DeleteUserPrivilegesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserPrivilege not implemented")
+}
+func (UnimplementedConfigServer) ListUserGroupPrivileges(context.Context, *ListUserPrivilegesReq) (*ListUserPrivilegesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserGroupPrivileges not implemented")
+}
+func (UnimplementedConfigServer) DeleteUserGroupPrivilege(context.Context, *DeleteUserPrivilegesReq) (*DeleteUserPrivilegesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserGroupPrivilege not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -5611,6 +5675,78 @@ func _Config_GetTemplateAndNonTemplateCICount_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListUserPrivileges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserPrivilegesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListUserPrivileges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListUserPrivileges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListUserPrivileges(ctx, req.(*ListUserPrivilegesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_DeleteUserPrivilege_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserPrivilegesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteUserPrivilege(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteUserPrivilege_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteUserPrivilege(ctx, req.(*DeleteUserPrivilegesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ListUserGroupPrivileges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserPrivilegesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListUserGroupPrivileges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListUserGroupPrivileges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListUserGroupPrivileges(ctx, req.(*ListUserPrivilegesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_DeleteUserGroupPrivilege_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserPrivilegesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteUserGroupPrivilege(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteUserGroupPrivilege_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteUserGroupPrivilege(ctx, req.(*DeleteUserPrivilegesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6285,6 +6421,22 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTemplateAndNonTemplateCICount",
 			Handler:    _Config_GetTemplateAndNonTemplateCICount_Handler,
+		},
+		{
+			MethodName: "ListUserPrivileges",
+			Handler:    _Config_ListUserPrivileges_Handler,
+		},
+		{
+			MethodName: "DeleteUserPrivilege",
+			Handler:    _Config_DeleteUserPrivilege_Handler,
+		},
+		{
+			MethodName: "ListUserGroupPrivileges",
+			Handler:    _Config_ListUserGroupPrivileges_Handler,
+		},
+		{
+			MethodName: "DeleteUserGroupPrivilege",
+			Handler:    _Config_DeleteUserGroupPrivilege_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

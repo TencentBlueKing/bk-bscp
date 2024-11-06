@@ -64,8 +64,7 @@ type configImport struct {
 }
 
 // TemplateConfigFileImport Import template config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 
@@ -245,6 +244,8 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 			newItem.Privilege = data.GetTemplateRevision().GetSpec().GetPermission().GetPrivilege()
 			newItem.User = data.GetTemplateRevision().GetSpec().GetPermission().GetUser()
 			newItem.UserGroup = data.GetTemplateRevision().GetSpec().GetPermission().GetUserGroup()
+			newItem.Uid = data.GetTemplateRevision().GetSpec().GetPermission().GetUid()
+			newItem.Gid = data.GetTemplateRevision().GetSpec().GetPermission().GetGid()
 			exist = append(exist, newItem)
 		}
 	}
@@ -263,8 +264,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 }
 
 // ConfigFileImport Import config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) {
 
 	kt := kit.MustGetKit(r.Context())
@@ -465,6 +465,8 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 			newItem.Privilege = config.GetSpec().GetPermission().GetPrivilege()
 			newItem.User = config.GetSpec().GetPermission().GetUser()
 			newItem.UserGroup = config.GetSpec().GetPermission().GetUserGroup()
+			newItem.Uid = config.GetSpec().GetPermission().GetUid()
+			newItem.Gid = config.GetSpec().GetPermission().GetGid()
 			exist = append(exist, newItem)
 		}
 	}

@@ -134,6 +134,19 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 			return nil, errors.New("app config items is empty")
 		}
 
+		// 检测权限组是否存在冲突
+		var configItem []*table.ConfigItem
+		for _, v := range cis {
+			configItem = append(configItem, &table.ConfigItem{
+				ID:         v.Id,
+				Spec:       v.Spec.ConfigItemSpec(),
+				Attachment: v.GetAttachment().ConfigItemAttachment(),
+			})
+		}
+		if err = checkTplNonTplPerms(grpcKit, configItem, tmplRevisions); err != nil {
+			return nil, err
+		}
+
 		// 3: do template and non-template config item related operations for create release.
 		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, release.ID, tmplRevisions, cis); err != nil {
 			if rErr := tx.Rollback(); rErr != nil {
@@ -162,13 +175,13 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 
 // doConfigItemOperations do config item related operations for create release.
 /*
-1.下载服务的所有模版和非模版配置文件内容，提取服务模版变量
-2.获取入参变量和业务变量，判断是否缺少变量，缺少则报错
-3.使用变量渲染模版和非模版配置文件，上传渲染后的内容
-4.创建已生成版本服务的模版和非模版配置项
-5.创建已生成版本服务的服务模版详情
-6.创建已生成版本服务的模版变量
-7.将当前使用变量更新到未命名版本的服务模版变量
+ 1.下载服务的所有模版和非模版配置文件内容，提取服务模版变量
+ 2.获取入参变量和业务变量，判断是否缺少变量，缺少则报错
+ 3.使用变量渲染模版和非模版配置文件，上传渲染后的内容
+ 4.创建已生成版本服务的模版和非模版配置项
+ 5.创建已生成版本服务的服务模版详情
+ 6.创建已生成版本服务的模版变量
+ 7.将当前使用变量更新到未命名版本的服务模版变量
 */
 //nolint:funlen
 func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.TemplateVariableSpec,
@@ -462,6 +475,8 @@ func (s *Service) createReleasedRenderedCIs(kt *kit.Kit, tx *gen.QueryTx, releas
 					User:      ci.Spec.Permission.User,
 					UserGroup: ci.Spec.Permission.UserGroup,
 					Privilege: ci.Spec.Permission.Privilege,
+					Uid:       ci.Spec.Permission.Uid,
+					Gid:       ci.Spec.Permission.Gid,
 				},
 			},
 			Attachment: &table.ConfigItemAttachment{
@@ -536,14 +551,18 @@ func (s *Service) createReleasedAppTemplates(kt *kit.Kit, tx *gen.QueryTx, relea
 				TemplateRevisionMemo: r.TemplateRevisionMemo,
 				FileType:             r.FileType,
 				FileMode:             r.FileMode,
-				User:                 r.User,
-				UserGroup:            r.UserGroup,
-				Privilege:            r.Privilege,
-				Signature:            signatureMap[r.TemplateRevisionId],
-				ByteSize:             byteSizeMap[r.TemplateRevisionId],
-				OriginSignature:      r.Signature,
-				OriginByteSize:       r.ByteSize,
-				Md5:                  md5Map[r.TemplateRevisionId],
+				Permission: &table.FilePermission{
+					User:      r.Permission.User,
+					UserGroup: r.Permission.UserGroup,
+					Privilege: r.Permission.Privilege,
+					Uid:       r.Permission.Uid,
+					Gid:       r.Permission.Gid,
+				},
+				Signature:       signatureMap[r.TemplateRevisionId],
+				ByteSize:        byteSizeMap[r.TemplateRevisionId],
+				OriginSignature: r.Signature,
+				OriginByteSize:  r.ByteSize,
+				Md5:             md5Map[r.TemplateRevisionId],
 			},
 			Attachment: &table.ReleasedAppTemplateAttachment{
 				BizID: kt.BizID,
