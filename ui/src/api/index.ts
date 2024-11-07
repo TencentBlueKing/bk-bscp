@@ -116,9 +116,9 @@ export const loginOut = () =>
   });
 
 /**
- * 审批人员名单
+ * 获取人员名单
  * @returns
  */
 export const getApproverListApi = () =>
-  `${(window as any).USER_MAN_HOST}/api/c/compapi/v2/usermanage/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1`;
-// /api/c/compapi/v2/usermanage/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1"
+  `${(window as any).USER_MAN_HOST}/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1`;
+// `${(window as any).USER_MAN_HOST}/api/c/compapi/v2/usermanage/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1`;

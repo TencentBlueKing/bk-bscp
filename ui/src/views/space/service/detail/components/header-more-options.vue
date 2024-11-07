@@ -55,6 +55,9 @@
   const handleLinkTo = () => {
     const url = router.resolve({
       name: 'records-app',
+      query: {
+        action: 'publish_release_config',
+      },
       params: {
         appId: route.params.appId,
       },

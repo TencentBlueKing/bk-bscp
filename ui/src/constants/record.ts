@@ -7,10 +7,10 @@ export const RECORD_RES_TYPE = {
 
 // 操作行为
 export const ACTION = {
-  create_app: localT('创建服务'),
-  publish_app: localT('上线服务'),
-  update_app: localT('更新服务'),
-  delete_app: localT('删除服务'),
+  // create_app: localT('创建服务'),
+  // publish_app: localT('上线服务'),
+  // update_app: localT('更新服务'),
+  // delete_app: localT('删除服务'),
   publish_release_config: localT('上线版本配置'),
 };
 
@@ -18,6 +18,12 @@ export const ACTION = {
 export const INSTANCE = {
   releases_name: localT('配置版本名称'),
   group: localT('配置上线范围'),
+};
+
+// 操作途径
+export const OPERATE_WAY = {
+  WebUI: 'WebUI',
+  API: 'API',
 };
 
 // 状态
@@ -52,7 +58,7 @@ export enum ONLINE_TYPE {
 
 // 过滤的Key
 export enum FILTER_KEY {
-  publish_release_config = 'publish_release_config', // 上线版本配置
+  publish_release_config = 'publish_release_config', // 上线
   failure = 'failure', // 失败
 }
 

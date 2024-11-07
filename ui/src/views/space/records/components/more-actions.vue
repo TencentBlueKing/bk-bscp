@@ -1,9 +1,17 @@
 <template>
   <div class="more-actions">
-    <Ellipsis class="ellipsis" />
-    <ul class="more-actions-ul">
-      <li class="more-actions-li" @click="handleUndo">{{ $t('撤销') }}</li>
-    </ul>
+    <bk-popover
+      placement="bottom-end"
+      theme="light"
+      ext-cls="action-popover-style"
+      :offset="{ mainAxis: 4, crossAxis: 4 }">
+      <Ellipsis class="ellipsis" />
+      <template #content>
+        <ul class="more-actions-ul">
+          <li class="more-actions-li" @click="handleUndo">{{ $t('撤销') }}</li>
+        </ul>
+      </template>
+    </bk-popover>
   </div>
 </template>
 
@@ -21,16 +29,13 @@
     box-sizing: content-box;
     position: absolute;
     right: 0;
-    top: -5px;
+    top: -7px;
     display: inline-block;
     vertical-align: middle;
     width: 32px;
     height: 32px;
     cursor: pointer;
     &:hover {
-      .more-actions-ul {
-        display: block;
-      }
       .ellipsis {
         color: #3a84ff;
       }
@@ -60,25 +65,26 @@
     }
   }
   .more-actions-ul {
-    position: absolute;
-    right: 7px;
-    top: 32px;
-    display: none;
     border: 1px solid #dcdee5;
     border-radius: 2px;
     box-shadow: 0 2px 6px 0 #0000001a;
   }
   .more-actions-li {
-    position: relative;
-    z-index: 2;
     padding: 4px 12px;
     min-width: 62px;
     line-height: 32px;
     font-size: 12px;
     color: #63656e;
     background-color: #fff;
+    cursor: pointer;
     &:hover {
       background-color: #f5f7fa;
     }
+  }
+</style>
+
+<style lang="scss">
+  .bk-popover.action-popover-style {
+    padding: 0;
   }
 </style>

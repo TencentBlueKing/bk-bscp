@@ -5,10 +5,9 @@
     <div class="search-input__wrap">
       <bk-search-select
         v-model="searchValue"
+        unique-select
         :placeholder="$t('资源类型/操作行为/资源实例/状态/操作人/操作途径')"
         :data="searchData"
-        unique-select
-        :max-height="32"
         @update:model-value="change" />
     </div>
   </section>
@@ -19,7 +18,7 @@
   import { useRouter, useRoute } from 'vue-router';
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
-  import { RECORD_RES_TYPE, ACTION, STATUS, FILTER_KEY, SEARCH_ID } from '../../../../constants/record';
+  import { RECORD_RES_TYPE, ACTION, STATUS, FILTER_KEY, SEARCH_ID, OPERATE_WAY } from '../../../../constants/record';
 
   interface ISearchValueItem {
     id: string;
@@ -90,6 +89,10 @@
       name: t('操作途径'),
       id: SEARCH_ID.operate_way,
       multiple: true,
+      children: Object.entries(OPERATE_WAY).map(([key, value]) => ({
+        name: value,
+        id: key,
+      })),
       async: false,
     },
   ];

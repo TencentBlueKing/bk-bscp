@@ -27,11 +27,6 @@
 
   onMounted(() => {
     mergeData();
-    // 操作记录id
-    const id = Number(route.query.id);
-    if (id && id > 0) {
-      searchParams.value.id = id;
-    }
     init.value = false;
   });
 
@@ -48,15 +43,20 @@
   };
 
   const mergeData = () => {
-    searchParams.value = {
+    const params = {
       ...dateTimeParams.value,
       ...optionParams.value,
       app_id: Number(route.params.appId),
       all: Number(route.params.appId) <= -1,
     };
-    if (Number(route.query.id) <= -1) {
-      delete searchParams.value.id;
+    // 操作记录id
+    const id = Number(route.query.id);
+    if (id > 0) {
+      params.id = id;
     }
+    searchParams.value = {
+      ...params,
+    };
   };
 </script>
 <style lang="scss" scoped>

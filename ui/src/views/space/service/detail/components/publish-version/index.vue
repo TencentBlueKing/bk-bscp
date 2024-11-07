@@ -147,6 +147,7 @@
   const warnDialogData = ref<IPublishData>({
     final_approval_time: '', // 最后更新时间
     version_name: '', // 最后上线的版本名称
+    release_id: 0, // 最后上线的版本id
   });
 
   const permissionQueryResource = computed(() => [
@@ -286,7 +287,7 @@
     const resp = await approve(biz_id, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
     });
-    handleConfirm(resp.haveCredentials);
+    handleConfirm(resp.haveCredentials, false);
   };
 
   const handleOpenPublishDialog = () => {
@@ -314,13 +315,13 @@
     }
   };
 
-  // 版本上线成功
-  const handleConfirm = (havePull: boolean, publishType = '', publishTime = '') => {
+  // 版本上线成功/提交成功
+  const handleConfirm = (havePull: boolean, isApprove: boolean, publishType = '', publishTime = '') => {
     isDiffSliderShow.value = false;
     publishedVersionId.value = versionData.value.id;
     handlePanelClose();
     emit('confirm');
-    if (havePull) {
+    if ((havePull && !isApprove) || isApprove) {
       InfoBox({
         infoType: 'success',
         'ext-cls': 'info-box-style',
@@ -363,7 +364,7 @@
     }
     if (data?.publish_record.length) {
       // 最近上线的版本时间与当前系统时间在2小时内，风险提示弹窗
-      const time = data.final_approval_time;
+      const time = data.publish_record[0].final_approval_time;
       const publishTime = dayjs(convertTime(time, 'local'));
       const currentTime = dayjs();
       if (publishTime.add(2, 'hour').isAfter(currentTime)) {

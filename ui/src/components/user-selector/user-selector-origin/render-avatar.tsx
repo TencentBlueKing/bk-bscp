@@ -20,7 +20,8 @@
 //     } catch (e) {}
 //   },
 // };
-
+// @ts-nocheck
+/* eslint-disable */
 import { onMounted, ref, watch } from 'vue';
 
 export default {

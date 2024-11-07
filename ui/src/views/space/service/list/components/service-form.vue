@@ -52,7 +52,7 @@
     <bk-form-item>
       <template #label>
         <div class="label-wrap">
-          上线审批
+          {{ t('上线审批') }}
           <help
             v-bk-tooltips="{
               content: $t(
@@ -67,7 +67,7 @@
         </div>
       </template>
       <div v-if="localData.is_approve" class="approval-content">
-        <bk-form-item label="指定审批人" property="approver" required>
+        <bk-form-item :label="t('指定审批人')" property="approver" required>
           <bk-member-selector
             v-model="selectionsApprover"
             :api="approverApi"
@@ -77,7 +77,7 @@
         <bk-form-item property="approve_type">
           <template #label>
             <div class="label-wrap">
-              审批方式
+              {{ t('审批方式') }}
               <help
                 v-bk-tooltips="{
                   content: $t('或签：多人同时审批，一人同意即可通过n会签：审批人依次审批，每人都需同意才能通过'),
@@ -107,8 +107,8 @@
     ref="dialog"
     ext-cls="confirm-dialog"
     footer-align="center"
-    confirm-text="再想想"
-    cancel-text="仍要关闭"
+    :confirm-text="t('再想想')"
+    :cancel-text="t('仍要关闭')"
     :close-icon="true"
     :show-mask="true"
     :quick-close="false"
@@ -125,11 +125,11 @@
       <div class="tip-icon__wrap">
         <exclamation-circle-shape class="tip-icon" />
       </div>
-      <div class="headline">关闭上线审批存在风险</div>
+      <div class="headline">{{ t('关闭上线审批存在风险') }}</div>
     </template>
     <div class="content-info">
-      <div>生产环境不建议关闭审批</div>
-      <div>审批流程可以提高配置更改的准确性和安全性</div>
+      <div>{{ t('生产环境不建议关闭审批') }}</div>
+      <div>{{ t('审批流程可以提高配置更改的准确性和安全性') }}</div>
     </div>
   </bk-dialog>
 </template>

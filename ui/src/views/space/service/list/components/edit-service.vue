@@ -29,7 +29,7 @@
           </template>
           <ul class="approval-info" v-if="serviceData!.spec.is_approve">
             <li class="approval-li">
-              <div class="approval-hd">指定审批人</div>
+              <div class="approval-hd">{{ t('指定审批人') }}</div>
               <div class="approval-bd">
                 <bk-member-selector
                   v-model="selectionsApprover"
@@ -39,11 +39,11 @@
               </div>
             </li>
             <li class="approval-li">
-              <div class="approval-hd">审批方式</div>
+              <div class="approval-hd">{{ t('审批方式') }}</div>
               <div class="approval-bd">{{ serviceData!.spec.approve_type === 'or_sign' ? t('或签') : t('会签') }}</div>
             </li>
           </ul>
-          <span v-else>未开启</span>
+          <span v-else>{{ t('未开启') }}</span>
         </bk-form-item>
         <bk-form-item :label="t('创建者')">
           {{ serviceData?.revision.creator }}

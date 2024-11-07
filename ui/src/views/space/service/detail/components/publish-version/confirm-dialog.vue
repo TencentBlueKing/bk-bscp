@@ -288,6 +288,7 @@
         emits(
           'confirm',
           resp.data.have_pull as boolean,
+          isApprove.value,
           params.publish_type,
           convertTime(params.publish_time as string, 'local'),
         );

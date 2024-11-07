@@ -72,5 +72,6 @@ export interface IPublishData {
   is_publishing?: boolean; // 是否有其他版本在上线
   final_approval_time: string; // 最近上线版本/驳回/通过/撤销 的时间
   version_name: string; // 最后上线的版本名称
+  release_id: number; // 最后上线的版本id
   publish_record?: IPublishRecord[]; // 最近的上线记录
 }

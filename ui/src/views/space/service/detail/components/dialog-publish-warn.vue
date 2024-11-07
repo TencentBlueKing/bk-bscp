@@ -4,9 +4,9 @@
     ref="dialog"
     ext-cls="confirm-dialog"
     footer-align="center"
-    cancel-text="再想想"
+    :cancel-text="$t('再想想')"
     :width="dialogType === 'confirm' ? '480' : '640'"
-    :confirm-text="dialogType === 'confirm' ? '我知道了' : '继续上线'"
+    :confirm-text="dialogType === 'confirm' ? $t('我知道了') : $t('继续上线')"
     :dialog-type="dialogType === 'confirm' ? 'confirm' : 'operation'"
     :close-icon="true"
     :show-mask="true"
@@ -19,34 +19,40 @@
         <exclamation-circle-shape class="tip-icon" />
       </div>
       <div class="headline">
-        {{ dialogType === 'confirm' ? '当前服务有正在上线的任务，请稍后尝试' : '高频上线风险提示' }}
+        {{ dialogType === 'confirm' ? $t('当前服务有正在上线的任务，请稍后尝试') : $t('高频上线风险提示') }}
       </div>
     </template>
     <div v-if="dialogType === 'confirm'" class="content-info">
-      正在上线的版本：
+      {{ $t('正在上线的版本：') }}
       <span class="content-info__bd">
         {{ dialogData.version_name }}
       </span>
-      <share class="share" @click="handleLinkTo($event, dialogData.final_approval_time)" />
+      <share class="share" @click="handleLinkTo($event, dialogData.release_id)" />
     </div>
     <template v-else>
       <div class="content-info is-special">
-        距上次版本上线<span class="content-info--em">不到 2 小时</span>
-        ，请确保当前情况确实需要上线版本，避免过于频繁的上线操作可能带来的潜在风险
+        <template v-if="locale !== 'en'">
+          距上次版本上线<span class="content-info--em">不到 2 小时</span>
+          ，请确保当前情况确实需要上线版本，避免过于频繁的上线操作可能带来的潜在风险
+        </template>
+        <template v-else>
+          The time since the last version release <span class="content-info--em">is under 2 hours</span>. Please confirm
+          that the current deployment is essential to mitigate potential risks from frequent updates
+        </template>
       </div>
       <div class="record-hd">
-        <span>近三次版本上线记录</span>
-        <bk-link theme="primary" target="_blank" @click="handleLinkTo($event, 'all')">
-          <share class="share" />查看全部上线记录
+        <span>{{ $t('近三次版本上线记录') }}</span>
+        <bk-link theme="primary" target="_blank" @click="handleLinkTo($event, 'record-table')">
+          <share class="share" />{{ $t('查看全部上线记录') }}
         </bk-link>
       </div>
       <div class="record-bd">
         <div class="record-bd__table">
           <div class="table-tr">
-            <div class="table-th">上线时间</div>
-            <div class="table-th">上线版本</div>
-            <div class="table-th">上线范围</div>
-            <div class="table-th">操作人</div>
+            <div class="table-th">{{ $t('上线时间') }}</div>
+            <div class="table-th">{{ $t('上线版本') }}</div>
+            <div class="table-th">{{ $t('上线范围') }}</div>
+            <div class="table-th">{{ $t('操作人') }}</div>
           </div>
           <div class="table-tr" v-for="(item, index) in dialogData.publish_record" :key="index">
             <div class="table-td">
@@ -69,6 +75,7 @@
   import { IPublishData } from '../../../../../../types/service';
   import { convertTime } from '../../../../../utils';
   import { APPROVE_STATUS } from '../../../../../constants/record';
+  import { useI18n } from 'vue-i18n';
 
   const emits = defineEmits(['update:show', 'confirm']);
 
@@ -83,31 +90,35 @@
   const route = useRoute();
   const router = useRouter();
 
+  const { locale } = useI18n();
+
   const dialogType = computed(() => (props.dialogData.is_publishing ? 'confirm' : 'other'));
 
-  const handleLinkTo = ($event: MouseEvent, time: string) => {
+  const handleLinkTo = ($event: MouseEvent, target: string | number) => {
     $event.preventDefault();
-    const query: { start_time?: string; end_time?: string; status?: string; limit?: number } = {
-      start_time: time === 'all' ? '' : convertTime(time, 'local'),
-      end_time: time === 'all' ? '' : convertTime(time, 'local'),
-      status: time === 'all' ? APPROVE_STATUS.already_publish : '',
-      limit: 1,
-    };
-    if (time !== 'all') {
-      delete query.start_time;
-      delete query.end_time;
-      delete query.status;
+    const param = target === 'record-table' ? APPROVE_STATUS.already_publish : target;
+    if (target === 'record-table') {
+      // 新开页面跳转操作记录列表 且查看当前服务所有已上线版本
+      const url = router.resolve({
+        name: 'records-app',
+        query: {
+          status: param,
+        },
+        params: {
+          appId: route.params.appId,
+        },
+      }).href;
+      window.open(url, '_blank');
     } else {
-      delete query.limit;
+      // 当前页跳转配置页面正在发布的版本
+      const url = router.resolve({
+        name: 'service-config',
+        params: {
+          versionId: param,
+        },
+      }).href;
+      window.location.href = url;
     }
-    const url = router.resolve({
-      name: 'records-app',
-      query,
-      params: {
-        appId: route.params.appId,
-      },
-    }).href;
-    window.open(url, '_blank');
   };
 
   const versionScope = <T extends { spec: { name?: string } }>(data: T[]) => {

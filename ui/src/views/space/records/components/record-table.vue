@@ -75,10 +75,7 @@
                 {{ STATUS[row.audit.spec.status as keyof typeof STATUS] || '--' }}
                 <!-- 上线时间icon -->
                 <div
-                  v-if="
-                    row.strategy?.publish_time &&
-                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
-                  "
+                  v-if="row.strategy?.publish_time && row.audit.spec.status === APPROVE_STATUS.pending_publish"
                   v-bk-tooltips="{
                     content: `${t('定时上线')}: ${convertTime(row.strategy.publish_time, 'local')}${
                       isTimeout(row.strategy.publish_time) ? `(${t('已过时')})` : ''
@@ -88,9 +85,7 @@
                   class="time-icon"></div>
                 <!-- 信息提示icon -->
                 <info-line
-                  v-if="
-                    ![APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
-                  "
+                  v-if="row.audit.spec.status !== APPROVE_STATUS.pending_publish"
                   v-bk-tooltips="{
                     content: statusTip(row),
                     placement: 'top',
@@ -101,8 +96,9 @@
             </template>
           </bk-table-column>
           <bk-table-column
-            :label="t('操作')"
+            fixed="right"
             :show-overflow-tooltip="false"
+            :label="t('操作')"
             :width="locale === 'zh-cn' ? '110' : '150'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
@@ -370,8 +366,10 @@
       return '--';
     }
     const { status } = row.audit.spec;
-    const { final_approval_time: time, reject_reason: reason, reviser } = row.strategy;
+    const { final_approval_time: time, reject_reason: reason, reviser, approver_progress: approver } = row.strategy;
     switch (status) {
+      case APPROVE_STATUS.pending_approval:
+        return t('提示-待审批', { approver });
       case APPROVE_STATUS.already_publish:
         return t('提示-已上线文案', { reviser, time: convertTime(time, 'local') });
       case APPROVE_STATUS.rejected_approval:
@@ -575,12 +573,12 @@
       position: relative;
       margin-left: 8px;
       display: inline-block;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       vertical-align: bottom;
       border: 1px solid #3a84ff;
       border-radius: 50%;
-      box-shadow: inset 0 0 0 0.4px #3a84ff;
+      box-shadow: inset 0 0 0 0.1px #3a84ff;
       &::after {
         content: '';
         position: absolute;
@@ -590,26 +588,18 @@
         height: 35%;
         border-left: 1px solid #3a84ff;
         border-bottom: 1px solid #3a84ff;
-        box-shadow:
-          0 0.4px 0 0 #3a84ff,
-          -0.4px 0 0 0 #3a84ff;
       }
     }
     .info-line {
       margin-left: 8px;
-      font-size: 16px;
+      font-size: 15px;
       vertical-align: bottom;
-      transform: scale(1.1);
+      transform: scale(1.05);
+      color: #979ba5;
     }
   }
   .action-btns {
     position: relative;
-  }
-  .action-btn {
-    vertical-align: sub;
-    // & + .more-actions {
-    //   margin-left: 8px;
-    // }
   }
   .table-list-pagination {
     padding: 12px;

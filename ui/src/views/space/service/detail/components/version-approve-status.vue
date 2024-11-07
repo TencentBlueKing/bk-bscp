@@ -1,5 +1,5 @@
 <template>
-  <div class="version-approve-status" v-if="approverList && route.params.versionId">
+  <div class="version-approve-status" v-if="approverList">
     <Spinner v-show="approveStatus === 0" class="spinner" />
     <div
       v-show="approveStatus !== 0"
@@ -18,15 +18,10 @@
 <script setup lang="ts">
   import { ref, watch, onMounted } from 'vue';
   import { Spinner, TextFile } from 'bkui-vue/lib/icon';
-  import { storeToRefs } from 'pinia';
-  import useConfigStore from '../../../../../store/config';
   import { useRoute } from 'vue-router';
   import { useI18n } from 'vue-i18n';
   import { versionStatusQuery } from '../../../../../api/config';
   import { APPROVE_TYPE } from '../../../../../constants/config';
-
-  const configStore = useConfigStore();
-  const { publishedVersionId } = storeToRefs(configStore);
 
   const emits = defineEmits(['sendData']);
 
@@ -37,9 +32,14 @@
   const approveStatus = ref(-1); // 审批图标状态展示
   const approveText = ref(''); // 审批文案
 
-  watch([() => route.params, publishedVersionId], () => {
-    loadStatus();
-  });
+  watch(
+    () => route.params.versionId,
+    (newV) => {
+      if (newV !== 'undefined') {
+        loadStatus();
+      }
+    },
+  );
 
   onMounted(() => {
     loadStatus();
@@ -53,7 +53,6 @@
         const { spec } = resp.data;
         approverList.value = spec.approver_progress; // 审批人
         approveText.value = publishStatusText(spec.publish_status);
-        // console.log(resp.data, 'dadada');
         sendData(resp.data);
       } catch (error) {
         console.log(error);
