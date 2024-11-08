@@ -20,9 +20,16 @@
         <section
           v-for="version in versionsInView"
           :key="version.id"
-          :class="['version-item', { active: versionData.id === version.id }]"
+          :class="[
+            'version-item ',
+            { 'approval-version': pendingApprovalVersion?.id === version.id },
+            { active: versionData.id === version.id },
+          ]"
           @click="handleSelectVersion(version)">
-          <div :class="['dot', version.status.publish_status]"></div>
+          <div v-if="pendingApprovalVersion?.id !== version.id" :class="['dot', version.status.publish_status]"></div>
+          <div v-else class="status">
+            {{ version.strategy_spec?.publish_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
+          </div>
           <bk-overflow-title class="version-name" type="tips">
             {{ version.spec.name }}
           </bk-overflow-title>
@@ -118,6 +125,15 @@
     });
   });
 
+  // 待审批状态版本
+  const pendingApprovalVersion = computed(() => {
+    return versionList.value.find(
+      (item) =>
+        item.strategy_spec?.publish_status === 'pending_publish' ||
+        item.strategy_spec?.publish_status === 'pending_approval',
+    );
+  });
+
   // 监听刷新版本列表标识，处理新增版本场景，默认选中新增的版本
   watch(refreshVersionListFlag, async (val) => {
     if (val) {
@@ -142,7 +158,7 @@
   watch(
     () => props.appId,
     () => {
-      getVersionList();
+      init();
     },
   );
 
@@ -152,6 +168,9 @@
 
   const init = async () => {
     await getVersionList();
+    if (pendingApprovalVersion.value) {
+      versionData.value = pendingApprovalVersion.value;
+    }
     if (route.params.versionId) {
       const version = versionList.value.find((item) => item.id === Number(route.params.versionId));
       if (version) {
@@ -297,11 +316,10 @@
     padding: 16px 0;
     overflow: auto;
   }
-  .unnamed-version {
-    .divider {
-      margin: 8px 24px;
-      border-bottom: 1px solid #dcdee5;
-    }
+
+  .divider {
+    margin: 8px 24px;
+    border-bottom: 1px solid #dcdee5;
   }
   .version-item {
     position: relative;
@@ -309,6 +327,9 @@
     cursor: pointer;
     &.active {
       background: #e1ecff;
+      .version-name {
+        color: #3a84ff;
+      }
     }
     &:hover {
       background: #e1ecff;
@@ -359,6 +380,23 @@
         border-radius: 2px;
         color: #14a568;
       }
+    }
+  }
+  .approval-version {
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+    gap: 8px;
+    background: #fdf4e8 !important;
+    font-size: 12px;
+    .status {
+      width: 52px;
+      height: 22px;
+      background: #f59500;
+      border-radius: 2px;
+      color: #ffffff;
+      line-height: 22px;
+      text-align: center;
     }
   }
   .version-name {

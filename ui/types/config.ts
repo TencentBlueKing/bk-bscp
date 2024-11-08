@@ -23,6 +23,9 @@ export interface IConfigVersion {
     fully_released: boolean;
     fully_release?: boolean;
   };
+  strategy_spec?: {
+    publish_status: string;
+  };
 }
 
 // 单个配置详情
