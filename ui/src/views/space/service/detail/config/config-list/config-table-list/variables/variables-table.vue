@@ -31,11 +31,13 @@
                 @change="deleteCellError(variable.name, col.prop)">
                 <bk-option id="string" label="string"></bk-option>
                 <bk-option id="number" label="number"></bk-option>
+                <bk-option id="text" label="text"></bk-option>
               </bk-select>
               <bk-input
                 v-else-if="col.prop === 'default_val'"
                 v-model="variable.default_val"
                 :placeholder="t('请输入')"
+                :type="variable.type === 'text' && 'textarea'"
                 @blur="handleValueChange(variable.type, variable.default_val)"
                 @change="deleteCellError(variable.name, col.prop)" />
               <bk-input
@@ -71,6 +73,7 @@
   import cloneDeep from 'lodash';
   import Message from 'bkui-vue/lib/message';
   import { IVariableEditParams, IVariableCitedByConfigDetailItem } from '../../../../../../../../../types/variable';
+  import { joinPathName } from '../../../../../../../../utils/config';
 
   interface IErrorDetail {
     [key: string]: string[];
@@ -131,7 +134,7 @@
 
   const getCitedTpls = (name: string) => {
     const detail = props.citedList.find((item) => item.variable_name === name);
-    return detail?.references.map((item) => item.name).join(',');
+    return detail?.references.map((item) => joinPathName(item.path, item.name)).join(',');
   };
 
   const deleteCellError = (name: string, key: string) => {

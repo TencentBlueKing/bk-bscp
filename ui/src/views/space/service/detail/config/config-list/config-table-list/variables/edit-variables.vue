@@ -18,7 +18,7 @@
     @closed="close">
     <bk-loading :loading="loading" class="variables-table-content">
       <div class="buttons-area">
-        <bk-button @click="handleExport">{{ t('导出变量') }}</bk-button>
+        <ExportVariables @export="handleExport" />
         <ResetDefaultValue
           class="reset-default"
           :bk-biz-id="bkBizId"
@@ -51,10 +51,12 @@
     getUnReleasedAppVariables,
     getUnReleasedAppVariablesCitedDetail,
     updateUnReleasedAppVariables,
+    exportUnReleasedVariables,
   } from '../../../../../../../../api/variable';
-  import { fileDownload } from '../../../../../../../../utils/file';
+  import { downloadFile } from '../../../../../../../../utils/index';
   import VariablesTable from './variables-table.vue';
   import ResetDefaultValue from './reset-default-value.vue';
+  import ExportVariables from './export-variables.vue';
 
   const serviceStore = useServiceStore();
   const { permCheckLoading, hasEditServicePerm } = storeToRefs(serviceStore);
@@ -104,12 +106,21 @@
   };
 
   // 导出变量
-  const handleExport = async () => {
-    fileDownload(
-      `${(window as any).BK_BCS_BSCP_API}/api/v1/config/biz/${props.bkBizId}/apps/${props.appId}/variables/export`,
-      '',
-      false,
-    );
+  const handleExport = async (type: string) => {
+    const res = await exportUnReleasedVariables(props.bkBizId, props.appId, type);
+    let content: any;
+    let mimeType: string;
+    let extension: string;
+    if (type === 'json') {
+      content = JSON.stringify(res, null, 2);
+      mimeType = 'application/json';
+      extension = 'json';
+    } else {
+      content = res;
+      mimeType = 'text/yaml';
+      extension = 'yaml';
+    }
+    downloadFile(content, mimeType, `bscp_variables_${props.bkBizId}.${extension}`);
   };
 
   const handleResetDefault = (list: IVariableEditParams[]) => {

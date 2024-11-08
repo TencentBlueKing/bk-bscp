@@ -3,7 +3,7 @@
   <bk-sideslider width="960" :title="t('查看变量')" :is-show="isSliderShow" @closed="close">
     <div class="view-variables-container">
       <div class="buttons-wrapper">
-        <bk-button @click="handleExport">{{ t('导出变量') }}</bk-button>
+        <ExportVariables @export="handleExport" />
       </div>
       <VariablesTable
         class="variables-table-content"
@@ -20,10 +20,15 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { fileDownload } from '../../../../../../../../utils/file';
   import VariablesTable from './variables-table.vue';
   import { IVariableEditParams, IVariableCitedByConfigDetailItem } from '../../../../../../../../../types/variable';
-  import { getReleasedAppVariables, getReleasedAppVariablesCitedDetail } from '../../../../../../../../api/variable';
+  import {
+    getReleasedAppVariables,
+    getReleasedAppVariablesCitedDetail,
+    exportReleasedVaribles,
+  } from '../../../../../../../../api/variable';
+  import { downloadFile } from '../../../../../../../../utils/index';
+  import ExportVariables from './export-variables.vue';
 
   const { t } = useI18n();
   const props = defineProps<{
@@ -49,14 +54,21 @@
   };
 
   // 导出变量
-  const handleExport = async () => {
-    fileDownload(
-      `${(window as any).BK_BCS_BSCP_API}/api/v1/config/biz/${props.bkBizId}/apps/${props.appId}/releases/${
-        props.verisionId
-      }/variables/export`,
-      '',
-      false,
-    );
+  const handleExport = async (type: string) => {
+    const res = await exportReleasedVaribles(props.bkBizId, props.appId, props.verisionId, type);
+    let content: any;
+    let mimeType: string;
+    let extension: string;
+    if (type === 'json') {
+      content = JSON.stringify(res, null, 2);
+      mimeType = 'application/json';
+      extension = 'json';
+    } else {
+      content = res;
+      mimeType = 'text/yaml';
+      extension = 'yaml';
+    }
+    downloadFile(content, mimeType, `bscp_variables_${props.bkBizId}.${extension}`);
   };
 
   const handleOpenSlider = () => {
