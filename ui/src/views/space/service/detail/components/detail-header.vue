@@ -40,7 +40,7 @@
             </div>
           </div>
         </ReleasedGroupViewer>
-        <VersionApproveStatus ref="verAppStatus" @send-data="getVerApproveStatus" />
+        <VersionApproveStatus ref="verAppStatus" :show-status-id="showStatusId" @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
           :app-id="props.appId"
@@ -54,20 +54,17 @@
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
-          @confirm="refreshVesionList" />
+          @confirm="handleRefresh" />
         <ModifyGroupPublish
           :bk-biz-id="props.bkBizId"
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
-          @confirm="refreshVesionList" />
+          @confirm="handleRefresh" />
         <!-- 更多选项 -->
         <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->
-        <HeaderMoreOptions
-          :approve-status="approveData.status"
-          :creator="creator"
-          @handle-undo="verAppStatus.loadStatus()" />
+        <HeaderMoreOptions :approve-status="approveData.status" :creator="creator" @handle-undo="handleRefresh" />
       </section>
     </template>
   </div>
@@ -126,6 +123,7 @@
   });
 
   const creator = ref('');
+  const showStatusId = ref(-1);
 
   const getDefaultTab = () => {
     const tab = tabs.value.find((item) => item.routeName === route.name);
@@ -245,8 +243,15 @@
   const handleTabChange = (val: string) => {
     const tab = tabs.value.find((item) => item.name === val);
     if (tab) {
-      router.push({ name: tab.routeName });
+      const params = route.params.versionId ? { versionId: route.params.versionId } : {};
+      router.push({ name: tab.routeName, params });
     }
+  };
+
+  const handleRefresh = (versionId: number) => {
+    refreshVesionList(); // 刷新版本列表
+    verAppStatus.value.loadStatus(); // 刷新版本状态（右上角）
+    showStatusId.value = versionId;
   };
 </script>
 <style lang="scss" scoped>

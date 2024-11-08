@@ -184,7 +184,8 @@
     all: false,
     memo: '',
     publish_type: '',
-    publish_time: dayjs().add(2, 'hour').format('YYYY-MM-DD HH:mm:ss'), // 默认当前时间的后两小时
+    // publish_time: dayjs().add(2, 'hour').format('YYYY-MM-DD HH:mm:ss'), // 默认当前时间的后两小时
+    publish_time: '',
   });
   const previewData = ref<IModifyReleasePreviewItem[]>([]);
   const excludeGroups = ref<IGroupToPublish[]>([]);
@@ -201,7 +202,21 @@
     ],
     publish_time: [
       {
-        validator: (value: Date) => dayjs(value).isAfter(dayjs()),
+        validator: (value: Date) => {
+          if (localVal.value.publish_type === 'scheduled' && !value) {
+            return false;
+          }
+          return true;
+        },
+        message: t('请选择'),
+      },
+      {
+        validator: (value: Date) => {
+          if (localVal.value.publish_type === 'scheduled' && dayjs().isAfter(dayjs(value))) {
+            return false;
+          }
+          return true;
+        },
         message: t('不能选择过去的时间'),
       },
     ],
@@ -260,7 +275,7 @@
       all: false,
       memo: '',
       publish_type: '',
-      publish_time: dayjs().add(2, 'hour').format('YYYY-MM-DD HH:mm:ss'),
+      publish_time: '',
     };
   };
 

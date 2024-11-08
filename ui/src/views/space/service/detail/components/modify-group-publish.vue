@@ -3,14 +3,12 @@
     <bk-button
       v-if="
         !approveData?.status ||
-        ![APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
-          approveData.status as APPROVE_STATUS,
-        )
+        ![APPROVE_STATUS.pending_publish, APPROVE_STATUS.already_publish].includes(approveData.status as APPROVE_STATUS)
       "
       v-cursor="{ active: !props.hasPerm }"
       theme="primary"
       :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
-      :disabled="props.permCheckLoading"
+      :disabled="props.permCheckLoading || approveData?.status === APPROVE_STATUS.pending_approval"
       @click="handleBtnClick">
       {{ t('调整分组上线') }}
     </bk-button>
@@ -19,7 +17,7 @@
       v-cursor="{ active: !props.hasPerm }"
       v-bk-tooltips="{
         disabled: approveData.type !== ONLINE_TYPE.scheduled,
-        content: convertTime(approveData.time, 'local'),
+        content: `定时上线：${convertTime(approveData.time, 'local')}`,
         placement: 'bottom-end',
       }"
       :disabled="approveData.type === ONLINE_TYPE.scheduled"
@@ -95,7 +93,7 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router';
+  import { useRouter, useRoute } from 'vue-router';
   import { ArrowsLeft, AngleRight } from 'bkui-vue/lib/icon';
   import { InfoBox } from 'bkui-vue';
   import BkMessage from 'bkui-vue/lib/message';
@@ -140,6 +138,7 @@
   const emit = defineEmits(['confirm']);
 
   const router = useRouter();
+  const route = useRoute();
   const versionList = ref<IConfigVersion[]>([]);
   const versionListLoading = ref(true);
   const groupList = ref<IGroupItemInService[]>([]);
@@ -340,7 +339,7 @@
     const resp = await approve(biz_id, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
     });
-    handleConfirm(resp.haveCredentials, false);
+    handleConfirm(resp.have_pull, false);
   };
 
   // 打开上线版本确认弹窗
@@ -359,14 +358,14 @@
   };
 
   // 版本上线文案
-  const publishTitle = (type: string, time: string) => {
+  const publishTitle = (isApprove: boolean, type: string, time: string) => {
     switch (type) {
       case ONLINE_TYPE.manually:
         return t('手动上线文案-调整分组');
       case ONLINE_TYPE.automatically:
         return t('审批通过后上线文案-调整分组');
       case ONLINE_TYPE.scheduled:
-        return t('定时上线文案-调整分组', { time });
+        return isApprove ? t('需审批-定时上线文案', { time }) : t('定时上线文案', { time });
       default:
         return t('版本已上线');
     }
@@ -377,19 +376,19 @@
     isDiffSliderShow.value = false;
     publishedVersionId.value = versionData.value.id;
     handlePanelClose();
-    emit('confirm');
-    if ((havePull && !isApprove) || isApprove) {
+    emit('confirm', Number(route.params.versionId));
+    if (havePull || (!havePull && isApprove)) {
       InfoBox({
         infoType: 'success',
         'ext-cls': 'info-box-style',
-        title: publishTitle(publishType, publishTime),
+        title: publishTitle(isApprove, publishType, publishTime),
         dialogType: 'confirm',
       });
     } else {
       InfoBox({
         infoType: 'success',
         'ext-cls': 'info-box-style',
-        title: publishTitle(publishType, publishTime),
+        title: publishTitle(isApprove, publishType, publishTime),
         confirmText: t('配置客户端'),
         cancelText: t('稍后再说'),
         onConfirm: () => {

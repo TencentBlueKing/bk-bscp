@@ -24,13 +24,16 @@
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import useUserStore from '../../../../../store/user';
+  import useConfigStore from '../../../../../store/config';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { approve } from '../../../../../api/record';
   import BkMessage from 'bkui-vue/lib/message';
   import { APPROVE_STATUS } from '../../../../../constants/record';
   import { useI18n } from 'vue-i18n';
 
+  const versionStore = useConfigStore();
   const { userInfo } = storeToRefs(useUserStore());
+  const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
   const props = withDefaults(
     defineProps<{
@@ -77,7 +80,8 @@
         theme: 'success',
         message: t('成功'),
       });
-      emits('handleUndo');
+      publishedVersionId.value = versionData.value.id;
+      emits('handleUndo', release_id);
     } catch (error) {
       console.log(error);
     } finally {

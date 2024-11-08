@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeMount, ref, Ref } from 'vue';
+  import { computed, onBeforeMount, ref, Ref, shallowRef } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
@@ -36,7 +36,7 @@
   const failure = ref(false);
   const searchValue = ref<ISearchValueItem[]>([]);
 
-  const searchData = [
+  const searchData = shallowRef([
     // {
     //   name: '所属服务',
     //   id: SEARCH_ID.service,
@@ -82,7 +82,9 @@
     {
       name: t('操作人'),
       id: SEARCH_ID.operator,
-      multiple: true,
+      placeholder: '异步获取的业务',
+      multiple: false,
+      children: [],
       async: false,
     },
     {
@@ -95,7 +97,7 @@
       })),
       async: false,
     },
-  ];
+  ]);
 
   const routeSearchValue = computed(() => {
     return searchValue.value.reduce<{ [key: string]: string }>((acc, item) => {
@@ -178,17 +180,17 @@
       // 遍历路由参数的id
       if (searchId.includes(routeKey)) {
         // 过滤当前组件选项的id
-        const index = searchData.findIndex((item) => item.id === routeKey);
-        const name = searchData[index].name;
+        const index = searchData.value.findIndex((item) => item.id === routeKey);
+        const name = searchData.value[index].name;
         let values = null;
         // 设置子元素
         values = String(route.query[routeKey])
           .split(',')
           .map((valItem) => {
-            if (searchData[index].children) {
+            if (searchData.value[index].children) {
               // 单选
               // const getObj = searchData[index].children?.find((item) => item.id === route.query[routeKey]);
-              const getObj = searchData[index].children?.find((item) => route.query[routeKey]?.includes(item.id));
+              const getObj = searchData.value[index].children?.find((item) => route.query[routeKey]?.includes(item.id));
               return {
                 id: valItem,
                 name: getObj!.name, // searchData正确配置肯定会有name
