@@ -427,12 +427,17 @@
     try {
       const { biz_id, app_id } = row.audit.attachment;
       const { release_id } = row.strategy;
-      await approve(String(biz_id), app_id, release_id, {
+      const resp = await approve(String(biz_id), app_id, release_id, {
         publish_status: APPROVE_STATUS.pending_publish,
       });
+      // 这里有两种情况且不会同时出现：
+      // 1. itsm已经审批了，但我们产品页面还没有刷新
+      // 2. itsm已经撤销了，但我们产品页面还没有刷新
+      // 如果存在以上两种情况之一，提示使用message，否则message的值为空
+      const { message } = resp;
       BkMessage({
         theme: 'success',
-        message: t('操作成功'),
+        message: message ? t(message) : t('操作成功'),
       });
       loadRecordList();
     } catch (e) {

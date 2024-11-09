@@ -80,15 +80,20 @@
   const handleConfirm = async () => {
     btnLoading.value = true;
     try {
-      await approve(props.spaceId, props.appId, props.releaseId, {
+      const resp = await approve(props.spaceId, props.appId, props.releaseId, {
         publish_status: submitType.value,
         reason: reason.value,
       });
       emits('update:show', false);
       emits('refreshList');
+      // 这里有两种情况且不会同时出现：
+      // 1. itsm已经审批了，但我们产品页面还没有刷新
+      // 2. itsm已经撤销了，但我们产品页面还没有刷新
+      // 如果存在以上两种情况之一，提示使用message，否则message的值为空
+      const { message } = resp;
       BkMessage({
         theme: 'success',
-        message: t('操作成功'),
+        message: message ? t(message) : t('操作成功'),
       });
     } catch (e) {
       console.log(e);

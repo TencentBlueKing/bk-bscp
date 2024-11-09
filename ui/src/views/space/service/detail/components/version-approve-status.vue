@@ -9,25 +9,40 @@
         v-show="approveStatus !== 0"
         :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
       <span class="approve-status-text">{{ approveText }}</span>
-      <text-file
-        v-show="approveStatus > -1"
-        v-bk-tooltips="{
-          content: `${approveStatus === 3 ? t('撤销人') : t('审批人')}：${approverList}`,
-          placement: 'bottom',
-        }"
-        class="text-file" />
+      <bk-popover :popover-delay="[0, 0]" placement="bottom-end" theme="light">
+        <text-file v-show="approveStatus > -1" class="text-file" />
+        <template #content>
+          <div class="popover-content">
+            <template v-if="itsmData?.itsm_ticket_sn">
+              <div>{{ $t('审批单') }}：</div>
+              <div class="itsm-content">
+                <div class="itsm-sn">{{ itsmData?.itsm_ticket_sn }}</div>
+                <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
+              </div>
+            </template>
+            <div>
+              {{
+                `${approveStatus === 3 ? t('撤销人') : t('审批人')}（${approveType === 'or_sign' ? $t('或签') : $t('会签')}）`
+              }}：
+            </div>
+            <div>{{ approverList }}</div>
+          </div>
+        </template>
+      </bk-popover>
     </div>
   </bk-loading>
 </template>
 
 <script setup lang="ts">
   import { ref, onMounted, watch } from 'vue';
-  import { Spinner, TextFile } from 'bkui-vue/lib/icon';
+  import { Spinner, TextFile, Copy } from 'bkui-vue/lib/icon';
   import { useRoute } from 'vue-router';
   import { useI18n } from 'vue-i18n';
   import { versionStatusQuery } from '../../../../../api/config';
   import { APPROVE_TYPE } from '../../../../../constants/config';
   import { debounce } from 'lodash';
+  import { copyToClipBoard } from '../../../../../utils/index';
+  import BkMessage from 'bkui-vue/lib/message';
 
   const emits = defineEmits(['sendData']);
 
@@ -41,7 +56,12 @@
   const approverList = ref(''); // 审批人
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1上线 2驳回 3撤销
   const approveText = ref(''); // 审批文案
+  const approveType = ref(''); // 审批方式
   const showStatusIdArr = ref<number[]>([]); // 提交上线/调整分组上线/撤销上线的id集合
+  const itsmData = ref<{
+    itsm_ticket_sn: string;
+    itsm_ticket_url: string;
+  }>();
   const loading = ref(true);
 
   watch(
@@ -66,10 +86,19 @@
       const { spaceId, appId, versionId } = route.params;
       try {
         const resp = await versionStatusQuery(String(spaceId), Number(appId), Number(versionId));
-        const { spec } = resp.data;
-        approverList.value = spec.approver_progress; // 审批人
+        const {
+          app,
+          spec,
+          spec: { itsm_ticket_sn, itsm_ticket_url },
+        } = resp.data;
+        // 审批人
+        approverList.value = spec.approver_progress;
         approveText.value = publishStatusText(spec.publish_status);
+        approveType.value = app?.approve_type || '';
+        // itsm信息
+        itsmData.value = { itsm_ticket_sn, itsm_ticket_url };
         sendData(resp.data);
+        // 需要展示状态的版本
         filterShowVer();
       } catch (error) {
         console.log(error);
@@ -100,7 +129,7 @@
     }
   };
 
-  // 版本状态是否显示()
+  // 版本状态是否显示(撤销/驳回的状态刷新页面后就消失，其他状态保持展示)
   const filterShowVer = () => {
     // 更新了版本状态的id都需要展示
     if (props.showStatusId > -1 && !showStatusIdArr.value.includes(props.showStatusId)) {
@@ -110,6 +139,15 @@
     if ([0, 1].includes(approveStatus.value) && !showStatusIdArr.value.includes(Number(route.params.versionId))) {
       showStatusIdArr.value.push(Number(route.params.versionId));
     }
+  };
+
+  const handleCopy = (str?: string) => {
+    if (!str) return;
+    copyToClipBoard(str);
+    BkMessage({
+      theme: 'success',
+      message: t('ITSM 审批链接已复制！'),
+    });
   };
 
   const sendData = (data: any) => {
@@ -158,6 +196,30 @@
     &.offline {
       border: 3px solid #eeeef0;
       background-color: #979ba5;
+    }
+  }
+  .popover-content {
+    // min-width: 172px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #4d4f56;
+    .itsm-content {
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      color: #3a84ff;
+    }
+    // .itsm-sn {
+
+    // }
+    .itsm-action {
+      margin-left: 10px;
+      padding-left: 10px;
+      display: flex;
+      align-items: center;
+      border-left: 1px solid #dcdee5;
+      cursor: pointer;
     }
   }
 </style>

@@ -565,6 +565,10 @@ export default {
   指定审批人: 'Designated approver',
   审批方式: 'Approval method',
   未开启: 'Not enabled',
+  'ITSM 审批链接已复制！': 'The ITSM approval link has been copied!',
+  '此单据已审批完成，无需进一步处理': 'This document has been approved and requires no further action',
+  '此单据已撤销，无需进一步处理': 'This document has been canceled and requires no further action',
+  审批单: 'Approval SN',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',

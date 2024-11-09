@@ -109,6 +109,7 @@
   import DialogWarn from '../dialog-publish-warn.vue';
   import { convertTime } from '../../../../../../utils';
   import dayjs from 'dayjs';
+  import BkMessage from 'bkui-vue/lib/message';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const serviceStore = useServiceStore();
@@ -283,12 +284,32 @@
 
   // 确定上线按钮
   const handlePublishClick = async () => {
+    // if (!isConfirmDialogShow.value) {
+    //   isConfirmDialogShow.value = true;
+    //   return;
+    // }
     const { bkBizId: biz_id, appId: app_id } = props;
     // 上线后查询当前版本状态
     const resp = await approve(biz_id, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
     });
-    handleConfirm(resp.have_pull, false);
+    // 这里有两种情况且不会同时出现：
+    // 1. itsm已经审批了，但我们产品页面还没有刷新
+    // 2. itsm已经撤销了，但我们产品页面还没有刷新
+    // 如果存在以上两种情况之一，提示使用message，否则继续后面流程
+    const { message } = resp;
+    if (message) {
+      // 不再走上线流程
+      publishedVersionId.value = versionData.value.id;
+      emit('confirm', Number(route.params.versionId));
+      BkMessage({
+        theme: 'success',
+        message,
+      });
+    } else {
+      // 继续上线流程
+      handleConfirm(resp.have_pull, false);
+    }
   };
 
   const handleOpenPublishDialog = () => {

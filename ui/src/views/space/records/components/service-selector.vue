@@ -2,7 +2,9 @@
   <bk-select
     v-model="localApp.id"
     ref="selectorRef"
-    class="service-selector"
+    class="service-selector-record"
+    multiple-mode="tag"
+    placeholder="全部"
     :popover-options="{ theme: 'light bk-select-popover' }"
     :popover-min-width="360"
     :filterable="true"
@@ -11,20 +13,9 @@
     :loading="loading"
     :search-placeholder="$t('请输入关键字')"
     @change="handleAppChange">
-    <template #trigger>
-      <div class="selector-trigger">
-        <bk-overflow-title v-if="localApp?.name" class="app-name" type="tips">
-          {{ localApp.name }}
-        </bk-overflow-title>
-        <span v-else class="app-name no-app">{{ $t('暂无服务') }}</span>
-        <DownSmall class="arrow-icon arrow-fill" />
-      </div>
+    <template #prefix>
+      <span class="prefix-content">服务</span>
     </template>
-    <bk-option value="-1" :label="t('全部服务')">
-      <div :class="['service-option-item']">
-        <div class="name-text">{{ t('全部服务') }}</div>
-      </div>
-    </bk-option>
     <bk-option v-for="item in serviceList" :key="item.id ? item.id : 'all'" :value="item.id" :label="item.spec.name">
       <div
         v-cursor="{
@@ -45,19 +36,18 @@
   import { useRoute, useRouter } from 'vue-router';
   import { IAppItem } from '../../../../../types/app';
   import { getAppList } from '../../../../api';
-  import { DownSmall } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
 
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const route = useRoute();
   const router = useRouter();
 
   const loading = ref(false);
-  const localApp = ref({
-    name: t('全部服务'),
-    id: -1,
-    serviceType: '',
-  });
+  const localApp = ref<{
+    name?: string;
+    id?: number;
+    serviceType?: string;
+  }>({});
   const bizId = ref(String(route.params.spaceId));
   const serviceList = ref<IAppItem[]>([]);
 
@@ -93,6 +83,8 @@
 
   // 下拉列表操作
   const handleAppChange = async (appId: number) => {
+    console.log(localApp.value, 'appId');
+
     const service = serviceList.value.find((service) => service.id === Number(appId));
     // 重新选择服务后不再精确查询
     const query = route.query;
@@ -107,11 +99,7 @@
       setLastAccessedServiceDetail(appId);
       await router.push({ name: 'records-app', params: { spaceId: bizId.value, appId }, query });
     } else {
-      localApp.value = {
-        name: t('全部服务'),
-        id: -1,
-        serviceType: '',
-      };
+      localApp.value = {};
       await router.push({ name: 'records-all', params: { spaceId: bizId.value }, query });
     }
   };
@@ -122,48 +110,17 @@
 </script>
 
 <style scoped lang="scss">
-  .service-selector {
-    width: 200px;
-    &.popover-show {
-      .selector-trigger .arrow-icon {
-        transform: rotate(-180deg);
-      }
-    }
-    &.is-focus {
-      .selector-trigger {
-        outline: 0;
-      }
-    }
-    .selector-trigger {
-      padding: 0 10px 0;
-      height: 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      border-radius: 2px;
-      transition: all 0.3s;
-      background: #fff;
-      font-size: 14px;
-      border: 1px solid #c4c6cc;
-
-      .app-name {
-        flex: 1;
-        color: #313238;
-        overflow: hidden;
-      }
-      .no-app {
-        color: #c4c6cc;
-      }
-      .arrow-icon {
-        margin-left: 13px;
-        flex-shrink: 0;
-        font-size: 18px;
-        font-weight: 700;
-        color: #979ba5;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
+  .service-selector-record {
+    width: 254px;
+    .prefix-content {
+      margin-right: 10px;
+      padding: 0 12px;
+      line-height: 32px;
+      border-right: 1px solid #c4c6cc;
+      background-color: #fafcfe;
     }
   }
+
   .service-option-item {
     display: flex;
     justify-content: flex-start;
@@ -189,6 +146,15 @@
       &--en {
         width: 96px;
       }
+    }
+  }
+</style>
+
+<style lang="scss">
+  .service-selector-record {
+    width: 252px;
+    .bk-select-trigger .bk-select-tag:not(.is-disabled):hover {
+      border-color: #c4c6cc;
     }
   }
 </style>
