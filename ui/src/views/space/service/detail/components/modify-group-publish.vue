@@ -353,7 +353,7 @@
       publishedVersionId.value = versionData.value.id;
       emit('confirm', Number(route.params.versionId));
       BkMessage({
-        theme: 'success',
+        theme: 'primary',
         message,
       });
     } else {

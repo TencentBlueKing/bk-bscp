@@ -14,18 +14,30 @@
         <template #content>
           <div class="popover-content">
             <template v-if="itsmData?.itsm_ticket_sn">
-              <div>{{ $t('审批单') }}：</div>
-              <div class="itsm-content">
+              <div class="itsm-title">{{ $t('审批单') }}：</div>
+              <div class="itsm-content em">
                 <div class="itsm-sn">{{ itsmData?.itsm_ticket_sn }}</div>
                 <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
               </div>
             </template>
-            <div>
+            <div class="itsm-title">
               {{
                 `${approveStatus === 3 ? t('撤销人') : t('审批人')}（${approveType === 'or_sign' ? $t('或签') : $t('会签')}）`
               }}：
             </div>
-            <div>{{ approverList }}</div>
+            <div class="itsm-content">{{ approverList }}</div>
+            <template v-if="approveStatus === 0 && publishTime">
+              <div class="itsm-title">{{ $t('定时上线') }}：</div>
+              <div class="itsm-content">
+                {{ convertTime(publishTime, 'local') || '--' }}
+              </div>
+            </template>
+            <template v-if="approveStatus === 2">
+              <div class="itsm-title">{{ $t('驳回原因') }}：</div>
+              <div class="itsm-content">
+                {{ rejectionReason || '--' }}
+              </div>
+            </template>
           </div>
         </template>
       </bk-popover>
@@ -41,10 +53,10 @@
   import { versionStatusQuery } from '../../../../../api/config';
   import { APPROVE_TYPE } from '../../../../../constants/config';
   import { debounce } from 'lodash';
-  import { copyToClipBoard } from '../../../../../utils/index';
+  import { convertTime, copyToClipBoard } from '../../../../../utils/index';
   import BkMessage from 'bkui-vue/lib/message';
 
-  const emits = defineEmits(['sendData']);
+  const emits = defineEmits(['send-data']);
 
   const props = defineProps<{
     showStatusId: number; // 操作 提交上线/调整分组上线/撤销上线时的id
@@ -57,6 +69,8 @@
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1上线 2驳回 3撤销
   const approveText = ref(''); // 审批文案
   const approveType = ref(''); // 审批方式
+  const rejectionReason = ref(''); // 拒绝理由
+  const publishTime = ref(''); // 定时上线时间
   const showStatusIdArr = ref<number[]>([]); // 提交上线/调整分组上线/撤销上线的id集合
   const itsmData = ref<{
     itsm_ticket_sn: string;
@@ -89,12 +103,14 @@
         const {
           app,
           spec,
-          spec: { itsm_ticket_sn, itsm_ticket_url },
+          spec: { itsm_ticket_sn, itsm_ticket_url, publish_time, reject_reason },
         } = resp.data;
         // 审批人
         approverList.value = spec.approver_progress;
         approveText.value = publishStatusText(spec.publish_status);
         approveType.value = app?.approve_type || '';
+        rejectionReason.value = reject_reason;
+        publishTime.value = publish_time;
         // itsm信息
         itsmData.value = { itsm_ticket_sn, itsm_ticket_url };
         sendData(resp.data);
@@ -109,7 +125,7 @@
   }, 300);
 
   const publishStatusText = (type: string) => {
-    switch (type as string) {
+    switch (type) {
       case 'pending_approval':
         approveStatus.value = APPROVE_TYPE.pending_approval;
         return t('待审批');
@@ -157,7 +173,7 @@
       time: spec.publish_time,
       type: spec.publish_type,
     };
-    emits('sendData', approveData, revision?.creator || '');
+    emits('send-data', approveData, revision?.creator || '');
   };
 
   defineExpose({
@@ -199,20 +215,21 @@
     }
   }
   .popover-content {
-    // min-width: 172px;
     font-size: 12px;
     line-height: 16px;
     color: #4d4f56;
     .itsm-content {
-      margin-bottom: 18px;
       display: flex;
       justify-content: flex-start;
       align-items: center;
-      color: #3a84ff;
+      color: #4d4f56;
+      &.em {
+        color: #3a84ff;
+      }
+      & + .itsm-title {
+        margin-top: 18px;
+      }
     }
-    // .itsm-sn {
-
-    // }
     .itsm-action {
       margin-left: 10px;
       padding-left: 10px;

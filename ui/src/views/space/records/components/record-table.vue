@@ -83,9 +83,58 @@
                     placement: 'top',
                   }"
                   class="time-icon"></div>
-                <!-- 信息提示icon -->
+                <!-- 信息提示icon：待审批/审批驳回样式 -->
+                <bk-popover :popover-delay="[0, 0]" placement="bottom-end" theme="light">
+                  <text-file
+                    v-if="
+                      [APPROVE_STATUS.pending_approval, APPROVE_STATUS.rejected_approval].includes(
+                        row.audit.spec.status,
+                      )
+                    "
+                    class="info-line is-text" />
+                  <template #content>
+                    <div class="popover-content">
+                      <div>{{ $t('审批单') }}：</div>
+                      <div class="itsm-content em">
+                        <div class="itsm-sn">{{ row.strategy.itsm_ticket_sn }}</div>
+                        <div class="itsm-action" @click="handleCopy(row.strategy.itsm_ticket_url)"><Copy /></div>
+                      </div>
+                      <div class="itsm-title">
+                        {{ $t('审批人') }}
+                        ({{ row.app.approve_type === 'or_sigh' ? $t('或签') : $t('会签') }})：
+                      </div>
+                      <div class="itsm-content">
+                        {{ row.strategy.approver_progress }}
+                      </div>
+                      <template v-if="row.audit.spec.status === APPROVE_STATUS.rejected_approval">
+                        <div class="itsm-title">{{ $t('审批时间') }}：</div>
+                        <div class="itsm-content">
+                          {{ convertTime(row.strategy.final_approval_time, 'local') || '--' }}
+                        </div>
+                      </template>
+                      <template
+                        v-if="row.audit.spec.status === APPROVE_STATUS.pending_approval && row.strategy.publish_time">
+                        <div class="itsm-title">{{ $t('定时上线') }}：</div>
+                        <div class="itsm-content">
+                          {{ convertTime(row.strategy.publish_time, 'local') || '--' }}
+                        </div>
+                      </template>
+                      <template v-if="row.audit.spec.status === APPROVE_STATUS.rejected_approval">
+                        <div class="itsm-title">{{ $t('驳回原因') }}：</div>
+                        <div class="itsm-content">
+                          {{ row.strategy.reject_reason }}
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </bk-popover>
+                <!-- 信息提示icon：已上线/已撤销/失败样式 -->
                 <info-line
-                  v-if="row.audit.spec.status !== APPROVE_STATUS.pending_publish"
+                  v-if="
+                    [APPROVE_STATUS.already_publish, APPROVE_STATUS.revoked_publish, APPROVE_STATUS.failure].includes(
+                      row.audit.spec.status,
+                    )
+                  "
                   v-bk-tooltips="{
                     content: statusTip(row),
                     placement: 'top',
@@ -211,10 +260,10 @@
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import MoreActions from './more-actions.vue';
   import DialogConfirm from './dialog-confirm.vue';
-  import { InfoLine } from 'bkui-vue/lib/icon';
+  import { InfoLine, Copy, TextFile } from 'bkui-vue/lib/icon';
   import VersionDiff from './version-diff.vue';
   import BkMessage from 'bkui-vue/lib/message';
-  import { convertTime } from '../../../../utils';
+  import { convertTime, copyToClipBoard } from '../../../../utils';
   import dayjs from 'dayjs';
 
   const props = withDefaults(
@@ -366,18 +415,19 @@
       return '--';
     }
     const { status } = row.audit.spec;
-    const { final_approval_time: time, reject_reason: reason, reviser, approver_progress: approver } = row.strategy;
+    // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
+    const { final_approval_time: time, reviser } = row.strategy;
     switch (status) {
-      case APPROVE_STATUS.pending_approval:
-        return t('提示-待审批', { approver });
+      // case APPROVE_STATUS.pending_approval:
+      //   return t('提示-待审批', { approver_progress, approveType });
       case APPROVE_STATUS.already_publish:
-        return t('提示-已上线文案', { reviser, time: convertTime(time, 'local') });
-      case APPROVE_STATUS.rejected_approval:
-        return t('提示-审批驳回', {
-          reviser,
-          time: convertTime(time, 'local'),
-          reason,
-        });
+        return t('提示-已上线文案', { time: convertTime(time, 'local') });
+      // case APPROVE_STATUS.rejected_approval:
+      //   return t('提示-审批驳回', {
+      //     reviser,
+      //     time: convertTime(time, 'local'),
+      //     reason,
+      //   });
       case APPROVE_STATUS.revoked_publish:
         return t('提示-已撤销', { reviser, time: convertTime(time, 'local') });
       case APPROVE_STATUS.failure:
@@ -385,6 +435,16 @@
       default:
         return '--';
     }
+  };
+
+  // 复制审批链接
+  const handleCopy = (str?: string) => {
+    if (!str) return;
+    copyToClipBoard(str);
+    BkMessage({
+      theme: 'success',
+      message: t('ITSM 审批链接已复制！'),
+    });
   };
 
   // 上线时间是否超时
@@ -436,7 +496,7 @@
       // 如果存在以上两种情况之一，提示使用message，否则message的值为空
       const { message } = resp;
       BkMessage({
-        theme: 'success',
+        theme: message ? 'primary' : 'success',
         message: message ? t(message) : t('操作成功'),
       });
       loadRecordList();
@@ -601,6 +661,9 @@
       vertical-align: bottom;
       transform: scale(1.05);
       color: #979ba5;
+      &.is-text {
+        transform: scale(1);
+      }
     }
   }
   .action-btns {
@@ -652,5 +715,31 @@
   .empty-action {
     margin-right: 50px;
     vertical-align: sub;
+  }
+  .popover-content {
+    // min-width: 172px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #4d4f56;
+    .itsm-content {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      color: #4d4f56;
+      &.em {
+        color: #3a84ff;
+      }
+      & + .itsm-title {
+        margin-top: 18px;
+      }
+    }
+    .itsm-action {
+      margin-left: 10px;
+      padding-left: 10px;
+      display: flex;
+      align-items: center;
+      border-left: 1px solid #dcdee5;
+      cursor: pointer;
+    }
   }
 </style>

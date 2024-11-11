@@ -64,6 +64,7 @@
 
   const handleClose = () => {
     emits('update:show', false);
+    reason.value = '';
   };
   const handleConfirm = async () => {
     if (!reason.value) {
@@ -85,7 +86,7 @@
       // 如果存在以上两种情况之一，提示使用message，否则message的值为空
       const { message } = resp;
       BkMessage({
-        theme: 'success',
+        theme: message ? 'primary' : 'success',
         message: message ? t(message) : t('操作成功'),
       });
       emits('reject');

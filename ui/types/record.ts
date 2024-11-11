@@ -50,6 +50,11 @@ export interface IRowData {
     };
   };
   strategy: {
+    itsm_ticket_sn: string;
+    itsm_ticket_state_id: number;
+    itsm_ticket_status: string;
+    itsm_ticket_type: string;
+    itsm_ticket_url: string;
     publish_type: string;
     publish_time: string;
     publish_status: string;
@@ -124,5 +129,6 @@ export interface IRowData {
   app: {
     name: string;
     creator: string;
+    approve_type: string;
   };
 }
