@@ -228,13 +228,12 @@
           @limit-change="handlePageLimitChange" />
       </bk-loading>
     </div>
-    <!-- 上线/撤销弹窗 -->
+    <!-- 撤销弹窗 -->
     <DialogConfirm
       v-model:show="confirmShow"
       :space-id="spaceId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
-      :dialog-type="confirmType"
       :data="confirmData"
       @refresh-list="loadRecordList" />
     <!-- 审批对比弹窗 -->

@@ -6,7 +6,7 @@
     dialog-type="operation"
     :is-loading="btnLoading"
     :cancel-text="t('取消')"
-    :confirm-text="dialogType === 'publish' ? t('上线') : t('撤销')"
+    :confirm-text="t('撤销')"
     :is-show="show"
     :close-icon="true"
     :show-mask="true"
@@ -16,7 +16,7 @@
     @closed="handleClose">
     <template #header>
       <div class="headline">
-        {{ dialogType === 'publish' ? `${t('确认上线该版本')}?` : `${t('确认撤销该上线任务')}？` }}
+        {{ `${t('确认撤销该上线任务')}？` }}
       </div>
     </template>
     <ul :class="['content-info', { 'li-en': locale !== 'zh-cn' }]">
@@ -33,7 +33,7 @@
         <span class="content-info__bd"> {{ data.group || '--' }} </span>
       </li>
     </ul>
-    <div v-if="dialogType !== 'publish'">
+    <div>
       <div class="textarea-title">{{ t('说明') }}</div>
       <bk-input
         v-model="reason"
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { ref } from 'vue';
   import { approve } from '../../../../api/record';
   import { IDialogData } from '../../../../../types/record';
   import { APPROVE_STATUS } from '../../../../constants/record';
@@ -61,7 +61,7 @@
     spaceId: string;
     appId: number;
     releaseId: number;
-    dialogType: string;
+    // dialogType: string;
     data: IDialogData;
   }>();
 
@@ -70,10 +70,6 @@
   const btnLoading = ref(false);
   const reason = ref('');
 
-  const submitType = computed(() => {
-    return props.dialogType === 'publish' ? APPROVE_STATUS.already_publish : APPROVE_STATUS.revoked_publish;
-  });
-
   const handleClose = () => {
     emits('update:show', false);
   };
@@ -81,7 +77,7 @@
     btnLoading.value = true;
     try {
       const resp = await approve(props.spaceId, props.appId, props.releaseId, {
-        publish_status: submitType.value,
+        publish_status: APPROVE_STATUS.revoked_publish,
         reason: reason.value,
       });
       emits('update:show', false);
