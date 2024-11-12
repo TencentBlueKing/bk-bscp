@@ -261,6 +261,7 @@
     }
     await Promise.allSettled(uploadPromises);
     multifileUploading.value = false;
+    emits('uploading', false);
   };
 
   const handleSortFileList = () => {
