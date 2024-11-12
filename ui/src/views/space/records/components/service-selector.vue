@@ -111,7 +111,7 @@
 
 <style scoped lang="scss">
   .service-selector-record {
-    width: 254px;
+    width: 260px;
     .prefix-content {
       margin-right: 10px;
       padding: 0 12px;
@@ -152,7 +152,6 @@
 
 <style lang="scss">
   .service-selector-record {
-    width: 252px;
     .bk-select-trigger .bk-select-tag:not(.is-disabled):hover {
       border-color: #c4c6cc;
     }

@@ -100,6 +100,9 @@ func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) (err 
 		network := cc.FeedProxy().Network
 		targetHost := net.JoinHostPort(network.BindIP, strconv.Itoa(int(network.HttpPort)))
 		resp.Url = replaceHost(resp.Url, targetHost)
+		for i := range resp.Urls {
+			resp.Urls[i] = replaceHost(resp.Urls[i], targetHost)
+		}
 		if err := serverStream.SendMsg(resp); err != nil {
 			return err
 		}
