@@ -116,10 +116,14 @@
     status: string;
     time: string;
     type: string;
+    memo: string;
+    groupIds: number[];
   }>({
     status: '',
     time: '',
     type: '',
+    memo: '',
+    groupIds: [],
   });
 
   const creator = ref('');

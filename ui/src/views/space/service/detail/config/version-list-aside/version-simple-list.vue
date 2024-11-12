@@ -28,7 +28,7 @@
           @click="handleSelectVersion(version)">
           <div v-if="pendingApprovalVersion?.id !== version.id" :class="['dot', version.status.publish_status]"></div>
           <div v-else class="status">
-            {{ version.strategy_spec?.publish_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
+            {{ version.status.strategy_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
           </div>
           <bk-overflow-title class="version-name" type="tips">
             {{ version.spec.name }}
@@ -129,8 +129,8 @@
   const pendingApprovalVersion = computed(() => {
     return versionList.value.find(
       (item) =>
-        item.strategy_spec?.publish_status === 'pending_publish' ||
-        item.strategy_spec?.publish_status === 'pending_approval',
+        item.status.strategy_status === 'pending_publish' ||
+        item.status.strategy_status === 'pending_approval',
     );
   });
 
@@ -170,6 +170,7 @@
     await getVersionList();
     if (pendingApprovalVersion.value) {
       versionData.value = pendingApprovalVersion.value;
+      router.push({ name: route.name as string, params: { versionId: versionData.value.id } });
     }
     if (route.params.versionId) {
       const version = versionList.value.find((item) => item.id === Number(route.params.versionId));

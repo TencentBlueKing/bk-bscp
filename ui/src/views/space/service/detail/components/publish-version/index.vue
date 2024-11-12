@@ -71,7 +71,10 @@
       :version-list="versionList"
       :release-type="releaseType"
       :groups="groups"
-      @confirm="handleConfirm" />
+      :second-confirm="isSecondConfirm"
+      :memo="approveData.memo"
+      @confirm="handleConfirm"
+      @second-confirm="handleSecondConfirm" />
     <PublishVersionDiff
       :bk-biz-id="props.bkBizId"
       :app-id="props.appId"
@@ -86,7 +89,7 @@
   </section>
 </template>
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter, useRoute } from 'vue-router';
   import { ArrowsLeft, AngleRight } from 'bkui-vue/lib/icon';
@@ -127,6 +130,8 @@
       status: string;
       time: string;
       type: string;
+      memo: string;
+      groupIds: number[];
     };
   }>();
 
@@ -151,6 +156,8 @@
     version_name: '', // 最后上线的版本名称
     release_id: 0, // 最后上线的版本id
   });
+
+  const isSecondConfirm = ref(false); // 是否为二次确认
 
   const permissionQueryResource = computed(() => [
     {
@@ -211,6 +218,19 @@
     });
     return list;
   });
+
+  watch(
+    () => props.approveData,
+    () => {
+      if (props.approveData?.status === APPROVE_STATUS.pending_publish) {
+        isSecondConfirm.value = true;
+        handlePendingPublish();
+      } else {
+        isSecondConfirm.value = false;
+      }
+    },
+    { deep: true },
+  );
 
   // 获取所有分组，并组装tree组件节点需要的数据
   const getAllGroupData = async () => {
@@ -282,8 +302,13 @@
     }
   };
 
-  // 确定上线按钮
   const handlePublishClick = async () => {
+    isSecondConfirm.value = true;
+    isConfirmDialogShow.value = true;
+  };
+
+  // 确定上线按钮
+  const handleSecondConfirm = async () => {
     // if (!isConfirmDialogShow.value) {
     //   isConfirmDialogShow.value = true;
     //   return;
@@ -396,6 +421,23 @@
     }
     // 可以继续上线
     return true;
+  };
+
+  // 待确认上线
+  const handlePendingPublish = async () => {
+    await getAllGroupData();
+    await getVersionList();
+    if (props.approveData.groupIds.length === 0) {
+      groups.value = treeNodeGroups.value;
+      releaseType.value = 'all';
+    } else {
+      groups.value = treeNodeGroups.value.filter((item) => props.approveData.groupIds.includes(item.id));
+      if (props.approveData.groupIds.includes(0)) {
+        releaseType.value = 'all';
+      } else {
+        releaseType.value = 'select';
+      }
+    }
   };
 
   defineExpose({

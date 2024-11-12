@@ -152,10 +152,13 @@
 
   const sendData = (data: any) => {
     const { spec, revision } = data;
+    const releaseGroupIds = spec.scope.groups.map((item: any) => item.id);
     const approveData = {
       status: spec.publish_status,
       time: spec.publish_time,
       type: spec.publish_type,
+      groupIds: releaseGroupIds,
+      memo: spec.memo,
     };
     emits('sendData', approveData, revision?.creator || '');
   };

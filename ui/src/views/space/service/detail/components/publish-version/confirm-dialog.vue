@@ -75,9 +75,15 @@
         </div>
       </bk-form-item>
       <bk-form-item :label="t('上线说明')" property="memo">
-        <bk-input v-model="localVal.memo" type="textarea" :placeholder="t('请输入')" :maxlength="200" :resize="true" />
+        <bk-input
+          v-model="localVal.memo"
+          type="textarea"
+          :disabled="props.secondConfirm"
+          :placeholder="t('请输入')"
+          :maxlength="200"
+          :resize="true" />
       </bk-form-item>
-      <bk-form-item property="publish_time">
+      <bk-form-item v-if="!props.secondConfirm" property="publish_time">
         <template #label>
           <span>{{ t('上线方式') }}</span>
           <help-fill
@@ -116,7 +122,8 @@
     </bk-form>
     <template #footer>
       <div class="dialog-footer">
-        <bk-button theme="primary" :loading="pending" @click="handleConfirm">
+        <bk-button v-if="props.secondConfirm" theme="primary" @click="handleSecondConfirm">{{ t('上线') }}</bk-button>
+        <bk-button v-else theme="primary" :loading="pending" @click="handleConfirm">
           {{ isApprove ? t('提交上线审批') : t('确定上线') }}
         </bk-button>
         <bk-button :disabled="pending" @click="handleClose">{{ t('取消') }}</bk-button>
@@ -171,13 +178,17 @@
       releaseType: string;
       releasedGroups?: number[];
       groups: IGroupToPublish[];
+      secondConfirm?: boolean;
+      memo?: string;
     }>(),
     {
       releasedGroups: () => [],
+      secondConfirm: false,
+      memo: '',
     },
   );
 
-  const emits = defineEmits(['confirm', 'update:show']);
+  const emits = defineEmits(['confirm', 'update:show', 'secondConfirm']);
 
   const localVal = ref<IFormData>({
     groups: [],
@@ -252,6 +263,9 @@
         });
         excludeGroups.value = list;
         loadPublishType();
+        if (props.secondConfirm) {
+          localVal.value.memo = props.memo;
+        }
       }
     },
   );
@@ -323,6 +337,13 @@
     } finally {
       pending.value = false;
     }
+  };
+
+  const handleSecondConfirm = () => {
+    handleClose();
+    setTimeout(() => {
+      emits('secondConfirm');
+    }, 300);
   };
 
   const loadPublishType = async () => {

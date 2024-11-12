@@ -76,7 +76,10 @@
       :release-type="releaseType"
       :groups="groups"
       :released-groups="releasedGroups"
-      @confirm="handleConfirm" />
+      :second-confirm="isSecondConfirm"
+      :memo="approveData.memo"
+      @confirm="handleConfirm"
+      @second-confirm="handleSecondConfirm" />
     <PublishVersionDiff
       :bk-biz-id="props.bkBizId"
       :app-id="props.appId"
@@ -132,6 +135,8 @@
       status: string;
       time: string;
       type: string;
+      memo: string;
+      groupIds: number[];
     };
   }>();
 
@@ -158,6 +163,7 @@
     version_name: '', // 最后上线的版本名称
     release_id: 0, // 最后上线的版本id
   });
+  const isSecondConfirm = ref(false); // 是否为二次确认
 
   // 当前版本已上线分组id集合
   const releasedGroups = computed(() => versionData.value.status.released_groups.map((group) => group.id));
@@ -234,6 +240,19 @@
     () => {
       setReleaseData();
     },
+  );
+
+  watch(
+    () => props.approveData,
+    () => {
+      if (props.approveData?.status === APPROVE_STATUS.pending_publish) {
+        isSecondConfirm.value = true;
+        handlePendingPublish();
+      } else {
+        isSecondConfirm.value = false;
+      }
+    },
+    { deep: true },
   );
 
   // 判断是否需要对比上线版本
@@ -335,10 +354,11 @@
 
   // 确定上线按钮
   const handlePublishClick = async () => {
-    // if (!isConfirmDialogShow.value) {
-    //   isConfirmDialogShow.value = true;
-    //   return;
-    // }
+    isSecondConfirm.value = true;
+    isConfirmDialogShow.value = true;
+  };
+
+  const handleSecondConfirm = async () => {
     const { bkBizId: biz_id, appId: app_id } = props;
     const resp = await approve(biz_id, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
@@ -451,6 +471,23 @@
     }
     // 可以继续上线
     return true;
+  };
+
+  // 待确认上线
+  const handlePendingPublish = async () => {
+    await getAllGroupData();
+    await getVersionList();
+    if (props.approveData.groupIds.length === 0) {
+      groups.value = treeNodeGroups.value;
+      releaseType.value = 'all';
+    } else {
+      groups.value = treeNodeGroups.value.filter((item) => props.approveData.groupIds.includes(item.id));
+      if (props.approveData.groupIds.includes(0)) {
+        releaseType.value = 'all';
+      } else {
+        releaseType.value = 'select';
+      }
+    }
   };
 </script>
 <style lang="scss" scoped>

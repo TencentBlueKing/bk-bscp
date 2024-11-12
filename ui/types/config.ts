@@ -21,10 +21,8 @@ export interface IConfigVersion {
     publish_status: string;
     released_groups: IReleasedGroup[];
     fully_released: boolean;
+    strategy_status: string;
     fully_release?: boolean;
-  };
-  strategy_spec?: {
-    publish_status: string;
   };
 }
 
