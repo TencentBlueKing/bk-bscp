@@ -40,7 +40,11 @@
             </div>
           </div>
         </ReleasedGroupViewer>
-        <VersionApproveStatus ref="verAppStatus" :show-status-id="showStatusId" @send-data="getVerApproveStatus" />
+        <VersionApproveStatus
+          ref="verAppStatus"
+          :show-status-id="showStatusId"
+          :refresh-ver="refreshVesionList"
+          @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
           :app-id="props.appId"

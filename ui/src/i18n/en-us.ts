@@ -332,7 +332,7 @@ export default {
   请选择分组实例: 'Please select an online group',
   本次上线分组: 'This online group',
   上线说明: 'Online instructions',
-  确定上线: 'Confirm to go online',
+  确认上线: 'Confirm to go online',
   前置脚本: 'Prescript',
   后置脚本: 'Postscript',
   移除: 'Remove',
@@ -571,6 +571,7 @@ export default {
   审批单: 'Approval SN',
   审批时间: 'Approval time',
   驳回原因: 'Reason for rejection',
+  请输入驳回理由: 'Please enter the reason for rejection',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',

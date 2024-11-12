@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, watch } from 'vue';
+  import { ref, onMounted, watch, onUnmounted } from 'vue';
   import { Spinner, TextFile, Copy } from 'bkui-vue/lib/icon';
   import { useRoute } from 'vue-router';
   import { useI18n } from 'vue-i18n';
@@ -55,15 +55,20 @@
   import { debounce } from 'lodash';
   import { convertTime, copyToClipBoard } from '../../../../../utils/index';
   import BkMessage from 'bkui-vue/lib/message';
+  import { storeToRefs } from 'pinia';
+  import useConfigStore from '../../../../../store/config';
 
   const emits = defineEmits(['send-data']);
 
   const props = defineProps<{
     showStatusId: number; // 操作 提交上线/调整分组上线/撤销上线时的id
+    refreshVer: Function; // 刷新左侧版本列表
   }>();
 
   const route = useRoute();
   const { t } = useI18n();
+  const versionStore = useConfigStore();
+  const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
   const approverList = ref(''); // 审批人
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1上线 2驳回 3撤销
@@ -77,6 +82,7 @@
     itsm_ticket_url: string;
   }>();
   const loading = ref(true);
+  let interval = 0;
 
   watch(
     () => route.params.versionId,
@@ -87,15 +93,31 @@
     },
   );
 
+  watch(approveStatus, (newV, oldV) => {
+    // 状态发生变化才需要刷新版本列表状态
+    if (newV !== oldV && ![newV, oldV].includes(-1)) {
+      publishedVersionId.value = versionData.value.id;
+      props.refreshVer();
+    }
+  });
+
   onMounted(async () => {
     await loadStatus();
+    // 待审批和审批通过常驻显示
     if ([0, 1].includes(approveStatus.value)) {
       showStatusIdArr.value.push(Number(route.params.versionId));
     }
   });
 
+  onUnmounted(() => {
+    clearInterval(interval);
+  });
+
   const loadStatus = debounce(async () => {
     loading.value = true;
+    if (interval) {
+      clearInterval(interval);
+    }
     if (route.params.versionId) {
       const { spaceId, appId, versionId } = route.params;
       try {
@@ -116,8 +138,10 @@
         sendData(resp.data);
         // 需要展示状态的版本
         filterShowVer();
+        interval = setInterval(loadStatus, 5000);
       } catch (error) {
         console.log(error);
+        clearInterval(interval);
       } finally {
         loading.value = false;
       }
@@ -131,7 +155,7 @@
         return t('待审批');
       case 'pending_publish':
         approveStatus.value = APPROVE_TYPE.pending_publish;
-        return t('审批通过');
+        return t('待上线');
       case 'rejected_approval':
         approveStatus.value = APPROVE_TYPE.rejected_approval;
         return t('审批驳回');
@@ -147,11 +171,11 @@
 
   // 版本状态是否显示(撤销/驳回的状态刷新页面后就消失，其他状态保持展示)
   const filterShowVer = () => {
-    // 更新了版本状态的id都需要展示
+    // 更新了版本状态的id都需要展示(撤销/拒绝刷新消失)
     if (props.showStatusId > -1 && !showStatusIdArr.value.includes(props.showStatusId)) {
       showStatusIdArr.value.push(props.showStatusId);
     }
-    // 如果当前版本状态为待审批/审批通过，也需要展示
+    // 如果当前版本状态为待审批/审批通过，也需要展示（常驻显示）
     if ([0, 1].includes(approveStatus.value) && !showStatusIdArr.value.includes(Number(route.params.versionId))) {
       showStatusIdArr.value.push(Number(route.params.versionId));
     }

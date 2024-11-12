@@ -25,7 +25,7 @@
       :disabled="approveData.type === ONLINE_TYPE.scheduled"
       @click="handlePublishClick">
       <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
-      {{ approveData.type === ONLINE_TYPE.scheduled ? t('等待定时上线') : t('确定上线') }}
+      {{ approveData.type === ONLINE_TYPE.scheduled ? t('等待定时上线') : t('确认上线') }}
     </bk-button>
     <Teleport to="body">
       <VersionLayout v-if="isSelectGroupPanelOpen">

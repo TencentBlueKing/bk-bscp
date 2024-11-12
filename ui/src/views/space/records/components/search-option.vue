@@ -82,7 +82,6 @@
     {
       name: t('操作人'),
       id: SEARCH_ID.operator,
-      placeholder: '异步获取的业务',
       multiple: false,
       children: [],
       async: false,

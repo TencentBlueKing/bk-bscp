@@ -331,15 +331,21 @@
       const resp = await publishType(props.bkBizId, props.appId);
       const { is_approve, publish_type } = resp.data;
       isApprove.value = is_approve;
-      // 审批类型
-      if (publish_type) {
-        localVal.value.publish_type = publish_type;
+      // 需要审批
+      if (is_approve) {
+        localVal.value.publish_type = ['manually', 'automatically', 'scheduled'].includes(publish_type)
+          ? publish_type
+          : 'manually';
       } else {
-        // 无审批类型，默认选择选项的第一个
-        localVal.value.publish_type = is_approve ? 'manually' : 'immediately';
+        // 不需要审批，默认选择选项的第一个
+        localVal.value.publish_type = ['immediately', 'scheduled'].includes(publish_type)
+          ? publish_type
+          : 'immediately';
       }
     } catch (error) {
       console.log(error);
+      // 产品要求数据不对时默认选中立即上线
+      localVal.value.publish_type = 'immediately';
     } finally {
       pending.value = false;
     }

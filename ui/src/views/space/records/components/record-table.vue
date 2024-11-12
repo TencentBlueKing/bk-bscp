@@ -94,11 +94,13 @@
                     class="info-line is-text" />
                   <template #content>
                     <div class="popover-content">
-                      <div>{{ $t('审批单') }}：</div>
-                      <div class="itsm-content em">
-                        <div class="itsm-sn">{{ row.strategy.itsm_ticket_sn }}</div>
-                        <div class="itsm-action" @click="handleCopy(row.strategy.itsm_ticket_url)"><Copy /></div>
-                      </div>
+                      <template v-if="row.strategy.itsm_ticket_sn">
+                        <div>{{ $t('审批单') }}：</div>
+                        <div class="itsm-content em">
+                          <div class="itsm-sn">{{ row.strategy.itsm_ticket_sn }}</div>
+                          <div class="itsm-action" @click="handleCopy(row.strategy.itsm_ticket_url)"><Copy /></div>
+                        </div>
+                      </template>
                       <div class="itsm-title">
                         {{ $t('审批人') }}
                         ({{ row.app.approve_type === 'or_sigh' ? $t('或签') : $t('会签') }})：
@@ -162,7 +164,7 @@
                   theme="primary"
                   :disabled="!isTimeout(row.strategy.publish_time) && !!row.strategy?.publish_time"
                   @click="handleConfirm(row, 'publish')">
-                  {{ t('上线') }}
+                  {{ t('确认上线') }}
                 </bk-button>
                 <!-- 1.待审批状态 且 对应审批人才可显示 -->
                 <!-- 2.版本首次在分组上线的情况，显示审批，点击审批直接通过 -->
