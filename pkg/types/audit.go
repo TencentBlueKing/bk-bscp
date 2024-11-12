@@ -108,4 +108,10 @@ type StrategyPart struct {
 	Creator           string      `db:"creator" json:"creator" gorm:"column:creator"`
 	ReleaseId         uint32      `db:"reviser" json:"release_id" gorm:"column:release_id"`
 	Scope             table.Scope `db:"scope" json:"scope" gorm:"column:scope"`
+	ItsmTicketType    string      `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
+	ItsmTicketUrl     string      `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
+	ItsmTicketSn      string      `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
+	ItsmTicketStatus  string      `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
+	ItsmTicketStateID int         `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
+	ApproveType       string      `db:"approve_type" json:"approve_type" gorm:"column:approve_type"`
 }

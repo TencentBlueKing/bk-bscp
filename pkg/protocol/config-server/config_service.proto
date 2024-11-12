@@ -2885,6 +2885,7 @@ message ApproveResp {
   bool have_credentials = 1;
   int32 code = 2;  // itsm回调
   bool have_pull = 3;
+  string message = 4;
 }
 
 message GetLastSelectReq {

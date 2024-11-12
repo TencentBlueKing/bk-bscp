@@ -232,6 +232,7 @@ type StrategySpec struct {
 	Approver          string        `db:"approver" json:"approver" approver:"column:approver"`
 	ApproverProgress  string        `db:"approver_progress" json:"approver_progress" gorm:"column:approver_progress"`
 	FinalApprovalTime time.Time     `db:"final_approval_time" json:"final_approval_time" gorm:"column:final_approval_time"` // nolint
+	ApproveType       string        `db:"approve_type" json:"approve_type" gorm:"column:approve_type"`                      // nolint
 	ItsmTicketType    string        `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
 	ItsmTicketUrl     string        `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
 	ItsmTicketSn      string        `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`

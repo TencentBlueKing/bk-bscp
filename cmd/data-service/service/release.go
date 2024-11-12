@@ -651,7 +651,10 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		logs.Errorf("list app groups failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
+
+	var releaseIDs []uint32
 	for _, release := range releases {
+		releaseIDs = append(releaseIDs, release.Id)
 		status, selected := s.queryPublishStatus(gcrs, release.Id)
 		releasedGroups := make([]*pbrelease.ReleaseStatus_ReleasedGroup, 0)
 		for _, gcr := range selected {
@@ -694,6 +697,20 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		}
 		release.Status.PublishStatus = status
 		release.Status.ReleasedGroups = releasedGroups
+	}
+
+	// 追加发布状态
+	st, err := s.dao.Strategy().ListStrategyByReleasesIDs(grpcKit, releaseIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, r := range releases {
+		for _, s := range st {
+			if r.Id == s.Spec.ReleaseID {
+				r.Status.StrategyStatus = string(s.Spec.PublishStatus)
+			}
+		}
 	}
 
 	resp := &pbds.ListReleasesResp{

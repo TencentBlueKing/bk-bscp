@@ -63,6 +63,11 @@ func PbStrategySpec(s *table.StrategySpec) *StrategySpec {
 		ApproverProgress:  s.ApproverProgress,
 		Memo:              s.Memo,
 		FinalApprovalTime: s.FinalApprovalTime.Format(time.DateTime),
+		ItsmTicketType:    s.ItsmTicketType,
+		ItsmTicketUrl:     s.ItsmTicketUrl,
+		ItsmTicketSn:      s.ItsmTicketSn,
+		ItsmTicketStatus:  s.ItsmTicketStatus,
+		ItsmTicketStateId: int32(s.ItsmTicketStateID),
 	}
 }
 

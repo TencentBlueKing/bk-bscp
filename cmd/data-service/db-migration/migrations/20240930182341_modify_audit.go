@@ -89,41 +89,41 @@ func mig20240930182341Up(tx *gorm.DB) error {
 func mig20240930182341Down(tx *gorm.DB) error {
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "res_instance") {
-		if err := tx.Migrator().AddColumn(&Audits{}, "res_instance"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "res_instance"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "operate_way") {
-		if err := tx.Migrator().AddColumn(&Audits{}, "operate_way"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "operate_way"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "status") {
-		if err := tx.Migrator().AddColumn(&Audits{}, "status"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "status"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "strategy_id") {
-		if err := tx.Migrator().AddColumn(&Audits{}, "strategy_id"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "strategy_id"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
 	if !tx.Migrator().HasColumn(&Audits{}, "is_compare") {
-		if err := tx.Migrator().AddColumn(&Audits{}, "is_compare"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "is_compare"); err != nil {
 			return err
 		}
 	}
 
 	if tx.Migrator().HasColumn(&Audits{}, "action") {
-		if err := tx.Migrator().AlterColumn(&Audits{}, "action"); err != nil {
+		if err := tx.Migrator().DropColumn(&Audits{}, "action"); err != nil {
 			return err
 		}
 	}

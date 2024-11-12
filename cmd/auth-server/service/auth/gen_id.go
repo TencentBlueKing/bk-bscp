@@ -242,6 +242,29 @@ func genCredIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, 
 	return action, nil
 }
 
+func genAuditIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, error) {
+	action := bkiam.ApplicationAction{
+		RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+			SystemID: sys.SystemIDCMDB,
+			Type:     string(sys.Business),
+			Instances: []bkiam.ApplicationResourceInstance{
+				[]iam.ApplicationResourceNode{{
+					Type: string(sys.Business),
+					ID:   strconv.FormatUint(uint64(a.BizID), 10),
+				}},
+			},
+		}},
+	}
+
+	switch a.Basic.Action {
+	case meta.View:
+		action.ID = string(sys.AuditView)
+	default:
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+	}
+	return action, nil
+}
+
 // genAppResource generate application related iam resource.
 func genAppResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
 	bizRes := client.Resource{
@@ -299,6 +322,22 @@ func genCredResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resou
 		return sys.CredentialView, []client.Resource{bizRes}, nil
 	case meta.Manage:
 		return sys.CredentialManage, []client.Resource{bizRes}, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+	}
+}
+
+// audit permission
+func genAuditResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+	bizRes := client.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Business,
+		ID:     strconv.FormatUint(uint64(a.BizID), 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.View:
+		return sys.AuditView, []client.Resource{bizRes}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
 	}

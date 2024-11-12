@@ -41,6 +41,7 @@ func newStrategy(db *gorm.DB, opts ...gen.DOOption) strategy {
 	_strategy.Approver = field.NewString(tableName, "approver")
 	_strategy.ApproverProgress = field.NewString(tableName, "approver_progress")
 	_strategy.FinalApprovalTime = field.NewTime(tableName, "final_approval_time")
+	_strategy.ApproveType = field.NewString(tableName, "approve_type")
 	_strategy.ItsmTicketType = field.NewString(tableName, "itsm_ticket_type")
 	_strategy.ItsmTicketUrl = field.NewString(tableName, "itsm_ticket_url")
 	_strategy.ItsmTicketSn = field.NewString(tableName, "itsm_ticket_sn")
@@ -78,6 +79,7 @@ type strategy struct {
 	Approver          field.String
 	ApproverProgress  field.String
 	FinalApprovalTime field.Time
+	ApproveType       field.String
 	ItsmTicketType    field.String
 	ItsmTicketUrl     field.String
 	ItsmTicketSn      field.String
@@ -121,6 +123,7 @@ func (s *strategy) updateTableName(table string) *strategy {
 	s.Approver = field.NewString(table, "approver")
 	s.ApproverProgress = field.NewString(table, "approver_progress")
 	s.FinalApprovalTime = field.NewTime(table, "final_approval_time")
+	s.ApproveType = field.NewString(table, "approve_type")
 	s.ItsmTicketType = field.NewString(table, "itsm_ticket_type")
 	s.ItsmTicketUrl = field.NewString(table, "itsm_ticket_url")
 	s.ItsmTicketSn = field.NewString(table, "itsm_ticket_sn")
@@ -158,7 +161,7 @@ func (s *strategy) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (s *strategy) fillFieldMap() {
-	s.fieldMap = make(map[string]field.Expr, 27)
+	s.fieldMap = make(map[string]field.Expr, 28)
 	s.fieldMap["id"] = s.ID
 	s.fieldMap["name"] = s.Name
 	s.fieldMap["release_id"] = s.ReleaseID
@@ -173,6 +176,7 @@ func (s *strategy) fillFieldMap() {
 	s.fieldMap["approver"] = s.Approver
 	s.fieldMap["approver_progress"] = s.ApproverProgress
 	s.fieldMap["final_approval_time"] = s.FinalApprovalTime
+	s.fieldMap["approve_type"] = s.ApproveType
 	s.fieldMap["itsm_ticket_type"] = s.ItsmTicketType
 	s.fieldMap["itsm_ticket_url"] = s.ItsmTicketUrl
 	s.fieldMap["itsm_ticket_sn"] = s.ItsmTicketSn

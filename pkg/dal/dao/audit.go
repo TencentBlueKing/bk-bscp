@@ -183,7 +183,9 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		app.Name, app.Creator,
 		strategy.PublishType, strategy.PublishTime, strategy.PublishTime, strategy.FinalApprovalTime,
 		strategy.PublishStatus, strategy.RejectReason, strategy.Approver, strategy.ApproverProgress,
-		strategy.UpdatedAt, strategy.Reviser, strategy.Creator, strategy.ReleaseID, strategy.Scope).
+		strategy.UpdatedAt, strategy.Reviser, strategy.Creator, strategy.ReleaseID, strategy.Scope,
+		strategy.ItsmTicketSn, strategy.ItsmTicketUrl, strategy.ItsmTicketStateID, strategy.ItsmTicketStatus,
+		strategy.ItsmTicketType, strategy.ApproveType).
 		LeftJoin(app, app.ID.EqCol(audit.AppID)).
 		LeftJoin(strategy, strategy.ID.EqCol(audit.StrategyId)).
 		Where(audit.BizID.Eq(req.BizId), audit.ResourceType.In(string(enumor.ResAppConfig), string(enumor.ResGroup),
@@ -251,8 +253,8 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		result = result.Where(audit.Operator.Like("%" + req.Operator + "%"))
 	}
 
-	if req.OperateWay != "" {
-		result = result.Where(audit.OperateWay.Like("%" + req.OperateWay + "%"))
+	if len(req.OperateWay) != 0 {
+		result = result.Where(audit.OperateWay.In(req.OperateWay...))
 	}
 
 	return result, nil

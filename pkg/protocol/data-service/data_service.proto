@@ -1795,6 +1795,7 @@ message ApproveReq {
 message ApproveResp {
   bool have_credentials = 1;
   bool have_pull = 2;
+  string message = 3;
 }
 
 message GetLastSelectReq {
@@ -1851,7 +1852,7 @@ message ListAuditsReq {
   string start_time = 3;
   string end_time = 4;
   string operate = 5;
-  string operate_way = 6;
+  repeated string operate_way = 6;
   uint32 start = 7;
   uint32 limit = 8;
   bool all = 9;

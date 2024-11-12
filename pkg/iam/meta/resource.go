@@ -68,4 +68,6 @@ const (
 	Credential ResourceType = "credential"
 	// CredentialScope resource's bscp auth resource type
 	CredentialScope ResourceType = "credential_scope" //nolint:gosec
+	// Audit resource's bscp audit resource type
+	Audit ResourceType = "audit"
 )

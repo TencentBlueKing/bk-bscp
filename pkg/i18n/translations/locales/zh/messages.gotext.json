@@ -235,6 +235,11 @@
             "translation": "批量删除配置项失败"
         },
         {
+            "id": "batch recovery config items failed",
+            "message": "batch recovery config items failed",
+            "translation": ""
+        },
+        {
             "id": "batch delete groups failed",
             "message": "batch delete groups failed",
             "translation": "批量删除群组失败"
@@ -474,6 +479,16 @@
             "id": "the certificate format is incorrect, only X.509 format is supported",
             "message": "the certificate format is incorrect, only X.509 format is supported",
             "translation": "证书格式不正确, 仅支持X.509格式"
+        },
+        {
+            "id": "keys is required",
+            "message": "keys is required",
+            "translation": ""
+        },
+        {
+            "id": "batch recovery kv failed",
+            "message": "batch recovery kv failed",
+            "translation": ""
         },
         {
             "id": "delete template from template sets failed",
@@ -1303,6 +1318,211 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "message": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "message": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "AppConfigCnt",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "appConfigCnt"
+                }
+            ]
+        },
+        {
+            "id": "release {Name} is deprecated, can not be submited",
+            "message": "release {Name} is deprecated, can not be submited",
+            "translation": "版本{Name}已弃用，无法提交",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "release.Spec.Name"
+                }
+            ]
+        },
+        {
+            "id": "there is a release in publishing currently",
+            "message": "there is a release in publishing currently",
+            "translation": "当前有版本在上线"
+        },
+        {
+            "id": "release {Name} is deprecated, can not be revoke",
+            "message": "release {Name} is deprecated, can not be revoke",
+            "translation": "版本{Name}已弃用，无法撤消",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "release.Spec.Name"
+                }
+            ]
+        },
+        {
+            "id": "invalid publish_status: {PublishStatus}",
+            "message": "invalid publish_status: {PublishStatus}",
+            "translation": "上线状态无效：{PublishStatus}",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.PublishStatus"
+                }
+            ]
+        },
+        {
+            "id": "release name {ReleaseName} already exists",
+            "message": "release name {ReleaseName} already exists",
+            "translation": "版本名称{ReleaseName}已存在",
+            "placeholders": [
+                {
+                    "id": "ReleaseName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.ReleaseName"
+                }
+            ]
+        },
+        {
+            "id": "no permission to revoke",
+            "message": "no permission to revoke",
+            "translation": "没有撤销权限"
+        },
+        {
+            "id": "revoked not allowed, current publish status is: {PublishStatus}",
+            "message": "revoked not allowed, current publish status is: {PublishStatus}",
+            "translation": "不允许撤销，当前上线状态为：{PublishStatus}",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ]
+        },
+        {
+            "id": "rejected not allowed, current publish status is: {PublishStatus}",
+            "message": "rejected not allowed, current publish status is: {PublishStatus}",
+            "translation": "无法拒绝，当前上线状态为：{PublishStatus}",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ]
+        },
+        {
+            "id": "reason can not empty",
+            "message": "reason can not empty",
+            "translation": "原因不能为空"
+        },
+        {
+            "id": "no permission to approve",
+            "message": "no permission to approve",
+            "translation": "无权限审批"
+        },
+        {
+            "id": "pass not allowed, current publish status is: {PublishStatus}",
+            "message": "pass not allowed, current publish status is: {PublishStatus}",
+            "translation": "无法通过，当前上线状态为：{PublishStatus}",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ]
+        },
+        {
+            "id": "publish not allowed, current publish status is: {PublishStatus}",
+            "message": "publish not allowed, current publish status is: {PublishStatus}",
+            "translation": "不允许上线，当前上线状态为：{PublishStatus}",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ]
+        },
+        {
+            "id": "biz list is empty",
+            "message": "biz list is empty",
+            "translation": "业务列表为空"
+        },
+        {
+            "id": "this ticket has been approved, no further processing is required",
+            "message": "this ticket has been approved, no further processing is required",
+            "translation": "此单据已审批完成，无需进一步处理"
+        },
+        {
+            "id": "this ticket has been revoked, no further processing is required",
+            "message": "this ticket has been revoked, no further processing is required",
+            "translation": "此单据已撤销，无需进一步处理"
+        },
+        {
+            "id": "this ticket has been finished, no further processing is required",
+            "message": "this ticket has been finished, no further processing is required",
+            "translation": "此单据已结束，无需进一步处理"
+        },
+        {
+            "id": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "message": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "translation": "此单据已撤销，无效的单据状态: {CurrentStatus}",
+            "placeholders": [
+                {
+                    "id": "CurrentStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ticketStatus.Data.CurrentStatus"
                 }
             ]
         },

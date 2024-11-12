@@ -34,4 +34,5 @@ message AppSpec {
 message AuditApp {
   string name = 1;
   string creator = 2;
+  string approve_type = 3;
 }

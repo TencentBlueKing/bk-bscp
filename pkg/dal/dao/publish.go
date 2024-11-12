@@ -139,15 +139,33 @@ func genStrategy(kit *kit.Kit, opt *types.PublishOption, stgID uint32, groups []
 		state = table.PublishState(opt.PubState)
 	}
 
+	scope := &table.Scope{
+		Groups: groups,
+	}
+	for _, v := range opt.Groups {
+		if v == 0 {
+			scope.Groups = append(scope.Groups, &table.Group{
+				ID: 0,
+				Spec: &table.GroupSpec{
+					Name:     "默认分组",
+					Public:   true,
+					Mode:     table.GroupModeDefault,
+					Selector: new(selector.Selector),
+					UID:      "",
+				},
+				Attachment: &table.GroupAttachment{},
+				Revision:   &table.Revision{},
+			})
+		}
+	}
+
 	return &table.Strategy{
 		ID: stgID,
 		Spec: &table.StrategySpec{
-			Name:      now.Format(time.RFC3339),
-			ReleaseID: opt.ReleaseID,
-			AsDefault: opt.Default,
-			Scope: &table.Scope{
-				Groups: groups,
-			},
+			Name:              now.Format(time.RFC3339),
+			ReleaseID:         opt.ReleaseID,
+			AsDefault:         opt.Default,
+			Scope:             scope,
 			Memo:              opt.Memo,
 			PublishType:       opt.PublishType,
 			PublishTime:       opt.PublishTime,
@@ -156,6 +174,7 @@ func genStrategy(kit *kit.Kit, opt *types.PublishOption, stgID uint32, groups []
 			Approver:          opt.Approver,
 			ApproverProgress:  opt.ApproverProgress,
 			FinalApprovalTime: time.Now().UTC(),
+			ApproveType:       opt.ApproveType,
 		},
 		State: &table.StrategyState{
 			PubState: state,

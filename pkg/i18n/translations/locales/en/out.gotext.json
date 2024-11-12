@@ -273,6 +273,13 @@
             "fuzzy": true
         },
         {
+            "id": "batch recovery config items failed",
+            "message": "batch recovery config items failed",
+            "translation": "batch recovery config items failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "batch delete groups failed",
             "message": "batch delete groups failed",
             "translation": "batch delete groups failed",
@@ -548,6 +555,20 @@
             "id": "the certificate format is incorrect, only X.509 format is supported",
             "message": "the certificate format is incorrect, only X.509 format is supported",
             "translation": "the certificate format is incorrect, only X.509 format is supported",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "keys is required",
+            "message": "keys is required",
+            "translation": "keys is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "batch recovery kv failed",
+            "message": "batch recovery kv failed",
+            "translation": "batch recovery kv failed",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -1492,6 +1513,249 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "message": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "translation": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "message": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "translation": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "AppConfigCnt",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "appConfigCnt"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "release {Name} is deprecated, can not be submited",
+            "message": "release {Name} is deprecated, can not be submited",
+            "translation": "release {Name} is deprecated, can not be submited",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "release.Spec.Name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "there is a release in publishing currently",
+            "message": "there is a release in publishing currently",
+            "translation": "there is a release in publishing currently",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "release {Name} is deprecated, can not be revoke",
+            "message": "release {Name} is deprecated, can not be revoke",
+            "translation": "release {Name} is deprecated, can not be revoke",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "release.Spec.Name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid publish_status: {PublishStatus}",
+            "message": "invalid publish_status: {PublishStatus}",
+            "translation": "invalid publish_status: {PublishStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.PublishStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "release name {ReleaseName} already exists",
+            "message": "release name {ReleaseName} already exists",
+            "translation": "release name {ReleaseName} already exists",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ReleaseName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.ReleaseName"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no permission to revoke",
+            "message": "no permission to revoke",
+            "translation": "no permission to revoke",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "revoked not allowed, current publish status is: {PublishStatus}",
+            "message": "revoked not allowed, current publish status is: {PublishStatus}",
+            "translation": "revoked not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "rejected not allowed, current publish status is: {PublishStatus}",
+            "message": "rejected not allowed, current publish status is: {PublishStatus}",
+            "translation": "rejected not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "reason can not empty",
+            "message": "reason can not empty",
+            "translation": "reason can not empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "no permission to approve",
+            "message": "no permission to approve",
+            "translation": "no permission to approve",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "pass not allowed, current publish status is: {PublishStatus}",
+            "message": "pass not allowed, current publish status is: {PublishStatus}",
+            "translation": "pass not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "publish not allowed, current publish status is: {PublishStatus}",
+            "message": "publish not allowed, current publish status is: {PublishStatus}",
+            "translation": "publish not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PublishStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strategy.Spec.PublishStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "biz list is empty",
+            "message": "biz list is empty",
+            "translation": "biz list is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "this ticket has been approved, no further processing is required",
+            "message": "this ticket has been approved, no further processing is required",
+            "translation": "this ticket has been approved, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "this ticket has been revoked, no further processing is required",
+            "message": "this ticket has been revoked, no further processing is required",
+            "translation": "this ticket has been revoked, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "this ticket has been finished, no further processing is required",
+            "message": "this ticket has been finished, no further processing is required",
+            "translation": "this ticket has been finished, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "message": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "translation": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CurrentStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ticketStatus.Data.CurrentStatus"
                 }
             ],
             "fuzzy": true

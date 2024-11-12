@@ -162,7 +162,8 @@ func (cm *Publish) updateStrategy(kt *kit.Kit) {
 	}
 
 	err = cm.set.Strategy().UpdateByIDs(kt, tx, manulStrategies, map[string]interface{}{
-		"publish_type": table.Manually,
+		"publish_type":        table.Manually,
+		"final_approval_time": time.Now().UTC(),
 	})
 	if err != nil {
 		logs.Errorf("update strategy by ids manually failed, err: %s, rid: %s", err.Error(), kt.Rid)
@@ -170,8 +171,9 @@ func (cm *Publish) updateStrategy(kt *kit.Kit) {
 	}
 
 	err = cm.set.Strategy().UpdateByIDs(kt, tx, publishStrategies, map[string]interface{}{
-		"publish_status": table.AlreadyPublish,
-		"pub_state":      table.Publishing,
+		"publish_status":      table.AlreadyPublish,
+		"pub_state":           table.Publishing,
+		"final_approval_time": time.Now().UTC(),
 	})
 	if err != nil {
 		logs.Errorf("update strategy by ids already publish failed, err: %s, rid: %s", err.Error(), kt.Rid)

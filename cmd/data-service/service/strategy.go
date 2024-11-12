@@ -175,7 +175,7 @@ func (s *Service) GetReleasesStatus(ctx context.Context, req *pbds.GetReleasesSt
 		Status:     pbstrategy.PbStrategyState(strategy.State),
 		Attachment: pbstrategy.PbStrategyAttachment(strategy.Attachment),
 		Revision:   pbstrategy.PbRevision(strategy.Revision),
-		App:        &pbstrategy.AppSpec{Creator: app.Revision.Creator},
+		App:        &pbstrategy.AppSpec{Creator: app.Revision.Creator, ApproveType: strategy.Spec.ApproveType},
 	}
 
 	return &resp, nil

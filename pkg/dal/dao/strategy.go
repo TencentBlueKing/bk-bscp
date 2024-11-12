@@ -27,6 +27,8 @@ type Strategy interface {
 	GetStrategyByIDs(kit *kit.Kit, strategyIDs []uint32) ([]*table.Strategy, error)
 	// ListStrategyByItsm list strategy by itsm.
 	ListStrategyByItsm(kit *kit.Kit) ([]*table.Strategy, error)
+	// ListStrategyByReleasesIDs list strategy by ReleasesID.
+	ListStrategyByReleasesIDs(kit *kit.Kit, releasesIDs []uint32) ([]*table.Strategy, error)
 	// UpdateByID update strategy kv by id.
 	UpdateByID(kit *kit.Kit, tx *gen.QueryTx, strategyID uint32, m map[string]interface{}) error
 	// UpdateByIDs update strategy kv by ids
@@ -70,6 +72,13 @@ func (dao *strategyDao) ListStrategyByItsm(kit *kit.Kit) ([]*table.Strategy, err
 		m.PublishStatus.In(string(table.PendingApproval), string(table.PendingPublish))).Find()
 }
 
+// ListStrategyByReleasesIDs list strategy by ReleasesIDs.
+func (dao *strategyDao) ListStrategyByReleasesIDs(kit *kit.Kit, releasesIDs []uint32) ([]*table.Strategy, error) {
+	m := dao.genQ.Strategy
+	subQuery := m.WithContext(kit.Ctx).Select(m.ID.Max()).Where(m.ReleaseID.In(releasesIDs...)).Group(m.ReleaseID)
+	return m.WithContext(kit.Ctx).Where(m.WithContext(kit.Ctx).Columns(m.ID).In(subQuery)).Find()
+}
+
 // UpdateByID update strategy kv by id
 func (dao *strategyDao) UpdateByID(kit *kit.Kit, tx *gen.QueryTx, strategyID uint32, m map[string]interface{}) error {
 	s := tx.Strategy
@@ -85,5 +94,12 @@ func (dao *strategyDao) UpdateByIDs(
 	}
 	s := tx.Strategy
 	_, err := s.WithContext(kit.Ctx).Where(s.ID.In(strategyIDs...)).Updates(m)
-	return err
+	if err != nil {
+		return err
+	}
+	_, err = s.WithContext(kit.Ctx).Where(s.ID.In(strategyIDs...)).UpdateSimple(s.Reviser.SetCol(s.Creator))
+	if err != nil {
+		return err
+	}
+	return nil
 }

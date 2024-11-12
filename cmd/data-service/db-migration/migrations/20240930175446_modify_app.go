@@ -67,21 +67,21 @@ func mig20240930175446Up(tx *gorm.DB) error {
 func mig20240930175446Down(tx *gorm.DB) error {
 	// Applications add new column
 	if !tx.Migrator().HasColumn(&Applications{}, "is_approve") {
-		if err := tx.Migrator().AddColumn(&Applications{}, "is_approve"); err != nil {
+		if err := tx.Migrator().DropColumn(&Applications{}, "is_approve"); err != nil {
 			return err
 		}
 	}
 
 	// Applications add new column
 	if !tx.Migrator().HasColumn(&Applications{}, "approve_type") {
-		if err := tx.Migrator().AddColumn(&Applications{}, "approve_type"); err != nil {
+		if err := tx.Migrator().DropColumn(&Applications{}, "approve_type"); err != nil {
 			return err
 		}
 	}
 
 	// Applications add new column
 	if !tx.Migrator().HasColumn(&Applications{}, "approver") {
-		if err := tx.Migrator().AddColumn(&Applications{}, "approver"); err != nil {
+		if err := tx.Migrator().DropColumn(&Applications{}, "approver"); err != nil {
 			return err
 		}
 	}

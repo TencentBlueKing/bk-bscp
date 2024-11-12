@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/cache-service"
@@ -86,7 +87,7 @@ func (s *Service) SubmitPublishApprove(
 		return nil, err
 	}
 	if release.Spec.Deprecated {
-		return nil, fmt.Errorf("release %s is deprecated, can not be submited", release.Spec.Name)
+		return nil, fmt.Errorf(i18n.T(grpcKit, "release %s is deprecated, can not be submited", release.Spec.Name))
 	}
 
 	// 获取最近的上线版本
@@ -102,7 +103,7 @@ func (s *Service) SubmitPublishApprove(
 
 	// 有在上线的版本则提示不能上线
 	if strategy.Spec.PublishStatus == table.PendingApproval || strategy.Spec.PublishStatus == table.PendingPublish {
-		return nil, errors.New("there is a release in publishing currently")
+		return nil, errors.New(i18n.T(grpcKit, "there is a release in publishing currently"))
 	}
 
 	isRollback := true
@@ -224,7 +225,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		return nil, err
 	}
 	if release.Spec.Deprecated {
-		return nil, fmt.Errorf("release %s is deprecated, can not be revoke", release.Spec.Name)
+		return nil, errors.New(i18n.T(grpcKit, "release %s is deprecated, can not be revoke", release.Spec.Name))
 	}
 
 	strategy, err := s.dao.Strategy().GetLast(grpcKit, req.BizId, req.AppId, req.ReleaseId, req.StrategyId)
@@ -309,7 +310,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("invalid publish_status: %s", req.PublishStatus)
+		return nil, errors.New(i18n.T(grpcKit, "invalid publish_status: %s", req.PublishStatus))
 	}
 
 	updateContent["reviser"] = grpcKit.User
@@ -360,14 +361,10 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		return nil, err
 	}
 	isRollback = false
-	// 在itsm操作后数据不正常的皆以报错形式返回
-	// 但如果是回调地址调用则正常返回
-	if message != "" && grpcKit.OperateWay != "" {
-		return nil, errors.New(message)
-	}
 	return &pbds.ApproveResp{
 		HaveCredentials: haveCredentials,
 		HavePull:        havePull,
+		Message:         message,
 	}, nil
 }
 
@@ -385,7 +382,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	if _, e := s.dao.Release().GetByName(grpcKit, req.BizId, req.AppId, req.ReleaseName); e == nil {
-		return nil, fmt.Errorf("release name %s already exists", req.ReleaseName)
+		return nil, errors.New(i18n.T(grpcKit, "release name %s already exists", req.ReleaseName))
 	}
 
 	// 获取最近的上线版本
@@ -403,7 +400,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 
 	// 有在上线的版本则提示不能上线
 	if strategy.Spec.PublishStatus == table.PendingApproval || strategy.Spec.PublishStatus == table.PendingPublish {
-		return nil, errors.New("there is a release in publishing currently")
+		return nil, errors.New(i18n.T(grpcKit, "there is a release in publishing currently"))
 	}
 
 	// 默认要回滚，除非已经提交
@@ -498,6 +495,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 		PublishType:   table.Immediately,
 		PublishStatus: table.AlreadyPublish,
 		PubState:      string(table.Publishing),
+		ApproveType:   string(app.Spec.ApproveType),
 	}
 
 	// if approval required, current approver required, pub_state unpublished
@@ -507,13 +505,6 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 		opt.Approver = app.Spec.Approver
 		opt.ApproverProgress = app.Spec.Approver
 		opt.PubState = string(table.Unpublished)
-	}
-
-	// 后续app改审批方式的时候可以判断是或签还是会签
-	if app.Spec.ApproveType == table.OrSign {
-		opt.Approver = app.Spec.Approver
-		approver := strings.Split(app.Spec.Approver, ",")
-		opt.Approver = strings.Join(approver, "|")
 	}
 
 	pshID, err := s.dao.Publish().SubmitWithTx(grpcKit, tx, opt)
@@ -579,12 +570,13 @@ func (s *Service) revokeApprove(
 
 	// 提单的人才能撤销
 	if strategy.Revision.Creator != kit.User && kit.OperateWay == string(enumor.WebUI) {
-		return nil, errors.New("no permission to revoke")
+		return nil, errors.New(i18n.T(kit, "no permission to revoke"))
 	}
 
 	// 只有待上线以及待审批的类型才允许撤回
 	if strategy.Spec.PublishStatus != table.PendingPublish && strategy.Spec.PublishStatus != table.PendingApproval {
-		return nil, fmt.Errorf("revoked not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
+		return nil, errors.New(i18n.T(kit, "revoked not allowed, current publish status is: %s",
+			strategy.Spec.PublishStatus))
 	}
 
 	return map[string]interface{}{
@@ -600,11 +592,12 @@ func (s *Service) rejectApprove(
 	kit *kit.Kit, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
 	if strategy.Spec.PublishStatus != table.PendingApproval {
-		return nil, fmt.Errorf("rejected not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
+		return nil, errors.New(i18n.T(kit, "rejected not allowed, current publish status is: %s",
+			strategy.Spec.PublishStatus))
 	}
 
 	if req.Reason == "" {
-		return nil, errors.New("reason can not empty")
+		return nil, errors.New(i18n.T(kit, "reason can not empty"))
 	}
 
 	var rejector string
@@ -625,7 +618,7 @@ func (s *Service) rejectApprove(
 
 	// 需要审批但不是审批人的情况返回无权限审批
 	if rejector == "" {
-		return nil, errors.New("no permission to approve")
+		return nil, errors.New(i18n.T(kit, "no permission to approve"))
 	}
 
 	return map[string]interface{}{
@@ -641,10 +634,10 @@ func (s *Service) passApprove(
 	kit *kit.Kit, tx *gen.QueryTx, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
 	if strategy.Spec.PublishStatus != table.PendingApproval {
-		return nil, fmt.Errorf("pass not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
+		return nil, errors.New(i18n.T(kit, "pass not allowed, current publish status is: %s",
+			strategy.Spec.PublishStatus))
 	}
 
-	// 存在app更改成不审批的情况，要根据审批人来确定是会签还是或签
 	// 判断是否在审批人队列
 	isApprover := false
 	progressUsers := strings.Split(strategy.Spec.ApproverProgress, ",")
@@ -672,13 +665,13 @@ func (s *Service) passApprove(
 
 	// 页面过来的数据不是审批人的情况返回无权限审批
 	if !isApprover && kit.OperateWay == string(enumor.WebUI) {
-		return nil, errors.New("no permission to approve")
+		return nil, errors.New(i18n.T(kit, "no permission to approve"))
 	}
 
 	result := make(map[string]interface{})
 	publishStatus := table.PendingApproval
 	// 或签通过或者是只有一个审批人的情况
-	if strings.Contains(strategy.Spec.Approver, "|") || strategy.Spec.Approver == kit.User {
+	if strategy.Spec.ApproveType == string(table.OrSign) || strategy.Spec.Approver == kit.User {
 		publishStatus = table.PendingPublish
 		result["approver_progress"] = kit.User // 需要更新下给前端展示
 		result["itsm_ticket_status"] = constant.ItsmTicketStatusPassed
@@ -725,7 +718,8 @@ func (s *Service) publishApprove(
 	kit *kit.Kit, tx *gen.QueryTx, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
 
 	if strategy.Spec.PublishStatus != table.PendingPublish {
-		return nil, fmt.Errorf("publish not allowed, current publish status is: %s", strategy.Spec.PublishStatus)
+		return nil, errors.New(i18n.T(kit, "publish not allowed, current publish status is: %s",
+			strategy.Spec.PublishStatus))
 	}
 
 	opt := types.PublishOption{
@@ -766,6 +760,7 @@ func (s *Service) parsePublishOption(req *pbds.SubmitPublishApproveReq, app *tab
 		PublishTime:   req.PublishTime,
 		PublishStatus: table.PendingPublish,
 		PubState:      string(table.Publishing),
+		ApproveType:   string(app.Spec.ApproveType),
 	}
 
 	// if approval required, current approver required, pub_state unpublished
@@ -774,13 +769,6 @@ func (s *Service) parsePublishOption(req *pbds.SubmitPublishApproveReq, app *tab
 		opt.Approver = app.Spec.Approver
 		opt.ApproverProgress = app.Spec.Approver
 		opt.PubState = string(table.Unpublished)
-	}
-
-	// 后续app改审批方式的时候可以判断是或签还是会签
-	if app.Spec.ApproveType == table.OrSign {
-		opt.Approver = app.Spec.Approver
-		approver := strings.Split(app.Spec.Approver, ",")
-		opt.Approver = strings.Join(approver, "|")
 	}
 
 	// publish immediately
@@ -998,7 +986,7 @@ func (s *Service) submitCreateApproveTicket(
 	}
 
 	if len(bizList.Info) == 0 {
-		return nil, fmt.Errorf("biz list is empty")
+		return nil, errors.New(i18n.T(kt, "biz list is empty"))
 	}
 
 	var bizName string
@@ -1164,17 +1152,14 @@ func checkTicketStatus(grpcKit *kit.Kit,
 			// 审批通过，非待上线的情况
 			if GetApproveNodeResultData.Data.ApproveResult {
 				req.PublishStatus = string(table.PendingPublish)
-				return req,
-					fmt.Sprintf("approval has been passed by itsm person: %s",
-						GetApproveNodeResultData.Data.Processeduser), nil
+				return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
 			}
 			// itsm驳回
 			if !GetApproveNodeResultData.Data.ApproveResult {
 				req.PublishStatus = string(table.RejectedApproval)
 				req.Reason = GetApproveNodeResultData.Data.ApproveRemark
 				return req,
-					fmt.Sprintf("approval has been rejected by itsm person: %s",
-						GetApproveNodeResultData.Data.Processeduser), nil
+					i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
 			}
 			logs.Infof("get approve node result, operateWay: %s, kit user: %s, approved by: %v, message: %s",
 				grpcKit.OperateWay, grpcKit.User, req.ApprovedBy, message)
@@ -1190,7 +1175,7 @@ func checkTicketStatus(grpcKit *kit.Kit,
 				// 已经审批过直接提示已经被审批过
 				if v == grpcKit.User || grpcKit.OperateWay == "" {
 					grpcKit.User = v
-					return req, "approval has been passed or rejected", nil
+					return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
 				}
 			}
 			logs.Infof("get ticket logs by pass, operateWay: %s, kit user: %s, approved by: %v, message: %s",
@@ -1200,19 +1185,20 @@ func checkTicketStatus(grpcKit *kit.Kit,
 
 	case constant.TicketRevokedStatu:
 		req.PublishStatus = string(table.RevokedPublish)
-		return req, "approval has been revoked by itsm person", nil
+		return req, i18n.T(grpcKit, "this ticket has been revoked, no further processing is required"), nil
 	case constant.TicketFinishedStatu:
 		// 允许审批通过后撤销
 		if req.PublishStatus == string(table.RevokedPublish) {
 			return req, message, nil
 		}
 		// 不是上线的状况下，单据已结束证明数据是正常的，直接报错返回
-		return req, "approval has been finished", nil
+		return req, i18n.T(grpcKit, "this ticket has been finished, no further processing is required"), nil
 	default:
 		// 其他状态一律当撤销
 		req.PublishStatus = string(table.RevokedPublish)
 		req.Reason = "invalid tikcet status: " + ticketStatus.Data.CurrentStatus
 		return req,
-			fmt.Sprintf("approval has been revoked, invalid tikcet status: %s", ticketStatus.Data.CurrentStatus), nil
+			i18n.T(grpcKit, "approval has been revoked, invalid tikcet status: %s", ticketStatus.Data.CurrentStatus),
+			nil
 	}
 }

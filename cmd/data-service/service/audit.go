@@ -83,10 +83,16 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 				Scope:             pbstrategy.PbScope(&value.Strategy.Scope),
 				Creator:           value.Strategy.Creator,
 				FinalApprovalTime: value.Strategy.FinalApprovalTime.Format(time.DateTime),
+				ItsmTicketType:    value.Strategy.ItsmTicketType,
+				ItsmTicketUrl:     value.Strategy.ItsmTicketUrl,
+				ItsmTicketSn:      value.Strategy.ItsmTicketSn,
+				ItsmTicketStatus:  value.Strategy.ItsmTicketStatus,
+				ItsmTicketStateId: int32(value.Strategy.ItsmTicketStateID),
 			},
 			App: &pbapp.AuditApp{
-				Name:    value.App.Name,
-				Creator: value.App.Creator,
+				Name:        value.App.Name,
+				Creator:     value.App.Creator,
+				ApproveType: value.Strategy.ApproveType,
 			},
 		})
 	}

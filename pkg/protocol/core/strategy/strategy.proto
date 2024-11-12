@@ -31,6 +31,11 @@ message StrategySpec {
   string approver_progress = 11;
   string memo = 12;
   string final_approval_time = 13;
+  string itsm_ticket_type = 14;
+  string itsm_ticket_url = 15;
+  string itsm_ticket_sn = 16;
+  string itsm_ticket_status = 17;
+  int32 itsm_ticket_state_id = 18;
 }
 
 // Scope defines the scope
@@ -72,9 +77,15 @@ message AuditStrategy {
   Scope scope = 10;
   string creator = 11;
   string final_approval_time = 12;
+  string itsm_ticket_type = 13;
+  string itsm_ticket_url = 14;
+  string itsm_ticket_sn = 15;
+  string itsm_ticket_status = 16;
+  int32 itsm_ticket_state_id = 17;
 }
 
 // AppSpec app relate
 message AppSpec {
   string creator = 1;
+  string approve_type = 2;
 }
