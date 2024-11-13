@@ -163,7 +163,7 @@
                   text
                   theme="primary"
                   :disabled="!isTimeout(row.strategy.publish_time) && !!row.strategy?.publish_time"
-                  @click="handleConfirm(row, 'publish')">
+                  @click="handlePublishClick(row)">
                   {{ t('确认上线') }}
                 </bk-button>
                 <!-- 1.待审批状态 且 对应审批人才可显示 -->
@@ -229,13 +229,23 @@
       </bk-loading>
     </div>
     <!-- 撤销弹窗 -->
-    <DialogConfirm
-      v-model:show="confirmShow"
+    <RepealDialog
+      v-model:show="repealDialogShow"
       :space-id="spaceId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
       :data="confirmData"
       @refresh-list="loadRecordList" />
+    <PublishDialog
+      v-model:show="publishDialogShow"
+      :bk-biz-id="spaceId"
+      :app-id="confirmData.serviceId"
+      :group-list="groupList"
+      :groups="groups"
+      :release-type="releaseType"
+      :second-confirm="true"
+      :memo="confirmData.memo"
+      @second-confirm="handleConfirmPublish" />
     <!-- 审批对比弹窗 -->
     <VersionDiff
       :show="approvalShow"
@@ -253,19 +263,23 @@
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
   import { IRecordQuery, IDialogData, IRowData } from '../../../../../types/record';
-  import { RECORD_RES_TYPE, ACTION, STATUS, INSTANCE, APPROVE_STATUS } from '../../../../constants/record';
+  import { RECORD_RES_TYPE, ACTION, STATUS, INSTANCE, APPROVE_STATUS, ONLINE_TYPE } from '../../../../constants/record';
   import { storeToRefs } from 'pinia';
   import useUserStore from '../../../../store/user';
   import { getRecordList, approve } from '../../../../api/record';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import MoreActions from './more-actions.vue';
-  import DialogConfirm from './dialog-confirm.vue';
+  import RepealDialog from './dialog-confirm.vue';
   import { InfoLine, Copy, TextFile } from 'bkui-vue/lib/icon';
   import VersionDiff from './version-diff.vue';
   import BkMessage from 'bkui-vue/lib/message';
   import { convertTime, copyToClipBoard } from '../../../../utils';
+  import { getServiceGroupList } from '../../../../api/group';
+  import { IGroupItemInService, IGroupToPublish } from '../../../../../types/group';
   import dayjs from 'dayjs';
+  import PublishDialog from '../../service/detail/components/publish-version/confirm-dialog.vue';
+  import { InfoBox } from 'bkui-vue';
 
   const props = withDefaults(
     defineProps<{
@@ -294,13 +308,20 @@
   const rowAppId = ref(-1);
   const rowReleaseId = ref(-1);
   const rowReleaseGroups = ref<number[]>([]);
-  const confirmShow = ref(false);
+  const repealDialogShow = ref(false);
+  const publishDialogShow = ref(false);
   const confirmType = ref('');
   const confirmData = ref<IDialogData>({
     service: '',
     version: '',
     group: '',
+    serviceId: 0,
+    releaseId: 0,
+    memo: '',
   });
+  const groupList = ref<IGroupToPublish[]>([]);
+  const groups = ref<IGroupToPublish[]>([]);
+  const releaseType = ref('select');
 
   // 数据过滤 S
   // 1. 资源类型
@@ -456,10 +477,10 @@
     return publishTime.isBefore(currentTime);
   };
 
-  // 上线/撤回提示框
+  // 撤回提示框
   const handleConfirm = (row: IRowData, type: string) => {
     confirmType.value = type;
-    confirmShow.value = true;
+    repealDialogShow.value = true;
     const matchVersion = row.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
     const matchGroup = row.audit.spec.res_instance.match(/group:([^\n]*)/);
     rowAppId.value = row.audit.attachment.app_id;
@@ -468,7 +489,110 @@
       service: row.app.name,
       version: matchVersion ? matchVersion[1] : '--',
       group: matchGroup ? matchGroup[1] : '--',
+      memo: '',
+      serviceId: row.audit.attachment.app_id,
+      releaseId: row.strategy.release_id,
     };
+  };
+
+  // 确认上线
+  const handlePublishClick = async (row: IRowData) => {
+    await getAllGroupData(row.audit.attachment.app_id);
+    const publishGroupIds = row.strategy.scope.groups.map((group) => group.id);
+    if (publishGroupIds.length === 0) {
+      groups.value = groupList.value;
+      releaseType.value = 'all';
+    } else {
+      groups.value = groupList.value.filter((item) => publishGroupIds.includes(item.id));
+      if (publishGroupIds.includes(0)) {
+        releaseType.value = 'all';
+      } else {
+        releaseType.value = 'select';
+      }
+    }
+    publishDialogShow.value = true;
+    confirmData.value = {
+      service: row.app.name,
+      version: '',
+      group: '',
+      memo: '',
+      serviceId: row.audit.attachment.app_id,
+      releaseId: row.strategy.release_id,
+    };
+  };
+
+  const handleConfirmPublish = async () => {
+    const resp = await approve(props.spaceId, confirmData.value.serviceId, confirmData.value.releaseId, {
+      publish_status: APPROVE_STATUS.already_publish,
+    });
+    // 这里有两种情况且不会同时出现：
+    // 1. itsm已经审批了，但我们产品页面还没有刷新
+    // 2. itsm已经撤销了，但我们产品页面还没有刷新
+    // 如果存在以上两种情况之一，提示使用message，否则继续后面流程
+    const { message } = resp;
+    if (message) {
+      // 不再走上线流程
+      BkMessage({
+        theme: 'primary',
+        message,
+      });
+    } else {
+      // 继续上线流程
+      handlePublishSuccess(resp.have_pull, false);
+    }
+  };
+
+  // 版本上线成功/提交成功
+  const handlePublishSuccess = (havePull: boolean, isApprove: boolean, publishType = '', publishTime = '') => {
+    if (havePull || (!havePull && isApprove)) {
+      InfoBox({
+        infoType: 'success',
+        'ext-cls': 'info-box-style',
+        title: publishTitle(isApprove, publishType, publishTime),
+        dialogType: 'confirm',
+      });
+    } else {
+      InfoBox({
+        infoType: 'success',
+        title: publishTitle(isApprove, publishType, publishTime),
+        'ext-cls': 'info-box-style',
+        confirmText: t('配置客户端'),
+        cancelText: t('稍后再说'),
+        onConfirm: () => {
+          const routeData = router.resolve({
+            name: 'configuration-example',
+            params: { spaceId: props.spaceId, appId: confirmData.value.serviceId },
+          });
+          window.open(routeData.href, '_blank');
+        },
+      });
+    }
+  };
+
+  // 版本上线文案
+  const publishTitle = (isApprove: boolean, type: string, time: string) => {
+    switch (type) {
+      case ONLINE_TYPE.manually:
+        return t('手动上线文案');
+      case ONLINE_TYPE.automatically:
+        // return t('待审批通过后，调整分组将自动上线');
+        return t('审批通过后上线文案');
+      case ONLINE_TYPE.scheduled:
+        return isApprove ? t('需审批-定时上线文案', { time }) : t('定时上线文案', { time });
+      default:
+        return t('版本已上线');
+    }
+  };
+
+  // 获取所有上线服务内的分组列表，并组装tree组件节点需要的数据
+  const getAllGroupData = async (appId: number) => {
+    const res = await getServiceGroupList(props.spaceId, appId);
+    groupList.value = res.details.map((group: IGroupItemInService) => {
+      const { group_id, group_name, release_id, release_name } = group;
+      const selector = group.new_selector;
+      const rules = selector.labels_and || selector.labels_or || [];
+      return { id: group_id, name: group_name, release_id, release_name, rules };
+    });
   };
 
   // 再次提交

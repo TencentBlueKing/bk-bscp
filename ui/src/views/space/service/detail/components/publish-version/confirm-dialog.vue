@@ -138,7 +138,6 @@
   import { AngleDown, AngleRight, ArrowsRight, HelpFill } from 'bkui-vue/lib/icon';
   import { publishVerSubmit, publishType } from '../../../../../../api/config';
   import { IGroupToPublish, IGroupPreviewItem } from '../../../../../../../types/group';
-  import { IConfigVersion } from '../../../../../../../types/config';
   import useConfigStore from '../../../../../../store/config';
   import { aggregatePreviewData, aggregateExcludedData } from '../hooks/aggregate-groups';
   import RuleTag from '../../../../groups/components/rule-tag.vue';
@@ -173,7 +172,6 @@
       show: boolean;
       bkBizId: string;
       appId: number;
-      versionList: IConfigVersion[];
       groupList: IGroupToPublish[];
       releaseType: string;
       releasedGroups?: number[];
