@@ -17,19 +17,24 @@
           </section>
           <div class="divider"></div>
         </section>
+        <!-- 待审批/待上线置顶软链 -->
+        <section
+          v-if="pendingApprovalVersion"
+          :class="['approval-version version-item', { active: versionData.id === pendingApprovalVersion.id }]"
+          @click="handleSelectVersion(pendingApprovalVersion)">
+          <div class="status">
+            {{ pendingApprovalVersion.status.strategy_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
+          </div>
+          <bk-overflow-title class="version-name" type="tips">
+            {{ pendingApprovalVersion.spec.name }}
+          </bk-overflow-title>
+        </section>
         <section
           v-for="version in versionsInView"
           :key="version.id"
-          :class="[
-            'version-item ',
-            { 'approval-version': pendingApprovalVersion?.id === version.id },
-            { active: versionData.id === version.id },
-          ]"
+          :class="['version-item', { active: versionData.id === version.id }]"
           @click="handleSelectVersion(version)">
-          <div v-if="pendingApprovalVersion?.id !== version.id" :class="['dot', version.status.publish_status]"></div>
-          <div v-else class="status">
-            {{ version.status.strategy_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
-          </div>
+          <div :class="['dot', version.status.publish_status]"></div>
           <bk-overflow-title class="version-name" type="tips">
             {{ version.spec.name }}
           </bk-overflow-title>
@@ -408,6 +413,7 @@
     gap: 8px;
     background: #fdf4e8 !important;
     font-size: 12px;
+    cursor: pointer;
     .status {
       width: 52px;
       height: 22px;

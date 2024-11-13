@@ -72,6 +72,7 @@
 
   const handleClose = () => {
     emits('update:show', false);
+    reason.value = '';
   };
   const handleConfirm = async () => {
     btnLoading.value = true;
@@ -91,6 +92,7 @@
         theme: message ? 'primary' : 'success',
         message: message ? t(message) : t('操作成功'),
       });
+      reason.value = '';
     } catch (e) {
       console.log(e);
     } finally {

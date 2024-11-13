@@ -5,7 +5,7 @@
       <date-picker class="date-picker" @change-time="updateParams" />
       <search-option ref="searchOptionRef" @send-search-data="updateParams" />
     </div>
-    <record-table :space-id="spaceId" :search-params="searchParams" />
+    <record-table :space-id="spaceId" :search-params="searchParams" @handle-table-filter="optionParams = $event" />
   </section>
 </template>
 <script setup lang="ts">
@@ -44,8 +44,8 @@
 
   const mergeData = () => {
     const params = {
-      ...dateTimeParams.value,
       ...optionParams.value,
+      ...dateTimeParams.value,
       app_id: Number(route.params.appId),
       all: Number(route.params.appId) <= -1,
     };

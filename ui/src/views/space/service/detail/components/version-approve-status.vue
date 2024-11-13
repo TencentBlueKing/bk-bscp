@@ -9,8 +9,8 @@
         v-show="approveStatus !== 0"
         :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
       <span class="approve-status-text">{{ approveText }}</span>
-      <bk-popover :popover-delay="[0, 0]" placement="bottom-end" theme="light">
-        <text-file v-show="approveStatus > -1" class="text-file" />
+      <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
+        <text-file v-show="approveStatus > -1 && approveStatus !== 1" class="text-file" />
         <template #content>
           <div class="popover-content">
             <template v-if="itsmData?.itsm_ticket_sn">
@@ -71,7 +71,7 @@
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
   const approverList = ref(''); // 审批人
-  const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1上线 2驳回 3撤销
+  const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1待上线(审批通过) 2驳回 3撤销
   const approveText = ref(''); // 审批文案
   const approveType = ref(''); // 审批方式
   const rejectionReason = ref(''); // 拒绝理由
@@ -94,8 +94,8 @@
   );
 
   watch(approveStatus, (newV, oldV) => {
-    // 状态发生变化才需要刷新版本列表状态
-    if (newV !== oldV && ![newV, oldV].includes(-1)) {
+    // 轮询中 且 状态发生变化才需要刷新版本列表状态
+    if (newV !== oldV && interval) {
       publishedVersionId.value = versionData.value.id;
       props.refreshVer();
     }
@@ -138,7 +138,14 @@
         sendData(resp.data);
         // 需要展示状态的版本
         filterShowVer();
-        interval = setInterval(loadStatus, 5000);
+        // 待审批/待上线状态 且 待上线为定时上线才需要轮询
+        if (approveStatus.value === 0 || (approveStatus.value === 1 && publishTime.value)) {
+          interval = setTimeout(loadStatus, 5000);
+        }
+        // 带审批/待上线状态轮询
+        // if ([0, 1].includes(approveStatus.value)) {
+        //   interval = setTimeout(loadStatus, 5000);
+        // }
       } catch (error) {
         console.log(error);
         clearInterval(interval);
@@ -192,7 +199,7 @@
 
   const sendData = (data: any) => {
     const { spec, revision } = data;
-    const releaseGroupIds = spec.scope.groups.map((item: any) => item.id);
+    const releaseGroupIds = spec.scope?.groups.map((item: any) => item.id);
     const approveData = {
       status: spec.publish_status,
       time: spec.publish_time,
@@ -233,8 +240,8 @@
     height: 13px;
     border-radius: 50%;
     &.online {
-      border: 3px solid #e0f5e7;
-      background-color: #3fc06d;
+      border: 3px solid #c4c6cc;
+      background-color: #f0f1f5;
     }
     &.offline {
       border: 3px solid #eeeef0;

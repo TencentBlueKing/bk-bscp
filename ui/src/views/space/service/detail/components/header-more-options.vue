@@ -11,11 +11,19 @@
               props.approveStatus as APPROVE_STATUS,
             ) && creator === userInfo.username
           "
-          @click="handleUndo">
+          @click="handleConfirm">
           {{ $t('撤销') }}
         </li>
       </bk-loading>
     </ul>
+    <!-- 撤销弹窗 -->
+    <DialogConfirm
+      v-model:show="confirmShow"
+      :space-id="String(route.params.spaceId)"
+      :app-id="Number(route.params.appId)"
+      :release-id="Number(route.params.versionId)"
+      :data="confirmData"
+      @refresh-list="handleUndo" />
   </div>
 </template>
 
@@ -26,10 +34,10 @@
   import useUserStore from '../../../../../store/user';
   import useConfigStore from '../../../../../store/config';
   import { Ellipsis } from 'bkui-vue/lib/icon';
-  import { approve } from '../../../../../api/record';
-  import BkMessage from 'bkui-vue/lib/message';
   import { APPROVE_STATUS } from '../../../../../constants/record';
-  import { useI18n } from 'vue-i18n';
+  import { getRecordList } from '../../../../../api/record';
+  import { IDialogData } from '../../../../../../types/record';
+  import DialogConfirm from '../../../records/components/dialog-confirm.vue';
 
   const versionStore = useConfigStore();
   const { userInfo } = storeToRefs(useUserStore());
@@ -50,9 +58,14 @@
 
   const route = useRoute();
   const router = useRouter();
-  const { t } = useI18n();
 
   const loading = ref(false);
+  const confirmShow = ref(false);
+  const confirmData = ref<IDialogData>({
+    service: '',
+    version: '',
+    group: '',
+  });
 
   // 跳转到服务记录页面
   const handleLinkTo = () => {
@@ -68,30 +81,35 @@
     window.open(url, '_blank');
   };
 
-  // 撤销审批
-  const handleUndo = async () => {
+  // 撤回提示框
+  const handleConfirm = async () => {
     loading.value = true;
+    confirmShow.value = true;
     try {
-      const { spaceId: biz_id, appId: app_id, versionId: release_id } = route.params;
-      const resp = await approve(String(biz_id), Number(app_id), Number(release_id), {
-        publish_status: APPROVE_STATUS.revoked_publish,
+      const res = await getRecordList(String(route.params.spaceId), {
+        limit: 1,
+        app_id: Number(route.params.appId),
       });
-      // 这里有两种情况且不会同时出现：
-      // 1. itsm已经审批了，但我们产品页面还没有刷新
-      // 2. itsm已经撤销了，但我们产品页面还没有刷新
-      // 如果存在以上两种情况之一，提示使用message，否则message的值为空
-      const { message } = resp;
-      BkMessage({
-        theme: message ? 'primary' : 'success',
-        message: message ? t(message) : t('操作成功'),
-      });
-      publishedVersionId.value = versionData.value.id;
-      emits('handleUndo', Number(release_id));
-    } catch (error) {
-      console.log(error);
+      const versionId = Number(route.params.versionId);
+      const currentVerData = res.details.find((item: any) => item.strategy.release_id === versionId);
+      const matchVersion = currentVerData.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
+      const matchGroup = currentVerData.audit.spec.res_instance.match(/group:([^\n]*)/);
+      confirmData.value = {
+        service: currentVerData.app.name || '--',
+        version: matchVersion ? matchVersion[1] : '--',
+        group: matchGroup ? matchGroup[1] : '--',
+      };
+    } catch (e) {
+      console.log(e);
     } finally {
       loading.value = false;
     }
+  };
+
+  // 撤销审批
+  const handleUndo = async () => {
+    publishedVersionId.value = versionData.value.id;
+    emits('handleUndo', Number(route.params.release_id));
   };
 </script>
 

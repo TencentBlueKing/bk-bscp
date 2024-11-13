@@ -10,17 +10,17 @@
           :data="tableData"
           @column-sort="handleSort"
           @column-filter="handleFilter">
-          <bk-table-column :label="t('操作时间')" width="155" :sort="true">
+          <bk-table-column :label="t('操作时间')" min-width="155" :sort="true">
             <template #default="{ row }">
               {{ convertTime(row.audit?.revision.created_at, 'local') }}
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('所属服务')" width="190">
+          <bk-table-column :label="t('所属服务')" min-width="190">
             <template #default="{ row }"> {{ row.app?.name || '--' }} </template>
           </bk-table-column>
           <bk-table-column
             :label="t('资源类型')"
-            :width="locale === 'zh-cn' ? '96' : '160'"
+            :min-width="locale === 'zh-cn' ? '96' : '160'"
             :filter="{
               filterFn: () => true,
               list: resTypeFilterList,
@@ -32,7 +32,7 @@
           </bk-table-column>
           <bk-table-column
             :label="t('操作行为')"
-            :width="locale === 'zh-cn' ? '114' : '240'"
+            :min-width="locale === 'zh-cn' ? '114' : '240'"
             :filter="{
               filterFn: () => true,
               list: actionFilterList,
@@ -52,7 +52,7 @@
               <!-- <div>{{ row.audit?.spec.res_instance || '--' }}</div> -->
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('操作人')" width="140">
+          <bk-table-column :label="t('操作人')" min-width="140">
             <template #default="{ row }">
               {{ row.audit?.spec.operator || '--' }}
             </template>
@@ -84,7 +84,7 @@
                   }"
                   class="time-icon"></div>
                 <!-- 信息提示icon：待审批/审批驳回样式 -->
-                <bk-popover :popover-delay="[0, 0]" placement="bottom-end" theme="light">
+                <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
                   <text-file
                     v-if="
                       [APPROVE_STATUS.pending_approval, APPROVE_STATUS.rejected_approval].includes(
@@ -150,20 +150,21 @@
             fixed="right"
             :show-overflow-tooltip="false"
             :label="t('操作')"
-            :width="locale === 'zh-cn' ? '110' : '150'">
+            :width="locale === 'zh-cn' ? '160' : '200'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
               <div v-if="row.audit && row.audit.spec.action === 'publish_release_config'" class="action-btns">
                 <!-- 创建者且版本待上线 才展示上线按钮;审批通过的时间在定时上线的时间以前，上线按钮置灰 -->
                 <bk-button
                   v-if="
-                    row.audit.spec.status === APPROVE_STATUS.pending_publish && row.app.creator === userInfo.username
+                    row.audit.spec.status === APPROVE_STATUS.pending_publish &&
+                    row.app.creator === userInfo.username &&
+                    (!row.strategy.publish_time || isTimeout(row.strategy.publish_time))
                   "
                   class="action-btn"
                   text
                   theme="primary"
-                  :disabled="!isTimeout(row.strategy.publish_time) && !!row.strategy?.publish_time"
-                  @click="handleConfirm(row, 'publish')">
+                  @click="handleConfirm(row)">
                   {{ t('确认上线') }}
                 </bk-button>
                 <!-- 1.待审批状态 且 对应审批人才可显示 -->
@@ -201,16 +202,37 @@
                   @click="retrySubmission(row)">
                   {{ t('再次提交') }}
                 </bk-button>
-                <span v-else class="empty-action">--</span>
-                <!-- 待上线/去审批状态 才显示更多操作；目前仅创建者有撤销权限 -->
-                <MoreActions
+                <span
+                  v-else-if="
+                    !(
+                      [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
+                        row.audit.spec.status,
+                      ) && row.strategy.creator === userInfo.username
+                    )
+                  "
+                  class="empty-action">
+                  --
+                </span>
+                <!-- 待上线/去审批状态且版本创建者才显示撤销 -->
+                <bk-button
                   v-if="
                     [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status) &&
                     row.strategy.creator === userInfo.username
                   "
-                  @handle-undo="handleConfirm(row, $event)" />
+                  text
+                  class="action-btn"
+                  theme="primary"
+                  @click="handleConfirm(row)">
+                  撤销
+                </bk-button>
+                <!-- <MoreActions
+                  v-if="
+                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status) &&
+                    row.strategy.creator === userInfo.username
+                  "
+                  @handle-undo="handleConfirm(row, $event)" /> -->
               </div>
-              <template v-else>--</template>
+              <template v-else>--2</template>
             </template>
           </bk-table-column>
           <template #empty>
@@ -259,7 +281,7 @@
   import { getRecordList, approve } from '../../../../api/record';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
-  import MoreActions from './more-actions.vue';
+  // import MoreActions from './more-actions.vue';
   import DialogConfirm from './dialog-confirm.vue';
   import { InfoLine, Copy, TextFile } from 'bkui-vue/lib/icon';
   import VersionDiff from './version-diff.vue';
@@ -295,7 +317,6 @@
   const rowReleaseId = ref(-1);
   const rowReleaseGroups = ref<number[]>([]);
   const confirmShow = ref(false);
-  const confirmType = ref('');
   const confirmData = ref<IDialogData>({
     service: '',
     version: '',
@@ -457,8 +478,7 @@
   };
 
   // 上线/撤回提示框
-  const handleConfirm = (row: IRowData, type: string) => {
-    confirmType.value = type;
+  const handleConfirm = (row: IRowData) => {
     confirmShow.value = true;
     const matchVersion = row.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
     const matchGroup = row.audit.spec.res_instance.match(/group:([^\n]*)/);
@@ -542,17 +562,26 @@
     switch (index) {
       case 2:
         searchParams.value.resource_type = checked.join(',');
+        if (!checked.length) {
+          delete searchParams.value.resource_type;
+        }
         break;
       case 3:
         searchParams.value.action = checked.join(',');
+        if (!checked.length) {
+          delete searchParams.value.action;
+        }
         break;
       case 7:
         searchParams.value.status = checked.join(',');
+        if (!checked.length) {
+          delete searchParams.value.status;
+        }
         break;
       default:
         break;
     }
-    emits('handle-table-filter'); // 使用表格过滤同步搜索框
+    emits('handle-table-filter', { ...searchParams.value }); // 使用表格过滤同步搜索框
     loadRecordList();
   };
 
@@ -669,6 +698,9 @@
   }
   .action-btns {
     position: relative;
+    .action-btn + .action-btn {
+      margin-left: 14px;
+    }
   }
   .table-list-pagination {
     padding: 12px;
