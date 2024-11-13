@@ -185,7 +185,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		strategy.PublishStatus, strategy.RejectReason, strategy.Approver, strategy.ApproverProgress,
 		strategy.UpdatedAt, strategy.Reviser, strategy.Creator, strategy.ReleaseID, strategy.Scope,
 		strategy.ItsmTicketSn, strategy.ItsmTicketUrl, strategy.ItsmTicketStateID, strategy.ItsmTicketStatus,
-		strategy.ItsmTicketType, strategy.ApproveType).
+		strategy.ItsmTicketType, strategy.ApproveType, strategy.Memo).
 		LeftJoin(app, app.ID.EqCol(audit.AppID)).
 		LeftJoin(strategy, strategy.ID.EqCol(audit.StrategyId)).
 		Where(audit.BizID.Eq(req.BizId), audit.ResourceType.In(string(enumor.ResAppConfig), string(enumor.ResGroup),

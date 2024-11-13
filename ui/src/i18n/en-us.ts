@@ -619,7 +619,7 @@ export default {
   '对于Windows客户端，以上文件权限、用户及用户组设置不生效，可在后置脚本中处理文件权限': 'For Windows clients, the above file permission, user and user group settings do not take effect, and file permissions can be handled in the post-script',
   '为确保最佳用户体验，此服务的配置文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config files for this service is limited to {n}. There are currently {m} and you can add {p} more',
   '为确保最佳用户体验，此服务的配置项数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of config items for this service is limited to {n}. There are currently {m} and you can add {p} more',
-  '为确保最佳用户体验，此服务的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of template files for this service is limited to {n}. There are currently {m} and you can add {p} more',
+  '为确保最佳用户体验，此套餐的模板文件数量限制为 {n} 个。当前已有 {m} 个，还可添加 {p} 个': 'In order to ensure the best user experience, the number of template files for this package is limited to {n}. There are currently {m} and you can add {p} more',
   批量恢复: 'Batch restore',
   批量恢复配置文件成功: 'Batch restore configuration file successfully',
   批量恢复配置项成功: 'Batch restore configuration item successfully',

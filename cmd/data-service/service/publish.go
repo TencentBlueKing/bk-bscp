@@ -140,7 +140,7 @@ func (s *Service) SubmitPublishApprove(
 	}
 
 	if req.All {
-		groupName = []string{"all"}
+		groupName = []string{"All"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
@@ -254,6 +254,8 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		if err != nil {
 			return nil, err
 		}
+		logs.Infof("check ticket status, operateWay: %s, kit user: %s, approved by: %v, message: %s",
+			grpcKit.OperateWay, grpcKit.User, req.ApprovedBy, message)
 	}
 
 	// 默认要回滚，除非已经提交
@@ -329,7 +331,8 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 	}
 
 	// 从页面进来且需要审批的数据则同步itsm
-	if app.Spec.IsApprove && message == "" && strategy.Spec.ItsmTicketStatus == constant.ItsmTicketStatusCreated {
+	if app.Spec.IsApprove && grpcKit.OperateWay == string(enumor.WebUI) && message == "" &&
+		strategy.Spec.ItsmTicketStatus == constant.ItsmTicketStatusCreated {
 		// 撤销状态下，直接撤销
 		if req.PublishStatus == string(table.RevokedPublish) {
 			err = itsm.WithdrawTicket(grpcKit.Ctx, itsmUpdata)
@@ -514,7 +517,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	if req.All {
-		groupName = []string{"all"}
+		groupName = []string{"All"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
@@ -1014,8 +1017,9 @@ func (s *Service) submitCreateApproveTicket(
 			"key":   "SCOPE",
 			"value": scope,
 		}, {
-			"key":   "COMPARE",
-			"value": fmt.Sprintf("%s/space/%d/records/all?limit=1&id=%d", cc.DataService().ITSM.BscpPageUrl, app.BizID, aduitId),
+			"key": "COMPARE",
+			"value": fmt.Sprintf("%s/space/%d/records/all?limit=1&id=%d",
+				cc.DataService().ITSM.BscpPageUrl, app.BizID, aduitId),
 		}, {
 			"key":   "BIZ_ID",
 			"value": app.BizID,
@@ -1128,6 +1132,12 @@ func checkTicketStatus(grpcKit *kit.Kit,
 	if req.PublishStatus == string(table.AlreadyPublish) {
 		return req, message, nil
 	}
+
+	// 如果从页面来的是撤回，直接返回，itsm撤销不会回调
+	if grpcKit.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RevokedPublish) {
+		return req, message, nil
+	}
+
 	// 先获取tikect status
 	ticketStatus, err := itsm.GetTicketStatus(grpcKit.Ctx, sn)
 	if err != nil {
@@ -1136,50 +1146,33 @@ func checkTicketStatus(grpcKit *kit.Kit,
 
 	switch ticketStatus.Data.CurrentStatus {
 	case constant.TicketRunningStatu:
-		// 如果从页面来的是撤回，直接返回，itsm撤销不会回调
-		if req.PublishStatus == string(table.RevokedPublish) {
+		// 统计itsm有多少人已经审批通过,有可能处于回调过程中
+		approveData, err := itsm.GetTicketLogs(grpcKit.Ctx, sn)
+		if err != nil {
 			return req, message, err
 		}
-		// 发生这种情况就是审批通过/驳回没有回调，手动更新
-		if len(ticketStatus.Data.CurrentSteps) == 0 {
-			GetApproveNodeResultData, err := itsm.GetApproveNodeResult(grpcKit.Ctx, sn, stateID)
+		// 失败需要有reason
+		if _, ok := approveData[constant.ItsmRejectedApproveResult]; ok {
+			getApproveNodeResultData, err := itsm.GetApproveNodeResult(grpcKit.Ctx, sn, stateID)
 			if err != nil {
 				return req, message, err
 			}
-
-			// 审批人列表，驳回的时候只有一个，会签通过时会以逗号分隔
-			req.ApprovedBy = strings.Split(GetApproveNodeResultData.Data.Processeduser, ",")
-			// 审批通过，非待上线的情况
-			if GetApproveNodeResultData.Data.ApproveResult {
-				req.PublishStatus = string(table.PendingPublish)
-				return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
-			}
-			// itsm驳回
-			if !GetApproveNodeResultData.Data.ApproveResult {
-				req.PublishStatus = string(table.RejectedApproval)
-				req.Reason = GetApproveNodeResultData.Data.ApproveRemark
-				return req,
-					i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
-			}
-			logs.Infof("get approve node result, operateWay: %s, kit user: %s, approved by: %v, message: %s",
-				grpcKit.OperateWay, grpcKit.User, req.ApprovedBy, message)
-		} else {
-			// 回调过程中或者审批过程中
-			// 统计itsm有多少人已经审批通过,有可能处于回调过程中
-			approver, err := itsm.GetTicketLogsByPass(grpcKit.Ctx, sn)
-			if err != nil {
-				return req, message, err
-			}
-			req.ApprovedBy = approver
-			for _, v := range approver {
+			req.Reason = getApproveNodeResultData.Data.ApproveRemark
+			req.PublishStatus = string(table.RejectedApproval)
+			req.ApprovedBy = approveData[constant.ItsmRejectedApproveResult]
+			return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
+		}
+		if _, ok := approveData[constant.ItsmPassedApproveResult]; ok {
+			req.ApprovedBy = approveData[constant.ItsmPassedApproveResult]
+			req.PublishStatus = string(table.PendingPublish)
+			for _, v := range req.ApprovedBy {
 				// 已经审批过直接提示已经被审批过
-				if v == grpcKit.User || grpcKit.OperateWay == "" {
+				if v == grpcKit.User || grpcKit.OperateWay != string(enumor.WebUI) {
 					grpcKit.User = v
-					return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
+					return req, i18n.T(grpcKit,
+						"this ticket has been approved, no further processing is required"), nil
 				}
 			}
-			logs.Infof("get ticket logs by pass, operateWay: %s, kit user: %s, approved by: %v, message: %s",
-				grpcKit.OperateWay, grpcKit.User, req.ApprovedBy, message)
 		}
 		return req, message, nil
 

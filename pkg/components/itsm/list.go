@@ -215,8 +215,8 @@ type TicketLogs struct {
 	Message  string `json:"message"`
 }
 
-// GetTicketLogsByPass get itsm ticket logs by sn
-func GetTicketLogsByPass(ctx context.Context, sn string) ([]string, error) {
+// GetTicketLogs get itsm ticket logs by sn
+func GetTicketLogs(ctx context.Context, sn string) (map[string][]string, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
@@ -225,7 +225,7 @@ func GetTicketLogsByPass(ctx context.Context, sn string) ([]string, error) {
 	}
 	reqURL := fmt.Sprintf("%s%s?sn=%s", host, getTicketLogsPath, sn)
 
-	var resp []string
+	resp := make(map[string][]string, 0)
 	// 解析返回的body
 	result := GetTicketLogsData{}
 	body, err := ItsmRequest(ctx, http.MethodGet, reqURL, nil)
@@ -245,11 +245,12 @@ func GetTicketLogsByPass(ctx context.Context, sn string) ([]string, error) {
 
 	for _, v := range result.Data.Logs {
 		if strings.Contains(v.Message, constant.ItsmRejectedApproveResult) {
-			return []string{v.Operator}, nil
+			resp[constant.ItsmRejectedApproveResult] = []string{v.Operator}
+			return resp, nil
 		}
 
 		if strings.Contains(v.Message, constant.ItsmPassedApproveResult) {
-			resp = append(resp, v.Operator)
+			resp[constant.ItsmPassedApproveResult] = append(resp[constant.ItsmPassedApproveResult], v.Operator)
 		}
 	}
 

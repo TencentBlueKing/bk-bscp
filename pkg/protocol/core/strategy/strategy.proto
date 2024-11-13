@@ -82,6 +82,7 @@ message AuditStrategy {
   string itsm_ticket_sn = 15;
   string itsm_ticket_status = 16;
   int32 itsm_ticket_state_id = 17;
+  string memo = 18;
 }
 
 // AppSpec app relate

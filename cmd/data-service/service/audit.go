@@ -88,6 +88,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 				ItsmTicketSn:      value.Strategy.ItsmTicketSn,
 				ItsmTicketStatus:  value.Strategy.ItsmTicketStatus,
 				ItsmTicketStateId: int32(value.Strategy.ItsmTicketStateID),
+				Memo:              value.Strategy.Memo,
 			},
 			App: &pbapp.AuditApp{
 				Name:        value.App.Name,

@@ -121,11 +121,6 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 		}
 		// 正常状态的单据
 		if ticket.CurrentStatus == constant.TicketRunningStatu {
-			ticketStatus, err := itsm.GetTicketStatus(kt.Ctx, ticket.SN)
-			if err != nil {
-				logs.Errorf("get ticket status failed, err: %s", err.Error())
-				return
-			}
 			req := &pbds.ApproveReq{
 				BizId:         strategyMap[ticket.SN].Attachment.BizID,
 				AppId:         strategyMap[ticket.SN].Attachment.AppID,
@@ -133,36 +128,34 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 				PublishStatus: string(table.PendingPublish),
 				StrategyId:    strategyMap[ticket.SN].ID,
 			}
-			// 正常通过或者驳回的单据
-			if len(ticketStatus.Data.CurrentSteps) == 0 {
-				gan, errResult := itsm.GetApproveNodeResult(kt.Ctx, ticket.SN,
-					strategyMap[ticket.SN].Spec.ItsmTicketStateID)
+
+			approveData, errResult := itsm.GetTicketLogs(kt.Ctx, ticket.SN)
+			if errResult != nil {
+				logs.Errorf("GetTicketLogs failed, err: %s", errResult.Error())
+				return
+			}
+			if len(approveData) == 0 {
+				continue
+			}
+
+			// 失败需要有reason
+			if _, ok := approveData[constant.ItsmRejectedApproveResult]; ok {
+				getApproveNodeResultData, errResult := itsm.GetApproveNodeResult(
+					kt.Ctx, ticket.SN, strategyMap[ticket.SN].Spec.ItsmTicketStateID)
 				if errResult != nil {
 					logs.Errorf("GetApproveNodeResult failed, err: %s", errResult.Error())
 					return
 				}
-				// itsm驳回了
-				if !gan.Data.ApproveResult {
-					req.PublishStatus = string(table.RejectedApproval)
-					req.Reason = gan.Data.ApproveRemark
-					md[strings.ToLower(constant.UserKey)] = []string{gan.Data.Processeduser}
-				}
-				req.ApprovedBy = strings.Split(gan.Data.Processeduser, ",")
-
-			} else {
-				// 统计有多少人已经审批通过
-				passApprover, errResult := itsm.GetTicketLogsByPass(kt.Ctx, ticket.SN)
-				if errResult != nil {
-					logs.Errorf("GetTicketLogsByPass failed, err: %s", errResult.Error())
-					return
-				}
-				if len(passApprover) == 0 {
-					continue
-				}
-
-				req.PublishStatus = string(table.PendingApproval)
-				req.ApprovedBy = passApprover
+				req.Reason = getApproveNodeResultData.Data.ApproveRemark
+				req.PublishStatus = string(table.RejectedApproval)
+				req.ApprovedBy = approveData[constant.ItsmRejectedApproveResult]
+				md[strings.ToLower(constant.UserKey)] = approveData[constant.ItsmRejectedApproveResult]
 			}
+
+			if _, ok := approveData[constant.ItsmPassedApproveResult]; ok {
+				req.ApprovedBy = approveData[constant.ItsmPassedApproveResult]
+			}
+
 			ctx := metadata.NewIncomingContext(kt.Ctx, md)
 			_, err = c.srv.Approve(ctx, req)
 			if err != nil {

@@ -114,4 +114,5 @@ type StrategyPart struct {
 	ItsmTicketStatus  string      `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
 	ItsmTicketStateID int         `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
 	ApproveType       string      `db:"approve_type" json:"approve_type" gorm:"column:approve_type"`
+	Memo              string      `db:"memo" json:"memo" gorm:"column:memo"`
 }

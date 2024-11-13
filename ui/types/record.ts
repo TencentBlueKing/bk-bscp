@@ -19,9 +19,12 @@ export interface IRecordQuery {
 
 // 审批操作：撤销/驳回/通过/手动上线
 export interface IDialogData {
-  service?: string;
-  version?: string;
-  group?: string;
+  service: string;
+  version: string;
+  group: string;
+  memo: string;
+  serviceId: number;
+  releaseId: number;
 }
 
 // 列表每行的数据
@@ -65,6 +68,7 @@ export interface IRowData {
     final_approval_time: string;
     reviser: string;
     release_id: number;
+    memo: string;
     scope: {
       groups: [
         {

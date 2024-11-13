@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    :title="`${t('上线版本')}-${versionData.spec.name}`"
+    :title="`${t('上线版本')}-${props.version ? props.version : versionData.spec.name}`"
     ext-cls="release-version-dialog"
     :is-show="props.show"
     :esc-close="false"
@@ -79,7 +79,7 @@
           v-model="localVal.memo"
           type="textarea"
           :disabled="props.secondConfirm"
-          :placeholder="t('请输入')"
+          :placeholder="props.secondConfirm ? ' ' : t('请输入')"
           :maxlength="200"
           :resize="true" />
       </bk-form-item>
@@ -138,7 +138,6 @@
   import { AngleDown, AngleRight, ArrowsRight, HelpFill } from 'bkui-vue/lib/icon';
   import { publishVerSubmit, publishType } from '../../../../../../api/config';
   import { IGroupToPublish, IGroupPreviewItem } from '../../../../../../../types/group';
-  import { IConfigVersion } from '../../../../../../../types/config';
   import useConfigStore from '../../../../../../store/config';
   import { aggregatePreviewData, aggregateExcludedData } from '../hooks/aggregate-groups';
   import RuleTag from '../../../../groups/components/rule-tag.vue';
@@ -173,13 +172,13 @@
       show: boolean;
       bkBizId: string;
       appId: number;
-      versionList: IConfigVersion[];
       groupList: IGroupToPublish[];
       releaseType: string;
       releasedGroups?: number[];
       groups: IGroupToPublish[];
       secondConfirm?: boolean;
       memo?: string;
+      version?: string;
     }>(),
     {
       releasedGroups: () => [],

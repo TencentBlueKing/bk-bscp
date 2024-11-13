@@ -66,7 +66,7 @@ func (s *Service) GetLastSelect(ctx context.Context, req *pbds.GetLastSelectReq)
 	}
 
 	// if approval is not required, it will only be immediately and periodical publish
-	if !app.Spec.IsApprove && (strategyRecord.Spec.PublishType == table.Immediately ||
+	if !app.Spec.IsApprove && !(strategyRecord.Spec.PublishType == table.Immediately ||
 		strategyRecord.Spec.PublishType == table.Scheduled) {
 		// default value
 		resp.PublishType = string(table.Immediately)
