@@ -245,6 +245,7 @@
       :release-type="releaseType"
       :second-confirm="true"
       :memo="confirmData.memo"
+      :version="confirmData.version"
       @second-confirm="handleConfirmPublish" />
     <!-- 审批对比弹窗 -->
     <VersionDiff
@@ -499,6 +500,7 @@
   const handlePublishClick = async (row: IRowData) => {
     await getAllGroupData(row.audit.attachment.app_id);
     const publishGroupIds = row.strategy.scope.groups.map((group) => group.id);
+    const matchVersion = row.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
     if (publishGroupIds.length === 0) {
       groups.value = groupList.value;
       releaseType.value = 'all';
@@ -513,9 +515,9 @@
     publishDialogShow.value = true;
     confirmData.value = {
       service: row.app.name,
-      version: '',
+      version: matchVersion ? matchVersion[1] : '--',
       group: '',
-      memo: '',
+      memo: row.strategy.memo,
       serviceId: row.audit.attachment.app_id,
       releaseId: row.strategy.release_id,
     };

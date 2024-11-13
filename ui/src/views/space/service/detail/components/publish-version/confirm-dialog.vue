@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    :title="`${t('上线版本')}-${versionData.spec.name}`"
+    :title="`${t('上线版本')}-${props.version ? props.version : versionData.spec.name}`"
     ext-cls="release-version-dialog"
     :is-show="props.show"
     :esc-close="false"
@@ -79,7 +79,7 @@
           v-model="localVal.memo"
           type="textarea"
           :disabled="props.secondConfirm"
-          :placeholder="t('请输入')"
+          :placeholder="props.secondConfirm ? ' ' : t('请输入')"
           :maxlength="200"
           :resize="true" />
       </bk-form-item>
@@ -178,6 +178,7 @@
       groups: IGroupToPublish[];
       secondConfirm?: boolean;
       memo?: string;
+      version?: string;
     }>(),
     {
       releasedGroups: () => [],

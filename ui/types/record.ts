@@ -68,6 +68,7 @@ export interface IRowData {
     final_approval_time: string;
     reviser: string;
     release_id: number;
+    memo: string;
     scope: {
       groups: [
         {
