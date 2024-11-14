@@ -54,7 +54,8 @@
                 【{{ TYPE_MAP[previewGroup.type as keyof typeof TYPE_MAP] }}】
               </div>
               <span v-if="previewGroup.type === 'modify'" class="release-name">
-                {{ previewGroup.name }} <ArrowsRight class="arrow-icon" /> {{ versionData.spec.name }}
+                {{ previewGroup.name }} <ArrowsRight class="arrow-icon" />
+                {{ props.version ? props.version : versionData.spec.name }}
               </span>
             </div>
             <div v-show="!previewGroup.fold" class="group-list">
