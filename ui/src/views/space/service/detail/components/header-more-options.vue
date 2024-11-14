@@ -65,6 +65,9 @@
     service: '',
     version: '',
     group: '',
+    serviceId: 0,
+    releaseId: 0,
+    memo: '',
   });
 
   // 跳转到服务记录页面
@@ -98,6 +101,9 @@
         service: currentVerData.app.name || '--',
         version: matchVersion ? matchVersion[1] : '--',
         group: matchGroup ? matchGroup[1] : '--',
+        serviceId: 0,
+        releaseId: 0,
+        memo: '',
       };
     } catch (e) {
       console.log(e);

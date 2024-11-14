@@ -97,7 +97,9 @@
                       <template v-if="row.strategy.itsm_ticket_sn">
                         <div>{{ $t('审批单') }}：</div>
                         <div class="itsm-content em">
-                          <div class="itsm-sn">{{ row.strategy.itsm_ticket_sn }}</div>
+                          <div class="itsm-sn" @click="handleLinkTo(row.strategy.itsm_ticket_url)">
+                            {{ row.strategy.itsm_ticket_sn }}
+                          </div>
                           <div class="itsm-action" @click="handleCopy(row.strategy.itsm_ticket_url)"><Copy /></div>
                         </div>
                       </template>
@@ -192,9 +194,7 @@
                 <!-- 审批驳回/已撤销才可显示 -->
                 <bk-button
                   v-else-if="
-                    [APPROVE_STATUS.rejected_approval, APPROVE_STATUS.revoked_publish].includes(
-                      row.audit.spec.status,
-                    ) && row.app.creator === userInfo.username
+                    [APPROVE_STATUS.rejected_approval, APPROVE_STATUS.revoked_publish].includes(row.audit.spec.status)
                   "
                   class="action-btn"
                   text
@@ -743,6 +743,13 @@
     ];
   };
 
+  // 跳转审批页面
+  const handleLinkTo = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   //  翻页
   const handlePageChange = (val: number) => {
     pagination.value.current = val;
@@ -879,6 +886,9 @@
     font-size: 12px;
     line-height: 16px;
     color: #4d4f56;
+    .itsm-sn {
+      cursor: pointer;
+    }
     .itsm-content {
       display: flex;
       justify-content: flex-start;

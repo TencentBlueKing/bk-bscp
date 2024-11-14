@@ -16,7 +16,9 @@
             <template v-if="itsmData?.itsm_ticket_sn">
               <div class="itsm-title">{{ $t('审批单') }}：</div>
               <div class="itsm-content em">
-                <div class="itsm-sn">{{ itsmData?.itsm_ticket_sn }}</div>
+                <div class="itsm-sn" @click="handleLinkTo(itsmData?.itsm_ticket_url)">
+                  {{ itsmData?.itsm_ticket_sn }}
+                </div>
                 <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
               </div>
             </template>
@@ -197,6 +199,13 @@
     });
   };
 
+  // 跳转审批页面
+  const handleLinkTo = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   const sendData = (data: any) => {
     const { spec, revision } = data;
     const releaseGroupIds = spec.scope?.groups.map((item: any) => item.id);
@@ -252,6 +261,9 @@
     font-size: 12px;
     line-height: 16px;
     color: #4d4f56;
+    .itsm-sn {
+      cursor: pointer;
+    }
     .itsm-content {
       display: flex;
       justify-content: flex-start;
