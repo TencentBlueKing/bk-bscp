@@ -218,11 +218,11 @@
           version.status.strategy_status = newVersion.status.strategy_status;
         }
       });
-      console.log(versionList.value, 111);
     } catch (error) {}
   };
 
   const handleSelectVersion = (version: IConfigVersion) => {
+    if (version.id === versionData.value.id) return;
     configStore.$patch((state) => {
       state.allExistConfigCount = 0;
       state.conflictFileCount = 0;
