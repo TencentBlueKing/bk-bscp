@@ -232,7 +232,7 @@
                   "
                   @handle-undo="handleConfirm(row, $event)" /> -->
               </div>
-              <template v-else>--2</template>
+              <template v-else>--</template>
             </template>
           </bk-table-column>
           <template #empty>
