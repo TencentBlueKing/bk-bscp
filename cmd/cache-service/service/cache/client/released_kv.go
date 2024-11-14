@@ -86,7 +86,8 @@ func (c *client) GetReleasedKvValue(kt *kit.Kit, bizID, appID, releaseID uint32,
 	}
 	rkv, err := c.db.GetReleasedKv(kt.RpcCtx(), r)
 	if err != nil {
-		logs.Errorf("get biz: %d release: %d Kv from db failed, err: %v, rid: %s", bizID, releaseID, err, kt.Rid)
+		logs.Errorf("get biz: %d release: %d key: %s Kv from db failed, err: %v, rid: %s",
+			bizID, releaseID, key, err, kt.Rid)
 		return "", err
 	}
 	c.mc.refreshLagMS.With(prm.Labels{"rsc": releasedKvValueRes, "biz": tools.Itoa(bizID)}).Observe(tools.SinceMS(start))
