@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // JoinUint32 joint the uint slice to a string
@@ -91,4 +92,20 @@ func IsNumber(s string) bool {
 	// Try to convert to a float64
 	_, err = strconv.ParseFloat(s, 64)
 	return err == nil
+}
+
+// RemoveSpace removes all space characters from a string
+func RemoveSpace(s string) string {
+	var b strings.Builder
+	// 预先分配内存
+	b.Grow(len(s))
+
+	for _, r := range s {
+		// 如果不是空白字符，就写入 Builder
+		if !unicode.IsSpace(r) {
+			b.WriteRune(r)
+		}
+	}
+
+	return b.String()
 }

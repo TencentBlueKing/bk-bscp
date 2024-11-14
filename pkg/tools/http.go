@@ -13,9 +13,12 @@
 package tools
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -68,7 +71,21 @@ func reqToCurl(r *http.Request) string {
 
 	reqMsg := fmt.Sprintf("curl -X %s '%s'%s", r.Method, rawURL.String(), headers)
 	if r.Body != nil {
-		reqMsg += " -d (io.Reader)"
+		contentType := r.Header.Get("Content-Type")
+		if RemoveSpace(contentType) == "application/json" ||
+			RemoveSpace(contentType) == "application/json;charset=utf-8" {
+			// 仅在内容为 JSON 时读取 body
+			bodyBytes, err := io.ReadAll(r.Body)
+			if err != nil {
+				reqMsg += " -d (error reading body)"
+			} else {
+				// 重新填充 Body，以便后续可以继续读取
+				r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				reqMsg += fmt.Sprintf(" -d '%s'", string(bodyBytes))
+			}
+		} else {
+			reqMsg += " -d (io.Reader)"
+		}
 	}
 
 	if r.Form.Encode() != "" {
@@ -83,8 +100,45 @@ func reqToCurl(r *http.Request) string {
 
 // respToCurl 返回日志
 func respToCurl(resp *http.Response, st time.Time) string {
-	respMsg := fmt.Sprintf("[%s] size=%s duration=%s",
+	respMsg := fmt.Sprintf("[%s] size=%s duration=%s\n",
 		resp.Status, humanize.Bytes(uint64(resp.ContentLength)), time.Since(st))
+
+	var responseHeaders []string
+	for header, values := range resp.Header {
+		for _, value := range values {
+			responseHeaders = append(responseHeaders, fmt.Sprintf("%s: %s", header, value))
+		}
+	}
+	responseHeaderStr := strings.Join(responseHeaders, "\n")
+
+	respMsg += fmt.Sprintf("HTTP/1.1 %d %s\n%s\n",
+		resp.StatusCode,
+		http.StatusText(resp.StatusCode),
+		responseHeaderStr,
+	)
+
+	// 读取并处理响应体
+	if resp.Body != nil {
+		// 检查 Content-Type
+		contentType := resp.Header.Get("Content-Type")
+		// 仅在内容为 JSON 或 HTML 或简单文本时添加到日志中
+		if RemoveSpace(contentType) == "application/json" ||
+			RemoveSpace(contentType) == "application/json;charset=utf-8" {
+			// 读取响应体内容
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				respMsg += "(error reading body)"
+			} else {
+				// 重新填充 Body，以便后续可以继续读取
+				resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+				respMsg += fmt.Sprintf(string(bodyBytes))
+			}
+		} else {
+			respMsg += "(io.Reader)"
+		}
+	}
+
 	return respMsg
 }
 
