@@ -109,6 +109,7 @@
       console.log(e);
     } finally {
       loading.value = false;
+      confirmShow.value = false;
     }
   };
 

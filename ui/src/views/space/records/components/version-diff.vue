@@ -121,6 +121,7 @@
       version.status.released_groups.some((group) => {
         if (releasedGroups.value.includes(group.id)) {
           list.push(version);
+          return true;
         }
         // 全量分组上线的版本中 含有 待上线版本的的分组, 也需要对比
         if (version.status.fully_released) {
