@@ -140,7 +140,7 @@ func (s *Service) SubmitPublishApprove(
 	}
 
 	if req.All {
-		groupName = []string{"All"}
+		groupName = []string{"ALL"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
@@ -517,7 +517,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	if req.All {
-		groupName = []string{"All"}
+		groupName = []string{"ALL"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
