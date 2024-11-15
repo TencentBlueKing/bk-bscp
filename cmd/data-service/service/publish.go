@@ -169,7 +169,7 @@ func (s *Service) SubmitPublishApprove(
 	if app.Spec.IsApprove {
 		scope := strings.Join(groupName, ",")
 		ticketData, errCreate := s.submitCreateApproveTicket(
-			grpcKit, app, release.Spec.Name, scope, ad.GetAuditID(), release.ID)
+			grpcKit, app, release.Spec.Name, scope, req.Memo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
 			logs.Errorf("submit create approve ticket, err: %v, rid: %s", errCreate, grpcKit.Rid)
 			return nil, errCreate
@@ -539,7 +539,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	if app.Spec.IsApprove {
 		scope := strings.Join(groupName, ",")
 		ticketData, errCreate := s.submitCreateApproveTicket(
-			grpcKit, app, release.Spec.Name, scope, ad.GetAuditID(), release.ID)
+			grpcKit, app, release.Spec.Name, scope, req.ReleaseMemo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
 			logs.Errorf("submit create approve ticket, err: %v, rid: %s", errCreate, grpcKit.Rid)
 			return nil, errCreate
@@ -962,8 +962,8 @@ func (s *Service) createReleasedHook(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, a
 
 // submitCreateApproveTicket create new itsm create approve ticket
 // nolint: funlen
-func (s *Service) submitCreateApproveTicket(
-	kt *kit.Kit, app *table.App, releaseName, scope string, aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
+func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, releaseName, scope, memo string,
+	aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
 
 	// 或签和会签是不同的模板
 	stateIDKey := constant.CreateOrSignApproveItsmStateID
@@ -1032,6 +1032,9 @@ func (s *Service) submitCreateApproveTicket(
 		}, {
 			"key":   "APPROVE_TYPE",
 			"value": approveType,
+		}, {
+			"key":   "MEMO",
+			"value": memo,
 		},
 	}
 
