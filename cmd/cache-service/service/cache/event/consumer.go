@@ -18,8 +18,8 @@ import (
 	"sync"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"

@@ -22,10 +22,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )

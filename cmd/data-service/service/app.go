@@ -20,20 +20,20 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/version"
-	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
-	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
-	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // CreateApp create application.

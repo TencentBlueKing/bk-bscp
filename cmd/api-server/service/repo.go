@@ -21,10 +21,10 @@ import (
 	"github.com/go-chi/render"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )

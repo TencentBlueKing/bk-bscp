@@ -18,8 +18,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 

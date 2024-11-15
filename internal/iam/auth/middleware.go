@@ -29,14 +29,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 )
 
 // initKitWithBKJWT 蓝鲸网关鉴权

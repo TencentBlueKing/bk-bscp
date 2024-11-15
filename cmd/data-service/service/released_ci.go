@@ -17,12 +17,12 @@ import (
 	"path"
 	"sort"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/search"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbrci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-ci"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // GetReleasedConfigItem get released config item

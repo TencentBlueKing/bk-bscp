@@ -16,9 +16,9 @@ package event
 import (
 	"sync"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 )
 
 // nolint: unused

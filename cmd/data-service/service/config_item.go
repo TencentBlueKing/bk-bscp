@@ -24,16 +24,14 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/search"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
@@ -41,6 +39,8 @@ import (
 	pbtset "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-set"
 	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateConfigItem create config item.
@@ -1394,7 +1394,7 @@ func (s *Service) checkRestorePrerequisites(kit *kit.Kit, bizID, appID uint32, n
 
 	if totalConfigItemCount > appConfigCnt {
 		return errf.New(errf.InvalidParameter,
-			i18n.T(kit, `the total number of config items(including template and non-template) 
+			i18n.T(kit, `the total number of config items(including template and non-template)
 			exceeded the limit %d`, appConfigCnt))
 	}
 

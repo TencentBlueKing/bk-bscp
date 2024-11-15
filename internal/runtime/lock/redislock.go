@@ -20,7 +20,7 @@ import (
 	prm "github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/atomic"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
