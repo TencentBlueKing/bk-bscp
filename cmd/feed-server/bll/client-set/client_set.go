@@ -18,13 +18,13 @@ import (
 
 	"google.golang.org/grpc"
 
+	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
-	iamauth "github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 
 // New create a client set instance.

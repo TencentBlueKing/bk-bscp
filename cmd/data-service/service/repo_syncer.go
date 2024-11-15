@@ -22,6 +22,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/space"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/repository"
@@ -29,7 +30,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
-	"github.com/TencentBlueKing/bk-bscp/pkg/space"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

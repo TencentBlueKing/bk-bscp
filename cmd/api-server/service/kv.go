@@ -13,7 +13,7 @@
 package service
 
 import (
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 

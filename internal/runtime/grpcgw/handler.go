@@ -23,9 +23,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/rest/view"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest/view"
 )
 
 // bkErrorHandler 蓝鲸规范化的错误返回

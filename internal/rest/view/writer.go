@@ -21,10 +21,10 @@ import (
 	"github.com/tidwall/sjson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/modifier"
+	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest/view/modifier"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest/view/webannotation"
 )
 
 const (

@@ -24,8 +24,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/lcache"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/observer"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/release"
+	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	iamauth "github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )

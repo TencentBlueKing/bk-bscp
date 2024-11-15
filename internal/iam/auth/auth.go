@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/space"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -36,13 +37,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
+	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/gwparser"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
-	"github.com/TencentBlueKing/bk-bscp/pkg/space"
 	esbcli "github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 )
 
 // Authorizer defines all the supported functionalities to do auth operation.

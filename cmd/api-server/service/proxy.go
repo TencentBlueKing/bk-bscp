@@ -23,14 +23,14 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/grpcgw"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/grpcgw"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // proxy all server's mux proxy.
