@@ -20,18 +20,18 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/natsort"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/natsort"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbhook "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/hook"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // CreateHook create a hook

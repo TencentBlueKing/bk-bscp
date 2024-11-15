@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
@@ -28,7 +29,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 )
 
 // moduleType auth logic module type.

@@ -35,6 +35,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/archive"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -45,7 +46,6 @@ import (
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/archive"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )

@@ -17,12 +17,12 @@ import (
 
 	"github.com/go-chi/render"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 )
 
 // HealthyHandler livenessProbe 健康检查

@@ -16,9 +16,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 

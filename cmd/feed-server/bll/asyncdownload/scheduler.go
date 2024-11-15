@@ -25,6 +25,7 @@ import (
 	prm "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/bcs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/gse"
@@ -34,7 +35,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

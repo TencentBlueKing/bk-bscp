@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/app"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/flags"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/flags"
 )
 
 // SysOpt is the system option

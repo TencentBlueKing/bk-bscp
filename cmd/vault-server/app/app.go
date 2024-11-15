@@ -28,15 +28,15 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/brpc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
+	pbvs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/vault-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbvs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/vault-server"
 )
 
 // Run start the config server

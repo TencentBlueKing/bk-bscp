@@ -16,8 +16,8 @@ package main
 import (
 	"github.com/spf13/pflag"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/flags"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/flags"
 )
 
 // Option defines the app's runtime flag options.

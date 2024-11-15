@@ -23,6 +23,7 @@ import (
 
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/natsort"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
@@ -33,7 +34,6 @@ import (
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/natsort"
 )
 
 // CreateApp create app with options

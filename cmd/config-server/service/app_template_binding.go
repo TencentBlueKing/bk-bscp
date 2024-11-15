@@ -20,16 +20,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/natsort"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/natsort"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbatb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-template-binding"
 	pbtset "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-set"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // CreateAppTemplateBinding create an app template binding

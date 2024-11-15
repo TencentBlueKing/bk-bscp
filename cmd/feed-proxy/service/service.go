@@ -25,11 +25,11 @@ import (
 
 	httpproxy "github.com/TencentBlueKing/bk-bscp/cmd/feed-proxy/proxy/http"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
