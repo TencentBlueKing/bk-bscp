@@ -21,7 +21,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/pkg/audit"
 	"k8s.io/klog/v2"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/audit/routematch"
+	"github.com/TencentBlueKing/bk-bscp/internal/audit/routematch"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 )
 

@@ -18,8 +18,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/audit"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
-	"github.com/TencentBlueKing/bk-bscp/pkg/audit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/view"
 )
