@@ -18,9 +18,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/repo"
 )
 
 func (s *Service) createRepo(w http.ResponseWriter, r *http.Request) {

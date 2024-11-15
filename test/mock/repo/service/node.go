@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
