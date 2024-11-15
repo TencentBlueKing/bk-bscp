@@ -58,6 +58,7 @@
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
+          :creator="creator"
           @confirm="handleRefresh" />
         <ModifyGroupPublish
           :bk-biz-id="props.bkBizId"
@@ -65,6 +66,7 @@
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
+          :creator="creator"
           @confirm="handleRefresh" />
         <!-- 更多选项 -->
         <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->

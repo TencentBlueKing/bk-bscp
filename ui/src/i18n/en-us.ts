@@ -572,6 +572,7 @@ export default {
   审批时间: 'Approval time',
   驳回原因: 'Reason for rejection',
   请输入驳回理由: 'Please enter the reason for rejection',
+  无确认上线权限文案: 'Please contact the service go-live submitter, {creator}, for confirmation of the go-live operation\nIf you are unable to reach the submitter and there are urgent configurations that need to be published\nyou may perform a revoke go-live and then resubmit the service go-live process',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',

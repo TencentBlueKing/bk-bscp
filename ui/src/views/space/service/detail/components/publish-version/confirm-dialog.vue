@@ -110,13 +110,23 @@
             </template>
           </bk-radio-group>
           <bk-date-picker
+            ref="datePickerRef"
             v-if="localVal.publish_type === 'scheduled'"
             v-model="localVal.publish_time"
+            placement="top"
+            append-to-body
+            type="datetime"
             :editable="false"
             :clearable="false"
             :disabled-date="disabledDate"
             :hide-disabled-options="true"
-            type="datetime">
+            ext-popover-cls="time-header-style"
+            :time-picker-options="{
+              allowCrossDay: true,
+            }">
+            <template #header>
+              <div v-if="isTimeMode" @click="getCurrentTime">此刻</div>
+            </template>
           </bk-date-picker>
         </bk-loading>
       </bk-form-item>
@@ -203,6 +213,7 @@
   const pending = ref(false);
   const formRef = ref();
   const isApprove = ref(false); // 服务的审批状态
+  const datePickerRef = ref();
 
   const rules = {
     memo: [
@@ -238,6 +249,10 @@
   });
 
   const isCompare = computed(() => previewData.value.some((item) => item.type !== 'plain'));
+
+  const isTimeMode = computed(() => {
+    return datePickerRef.value && datePickerRef.value.selectionMode === 'time';
+  });
 
   watch(
     () => props.show,
@@ -344,6 +359,18 @@
     setTimeout(() => {
       emits('secondConfirm');
     }, 300);
+  };
+
+  const getCurrentTime = (e: MouseEvent) => {
+    e.preventDefault();
+    const hour = dayjs().hour();
+    const minute = dayjs().minute();
+    const second = dayjs().second();
+    localVal.value.publish_time = dayjs(localVal.value.publish_time)
+      .set('hour', hour)
+      .set('minute', minute)
+      .set('second', second)
+      .toDate();
   };
 
   const loadPublishType = async () => {
@@ -483,5 +510,14 @@
 <style lang="scss">
   .release-version-dialog.bk-modal-wrapper .bk-dialog-header {
     padding-bottom: 20px;
+  }
+  .time-header-style {
+    .bk-date-picker-top-wrapper {
+      position: absolute;
+      right: 54px;
+      top: 22px;
+      color: #3a84ff;
+      cursor: pointer;
+    }
   }
 </style>

@@ -13,19 +13,34 @@
       {{ t('调整分组上线') }}
     </bk-button>
     <bk-button
-      v-if="approveData?.status === APPROVE_STATUS.pending_publish"
+      v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.scheduled"
       v-cursor="{ active: !props.hasPerm }"
       v-bk-tooltips="{
         disabled: approveData.type !== ONLINE_TYPE.scheduled,
         content: `定时上线：${convertTime(approveData.time, 'local')}`,
         placement: 'bottom-end',
       }"
-      :disabled="approveData.type === ONLINE_TYPE.scheduled"
       theme="primary"
       :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
+      :disabled="approveData.type === ONLINE_TYPE.scheduled"
       @click="handlePublishClick">
       <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
-      {{ approveData.type === ONLINE_TYPE.scheduled ? t('等待定时上线') : t('确认上线') }}
+      {{ t('等待定时上线') }}
+    </bk-button>
+    <bk-button
+      v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.manually"
+      v-cursor="{ active: !props.hasPerm }"
+      v-bk-tooltips="{
+        disabled: props.creator === userInfo.username,
+        content: $t('无确认上线权限文案', { creator: props.creator }),
+        placement: 'bottom-end',
+      }"
+      theme="primary"
+      :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
+      :disabled="props.creator !== userInfo.username"
+      @click="handlePublishClick">
+      <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
+      {{ t('确认上线') }}
     </bk-button>
     <Teleport to="body">
       <VersionLayout v-if="isSelectGroupPanelOpen">
@@ -109,6 +124,7 @@
   import useGlobalStore from '../../../../../store/global';
   import useServiceStore from '../../../../../store/service';
   import useConfigStore from '../../../../../store/config';
+  import useUserStore from '../../../../../store/user';
   import { IGroupToPublish, IGroupItemInService } from '../../../../../../types/group';
   import VersionLayout from '../config/components/version-layout.vue';
   import ConfirmDialog from './publish-version/confirm-dialog.vue';
@@ -124,6 +140,7 @@
   const versionStore = useConfigStore();
   const { appData } = storeToRefs(serviceStore);
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
+  const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -138,6 +155,7 @@
       memo: string;
       groupIds: number[];
     };
+    creator: string;
   }>();
 
   const emit = defineEmits(['confirm']);
@@ -447,6 +465,7 @@
     releaseType.value = 'all';
     isSelectGroupPanelOpen.value = false;
     groups.value = [];
+    treeNodeGroups.value = [];
   };
 
   // 检查是否有正在上线的版本 或 2小时内有无其他版本上线

@@ -52,7 +52,7 @@
               </div>
             </bk-checkbox>
             <div v-if="node.fullReleased" v-bk-tooltips="{ content: t('当前线上全量版本') }" class="full-released-tag">
-              All
+              ALL
             </div>
           </div>
         </template>

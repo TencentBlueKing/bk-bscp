@@ -44,7 +44,7 @@
             v-bk-tooltips="{
               content: version.status.fully_release ? t('当前线上全量版本') : t('历史全量上线过的版本'),
             }">
-            All
+            ALL
           </div>
           <Ellipsis class="action-more-icon" @mouseenter="handlePopShow(version, $event)" @mouseleave="handlePopHide" />
         </section>

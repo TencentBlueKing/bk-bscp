@@ -152,7 +152,7 @@
             fixed="right"
             :show-overflow-tooltip="false"
             :label="t('操作')"
-            :width="locale === 'zh-cn' ? '160' : '200'">
+            :width="locale === 'zh-cn' ? '160' : '260'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
               <div v-if="row.audit && row.audit.spec.action === 'publish_release_config'" class="action-btns">
@@ -160,12 +160,17 @@
                 <bk-button
                   v-if="
                     row.audit.spec.status === APPROVE_STATUS.pending_publish &&
-                    row.app.creator === userInfo.username &&
                     (!row.strategy.publish_time || isTimeout(row.strategy.publish_time))
                   "
+                  v-bk-tooltips="{
+                    content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
+                    placement: 'top',
+                    disabled: row.strategy.creator === userInfo.username,
+                  }"
                   class="action-btn"
                   text
                   theme="primary"
+                  :disabled="row.strategy.creator !== userInfo.username"
                   @click="handlePublishClick(row)">
                   {{ t('确认上线') }}
                 </bk-button>
@@ -223,7 +228,7 @@
                   class="action-btn"
                   theme="primary"
                   @click="handleConfirm(row)">
-                  撤销
+                  {{ $t('撤销上线') }}
                 </bk-button>
                 <!-- <MoreActions
                   v-if="
@@ -546,6 +551,7 @@
     const resp = await approve(props.spaceId, confirmData.value.serviceId, confirmData.value.releaseId, {
       publish_status: APPROVE_STATUS.already_publish,
     });
+    loadRecordList();
     // 这里有两种情况且不会同时出现：
     // 1. itsm已经审批了，但我们产品页面还没有刷新
     // 2. itsm已经撤销了，但我们产品页面还没有刷新

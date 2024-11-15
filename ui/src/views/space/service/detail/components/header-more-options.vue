@@ -12,7 +12,7 @@
             ) && creator === userInfo.username
           "
           @click="handleConfirm">
-          {{ $t('撤销') }}
+          {{ $t('撤销上线') }}
         </li>
       </bk-loading>
     </ul>
