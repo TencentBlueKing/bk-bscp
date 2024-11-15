@@ -42,6 +42,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	esbcli "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -57,7 +58,6 @@ import (
 	base "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	basepb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
-	esbcli "github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

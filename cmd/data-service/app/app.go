@@ -40,12 +40,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

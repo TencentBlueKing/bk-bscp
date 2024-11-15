@@ -23,11 +23,11 @@ import (
 	"github.com/pkg/errors"
 	cos "github.com/tencentyun/cos-go-sdk-v5"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

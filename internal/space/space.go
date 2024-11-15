@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	esbcli "github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
+	esbcli "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 )
 
 // Type 空间类型

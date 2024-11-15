@@ -27,13 +27,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/internal/tmplprocess"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

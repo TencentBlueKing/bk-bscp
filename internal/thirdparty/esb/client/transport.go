@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/types"
 )
 
 // esbAuthTransport esb auth transport

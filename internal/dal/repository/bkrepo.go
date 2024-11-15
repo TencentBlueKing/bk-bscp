@@ -22,12 +22,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
-	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/repo"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

@@ -10,24 +10,15 @@
  * limitations under the License.
  */
 
-package bklogin
+// Package constant is for constant
+package constant
 
-import "github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/types"
-
-// nolint
 const (
-	codeOK         = 0       // 成功
-	codeNotLogin   = 1302100 // 用户认证失败，即用户登录态无效
-	codeNotHasPerm = 1302403 // 用户认证成功，但用户无应用访问权限
+	// EnvHostIP container env in bind the env variable of the host IP
+	EnvHostIP = "ENV_BK_BSCP_HOST_IP"
+	// EnvMaxDownloadFileGoroutines is the env of sidecar maximum combined weight for concurrent download access.
+	// the minimum value is 1 and the maximum value is 15.
+	EnvMaxDownloadFileGoroutines = "ENV_BK_BSCP_MAX_DOWNLOAD_FILE_GOROUTINES"
+	// EnvSuitTestSidecarWorkspace is the env of sidecar workspace, only sidecar suite use.
+	EnvSuitTestSidecarWorkspace = "ENV_BSCP_TEST_SIDECAR_WORKSPACE"
 )
-
-// IsLoginResult .
-type IsLoginResult struct {
-	BKUsername string `json:"bk_username"`
-}
-
-// IsLoginResp is bklogin isLogin response.
-type IsLoginResp struct {
-	types.BaseResponse
-	IsLoginResult `json:"data"`
-}

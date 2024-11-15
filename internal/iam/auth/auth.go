@@ -30,6 +30,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/gwparser"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	esbcli "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -41,7 +42,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	esbcli "github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
