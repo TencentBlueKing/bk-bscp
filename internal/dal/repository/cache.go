@@ -18,10 +18,10 @@ import (
 	"io"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/internal/tmplprocess"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tmplprocess"
 )
 
 // variableCacheTTLSeconds is ttl for variable cache, 7 day.
