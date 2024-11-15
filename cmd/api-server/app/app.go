@@ -24,10 +24,10 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bknotice"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/components/bknotice"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"

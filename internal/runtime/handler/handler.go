@@ -29,8 +29,8 @@ import (
 	"github.com/google/uuid"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
-	"github.com/TencentBlueKing/bk-bscp/pkg/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )

@@ -24,9 +24,9 @@ import (
 
 	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"

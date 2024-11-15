@@ -19,8 +19,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/components"
 )
 
 // QueryPodData 通过集群ID和 pod UID 查询 pod 信息返回

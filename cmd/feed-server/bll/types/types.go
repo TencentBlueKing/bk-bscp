@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"

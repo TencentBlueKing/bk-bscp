@@ -17,7 +17,7 @@ import (
 
 	"github.com/go-chi/render"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/components/bknotice"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bknotice"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"

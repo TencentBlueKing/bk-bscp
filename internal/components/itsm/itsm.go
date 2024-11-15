@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/components"
 )
 
 // GetAuthHeader 获取蓝鲸网关通用认证头
