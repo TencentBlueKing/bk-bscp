@@ -16,7 +16,7 @@ package pbce
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // ClientEventSpec convert pb ClientEventSpec to table ClientEventSpec

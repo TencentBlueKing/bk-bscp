@@ -15,7 +15,7 @@ package types
 import (
 	"errors"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // ListHookRevisionsOption defines the response details of requested ListHookRevisionsOption.

@@ -20,7 +20,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	pbvs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/vault-server"
 )
 

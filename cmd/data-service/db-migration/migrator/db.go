@@ -19,8 +19,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/sharding"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/sharding"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // NewDB new a gorm db instance

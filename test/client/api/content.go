@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 

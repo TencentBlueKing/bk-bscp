@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"

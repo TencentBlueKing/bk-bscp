@@ -1429,7 +1429,7 @@
                 {
                     "id": "PublishStatus",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.PublishStatus",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
@@ -1444,7 +1444,7 @@
                 {
                     "id": "PublishStatus",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.PublishStatus",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
@@ -1469,7 +1469,7 @@
                 {
                     "id": "PublishStatus",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.PublishStatus",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
@@ -1484,7 +1484,7 @@
                 {
                     "id": "PublishStatus",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.PublishStatus",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.PublishStatus",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
@@ -2490,7 +2490,7 @@
                 {
                     "id": "ConfigType",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.ConfigType",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ConfigType",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "as.ConfigType"
@@ -2515,7 +2515,7 @@
                 {
                     "id": "ConfigType",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.ConfigType",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ConfigType",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "c"
@@ -2530,7 +2530,7 @@
                 {
                     "id": "AppReloadType",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.AppReloadType",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.AppReloadType",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "rt"
@@ -2611,7 +2611,7 @@
                 {
                     "id": "FileFormat",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.FileFormat",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileFormat",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"
@@ -2626,7 +2626,7 @@
                 {
                     "id": "FileMode",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.FileMode",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileMode",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"
@@ -2691,7 +2691,7 @@
                 {
                     "id": "VariableType",
                     "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table.VariableType",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.VariableType",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "t"

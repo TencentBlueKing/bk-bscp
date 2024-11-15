@@ -13,8 +13,8 @@
 package lcache
 
 import (
-	clientset "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/client-set"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 

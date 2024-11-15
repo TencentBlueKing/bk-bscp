@@ -15,9 +15,9 @@ package table
 import (
 	"errors"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/validator"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/types"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // TemplateSet 模版套餐

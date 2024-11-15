@@ -21,11 +21,11 @@ import (
 	"gorm.io/gorm"
 
 	// run the init function to add migrations
-	_ "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrations"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/scripts/migrations/itsm"
+	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
 
 // cmd for migration

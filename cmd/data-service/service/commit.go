@@ -15,9 +15,9 @@ package service
 import (
 	"context"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )

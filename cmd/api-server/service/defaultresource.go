@@ -16,7 +16,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 

@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/jsoni"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
 
 type selectorRaw struct {

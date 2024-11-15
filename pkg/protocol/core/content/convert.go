@@ -16,8 +16,8 @@ package pbcontent
 import (
 	"github.com/golang/protobuf/jsonpb" //nolint:staticcheck
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/jsoni"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 

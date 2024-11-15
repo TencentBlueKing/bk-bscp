@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbaudit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/audit"
 	pbstrategy "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/strategy"

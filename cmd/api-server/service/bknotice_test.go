@@ -21,8 +21,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/api-server/options"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/options"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // SysOpt is the system option

@@ -14,8 +14,8 @@
 package i18n
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n/localizer"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n/localizer"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // T 国际化消息

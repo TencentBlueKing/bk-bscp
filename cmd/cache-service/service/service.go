@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/cache-service/service/cache/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/cache-service/service/cache/event"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/bedis"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/dao"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
+	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/client"
+	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/event"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 )
 
 // Service do all the cache service's work

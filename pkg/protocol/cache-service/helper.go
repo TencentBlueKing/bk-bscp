@@ -13,7 +13,7 @@
 package pbcs
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 )
 
 // Validate BenchAppMetaReq.

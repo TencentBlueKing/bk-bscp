@@ -20,9 +20,9 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/selector"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // AppCacheMeta defines app's basic meta info
