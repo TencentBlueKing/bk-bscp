@@ -26,8 +26,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/release"
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // New create a new BLL instance.

@@ -23,18 +23,18 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/vault"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tmplprocess"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
-	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // Service do all the data service's work

@@ -25,11 +25,11 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/grpcgw"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

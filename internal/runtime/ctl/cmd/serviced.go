@@ -15,9 +15,9 @@ package cmd
 import (
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // WithRegister init and returns the register command.

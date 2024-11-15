@@ -33,12 +33,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl/cmd"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 

@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // purger is used to purge the outdated events from db.

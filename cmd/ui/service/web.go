@@ -33,10 +33,10 @@ import (
 	_ "github.com/TencentBlueKing/bk-bscp/docs" // 文档自动注册到 swagger
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // WebServer :

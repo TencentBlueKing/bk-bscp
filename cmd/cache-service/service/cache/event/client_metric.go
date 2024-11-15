@@ -21,6 +21,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/client"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -28,7 +29,6 @@ import (
 	pbclient "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client"
 	pbce "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client-event"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
 )
 

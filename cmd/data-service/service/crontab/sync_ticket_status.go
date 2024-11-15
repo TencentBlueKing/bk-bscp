@@ -23,6 +23,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
@@ -31,7 +32,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 const (

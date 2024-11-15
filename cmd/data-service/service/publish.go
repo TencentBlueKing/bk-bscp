@@ -32,11 +32,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	pbgroup "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // Publish exec publish strategy.

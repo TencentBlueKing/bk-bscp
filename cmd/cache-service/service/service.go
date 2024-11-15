@@ -20,9 +20,9 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/client"
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/event"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // Service do all the cache service's work

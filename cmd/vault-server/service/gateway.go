@@ -20,10 +20,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 
 // gateway auth server's grpc-gateway.
