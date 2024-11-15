@@ -29,10 +29,10 @@ import (
 	"github.com/google/uuid"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/pkg/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/ctl"
 )
 
 // Handler defines http handlers to add to http service

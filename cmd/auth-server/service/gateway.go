@@ -19,8 +19,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/handler"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 

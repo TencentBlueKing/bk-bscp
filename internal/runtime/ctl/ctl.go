@@ -20,11 +20,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl/cmd"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/ctl/cmd"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 )
 

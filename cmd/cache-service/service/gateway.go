@@ -26,15 +26,15 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/grpcgw"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/handler"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 
 // gateway auth server's grpc-gateway.

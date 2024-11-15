@@ -29,16 +29,16 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
+	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/brpc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
 )
 
 // Run start the feed server
