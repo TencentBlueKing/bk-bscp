@@ -2,8 +2,6 @@ module github.com/TencentBlueKing/bk-bscp/pkg
 
 go 1.20
 
-replace github.com/go-resty/resty/v2 => github.com/ifooth/resty/v2 v2.0.0-20230223083514-3015979960de
-
 require (
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20240418123107-72b120390195
 	github.com/dustin/go-humanize v1.0.1
