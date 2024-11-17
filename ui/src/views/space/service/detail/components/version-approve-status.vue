@@ -1,59 +1,56 @@
 <template>
-  <bk-loading
+  <div
     v-if="approverList && route.params.versionId && showStatusIdArr.includes(Number(route.params.versionId))"
-    :loading="loading"
-    size="mini">
-    <div class="version-approve-status">
-      <Spinner v-show="approveStatus === 0" class="spinner" />
-      <div
-        v-show="approveStatus !== 0"
-        :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
-      <span class="approve-status-text">{{ approveText }}</span>
-      <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
-        <text-file v-show="[0, 2].includes(approveStatus)" class="text-file" />
-        <template #content>
-          <div class="popover-content">
-            <template v-if="itsmData?.itsm_ticket_sn">
-              <div class="itsm-title">{{ $t('审批单') }}：</div>
-              <div class="itsm-content em">
-                <div class="itsm-sn" @click="handleLinkTo(itsmData?.itsm_ticket_url)">
-                  {{ itsmData?.itsm_ticket_sn }}
-                </div>
-                <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
+    class="version-approve-status">
+    <Spinner v-show="approveStatus === 0" class="spinner" />
+    <div
+      v-show="![0, 1].includes(approveStatus)"
+      :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
+    <span class="approve-status-text" v-show="approveStatus !== 1">{{ approveText }}</span>
+    <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
+      <text-file v-show="[0, 2].includes(approveStatus)" class="text-file" />
+      <template #content>
+        <div class="popover-content">
+          <template v-if="itsmData?.itsm_ticket_sn">
+            <div class="itsm-title">{{ $t('审批单') }}：</div>
+            <div class="itsm-content em">
+              <div class="itsm-sn" @click="handleLinkTo(itsmData?.itsm_ticket_url)">
+                {{ itsmData?.itsm_ticket_sn }}
               </div>
-            </template>
-            <div class="itsm-title">
-              {{ approveStatus === 3 ? t('撤销人') : t('审批人') }}
-              <template v-if="approveStatus !== 3">
-                （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}）
-              </template>
-              ：
+              <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
             </div>
-            <div class="itsm-content">{{ approverList }}</div>
-            <template v-if="approveStatus === 0 && publishTime">
-              <div class="itsm-title">{{ $t('定时上线') }}：</div>
-              <div class="itsm-content">
-                {{ convertTime(publishTime, 'local') || '--' }}
-              </div>
+          </template>
+          <div class="itsm-title">
+            {{ approveStatus === 3 ? t('撤销人') : t('审批人') }}
+            <template v-if="approveStatus !== 3">
+              （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}）
             </template>
-            <template v-if="approveStatus === 2">
-              <div class="itsm-title">{{ $t('驳回原因') }}：</div>
-              <div class="itsm-content">
-                {{ rejectionReason || '--' }}
-              </div>
-            </template>
+            ：
           </div>
-        </template>
-      </bk-popover>
-      <text-file
-        v-if="approveStatus === 3"
-        v-bk-tooltips="{
-          content: t('提示-已撤销', { reviser: approverList, time: convertTime(finalApprovalTime, 'local') }),
-          placement: 'bottom',
-        }"
-        class="text-file" />
-    </div>
-  </bk-loading>
+          <div class="itsm-content">{{ approverList }}</div>
+          <template v-if="approveStatus === 0 && publishTime">
+            <div class="itsm-title">{{ $t('定时上线') }}：</div>
+            <div class="itsm-content">
+              {{ convertTime(publishTime, 'local') || '--' }}
+            </div>
+          </template>
+          <template v-if="approveStatus === 2">
+            <div class="itsm-title">{{ $t('驳回原因') }}：</div>
+            <div class="itsm-content">
+              {{ rejectionReason || '--' }}
+            </div>
+          </template>
+        </div>
+      </template>
+    </bk-popover>
+    <text-file
+      v-if="approveStatus === 3"
+      v-bk-tooltips="{
+        content: t('提示-已撤销', { reviser: approverList, time: convertTime(finalApprovalTime, 'local') }),
+        placement: 'bottom',
+      }"
+      class="text-file" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -93,7 +90,6 @@
     itsm_ticket_url: string;
   }>();
   const finalApprovalTime = ref('--');
-  const loading = ref(true);
   let interval = 0;
 
   watch(
@@ -126,7 +122,6 @@
   });
 
   const loadStatus = debounce(async () => {
-    loading.value = true;
     if (interval) {
       clearInterval(interval);
     }
@@ -162,8 +157,6 @@
       } catch (error) {
         console.log(error);
         clearInterval(interval);
-      } finally {
-        loading.value = false;
       }
     }
   }, 300);
