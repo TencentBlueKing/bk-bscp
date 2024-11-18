@@ -15,7 +15,7 @@ package eventc
 import (
 	"sync"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 type appPool struct {

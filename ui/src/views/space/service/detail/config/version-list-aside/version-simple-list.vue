@@ -1,7 +1,10 @@
 <template>
   <section class="version-container">
     <div class="service-selector-wrapper">
-      <ServiceSelector :value="props.appId" />
+      <ServiceSelector :value="props.appId" @change="editingService = $event"/>
+      <div class="details-btn" @click="isEditServicePopShow = true">
+        <span class="bk-bscp-icon icon-view-detail"></span>
+      </div>
     </div>
     <bk-loading :loading="versionListLoading">
       <div class="version-search-wrapper">
@@ -16,6 +19,18 @@
             <div class="version-name">{{ t('未命名版本') }}</div>
           </section>
           <div class="divider"></div>
+        </section>
+        <!-- 待审批/待上线置顶软链 -->
+        <section
+          v-if="pendingApprovalVersion"
+          :class="['approval-version version-item', { active: versionData.id === pendingApprovalVersion.id }]"
+          @click="handleSelectVersion(pendingApprovalVersion)">
+          <div class="status">
+            {{ pendingApprovalVersion.status.strategy_status === 'pending_approval' ? $t('待审批') : $t('待上线') }}
+          </div>
+          <bk-overflow-title class="version-name" type="tips">
+            {{ pendingApprovalVersion.spec.name }}
+          </bk-overflow-title>
         </section>
         <section
           v-for="version in versionsInView"
@@ -32,7 +47,7 @@
             v-bk-tooltips="{
               content: version.status.fully_release ? t('当前线上全量版本') : t('历史全量上线过的版本'),
             }">
-            All
+            ALL
           </div>
           <Ellipsis class="action-more-icon" @mouseenter="handlePopShow(version, $event)" @mouseleave="handlePopHide" />
         </section>
@@ -64,6 +79,7 @@
         {{ t('版本废弃') }}
       </div>
     </div>
+    <EditService v-model:show="isEditServicePopShow" :service="editingService"></EditService>
   </section>
 </template>
 <script setup lang="ts">
@@ -77,11 +93,13 @@
   import { getConfigVersionList, deprecateVersion } from '../../../../../../api/config';
   import { GET_UNNAMED_VERSION_DATA } from '../../../../../../constants/config';
   import { IConfigVersion } from '../../../../../../../types/config';
+  import { IAppItem } from '../../../../../../../types/app';
   import ServiceSelector from '../../components/service-selector.vue';
   import SearchInput from '../../../../../../components/search-input.vue';
   import TableEmpty from '../../../../../../components/table/table-empty.vue';
   import VersionDiff from '../../config/components/version-diff/index.vue';
   import VersionOperateConfirmDialog from './version-operate-confirm-dialog.vue';
+  import EditService from '../../../list/components/edit-service.vue';
 
   const configStore = useConfigStore();
   const { versionData, refreshVersionListFlag, publishedVersionId } = storeToRefs(configStore);
@@ -107,6 +125,29 @@
   const popover = ref<HTMLInputElement | null>(null);
   const popHideTimerId = ref(0);
   const isMouseenter = ref(false);
+  const isEditServicePopShow = ref(false);
+  const editingService = ref<IAppItem>({
+    id: 0,
+    biz_id: 0,
+    space_id: '',
+    spec: {
+      name: '',
+      config_type: '',
+      memo: '',
+      alias: '',
+      data_type: '',
+      is_approve: true,
+      approver: '',
+      approve_type: 'or_sign',
+    },
+    revision: {
+      creator: '',
+      reviser: '',
+      create_at: '',
+      update_at: '',
+    },
+    permissions: {},
+  });
 
   const versionsInView = computed(() => {
     if (searchStr.value === '') {
@@ -116,6 +157,13 @@
       const isNameMatched = item.spec.name.toLowerCase().includes(searchStr.value.toLocaleLowerCase());
       return item.id > 0 && isNameMatched;
     });
+  });
+
+  // 待审批状态版本
+  const pendingApprovalVersion = computed(() => {
+    return versionList.value.find(
+      (item) => item.status.strategy_status === 'pending_publish' || item.status.strategy_status === 'pending_approval',
+    );
   });
 
   // 监听刷新版本列表标识，处理新增版本场景，默认选中新增的版本
@@ -133,6 +181,8 @@
       if (versionDetail) {
         versionData.value = versionDetail;
         refreshVersionListFlag.value = false;
+        // 默认选中新增的版本时，路由参数versionId需要更新
+        router.push({ name: route.name as string, params: { versionId: versionDetail.id } });
       }
     }
   });
@@ -140,7 +190,7 @@
   watch(
     () => props.appId,
     () => {
-      getVersionList();
+      init();
     },
   );
 
@@ -150,6 +200,10 @@
 
   const init = async () => {
     await getVersionList();
+    if (pendingApprovalVersion.value) {
+      versionData.value = pendingApprovalVersion.value;
+      router.push({ name: route.name as string, params: { versionId: versionData.value.id } });
+    }
     if (route.params.versionId) {
       const version = versionList.value.find((item) => item.id === Number(route.params.versionId));
       if (version) {
@@ -179,7 +233,25 @@
     }
   };
 
+  const refreshVersionApprovalStatus = async () => {
+    try {
+      const params = {
+        // 未命名版本不在实际的版本列表里，需要特殊处理
+        start: 0,
+        all: true,
+      };
+      const res = await getConfigVersionList(props.bkBizId, props.appId, params);
+      versionList.value.forEach((version: IConfigVersion) => {
+        const newVersion = res.data.details.find((item: IConfigVersion) => item.id === version.id);
+        if (newVersion) {
+          version.status.strategy_status = newVersion.status.strategy_status;
+        }
+      });
+    } catch (error) {}
+  };
+
   const handleSelectVersion = (version: IConfigVersion) => {
+    if (version.id === versionData.value.id) return;
     configStore.$patch((state) => {
       state.allExistConfigCount = 0;
       state.conflictFileCount = 0;
@@ -192,7 +264,9 @@
     if (version.id !== 0) {
       params.versionId = version.id;
     }
+    refreshVersionApprovalStatus();
     router.push({ name: route.name as string, params });
+    // 更新版本审批状态
   };
 
   const handleDiffDialogShow = (version: IConfigVersion) => {
@@ -276,9 +350,29 @@
     height: 100%;
   }
   .service-selector-wrapper {
+    display: flex;
     padding: 10px 8px 9px;
     width: 280px;
     border-bottom: 1px solid #eaebf0;
+    :deep(.service-selector) {
+      flex: 1;
+    }
+    .details-btn {
+      width: 32px;
+      height: 32px;
+      background: #f0f1f5;
+      border-radius: 2px;
+      font-size: 14px;
+      margin: 0 8px;
+      text-align: center;
+      line-height: 32px;
+      color: #979ba5;
+      cursor: pointer;
+      &:hover {
+        color: #3a84ff;
+        background: #e1ecff;
+      }
+    }
   }
   .bk-nested-loading {
     height: calc(100% - 52px);
@@ -295,11 +389,10 @@
     padding: 16px 0;
     overflow: auto;
   }
-  .unnamed-version {
-    .divider {
-      margin: 8px 24px;
-      border-bottom: 1px solid #dcdee5;
-    }
+
+  .divider {
+    margin: 8px 24px;
+    border-bottom: 1px solid #dcdee5;
   }
   .version-item {
     position: relative;
@@ -307,6 +400,9 @@
     cursor: pointer;
     &.active {
       background: #e1ecff;
+      .version-name {
+        color: #3a84ff;
+      }
     }
     &:hover {
       background: #e1ecff;
@@ -357,6 +453,24 @@
         border-radius: 2px;
         color: #14a568;
       }
+    }
+  }
+  .approval-version {
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+    gap: 8px;
+    background: #fdf4e8 !important;
+    font-size: 12px;
+    cursor: pointer;
+    .status {
+      width: 52px;
+      height: 22px;
+      background: #f59500;
+      border-radius: 2px;
+      color: #ffffff;
+      line-height: 22px;
+      text-align: center;
     }
   }
   .version-name {

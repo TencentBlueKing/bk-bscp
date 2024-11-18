@@ -18,10 +18,10 @@ import (
 
 	bkiam "github.com/TencentBlueKing/iam-go-sdk"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/sys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 )
 
 // AdaptAuthOptions convert bscp auth resource to iam action id and resources
@@ -42,6 +42,8 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return genAppResource(a)
 	case meta.Credential:
 		return genCredResource(a)
+	case meta.Audit:
+		return genAuditResource(a)
 	case meta.Commit, meta.ConfigItem, meta.Content, meta.CRInstance, meta.Release, meta.ReleasedCI, meta.Strategy,
 		meta.StrategySet, meta.PSH, meta.Repo, meta.Sidecar:
 		return genSkipResource(a)
@@ -115,6 +117,12 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 			actions = append(actions, action)
 		case meta.Credential:
 			action, err := genCredIAMApplication(a)
+			if err != nil {
+				return nil, err
+			}
+			actions = append(actions, action)
+		case meta.Audit:
+			action, err := genAuditIAMApplication(a)
 			if err != nil {
 				return nil, err
 			}

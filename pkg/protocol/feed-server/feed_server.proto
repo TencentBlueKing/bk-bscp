@@ -10,7 +10,7 @@ import "pkg/protocol/core/kv/kvs.proto";
 import "pkg/protocol/core/content/content.proto";
 import "google/api/annotations.proto";
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/feed-server;pbfs";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server;pbfs";
 
 service Upstream {
   // APIs for sidecar.
@@ -48,6 +48,8 @@ service Upstream {
       body: "*"
     };
   }
+  // 获取单个文件配置项
+  rpc GetSingleFileContent(GetSingleFileContentReq) returns (stream SingleFileChunk) {}
 }
 
 // SidecarSpec defines a sidecar's specifics.
@@ -255,4 +257,20 @@ message GetSingleKvValueResp {
 
 message GetSingleKvMetaResp {
   KvMeta data = 1;
+}
+
+message GetSingleFileContentReq {
+  // version defines message's protocol version from sidecar
+  pbbase.Versioning api_version = 1;
+  // payload is the message's details information which is a json raw bytes.
+  // refer to sfs.SideWatchPayload.
+  uint32 biz_id = 2;
+  AppMeta app_meta = 3;
+  string file_path = 4;
+  string token = 5;
+}
+
+message SingleFileChunk {
+  bytes content = 1;
+  int64 content_length = 2;
 }

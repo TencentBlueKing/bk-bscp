@@ -1,46 +1,44 @@
 <template>
-  <div>
-    <bk-select
-      v-model="localVal"
-      ref="selectorRef"
-      class="service-selector"
-      :popover-options="{ theme: 'light bk-select-popover service-selector-popover' }"
-      :popover-min-width="360"
-      :filterable="true"
-      :input-search="false"
-      :clearable="false"
-      :loading="loading"
-      :search-placeholder="$t('请输入关键字')"
-      @change="handleAppChange">
-      <template #trigger>
-        <div class="selector-trigger">
-          <input readonly :value="appData.spec.name" />
-          <AngleUpFill class="arrow-icon arrow-fill" />
+  <bk-select
+    v-model="localVal"
+    ref="selectorRef"
+    class="service-selector"
+    :popover-options="{ theme: 'light bk-select-popover service-selector-popover' }"
+    :popover-min-width="360"
+    :filterable="true"
+    :input-search="false"
+    :clearable="false"
+    :loading="loading"
+    :search-placeholder="$t('请输入关键字')"
+    @change="handleAppChange">
+    <template #trigger>
+      <div class="selector-trigger">
+        <input readonly :value="appData.spec.name" />
+        <AngleUpFill class="arrow-icon arrow-fill" />
+      </div>
+    </template>
+    <bk-option v-for="item in serviceList" :key="item.id" :value="item.id" :label="item.spec.name">
+      <div
+        v-cursor="{
+          active: !item.permissions.view,
+        }"
+        :class="['service-option-item', { 'no-perm': !item.permissions.view }]"
+        @click="handleOptionClick(item, $event)">
+        <div class="name-text">{{ item.spec.name }}</div>
+        <div :class="['type-tag', { 'type-tag--en': locale === 'en' }]">
+          {{ item.spec.config_type === 'file' ? t('文件型') : t('键值型') }}
         </div>
-      </template>
-      <bk-option v-for="item in serviceList" :key="item.id" :value="item.id" :label="item.spec.name">
-        <div
-          v-cursor="{
-            active: !item.permissions.view,
-          }"
-          :class="['service-option-item', { 'no-perm': !item.permissions.view }]"
-          @click="handleOptionClick(item, $event)">
-          <div class="name-text">{{ item.spec.name }}</div>
-          <div :class="['type-tag', { 'type-tag--en': locale === 'en' }]">
-            {{ item.spec.config_type === 'file' ? t('文件型') : t('键值型') }}
-          </div>
+      </div>
+    </bk-option>
+    <template #extension>
+      <div class="selector-extensition">
+        <div class="content" @click="router.push({ name: 'service-all' })">
+          <i class="bk-bscp-icon icon-app-store app-icon"></i>
+          {{ t('服务管理') }}
         </div>
-      </bk-option>
-      <template #extension>
-        <div class="selector-extensition">
-          <div class="content" @click="router.push({ name: 'service-all' })">
-            <i class="bk-bscp-icon icon-app-store app-icon"></i>
-            {{ t('服务管理') }}
-          </div>
-        </div>
-      </template>
-    </bk-select>
-  </div>
+      </div>
+    </template>
+  </bk-select>
 </template>
 <script setup lang="ts">
   import { ref, watch, onMounted } from 'vue';
@@ -69,7 +67,7 @@
     value: number;
   }>();
 
-  defineEmits(['change']);
+  const emits = defineEmits(['change']);
 
   const serviceList = ref<IAppItem[]>([]);
   const loading = ref(false);
@@ -83,8 +81,10 @@
     },
   );
 
-  onMounted(() => {
-    loadServiceList();
+  onMounted(async () => {
+    await loadServiceList();
+    const service = serviceList.value.find((service) => service.id === localVal.value);
+    emits('change', service);
   });
 
   const loadServiceList = async () => {
@@ -139,6 +139,7 @@
       }
 
       router.push({ name, params: { spaceId: service.space_id, appId: id } });
+      emits('change', service);
     }
   };
 </script>

@@ -12,7 +12,7 @@
 
 package sys
 
-import "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
+import "github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 
 // GenerateStaticActionGroups generate all the static resource action groups.
 func GenerateStaticActionGroups() []client.ActionGroup {
@@ -65,6 +65,14 @@ func genBusinessManagementActionGroups() []client.ActionGroup {
 			// 		{ID: GroupDelete},
 			// 	},
 			// },
+
+		},
+		{
+			Name:   "操作记录",
+			NameEn: "Audit",
+			Actions: []client.ActionWithID{ // 操作记录查看
+				{ID: AuditView},
+			},
 		},
 	}
 }

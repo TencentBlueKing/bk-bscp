@@ -2,10 +2,11 @@ syntax = "proto3";
 
 import "google/protobuf/struct.proto";
 import "pkg/protocol/core/base/base.proto";
+import "pkg/protocol/core/strategy/strategy.proto";
 
 package pbrelease;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/release;pbrelease";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/release;pbrelease";
 
 // Release source resource reference: pkg/dal/table/release.go
 message Release {
@@ -39,10 +40,22 @@ message ReleaseStatus {
   repeated ReleasedGroup released_groups = 2;
   // 是否全量发布过,或者发布过默认分组
   bool fully_released = 3;
+  string strategy_status = 4;
 }
 
 // ReleaseAttachment source resource reference: pkg/dal/table/release.go
 message ReleaseAttachment {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+}
+
+// PublishRecord list publish relate field
+message PublishRecord {
+  string publish_time = 1;
+  string name = 2;
+  pbstrategy.Scope scope = 3;
+  string creator = 4;
+  bool fully_released = 5;
+  string updated_at = 6;
+  string final_approval_time = 7;
 }

@@ -1,13 +1,46 @@
 <template>
-  <section class="create-version">
+  <section class="create-version" v-if="versionData.status.publish_status === 'partial_released'">
     <bk-button
-      v-if="versionData.status.publish_status === 'partial_released'"
+      v-if="
+        !approveData?.status ||
+        ![APPROVE_STATUS.pending_publish, APPROVE_STATUS.already_publish].includes(approveData.status as APPROVE_STATUS)
+      "
       v-cursor="{ active: !props.hasPerm }"
       theme="primary"
       :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
-      :disabled="props.permCheckLoading"
+      :disabled="props.permCheckLoading || approveData?.status === APPROVE_STATUS.pending_approval"
       @click="handleBtnClick">
       {{ t('调整分组上线') }}
+    </bk-button>
+    <bk-button
+      v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.scheduled"
+      v-cursor="{ active: !props.hasPerm }"
+      v-bk-tooltips="{
+        disabled: approveData.type !== ONLINE_TYPE.scheduled,
+        content: `定时上线：${convertTime(approveData.time, 'local')}`,
+        placement: 'bottom-end',
+      }"
+      theme="primary"
+      :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
+      :disabled="approveData.type === ONLINE_TYPE.scheduled"
+      @click="handlePublishClick">
+      <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
+      {{ t('等待定时上线') }}
+    </bk-button>
+    <bk-button
+      v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.manually"
+      v-cursor="{ active: !props.hasPerm }"
+      v-bk-tooltips="{
+        disabled: props.creator === userInfo.username,
+        content: $t('无确认上线权限文案', { creator: props.creator }),
+        placement: 'bottom-end',
+      }"
+      theme="primary"
+      :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
+      :disabled="props.creator !== userInfo.username"
+      @click="handlePublishClick">
+      <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
+      {{ t('确认上线') }}
     </bk-button>
     <Teleport to="body">
       <VersionLayout v-if="isSelectGroupPanelOpen">
@@ -58,7 +91,10 @@
       :release-type="releaseType"
       :groups="groups"
       :released-groups="releasedGroups"
-      @confirm="handleConfirm" />
+      :second-confirm="isSecondConfirm"
+      :memo="approveData.memo"
+      @confirm="handleConfirm"
+      @second-confirm="handleSecondConfirm" />
     <PublishVersionDiff
       :bk-biz-id="props.bkBizId"
       :app-id="props.appId"
@@ -69,33 +105,42 @@
       :current-version-groups="groupsPendingtoPublish"
       @publish="handleOpenPublishDialog"
       @close="isDiffSliderShow = false" />
+    <DialogWarn v-model:show="warnDialogShow" :dialog-data="warnDialogData" @confirm="dialogConfirm" />
   </section>
 </template>
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router';
+  import { useRouter, useRoute } from 'vue-router';
   import { ArrowsLeft, AngleRight } from 'bkui-vue/lib/icon';
   import { InfoBox } from 'bkui-vue';
   import BkMessage from 'bkui-vue/lib/message';
   import { storeToRefs } from 'pinia';
-  import { getConfigVersionList } from '../../../../../api/config';
+  import { getConfigVersionList, versionStatusCheck } from '../../../../../api/config';
+  import { approve } from '../../../../../api/record';
   import { getServiceGroupList } from '../../../../../api/group';
   import { IConfigVersion, IReleasedGroup } from '../../../../../../types/config';
+  import { IPublishData } from '../../../../../../types/service';
   import useGlobalStore from '../../../../../store/global';
   import useServiceStore from '../../../../../store/service';
   import useConfigStore from '../../../../../store/config';
+  import useUserStore from '../../../../../store/user';
   import { IGroupToPublish, IGroupItemInService } from '../../../../../../types/group';
   import VersionLayout from '../config/components/version-layout.vue';
   import ConfirmDialog from './publish-version/confirm-dialog.vue';
   import SelectGroup from './publish-version/select-group/index.vue';
   import PublishVersionDiff from './publish-version-diff.vue';
+  import { ONLINE_TYPE, APPROVE_STATUS } from '../../../../../constants/record';
+  import DialogWarn from './dialog-publish-warn.vue';
+  import { convertTime } from '../../../../../utils';
+  import dayjs from 'dayjs';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const serviceStore = useServiceStore();
   const versionStore = useConfigStore();
   const { appData } = storeToRefs(serviceStore);
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
+  const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -103,11 +148,20 @@
     appId: number;
     permCheckLoading: boolean;
     hasPerm: boolean;
+    approveData: {
+      status: string;
+      time: string;
+      type: string;
+      memo: string;
+      groupIds: number[];
+    };
+    creator: string;
   }>();
 
   const emit = defineEmits(['confirm']);
 
   const router = useRouter();
+  const route = useRoute();
   const versionList = ref<IConfigVersion[]>([]);
   const versionListLoading = ref(true);
   const groupList = ref<IGroupItemInService[]>([]);
@@ -121,6 +175,13 @@
   const groups = ref<IGroupToPublish[]>([]);
   const baseVersionId = ref(0);
   const selectGroupRef = ref();
+  const warnDialogShow = ref(false);
+  const warnDialogData = ref<IPublishData>({
+    final_approval_time: '', // 最后更新时间
+    version_name: '', // 最后上线的版本名称
+    release_id: 0, // 最后上线的版本id
+  });
+  const isSecondConfirm = ref(false); // 是否为二次确认
 
   // 当前版本已上线分组id集合
   const releasedGroups = computed(() => versionData.value.status.released_groups.map((group) => group.id));
@@ -199,6 +260,21 @@
     },
   );
 
+  watch(
+    () => props.approveData.status,
+    (newV, oldV) => {
+      if (newV === APPROVE_STATUS.pending_publish) {
+        isSecondConfirm.value = true;
+        handlePendingPublish();
+      } else {
+        isSecondConfirm.value = false;
+      }
+      if (newV !== oldV) {
+        handlePanelClose();
+      }
+    },
+  );
+
   // 判断是否需要对比上线版本
   const handlePublishOrOpenDiff = () => {
     if (diffableVersionList.value.length) {
@@ -238,7 +314,25 @@
     groupListLoading.value = false;
   };
 
-  const handleBtnClick = () => {
+  // 风险提示弹窗→继续上线
+  const dialogConfirm = (isContinue: boolean) => {
+    warnDialogShow.value = false;
+    // 继续上线
+    if (isContinue) {
+      continuePublish();
+    }
+  };
+
+  // 调整分组上线按钮
+  const handleBtnClick = async () => {
+    const checkResult = await checkVersionStatus();
+    if (checkResult) {
+      continuePublish();
+    }
+  };
+
+  // 继续上线逻辑
+  const continuePublish = () => {
     if (props.hasPerm) {
       getVersionList();
       getAllGroupData();
@@ -278,6 +372,36 @@
     }
   };
 
+  // 确定上线按钮
+  const handlePublishClick = async () => {
+    isSecondConfirm.value = true;
+    isConfirmDialogShow.value = true;
+  };
+
+  const handleSecondConfirm = async () => {
+    const { bkBizId: biz_id, appId: app_id } = props;
+    const resp = await approve(biz_id, app_id, versionData.value.id, {
+      publish_status: APPROVE_STATUS.already_publish,
+    });
+    // 这里有两种情况且不会同时出现：
+    // 1. itsm已经审批了，但我们产品页面还没有刷新
+    // 2. itsm已经撤销了，但我们产品页面还没有刷新
+    // 如果存在以上两种情况之一，提示使用message，否则继续后面流程
+    const { message } = resp;
+    if (message) {
+      // 不再走上线流程
+      publishedVersionId.value = versionData.value.id;
+      emit('confirm', Number(route.params.versionId));
+      BkMessage({
+        theme: 'primary',
+        message,
+      });
+    } else {
+      // 继续上线流程
+      handleConfirm(resp.have_pull, false);
+    }
+  };
+
   // 打开上线版本确认弹窗
   const handleOpenPublishDialog = () => {
     if (groups.value.length === 0) {
@@ -293,24 +417,38 @@
     isDiffSliderShow.value = true;
   };
 
+  // 版本上线文案
+  const publishTitle = (isApprove: boolean, type: string, time: string) => {
+    switch (type) {
+      case ONLINE_TYPE.manually:
+        return t('手动上线文案-调整分组');
+      case ONLINE_TYPE.automatically:
+        return t('审批通过后上线文案-调整分组');
+      case ONLINE_TYPE.scheduled:
+        return isApprove ? t('需审批-定时上线文案', { time }) : t('定时上线文案', { time });
+      default:
+        return t('版本已上线');
+    }
+  };
+
   // 上线确认
-  const handleConfirm = (havePull: boolean) => {
+  const handleConfirm = (havePull: boolean, isApprove: boolean, publishType = '', publishTime = '') => {
     isDiffSliderShow.value = false;
     publishedVersionId.value = versionData.value.id;
     handlePanelClose();
-    emit('confirm');
-    if (havePull) {
+    emit('confirm', Number(route.params.versionId));
+    if (havePull || (!havePull && isApprove)) {
       InfoBox({
         infoType: 'success',
         'ext-cls': 'info-box-style',
-        title: t('调整分组上线成功'),
+        title: publishTitle(isApprove, publishType, publishTime),
         dialogType: 'confirm',
       });
     } else {
       InfoBox({
         infoType: 'success',
         'ext-cls': 'info-box-style',
-        title: t('调整分组上线成功'),
+        title: publishTitle(isApprove, publishType, publishTime),
         confirmText: t('配置客户端'),
         cancelText: t('稍后再说'),
         onConfirm: () => {
@@ -329,6 +467,47 @@
     releaseType.value = 'all';
     isSelectGroupPanelOpen.value = false;
     groups.value = [];
+  };
+
+  // 检查是否有正在上线的版本 或 2小时内有无其他版本上线
+  const checkVersionStatus = async () => {
+    const resp = await versionStatusCheck(props.bkBizId, props.appId);
+    const { data } = resp;
+    warnDialogData.value = data;
+    if (data?.is_publishing) {
+      // 当前服务有其他版本上线，不允许当前版本上线
+      warnDialogShow.value = true;
+      return false;
+    }
+    if (data?.publish_record.length) {
+      // 最近上线的版本时间与当前系统时间在2小时内，风险提示弹窗
+      const time = data.publish_record[0].final_approval_time;
+      const publishTime = dayjs(convertTime(time, 'local'));
+      const currentTime = dayjs();
+      if (publishTime.add(2, 'hour').isAfter(currentTime)) {
+        warnDialogShow.value = true;
+        return false;
+      }
+    }
+    // 可以继续上线
+    return true;
+  };
+
+  // 待确认上线
+  const handlePendingPublish = async () => {
+    await getAllGroupData();
+    await getVersionList();
+    if (props.approveData.groupIds.length === 0) {
+      groups.value = treeNodeGroups.value;
+      releaseType.value = 'all';
+    } else {
+      groups.value = treeNodeGroups.value.filter((item) => props.approveData.groupIds.includes(item.id));
+      if (props.approveData.groupIds.includes(0)) {
+        releaseType.value = 'all';
+      } else {
+        releaseType.value = 'select';
+      }
+    }
   };
 </script>
 <style lang="scss" scoped>

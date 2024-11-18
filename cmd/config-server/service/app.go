@@ -21,19 +21,19 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	iamauth "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/auth"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/sys"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbas "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/auth-server"
-	pbcs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/config-server"
-	pbapp "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/app"
-	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest/view/webannotation"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/natsort"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/space"
+	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/natsort"
+	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // CreateApp create app with options
@@ -56,11 +56,14 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 	r := &pbds.CreateAppReq{
 		BizId: req.BizId,
 		Spec: &pbapp.AppSpec{
-			Name:       req.Name,
-			ConfigType: req.ConfigType,
-			Memo:       req.Memo,
-			Alias:      req.Alias,
-			DataType:   req.DataType,
+			Name:        req.Name,
+			ConfigType:  req.ConfigType,
+			Memo:        req.Memo,
+			Alias:       req.Alias,
+			DataType:    req.DataType,
+			IsApprove:   req.IsApprove,
+			ApproveType: req.ApproveType,
+			Approver:    req.Approver,
 		},
 	}
 	rp, err := s.client.DS.CreateApp(kt.RpcCtx(), r)
@@ -100,10 +103,13 @@ func (s *Service) UpdateApp(ctx context.Context, req *pbcs.UpdateAppReq) (*pbapp
 		Id:    req.Id,
 		BizId: req.BizId,
 		Spec: &pbapp.AppSpec{
-			Name:     req.Name,
-			Memo:     req.Memo,
-			Alias:    req.Alias,
-			DataType: req.DataType,
+			Name:        req.Name,
+			Memo:        req.Memo,
+			Alias:       req.Alias,
+			DataType:    req.DataType,
+			IsApprove:   req.IsApprove,
+			ApproveType: req.ApproveType,
+			Approver:    req.Approver,
 		},
 	}
 	app, err := s.client.DS.UpdateApp(grpcKit.RpcCtx(), r)

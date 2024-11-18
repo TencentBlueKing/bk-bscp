@@ -5,7 +5,7 @@ package pbkv;
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/content/content.proto";
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/kv;pbkv";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv;pbkv";
 
 // Kv source resource reference: pkg/dal/table/kvs.go
 message Kv {

@@ -28,7 +28,7 @@ import (
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration" //nolint:goimports
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration" //nolint:goimports
 )
 
 const (

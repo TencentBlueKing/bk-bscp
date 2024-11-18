@@ -16,8 +16,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/enumor"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/selector"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
 
 // ReleasedGroupColumns defines group app's columns

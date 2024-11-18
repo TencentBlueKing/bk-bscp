@@ -14,7 +14,7 @@
 package options
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // Option defines the app's runtime flag options.

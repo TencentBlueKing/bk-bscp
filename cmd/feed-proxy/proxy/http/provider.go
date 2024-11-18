@@ -16,8 +16,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/handler"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // ProxyDownloadPrefix is the prefix for download proxy.

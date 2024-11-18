@@ -17,8 +17,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/sdk/operator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sdk/operator"
 )
 
 func (a *Authorize) countPolicy(ctx context.Context, p *operator.Policy, resourceType client.TypeID) (

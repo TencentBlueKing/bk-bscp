@@ -15,20 +15,28 @@ package types
 import (
 	"fmt"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // PublishOption defines options to publish a strategy
 type PublishOption struct {
-	BizID     uint32                 `json:"biz_id"`
-	AppID     uint32                 `json:"app_id"`
-	ReleaseID uint32                 `json:"release_id"`
-	Memo      string                 `json:"memo"`
-	All       bool                   `json:"all"`
-	Default   bool                   `json:"default"`
-	Groups    []uint32               `json:"groups"`
-	Revision  *table.CreatedRevision `json:"revision"`
+	BizID            uint32                 `json:"biz_id"`
+	AppID            uint32                 `json:"app_id"`
+	ReleaseID        uint32                 `json:"release_id"`
+	Memo             string                 `json:"memo"`
+	All              bool                   `json:"all"`
+	Default          bool                   `json:"default"`
+	Groups           []uint32               `json:"groups"`
+	Revision         *table.CreatedRevision `json:"revision"`
+	PublishType      table.PublishType      `json:"publish_type"`
+	PublishTime      string                 `json:"publish_time"`
+	PublishStatus    table.PublishStatus    `json:"publish_status"`
+	RejectReason     string                 `json:"reject_reason"`
+	Approver         string                 `json:"approver"`
+	ApproverProgress string                 `json:"approver_progress"`
+	PubState         string                 `json:"pub_state"`
+	ApproveType      string                 `json:"approve_type"`
 }
 
 // Validate options is valid or not.
@@ -62,4 +70,12 @@ func (ps *PublishOption) Validate() error {
 	}
 
 	return nil
+}
+
+// TicketInfo defines fields to ticket info
+type TicketInfo struct {
+	Status   string
+	Operater string
+	Message  string
+	Over     bool
 }

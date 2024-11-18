@@ -16,9 +16,9 @@ package pbhook
 import (
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/selector"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 
 // Hook convert pb Hook to table Hook

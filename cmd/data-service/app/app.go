@@ -29,24 +29,24 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/options"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/service/crontab"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/uuid"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/dao"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/repository"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/vault"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/metrics"
-	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/brpc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/ctl"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/shutdown"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/space"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/thirdparty/esb/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // RunServer run the data service
@@ -93,6 +93,7 @@ type dataService struct {
 	esb      client.Client
 	spaceMgr *space.Manager
 	repo     repository.Provider
+	ssd      serviced.ServiceDiscover
 }
 
 // prepare do prepare jobs before run data service.
@@ -128,6 +129,13 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	ds.sd = sd
+
+	ssd, err := serviced.NewServiceD(etcdOpt, svcOpt)
+	if err != nil {
+		return fmt.Errorf("new service faield, err: %v", err)
+	}
+
+	ds.ssd = ssd
 
 	// init bscp control tool
 	if err = ctl.LoadCtl(ctl.WithBasics(sd)...); err != nil {
@@ -237,10 +245,14 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.daoSet, ds.vault, ds.esb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo)
 	if err != nil {
 		return err
 	}
+
+	// 同步客户端在线状态
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
+	status.Run()
 
 	pbds.RegisterDataServer(serve, svc)
 
@@ -252,7 +264,6 @@ func (ds *dataService) listenAndServe() error {
 
 	ds.service = svc
 	ds.serve = serve
-
 	go func() {
 		notifier := shutdown.AddNotifier()
 		<-notifier.Signal
@@ -291,7 +302,6 @@ func (ds *dataService) listenAndServe() error {
 	}()
 
 	logs.Infof("listen grpc server at %s now.", addr)
-
 	return nil
 }
 

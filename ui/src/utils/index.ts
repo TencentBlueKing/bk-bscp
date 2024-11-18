@@ -1,5 +1,8 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import Cookies from 'js-cookie';
+
+dayjs.extend(utc);
 
 // 字节数转换为对应的显示单位
 export const byteUnitConverse = (size: number): string => {
@@ -40,6 +43,20 @@ export const copyToClipBoard = (content: string) => {
 
 // 时间格式化
 export const datetimeFormat = (str: string): string => dayjs(str).format('YYYY-MM-DD HH:mm:ss');
+
+// 时间转换 time格式YYYY-MM-DD HH:mm:ss
+export const convertTime = (time: string, type?: 'local' | 'utc') => {
+  if (type === 'local') {
+    // 把传入的UTC时间，转换成本地时间
+    return dayjs.utc(time, 'YYYY-MM-DD HH:mm:ss').local().format('YYYY-MM-DD HH:mm:ss');
+  }
+  if (type === 'utc') {
+    // 把传入的本地时间，转换成UTC时间
+    return dayjs(time, 'YYYY-MM-DD HH:mm:ss').utc().format('YYYY-MM-DD HH:mm:ss');
+  }
+  // 默认返回本地当前时间转换的UTC时间
+  return dayjs().utc().format('YYYY-MM-DD HH:mm:ss');
+};
 
 // 获取diff类型
 export const getDiffType = (base: string, current: string) => {

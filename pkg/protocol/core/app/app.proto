@@ -4,7 +4,7 @@ import "pkg/protocol/core/base/base.proto";
 
 package pbapp;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/app;pbapp";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app;pbapp";
 
 // App source resource reference: pkg/dal/table/app.go
 message App {
@@ -25,4 +25,14 @@ message AppSpec {
   string memo = 3;
   string alias = 4;
   string data_type = 5;  // data_type is enum type.
+  bool is_approve = 6;
+  string approve_type = 7;  // approve_type is enum type
+  string approver = 8;
+}
+
+// AuditApp audit and app
+message AuditApp {
+  string name = 1;
+  string creator = 2;
+  string approve_type = 3;
 }

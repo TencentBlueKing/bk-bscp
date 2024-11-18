@@ -21,7 +21,7 @@
         <bk-loading style="height: 100%" :loading="loading">
           <component
             :is="currentTemplate"
-            :kv-name="renderComponent"
+            :template-name="renderComponent"
             :content-scroll-top="contentScrollTop"
             :selected-key-data="selectedClientKey"
             :key="renderComponent"
@@ -39,7 +39,7 @@
   import ContainerExample from './components/content/container-example.vue';
   import NodeManaExample from './components/content/node-mana-example.vue';
   import CmdExample from './components/content/cmd-example.vue';
-  import KvExample from './components/content/kv-example.vue';
+  import DefaultExample from './components/content/default-example.vue';
   import Exception from '../components/exception.vue';
 
   const { t } = useI18n();
@@ -48,6 +48,7 @@
     { name: t('节点管理插件'), val: 'node' },
     { name: t('HTTP(S)接口调用'), val: 'http' }, // 文件型也有http(s)接口，页面结构和键值型一样，但脚本内容、部分文案不一样
     { name: t('命令行工具'), val: 'shell' },
+    { name: 'Go SDK', val: 'go' },
   ];
   const kvTypeArr = [
     { name: 'Python SDK', val: 'python' },
@@ -84,8 +85,8 @@
           );
           return CmdExample;
         default:
-          // 键值类型模板都一样
-          return KvExample;
+          // 默认模板
+          return DefaultExample;
       }
     }
     // 无数据模板

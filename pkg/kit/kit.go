@@ -24,8 +24,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"k8s.io/klog/v2"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 )
 
 // New initial a kit with rid and context.
@@ -46,6 +46,7 @@ var (
 	lowSpaceTypeIDKey = strings.ToLower(constant.SpaceTypeIDKey)
 	lowBizIDKey       = strings.ToLower(constant.BizIDKey)
 	lowAppIDKey       = strings.ToLower(constant.AppIDKey)
+	lowOperateWayKey  = strings.ToLower(constant.OperateWayKey)
 )
 
 // FromGrpcContext used only to obtain Kit through grpc context.
@@ -109,6 +110,11 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		}
 	}
 
+	operateWay := md[lowOperateWayKey]
+	if len(operateWay) != 0 {
+		kit.OperateWay = operateWay[0]
+	}
+
 	// set bizID in feedserver middleware
 	ctxBizID, ok := ctx.Value(constant.BizIDKey).(uint32)
 	if ok && ctxBizID != 0 {
@@ -140,6 +146,9 @@ type Kit struct {
 
 	// Lang is request language
 	Lang string
+
+	// OperateWay is request from web header
+	OperateWay string
 
 	// AppCode is app code.
 	AppCode     string
@@ -198,6 +207,7 @@ func (c *Kit) RPCMetaData() metadata.MD {
 		constant.SpaceTypeIDKey: c.SpaceTypeID,
 		constant.BizIDKey:       strconv.FormatUint(uint64(c.BizID), 10),
 		constant.AppIDKey:       strconv.FormatUint(uint64(c.AppID), 10),
+		constant.OperateWayKey:  c.OperateWay,
 	}
 
 	md := metadata.New(m)

@@ -71,12 +71,12 @@ linters-settings:
     disable:
       - printf
   goimports:
-    local-prefixes: github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/vault
+    local-prefixes: github.com/TencentBlueKing/bk-bscp/cmd/vault-server/vault
   gci:
     sections:
       - standard
       - default
-      - prefix(github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/vault)
+      - prefix(github.com/TencentBlueKing/bk-bscp/cmd/vault-server/vault)
   gocritic:
     settings:
       ifElseChain:

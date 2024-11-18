@@ -23,10 +23,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/sdk/operator"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sdk/operator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
 )
 
 const (

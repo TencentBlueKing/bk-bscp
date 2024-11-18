@@ -5,7 +5,7 @@ import "google/protobuf/struct.proto";
 
 package pbclient;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/client;pbclient";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client;pbclient";
 
 // Client source resource reference: pkg/dal/table/client.go
 message Client {

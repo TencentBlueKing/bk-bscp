@@ -14,8 +14,8 @@
 package pbcs
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/validator"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // Validate 新建服务校验

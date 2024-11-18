@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 package pbce;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/client-event;pbce";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client-event;pbce";
 
 // ClientEvent source resource reference: pkg/dal/table/client-event.go
 message ClientEvent {

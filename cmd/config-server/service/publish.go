@@ -16,11 +16,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbcs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/config-server"
-	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // Publish publish a strategy
@@ -60,6 +61,90 @@ func (s *Service) Publish(ctx context.Context, req *pbcs.PublishReq) (
 		Id:              rp.PublishedStrategyHistoryId,
 		HaveCredentials: rp.HaveCredentials,
 		HavePull:        rp.HavePull,
+	}
+	return resp, nil
+}
+
+// SubmitPublishApprove submit publish a strategy
+func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPublishApproveReq) (
+	*pbcs.PublishResp, error) {
+
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
+	}
+	err := s.authorizer.Authorize(grpcKit, res...)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &pbds.SubmitPublishApproveReq{
+		BizId:           req.BizId,
+		AppId:           req.AppId,
+		ReleaseId:       req.ReleaseId,
+		Memo:            req.Memo,
+		All:             req.All,
+		GrayPublishMode: req.GrayPublishMode,
+		Default:         req.Default,
+		Groups:          req.Groups,
+		Labels:          req.Labels,
+		GroupName:       req.GroupName,
+		PublishType:     req.PublishType,
+		PublishTime:     req.PublishTime,
+		IsCompare:       req.IsCompare,
+	}
+	rp, err := s.client.DS.SubmitPublishApprove(grpcKit.RpcCtx(), r)
+	if err != nil {
+		logs.Errorf("publish failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	resp := &pbcs.PublishResp{
+		Id:              rp.PublishedStrategyHistoryId,
+		HaveCredentials: rp.HaveCredentials,
+		HavePull:        rp.HavePull,
+	}
+	return resp, nil
+}
+
+// Approve publish approve
+func (s *Service) Approve(ctx context.Context, req *pbcs.ApproveReq) (*pbcs.ApproveResp, error) {
+
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 审批通过和驳回无需权限
+	// 撤销和上线使用上线版本权限
+	if req.PublishStatus == string(table.RevokedPublish) || req.PublishStatus == string(table.AlreadyPublish) {
+		res := []*meta.ResourceAttribute{
+			{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+			{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
+		}
+		err := s.authorizer.Authorize(grpcKit, res...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	r := &pbds.ApproveReq{
+		BizId:         req.BizId,
+		AppId:         req.AppId,
+		ReleaseId:     req.ReleaseId,
+		PublishStatus: req.PublishStatus,
+		Reason:        req.Reason,
+	}
+	rp, err := s.client.DS.Approve(grpcKit.RpcCtx(), r)
+	if err != nil {
+		logs.Errorf("approve failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	resp := &pbcs.ApproveResp{
+		HaveCredentials: rp.HaveCredentials,
+		Code:            0,
+		HavePull:        rp.HavePull,
+		Message:         rp.Message,
 	}
 	return resp, nil
 }

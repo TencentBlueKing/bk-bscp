@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 )
 
 // Columns defines the column's details prepared for
@@ -251,6 +251,8 @@ const (
 	ClientTable Name = "clients"
 	// ClientEventTable is client_events table's name
 	ClientEventTable Name = "client_events"
+	// ConfigTable is configs table's name
+	ConfigTable Name = "configs"
 )
 
 // RevisionColumns defines all the Revision table's columns.

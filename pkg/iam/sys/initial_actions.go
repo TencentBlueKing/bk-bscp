@@ -12,7 +12,7 @@
 
 package sys
 
-import "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
+import "github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 
 var (
 	// 业务资源, 自动拉取 cmdb 业务列表
@@ -37,6 +37,7 @@ func GenerateStaticActions() []client.ResourceAction {
 	resourceActionList = append(resourceActionList, genBusinessActions()...)
 	resourceActionList = append(resourceActionList, genApplicationActions()...)
 	resourceActionList = append(resourceActionList, genCredentialActions()...)
+	resourceActionList = append(resourceActionList, genAuditActions()...)
 
 	return resourceActionList
 }
@@ -270,6 +271,21 @@ func genBusinessActions() []client.ResourceAction {
 		Type:                 View,
 		RelatedResourceTypes: businessResource,
 		RelatedActions:       nil,
+		Version:              1,
+	})
+
+	return actions
+}
+
+func genAuditActions() []client.ResourceAction {
+	actions := make([]client.ResourceAction, 0)
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   AuditView,
+		Name:                 ActionIDNameMap[AuditView],
+		NameEn:               "View Audit",
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource},
 		Version:              1,
 	})
 

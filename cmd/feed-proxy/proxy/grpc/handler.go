@@ -27,10 +27,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	httpproxy "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-proxy/proxy/http"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbfs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/feed-server"
+	httpproxy "github.com/TencentBlueKing/bk-bscp/cmd/feed-proxy/proxy/http"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
 )
 
 var (
@@ -100,6 +100,9 @@ func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) (err 
 		network := cc.FeedProxy().Network
 		targetHost := net.JoinHostPort(network.BindIP, strconv.Itoa(int(network.HttpPort)))
 		resp.Url = replaceHost(resp.Url, targetHost)
+		for i := range resp.Urls {
+			resp.Urls[i] = replaceHost(resp.Urls[i], targetHost)
+		}
 		if err := serverStream.SendMsg(resp); err != nil {
 			return err
 		}

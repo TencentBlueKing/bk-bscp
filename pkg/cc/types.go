@@ -25,9 +25,9 @@ import (
 	etcd3 "go.etcd.io/etcd/client/v3"
 	"gorm.io/gorm/logger"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/version"
 )
 
 const (
@@ -1443,4 +1443,13 @@ func (g *Gorm) trySetDefault() {
 	if g.LogLevel == "" {
 		g.LogLevel = GormLogInfo
 	}
+}
+
+// ITSMConfig itsm操作需要的配置
+type ITSMConfig struct {
+	External    bool   `yaml:"external" usage:"use itsm as external"`
+	GatewayHost string `yaml:"gatewayHost" usage:"gateway host"`
+	Host        string `yaml:"host" usage:"itsm esb host"`
+	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
+	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
 }

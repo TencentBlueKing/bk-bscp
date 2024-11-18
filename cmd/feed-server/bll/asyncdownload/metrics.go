@@ -15,7 +15,7 @@ package asyncdownload
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/metrics"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
 // InitMetric init the async doenload related prometheus metrics

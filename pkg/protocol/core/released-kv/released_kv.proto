@@ -6,7 +6,7 @@ import "pkg/protocol/core/content/content.proto";
 
 package pbrkv;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/released-kv;pbrkv";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv;pbrkv";
 
 // ReleasedKv source resource reference: pkg/dal/table/released_kv.go
 message ReleasedKv {

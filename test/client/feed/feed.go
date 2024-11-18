@@ -19,10 +19,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/types"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest/client"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // Client feed server client

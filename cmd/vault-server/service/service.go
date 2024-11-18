@@ -20,8 +20,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	pbvs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/vault-server"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	pbvs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/vault-server"
 )
 
 // Service do all the data service's work

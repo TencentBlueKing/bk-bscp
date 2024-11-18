@@ -15,6 +15,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -24,23 +25,23 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/types"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/components/bcs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbcs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/cache-service"
-	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
-	pbkv "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/kv"
-	pbfs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/feed-server"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/ratelimiter"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/jsoni"
-	sfs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/sf-share"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bcs"
+	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
+	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
+	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // Handshake received handshake from sidecar to validate the app instance's authorization and legality.
@@ -380,11 +381,16 @@ func (s *Service) PullAppFileMeta(ctx context.Context, req *pbfs.PullAppFileMeta
 		if err != nil {
 			return nil, status.Errorf(codes.Aborted, "get app meta failed, %s", err.Error())
 		}
-		if match, err := s.bll.Auth().CanMatchCI(im.Kit, req.BizId, app.Name, req.Token,
-			ci.ConfigItemSpec.Path, ci.ConfigItemSpec.Name); err != nil || !match {
-			logs.Errorf("no permission to access config item %d, err: %v", ci.RciId, err)
-			return nil, status.Errorf(codes.PermissionDenied, "no permission to access config item %d", ci.RciId)
+		match, err := s.bll.Auth().CanMatchCI(im.Kit, req.BizId, app.Name, req.Token,
+			ci.ConfigItemSpec.Path, ci.ConfigItemSpec.Name)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "do authorization failed, %s", err.Error())
 		}
+
+		if !match {
+			return nil, status.Error(codes.PermissionDenied, "no permission to download file")
+		}
+
 		fileMetas = append(fileMetas, &pbfs.FileMeta{
 			Id:                   ci.RciId,
 			CommitId:             ci.CommitID,
@@ -960,4 +966,110 @@ func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resou
 	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
 	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
 	s.mc.clientCurrentMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryUsage))
+}
+
+// GetSingleFileContent 获取单文件内容
+// nolint:funlen
+func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
+	stream pbfs.Upstream_GetSingleFileContentServer) error {
+	// check if the sidecar's version can be accepted.
+	if !sfs.IsAPIVersionMatch(req.ApiVersion) {
+		st := status.New(codes.FailedPrecondition, "sdk's api version is too low, should be upgraded")
+		st, err := st.WithDetails(&pbbase.ErrDetails{
+			PrimaryError:   uint32(sfs.VersionIsTooLowFailed),
+			SecondaryError: uint32(sfs.SDKVersionIsTooLowFailed),
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "grpc status with details failed %s", err.Error())
+		}
+		return st.Err()
+	}
+
+	im, err := sfs.ParseFeedIncomingContext(stream.Context())
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	ra := &meta.ResourceAttribute{Basic: meta.Basic{Type: meta.Sidecar, Action: meta.Access}, BizID: im.Meta.BizID}
+	authorized, err := s.bll.Auth().Authorize(im.Kit, ra)
+	if err != nil {
+		return status.Errorf(codes.Aborted, "do authorization failed, %s", err.Error())
+	}
+
+	if !authorized {
+		return status.Error(codes.PermissionDenied, "no permission to access bscp server")
+	}
+
+	if req.GetAppMeta() == nil || req.GetAppMeta().App == "" {
+		return status.Error(codes.InvalidArgument, "app_meta is required")
+	}
+
+	appID, err := s.bll.AppCache().GetAppID(im.Kit, req.BizId, req.GetAppMeta().App)
+	if err != nil {
+		return status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+	}
+
+	filePath, fileName := tools.SplitPathAndName(req.FilePath)
+	if fileName == "" {
+		return status.Error(codes.InvalidArgument, "file name is required")
+	}
+
+	// validate can file be downloaded by credential.
+	match, err := s.bll.Auth().CanMatchCI(
+		im.Kit, req.BizId, req.AppMeta.App, req.Token, filePath, fileName)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "do authorization failed, %s", err.Error())
+	}
+
+	if !match {
+		return status.Error(codes.PermissionDenied, "no permission to download file")
+	}
+
+	meta := &types.AppInstanceMeta{
+		BizID:  req.BizId,
+		App:    req.GetAppMeta().App,
+		AppID:  appID,
+		Uid:    req.AppMeta.Uid,
+		Labels: req.AppMeta.Labels,
+	}
+
+	metas, err := s.bll.Release().ListAppLatestReleaseMeta(im.Kit, meta)
+	if err != nil {
+		// appid等未找到, 刷新缓存, 客户端重试请求
+		if isAppNotExistErr(err) {
+			s.bll.AppCache().RemoveCache(im.Kit, req.BizId, req.GetAppMeta().App)
+		}
+		return err
+	}
+
+	data := findMatchingConfigItem(filePath, fileName, metas.ConfigItems)
+	if data == nil {
+		return status.Errorf(codes.NotFound, "file does not exist")
+	}
+	im.Kit.BizID = req.BizId
+	body, contentLength, err := s.provider.Download(im.Kit, data.CommitSpec.GetContent().GetSignature())
+	if err != nil {
+		return status.Errorf(codes.Internal, "download file failed: %v", err)
+	}
+	defer body.Close()
+
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := body.Read(buffer)
+		if n > 0 {
+			chunk := &pbfs.SingleFileChunk{Content: buffer[:n], ContentLength: contentLength}
+			if err = stream.Send(chunk); err != nil {
+				return status.Errorf(codes.Internal, "send chunk failed: %v", err)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return status.Errorf(codes.Internal, "reading file failed: %v", err)
+		}
+	}
+
+	return nil
 }

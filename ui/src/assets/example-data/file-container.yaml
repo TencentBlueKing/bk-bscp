@@ -24,7 +24,7 @@ spec:
               value: '{{ .Bk_Bscp_Variable_BkBizId }}'
             # 服务名称，从当前环境自动获取，无需修改
             - name: app
-              value: {{ .Bk_Bscp_Variable_ServiceName }}
+              value: '{{ .Bk_Bscp_Variable_ServiceName }}'
             # 服务订阅地址，从当前环境自动获取，无需修改
             - name: feed_addrs
               value: {{ .Bk_Bscp_Variable_FEED_ADDR }}
@@ -61,7 +61,7 @@ spec:
             - name: biz
               value: '{{ .Bk_Bscp_Variable_BkBizId }}'
             - name: app
-              value: {{ .Bk_Bscp_Variable_ServiceName }}
+              value: '{{ .Bk_Bscp_Variable_ServiceName }}'
             - name: feed_addrs
               value: {{ .Bk_Bscp_Variable_FEED_ADDR }}
             - name: token

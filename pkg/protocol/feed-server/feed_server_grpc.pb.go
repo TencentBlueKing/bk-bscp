@@ -19,18 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Upstream_Handshake_FullMethodName           = "/pbfs.Upstream/Handshake"
-	Upstream_Messaging_FullMethodName           = "/pbfs.Upstream/Messaging"
-	Upstream_Watch_FullMethodName               = "/pbfs.Upstream/Watch"
-	Upstream_PullAppFileMeta_FullMethodName     = "/pbfs.Upstream/PullAppFileMeta"
-	Upstream_GetDownloadURL_FullMethodName      = "/pbfs.Upstream/GetDownloadURL"
-	Upstream_PullKvMeta_FullMethodName          = "/pbfs.Upstream/PullKvMeta"
-	Upstream_GetKvValue_FullMethodName          = "/pbfs.Upstream/GetKvValue"
-	Upstream_ListApps_FullMethodName            = "/pbfs.Upstream/ListApps"
-	Upstream_AsyncDownload_FullMethodName       = "/pbfs.Upstream/AsyncDownload"
-	Upstream_AsyncDownloadStatus_FullMethodName = "/pbfs.Upstream/AsyncDownloadStatus"
-	Upstream_GetSingleKvValue_FullMethodName    = "/pbfs.Upstream/GetSingleKvValue"
-	Upstream_GetSingleKvMeta_FullMethodName     = "/pbfs.Upstream/GetSingleKvMeta"
+	Upstream_Handshake_FullMethodName            = "/pbfs.Upstream/Handshake"
+	Upstream_Messaging_FullMethodName            = "/pbfs.Upstream/Messaging"
+	Upstream_Watch_FullMethodName                = "/pbfs.Upstream/Watch"
+	Upstream_PullAppFileMeta_FullMethodName      = "/pbfs.Upstream/PullAppFileMeta"
+	Upstream_GetDownloadURL_FullMethodName       = "/pbfs.Upstream/GetDownloadURL"
+	Upstream_PullKvMeta_FullMethodName           = "/pbfs.Upstream/PullKvMeta"
+	Upstream_GetKvValue_FullMethodName           = "/pbfs.Upstream/GetKvValue"
+	Upstream_ListApps_FullMethodName             = "/pbfs.Upstream/ListApps"
+	Upstream_AsyncDownload_FullMethodName        = "/pbfs.Upstream/AsyncDownload"
+	Upstream_AsyncDownloadStatus_FullMethodName  = "/pbfs.Upstream/AsyncDownloadStatus"
+	Upstream_GetSingleKvValue_FullMethodName     = "/pbfs.Upstream/GetSingleKvValue"
+	Upstream_GetSingleKvMeta_FullMethodName      = "/pbfs.Upstream/GetSingleKvMeta"
+	Upstream_GetSingleFileContent_FullMethodName = "/pbfs.Upstream/GetSingleFileContent"
 )
 
 // UpstreamClient is the client API for Upstream service.
@@ -51,6 +52,8 @@ type UpstreamClient interface {
 	// 获取单个kv实例
 	GetSingleKvValue(ctx context.Context, in *GetSingleKvValueReq, opts ...grpc.CallOption) (*GetSingleKvValueResp, error)
 	GetSingleKvMeta(ctx context.Context, in *GetSingleKvValueReq, opts ...grpc.CallOption) (*GetSingleKvMetaResp, error)
+	// 获取单个文件配置项
+	GetSingleFileContent(ctx context.Context, in *GetSingleFileContentReq, opts ...grpc.CallOption) (Upstream_GetSingleFileContentClient, error)
 }
 
 type upstreamClient struct {
@@ -192,6 +195,38 @@ func (c *upstreamClient) GetSingleKvMeta(ctx context.Context, in *GetSingleKvVal
 	return out, nil
 }
 
+func (c *upstreamClient) GetSingleFileContent(ctx context.Context, in *GetSingleFileContentReq, opts ...grpc.CallOption) (Upstream_GetSingleFileContentClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Upstream_ServiceDesc.Streams[1], Upstream_GetSingleFileContent_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &upstreamGetSingleFileContentClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Upstream_GetSingleFileContentClient interface {
+	Recv() (*SingleFileChunk, error)
+	grpc.ClientStream
+}
+
+type upstreamGetSingleFileContentClient struct {
+	grpc.ClientStream
+}
+
+func (x *upstreamGetSingleFileContentClient) Recv() (*SingleFileChunk, error) {
+	m := new(SingleFileChunk)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // UpstreamServer is the server API for Upstream service.
 // All implementations should embed UnimplementedUpstreamServer
 // for forward compatibility
@@ -210,6 +245,8 @@ type UpstreamServer interface {
 	// 获取单个kv实例
 	GetSingleKvValue(context.Context, *GetSingleKvValueReq) (*GetSingleKvValueResp, error)
 	GetSingleKvMeta(context.Context, *GetSingleKvValueReq) (*GetSingleKvMetaResp, error)
+	// 获取单个文件配置项
+	GetSingleFileContent(*GetSingleFileContentReq, Upstream_GetSingleFileContentServer) error
 }
 
 // UnimplementedUpstreamServer should be embedded to have forward compatible implementations.
@@ -251,6 +288,9 @@ func (UnimplementedUpstreamServer) GetSingleKvValue(context.Context, *GetSingleK
 }
 func (UnimplementedUpstreamServer) GetSingleKvMeta(context.Context, *GetSingleKvValueReq) (*GetSingleKvMetaResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSingleKvMeta not implemented")
+}
+func (UnimplementedUpstreamServer) GetSingleFileContent(*GetSingleFileContentReq, Upstream_GetSingleFileContentServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetSingleFileContent not implemented")
 }
 
 // UnsafeUpstreamServer may be embedded to opt out of forward compatibility for this service.
@@ -483,6 +523,27 @@ func _Upstream_GetSingleKvMeta_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Upstream_GetSingleFileContent_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetSingleFileContentReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(UpstreamServer).GetSingleFileContent(m, &upstreamGetSingleFileContentServer{stream})
+}
+
+type Upstream_GetSingleFileContentServer interface {
+	Send(*SingleFileChunk) error
+	grpc.ServerStream
+}
+
+type upstreamGetSingleFileContentServer struct {
+	grpc.ServerStream
+}
+
+func (x *upstreamGetSingleFileContentServer) Send(m *SingleFileChunk) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Upstream_ServiceDesc is the grpc.ServiceDesc for Upstream service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -539,6 +600,11 @@ var Upstream_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Watch",
 			Handler:       _Upstream_Watch_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetSingleFileContent",
+			Handler:       _Upstream_GetSingleFileContent_Handler,
 			ServerStreams: true,
 		},
 	},

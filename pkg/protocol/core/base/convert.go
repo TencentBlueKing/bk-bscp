@@ -19,9 +19,9 @@ import (
 
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/filter"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/filter"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // BasePage convert pb BasePage to types BasePage

@@ -21,6 +21,7 @@ func main() {
 	var biz uint32 = {{ .Bk_Bscp_Variable_BkBizId }}
 	var token string = {{ .Bk_Bscp_Variable_ClientKey }}
 	var app string = "{{ .Bk_Bscp_Variable_ServiceName }}"
+	var key string = {{ .Bk_Bscp_Variable_KeyName }}
 
 	labels := map[string]string{{ .Bk_Bscp_Variable_Leabels }}
 
@@ -39,13 +40,12 @@ func main() {
 
 	release, err := bscp.PullKvs(app, []string{}, opts...)
 
-	for _, kv := range release.KvItems {
-		value, err := bscp.Get(app, kv.Key, opts...)
-		if err != nil {
-			logger.Error("get value", logger.ErrAttr(err))
-			os.Exit(1)
-		}
-
-		fmt.Printf("%s=%s\n", kv.Key, value)
+	value, err := bscp.Get(app, key, opts...)
+	if err != nil {
+		logger.Error("get value", logger.ErrAttr(err))
+		os.Exit(1)
 	}
+
+	fmt.Printf("%s=%s\n", kv.Key, value)
+	
 }

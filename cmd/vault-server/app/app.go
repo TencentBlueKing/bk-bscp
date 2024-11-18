@@ -26,17 +26,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/options"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/uuid"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/metrics"
-	pbvs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/vault-server"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/brpc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/shutdown"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/options"
+	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
+	pbvs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/vault-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // Run start the config server

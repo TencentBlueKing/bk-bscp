@@ -12,7 +12,7 @@
 
 package sys
 
-import "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/client"
+import "github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 
 const (
 	// SystemIDBSCP is bscp in iam's system id.
@@ -94,6 +94,8 @@ const (
 	CredentialView client.ActionID = "app_credential_view" //nolint:gosec
 	// CredentialManage 服务密钥管理
 	CredentialManage client.ActionID = "app_credential_manage" //nolint:gosec
+	// AuditView 审计查看
+	AuditView client.ActionID = "audit_view"
 )
 
 // ActionIDNameMap is action id type map.
@@ -124,6 +126,7 @@ var ActionIDNameMap = map[client.ActionID]string{
 
 	CredentialView:   "服务秘钥查看",
 	CredentialManage: "服务秘钥管理",
+	AuditView:        "操作记录查看",
 }
 
 // InstanceSelectionID selection id to register iam.

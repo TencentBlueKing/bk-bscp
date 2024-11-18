@@ -21,22 +21,22 @@ import (
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
-	pbci "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/config-item"
-	pbcontent "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/content"
-	pbkv "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/kv"
-	pbrelease "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/release"
-	pbrkv "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/released-kv"
-	pbtv "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/template-variable"
-	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
+	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
+	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
+	pbrelease "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/release"
+	pbrkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv"
+	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateRelease create release.
@@ -651,7 +651,10 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		logs.Errorf("list app groups failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
+
+	var releaseIDs []uint32
 	for _, release := range releases {
+		releaseIDs = append(releaseIDs, release.Id)
 		status, selected := s.queryPublishStatus(gcrs, release.Id)
 		releasedGroups := make([]*pbrelease.ReleaseStatus_ReleasedGroup, 0)
 		for _, gcr := range selected {
@@ -694,6 +697,20 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		}
 		release.Status.PublishStatus = status
 		release.Status.ReleasedGroups = releasedGroups
+	}
+
+	// 追加发布状态
+	st, err := s.dao.Strategy().ListStrategyByReleasesIDs(grpcKit, releaseIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, r := range releases {
+		for _, s := range st {
+			if r.Id == s.Spec.ReleaseID {
+				r.Status.StrategyStatus = string(s.Spec.PublishStatus)
+			}
+		}
 	}
 
 	resp := &pbds.ListReleasesResp{

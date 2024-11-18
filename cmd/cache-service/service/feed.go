@@ -17,12 +17,12 @@ import (
 	"errors"
 	"math"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	pbcs "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/cache-service"
-	pbapp "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/app"
-	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
+	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 
 // GetAppID get app id by app name.
@@ -248,4 +248,18 @@ func (s *Service) BatchUpdateLastConsumedTime(ctx context.Context, req *pbcs.Bat
 		return nil, err
 	}
 	return &pbcs.BatchUpdateLastConsumedTimeResp{}, nil
+}
+
+// SetPublishTime set publish time
+func (s *Service) SetPublishTime(ctx context.Context, req *pbcs.SetPublishTimeReq) (*pbcs.SetPublishTimeResp,
+	error) {
+	kt := kit.FromGrpcContext(ctx)
+	result, err := s.op.SetPublishTime(kt, req.BizId, req.AppId, req.StrategyId, req.GetPublishTime())
+	if err != nil {
+		return nil, err
+	}
+	resp := pbcs.SetPublishTimeResp{
+		Result: result,
+	}
+	return &resp, nil
 }

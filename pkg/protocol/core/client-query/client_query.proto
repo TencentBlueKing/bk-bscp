@@ -5,7 +5,7 @@ import "google/protobuf/struct.proto";
 
 package pbcq;
 
-option go_package = "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/client-query;pbcq";
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client-query;pbcq";
 
 // ClientQuery source resource reference: pkg/dal/table/client-query.go
 message ClientQuery {

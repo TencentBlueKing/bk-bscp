@@ -15,21 +15,23 @@ package service
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	pbbase "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/base"
-	pbkv "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/core/kv"
-	pbds "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/protocol/data-service"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateKv is used to create key-value data.
@@ -443,25 +445,37 @@ func (s *Service) getKv(kt *kit.Kit, bizID, appID, version uint32, key string) (
 
 // doBatchUpsertVault is used to perform bulk insertion or update of key-value data in Vault.
 func (s *Service) doBatchUpsertVault(kt *kit.Kit, req *pbds.BatchUpsertKvsReq) (map[string]int, error) {
-
+	var mux sync.Mutex
+	eg, _ := errgroup.WithContext(context.Background())
+	eg.SetLimit(10)
 	versionMap := make(map[string]int)
 	for _, kv := range req.Kvs {
-		opt := &types.UpsertKvOption{
-			BizID:  req.BizId,
-			AppID:  req.AppId,
-			Key:    kv.KvSpec.Key,
-			Value:  kv.KvSpec.Value,
-			KvType: table.DataType(kv.KvSpec.KvType),
-		}
-		version, err := s.vault.UpsertKv(kt, opt)
-		if err != nil {
-			return nil, err
-		}
-		versionMap[kv.KvSpec.Key] = version
+		kv := kv
+		eg.Go(func() error {
+			opt := &types.UpsertKvOption{
+				BizID:  req.BizId,
+				AppID:  req.AppId,
+				Key:    kv.KvSpec.Key,
+				Value:  kv.KvSpec.Value,
+				KvType: table.DataType(kv.KvSpec.KvType),
+			}
+			version, err := s.vault.UpsertKv(kt, opt)
+			if err != nil {
+				return err
+			}
+			mux.Lock()
+			versionMap[kv.KvSpec.Key] = version
+			mux.Unlock()
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, errf.Errorf(errf.Aborted, i18n.T(kt, "batch upsert vault failed, err: %v", err))
 	}
 
 	return versionMap, nil
-
 }
 
 func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKvsReq, versionMap map[string]int,
