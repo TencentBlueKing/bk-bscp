@@ -167,7 +167,7 @@
   const keyInputRef = ref();
 
   // 内置标签
-  const BuiltInTag = ['ip', 'podname'];
+  const BuiltInTag = ['ip', 'pod_name'];
 
   const rules = {
     name: [
