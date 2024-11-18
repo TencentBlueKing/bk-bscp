@@ -1165,6 +1165,10 @@ func checkTicketStatus(grpcKit *kit.Kit,
 			return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
 		}
 		if _, ok := approveData[constant.ItsmPassedApproveResult]; ok {
+			// 驳回的情况直接忽略审批过的人
+			if grpcKit.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RejectedApproval) {
+				return req, message, err
+			}
 			req.ApprovedBy = approveData[constant.ItsmPassedApproveResult]
 			req.PublishStatus = string(table.PendingPublish)
 			for _, v := range req.ApprovedBy {

@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -113,13 +114,17 @@ func (s *Service) Approve(ctx context.Context, req *pbcs.ApproveReq) (*pbcs.Appr
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
-	}
-	err := s.authorizer.Authorize(grpcKit, res...)
-	if err != nil {
-		return nil, err
+	// 审批通过和驳回无需权限
+	// 撤销和上线使用上线版本权限
+	if req.PublishStatus == string(table.RevokedPublish) || req.PublishStatus == string(table.AlreadyPublish) {
+		res := []*meta.ResourceAttribute{
+			{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+			{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
+		}
+		err := s.authorizer.Authorize(grpcKit, res...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	r := &pbds.ApproveReq{
