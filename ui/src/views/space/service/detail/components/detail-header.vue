@@ -70,7 +70,10 @@
           @confirm="handleRefresh" />
         <!-- 更多选项 -->
         <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->
-        <HeaderMoreOptions :approve-status="approveData.status" @handle-undo="handleRefresh" />
+        <HeaderMoreOptions
+          :approve-status="approveData.status"
+          :target-groups="approveData.targetGroups"
+          @handle-undo="handleRefresh" />
       </section>
     </template>
   </div>
@@ -124,12 +127,14 @@
     type: string;
     memo: string;
     groupIds: number[];
+    targetGroups: [];
   }>({
     status: '',
     time: '',
     type: '',
     memo: '',
     groupIds: [],
+    targetGroups: [],
   });
 
   const creator = ref('');

@@ -8,6 +8,7 @@
     <bk-loading class="loading-wrapper" :loading="loading">
       <div v-if="!loading" class="version-diff-content">
         <AsideMenu
+          :app-id="props.appId"
           :base-version-id="selectedBaseVersion"
           :current-version-id="currentVersion.id"
           :un-named-version-variables="props.unNamedVersionVariables"
@@ -104,6 +105,7 @@
 
   const { t, locale } = useI18n();
   const props = defineProps<{
+    appId?: number;
     show: boolean;
     showPublishBtn?: boolean; // 是否显示发布按钮
     currentVersion: IConfigVersion; // 当前版本详情
@@ -163,13 +165,14 @@
 
   // 获取所有对比基准版本
   const getVersionList = async () => {
+    const currentAppId = appId.value || props.appId;
     try {
       versionListLoading.value = true;
       if (props.versionDiffList) {
         versionList.value = props.versionDiffList;
         return;
       }
-      const res = await getConfigVersionList(bkBizId.value, appId.value, { start: 0, all: true });
+      const res = await getConfigVersionList(bkBizId.value, Number(currentAppId), { start: 0, all: true });
       versionList.value = res.data.details.filter((item: IConfigVersion) => item.id !== props.currentVersion.id);
     } catch (e) {
       console.error(e);

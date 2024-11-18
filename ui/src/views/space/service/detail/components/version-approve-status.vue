@@ -222,6 +222,7 @@
       type: spec.publish_type,
       groupIds: releaseGroupIds,
       memo: spec.memo,
+      targetGroups: spec.scope?.groups || [],
     };
     emits('send-data', approveData, revision?.creator || '');
   };

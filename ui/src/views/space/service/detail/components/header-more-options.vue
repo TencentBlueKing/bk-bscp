@@ -34,19 +34,22 @@
   import useConfigStore from '../../../../../store/config';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { APPROVE_STATUS } from '../../../../../constants/record';
-  import { getRecordList } from '../../../../../api/record';
   import { IDialogData } from '../../../../../../types/record';
   import DialogConfirm from '../../../records/components/dialog-confirm.vue';
+  import useServiceStore from '../../../../../store/service';
 
   const versionStore = useConfigStore();
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
+  const { appData } = storeToRefs(useServiceStore());
 
   const props = withDefaults(
     defineProps<{
       approveStatus: string;
+      targetGroups: [];
     }>(),
     {
       approveStatus: '',
+      targetGroups: () => [],
     },
   );
 
@@ -82,30 +85,16 @@
 
   // 撤回提示框
   const handleConfirm = async () => {
-    loading.value = true;
     confirmShow.value = true;
-    try {
-      const res = await getRecordList(String(route.params.spaceId), {
-        limit: 1,
-        app_id: Number(route.params.appId),
-      });
-      const versionId = Number(route.params.versionId);
-      const currentVerData = res.details.find((item: any) => item.strategy.release_id === versionId);
-      const matchVersion = currentVerData.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
-      const matchGroup = currentVerData.audit.spec.res_instance.match(/group:([^\n]*)/);
-      confirmData.value = {
-        service: currentVerData.app.name || '--',
-        version: matchVersion ? matchVersion[1] : '--',
-        group: matchGroup ? matchGroup[1] : '--',
-        serviceId: 0,
-        releaseId: 0,
-        memo: '',
-      };
-    } catch (e) {
-      console.log(e);
-    } finally {
-      loading.value = false;
-    }
+    const group = props.targetGroups.map((item: any) => item.spec.name).join(',');
+    confirmData.value = {
+      service: appData.value.spec.name || '--',
+      version: versionData.value.spec?.name || '--',
+      group: group.length ? group : '--',
+      serviceId: 0,
+      releaseId: 0,
+      memo: '',
+    };
   };
 
   // 撤销审批

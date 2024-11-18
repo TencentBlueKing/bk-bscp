@@ -5,7 +5,7 @@
       :btn-loading="btnLoading"
       :is-approval-mode="true"
       :bk-biz-id="spaceId"
-      :app-id="appId"
+      :app-id="props.appId"
       :show="show"
       :current-version="versionData"
       :base-version-id="baseVersionId"
@@ -18,7 +18,7 @@
   <DialogReject
     v-model:show="RejectDialogShow"
     :space-id="spaceId"
-    :app-id="appId"
+    :app-id="props.appId"
     :release-id="versionData.id"
     :release-name="versionData.spec.name"
     @reject="handleReject" />
