@@ -209,11 +209,7 @@
                 </bk-button>
                 <span
                   v-else-if="
-                    !(
-                      [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
-                        row.audit.spec.status,
-                      ) && row.strategy.creator === userInfo.username
-                    )
+                    ![APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
                   "
                   class="empty-action">
                   --
@@ -221,8 +217,7 @@
                 <!-- 待上线/去审批状态且版本创建者才显示撤销 -->
                 <bk-button
                   v-if="
-                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status) &&
-                    row.strategy.creator === userInfo.username
+                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
                   "
                   text
                   class="action-btn"
