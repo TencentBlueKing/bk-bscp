@@ -84,7 +84,6 @@
   onMounted(async () => {
     await loadServiceList();
     const service = serviceList.value.find((service) => service.id === localVal.value);
-    console.log(service);
     emits('change', service);
   });
 
