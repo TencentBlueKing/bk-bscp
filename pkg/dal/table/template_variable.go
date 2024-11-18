@@ -198,6 +198,8 @@ const (
 	StringVar VariableType = "string"
 	// NumberVar is number type variable
 	NumberVar VariableType = "number"
+	// TextVar is text type variable
+	TextVar VariableType = "text"
 )
 
 // VariableType is template variable type
@@ -208,6 +210,7 @@ func (t VariableType) Validate(kit *kit.Kit) error {
 	switch t {
 	case StringVar:
 	case NumberVar:
+	case TextVar:
 	default:
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "unsupported variable type: %s", t))
 	}

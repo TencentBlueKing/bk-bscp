@@ -28,6 +28,7 @@ import (
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
@@ -68,7 +69,7 @@ func (s *Service) ListTemplateVariables(ctx context.Context, req *pbds.ListTempl
 	*pbds.ListTemplateVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, TopIds: req.TopIds}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
@@ -212,7 +213,20 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 		return nil, err
 	}
 
-	return &pbds.ImportTemplateVariablesResp{VariableCount: uint32(len(req.Specs))}, nil
+	createIds := []uint32{}
+	for _, v := range toCreate {
+		createIds = append(createIds, v.ID)
+	}
+
+	updateIds := []uint32{}
+	for _, v := range toUpdate {
+		updateIds = append(updateIds, v.ID)
+	}
+
+	return &pbds.ImportTemplateVariablesResp{
+			VariableCount: uint32(len(req.Specs)),
+			Ids:           tools.MergeAndDeduplicate(createIds, updateIds)},
+		nil
 }
 
 // TemplateVariableFetchIDsExcluding 获取模板变量排除指定ID的ID

@@ -27,179 +27,180 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Config_CreateApp_FullMethodName                         = "/pbcs.Config/CreateApp"
-	Config_UpdateApp_FullMethodName                         = "/pbcs.Config/UpdateApp"
-	Config_DeleteApp_FullMethodName                         = "/pbcs.Config/DeleteApp"
-	Config_GetApp_FullMethodName                            = "/pbcs.Config/GetApp"
-	Config_GetAppByName_FullMethodName                      = "/pbcs.Config/GetAppByName"
-	Config_ListAppsRest_FullMethodName                      = "/pbcs.Config/ListAppsRest"
-	Config_ListAppsBySpaceRest_FullMethodName               = "/pbcs.Config/ListAppsBySpaceRest"
-	Config_CreateConfigItem_FullMethodName                  = "/pbcs.Config/CreateConfigItem"
-	Config_BatchUpsertConfigItems_FullMethodName            = "/pbcs.Config/BatchUpsertConfigItems"
-	Config_UpdateConfigItem_FullMethodName                  = "/pbcs.Config/UpdateConfigItem"
-	Config_DeleteConfigItem_FullMethodName                  = "/pbcs.Config/DeleteConfigItem"
-	Config_BatchDeleteConfigItems_FullMethodName            = "/pbcs.Config/BatchDeleteConfigItems"
-	Config_UnDeleteConfigItem_FullMethodName                = "/pbcs.Config/UnDeleteConfigItem"
-	Config_BatchUnDeleteConfigItem_FullMethodName           = "/pbcs.Config/BatchUnDeleteConfigItem"
-	Config_UndoConfigItem_FullMethodName                    = "/pbcs.Config/UndoConfigItem"
-	Config_GetConfigItem_FullMethodName                     = "/pbcs.Config/GetConfigItem"
-	Config_GetReleasedConfigItem_FullMethodName             = "/pbcs.Config/GetReleasedConfigItem"
-	Config_ListConfigItems_FullMethodName                   = "/pbcs.Config/ListConfigItems"
-	Config_ListReleasedConfigItems_FullMethodName           = "/pbcs.Config/ListReleasedConfigItems"
-	Config_ListConfigItemCount_FullMethodName               = "/pbcs.Config/ListConfigItemCount"
-	Config_ListConfigItemByTuple_FullMethodName             = "/pbcs.Config/ListConfigItemByTuple"
-	Config_GetReleasedKv_FullMethodName                     = "/pbcs.Config/GetReleasedKv"
-	Config_ListReleasedKvs_FullMethodName                   = "/pbcs.Config/ListReleasedKvs"
-	Config_UpdateConfigHook_FullMethodName                  = "/pbcs.Config/UpdateConfigHook"
-	Config_CreateRelease_FullMethodName                     = "/pbcs.Config/CreateRelease"
-	Config_ListReleases_FullMethodName                      = "/pbcs.Config/ListReleases"
-	Config_GetReleaseByName_FullMethodName                  = "/pbcs.Config/GetReleaseByName"
-	Config_GetRelease_FullMethodName                        = "/pbcs.Config/GetRelease"
-	Config_DeprecateRelease_FullMethodName                  = "/pbcs.Config/DeprecateRelease"
-	Config_UnDeprecateRelease_FullMethodName                = "/pbcs.Config/UnDeprecateRelease"
-	Config_DeleteRelease_FullMethodName                     = "/pbcs.Config/DeleteRelease"
-	Config_CheckReleaseName_FullMethodName                  = "/pbcs.Config/CheckReleaseName"
-	Config_CreateHook_FullMethodName                        = "/pbcs.Config/CreateHook"
-	Config_DeleteHook_FullMethodName                        = "/pbcs.Config/DeleteHook"
-	Config_BatchDeleteHook_FullMethodName                   = "/pbcs.Config/BatchDeleteHook"
-	Config_UpdateHook_FullMethodName                        = "/pbcs.Config/UpdateHook"
-	Config_ListHooks_FullMethodName                         = "/pbcs.Config/ListHooks"
-	Config_ListHookTags_FullMethodName                      = "/pbcs.Config/ListHookTags"
-	Config_GetHook_FullMethodName                           = "/pbcs.Config/GetHook"
-	Config_CreateHookRevision_FullMethodName                = "/pbcs.Config/CreateHookRevision"
-	Config_ListHookRevisions_FullMethodName                 = "/pbcs.Config/ListHookRevisions"
-	Config_DeleteHookRevision_FullMethodName                = "/pbcs.Config/DeleteHookRevision"
-	Config_PublishHookRevision_FullMethodName               = "/pbcs.Config/PublishHookRevision"
-	Config_GetHookRevision_FullMethodName                   = "/pbcs.Config/GetHookRevision"
-	Config_UpdateHookRevision_FullMethodName                = "/pbcs.Config/UpdateHookRevision"
-	Config_ListHookReferences_FullMethodName                = "/pbcs.Config/ListHookReferences"
-	Config_ListHookRevisionReferences_FullMethodName        = "/pbcs.Config/ListHookRevisionReferences"
-	Config_GetReleaseHook_FullMethodName                    = "/pbcs.Config/GetReleaseHook"
-	Config_CreateTemplateSpace_FullMethodName               = "/pbcs.Config/CreateTemplateSpace"
-	Config_DeleteTemplateSpace_FullMethodName               = "/pbcs.Config/DeleteTemplateSpace"
-	Config_UpdateTemplateSpace_FullMethodName               = "/pbcs.Config/UpdateTemplateSpace"
-	Config_ListTemplateSpaces_FullMethodName                = "/pbcs.Config/ListTemplateSpaces"
-	Config_GetAllBizsOfTmplSpaces_FullMethodName            = "/pbcs.Config/GetAllBizsOfTmplSpaces"
-	Config_CreateDefaultTmplSpace_FullMethodName            = "/pbcs.Config/CreateDefaultTmplSpace"
-	Config_ListTmplSpacesByIDs_FullMethodName               = "/pbcs.Config/ListTmplSpacesByIDs"
-	Config_CreateTemplate_FullMethodName                    = "/pbcs.Config/CreateTemplate"
-	Config_DeleteTemplate_FullMethodName                    = "/pbcs.Config/DeleteTemplate"
-	Config_BatchDeleteTemplate_FullMethodName               = "/pbcs.Config/BatchDeleteTemplate"
-	Config_UpdateTemplate_FullMethodName                    = "/pbcs.Config/UpdateTemplate"
-	Config_ListTemplates_FullMethodName                     = "/pbcs.Config/ListTemplates"
-	Config_BatchUpsertTemplates_FullMethodName              = "/pbcs.Config/BatchUpsertTemplates"
-	Config_BatchUpdateTemplatePermissions_FullMethodName    = "/pbcs.Config/BatchUpdateTemplatePermissions"
-	Config_AddTmplsToTmplSets_FullMethodName                = "/pbcs.Config/AddTmplsToTmplSets"
-	Config_DeleteTmplsFromTmplSets_FullMethodName           = "/pbcs.Config/DeleteTmplsFromTmplSets"
-	Config_ListTemplatesByIDs_FullMethodName                = "/pbcs.Config/ListTemplatesByIDs"
-	Config_ListTemplatesNotBound_FullMethodName             = "/pbcs.Config/ListTemplatesNotBound"
-	Config_ListTemplateByTuple_FullMethodName               = "/pbcs.Config/ListTemplateByTuple"
-	Config_ListTmplsOfTmplSet_FullMethodName                = "/pbcs.Config/ListTmplsOfTmplSet"
-	Config_ListTemplateSetsAndRevisions_FullMethodName      = "/pbcs.Config/ListTemplateSetsAndRevisions"
-	Config_CreateTemplateRevision_FullMethodName            = "/pbcs.Config/CreateTemplateRevision"
-	Config_UpdateTemplateRevision_FullMethodName            = "/pbcs.Config/UpdateTemplateRevision"
-	Config_ListTemplateRevisions_FullMethodName             = "/pbcs.Config/ListTemplateRevisions"
-	Config_GetTemplateRevision_FullMethodName               = "/pbcs.Config/GetTemplateRevision"
-	Config_ListTemplateRevisionsByIDs_FullMethodName        = "/pbcs.Config/ListTemplateRevisionsByIDs"
-	Config_ListTmplRevisionNamesByTmplIDs_FullMethodName    = "/pbcs.Config/ListTmplRevisionNamesByTmplIDs"
-	Config_CreateTemplateSet_FullMethodName                 = "/pbcs.Config/CreateTemplateSet"
-	Config_DeleteTemplateSet_FullMethodName                 = "/pbcs.Config/DeleteTemplateSet"
-	Config_UpdateTemplateSet_FullMethodName                 = "/pbcs.Config/UpdateTemplateSet"
-	Config_ListTemplateSets_FullMethodName                  = "/pbcs.Config/ListTemplateSets"
-	Config_ListAppTemplateSets_FullMethodName               = "/pbcs.Config/ListAppTemplateSets"
-	Config_ListTemplateSetsByIDs_FullMethodName             = "/pbcs.Config/ListTemplateSetsByIDs"
-	Config_ListTmplSetsOfBiz_FullMethodName                 = "/pbcs.Config/ListTmplSetsOfBiz"
-	Config_CreateAppTemplateBinding_FullMethodName          = "/pbcs.Config/CreateAppTemplateBinding"
-	Config_DeleteAppTemplateBinding_FullMethodName          = "/pbcs.Config/DeleteAppTemplateBinding"
-	Config_UpdateAppTemplateBinding_FullMethodName          = "/pbcs.Config/UpdateAppTemplateBinding"
-	Config_ListAppTemplateBindings_FullMethodName           = "/pbcs.Config/ListAppTemplateBindings"
-	Config_ListAppBoundTmplRevisions_FullMethodName         = "/pbcs.Config/ListAppBoundTmplRevisions"
-	Config_ListReleasedAppBoundTmplRevisions_FullMethodName = "/pbcs.Config/ListReleasedAppBoundTmplRevisions"
-	Config_GetReleasedAppBoundTmplRevision_FullMethodName   = "/pbcs.Config/GetReleasedAppBoundTmplRevision"
-	Config_UpdateAppBoundTmplRevisions_FullMethodName       = "/pbcs.Config/UpdateAppBoundTmplRevisions"
-	Config_DeleteAppBoundTmplSets_FullMethodName            = "/pbcs.Config/DeleteAppBoundTmplSets"
-	Config_RemoveAppBoundTmplSet_FullMethodName             = "/pbcs.Config/RemoveAppBoundTmplSet"
-	Config_CheckAppTemplateBinding_FullMethodName           = "/pbcs.Config/CheckAppTemplateBinding"
-	Config_ImportFromTemplateSetToApp_FullMethodName        = "/pbcs.Config/ImportFromTemplateSetToApp"
-	Config_ListTmplBoundCounts_FullMethodName               = "/pbcs.Config/ListTmplBoundCounts"
-	Config_ListTmplRevisionBoundCounts_FullMethodName       = "/pbcs.Config/ListTmplRevisionBoundCounts"
-	Config_ListTmplSetBoundCounts_FullMethodName            = "/pbcs.Config/ListTmplSetBoundCounts"
-	Config_ListTmplBoundUnnamedApps_FullMethodName          = "/pbcs.Config/ListTmplBoundUnnamedApps"
-	Config_ListTmplBoundNamedApps_FullMethodName            = "/pbcs.Config/ListTmplBoundNamedApps"
-	Config_ListTmplBoundTmplSets_FullMethodName             = "/pbcs.Config/ListTmplBoundTmplSets"
-	Config_ListMultiTmplBoundTmplSets_FullMethodName        = "/pbcs.Config/ListMultiTmplBoundTmplSets"
-	Config_ListTmplRevisionBoundUnnamedApps_FullMethodName  = "/pbcs.Config/ListTmplRevisionBoundUnnamedApps"
-	Config_ListTmplRevisionBoundNamedApps_FullMethodName    = "/pbcs.Config/ListTmplRevisionBoundNamedApps"
-	Config_ListTmplSetBoundUnnamedApps_FullMethodName       = "/pbcs.Config/ListTmplSetBoundUnnamedApps"
-	Config_ListMultiTmplSetBoundUnnamedApps_FullMethodName  = "/pbcs.Config/ListMultiTmplSetBoundUnnamedApps"
-	Config_CheckTemplateSetReferencesApps_FullMethodName    = "/pbcs.Config/CheckTemplateSetReferencesApps"
-	Config_ListTmplSetBoundNamedApps_FullMethodName         = "/pbcs.Config/ListTmplSetBoundNamedApps"
-	Config_ListLatestTmplBoundUnnamedApps_FullMethodName    = "/pbcs.Config/ListLatestTmplBoundUnnamedApps"
-	Config_CreateTemplateVariable_FullMethodName            = "/pbcs.Config/CreateTemplateVariable"
-	Config_DeleteTemplateVariable_FullMethodName            = "/pbcs.Config/DeleteTemplateVariable"
-	Config_BatchDeleteTemplateVariable_FullMethodName       = "/pbcs.Config/BatchDeleteTemplateVariable"
-	Config_UpdateTemplateVariable_FullMethodName            = "/pbcs.Config/UpdateTemplateVariable"
-	Config_ListTemplateVariables_FullMethodName             = "/pbcs.Config/ListTemplateVariables"
-	Config_ImportTemplateVariables_FullMethodName           = "/pbcs.Config/ImportTemplateVariables"
-	Config_ExtractAppTmplVariables_FullMethodName           = "/pbcs.Config/ExtractAppTmplVariables"
-	Config_GetAppTmplVariableRefs_FullMethodName            = "/pbcs.Config/GetAppTmplVariableRefs"
-	Config_GetReleasedAppTmplVariableRefs_FullMethodName    = "/pbcs.Config/GetReleasedAppTmplVariableRefs"
-	Config_UpdateAppTmplVariables_FullMethodName            = "/pbcs.Config/UpdateAppTmplVariables"
-	Config_ListAppTmplVariables_FullMethodName              = "/pbcs.Config/ListAppTmplVariables"
-	Config_ListReleasedAppTmplVariables_FullMethodName      = "/pbcs.Config/ListReleasedAppTmplVariables"
-	Config_CreateGroup_FullMethodName                       = "/pbcs.Config/CreateGroup"
-	Config_DeleteGroup_FullMethodName                       = "/pbcs.Config/DeleteGroup"
-	Config_BatchDeleteGroups_FullMethodName                 = "/pbcs.Config/BatchDeleteGroups"
-	Config_UpdateGroup_FullMethodName                       = "/pbcs.Config/UpdateGroup"
-	Config_ListAllGroups_FullMethodName                     = "/pbcs.Config/ListAllGroups"
-	Config_ListAppGroups_FullMethodName                     = "/pbcs.Config/ListAppGroups"
-	Config_ListGroupReleasedApps_FullMethodName             = "/pbcs.Config/ListGroupReleasedApps"
-	Config_GetGroupByName_FullMethodName                    = "/pbcs.Config/GetGroupByName"
-	Config_Publish_FullMethodName                           = "/pbcs.Config/Publish"
-	Config_GenerateReleaseAndPublish_FullMethodName         = "/pbcs.Config/GenerateReleaseAndPublish"
-	Config_SubmitPublishApprove_FullMethodName              = "/pbcs.Config/SubmitPublishApprove"
-	Config_Approve_FullMethodName                           = "/pbcs.Config/Approve"
-	Config_GetLastSelect_FullMethodName                     = "/pbcs.Config/GetLastSelect"
-	Config_GetLastPublish_FullMethodName                    = "/pbcs.Config/GetLastPublish"
-	Config_GetReleasesStatus_FullMethodName                 = "/pbcs.Config/GetReleasesStatus"
-	Config_ListAudits_FullMethodName                        = "/pbcs.Config/ListAudits"
-	Config_CreateCredentials_FullMethodName                 = "/pbcs.Config/CreateCredentials"
-	Config_ListCredentials_FullMethodName                   = "/pbcs.Config/ListCredentials"
-	Config_DeleteCredential_FullMethodName                  = "/pbcs.Config/DeleteCredential"
-	Config_UpdateCredential_FullMethodName                  = "/pbcs.Config/UpdateCredential"
-	Config_CheckCredentialName_FullMethodName               = "/pbcs.Config/CheckCredentialName"
-	Config_ListCredentialScopes_FullMethodName              = "/pbcs.Config/ListCredentialScopes"
-	Config_UpdateCredentialScope_FullMethodName             = "/pbcs.Config/UpdateCredentialScope"
-	Config_CredentialScopePreview_FullMethodName            = "/pbcs.Config/CredentialScopePreview"
-	Config_CreateKv_FullMethodName                          = "/pbcs.Config/CreateKv"
-	Config_UpdateKv_FullMethodName                          = "/pbcs.Config/UpdateKv"
-	Config_ListKvs_FullMethodName                           = "/pbcs.Config/ListKvs"
-	Config_DeleteKv_FullMethodName                          = "/pbcs.Config/DeleteKv"
-	Config_BatchDeleteKv_FullMethodName                     = "/pbcs.Config/BatchDeleteKv"
-	Config_BatchUpsertKvs_FullMethodName                    = "/pbcs.Config/BatchUpsertKvs"
-	Config_UnDeleteKv_FullMethodName                        = "/pbcs.Config/UnDeleteKv"
-	Config_BatchUnDeleteKv_FullMethodName                   = "/pbcs.Config/BatchUnDeleteKv"
-	Config_UndoKv_FullMethodName                            = "/pbcs.Config/UndoKv"
-	Config_ImportKvs_FullMethodName                         = "/pbcs.Config/ImportKvs"
-	Config_ListClients_FullMethodName                       = "/pbcs.Config/ListClients"
-	Config_ListClientEvents_FullMethodName                  = "/pbcs.Config/ListClientEvents"
-	Config_RetryClients_FullMethodName                      = "/pbcs.Config/RetryClients"
-	Config_ListClientQuerys_FullMethodName                  = "/pbcs.Config/ListClientQuerys"
-	Config_CreateClientQuery_FullMethodName                 = "/pbcs.Config/CreateClientQuery"
-	Config_UpdateClientQuery_FullMethodName                 = "/pbcs.Config/UpdateClientQuery"
-	Config_DeleteClientQuery_FullMethodName                 = "/pbcs.Config/DeleteClientQuery"
-	Config_CheckClientQueryName_FullMethodName              = "/pbcs.Config/CheckClientQueryName"
-	Config_ClientConfigVersionStatistics_FullMethodName     = "/pbcs.Config/ClientConfigVersionStatistics"
-	Config_ClientPullTrendStatistics_FullMethodName         = "/pbcs.Config/ClientPullTrendStatistics"
-	Config_ClientPullStatistics_FullMethodName              = "/pbcs.Config/ClientPullStatistics"
-	Config_ClientLabelStatistics_FullMethodName             = "/pbcs.Config/ClientLabelStatistics"
-	Config_ClientAnnotationStatistics_FullMethodName        = "/pbcs.Config/ClientAnnotationStatistics"
-	Config_ClientVersionStatistics_FullMethodName           = "/pbcs.Config/ClientVersionStatistics"
-	Config_ListClientLabelAndAnnotation_FullMethodName      = "/pbcs.Config/ListClientLabelAndAnnotation"
-	Config_ClientSpecificFailedReason_FullMethodName        = "/pbcs.Config/ClientSpecificFailedReason"
-	Config_CompareConfigItemConflicts_FullMethodName        = "/pbcs.Config/CompareConfigItemConflicts"
-	Config_CompareKvConflicts_FullMethodName                = "/pbcs.Config/CompareKvConflicts"
-	Config_GetTemplateAndNonTemplateCICount_FullMethodName  = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
+	Config_CreateApp_FullMethodName                          = "/pbcs.Config/CreateApp"
+	Config_UpdateApp_FullMethodName                          = "/pbcs.Config/UpdateApp"
+	Config_DeleteApp_FullMethodName                          = "/pbcs.Config/DeleteApp"
+	Config_GetApp_FullMethodName                             = "/pbcs.Config/GetApp"
+	Config_GetAppByName_FullMethodName                       = "/pbcs.Config/GetAppByName"
+	Config_ListAppsRest_FullMethodName                       = "/pbcs.Config/ListAppsRest"
+	Config_ListAppsBySpaceRest_FullMethodName                = "/pbcs.Config/ListAppsBySpaceRest"
+	Config_CreateConfigItem_FullMethodName                   = "/pbcs.Config/CreateConfigItem"
+	Config_BatchUpsertConfigItems_FullMethodName             = "/pbcs.Config/BatchUpsertConfigItems"
+	Config_UpdateConfigItem_FullMethodName                   = "/pbcs.Config/UpdateConfigItem"
+	Config_DeleteConfigItem_FullMethodName                   = "/pbcs.Config/DeleteConfigItem"
+	Config_BatchDeleteConfigItems_FullMethodName             = "/pbcs.Config/BatchDeleteConfigItems"
+	Config_UnDeleteConfigItem_FullMethodName                 = "/pbcs.Config/UnDeleteConfigItem"
+	Config_BatchUnDeleteConfigItem_FullMethodName            = "/pbcs.Config/BatchUnDeleteConfigItem"
+	Config_UndoConfigItem_FullMethodName                     = "/pbcs.Config/UndoConfigItem"
+	Config_GetConfigItem_FullMethodName                      = "/pbcs.Config/GetConfigItem"
+	Config_GetReleasedConfigItem_FullMethodName              = "/pbcs.Config/GetReleasedConfigItem"
+	Config_ListConfigItems_FullMethodName                    = "/pbcs.Config/ListConfigItems"
+	Config_ListReleasedConfigItems_FullMethodName            = "/pbcs.Config/ListReleasedConfigItems"
+	Config_ListConfigItemCount_FullMethodName                = "/pbcs.Config/ListConfigItemCount"
+	Config_ListConfigItemByTuple_FullMethodName              = "/pbcs.Config/ListConfigItemByTuple"
+	Config_GetReleasedKv_FullMethodName                      = "/pbcs.Config/GetReleasedKv"
+	Config_ListReleasedKvs_FullMethodName                    = "/pbcs.Config/ListReleasedKvs"
+	Config_UpdateConfigHook_FullMethodName                   = "/pbcs.Config/UpdateConfigHook"
+	Config_CreateRelease_FullMethodName                      = "/pbcs.Config/CreateRelease"
+	Config_ListReleases_FullMethodName                       = "/pbcs.Config/ListReleases"
+	Config_GetReleaseByName_FullMethodName                   = "/pbcs.Config/GetReleaseByName"
+	Config_GetRelease_FullMethodName                         = "/pbcs.Config/GetRelease"
+	Config_DeprecateRelease_FullMethodName                   = "/pbcs.Config/DeprecateRelease"
+	Config_UnDeprecateRelease_FullMethodName                 = "/pbcs.Config/UnDeprecateRelease"
+	Config_DeleteRelease_FullMethodName                      = "/pbcs.Config/DeleteRelease"
+	Config_CheckReleaseName_FullMethodName                   = "/pbcs.Config/CheckReleaseName"
+	Config_CreateHook_FullMethodName                         = "/pbcs.Config/CreateHook"
+	Config_DeleteHook_FullMethodName                         = "/pbcs.Config/DeleteHook"
+	Config_BatchDeleteHook_FullMethodName                    = "/pbcs.Config/BatchDeleteHook"
+	Config_UpdateHook_FullMethodName                         = "/pbcs.Config/UpdateHook"
+	Config_ListHooks_FullMethodName                          = "/pbcs.Config/ListHooks"
+	Config_ListHookTags_FullMethodName                       = "/pbcs.Config/ListHookTags"
+	Config_GetHook_FullMethodName                            = "/pbcs.Config/GetHook"
+	Config_CreateHookRevision_FullMethodName                 = "/pbcs.Config/CreateHookRevision"
+	Config_ListHookRevisions_FullMethodName                  = "/pbcs.Config/ListHookRevisions"
+	Config_DeleteHookRevision_FullMethodName                 = "/pbcs.Config/DeleteHookRevision"
+	Config_PublishHookRevision_FullMethodName                = "/pbcs.Config/PublishHookRevision"
+	Config_GetHookRevision_FullMethodName                    = "/pbcs.Config/GetHookRevision"
+	Config_UpdateHookRevision_FullMethodName                 = "/pbcs.Config/UpdateHookRevision"
+	Config_ListHookReferences_FullMethodName                 = "/pbcs.Config/ListHookReferences"
+	Config_ListHookRevisionReferences_FullMethodName         = "/pbcs.Config/ListHookRevisionReferences"
+	Config_GetReleaseHook_FullMethodName                     = "/pbcs.Config/GetReleaseHook"
+	Config_CreateTemplateSpace_FullMethodName                = "/pbcs.Config/CreateTemplateSpace"
+	Config_DeleteTemplateSpace_FullMethodName                = "/pbcs.Config/DeleteTemplateSpace"
+	Config_UpdateTemplateSpace_FullMethodName                = "/pbcs.Config/UpdateTemplateSpace"
+	Config_ListTemplateSpaces_FullMethodName                 = "/pbcs.Config/ListTemplateSpaces"
+	Config_GetAllBizsOfTmplSpaces_FullMethodName             = "/pbcs.Config/GetAllBizsOfTmplSpaces"
+	Config_CreateDefaultTmplSpace_FullMethodName             = "/pbcs.Config/CreateDefaultTmplSpace"
+	Config_ListTmplSpacesByIDs_FullMethodName                = "/pbcs.Config/ListTmplSpacesByIDs"
+	Config_CreateTemplate_FullMethodName                     = "/pbcs.Config/CreateTemplate"
+	Config_DeleteTemplate_FullMethodName                     = "/pbcs.Config/DeleteTemplate"
+	Config_BatchDeleteTemplate_FullMethodName                = "/pbcs.Config/BatchDeleteTemplate"
+	Config_UpdateTemplate_FullMethodName                     = "/pbcs.Config/UpdateTemplate"
+	Config_ListTemplates_FullMethodName                      = "/pbcs.Config/ListTemplates"
+	Config_BatchUpsertTemplates_FullMethodName               = "/pbcs.Config/BatchUpsertTemplates"
+	Config_BatchUpdateTemplatePermissions_FullMethodName     = "/pbcs.Config/BatchUpdateTemplatePermissions"
+	Config_AddTmplsToTmplSets_FullMethodName                 = "/pbcs.Config/AddTmplsToTmplSets"
+	Config_DeleteTmplsFromTmplSets_FullMethodName            = "/pbcs.Config/DeleteTmplsFromTmplSets"
+	Config_ListTemplatesByIDs_FullMethodName                 = "/pbcs.Config/ListTemplatesByIDs"
+	Config_ListTemplatesNotBound_FullMethodName              = "/pbcs.Config/ListTemplatesNotBound"
+	Config_ListTemplateByTuple_FullMethodName                = "/pbcs.Config/ListTemplateByTuple"
+	Config_ListTmplsOfTmplSet_FullMethodName                 = "/pbcs.Config/ListTmplsOfTmplSet"
+	Config_ListTemplateSetsAndRevisions_FullMethodName       = "/pbcs.Config/ListTemplateSetsAndRevisions"
+	Config_CreateTemplateRevision_FullMethodName             = "/pbcs.Config/CreateTemplateRevision"
+	Config_UpdateTemplateRevision_FullMethodName             = "/pbcs.Config/UpdateTemplateRevision"
+	Config_ListTemplateRevisions_FullMethodName              = "/pbcs.Config/ListTemplateRevisions"
+	Config_GetTemplateRevision_FullMethodName                = "/pbcs.Config/GetTemplateRevision"
+	Config_ListTemplateRevisionsByIDs_FullMethodName         = "/pbcs.Config/ListTemplateRevisionsByIDs"
+	Config_ListTmplRevisionNamesByTmplIDs_FullMethodName     = "/pbcs.Config/ListTmplRevisionNamesByTmplIDs"
+	Config_CreateTemplateSet_FullMethodName                  = "/pbcs.Config/CreateTemplateSet"
+	Config_DeleteTemplateSet_FullMethodName                  = "/pbcs.Config/DeleteTemplateSet"
+	Config_UpdateTemplateSet_FullMethodName                  = "/pbcs.Config/UpdateTemplateSet"
+	Config_ListTemplateSets_FullMethodName                   = "/pbcs.Config/ListTemplateSets"
+	Config_ListAppTemplateSets_FullMethodName                = "/pbcs.Config/ListAppTemplateSets"
+	Config_ListTemplateSetsByIDs_FullMethodName              = "/pbcs.Config/ListTemplateSetsByIDs"
+	Config_ListTmplSetsOfBiz_FullMethodName                  = "/pbcs.Config/ListTmplSetsOfBiz"
+	Config_CreateAppTemplateBinding_FullMethodName           = "/pbcs.Config/CreateAppTemplateBinding"
+	Config_DeleteAppTemplateBinding_FullMethodName           = "/pbcs.Config/DeleteAppTemplateBinding"
+	Config_UpdateAppTemplateBinding_FullMethodName           = "/pbcs.Config/UpdateAppTemplateBinding"
+	Config_ListAppTemplateBindings_FullMethodName            = "/pbcs.Config/ListAppTemplateBindings"
+	Config_ListAppBoundTmplRevisions_FullMethodName          = "/pbcs.Config/ListAppBoundTmplRevisions"
+	Config_ListReleasedAppBoundTmplRevisions_FullMethodName  = "/pbcs.Config/ListReleasedAppBoundTmplRevisions"
+	Config_GetReleasedAppBoundTmplRevision_FullMethodName    = "/pbcs.Config/GetReleasedAppBoundTmplRevision"
+	Config_UpdateAppBoundTmplRevisions_FullMethodName        = "/pbcs.Config/UpdateAppBoundTmplRevisions"
+	Config_DeleteAppBoundTmplSets_FullMethodName             = "/pbcs.Config/DeleteAppBoundTmplSets"
+	Config_RemoveAppBoundTmplSet_FullMethodName              = "/pbcs.Config/RemoveAppBoundTmplSet"
+	Config_CheckAppTemplateBinding_FullMethodName            = "/pbcs.Config/CheckAppTemplateBinding"
+	Config_ImportFromTemplateSetToApp_FullMethodName         = "/pbcs.Config/ImportFromTemplateSetToApp"
+	Config_ListTmplBoundCounts_FullMethodName                = "/pbcs.Config/ListTmplBoundCounts"
+	Config_ListTmplRevisionBoundCounts_FullMethodName        = "/pbcs.Config/ListTmplRevisionBoundCounts"
+	Config_ListTmplSetBoundCounts_FullMethodName             = "/pbcs.Config/ListTmplSetBoundCounts"
+	Config_ListTmplBoundUnnamedApps_FullMethodName           = "/pbcs.Config/ListTmplBoundUnnamedApps"
+	Config_ListTmplBoundNamedApps_FullMethodName             = "/pbcs.Config/ListTmplBoundNamedApps"
+	Config_ListTmplBoundTmplSets_FullMethodName              = "/pbcs.Config/ListTmplBoundTmplSets"
+	Config_ListMultiTmplBoundTmplSets_FullMethodName         = "/pbcs.Config/ListMultiTmplBoundTmplSets"
+	Config_ListTmplRevisionBoundUnnamedApps_FullMethodName   = "/pbcs.Config/ListTmplRevisionBoundUnnamedApps"
+	Config_ListTmplRevisionBoundNamedApps_FullMethodName     = "/pbcs.Config/ListTmplRevisionBoundNamedApps"
+	Config_ListTmplSetBoundUnnamedApps_FullMethodName        = "/pbcs.Config/ListTmplSetBoundUnnamedApps"
+	Config_ListMultiTmplSetBoundUnnamedApps_FullMethodName   = "/pbcs.Config/ListMultiTmplSetBoundUnnamedApps"
+	Config_CheckTemplateSetReferencesApps_FullMethodName     = "/pbcs.Config/CheckTemplateSetReferencesApps"
+	Config_ListTmplSetBoundNamedApps_FullMethodName          = "/pbcs.Config/ListTmplSetBoundNamedApps"
+	Config_ListLatestTmplBoundUnnamedApps_FullMethodName     = "/pbcs.Config/ListLatestTmplBoundUnnamedApps"
+	Config_CreateTemplateVariable_FullMethodName             = "/pbcs.Config/CreateTemplateVariable"
+	Config_DeleteTemplateVariable_FullMethodName             = "/pbcs.Config/DeleteTemplateVariable"
+	Config_BatchDeleteTemplateVariable_FullMethodName        = "/pbcs.Config/BatchDeleteTemplateVariable"
+	Config_UpdateTemplateVariable_FullMethodName             = "/pbcs.Config/UpdateTemplateVariable"
+	Config_ListTemplateVariables_FullMethodName              = "/pbcs.Config/ListTemplateVariables"
+	Config_ImportTemplateVariables_FullMethodName            = "/pbcs.Config/ImportTemplateVariables"
+	Config_ImportOtherFormatTemplateVariables_FullMethodName = "/pbcs.Config/ImportOtherFormatTemplateVariables"
+	Config_ExtractAppTmplVariables_FullMethodName            = "/pbcs.Config/ExtractAppTmplVariables"
+	Config_GetAppTmplVariableRefs_FullMethodName             = "/pbcs.Config/GetAppTmplVariableRefs"
+	Config_GetReleasedAppTmplVariableRefs_FullMethodName     = "/pbcs.Config/GetReleasedAppTmplVariableRefs"
+	Config_UpdateAppTmplVariables_FullMethodName             = "/pbcs.Config/UpdateAppTmplVariables"
+	Config_ListAppTmplVariables_FullMethodName               = "/pbcs.Config/ListAppTmplVariables"
+	Config_ListReleasedAppTmplVariables_FullMethodName       = "/pbcs.Config/ListReleasedAppTmplVariables"
+	Config_CreateGroup_FullMethodName                        = "/pbcs.Config/CreateGroup"
+	Config_DeleteGroup_FullMethodName                        = "/pbcs.Config/DeleteGroup"
+	Config_BatchDeleteGroups_FullMethodName                  = "/pbcs.Config/BatchDeleteGroups"
+	Config_UpdateGroup_FullMethodName                        = "/pbcs.Config/UpdateGroup"
+	Config_ListAllGroups_FullMethodName                      = "/pbcs.Config/ListAllGroups"
+	Config_ListAppGroups_FullMethodName                      = "/pbcs.Config/ListAppGroups"
+	Config_ListGroupReleasedApps_FullMethodName              = "/pbcs.Config/ListGroupReleasedApps"
+	Config_GetGroupByName_FullMethodName                     = "/pbcs.Config/GetGroupByName"
+	Config_Publish_FullMethodName                            = "/pbcs.Config/Publish"
+	Config_GenerateReleaseAndPublish_FullMethodName          = "/pbcs.Config/GenerateReleaseAndPublish"
+	Config_SubmitPublishApprove_FullMethodName               = "/pbcs.Config/SubmitPublishApprove"
+	Config_Approve_FullMethodName                            = "/pbcs.Config/Approve"
+	Config_GetLastSelect_FullMethodName                      = "/pbcs.Config/GetLastSelect"
+	Config_GetLastPublish_FullMethodName                     = "/pbcs.Config/GetLastPublish"
+	Config_GetReleasesStatus_FullMethodName                  = "/pbcs.Config/GetReleasesStatus"
+	Config_ListAudits_FullMethodName                         = "/pbcs.Config/ListAudits"
+	Config_CreateCredentials_FullMethodName                  = "/pbcs.Config/CreateCredentials"
+	Config_ListCredentials_FullMethodName                    = "/pbcs.Config/ListCredentials"
+	Config_DeleteCredential_FullMethodName                   = "/pbcs.Config/DeleteCredential"
+	Config_UpdateCredential_FullMethodName                   = "/pbcs.Config/UpdateCredential"
+	Config_CheckCredentialName_FullMethodName                = "/pbcs.Config/CheckCredentialName"
+	Config_ListCredentialScopes_FullMethodName               = "/pbcs.Config/ListCredentialScopes"
+	Config_UpdateCredentialScope_FullMethodName              = "/pbcs.Config/UpdateCredentialScope"
+	Config_CredentialScopePreview_FullMethodName             = "/pbcs.Config/CredentialScopePreview"
+	Config_CreateKv_FullMethodName                           = "/pbcs.Config/CreateKv"
+	Config_UpdateKv_FullMethodName                           = "/pbcs.Config/UpdateKv"
+	Config_ListKvs_FullMethodName                            = "/pbcs.Config/ListKvs"
+	Config_DeleteKv_FullMethodName                           = "/pbcs.Config/DeleteKv"
+	Config_BatchDeleteKv_FullMethodName                      = "/pbcs.Config/BatchDeleteKv"
+	Config_BatchUpsertKvs_FullMethodName                     = "/pbcs.Config/BatchUpsertKvs"
+	Config_UnDeleteKv_FullMethodName                         = "/pbcs.Config/UnDeleteKv"
+	Config_BatchUnDeleteKv_FullMethodName                    = "/pbcs.Config/BatchUnDeleteKv"
+	Config_UndoKv_FullMethodName                             = "/pbcs.Config/UndoKv"
+	Config_ImportKvs_FullMethodName                          = "/pbcs.Config/ImportKvs"
+	Config_ListClients_FullMethodName                        = "/pbcs.Config/ListClients"
+	Config_ListClientEvents_FullMethodName                   = "/pbcs.Config/ListClientEvents"
+	Config_RetryClients_FullMethodName                       = "/pbcs.Config/RetryClients"
+	Config_ListClientQuerys_FullMethodName                   = "/pbcs.Config/ListClientQuerys"
+	Config_CreateClientQuery_FullMethodName                  = "/pbcs.Config/CreateClientQuery"
+	Config_UpdateClientQuery_FullMethodName                  = "/pbcs.Config/UpdateClientQuery"
+	Config_DeleteClientQuery_FullMethodName                  = "/pbcs.Config/DeleteClientQuery"
+	Config_CheckClientQueryName_FullMethodName               = "/pbcs.Config/CheckClientQueryName"
+	Config_ClientConfigVersionStatistics_FullMethodName      = "/pbcs.Config/ClientConfigVersionStatistics"
+	Config_ClientPullTrendStatistics_FullMethodName          = "/pbcs.Config/ClientPullTrendStatistics"
+	Config_ClientPullStatistics_FullMethodName               = "/pbcs.Config/ClientPullStatistics"
+	Config_ClientLabelStatistics_FullMethodName              = "/pbcs.Config/ClientLabelStatistics"
+	Config_ClientAnnotationStatistics_FullMethodName         = "/pbcs.Config/ClientAnnotationStatistics"
+	Config_ClientVersionStatistics_FullMethodName            = "/pbcs.Config/ClientVersionStatistics"
+	Config_ListClientLabelAndAnnotation_FullMethodName       = "/pbcs.Config/ListClientLabelAndAnnotation"
+	Config_ClientSpecificFailedReason_FullMethodName         = "/pbcs.Config/ClientSpecificFailedReason"
+	Config_CompareConfigItemConflicts_FullMethodName         = "/pbcs.Config/CompareConfigItemConflicts"
+	Config_CompareKvConflicts_FullMethodName                 = "/pbcs.Config/CompareKvConflicts"
+	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
 )
 
 // ConfigClient is the client API for Config service.
@@ -285,14 +286,14 @@ type ConfigClient interface {
 	ListTemplateRevisions(ctx context.Context, in *ListTemplateRevisionsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsResp, error)
 	GetTemplateRevision(ctx context.Context, in *GetTemplateRevisionReq, opts ...grpc.CallOption) (*GetTemplateRevisionResp, error)
 	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	// rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	// (DeleteTemplateRevisionResp) {
+	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
+	//(DeleteTemplateRevisionResp) {
 	//
-	// option (google.api.http) = {
-	// delete :
-	// "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	// };
-	// }
+	//option (google.api.http) = {
+	//delete :
+	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
+	//};
+	//}
 	ListTemplateRevisionsByIDs(ctx context.Context, in *ListTemplateRevisionsByIDsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsByIDsResp, error)
 	ListTmplRevisionNamesByTmplIDs(ctx context.Context, in *ListTmplRevisionNamesByTmplIDsReq, opts ...grpc.CallOption) (*ListTmplRevisionNamesByTmplIDsResp, error)
 	CreateTemplateSet(ctx context.Context, in *CreateTemplateSetReq, opts ...grpc.CallOption) (*CreateTemplateSetResp, error)
@@ -334,6 +335,7 @@ type ConfigClient interface {
 	UpdateTemplateVariable(ctx context.Context, in *UpdateTemplateVariableReq, opts ...grpc.CallOption) (*UpdateTemplateVariableResp, error)
 	ListTemplateVariables(ctx context.Context, in *ListTemplateVariablesReq, opts ...grpc.CallOption) (*ListTemplateVariablesResp, error)
 	ImportTemplateVariables(ctx context.Context, in *ImportTemplateVariablesReq, opts ...grpc.CallOption) (*ImportTemplateVariablesResp, error)
+	ImportOtherFormatTemplateVariables(ctx context.Context, in *ImportOtherFormatTemplateVariablesReq, opts ...grpc.CallOption) (*ImportOtherFormatTemplateVariablesResp, error)
 	ExtractAppTmplVariables(ctx context.Context, in *ExtractAppTmplVariablesReq, opts ...grpc.CallOption) (*ExtractAppTmplVariablesResp, error)
 	GetAppTmplVariableRefs(ctx context.Context, in *GetAppTmplVariableRefsReq, opts ...grpc.CallOption) (*GetAppTmplVariableRefsResp, error)
 	GetReleasedAppTmplVariableRefs(ctx context.Context, in *GetReleasedAppTmplVariableRefsReq, opts ...grpc.CallOption) (*GetReleasedAppTmplVariableRefsResp, error)
@@ -1433,6 +1435,15 @@ func (c *configClient) ImportTemplateVariables(ctx context.Context, in *ImportTe
 	return out, nil
 }
 
+func (c *configClient) ImportOtherFormatTemplateVariables(ctx context.Context, in *ImportOtherFormatTemplateVariablesReq, opts ...grpc.CallOption) (*ImportOtherFormatTemplateVariablesResp, error) {
+	out := new(ImportOtherFormatTemplateVariablesResp)
+	err := c.cc.Invoke(ctx, Config_ImportOtherFormatTemplateVariables_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ExtractAppTmplVariables(ctx context.Context, in *ExtractAppTmplVariablesReq, opts ...grpc.CallOption) (*ExtractAppTmplVariablesResp, error) {
 	out := new(ExtractAppTmplVariablesResp)
 	err := c.cc.Invoke(ctx, Config_ExtractAppTmplVariables_FullMethodName, in, out, opts...)
@@ -2047,14 +2058,14 @@ type ConfigServer interface {
 	ListTemplateRevisions(context.Context, *ListTemplateRevisionsReq) (*ListTemplateRevisionsResp, error)
 	GetTemplateRevision(context.Context, *GetTemplateRevisionReq) (*GetTemplateRevisionResp, error)
 	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	// rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	// (DeleteTemplateRevisionResp) {
+	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
+	//(DeleteTemplateRevisionResp) {
 	//
-	// option (google.api.http) = {
-	// delete :
-	// "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	// };
-	// }
+	//option (google.api.http) = {
+	//delete :
+	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
+	//};
+	//}
 	ListTemplateRevisionsByIDs(context.Context, *ListTemplateRevisionsByIDsReq) (*ListTemplateRevisionsByIDsResp, error)
 	ListTmplRevisionNamesByTmplIDs(context.Context, *ListTmplRevisionNamesByTmplIDsReq) (*ListTmplRevisionNamesByTmplIDsResp, error)
 	CreateTemplateSet(context.Context, *CreateTemplateSetReq) (*CreateTemplateSetResp, error)
@@ -2096,6 +2107,7 @@ type ConfigServer interface {
 	UpdateTemplateVariable(context.Context, *UpdateTemplateVariableReq) (*UpdateTemplateVariableResp, error)
 	ListTemplateVariables(context.Context, *ListTemplateVariablesReq) (*ListTemplateVariablesResp, error)
 	ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error)
+	ImportOtherFormatTemplateVariables(context.Context, *ImportOtherFormatTemplateVariablesReq) (*ImportOtherFormatTemplateVariablesResp, error)
 	ExtractAppTmplVariables(context.Context, *ExtractAppTmplVariablesReq) (*ExtractAppTmplVariablesResp, error)
 	GetAppTmplVariableRefs(context.Context, *GetAppTmplVariableRefsReq) (*GetAppTmplVariableRefsResp, error)
 	GetReleasedAppTmplVariableRefs(context.Context, *GetReleasedAppTmplVariableRefsReq) (*GetReleasedAppTmplVariableRefsResp, error)
@@ -2506,6 +2518,9 @@ func (UnimplementedConfigServer) ListTemplateVariables(context.Context, *ListTem
 }
 func (UnimplementedConfigServer) ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportTemplateVariables not implemented")
+}
+func (UnimplementedConfigServer) ImportOtherFormatTemplateVariables(context.Context, *ImportOtherFormatTemplateVariablesReq) (*ImportOtherFormatTemplateVariablesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ImportOtherFormatTemplateVariables not implemented")
 }
 func (UnimplementedConfigServer) ExtractAppTmplVariables(context.Context, *ExtractAppTmplVariablesReq) (*ExtractAppTmplVariablesResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExtractAppTmplVariables not implemented")
@@ -4748,6 +4763,24 @@ func _Config_ImportTemplateVariables_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ImportOtherFormatTemplateVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportOtherFormatTemplateVariablesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ImportOtherFormatTemplateVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ImportOtherFormatTemplateVariables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ImportOtherFormatTemplateVariables(ctx, req.(*ImportOtherFormatTemplateVariablesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_ExtractAppTmplVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExtractAppTmplVariablesReq)
 	if err := dec(in); err != nil {
@@ -6272,6 +6305,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ImportTemplateVariables",
 			Handler:    _Config_ImportTemplateVariables_Handler,
+		},
+		{
+			MethodName: "ImportOtherFormatTemplateVariables",
+			Handler:    _Config_ImportOtherFormatTemplateVariables_Handler,
 		},
 		{
 			MethodName: "ExtractAppTmplVariables",

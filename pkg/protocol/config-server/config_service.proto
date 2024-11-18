@@ -746,12 +746,20 @@ option (google.api.http) = {
   }
   rpc ListTemplateVariables(ListTemplateVariablesReq) returns (ListTemplateVariablesResp) {
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/template_variables"
+      post: "/api/v1/config/biz/{biz_id}/template_variables/list"
+      body: "*"
     };
   }
   rpc ImportTemplateVariables(ImportTemplateVariablesReq) returns (ImportTemplateVariablesResp) {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables/import"
+      body: "*"
+    };
+  }
+  rpc ImportOtherFormatTemplateVariables(ImportOtherFormatTemplateVariablesReq)
+      returns (ImportOtherFormatTemplateVariablesResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/template_variables/{format}/import"
       body: "*"
     };
   }
@@ -2650,6 +2658,7 @@ message ListTemplateVariablesReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  repeated uint32 top_ids = 7;
 }
 
 message ListTemplateVariablesResp {
@@ -2665,6 +2674,17 @@ message ImportTemplateVariablesReq {
 
 message ImportTemplateVariablesResp {
   uint32 variable_count = 1;
+  repeated uint32 ids = 2;
+}
+
+message ImportOtherFormatTemplateVariablesReq {
+  uint32 biz_id = 1;
+  string format = 2;
+  string data = 3;
+}
+
+message ImportOtherFormatTemplateVariablesResp {
+  repeated uint32 ids = 1;
 }
 
 message ExtractAppTmplVariablesReq {

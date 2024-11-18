@@ -16,6 +16,7 @@ import (
 	rawgen "gorm.io/gen"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -136,8 +137,8 @@ func (dao *templateVariableDao) Update(kit *kit.Kit, g *table.TemplateVariable) 
 }
 
 // List template variables with options.
-func (dao *templateVariableDao) List(
-	kit *kit.Kit, bizID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateVariable, int64, error) {
+func (dao *templateVariableDao) List(kit *kit.Kit, bizID uint32, s search.Searcher,
+	opt *types.BasePage) ([]*table.TemplateVariable, int64, error) {
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
 
@@ -157,7 +158,13 @@ func (dao *templateVariableDao) List(
 		}
 	}
 
-	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.Name)
+	if len(opt.TopIds) != 0 {
+		q = q.Order(utils.NewCustomExpr(`CASE WHEN id IN (?) THEN 0 ELSE 1 END,name ASC`, []interface{}{opt.TopIds}))
+	} else {
+		q = q.Order(m.Name)
+	}
+
+	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
 	if opt.All {
 		result, err := d.Find()
 		if err != nil {

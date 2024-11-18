@@ -14,20 +14,24 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"gopkg.in/yaml.v3"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbrelease "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/release"
 	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 type variableService struct {
@@ -44,10 +48,8 @@ func newVariableService(cfgClient pbcs.ConfigClient) *variableService {
 // ExportGlobalVariables exports global variables.
 func (s *variableService) ExportGlobalVariables(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
-	sep := r.URL.Query().Get("sep")
-	if sep == "" {
-		sep = " "
-	}
+
+	format := r.URL.Query().Get("format")
 
 	vars, err := s.cfgClient.ListTemplateVariables(kt.RpcCtx(), &pbcs.ListTemplateVariablesReq{
 		BizId: kt.BizID,
@@ -62,13 +64,32 @@ func (s *variableService) ExportGlobalVariables(w http.ResponseWriter, r *http.R
 	for _, v := range vars.Details {
 		vs = append(vs, v.Spec)
 	}
-	buf := getVarBuffer(vs, sep)
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_global_variable.txt", kt.BizID))
-	w.Header().Set("Content-Type", "text/plain")
-	_, err = buf.WriteTo(w)
+	var exporter VariableExporter
+
+	outData := variablesToOutData(vs)
+	switch format {
+	case "yaml":
+		exporter = &YAMLVariableExporter{OutData: outData}
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_global_variable.yaml", kt.BizID))
+		w.Header().Set("Content-Type", "application/x-yaml")
+	case "json":
+		exporter = &JSONVariableExporter{OutData: outData}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_global_variable.json", kt.BizID))
+	default:
+		_ = render.Render(w, r, rest.BadRequest(errors.New("invalid format")))
+		return
+	}
+
+	content, err := exporter.VariableExport()
 	if err != nil {
-		logs.Errorf("write response failed, err: %s", err)
+		logs.Errorf("export variable fail, err: %v", err)
+		_ = render.Render(w, r, rest.BadRequest(err))
+	}
+	_, err = w.Write(content)
+	if err != nil {
+		logs.Errorf("Error writing response:%s", err)
 		_ = render.Render(w, r, rest.BadRequest(err))
 	}
 }
@@ -76,10 +97,8 @@ func (s *variableService) ExportGlobalVariables(w http.ResponseWriter, r *http.R
 // ExportAppVariables exports app variables.
 func (s *variableService) ExportAppVariables(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
-	sep := r.URL.Query().Get("sep")
-	if sep == "" {
-		sep = " "
-	}
+
+	format := r.URL.Query().Get("format")
 
 	vars, err := s.cfgClient.ListAppTmplVariables(kt.RpcCtx(), &pbcs.ListAppTmplVariablesReq{
 		BizId: kt.BizID,
@@ -90,7 +109,6 @@ func (s *variableService) ExportAppVariables(w http.ResponseWriter, r *http.Requ
 		_ = render.Render(w, r, rest.BadRequest(err))
 		return
 	}
-	buf := getVarBuffer(vars.Details, sep)
 
 	var app *pbapp.App
 	if app, err = s.cfgClient.GetApp(kt.RpcCtx(), &pbcs.GetAppReq{
@@ -102,12 +120,33 @@ func (s *variableService) ExportAppVariables(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_variable.txt",
-		kt.BizID, app.Spec.Name))
-	w.Header().Set("Content-Type", "text/plain")
-	_, err = buf.WriteTo(w)
+	var exporter VariableExporter
+
+	outData := variablesToOutData(vars.Details)
+	switch format {
+	case "yaml":
+		exporter = &YAMLVariableExporter{OutData: outData}
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_variable.yaml",
+			kt.BizID, app.Spec.Name))
+		w.Header().Set("Content-Type", "application/x-yaml")
+	case "json":
+		exporter = &JSONVariableExporter{OutData: outData}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_variable.json",
+			kt.BizID, app.Spec.Name))
+	default:
+		_ = render.Render(w, r, rest.BadRequest(errors.New("invalid format")))
+		return
+	}
+
+	content, err := exporter.VariableExport()
 	if err != nil {
-		logs.Errorf("write response failed, err: %s", err)
+		logs.Errorf("export variable fail, err: %v", err)
+		_ = render.Render(w, r, rest.BadRequest(err))
+	}
+	_, err = w.Write(content)
+	if err != nil {
+		logs.Errorf("Error writing response:%s", err)
 		_ = render.Render(w, r, rest.BadRequest(err))
 	}
 }
@@ -115,10 +154,7 @@ func (s *variableService) ExportAppVariables(w http.ResponseWriter, r *http.Requ
 // ExportReleasedAppVariables exports released app variables.
 func (s *variableService) ExportReleasedAppVariables(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
-	sep := r.URL.Query().Get("sep")
-	if sep == "" {
-		sep = " "
-	}
+	format := r.URL.Query().Get("format")
 	releaseIDStr := chi.URLParam(r, "release_id")
 	releaseID, _ := strconv.Atoi(releaseIDStr)
 
@@ -131,7 +167,6 @@ func (s *variableService) ExportReleasedAppVariables(w http.ResponseWriter, r *h
 		_ = render.Render(w, r, rest.BadRequest(err))
 		return
 	}
-	buf := getVarBuffer(vars.Details, sep)
 
 	var app *pbapp.App
 	if app, err = s.cfgClient.GetApp(kt.RpcCtx(), &pbcs.GetAppReq{
@@ -154,29 +189,96 @@ func (s *variableService) ExportReleasedAppVariables(w http.ResponseWriter, r *h
 		return
 	}
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_%s_variable.txt",
-		kt.BizID, app.Spec.Name, rel.Spec.Name))
-	w.Header().Set("Content-Type", "text/plain")
-	_, err = buf.WriteTo(w)
+	var exporter VariableExporter
+
+	outData := variablesToOutData(vars.Details)
+	switch format {
+	case "yaml":
+		exporter = &YAMLVariableExporter{OutData: outData}
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_%s_variable.yaml",
+			kt.BizID, app.Spec.Name, rel.Spec.Name))
+		w.Header().Set("Content-Type", "application/x-yaml")
+	case "json":
+		exporter = &JSONVariableExporter{OutData: outData}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_%s_variable.json",
+			kt.BizID, app.Spec.Name, rel.Spec.Name))
+	default:
+		_ = render.Render(w, r, rest.BadRequest(errors.New("invalid format")))
+		return
+	}
+
+	content, err := exporter.VariableExport()
 	if err != nil {
-		logs.Errorf("write response failed, err: %s", err)
+		logs.Errorf("export variable fail, err: %v", err)
+		_ = render.Render(w, r, rest.BadRequest(err))
+	}
+	_, err = w.Write(content)
+	if err != nil {
+		logs.Errorf("Error writing response:%s", err)
 		_ = render.Render(w, r, rest.BadRequest(err))
 	}
 }
 
-// getVarBuffer get variable buffer to export
-func getVarBuffer(vars []*pbtv.TemplateVariableSpec, sep string) bytes.Buffer {
-	var buf bytes.Buffer
-	for _, v := range vars {
-		// 导出格式：每行一个变量，有四个字段，依次分别是变量名称、变量类型、变量值、变量描述（描述可为空），各字段以分隔符隔开
-		buf.WriteString(v.Name)
-		buf.WriteString(sep)
-		buf.WriteString(v.Type)
-		buf.WriteString(sep)
-		buf.WriteString(v.DefaultVal)
-		buf.WriteString(sep)
-		buf.WriteString(v.Memo)
-		buf.WriteString("\n")
+// VariableExporter The Exporter interface defines methods for exporting files.
+type VariableExporter interface {
+	VariableExport() ([]byte, error)
+}
+
+// YAMLVariableExporter implements the Exporter interface for exporting YAML files.
+type YAMLVariableExporter struct {
+	OutData map[string]interface{}
+}
+
+// VariableExport method implements the Exporter interface, exporting data as a byte slice in YAML format.
+func (ym *YAMLVariableExporter) VariableExport() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := yaml.NewEncoder(buffer)
+	// 设置缩进
+	encoder.SetIndent(2)
+	defer func() {
+		_ = encoder.Close()
+	}()
+	err := encoder.Encode(ym.OutData)
+	return buffer.Bytes(), err
+}
+
+// JSONVariableExporter implements the Exporter interface for exporting JSON files.
+type JSONVariableExporter struct {
+	OutData map[string]interface{}
+}
+
+// VariableExport method implements the Exporter interface, exporting data as a byte slice in JSON format.
+func (js *JSONVariableExporter) VariableExport() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	// Set indent for pretty-printed JSON
+	// adds two spaces for indentation
+	encoder.SetIndent("", "  ")
+	err := encoder.Encode(js.OutData)
+	if err != nil {
+		return nil, err
 	}
-	return buf
+	return buffer.Bytes(), nil
+}
+
+func variablesToOutData(vars []*pbtv.TemplateVariableSpec) map[string]interface{} {
+	d := map[string]interface{}{}
+	for _, v := range vars {
+		var value interface{}
+		value = v.DefaultVal
+		if v.Type == string(table.NumberVar) {
+			i, _ := strconv.Atoi(v.DefaultVal)
+			value = i
+		}
+
+		d[v.Name] = map[string]interface{}{
+			"variable_type": v.Type,
+			"value":         value,
+			"memo":          v.Memo,
+		}
+	}
+
+	return d
 }

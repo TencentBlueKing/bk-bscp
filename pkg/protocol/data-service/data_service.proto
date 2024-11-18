@@ -1635,6 +1635,7 @@ message ImportTemplateVariablesReq {
 
 message ImportTemplateVariablesResp {
   uint32 variable_count = 1;
+  repeated uint32 ids = 2;
 }
 
 message ListTemplateVariablesReq {
@@ -1644,6 +1645,7 @@ message ListTemplateVariablesReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  repeated uint32 top_ids = 7;
 }
 
 message ListTemplateVariablesResp {
