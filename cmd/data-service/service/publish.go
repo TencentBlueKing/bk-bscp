@@ -279,7 +279,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		}
 		itsmUpdata = map[string]interface{}{
 			"sn":             strategy.Spec.ItsmTicketSn,
-			"operator":       grpcKit.User,
+			"operator":       strategy.Revision.Creator,
 			"action_type":    "WITHDRAW",
 			"action_message": fmt.Sprintf("BSCP 代理用户 %s 撤回: %s", grpcKit.User, req.Reason),
 		}
@@ -570,11 +570,6 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 // revokeApprove revoke publish approve.
 func (s *Service) revokeApprove(
 	kit *kit.Kit, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
-
-	// 提单的人才能撤销
-	if strategy.Revision.Creator != kit.User && kit.OperateWay == string(enumor.WebUI) {
-		return nil, errors.New(i18n.T(kit, "no permission to revoke"))
-	}
 
 	// 只有待上线以及待审批的类型才允许撤回
 	if strategy.Spec.PublishStatus != table.PendingPublish && strategy.Spec.PublishStatus != table.PendingApproval {
