@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbtset;
 
@@ -8,7 +9,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/templa
 
 // TemplateSet source resource reference: pkg/dal/table/template_set.go
 message TemplateSet {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
   TemplateSetSpec spec = 2;
   TemplateSetAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -16,34 +17,49 @@ message TemplateSet {
 
 // TemplateSetSpec source resource reference: pkg/dal/table/template_set.go
 message TemplateSetSpec {
-  string name = 1;
-  string memo = 2;
-  repeated uint32 template_ids = 3;
-  bool public = 4;
-  repeated uint32 bound_apps = 5;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+  string memo = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐描述" }];
+  repeated uint32 template_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  bool public = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "服务可见范围，公开=true，指定服务=false",
+    default: "true"
+  }];
+  repeated uint32 bound_apps = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定的服务" }];
 }
 
 // TemplateSetAttachment source resource reference: pkg/dal/table/template_set.go
 message TemplateSetAttachment {
-  uint32 biz_id = 1;
-  uint32 template_space_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 template_space_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
 }
 
 // TemplateSetOfBizDetail is template set of biz detail
 message TemplateSetOfBizDetail {
   message TemplateSetOfBiz {
-    uint32 template_set_id = 1;
-    string template_set_name = 2;
-    repeated uint32 template_ids = 3;
+    uint32 template_set_id = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+    string template_set_name = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+    repeated uint32 template_ids = 3
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
   }
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
   repeated TemplateSetOfBiz template_sets = 3;
 }
 
 message TemplateSetBriefInfo {
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
-  uint32 template_set_id = 3;
-  string template_set_name = 4;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
+  uint32 template_set_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
 }

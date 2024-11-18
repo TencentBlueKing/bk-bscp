@@ -207,150 +207,265 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
+	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
+	// 删除服务
 	DeleteApp(ctx context.Context, in *DeleteAppReq, opts ...grpc.CallOption) (*DeleteAppResp, error)
+	// 获取服务
 	GetApp(ctx context.Context, in *GetAppReq, opts ...grpc.CallOption) (*app.App, error)
+	// 按服务名称获取
 	GetAppByName(ctx context.Context, in *GetAppByNameReq, opts ...grpc.CallOption) (*app.App, error)
 	// 获取用户有权限的 spaces 所有的 apps
 	ListAppsRest(ctx context.Context, in *ListAppsRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(ctx context.Context, in *ListAppsBySpaceRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
+	// 创建文件配置项
 	CreateConfigItem(ctx context.Context, in *CreateConfigItemReq, opts ...grpc.CallOption) (*CreateConfigItemResp, error)
+	// 批量创建或更新文件配置项
 	BatchUpsertConfigItems(ctx context.Context, in *BatchUpsertConfigItemsReq, opts ...grpc.CallOption) (*BatchUpsertConfigItemsResp, error)
+	// 更新文件配置项
 	UpdateConfigItem(ctx context.Context, in *UpdateConfigItemReq, opts ...grpc.CallOption) (*UpdateConfigItemResp, error)
+	// 删除文件配置项
 	DeleteConfigItem(ctx context.Context, in *DeleteConfigItemReq, opts ...grpc.CallOption) (*DeleteConfigItemResp, error)
+	// 批量删除文件配置项
 	BatchDeleteConfigItems(ctx context.Context, in *BatchDeleteAppResourcesReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 恢复文件配置项
 	UnDeleteConfigItem(ctx context.Context, in *UnDeleteConfigItemReq, opts ...grpc.CallOption) (*UnDeleteConfigItemResp, error)
+	// 批量恢复文件配置项
 	BatchUnDeleteConfigItem(ctx context.Context, in *BatchUnDeleteConfigItemReq, opts ...grpc.CallOption) (*BatchUnDeleteConfigItemResp, error)
+	// 撤销文件配置项
 	UndoConfigItem(ctx context.Context, in *UndoConfigItemReq, opts ...grpc.CallOption) (*UndoConfigItemResp, error)
+	// 获取文件配置项
 	GetConfigItem(ctx context.Context, in *GetConfigItemReq, opts ...grpc.CallOption) (*GetConfigItemResp, error)
+	// 获取已发布文件配置项
 	GetReleasedConfigItem(ctx context.Context, in *GetReleasedConfigItemReq, opts ...grpc.CallOption) (*GetReleasedConfigItemResp, error)
+	// 获取文件配置项列表
 	ListConfigItems(ctx context.Context, in *ListConfigItemsReq, opts ...grpc.CallOption) (*ListConfigItemsResp, error)
+	// 获取已发布文件配置项列表
 	ListReleasedConfigItems(ctx context.Context, in *ListReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListReleasedConfigItemsResp, error)
+	// 获取文件型服务配置数量列表
 	ListConfigItemCount(ctx context.Context, in *ListConfigItemCountReq, opts ...grpc.CallOption) (*ListConfigItemCountResp, error)
+	// 按绝对路径获取文件配置项列表
 	ListConfigItemByTuple(ctx context.Context, in *ListConfigItemByTupleReq, opts ...grpc.CallOption) (*ListConfigItemByTupleResp, error)
-	// ReleasedKv
+	// 获取已生成版本键值配置项
 	GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, opts ...grpc.CallOption) (*GetReleasedKvResp, error)
+	// 获取已生成版本键值配置项列表
 	ListReleasedKvs(ctx context.Context, in *ListReleasedKvsReq, opts ...grpc.CallOption) (*ListReleasedKvsResp, error)
+	// 引用前后置脚本
 	UpdateConfigHook(ctx context.Context, in *UpdateConfigHookReq, opts ...grpc.CallOption) (*UpdateConfigHookResp, error)
+	// 生成配置服务版本
 	CreateRelease(ctx context.Context, in *CreateReleaseReq, opts ...grpc.CallOption) (*CreateReleaseResp, error)
+	// 获取服务版本列表
 	ListReleases(ctx context.Context, in *ListReleasesReq, opts ...grpc.CallOption) (*ListReleasesResp, error)
+	// 按服务版本名
 	GetReleaseByName(ctx context.Context, in *GetReleaseByNameReq, opts ...grpc.CallOption) (*release.Release, error)
+	// 获取服务版本
 	GetRelease(ctx context.Context, in *GetReleaseReq, opts ...grpc.CallOption) (*release.Release, error)
+	// 废弃服务版本
 	DeprecateRelease(ctx context.Context, in *DeprecateReleaseReq, opts ...grpc.CallOption) (*DeprecateReleaseResp, error)
+	// 撤回废弃服务版本
 	UnDeprecateRelease(ctx context.Context, in *UnDeprecateReleaseReq, opts ...grpc.CallOption) (*UnDeprecateReleaseResp, error)
+	// 删除服务版本
 	DeleteRelease(ctx context.Context, in *DeleteReleaseReq, opts ...grpc.CallOption) (*DeleteReleaseResp, error)
+	// 检测服务版本名
 	CheckReleaseName(ctx context.Context, in *CheckReleaseNameReq, opts ...grpc.CallOption) (*CheckReleaseNameResp, error)
+	// 创建脚本
 	CreateHook(ctx context.Context, in *CreateHookReq, opts ...grpc.CallOption) (*CreateHookResp, error)
+	// 删除脚本
 	DeleteHook(ctx context.Context, in *DeleteHookReq, opts ...grpc.CallOption) (*DeleteHookResp, error)
+	// 批量删除脚本
 	BatchDeleteHook(ctx context.Context, in *BatchDeleteHookReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 更新脚本
 	UpdateHook(ctx context.Context, in *UpdateHookReq, opts ...grpc.CallOption) (*UpdateHookResp, error)
+	// 获取脚本列表
 	ListHooks(ctx context.Context, in *ListHooksReq, opts ...grpc.CallOption) (*ListHooksResp, error)
+	// 获取脚本标签列表
 	ListHookTags(ctx context.Context, in *ListHookTagsReq, opts ...grpc.CallOption) (*ListHookTagsResp, error)
+	// 获取脚本
 	GetHook(ctx context.Context, in *GetHookReq, opts ...grpc.CallOption) (*GetHookResp, error)
+	// 创建脚本版本
 	CreateHookRevision(ctx context.Context, in *CreateHookRevisionReq, opts ...grpc.CallOption) (*CreateHookRevisionResp, error)
+	// 获取脚本版本列表
 	ListHookRevisions(ctx context.Context, in *ListHookRevisionsReq, opts ...grpc.CallOption) (*ListHookRevisionsResp, error)
+	// 删除骄傲本版本
 	DeleteHookRevision(ctx context.Context, in *DeleteHookRevisionReq, opts ...grpc.CallOption) (*DeleteHookRevisionResp, error)
+	// 上线脚本版本
 	PublishHookRevision(ctx context.Context, in *PublishHookRevisionReq, opts ...grpc.CallOption) (*PublishHookRevisionResp, error)
+	// 获取脚本版本
 	GetHookRevision(ctx context.Context, in *GetHookRevisionReq, opts ...grpc.CallOption) (*hook_revision.HookRevision, error)
+	// 更新脚本版本
 	UpdateHookRevision(ctx context.Context, in *UpdateHookRevisionReq, opts ...grpc.CallOption) (*UpdateHookRevisionResp, error)
+	// 获取被引用的脚本配置服务列表
 	ListHookReferences(ctx context.Context, in *ListHookReferencesReq, opts ...grpc.CallOption) (*ListHookReferencesResp, error)
+	// 获取被引用的脚本版本配置服务列表
 	ListHookRevisionReferences(ctx context.Context, in *ListHookRevisionReferencesReq, opts ...grpc.CallOption) (*ListHookRevisionReferencesResp, error)
+	// TODO
 	GetReleaseHook(ctx context.Context, in *GetReleaseHookReq, opts ...grpc.CallOption) (*GetReleaseHookResp, error)
+	// 创建模板空间
 	CreateTemplateSpace(ctx context.Context, in *CreateTemplateSpaceReq, opts ...grpc.CallOption) (*CreateTemplateSpaceResp, error)
+	// 删除模板空间
 	DeleteTemplateSpace(ctx context.Context, in *DeleteTemplateSpaceReq, opts ...grpc.CallOption) (*DeleteTemplateSpaceResp, error)
+	// 更新模板空间
 	UpdateTemplateSpace(ctx context.Context, in *UpdateTemplateSpaceReq, opts ...grpc.CallOption) (*UpdateTemplateSpaceResp, error)
+	// 获取模板空间列表
 	ListTemplateSpaces(ctx context.Context, in *ListTemplateSpacesReq, opts ...grpc.CallOption) (*ListTemplateSpacesResp, error)
 	// GetAllBizsOfTmplSpaces called only by system itself
 	GetAllBizsOfTmplSpaces(ctx context.Context, in *base.EmptyReq, opts ...grpc.CallOption) (*GetAllBizsOfTmplSpacesResp, error)
-	// CreateDefaultTmplSpace called only by system itself
+	// 创建模板默认空间(仅由系统本身调用)
 	CreateDefaultTmplSpace(ctx context.Context, in *CreateDefaultTmplSpaceReq, opts ...grpc.CallOption) (*CreateDefaultTmplSpaceResp, error)
 	ListTmplSpacesByIDs(ctx context.Context, in *ListTmplSpacesByIDsReq, opts ...grpc.CallOption) (*ListTmplSpacesByIDsResp, error)
+	// 创建模板
 	CreateTemplate(ctx context.Context, in *CreateTemplateReq, opts ...grpc.CallOption) (*CreateTemplateResp, error)
+	// 删除模板
 	DeleteTemplate(ctx context.Context, in *DeleteTemplateReq, opts ...grpc.CallOption) (*DeleteTemplateResp, error)
+	// 批量删除模板
 	BatchDeleteTemplate(ctx context.Context, in *BatchDeleteTemplateReq, opts ...grpc.CallOption) (*BatchDeleteTemplateResp, error)
+	// 更新模板
 	UpdateTemplate(ctx context.Context, in *UpdateTemplateReq, opts ...grpc.CallOption) (*UpdateTemplateResp, error)
+	// 获取模板列表(全部配置文件)
 	ListTemplates(ctx context.Context, in *ListTemplatesReq, opts ...grpc.CallOption) (*ListTemplatesResp, error)
+	// 批量创建或更新模板
 	BatchUpsertTemplates(ctx context.Context, in *BatchUpsertTemplatesReq, opts ...grpc.CallOption) (*BatchUpsertTemplatesResp, error)
+	// 批量更新模板权限
 	BatchUpdateTemplatePermissions(ctx context.Context, in *BatchUpdateTemplatePermissionsReq, opts ...grpc.CallOption) (*BatchUpdateTemplatePermissionsResp, error)
+	// 添加至模板套餐中
 	AddTmplsToTmplSets(ctx context.Context, in *AddTmplsToTmplSetsReq, opts ...grpc.CallOption) (*AddTmplsToTmplSetsResp, error)
+	// 从模板套餐中移出
 	DeleteTmplsFromTmplSets(ctx context.Context, in *DeleteTmplsFromTmplSetsReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 按模板ID获取模板列表
 	ListTemplatesByIDs(ctx context.Context, in *ListTemplatesByIDsReq, opts ...grpc.CallOption) (*ListTemplatesByIDsResp, error)
+	// 获取未绑定的模板列表
 	ListTemplatesNotBound(ctx context.Context, in *ListTemplatesNotBoundReq, opts ...grpc.CallOption) (*ListTemplatesNotBoundResp, error)
+	// 按模板绝对路径获取模板列表
 	ListTemplateByTuple(ctx context.Context, in *ListTemplateByTupleReq, opts ...grpc.CallOption) (*ListTemplateByTupleResp, error)
+	// 按模板套餐获取模板列表
 	ListTmplsOfTmplSet(ctx context.Context, in *ListTmplsOfTmplSetReq, opts ...grpc.CallOption) (*ListTmplsOfTmplSetResp, error)
+	// 获取模板套餐下的所有版本列表
 	ListTemplateSetsAndRevisions(ctx context.Context, in *ListTemplateSetsAndRevisionsReq, opts ...grpc.CallOption) (*ListTemplateSetsAndRevisionsResp, error)
+	// 创建模板版本
 	CreateTemplateRevision(ctx context.Context, in *CreateTemplateRevisionReq, opts ...grpc.CallOption) (*CreateTemplateRevisionResp, error)
+	// 更新模板版本
 	UpdateTemplateRevision(ctx context.Context, in *UpdateTemplateRevisionReq, opts ...grpc.CallOption) (*UpdateTemplateRevisionResp, error)
+	// 获取模板版本列表
 	ListTemplateRevisions(ctx context.Context, in *ListTemplateRevisionsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsResp, error)
+	// 获取模板版本
 	GetTemplateRevision(ctx context.Context, in *GetTemplateRevisionReq, opts ...grpc.CallOption) (*GetTemplateRevisionResp, error)
-	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	//(DeleteTemplateRevisionResp) {
-	//
-	//option (google.api.http) = {
-	//delete :
-	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	//};
-	//}
+	// 按模板版本ID获取模板版本列表
 	ListTemplateRevisionsByIDs(ctx context.Context, in *ListTemplateRevisionsByIDsReq, opts ...grpc.CallOption) (*ListTemplateRevisionsByIDsResp, error)
+	// 按模板ID获取模板版本列表
 	ListTmplRevisionNamesByTmplIDs(ctx context.Context, in *ListTmplRevisionNamesByTmplIDsReq, opts ...grpc.CallOption) (*ListTmplRevisionNamesByTmplIDsResp, error)
+	// 创建模板套餐
 	CreateTemplateSet(ctx context.Context, in *CreateTemplateSetReq, opts ...grpc.CallOption) (*CreateTemplateSetResp, error)
+	// 删除模板套餐
 	DeleteTemplateSet(ctx context.Context, in *DeleteTemplateSetReq, opts ...grpc.CallOption) (*DeleteTemplateSetResp, error)
+	// 更新模板套餐
 	UpdateTemplateSet(ctx context.Context, in *UpdateTemplateSetReq, opts ...grpc.CallOption) (*UpdateTemplateSetResp, error)
+	// 获取模板套餐列表
 	ListTemplateSets(ctx context.Context, in *ListTemplateSetsReq, opts ...grpc.CallOption) (*ListTemplateSetsResp, error)
+	// 获取模板套餐列表
 	ListAppTemplateSets(ctx context.Context, in *ListAppTemplateSetsReq, opts ...grpc.CallOption) (*ListAppTemplateSetsResp, error)
+	// 按模板套餐ID获取模板套餐列表
 	ListTemplateSetsByIDs(ctx context.Context, in *ListTemplateSetsByIDsReq, opts ...grpc.CallOption) (*ListTemplateSetsByIDsResp, error)
+	// 按服务ID获取模板套餐列表
 	ListTmplSetsOfBiz(ctx context.Context, in *ListTmplSetsOfBizReq, opts ...grpc.CallOption) (*ListTmplSetsOfBizResp, error)
+	// 创建绑定服务的模板(暂无用到)
 	CreateAppTemplateBinding(ctx context.Context, in *CreateAppTemplateBindingReq, opts ...grpc.CallOption) (*CreateAppTemplateBindingResp, error)
+	// 删除绑定服务的模板
 	DeleteAppTemplateBinding(ctx context.Context, in *DeleteAppTemplateBindingReq, opts ...grpc.CallOption) (*DeleteAppTemplateBindingResp, error)
+	// 更新绑定服务的模板
 	UpdateAppTemplateBinding(ctx context.Context, in *UpdateAppTemplateBindingReq, opts ...grpc.CallOption) (*UpdateAppTemplateBindingResp, error)
+	// 按服务获取绑定的模板列表
 	ListAppTemplateBindings(ctx context.Context, in *ListAppTemplateBindingsReq, opts ...grpc.CallOption) (*ListAppTemplateBindingsResp, error)
+	// 按未命名版本服务获取绑定的模板版本列表
 	ListAppBoundTmplRevisions(ctx context.Context, in *ListAppBoundTmplRevisionsReq, opts ...grpc.CallOption) (*ListAppBoundTmplRevisionsResp, error)
+	// 按已发布版本服务获取绑定的模板版本列表
 	ListReleasedAppBoundTmplRevisions(ctx context.Context, in *ListReleasedAppBoundTmplRevisionsReq, opts ...grpc.CallOption) (*ListReleasedAppBoundTmplRevisionsResp, error)
+	// 查看已发布版本服务的模板版本详情
 	GetReleasedAppBoundTmplRevision(ctx context.Context, in *GetReleasedAppBoundTmplRevisionReq, opts ...grpc.CallOption) (*GetReleasedAppBoundTmplRevisionResp, error)
+	// 替换服务引用后的模板版本
 	UpdateAppBoundTmplRevisions(ctx context.Context, in *UpdateAppBoundTmplRevisionsReq, opts ...grpc.CallOption) (*UpdateAppBoundTmplRevisionsResp, error)
+	// 移除服务引用的模板套餐(暂未用到)
 	DeleteAppBoundTmplSets(ctx context.Context, in *DeleteAppBoundTmplSetsReq, opts ...grpc.CallOption) (*DeleteAppBoundTmplSetsResp, error)
+	// 移除服务引用的模板套餐
 	RemoveAppBoundTmplSet(ctx context.Context, in *RemoveAppBoundTmplSetReq, opts ...grpc.CallOption) (*RemoveAppBoundTmplSetResp, error)
+	// 检测服务绑定的模板套餐
 	CheckAppTemplateBinding(ctx context.Context, in *CheckAppTemplateBindingReq, opts ...grpc.CallOption) (*CheckAppTemplateBindingResp, error)
+	// 配置服务引用模版套餐
 	ImportFromTemplateSetToApp(ctx context.Context, in *ImportFromTemplateSetToAppReq, opts ...grpc.CallOption) (*ImportFromTemplateSetToAppResp, error)
+	// 获取模板绑定服务数列表
 	ListTmplBoundCounts(ctx context.Context, in *ListTmplBoundCountsReq, opts ...grpc.CallOption) (*ListTmplBoundCountsResp, error)
+	// 获取模板版本绑定服务数列表
 	ListTmplRevisionBoundCounts(ctx context.Context, in *ListTmplRevisionBoundCountsReq, opts ...grpc.CallOption) (*ListTmplRevisionBoundCountsResp, error)
+	// 获取模板套餐绑定服务数列表
 	ListTmplSetBoundCounts(ctx context.Context, in *ListTmplSetBoundCountsReq, opts ...grpc.CallOption) (*ListTmplSetBoundCountsResp, error)
+	// 获取模板绑定的服务列表
 	ListTmplBoundUnnamedApps(ctx context.Context, in *ListTmplBoundUnnamedAppsReq, opts ...grpc.CallOption) (*ListTmplBoundUnnamedAppsResp, error)
+	// 获取模板绑定的服务以及模板版本列表
 	ListTmplBoundNamedApps(ctx context.Context, in *ListTmplBoundNamedAppsReq, opts ...grpc.CallOption) (*ListTmplBoundNamedAppsResp, error)
+	// 获取服务绑定的模板套餐列表
 	ListTmplBoundTmplSets(ctx context.Context, in *ListTmplBoundTmplSetsReq, opts ...grpc.CallOption) (*ListTmplBoundTmplSetsResp, error)
+	// 获取服务绑定的模板套餐以及模板列表
 	ListMultiTmplBoundTmplSets(ctx context.Context, in *ListMultiTmplBoundTmplSetsReq, opts ...grpc.CallOption) (*ListMultiTmplBoundTmplSetsResp, error)
+	// 按模板版本获取绑定的未命名版本服务列表
 	ListTmplRevisionBoundUnnamedApps(ctx context.Context, in *ListTmplRevisionBoundUnnamedAppsReq, opts ...grpc.CallOption) (*ListTmplRevisionBoundUnnamedAppsResp, error)
+	// 按模板版本获取绑定的已命名版本服务列表
 	ListTmplRevisionBoundNamedApps(ctx context.Context, in *ListTmplRevisionBoundNamedAppsReq, opts ...grpc.CallOption) (*ListTmplRevisionBoundNamedAppsResp, error)
+	// 按模板套餐获取绑定的未命名版本服务列表
 	ListTmplSetBoundUnnamedApps(ctx context.Context, in *ListTmplSetBoundUnnamedAppsReq, opts ...grpc.CallOption) (*ListTmplSetBoundUnnamedAppsResp, error)
+	// 按多模板套餐获取绑定的未命名版本服务列表
 	ListMultiTmplSetBoundUnnamedApps(ctx context.Context, in *ListMultiTmplSetBoundUnnamedAppsReq, opts ...grpc.CallOption) (*ListMultiTmplSetBoundUnnamedAppsResp, error)
+	// 检测模板套餐引用的服务
 	CheckTemplateSetReferencesApps(ctx context.Context, in *CheckTemplateSetReferencesAppsReq, opts ...grpc.CallOption) (*CheckTemplateSetReferencesAppsResp, error)
+	// 按模板套餐获取绑定的已命名版本服务列表
 	ListTmplSetBoundNamedApps(ctx context.Context, in *ListTmplSetBoundNamedAppsReq, opts ...grpc.CallOption) (*ListTmplSetBoundNamedAppsResp, error)
+	// 按最新的模板版本获取未命名版本服务列表
 	ListLatestTmplBoundUnnamedApps(ctx context.Context, in *ListLatestTmplBoundUnnamedAppsReq, opts ...grpc.CallOption) (*ListLatestTmplBoundUnnamedAppsResp, error)
+	// 创建模板变量
 	CreateTemplateVariable(ctx context.Context, in *CreateTemplateVariableReq, opts ...grpc.CallOption) (*CreateTemplateVariableResp, error)
+	// 删除模板变量
 	DeleteTemplateVariable(ctx context.Context, in *DeleteTemplateVariableReq, opts ...grpc.CallOption) (*DeleteTemplateVariableResp, error)
+	// 批量删除模板变量
 	BatchDeleteTemplateVariable(ctx context.Context, in *BatchDeleteBizResourcesReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 更新模板变量
 	UpdateTemplateVariable(ctx context.Context, in *UpdateTemplateVariableReq, opts ...grpc.CallOption) (*UpdateTemplateVariableResp, error)
+	// 获取模板变量列表
 	ListTemplateVariables(ctx context.Context, in *ListTemplateVariablesReq, opts ...grpc.CallOption) (*ListTemplateVariablesResp, error)
+	// 批量导入简单文件模板变量
 	ImportTemplateVariables(ctx context.Context, in *ImportTemplateVariablesReq, opts ...grpc.CallOption) (*ImportTemplateVariablesResp, error)
 	ImportOtherFormatTemplateVariables(ctx context.Context, in *ImportOtherFormatTemplateVariablesReq, opts ...grpc.CallOption) (*ImportOtherFormatTemplateVariablesResp, error)
+	// 提取模板变量
 	ExtractAppTmplVariables(ctx context.Context, in *ExtractAppTmplVariablesReq, opts ...grpc.CallOption) (*ExtractAppTmplVariablesResp, error)
+	// 获取未命名服务版本被引用的变量
 	GetAppTmplVariableRefs(ctx context.Context, in *GetAppTmplVariableRefsReq, opts ...grpc.CallOption) (*GetAppTmplVariableRefsResp, error)
+	// 获取服务版本下被引用的变量
 	GetReleasedAppTmplVariableRefs(ctx context.Context, in *GetReleasedAppTmplVariableRefsReq, opts ...grpc.CallOption) (*GetReleasedAppTmplVariableRefsResp, error)
+	// 更新未命名服务版本变量
 	UpdateAppTmplVariables(ctx context.Context, in *UpdateAppTmplVariablesReq, opts ...grpc.CallOption) (*UpdateAppTmplVariablesResp, error)
+	// 获取未命名服务版本模板变量
 	ListAppTmplVariables(ctx context.Context, in *ListAppTmplVariablesReq, opts ...grpc.CallOption) (*ListAppTmplVariablesResp, error)
+	// 获取服务版本的模板变量列表
 	ListReleasedAppTmplVariables(ctx context.Context, in *ListReleasedAppTmplVariablesReq, opts ...grpc.CallOption) (*ListReleasedAppTmplVariablesResp, error)
+	// 创建分组
 	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...grpc.CallOption) (*CreateGroupResp, error)
+	// 删除分组
 	DeleteGroup(ctx context.Context, in *DeleteGroupReq, opts ...grpc.CallOption) (*DeleteGroupResp, error)
+	// 批量删除分组
 	BatchDeleteGroups(ctx context.Context, in *BatchDeleteBizResourcesReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 更新分组
 	UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*UpdateGroupResp, error)
+	// 获取所有分组列表
 	ListAllGroups(ctx context.Context, in *ListAllGroupsReq, opts ...grpc.CallOption) (*ListAllGroupsResp, error)
+	// 按服务获取分组
 	ListAppGroups(ctx context.Context, in *ListAppGroupsReq, opts ...grpc.CallOption) (*ListAppGroupsResp, error)
+	// 按分组获取服务
 	ListGroupReleasedApps(ctx context.Context, in *ListGroupReleasedAppsReq, opts ...grpc.CallOption) (*ListGroupReleasedAppsResp, error)
+	// 按名称获取分组
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
+	// 发布服务版本
 	Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*PublishResp, error)
+	// 生成新的服务版本并发布
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
@@ -358,44 +473,77 @@ type ConfigClient interface {
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
 	GetReleasesStatus(ctx context.Context, in *GetReleasesStatusReq, opts ...grpc.CallOption) (*strategy.Strategy, error)
 	ListAudits(ctx context.Context, in *ListAuditsReq, opts ...grpc.CallOption) (*ListAuditsResp, error)
+	// 创建客户端密钥
 	CreateCredentials(ctx context.Context, in *CreateCredentialReq, opts ...grpc.CallOption) (*CreateCredentialResp, error)
+	// 获取客户端密钥
 	ListCredentials(ctx context.Context, in *ListCredentialsReq, opts ...grpc.CallOption) (*ListCredentialsResp, error)
+	// 删除客户端密钥
 	DeleteCredential(ctx context.Context, in *DeleteCredentialsReq, opts ...grpc.CallOption) (*DeleteCredentialsResp, error)
+	// 更新客户端密钥
 	UpdateCredential(ctx context.Context, in *UpdateCredentialsReq, opts ...grpc.CallOption) (*UpdateCredentialsResp, error)
+	// 检测客户端密钥名称
 	CheckCredentialName(ctx context.Context, in *CheckCredentialNameReq, opts ...grpc.CallOption) (*CheckCredentialNameResp, error)
+	// 获取客户端密钥关联服务的列表
 	ListCredentialScopes(ctx context.Context, in *ListCredentialScopesReq, opts ...grpc.CallOption) (*ListCredentialScopesResp, error)
+	// 更新客户端密钥关联服务规则
 	UpdateCredentialScope(ctx context.Context, in *UpdateCredentialScopeReq, opts ...grpc.CallOption) (*UpdateCredentialScopeResp, error)
+	// 预览客户端密钥关联配置项
 	CredentialScopePreview(ctx context.Context, in *CredentialScopePreviewReq, opts ...grpc.CallOption) (*CredentialScopePreviewResp, error)
+	// 创建键值配置项
 	CreateKv(ctx context.Context, in *CreateKvReq, opts ...grpc.CallOption) (*CreateKvResp, error)
+	// 更新键值配置项
 	UpdateKv(ctx context.Context, in *UpdateKvReq, opts ...grpc.CallOption) (*UpdateKvResp, error)
+	// 获取键值配置项列表
 	ListKvs(ctx context.Context, in *ListKvsReq, opts ...grpc.CallOption) (*ListKvsResp, error)
+	// 删除键值配置项
 	DeleteKv(ctx context.Context, in *DeleteKvReq, opts ...grpc.CallOption) (*DeleteKvResp, error)
+	// 批量删除键值配置项
 	BatchDeleteKv(ctx context.Context, in *BatchDeleteAppResourcesReq, opts ...grpc.CallOption) (*BatchDeleteResp, error)
+	// 批量创建或更新键值配置项
 	BatchUpsertKvs(ctx context.Context, in *BatchUpsertKvsReq, opts ...grpc.CallOption) (*BatchUpsertKvsResp, error)
+	// 恢复键值配置项
 	UnDeleteKv(ctx context.Context, in *UnDeleteKvReq, opts ...grpc.CallOption) (*UnDeleteKvResp, error)
+	// 批量恢复键值配置项
 	BatchUnDeleteKv(ctx context.Context, in *BatchUnDeleteKvReq, opts ...grpc.CallOption) (*BatchUnDeleteKvResp, error)
+	// 撤销修改的键值配置项
 	UndoKv(ctx context.Context, in *UndoKvReq, opts ...grpc.CallOption) (*UndoKvResp, error)
+	// 批量导出文本格式键值配置项
 	ImportKvs(ctx context.Context, in *ImportKvsReq, opts ...grpc.CallOption) (*ImportKvsResp, error)
+	// 获取客户端列表
 	ListClients(ctx context.Context, in *ListClientsReq, opts ...grpc.CallOption) (*ListClientsResp, error)
+	// 获取客户端拉取记录列表
 	ListClientEvents(ctx context.Context, in *ListClientEventsReq, opts ...grpc.CallOption) (*ListClientEventsResp, error)
+	// 重试客户端拉取
 	RetryClients(ctx context.Context, in *RetryClientsReq, opts ...grpc.CallOption) (*RetryClientsResp, error)
-	// client query related interface
+	// 获取客户端查询条件列表
 	ListClientQuerys(ctx context.Context, in *ListClientQuerysReq, opts ...grpc.CallOption) (*ListClientQuerysResp, error)
+	// 创建客户端查询条件
 	CreateClientQuery(ctx context.Context, in *CreateClientQueryReq, opts ...grpc.CallOption) (*CreateClientQueryResp, error)
+	// 更新客户端查询条件
 	UpdateClientQuery(ctx context.Context, in *UpdateClientQueryReq, opts ...grpc.CallOption) (*UpdateClientQueryResp, error)
+	// 删除客户端查询条件
 	DeleteClientQuery(ctx context.Context, in *DeleteClientQueryReq, opts ...grpc.CallOption) (*DeleteClientQueryResp, error)
+	// 检测客户端查询条件名
 	CheckClientQueryName(ctx context.Context, in *CheckClientQueryNameReq, opts ...grpc.CallOption) (*CheckClientQueryNameResp, error)
-	// client chart related interface
+	// 客户端配置版本统计
 	ClientConfigVersionStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 客户端拉取趋势统计
 	ClientPullTrendStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 客户端拉取状态统计
 	ClientPullStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 客户端标签统计
 	ClientLabelStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 客户端附加信息统计
 	ClientAnnotationStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 客户端组件版本统计
 	ClientVersionStatistics(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 获取客户端标签和附加信息列表
 	ListClientLabelAndAnnotation(ctx context.Context, in *ListClientLabelAndAnnotationReq, opts ...grpc.CallOption) (*structpb.Struct, error)
+	// 获取客户端失败原因
 	ClientSpecificFailedReason(ctx context.Context, in *client.ClientCommonReq, opts ...grpc.CallOption) (*structpb.Struct, error)
-	// config item compare conflicts related interface
+	// 文件服务以及和其他服务版本之间对比
 	CompareConfigItemConflicts(ctx context.Context, in *CompareConfigItemConflictsReq, opts ...grpc.CallOption) (*CompareConfigItemConflictsResp, error)
+	// 键值服务以及和其他服务版本之间对比
 	CompareKvConflicts(ctx context.Context, in *CompareKvConflictsReq, opts ...grpc.CallOption) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(ctx context.Context, in *GetTemplateAndNonTemplateCICountReq, opts ...grpc.CallOption) (*GetTemplateAndNonTemplateCICountResp, error)
@@ -1979,150 +2127,265 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
+	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
+	// 删除服务
 	DeleteApp(context.Context, *DeleteAppReq) (*DeleteAppResp, error)
+	// 获取服务
 	GetApp(context.Context, *GetAppReq) (*app.App, error)
+	// 按服务名称获取
 	GetAppByName(context.Context, *GetAppByNameReq) (*app.App, error)
 	// 获取用户有权限的 spaces 所有的 apps
 	ListAppsRest(context.Context, *ListAppsRestReq) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(context.Context, *ListAppsBySpaceRestReq) (*ListAppsResp, error)
+	// 创建文件配置项
 	CreateConfigItem(context.Context, *CreateConfigItemReq) (*CreateConfigItemResp, error)
+	// 批量创建或更新文件配置项
 	BatchUpsertConfigItems(context.Context, *BatchUpsertConfigItemsReq) (*BatchUpsertConfigItemsResp, error)
+	// 更新文件配置项
 	UpdateConfigItem(context.Context, *UpdateConfigItemReq) (*UpdateConfigItemResp, error)
+	// 删除文件配置项
 	DeleteConfigItem(context.Context, *DeleteConfigItemReq) (*DeleteConfigItemResp, error)
+	// 批量删除文件配置项
 	BatchDeleteConfigItems(context.Context, *BatchDeleteAppResourcesReq) (*BatchDeleteResp, error)
+	// 恢复文件配置项
 	UnDeleteConfigItem(context.Context, *UnDeleteConfigItemReq) (*UnDeleteConfigItemResp, error)
+	// 批量恢复文件配置项
 	BatchUnDeleteConfigItem(context.Context, *BatchUnDeleteConfigItemReq) (*BatchUnDeleteConfigItemResp, error)
+	// 撤销文件配置项
 	UndoConfigItem(context.Context, *UndoConfigItemReq) (*UndoConfigItemResp, error)
+	// 获取文件配置项
 	GetConfigItem(context.Context, *GetConfigItemReq) (*GetConfigItemResp, error)
+	// 获取已发布文件配置项
 	GetReleasedConfigItem(context.Context, *GetReleasedConfigItemReq) (*GetReleasedConfigItemResp, error)
+	// 获取文件配置项列表
 	ListConfigItems(context.Context, *ListConfigItemsReq) (*ListConfigItemsResp, error)
+	// 获取已发布文件配置项列表
 	ListReleasedConfigItems(context.Context, *ListReleasedConfigItemsReq) (*ListReleasedConfigItemsResp, error)
+	// 获取文件型服务配置数量列表
 	ListConfigItemCount(context.Context, *ListConfigItemCountReq) (*ListConfigItemCountResp, error)
+	// 按绝对路径获取文件配置项列表
 	ListConfigItemByTuple(context.Context, *ListConfigItemByTupleReq) (*ListConfigItemByTupleResp, error)
-	// ReleasedKv
+	// 获取已生成版本键值配置项
 	GetReleasedKv(context.Context, *GetReleasedKvReq) (*GetReleasedKvResp, error)
+	// 获取已生成版本键值配置项列表
 	ListReleasedKvs(context.Context, *ListReleasedKvsReq) (*ListReleasedKvsResp, error)
+	// 引用前后置脚本
 	UpdateConfigHook(context.Context, *UpdateConfigHookReq) (*UpdateConfigHookResp, error)
+	// 生成配置服务版本
 	CreateRelease(context.Context, *CreateReleaseReq) (*CreateReleaseResp, error)
+	// 获取服务版本列表
 	ListReleases(context.Context, *ListReleasesReq) (*ListReleasesResp, error)
+	// 按服务版本名
 	GetReleaseByName(context.Context, *GetReleaseByNameReq) (*release.Release, error)
+	// 获取服务版本
 	GetRelease(context.Context, *GetReleaseReq) (*release.Release, error)
+	// 废弃服务版本
 	DeprecateRelease(context.Context, *DeprecateReleaseReq) (*DeprecateReleaseResp, error)
+	// 撤回废弃服务版本
 	UnDeprecateRelease(context.Context, *UnDeprecateReleaseReq) (*UnDeprecateReleaseResp, error)
+	// 删除服务版本
 	DeleteRelease(context.Context, *DeleteReleaseReq) (*DeleteReleaseResp, error)
+	// 检测服务版本名
 	CheckReleaseName(context.Context, *CheckReleaseNameReq) (*CheckReleaseNameResp, error)
+	// 创建脚本
 	CreateHook(context.Context, *CreateHookReq) (*CreateHookResp, error)
+	// 删除脚本
 	DeleteHook(context.Context, *DeleteHookReq) (*DeleteHookResp, error)
+	// 批量删除脚本
 	BatchDeleteHook(context.Context, *BatchDeleteHookReq) (*BatchDeleteResp, error)
+	// 更新脚本
 	UpdateHook(context.Context, *UpdateHookReq) (*UpdateHookResp, error)
+	// 获取脚本列表
 	ListHooks(context.Context, *ListHooksReq) (*ListHooksResp, error)
+	// 获取脚本标签列表
 	ListHookTags(context.Context, *ListHookTagsReq) (*ListHookTagsResp, error)
+	// 获取脚本
 	GetHook(context.Context, *GetHookReq) (*GetHookResp, error)
+	// 创建脚本版本
 	CreateHookRevision(context.Context, *CreateHookRevisionReq) (*CreateHookRevisionResp, error)
+	// 获取脚本版本列表
 	ListHookRevisions(context.Context, *ListHookRevisionsReq) (*ListHookRevisionsResp, error)
+	// 删除骄傲本版本
 	DeleteHookRevision(context.Context, *DeleteHookRevisionReq) (*DeleteHookRevisionResp, error)
+	// 上线脚本版本
 	PublishHookRevision(context.Context, *PublishHookRevisionReq) (*PublishHookRevisionResp, error)
+	// 获取脚本版本
 	GetHookRevision(context.Context, *GetHookRevisionReq) (*hook_revision.HookRevision, error)
+	// 更新脚本版本
 	UpdateHookRevision(context.Context, *UpdateHookRevisionReq) (*UpdateHookRevisionResp, error)
+	// 获取被引用的脚本配置服务列表
 	ListHookReferences(context.Context, *ListHookReferencesReq) (*ListHookReferencesResp, error)
+	// 获取被引用的脚本版本配置服务列表
 	ListHookRevisionReferences(context.Context, *ListHookRevisionReferencesReq) (*ListHookRevisionReferencesResp, error)
+	// TODO
 	GetReleaseHook(context.Context, *GetReleaseHookReq) (*GetReleaseHookResp, error)
+	// 创建模板空间
 	CreateTemplateSpace(context.Context, *CreateTemplateSpaceReq) (*CreateTemplateSpaceResp, error)
+	// 删除模板空间
 	DeleteTemplateSpace(context.Context, *DeleteTemplateSpaceReq) (*DeleteTemplateSpaceResp, error)
+	// 更新模板空间
 	UpdateTemplateSpace(context.Context, *UpdateTemplateSpaceReq) (*UpdateTemplateSpaceResp, error)
+	// 获取模板空间列表
 	ListTemplateSpaces(context.Context, *ListTemplateSpacesReq) (*ListTemplateSpacesResp, error)
 	// GetAllBizsOfTmplSpaces called only by system itself
 	GetAllBizsOfTmplSpaces(context.Context, *base.EmptyReq) (*GetAllBizsOfTmplSpacesResp, error)
-	// CreateDefaultTmplSpace called only by system itself
+	// 创建模板默认空间(仅由系统本身调用)
 	CreateDefaultTmplSpace(context.Context, *CreateDefaultTmplSpaceReq) (*CreateDefaultTmplSpaceResp, error)
 	ListTmplSpacesByIDs(context.Context, *ListTmplSpacesByIDsReq) (*ListTmplSpacesByIDsResp, error)
+	// 创建模板
 	CreateTemplate(context.Context, *CreateTemplateReq) (*CreateTemplateResp, error)
+	// 删除模板
 	DeleteTemplate(context.Context, *DeleteTemplateReq) (*DeleteTemplateResp, error)
+	// 批量删除模板
 	BatchDeleteTemplate(context.Context, *BatchDeleteTemplateReq) (*BatchDeleteTemplateResp, error)
+	// 更新模板
 	UpdateTemplate(context.Context, *UpdateTemplateReq) (*UpdateTemplateResp, error)
+	// 获取模板列表(全部配置文件)
 	ListTemplates(context.Context, *ListTemplatesReq) (*ListTemplatesResp, error)
+	// 批量创建或更新模板
 	BatchUpsertTemplates(context.Context, *BatchUpsertTemplatesReq) (*BatchUpsertTemplatesResp, error)
+	// 批量更新模板权限
 	BatchUpdateTemplatePermissions(context.Context, *BatchUpdateTemplatePermissionsReq) (*BatchUpdateTemplatePermissionsResp, error)
+	// 添加至模板套餐中
 	AddTmplsToTmplSets(context.Context, *AddTmplsToTmplSetsReq) (*AddTmplsToTmplSetsResp, error)
+	// 从模板套餐中移出
 	DeleteTmplsFromTmplSets(context.Context, *DeleteTmplsFromTmplSetsReq) (*BatchDeleteResp, error)
+	// 按模板ID获取模板列表
 	ListTemplatesByIDs(context.Context, *ListTemplatesByIDsReq) (*ListTemplatesByIDsResp, error)
+	// 获取未绑定的模板列表
 	ListTemplatesNotBound(context.Context, *ListTemplatesNotBoundReq) (*ListTemplatesNotBoundResp, error)
+	// 按模板绝对路径获取模板列表
 	ListTemplateByTuple(context.Context, *ListTemplateByTupleReq) (*ListTemplateByTupleResp, error)
+	// 按模板套餐获取模板列表
 	ListTmplsOfTmplSet(context.Context, *ListTmplsOfTmplSetReq) (*ListTmplsOfTmplSetResp, error)
+	// 获取模板套餐下的所有版本列表
 	ListTemplateSetsAndRevisions(context.Context, *ListTemplateSetsAndRevisionsReq) (*ListTemplateSetsAndRevisionsResp, error)
+	// 创建模板版本
 	CreateTemplateRevision(context.Context, *CreateTemplateRevisionReq) (*CreateTemplateRevisionResp, error)
+	// 更新模板版本
 	UpdateTemplateRevision(context.Context, *UpdateTemplateRevisionReq) (*UpdateTemplateRevisionResp, error)
+	// 获取模板版本列表
 	ListTemplateRevisions(context.Context, *ListTemplateRevisionsReq) (*ListTemplateRevisionsResp, error)
+	// 获取模板版本
 	GetTemplateRevision(context.Context, *GetTemplateRevisionReq) (*GetTemplateRevisionResp, error)
-	// 暂时不对外开发（删除模版后，服务引用的latest版本会回退到上一个老版本）
-	//rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
-	//(DeleteTemplateRevisionResp) {
-	//
-	//option (google.api.http) = {
-	//delete :
-	//"/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
-	//};
-	//}
+	// 按模板版本ID获取模板版本列表
 	ListTemplateRevisionsByIDs(context.Context, *ListTemplateRevisionsByIDsReq) (*ListTemplateRevisionsByIDsResp, error)
+	// 按模板ID获取模板版本列表
 	ListTmplRevisionNamesByTmplIDs(context.Context, *ListTmplRevisionNamesByTmplIDsReq) (*ListTmplRevisionNamesByTmplIDsResp, error)
+	// 创建模板套餐
 	CreateTemplateSet(context.Context, *CreateTemplateSetReq) (*CreateTemplateSetResp, error)
+	// 删除模板套餐
 	DeleteTemplateSet(context.Context, *DeleteTemplateSetReq) (*DeleteTemplateSetResp, error)
+	// 更新模板套餐
 	UpdateTemplateSet(context.Context, *UpdateTemplateSetReq) (*UpdateTemplateSetResp, error)
+	// 获取模板套餐列表
 	ListTemplateSets(context.Context, *ListTemplateSetsReq) (*ListTemplateSetsResp, error)
+	// 获取模板套餐列表
 	ListAppTemplateSets(context.Context, *ListAppTemplateSetsReq) (*ListAppTemplateSetsResp, error)
+	// 按模板套餐ID获取模板套餐列表
 	ListTemplateSetsByIDs(context.Context, *ListTemplateSetsByIDsReq) (*ListTemplateSetsByIDsResp, error)
+	// 按服务ID获取模板套餐列表
 	ListTmplSetsOfBiz(context.Context, *ListTmplSetsOfBizReq) (*ListTmplSetsOfBizResp, error)
+	// 创建绑定服务的模板(暂无用到)
 	CreateAppTemplateBinding(context.Context, *CreateAppTemplateBindingReq) (*CreateAppTemplateBindingResp, error)
+	// 删除绑定服务的模板
 	DeleteAppTemplateBinding(context.Context, *DeleteAppTemplateBindingReq) (*DeleteAppTemplateBindingResp, error)
+	// 更新绑定服务的模板
 	UpdateAppTemplateBinding(context.Context, *UpdateAppTemplateBindingReq) (*UpdateAppTemplateBindingResp, error)
+	// 按服务获取绑定的模板列表
 	ListAppTemplateBindings(context.Context, *ListAppTemplateBindingsReq) (*ListAppTemplateBindingsResp, error)
+	// 按未命名版本服务获取绑定的模板版本列表
 	ListAppBoundTmplRevisions(context.Context, *ListAppBoundTmplRevisionsReq) (*ListAppBoundTmplRevisionsResp, error)
+	// 按已发布版本服务获取绑定的模板版本列表
 	ListReleasedAppBoundTmplRevisions(context.Context, *ListReleasedAppBoundTmplRevisionsReq) (*ListReleasedAppBoundTmplRevisionsResp, error)
+	// 查看已发布版本服务的模板版本详情
 	GetReleasedAppBoundTmplRevision(context.Context, *GetReleasedAppBoundTmplRevisionReq) (*GetReleasedAppBoundTmplRevisionResp, error)
+	// 替换服务引用后的模板版本
 	UpdateAppBoundTmplRevisions(context.Context, *UpdateAppBoundTmplRevisionsReq) (*UpdateAppBoundTmplRevisionsResp, error)
+	// 移除服务引用的模板套餐(暂未用到)
 	DeleteAppBoundTmplSets(context.Context, *DeleteAppBoundTmplSetsReq) (*DeleteAppBoundTmplSetsResp, error)
+	// 移除服务引用的模板套餐
 	RemoveAppBoundTmplSet(context.Context, *RemoveAppBoundTmplSetReq) (*RemoveAppBoundTmplSetResp, error)
+	// 检测服务绑定的模板套餐
 	CheckAppTemplateBinding(context.Context, *CheckAppTemplateBindingReq) (*CheckAppTemplateBindingResp, error)
+	// 配置服务引用模版套餐
 	ImportFromTemplateSetToApp(context.Context, *ImportFromTemplateSetToAppReq) (*ImportFromTemplateSetToAppResp, error)
+	// 获取模板绑定服务数列表
 	ListTmplBoundCounts(context.Context, *ListTmplBoundCountsReq) (*ListTmplBoundCountsResp, error)
+	// 获取模板版本绑定服务数列表
 	ListTmplRevisionBoundCounts(context.Context, *ListTmplRevisionBoundCountsReq) (*ListTmplRevisionBoundCountsResp, error)
+	// 获取模板套餐绑定服务数列表
 	ListTmplSetBoundCounts(context.Context, *ListTmplSetBoundCountsReq) (*ListTmplSetBoundCountsResp, error)
+	// 获取模板绑定的服务列表
 	ListTmplBoundUnnamedApps(context.Context, *ListTmplBoundUnnamedAppsReq) (*ListTmplBoundUnnamedAppsResp, error)
+	// 获取模板绑定的服务以及模板版本列表
 	ListTmplBoundNamedApps(context.Context, *ListTmplBoundNamedAppsReq) (*ListTmplBoundNamedAppsResp, error)
+	// 获取服务绑定的模板套餐列表
 	ListTmplBoundTmplSets(context.Context, *ListTmplBoundTmplSetsReq) (*ListTmplBoundTmplSetsResp, error)
+	// 获取服务绑定的模板套餐以及模板列表
 	ListMultiTmplBoundTmplSets(context.Context, *ListMultiTmplBoundTmplSetsReq) (*ListMultiTmplBoundTmplSetsResp, error)
+	// 按模板版本获取绑定的未命名版本服务列表
 	ListTmplRevisionBoundUnnamedApps(context.Context, *ListTmplRevisionBoundUnnamedAppsReq) (*ListTmplRevisionBoundUnnamedAppsResp, error)
+	// 按模板版本获取绑定的已命名版本服务列表
 	ListTmplRevisionBoundNamedApps(context.Context, *ListTmplRevisionBoundNamedAppsReq) (*ListTmplRevisionBoundNamedAppsResp, error)
+	// 按模板套餐获取绑定的未命名版本服务列表
 	ListTmplSetBoundUnnamedApps(context.Context, *ListTmplSetBoundUnnamedAppsReq) (*ListTmplSetBoundUnnamedAppsResp, error)
+	// 按多模板套餐获取绑定的未命名版本服务列表
 	ListMultiTmplSetBoundUnnamedApps(context.Context, *ListMultiTmplSetBoundUnnamedAppsReq) (*ListMultiTmplSetBoundUnnamedAppsResp, error)
+	// 检测模板套餐引用的服务
 	CheckTemplateSetReferencesApps(context.Context, *CheckTemplateSetReferencesAppsReq) (*CheckTemplateSetReferencesAppsResp, error)
+	// 按模板套餐获取绑定的已命名版本服务列表
 	ListTmplSetBoundNamedApps(context.Context, *ListTmplSetBoundNamedAppsReq) (*ListTmplSetBoundNamedAppsResp, error)
+	// 按最新的模板版本获取未命名版本服务列表
 	ListLatestTmplBoundUnnamedApps(context.Context, *ListLatestTmplBoundUnnamedAppsReq) (*ListLatestTmplBoundUnnamedAppsResp, error)
+	// 创建模板变量
 	CreateTemplateVariable(context.Context, *CreateTemplateVariableReq) (*CreateTemplateVariableResp, error)
+	// 删除模板变量
 	DeleteTemplateVariable(context.Context, *DeleteTemplateVariableReq) (*DeleteTemplateVariableResp, error)
+	// 批量删除模板变量
 	BatchDeleteTemplateVariable(context.Context, *BatchDeleteBizResourcesReq) (*BatchDeleteResp, error)
+	// 更新模板变量
 	UpdateTemplateVariable(context.Context, *UpdateTemplateVariableReq) (*UpdateTemplateVariableResp, error)
+	// 获取模板变量列表
 	ListTemplateVariables(context.Context, *ListTemplateVariablesReq) (*ListTemplateVariablesResp, error)
+	// 批量导入简单文件模板变量
 	ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error)
 	ImportOtherFormatTemplateVariables(context.Context, *ImportOtherFormatTemplateVariablesReq) (*ImportOtherFormatTemplateVariablesResp, error)
+	// 提取模板变量
 	ExtractAppTmplVariables(context.Context, *ExtractAppTmplVariablesReq) (*ExtractAppTmplVariablesResp, error)
+	// 获取未命名服务版本被引用的变量
 	GetAppTmplVariableRefs(context.Context, *GetAppTmplVariableRefsReq) (*GetAppTmplVariableRefsResp, error)
+	// 获取服务版本下被引用的变量
 	GetReleasedAppTmplVariableRefs(context.Context, *GetReleasedAppTmplVariableRefsReq) (*GetReleasedAppTmplVariableRefsResp, error)
+	// 更新未命名服务版本变量
 	UpdateAppTmplVariables(context.Context, *UpdateAppTmplVariablesReq) (*UpdateAppTmplVariablesResp, error)
+	// 获取未命名服务版本模板变量
 	ListAppTmplVariables(context.Context, *ListAppTmplVariablesReq) (*ListAppTmplVariablesResp, error)
+	// 获取服务版本的模板变量列表
 	ListReleasedAppTmplVariables(context.Context, *ListReleasedAppTmplVariablesReq) (*ListReleasedAppTmplVariablesResp, error)
+	// 创建分组
 	CreateGroup(context.Context, *CreateGroupReq) (*CreateGroupResp, error)
+	// 删除分组
 	DeleteGroup(context.Context, *DeleteGroupReq) (*DeleteGroupResp, error)
+	// 批量删除分组
 	BatchDeleteGroups(context.Context, *BatchDeleteBizResourcesReq) (*BatchDeleteResp, error)
+	// 更新分组
 	UpdateGroup(context.Context, *UpdateGroupReq) (*UpdateGroupResp, error)
+	// 获取所有分组列表
 	ListAllGroups(context.Context, *ListAllGroupsReq) (*ListAllGroupsResp, error)
+	// 按服务获取分组
 	ListAppGroups(context.Context, *ListAppGroupsReq) (*ListAppGroupsResp, error)
+	// 按分组获取服务
 	ListGroupReleasedApps(context.Context, *ListGroupReleasedAppsReq) (*ListGroupReleasedAppsResp, error)
+	// 按名称获取分组
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
+	// 发布服务版本
 	Publish(context.Context, *PublishReq) (*PublishResp, error)
+	// 生成新的服务版本并发布
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
@@ -2130,44 +2393,77 @@ type ConfigServer interface {
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)
 	GetReleasesStatus(context.Context, *GetReleasesStatusReq) (*strategy.Strategy, error)
 	ListAudits(context.Context, *ListAuditsReq) (*ListAuditsResp, error)
+	// 创建客户端密钥
 	CreateCredentials(context.Context, *CreateCredentialReq) (*CreateCredentialResp, error)
+	// 获取客户端密钥
 	ListCredentials(context.Context, *ListCredentialsReq) (*ListCredentialsResp, error)
+	// 删除客户端密钥
 	DeleteCredential(context.Context, *DeleteCredentialsReq) (*DeleteCredentialsResp, error)
+	// 更新客户端密钥
 	UpdateCredential(context.Context, *UpdateCredentialsReq) (*UpdateCredentialsResp, error)
+	// 检测客户端密钥名称
 	CheckCredentialName(context.Context, *CheckCredentialNameReq) (*CheckCredentialNameResp, error)
+	// 获取客户端密钥关联服务的列表
 	ListCredentialScopes(context.Context, *ListCredentialScopesReq) (*ListCredentialScopesResp, error)
+	// 更新客户端密钥关联服务规则
 	UpdateCredentialScope(context.Context, *UpdateCredentialScopeReq) (*UpdateCredentialScopeResp, error)
+	// 预览客户端密钥关联配置项
 	CredentialScopePreview(context.Context, *CredentialScopePreviewReq) (*CredentialScopePreviewResp, error)
+	// 创建键值配置项
 	CreateKv(context.Context, *CreateKvReq) (*CreateKvResp, error)
+	// 更新键值配置项
 	UpdateKv(context.Context, *UpdateKvReq) (*UpdateKvResp, error)
+	// 获取键值配置项列表
 	ListKvs(context.Context, *ListKvsReq) (*ListKvsResp, error)
+	// 删除键值配置项
 	DeleteKv(context.Context, *DeleteKvReq) (*DeleteKvResp, error)
+	// 批量删除键值配置项
 	BatchDeleteKv(context.Context, *BatchDeleteAppResourcesReq) (*BatchDeleteResp, error)
+	// 批量创建或更新键值配置项
 	BatchUpsertKvs(context.Context, *BatchUpsertKvsReq) (*BatchUpsertKvsResp, error)
+	// 恢复键值配置项
 	UnDeleteKv(context.Context, *UnDeleteKvReq) (*UnDeleteKvResp, error)
+	// 批量恢复键值配置项
 	BatchUnDeleteKv(context.Context, *BatchUnDeleteKvReq) (*BatchUnDeleteKvResp, error)
+	// 撤销修改的键值配置项
 	UndoKv(context.Context, *UndoKvReq) (*UndoKvResp, error)
+	// 批量导出文本格式键值配置项
 	ImportKvs(context.Context, *ImportKvsReq) (*ImportKvsResp, error)
+	// 获取客户端列表
 	ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error)
+	// 获取客户端拉取记录列表
 	ListClientEvents(context.Context, *ListClientEventsReq) (*ListClientEventsResp, error)
+	// 重试客户端拉取
 	RetryClients(context.Context, *RetryClientsReq) (*RetryClientsResp, error)
-	// client query related interface
+	// 获取客户端查询条件列表
 	ListClientQuerys(context.Context, *ListClientQuerysReq) (*ListClientQuerysResp, error)
+	// 创建客户端查询条件
 	CreateClientQuery(context.Context, *CreateClientQueryReq) (*CreateClientQueryResp, error)
+	// 更新客户端查询条件
 	UpdateClientQuery(context.Context, *UpdateClientQueryReq) (*UpdateClientQueryResp, error)
+	// 删除客户端查询条件
 	DeleteClientQuery(context.Context, *DeleteClientQueryReq) (*DeleteClientQueryResp, error)
+	// 检测客户端查询条件名
 	CheckClientQueryName(context.Context, *CheckClientQueryNameReq) (*CheckClientQueryNameResp, error)
-	// client chart related interface
+	// 客户端配置版本统计
 	ClientConfigVersionStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 客户端拉取趋势统计
 	ClientPullTrendStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 客户端拉取状态统计
 	ClientPullStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 客户端标签统计
 	ClientLabelStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 客户端附加信息统计
 	ClientAnnotationStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 客户端组件版本统计
 	ClientVersionStatistics(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
+	// 获取客户端标签和附加信息列表
 	ListClientLabelAndAnnotation(context.Context, *ListClientLabelAndAnnotationReq) (*structpb.Struct, error)
+	// 获取客户端失败原因
 	ClientSpecificFailedReason(context.Context, *client.ClientCommonReq) (*structpb.Struct, error)
-	// config item compare conflicts related interface
+	// 文件服务以及和其他服务版本之间对比
 	CompareConfigItemConflicts(context.Context, *CompareConfigItemConflictsReq) (*CompareConfigItemConflictsResp, error)
+	// 键值服务以及和其他服务版本之间对比
 	CompareKvConflicts(context.Context, *CompareKvConflictsReq) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error)

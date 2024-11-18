@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/template-variable/template_variable.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbatv;
 
@@ -9,7 +10,8 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-te
 
 // AppTemplateVariable source resource reference: pkg/dal/table/app_template_variable.go
 message AppTemplateVariable {
-  uint32 id = 1;
+  uint32 id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务绑定模板变量后的ID" }];
   AppTemplateVariableSpec spec = 2;
   AppTemplateVariableAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -22,19 +24,20 @@ message AppTemplateVariableSpec {
 
 // AppTemplateVariableAttachment source resource reference: pkg/dal/table/app_template_variable.go
 message AppTemplateVariableAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
 
 // AppTemplateVariableReference is app template variable reference
 message AppTemplateVariableReference {
   message reference {
-    uint32 id = 1;
-    uint32 template_revision_id = 2;
-    string name = 3;
-    string path = 4;
+    uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+    uint32 template_revision_id = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+    string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+    string path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件路径" }];
   }
 
-  string variable_name = 1;
+  string variable_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量名" }];
   repeated reference references = 2;
 }

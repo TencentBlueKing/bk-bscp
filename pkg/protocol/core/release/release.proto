@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/struct.proto";
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/strategy/strategy.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbrelease;
 
@@ -10,7 +11,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/releas
 
 // Release source resource reference: pkg/dal/table/release.go
 message Release {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
   ReleaseSpec spec = 2;
   ReleaseStatus status = 3;
   ReleaseAttachment attachment = 4;
@@ -19,17 +20,18 @@ message Release {
 
 // ReleaseSpec source resource reference: pkg/dal/table/release.go
 message ReleaseSpec {
-  string name = 1;
-  string memo = 2;
-  bool deprecated = 3;
-  uint32 publish_num = 4;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本名称" }];
+  string memo = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本描述" }];
+  bool deprecated = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否弃用：是=true，否=false" }];
+  uint32 publish_num = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "发布数量" }];
 }
 
 // ReleaseStatus status that not in db
 message ReleaseStatus {
   message ReleasedGroup {
-    uint32 id = 1;
-    string name = 2;
+    uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本分组ID" }];
+    string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本分组名" }];
     string mode = 3;
     google.protobuf.Struct old_selector = 4;
     google.protobuf.Struct new_selector = 5;
@@ -45,8 +47,8 @@ message ReleaseStatus {
 
 // ReleaseAttachment source resource reference: pkg/dal/table/release.go
 message ReleaseAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
 
 // PublishRecord list publish relate field

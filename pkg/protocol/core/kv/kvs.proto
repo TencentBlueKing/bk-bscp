@@ -4,13 +4,16 @@ package pbkv;
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/content/content.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv;pbkv";
 
 // Kv source resource reference: pkg/dal/table/kvs.go
 message Kv {
-  uint32 id = 1;
-  string kv_state = 2;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "键值配置项ID" }];
+  string kv_state = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
+  }];
   KvSpec spec = 3;
   KvAttachment attachment = 4;
   pbbase.Revision revision = 5;
@@ -19,16 +22,21 @@ message Kv {
 
 // KvSpec source resource reference: pkg/dal/table/kvs.go
 message KvSpec {
-  string key = 1;
-  string kv_type = 2;
-  string value = 3;
-  string memo = 4;
-  string secret_type = 5;
-  bool secret_hidden = 6;
+  string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项名" }];
+  string kv_type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "键值类型：(any、string、number、text、json、yaml、xml、secret)"
+  }];
+  string value = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项值" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
+  string secret_type = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "密钥类型：(password、、certificate、secret_key、token、custom)"
+  }];
+  bool secret_hidden = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
 }
 
 // KvAttachment source resource reference: pkg/dal/table/kvs.go
 message KvAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }

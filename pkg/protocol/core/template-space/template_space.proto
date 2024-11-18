@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbts;
 
@@ -8,7 +9,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/templa
 
 // TemplateSpace source resource reference: pkg/dal/table/template_space.go
 message TemplateSpace {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
   TemplateSpaceSpec spec = 2;
   TemplateSpaceAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -16,11 +17,11 @@ message TemplateSpace {
 
 // TemplateSpaceSpec source resource reference: pkg/dal/table/template_space.go
 message TemplateSpaceSpec {
-  string name = 1;
-  string memo = 2;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+  string memo = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件描述" }];
 }
 
 // TemplateSpaceAttachment source resource reference: pkg/dal/table/template_space.go
 message TemplateSpaceAttachment {
-  uint32 biz_id = 1;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
 }

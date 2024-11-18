@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbatb;
 
@@ -8,7 +9,8 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-te
 
 // AppTemplateBinding source resource reference: pkg/dal/table/app_template_binding.go
 message AppTemplateBinding {
-  uint32 id = 1;
+  uint32 id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务绑定模板套餐后的ID" }];
   AppTemplateBindingSpec spec = 2;
   AppTemplateBindingAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -16,154 +18,227 @@ message AppTemplateBinding {
 
 // AppTemplateBindingSpec source resource reference: pkg/dal/table/app_template_binding.go
 message AppTemplateBindingSpec {
-  repeated uint32 template_space_ids = 1;
-  repeated uint32 template_set_ids = 2;
-  repeated uint32 template_ids = 3;
-  repeated uint32 template_revision_ids = 4;
-  repeated uint32 latest_template_ids = 5;
+  repeated uint32 template_space_ids = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  repeated uint32 template_set_ids = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  repeated uint32 template_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  repeated uint32 template_revision_ids = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+  repeated uint32 latest_template_ids = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "最新模板ID：模板文件版本是最新的版本"
+  }];
   repeated TemplateBinding bindings = 6;
 }
 
 // TemplateBinding source resource reference: pkg/dal/table/app_template_binding.go
 message TemplateBinding {
-  uint32 template_set_id = 1;
+  uint32 template_set_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
   repeated TemplateRevisionBinding template_revisions = 2;
 }
 
 message TemplateRevisionBinding {
-  uint32 template_id = 1;
-  uint32 template_revision_id = 2;
-  bool is_latest = 3;
+  uint32 template_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  uint32 template_revision_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+  bool is_latest = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否是最新：模板文件版本ID在该模板文件中是最新的一个版本"
+  }];
 }
 
 // AppTemplateBindingAttachment source resource reference: pkg/dal/table/app_template_binding.go
 message AppTemplateBindingAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
 
 // AppBoundTmplRevisionGroupBySet is app bound template revision group by template set
 message AppBoundTmplRevisionGroupBySet {
   message template_revision_detail {
-    uint32 template_id = 1;
-    string name = 2;
-    string path = 3;
-    uint32 template_revision_id = 4;
-    bool is_latest = 5;
-    string template_revision_name = 6;
-    string template_revision_memo = 7;
-    string file_type = 8;
-    string file_mode = 9;
-    string user = 10;
-    string user_group = 11;
-    string privilege = 12;
-    string signature = 13;
-    uint64 byte_size = 14;
-    string creator = 15;
-    string create_at = 16;
-    string file_state = 17;
-    string md5 = 18;
-    bool is_conflict = 19;
+    uint32 template_id = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+    string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+    string path = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件路径" }];
+    uint32 template_revision_id = 4
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+    bool is_latest = 5 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否是最新版本：是=true,否=false" }
+    ];
+    string template_revision_name = 6
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本名" }];
+    string template_revision_memo = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
+    string file_type = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "配置文件格式：文本文件=file, 二进制文件=binary"
+    }];
+    string file_mode = 9
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+    string user = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+    string user_group = 11
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+    string privilege = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+    string signature = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+    uint64 byte_size = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+    string creator = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
+    string create_at = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
+    string file_state = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件状态" }];
+    string md5 = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件MD5" }];
+    bool is_conflict = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否冲突" }];
   }
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
-  uint32 template_set_id = 3;
-  string template_set_name = 4;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
+  uint32 template_set_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
   repeated template_revision_detail template_revisions = 5;
 }
 
 // ReleasedAppBoundTmplRevisionGroupBySet is released app bound template revision group by template set
 message ReleasedAppBoundTmplRevisionGroupBySet {
   message template_revision_detail {
-    uint32 template_id = 1;
-    string name = 2;
-    string path = 3;
-    uint32 template_revision_id = 4;
-    bool is_latest = 5;
-    string template_revision_name = 6;
-    string template_revision_memo = 7;
-    string file_type = 8;
-    string file_mode = 9;
-    string user = 10;
-    string user_group = 11;
-    string privilege = 12;
-    string signature = 13;
-    uint64 byte_size = 14;
-    string origin_signature = 15;
-    uint64 origin_byte_size = 16;
-    string creator = 17;
-    string reviser = 18;
-    string create_at = 19;
-    string update_at = 20;
-    string md5 = 21;
+    uint32 template_id = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+    string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+    string path = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件路径" }];
+    uint32 template_revision_id = 4
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+    bool is_latest = 5 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否是最新版本：是=true,否=false" }
+    ];
+    string template_revision_name = 6
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本名" }];
+    string template_revision_memo = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
+    string file_type = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "配置文件格式：文本文件=file, 二进制文件=binary"
+    }];
+    string file_mode = 9
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+    string user = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+    string user_group = 11
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+    string privilege = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+    string signature = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+    uint64 byte_size = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+    string origin_signature = 15
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件sha256" }];
+    uint64 origin_byte_size = 16
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件大小" }];
+    string creator = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
+    string reviser = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新人" }];
+    string create_at = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
+    string update_at = 20 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
+    string md5 = 21 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
   }
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
-  uint32 template_set_id = 3;
-  string template_set_name = 4;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
+  uint32 template_set_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
   repeated template_revision_detail template_revisions = 5;
 }
 
 // AppBoundTmplRevision is app bound template revision
 message AppBoundTmplRevision {
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
-  uint32 template_set_id = 3;
-  string template_set_name = 4;
-  uint32 template_id = 5;
-  string name = 6;
-  string path = 7;
-  uint32 template_revision_id = 8;
-  bool is_latest = 9;
-  string template_revision_name = 10;
-  string template_revision_memo = 11;
-  string file_type = 12;
-  string file_mode = 13;
-  string user = 14;
-  string user_group = 15;
-  string privilege = 16;
-  string signature = 17;
-  uint64 byte_size = 18;
-  string creator = 19;
-  string create_at = 20;
-  string file_state = 21;
-  string md5 = 22;
-  bool is_conflict = 23;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
+  uint32 template_set_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+  uint32 template_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  string name = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+  string path = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件路径" }];
+  uint32 template_revision_id = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+  bool is_latest = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否是最新版本：是=true,否=false" }
+  ];
+  string template_revision_name = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本名" }];
+  string template_revision_memo = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
+  string file_type = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "配置文件格式：文本文件=file, 二进制文件=binary"
+  }];
+  string file_mode = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  string user = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string user_group = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string privilege = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+  string signature = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string creator = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
+  string create_at = 20 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
+  string file_state = 21 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "文件状态：(ADD、DELETE、REVISE、UNCHANGE)"
+  }];
+  string md5 = 22 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
+  bool is_conflict = 23 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否冲突" }];
 }
 
 // ReleasedAppBoundTmplRevision is released app bound template revision
 message ReleasedAppBoundTmplRevision {
-  uint32 template_space_id = 1;
-  string template_space_name = 2;
-  uint32 template_set_id = 3;
-  string template_set_name = 4;
-  uint32 template_id = 5;
-  string name = 6;
-  string path = 7;
-  uint32 template_revision_id = 8;
-  bool is_latest = 9;
-  string template_revision_name = 10;
-  string template_revision_memo = 11;
-  string file_type = 12;
-  string file_mode = 13;
-  string user = 14;
-  string user_group = 15;
-  string privilege = 16;
-  string signature = 17;
-  uint64 byte_size = 18;
-  string origin_signature = 19;
-  uint64 origin_byte_size = 20;
-  string creator = 21;
-  string reviser = 22;
-  string create_at = 23;
-  string update_at = 24;
-  string md5 = 25;
+  uint32 template_space_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  string template_space_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名" }];
+  uint32 template_set_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+  uint32 template_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  string name = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+  string path = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件路径" }];
+  uint32 template_revision_id = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+  bool is_latest = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否是最新版本：是=true,否=false" }
+  ];
+  string template_revision_name = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本名" }];
+  string template_revision_memo = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
+  string file_type = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "配置文件格式：文本文件=file, 二进制文件=binary"
+  }];
+  string file_mode = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  string user = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string user_group = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string privilege = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+  string signature = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string origin_signature = 19
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件sha256" }];
+  uint64 origin_byte_size = 20
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件大小" }];
+  string creator = 21 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
+  string reviser = 22 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新人" }];
+  string create_at = 23 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
+  string update_at = 24 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
+  string md5 = 25 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
 }
 
 // Conflict is the conflict when app binds templates
 message Conflict {
-  uint32 template_set_id = 1;
-  string template_set_name = 2;
-  uint32 template_id = 3;
-  string template_name = 4;
+  uint32 template_set_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
+  string template_set_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+  uint32 template_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  string template_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
 }

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/commit/commit.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbci;
 
@@ -9,42 +10,51 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config
 
 // ConfigItem source resource reference: pkg/dal/table/config_item.go
 message ConfigItem {
-  uint32 id = 1;
-  uint32 config_item_id = 2;
-  string file_state = 3;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 config_item_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  string file_state = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
+  }];
   ConfigItemSpec spec = 4;
   pbcommit.CommitSpec commit_spec = 5;
   ConfigItemAttachment attachment = 6;
   pbbase.Revision revision = 7;
-  bool is_conflict = 8;
+  bool is_conflict = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否存在冲突：是=true，否=false" }
+  ];
 }
 
 // ConfigItemSpec source resource reference: pkg/dal/table/config_item.go
 message ConfigItemSpec {
-  string name = 1;
-  string path = 2;
-  string file_type = 3;  // file_type is enum type
-  string file_mode = 4;  // file_mode is enum type
-  string memo = 5;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string path = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+  string file_type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "配置文件格式：文本文件=file, 二进制文件=binary"
+  }];
+  string file_mode = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件描述" }];
   FilePermission permission = 6;
 }
 
 // ConfigItemAttachment source resource reference: pkg/dal/table/config_item.go
 message ConfigItemAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
 
 // FilePermission source resource reference: pkg/dal/table/config_item.go
 message FilePermission {
-  string user = 1;
-  string user_group = 2;
-  string privilege = 3;
+  string user = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户名" }];
+  string user_group = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组名" }];
+  string privilege = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限", example: "644" }];
 }
 
 // ListConfigItemCounts source resource reference: pkg/dal/table/config_item.go
 message ListConfigItemCounts {
-  uint32 app_id = 1;
-  uint32 count = 2;
-  string update_at = 3;
+  uint32 app_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  string update_at = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
 }

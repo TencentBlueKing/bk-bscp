@@ -3,6 +3,7 @@ syntax = "proto3";
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/commit/commit.proto";
 import "pkg/protocol/core/config-item/config_item.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbrci;
 
@@ -10,11 +11,13 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/releas
 
 // ReleasedConfigItem source resource reference: pkg/dal/table/release_ci.go
 message ReleasedConfigItem {
-  uint32 id = 1;
-  uint32 release_id = 2;
-  uint32 commit_id = 3;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本文件配置项ID" }];
+  uint32 release_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 commit_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项版本记录ID" }];
   pbcommit.ReleasedCommitSpec commit_spec = 4;
-  uint32 config_item_id = 5;
+  uint32 config_item_id = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
   pbci.ConfigItemSpec spec = 6;
   pbci.ConfigItemAttachment attachment = 7;
   pbbase.Revision revision = 8;

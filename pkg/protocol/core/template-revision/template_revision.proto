@@ -3,6 +3,7 @@ syntax = "proto3";
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/config-item/config_item.proto";
 import "pkg/protocol/core/content/content.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbtr;
 
@@ -10,7 +11,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/templa
 
 // Template source resource reference: pkg/dal/table/template_revision.go
 message TemplateRevision {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
   TemplateRevisionSpec spec = 2;
   TemplateRevisionAttachment attachment = 3;
   pbbase.CreatedRevision revision = 4;
@@ -18,35 +19,54 @@ message TemplateRevision {
 
 // TemplateRevisionSpec source resource reference: pkg/dal/table/template_revision.go
 message TemplateRevisionSpec {
-  string revision_name = 1;
-  string revision_memo = 2;
-  string name = 3;
-  string path = 4;
-  string file_type = 5;  // file_type is enum type
-  string file_mode = 6;  // file_mode is enum type
+  string revision_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "模板文件版本号",
+  }];
+  string revision_memo = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
+  string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "文件名",
+  }];
+  string path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "文件路径",
+  }];
+  string file_type = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "配置文件格式：文本文件=file, 二进制文件=binary"
+  }];
+  string file_mode = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
   pbci.FilePermission permission = 7;
   pbcontent.ContentSpec content_spec = 8;
 }
 
 // TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go
 message TemplateRevisionAttachment {
-  uint32 biz_id = 1;
-  uint32 template_space_id = 2;
-  uint32 template_id = 3;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 template_space_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
+  uint32 template_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
 }
 
 // TemplateRevisionNamesDetail is template revision names Detail.
 message TemplateRevisionNamesDetail {
   message revision_names {
-    uint32 template_revision_id = 1;
-    string template_revision_name = 2;
-    string template_revision_memo = 3;
+    uint32 template_revision_id = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+    string template_revision_name = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本名" }];
+    string template_revision_memo = 3
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本描述" }];
   }
-  uint32 template_id = 1;
-  string template_name = 2;
-  uint32 latest_template_revision_id = 3;
-  string latest_revision_name = 5;
-  string latest_signature = 6;
-  uint64 latest_byte_size = 7;
+  uint32 template_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
+  string template_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件名" }];
+  uint32 latest_template_revision_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新模板文件版本ID" }];
+  string latest_revision_name = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新模板文件版本名" }];
+  string latest_signature = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新文件的sha256" }];
+  uint64 latest_byte_size = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新文件的大小" }];
   repeated revision_names template_revisions = 4;
 }

@@ -93,7 +93,7 @@ docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@protoc --proto_path=. --proto_path=pkg/thirdparty/protobuf/ \
+	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \
@@ -105,7 +105,7 @@ api_docs:
 
 bkapigw_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@protoc --proto_path=. --proto_path=pkg/thirdparty/protobuf/ \
+	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \

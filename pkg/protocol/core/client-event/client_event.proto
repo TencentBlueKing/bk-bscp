@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbce;
 
@@ -8,7 +9,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client
 
 // ClientEvent source resource reference: pkg/dal/table/client-event.go
 message ClientEvent {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端事件ID" }];
   ClientEventSpec spec = 2;
   ClientEventAttachment attachment = 3;
   google.protobuf.Timestamp heartbeat_time = 4;
@@ -19,27 +20,39 @@ message ClientEvent {
 
 // ClientEventSpec source resource reference: pkg/dal/table/client-event.go
 message ClientEventSpec {
-  uint32 original_release_id = 1;
-  uint32 target_release_id = 2;
-  google.protobuf.Timestamp start_time = 3;
-  google.protobuf.Timestamp end_time = 4;
-  double total_seconds = 5;
-  double total_file_size = 6;
-  double download_file_size = 7;
-  uint32 total_file_num = 8;
-  uint32 download_file_num = 9;
-  string release_change_status = 10;
-  string release_change_failed_reason = 11;
-  string failed_detail_reason = 12;
-  string specific_failed_reason = 13;
+  uint32 original_release_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源版本ID" }];
+  uint32 target_release_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板版本ID" }];
+  google.protobuf.Timestamp start_time = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
+  google.protobuf.Timestamp end_time = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
+  double total_seconds = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总耗时" }];
+  double total_file_size = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总文件大小" }];
+  double download_file_size = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "下载的文件大小" }];
+  uint32 total_file_num = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总文件数" }];
+  uint32 download_file_num = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "下载的文件数" }];
+  string release_change_status = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置拉取状态" }];
+  string release_change_failed_reason = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "发布变更失败原因" }];
+  string failed_detail_reason = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "失败详细信息原因" }];
+  string specific_failed_reason = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "具体失败原因" }];
 }
 
 // ClientEventAttachment source resource reference: pkg/dal/table/client-event.go
 message ClientEventAttachment {
-  uint32 client_id = 1;
-  string uid = 2;
-  uint32 biz_id = 3;
-  uint32 app_id = 4;
-  string client_mode = 5;
-  string cursor_id = 6;
+  uint32 client_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
+  string uid = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端UID" }];
+  uint32 biz_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  string client_mode = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "拉取方式：pull、watch" }];
+  string cursor_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "事件ID" }];
 }
