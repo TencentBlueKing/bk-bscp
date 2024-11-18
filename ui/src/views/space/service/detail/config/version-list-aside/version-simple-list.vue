@@ -3,7 +3,7 @@
     <div class="service-selector-wrapper">
       <ServiceSelector :value="props.appId" @change="editingService = $event"/>
       <div class="details-btn" @click="isEditServicePopShow = true">
-        <span class="bk-bscp-icon icon-lang-en"></span>
+        <span class="bk-bscp-icon icon-view-detail"></span>
       </div>
     </div>
     <bk-loading :loading="versionListLoading">
