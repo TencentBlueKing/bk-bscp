@@ -111,21 +111,20 @@
           </bk-radio-group>
           <bk-date-picker
             ref="datePickerRef"
-            v-if="localVal.publish_type === 'scheduled'"
+            v-show="localVal.publish_type === 'scheduled'"
             v-model="localVal.publish_time"
-            placement="top"
             append-to-body
             type="datetime"
+            ext-popover-cls="date-picker-popover"
+            placement="top-start"
             :editable="false"
             :clearable="false"
             :disabled-date="disabledDate"
-            :hide-disabled-options="true"
-            ext-popover-cls="time-header-style"
-            :time-picker-options="{
-              allowCrossDay: true,
-            }">
+            :open="datePickerShow"
+            @open-change="datePickerShow = true"
+            @pick-success="datePickerShow = false">
             <template #header>
-              <div v-if="isTimeMode" @click="getCurrentTime">此刻</div>
+              <div v-if="isTimeMode" @click="getCurrentTime" data-no-close="true">此刻</div>
             </template>
           </bk-date-picker>
         </bk-loading>
@@ -214,6 +213,7 @@
   const formRef = ref();
   const isApprove = ref(false); // 服务的审批状态
   const datePickerRef = ref();
+  const datePickerShow = ref(false);
 
   const rules = {
     memo: [
@@ -306,6 +306,7 @@
       publish_type: '',
       publish_time: '',
     };
+    datePickerShow.value = false;
   };
 
   const handleConfirm = async () => {
@@ -361,8 +362,7 @@
     }, 300);
   };
 
-  const getCurrentTime = (e: MouseEvent) => {
-    e.preventDefault();
+  const getCurrentTime = () => {
     const hour = dayjs().hour();
     const minute = dayjs().minute();
     const second = dayjs().second();
@@ -511,7 +511,7 @@
   .release-version-dialog.bk-modal-wrapper .bk-dialog-header {
     padding-bottom: 20px;
   }
-  .time-header-style {
+  .date-picker-popover {
     .bk-date-picker-top-wrapper {
       position: absolute;
       right: 54px;

@@ -419,9 +419,10 @@
         } else {
           // 当前版本新增项
           diffCount.value += 1;
+          // diffType: isBaseVersionExist.value ? 'add' : '',
           diffGroup.configs.push({
             ...crtItem,
-            diffType: isBaseVersionExist.value ? 'add' : '',
+            diffType: '',
             current: crtItem.signature,
             currentPermission: crtItem.permission,
             base: '',

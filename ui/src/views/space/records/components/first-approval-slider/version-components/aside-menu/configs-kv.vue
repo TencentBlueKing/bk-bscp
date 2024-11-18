@@ -185,7 +185,8 @@
       } else {
         // 当前版本新增项
         diffCount.value += 1;
-        diffType = isBaseVersionExist.value ? 'add' : '';
+        // diffType = isBaseVersionExist.value ? 'add' : '';
+        diffType = '';
       }
       list.push({
         diffType,

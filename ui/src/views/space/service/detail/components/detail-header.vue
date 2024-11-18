@@ -43,7 +43,7 @@
         <VersionApproveStatus
           ref="verAppStatus"
           :show-status-id="showStatusId"
-          :refresh-ver="refreshVesionList"
+          @refresh-version="refreshVesionList"
           @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
@@ -70,7 +70,7 @@
           @confirm="handleRefresh" />
         <!-- 更多选项 -->
         <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->
-        <HeaderMoreOptions :approve-status="approveData.status" :creator="creator" @handle-undo="handleRefresh" />
+        <HeaderMoreOptions :approve-status="approveData.status" @handle-undo="handleRefresh" />
       </section>
     </template>
   </div>

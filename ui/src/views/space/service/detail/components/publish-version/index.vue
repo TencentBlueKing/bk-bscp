@@ -238,16 +238,18 @@
   });
 
   watch(
-    () => props.approveData,
-    () => {
-      if (props.approveData?.status === APPROVE_STATUS.pending_publish) {
+    () => props.approveData.status,
+    (newV, oldV) => {
+      if (newV === APPROVE_STATUS.pending_publish) {
         isSecondConfirm.value = true;
         handlePendingPublish();
       } else {
         isSecondConfirm.value = false;
       }
+      if (newV !== oldV) {
+        handlePanelClose();
+      }
     },
-    { deep: true },
   );
 
   // 获取所有分组，并组装tree组件节点需要的数据
@@ -327,10 +329,6 @@
 
   // 确定上线按钮
   const handleSecondConfirm = async () => {
-    // if (!isConfirmDialogShow.value) {
-    //   isConfirmDialogShow.value = true;
-    //   return;
-    // }
     const { bkBizId: biz_id, appId: app_id } = props;
     // 上线后查询当前版本状态
     const resp = await approve(biz_id, app_id, versionData.value.id, {
@@ -415,7 +413,6 @@
     releaseType.value = 'select';
     isSelectGroupPanelOpen.value = false;
     groups.value = [];
-    treeNodeGroups.value = [];
   };
 
   // 检查是否有正在上线的版本 或 2小时内有无其他版本上线

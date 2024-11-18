@@ -261,16 +261,18 @@
   );
 
   watch(
-    () => props.approveData,
-    () => {
-      if (props.approveData?.status === APPROVE_STATUS.pending_publish) {
+    () => props.approveData.status,
+    (newV, oldV) => {
+      if (newV === APPROVE_STATUS.pending_publish) {
         isSecondConfirm.value = true;
         handlePendingPublish();
       } else {
         isSecondConfirm.value = false;
       }
+      if (newV !== oldV) {
+        handlePanelClose();
+      }
     },
-    { deep: true },
   );
 
   // 判断是否需要对比上线版本
@@ -465,7 +467,6 @@
     releaseType.value = 'all';
     isSelectGroupPanelOpen.value = false;
     groups.value = [];
-    treeNodeGroups.value = [];
   };
 
   // 检查是否有正在上线的版本 或 2小时内有无其他版本上线

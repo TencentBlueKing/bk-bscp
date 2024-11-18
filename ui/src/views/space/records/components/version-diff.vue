@@ -189,7 +189,7 @@
       const { message } = resp;
       BkMessage({
         theme: message ? 'primary' : 'success',
-        message: message ? t(message) : t('操作成功'),
+        message: message ? t(message) : t('版本已审批通过'),
       });
       emits('close', 'refresh');
     } catch (e) {

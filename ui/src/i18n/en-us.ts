@@ -530,7 +530,7 @@ export default {
   '提示-待审批': 'Approver({approveType})：{approver}',
   '提示-已上线文案': 'Publish Time: {time}',
   '提示-审批驳回': 'Approval has been rejected\nApprover: {reviser}\nPublish time: {time}\nRejection reason: {reason}',
-  '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}',
+  '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}\nreason: {reason}',
   '提示-失败': 'This script version is currently being used by the service, deletion failed',
   配置版本名称: 'Configuration version name',
   配置上线范围: 'Configuration publish scope',
@@ -575,6 +575,7 @@ export default {
   无确认上线权限文案: 'Please contact the service go-live submitter, {creator}, for confirmation of the go-live operation\nIf you are unable to reach the submitter and there are urgent configurations that need to be published\nyou may perform a revoke go-live and then resubmit the service go-live process',
   审批版本详情: 'Approval version information',
   待上线分组: 'Pending go live groups',
+  版本已审批通过: 'Version approved',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',

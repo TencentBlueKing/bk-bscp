@@ -9,7 +9,7 @@
           v-if="
             [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
               props.approveStatus as APPROVE_STATUS,
-            ) && creator === userInfo.username
+            )
           "
           @click="handleConfirm">
           {{ $t('撤销上线') }}
@@ -31,7 +31,6 @@
   import { ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import useUserStore from '../../../../../store/user';
   import useConfigStore from '../../../../../store/config';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { APPROVE_STATUS } from '../../../../../constants/record';
@@ -40,17 +39,14 @@
   import DialogConfirm from '../../../records/components/dialog-confirm.vue';
 
   const versionStore = useConfigStore();
-  const { userInfo } = storeToRefs(useUserStore());
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
   const props = withDefaults(
     defineProps<{
       approveStatus: string;
-      creator: string;
     }>(),
     {
       approveStatus: '',
-      creator: '',
     },
   );
 

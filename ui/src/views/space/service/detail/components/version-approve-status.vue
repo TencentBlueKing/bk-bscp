@@ -46,7 +46,11 @@
     <text-file
       v-if="approveStatus === 3"
       v-bk-tooltips="{
-        content: t('提示-已撤销', { reviser: approverList, time: convertTime(finalApprovalTime, 'local') }),
+        content: t('提示-已撤销', {
+          reviser: approverList,
+          time: convertTime(finalApprovalTime, 'local'),
+          reason: rejectionReason,
+        }),
         placement: 'bottom',
       }"
       class="text-file" />
@@ -66,11 +70,10 @@
   import { storeToRefs } from 'pinia';
   import useConfigStore from '../../../../../store/config';
 
-  const emits = defineEmits(['send-data']);
+  const emits = defineEmits(['send-data', 'refresh-version']);
 
   const props = defineProps<{
     showStatusId: number; // 操作 提交上线/调整分组上线/撤销上线时的id
-    refreshVer: Function; // 刷新左侧版本列表
   }>();
 
   const route = useRoute();
@@ -82,7 +85,7 @@
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1待上线(审批通过) 2驳回 3撤销
   const approveText = ref(''); // 审批文案
   const approveType = ref(''); // 审批方式
-  const rejectionReason = ref(''); // 拒绝理由
+  const rejectionReason = ref('--'); // 拒绝理由/撤销原因
   const publishTime = ref(''); // 定时上线时间
   const showStatusIdArr = ref<number[]>([]); // 提交上线/调整分组上线/撤销上线的id集合
   const itsmData = ref<{
@@ -105,7 +108,7 @@
     // 轮询中 且 状态发生变化才需要刷新版本列表状态
     if (newV !== oldV && interval) {
       publishedVersionId.value = versionData.value.id;
-      props.refreshVer();
+      emits('refresh-version');
     }
   });
 
@@ -138,7 +141,7 @@
         approverList.value = spec.approver_progress;
         approveText.value = publishStatusText(spec.publish_status);
         approveType.value = app?.approve_type || '';
-        rejectionReason.value = reject_reason;
+        rejectionReason.value = reject_reason || '--';
         publishTime.value = publish_time;
         finalApprovalTime.value = final_approval_time;
         // itsm信息

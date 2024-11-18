@@ -105,7 +105,7 @@
                       </template>
                       <div class="itsm-title">
                         {{ $t('审批人') }}
-                        ({{ row.app.approve_type === 'or_sigh' ? $t('或签') : $t('会签') }})：
+                        ({{ row.app.approve_type === 'or_sign' ? $t('或签') : $t('会签') }})：
                       </div>
                       <div class="itsm-content">
                         {{ row.strategy.approver_progress }}
@@ -475,7 +475,7 @@
     }
     const { status } = row.audit.spec;
     // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
-    const { final_approval_time: time, reviser } = row.strategy;
+    const { final_approval_time: time, reviser, reject_reason: reason } = row.strategy;
     switch (status) {
       // case APPROVE_STATUS.pending_approval:
       //   return t('提示-待审批', { approver_progress, approveType });
@@ -488,7 +488,7 @@
       //     reason,
       //   });
       case APPROVE_STATUS.revoked_publish:
-        return t('提示-已撤销', { reviser, time: convertTime(time, 'local') });
+        return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
       case APPROVE_STATUS.failure:
         return t('提示-失败');
       default:
