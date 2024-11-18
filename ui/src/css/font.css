@@ -146,3 +146,6 @@
 .icon-warning-circle:before {
   content: '\e128';
 }
+.icon-view-detail:before {
+  content: "\e12b";
+}
