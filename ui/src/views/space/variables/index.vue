@@ -78,7 +78,7 @@
         </template>
       </bk-table>
     </div>
-    <VariableCreate v-model:show="isCreateSliderShow" @created="refreshList" />
+    <VariableCreate v-model:show="isCreateSliderShow" @created="handleCreateVar" />
     <VariableEdit
       v-model:show="editSliderData.open"
       :id="editSliderData.id"
@@ -209,6 +209,11 @@
     } finally {
       loading.value = false;
     }
+  };
+
+  const handleCreateVar = (id: number) => {
+    topIds.value = [id];
+    refreshList();
   };
 
   // 导出变量
