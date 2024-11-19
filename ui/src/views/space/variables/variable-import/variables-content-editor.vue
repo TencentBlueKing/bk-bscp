@@ -22,6 +22,20 @@
               distance: 20,
             }"
             @click="codeEditorRef.openSearch()" />
+          <bk-upload
+            :accept="format === 'text' ? '.txt' : `.${format}`"
+            theme="button"
+            :size="5"
+            :custom-request="handleUploadFile">
+            <template #trigger>
+              <Upload
+                v-bk-tooltips="{
+                  content: t('上传'),
+                  placement: 'top',
+                  distance: 20,
+                }" />
+            </template>
+          </bk-upload>
           <i
             :class="['bk-bscp-icon', 'icon-terminal', { isOpen: modelValue }]"
             v-bk-tooltips="{
@@ -70,7 +84,7 @@
   import { ref, onBeforeUnmount, watch, computed, nextTick } from 'vue';
   import { useI18n } from 'vue-i18n';
   import BkMessage from 'bkui-vue/lib/message';
-  import { InfoLine, FilliscreenLine, UnfullScreen, Search } from 'bkui-vue/lib/icon';
+  import { InfoLine, FilliscreenLine, UnfullScreen, Search, Upload } from 'bkui-vue/lib/icon';
   import { importVariablesText, importVariablesJSON, importVariablesYaml } from '../../../../api/variable';
   import CodeEditor from '../../../../components/code-editor/index.vue';
   import SeparatorSelect from './separator-select.vue';
@@ -229,6 +243,21 @@
     handleValidateEditor();
   };
 
+  const handleUploadFile = async (option: { file: File }) => {
+    const reader = new FileReader();
+    reader.readAsText(option.file);
+    reader.onload = function (e) {
+      const fileContent = e.target?.result as string;
+      if (props.format === 'text') {
+        textContent.value = fileContent;
+      } else if (props.format === 'json') {
+        jsonContent.value = fileContent;
+      } else {
+        yamlContent.value = fileContent;
+      }
+    };
+  };
+
   const handlePaste = () => {
     if (handleValidateEditor()) separatorShow.value = true;
   };
@@ -269,14 +298,32 @@
       .btns {
         display: flex;
         justify-content: space-between;
-        width: 80px;
-        height: 16px;
         align-items: center;
-        & > span,
-        & > i {
+        gap: 8px;
+        span,
+        i {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 2px;
+          font-size: 16px;
+          color: #979ba5;
           cursor: pointer;
           &:hover {
             color: #3a84ff;
+          }
+          &.isOpen {
+            background: #181818;
+          }
+        }
+        :deep(.bk-upload) {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          .bk-upload-list {
+            display: none;
           }
         }
       }
