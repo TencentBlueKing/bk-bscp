@@ -189,6 +189,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      & > span {
+        word-wrap: break-word;
+        word-break: break-all;
+      }
       .view-icon {
         cursor: pointer;
         font-size: 14px;
