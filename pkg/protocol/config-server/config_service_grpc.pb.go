@@ -207,7 +207,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	//  创建服务
+	// 创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -467,6 +467,7 @@ type ConfigClient interface {
 	Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	// 生成新的服务版本并发布
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
+	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
 	GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error)
@@ -2127,7 +2128,7 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	//  创建服务
+	// 创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2387,6 +2388,7 @@ type ConfigServer interface {
 	Publish(context.Context, *PublishReq) (*PublishResp, error)
 	// 生成新的服务版本并发布
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
+	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
 	GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error)

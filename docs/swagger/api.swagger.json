@@ -6985,6 +6985,7 @@
     },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/submit": {
       "post": {
+        "summary": "上线服务版本",
         "operationId": "Config_SubmitPublishApprove",
         "responses": {
           "200": {
@@ -7003,6 +7004,7 @@
         "parameters": [
           {
             "name": "bizId",
+            "description": "业务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7010,6 +7012,7 @@
           },
           {
             "name": "appId",
+            "description": "服务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7017,6 +7020,7 @@
           },
           {
             "name": "releaseId",
+            "description": "服务版本ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -9882,13 +9886,16 @@
           "description": "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
         },
         "isApprove": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否需要审批：是=true，否=false"
         },
         "approveType": {
-          "type": "string"
+          "type": "string",
+          "description": "审批类型：会签=count_sign、或签=or_sign"
         },
         "approver": {
-          "type": "string"
+          "type": "string",
+          "description": "审批人列表"
         }
       },
       "description": "请求参数",
@@ -10032,7 +10039,8 @@
           "description": "绑定的服务"
         },
         "mode": {
-          "type": "string"
+          "type": "string",
+          "description": "分组枚举类型：custom,debug"
         },
         "selector": {
           "type": "object",
@@ -10053,7 +10061,8 @@
           "description": "标签选择器：op=(eq、ne、gt、ge...)等操作符"
         },
         "uid": {
-          "type": "string"
+          "type": "string",
+          "description": "debug UID "
         }
       },
       "description": "请求参数",
@@ -10454,7 +10463,8 @@
           "description": "全部实例上线：是=true，否=false"
         },
         "grayPublishMode": {
-          "type": "string"
+          "type": "string",
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
         },
         "groups": {
           "type": "array",
@@ -10468,10 +10478,12 @@
           "type": "array",
           "items": {
             "type": "object"
-          }
+          },
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
         },
         "groupName": {
-          "type": "string"
+          "type": "string",
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
         }
       }
     },
@@ -10974,7 +10986,8 @@
           "description": "全部实例上线：是=true，否=false"
         },
         "grayPublishMode": {
-          "type": "string"
+          "type": "string",
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
         },
         "default": {
           "type": "boolean"
@@ -10992,11 +11005,12 @@
           "type": "array",
           "items": {
             "type": "object"
-          }
+          },
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
         },
         "groupName": {
           "type": "string",
-          "description": "分组名"
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
         }
       }
     },
@@ -11027,13 +11041,16 @@
       "type": "object",
       "properties": {
         "memo": {
-          "type": "string"
+          "type": "string",
+          "description": "描述"
         },
         "all": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否全量发布：是=true，否=false"
         },
         "grayPublishMode": {
-          "type": "string"
+          "type": "string",
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
         },
         "default": {
           "type": "boolean"
@@ -11043,25 +11060,33 @@
           "items": {
             "type": "integer",
             "format": "int64"
-          }
+          },
+          "description": "分组ID"
         },
         "labels": {
           "type": "array",
           "items": {
             "type": "object"
-          }
+          },
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
         },
         "groupName": {
-          "type": "string"
+          "type": "string",
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
         },
         "publishType": {
-          "type": "string"
+          "type": "string",
+          "description": "发布策略：(manually、automatically、scheduled、immediately)"
         },
         "publishTime": {
-          "type": "string"
+          "type": "string",
+          "example": "2024-11-14 17:53:47",
+          "description": "如果publish_type为scheduled时才会有值"
         },
         "isCompare": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": "false",
+          "description": "是否比较差异：是=true，否=false"
         }
       }
     },
@@ -11088,13 +11113,16 @@
           "description": "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
         },
         "isApprove": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否需要审批：是=true，否=false"
         },
         "approveType": {
-          "type": "string"
+          "type": "string",
+          "description": "审批类型：会签=count_sign、或签=or_sign"
         },
         "approver": {
-          "type": "string"
+          "type": "string",
+          "description": "审批人列表"
         }
       },
       "description": "请求参数",
@@ -11301,7 +11329,8 @@
           "description": "绑定的服务"
         },
         "mode": {
-          "type": "string"
+          "type": "string",
+          "description": "分组枚举类型：custom,debug"
         },
         "selector": {
           "type": "object",
@@ -11322,7 +11351,8 @@
           "description": "标签选择器：op=(eq、ne、gt、ge...)等操作符"
         },
         "uid": {
-          "type": "string"
+          "type": "string",
+          "description": "debug UID "
         }
       }
     },
@@ -11649,10 +11679,12 @@
         },
         "releasedAppsNum": {
           "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "description": "已上线应用数量"
         },
         "edited": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "分组是否编辑过（old_selector和new_selector不一致"
         }
       }
     },
@@ -11677,13 +11709,16 @@
           "description": "服务版本名"
         },
         "oldSelector": {
-          "type": "object"
+          "type": "object",
+          "description": "当前线上分组选择器，如未上线则为空"
         },
         "newSelector": {
-          "type": "object"
+          "type": "object",
+          "description": "即将上线的分组选择器"
         },
         "edited": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "分组是否编辑过（old_selector和new_selector不一致"
         }
       }
     },
@@ -11708,7 +11743,8 @@
           "description": "服务版本名"
         },
         "edited": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否为已编辑状态"
         }
       }
     },
@@ -11740,19 +11776,24 @@
           "description": "服务版本分组名"
         },
         "mode": {
-          "type": "string"
+          "type": "string",
+          "description": "分组类型（枚举值：custom、debug、default）"
         },
         "oldSelector": {
-          "type": "object"
+          "type": "object",
+          "description": "当前线上分组选择器"
         },
         "newSelector": {
-          "type": "object"
+          "type": "object",
+          "description": "修改后的分组选择器"
         },
         "uid": {
-          "type": "string"
+          "type": "string",
+          "description": "调试分组的实例UID"
         },
         "edited": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否为已编辑状态"
         }
       }
     },
@@ -13871,7 +13912,8 @@
       "properties": {
         "id": {
           "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "description": "分组ID"
         }
       }
     },
@@ -15960,7 +16002,8 @@
       "type": "object",
       "properties": {
         "publishStatus": {
-          "type": "string"
+          "type": "string",
+          "description": "版本状态（枚举值：not_released、partial_released、full_released）"
         },
         "releasedGroups": {
           "type": "array",

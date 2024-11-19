@@ -968,7 +968,7 @@ option (google.api.http) = {
       body: "*"
     };
   }
-
+  // 上线服务版本
   rpc SubmitPublishApprove(SubmitPublishApproveReq) returns (PublishResp) {
     option (google.api.method_visibility).restriction = "BKAPIGW";
     option (google.api.http) = {
@@ -1394,9 +1394,13 @@ message CreateAppReq {
   string data_type = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
   }];
-  bool is_approve = 7;
-  string approve_type = 8;
-  string approver = 9;
+  bool is_approve = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否需要审批：是=true，否=false" }
+  ];
+  string approve_type = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "审批类型：会签=count_sign、或签=or_sign"
+  }];
+  string approver = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
 }
 
 message CreateAppResp {
@@ -1419,9 +1423,13 @@ message UpdateAppReq {
     description: "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
   }];
   ;
-  bool is_approve = 7;
-  string approve_type = 8;
-  string approver = 9;
+  bool is_approve = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否需要审批：是=true，否=false" }
+  ];
+  string approve_type = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "审批类型：会签=count_sign、或签=or_sign"
+  }];
+  string approver = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
 }
 
 message DeleteAppReq {
@@ -3301,16 +3309,17 @@ message CreateGroupReq {
   }];
   repeated uint32 bind_apps = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定的服务" }];
-  string mode = 5;
+  string mode = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组枚举类型：custom,debug" }];
   google.protobuf.Struct selector = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "标签选择器：op=(eq、ne、gt、ge...)等操作符",
     example: "{\"labels_and\":[{\"key\":\"env\",\"op\":\"eq\",\"value\":\"test\"},{\"key\":\"version\",\"op\":\"gt\",\"value\":1}]}"
   }];
-  string uid = 7;
+  string uid = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "debug UID " }];
 }
 
 message CreateGroupResp {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组ID" }];
 }
 
 message UpdateGroupReq {
@@ -3323,12 +3332,13 @@ message UpdateGroupReq {
   }];
   repeated uint32 bind_apps = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定的服务" }];
-  string mode = 6;
+  string mode = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组枚举类型：custom,debug" }];
   google.protobuf.Struct selector = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "标签选择器：op=(eq、ne、gt、ge...)等操作符",
     example: "{\"labels_and\":[{\"key\":\"env\",\"op\":\"eq\",\"value\":\"test\"},{\"key\":\"version\",\"op\":\"gt\",\"value\":1}]}"
   }];
-  string uid = 8;
+  string uid = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "debug UID " }];
 }
 
 message UpdateGroupResp {}
@@ -3362,8 +3372,11 @@ message ListAllGroupsResp {
       description: "标签选择器：op=(eq、ne、gt、ge...)等操作符",
       example: "{\"labels_and\":[{\"key\":\"env\",\"op\":\"eq\",\"value\":\"test\"},{\"key\":\"version\",\"op\":\"gt\",\"value\":1}]}"
     }];
-    uint32 released_apps_num = 6;
-    bool edited = 7;
+    uint32 released_apps_num = 6
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "已上线应用数量" }];
+    bool edited = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "分组是否编辑过（old_selector和new_selector不一致"
+    }];
   }
   repeated ListAllGroupsData details = 1;
 }
@@ -3380,9 +3393,14 @@ message ListAppGroupsResp {
     uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
     string release_name = 4
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本名" }];
-    google.protobuf.Struct old_selector = 5;
-    google.protobuf.Struct new_selector = 6;
-    bool edited = 7;
+    google.protobuf.Struct old_selector = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "当前线上分组选择器，如未上线则为空"
+    }];
+    google.protobuf.Struct new_selector = 6
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "即将上线的分组选择器" }];
+    bool edited = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "分组是否编辑过（old_selector和new_selector不一致"
+    }];
   }
   repeated ListAppGroupsData details = 1;
 }
@@ -3402,7 +3420,7 @@ message ListGroupReleasedAppsResp {
     uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
     string release_name = 4
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本名" }];
-    bool edited = 5;
+    bool edited = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否为已编辑状态" }];
   }
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated ListGroupReleasedAppsData details = 2;
@@ -3421,14 +3439,20 @@ message PublishReq {
   bool all = 5 [
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "全部实例上线：是=true，否=false" }
   ];
-  string gray_publish_mode = 6;
+  string gray_publish_mode = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
+  }];
   bool default = 7;
   repeated uint32 groups = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "分组上线：分组ID，如果有值那么all必须是false",
     default: "[]"
   }];
-  repeated google.protobuf.Struct labels = 9;
-  string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组名" }];
+  repeated google.protobuf.Struct labels = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
+  }];
+  string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+  }];
 }
 
 message GenerateReleaseAndPublishReq {
@@ -3440,13 +3464,19 @@ message GenerateReleaseAndPublishReq {
   bool all = 6 [
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "全部实例上线：是=true，否=false" }
   ];
-  string gray_publish_mode = 7;
+  string gray_publish_mode = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
+  }];
   repeated string groups = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "分组上线：分组ID，如果有值那么all必须是false",
     default: "[]"
   }];
-  repeated google.protobuf.Struct labels = 9;
-  string group_name = 10;
+  repeated google.protobuf.Struct labels = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
+  }];
+  string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+  }];
 }
 
 message GenerateReleaseAndPublishResp {
@@ -3462,19 +3492,35 @@ message PublishResp {
 }
 
 message SubmitPublishApproveReq {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
-  uint32 release_id = 3;
-  string memo = 4;
-  bool all = 5;
-  string gray_publish_mode = 6;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
+  bool all = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否全量发布：是=true，否=false" }
+  ];
+  string gray_publish_mode = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
+  }];
   bool default = 7;
-  repeated uint32 groups = 8;
-  repeated google.protobuf.Struct labels = 9;
-  string group_name = 10;
-  string publish_type = 11;
-  string publish_time = 12;
-  bool is_compare = 13;
+  repeated uint32 groups = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组ID" }];
+  repeated google.protobuf.Struct labels = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
+  }];
+  string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+  }];
+  string publish_type = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "发布策略：(manually、automatically、scheduled、immediately)"
+  }];
+  string publish_time = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "如果publish_type为scheduled时才会有值",
+    example: "\"2024-11-14 17:53:47\""
+  }];
+  bool is_compare = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否比较差异：是=true，否=false",
+    default: "false"
+  }];
 }
 
 message ApproveReq {
