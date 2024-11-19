@@ -21,11 +21,8 @@
             </div>
           </template>
           <div class="itsm-title">
-            {{ approveStatus === 3 ? t('撤销人') : t('审批人') }}
-            <template v-if="approveStatus !== 3">
-              （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}）
-            </template>
-            ：
+            {{ t('审批人') }}
+            （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}） ：
           </div>
           <div class="itsm-content">{{ approverList }}</div>
           <template v-if="approveStatus === 0 && publishTime">
@@ -47,7 +44,7 @@
       v-if="approveStatus === 3"
       v-bk-tooltips="{
         content: t('提示-已撤销', {
-          reviser: approverList,
+          reviser,
           time: convertTime(finalApprovalTime, 'local'),
           reason: rejectionReason,
         }),
@@ -81,6 +78,7 @@
   const versionStore = useConfigStore();
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
+  const reviser = ref(''); // 撤销人
   const approverList = ref(''); // 审批人
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1待上线(审批通过) 2驳回 3撤销
   const approveText = ref(''); // 审批文案
@@ -136,6 +134,7 @@
           app,
           spec,
           spec: { itsm_ticket_sn, itsm_ticket_url, publish_time, reject_reason, final_approval_time },
+          revision,
         } = resp.data;
         // 审批人
         approverList.value = spec.approver_progress;
@@ -144,6 +143,7 @@
         rejectionReason.value = reject_reason || '--';
         publishTime.value = publish_time;
         finalApprovalTime.value = final_approval_time;
+        reviser.value = revision.reviser;
         // itsm信息
         itsmData.value = { itsm_ticket_sn, itsm_ticket_url };
         sendData(resp.data);

@@ -94,6 +94,7 @@
       console.log(e);
     } finally {
       btnLoading.value = false;
+      reason.value = '';
     }
   };
 </script>
