@@ -1,8 +1,8 @@
 <template>
   <section class="version-container">
     <div class="service-selector-wrapper">
-      <ServiceSelector :value="props.appId" @change="editingService = $event"/>
-      <div class="details-btn" @click="isEditServicePopShow = true">
+      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="editingService = $event" />
+      <div class="details-btn" v-bk-tooltips="{ content: t('查看服务详情') }" @click="isEditServicePopShow = true">
         <span class="bk-bscp-icon icon-view-detail"></span>
       </div>
     </div>
@@ -79,7 +79,10 @@
         {{ t('版本废弃') }}
       </div>
     </div>
-    <EditService v-model:show="isEditServicePopShow" :service="editingService"></EditService>
+    <EditService
+      v-model:show="isEditServicePopShow"
+      :service="editingService"
+      @reload="handleReloadService"></EditService>
   </section>
 </template>
 <script setup lang="ts">
@@ -126,6 +129,7 @@
   const popHideTimerId = ref(0);
   const isMouseenter = ref(false);
   const isEditServicePopShow = ref(false);
+  const serviceSelectorRef = ref();
   const editingService = ref<IAppItem>({
     id: 0,
     biz_id: 0,
@@ -342,6 +346,10 @@
       handlePopHide();
       isMouseenter.value = false;
     }
+  };
+
+  const handleReloadService = () => {
+    serviceSelectorRef.value.reloadService();
   };
 </script>
 

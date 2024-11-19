@@ -142,6 +142,14 @@
       emits('change', service);
     }
   };
+
+  defineExpose({
+    reloadService: async () => {
+      await loadServiceList();
+      const service = serviceList.value.find((service) => service.id === localVal.value);
+      emits('change', service);
+    },
+  });
 </script>
 <style lang="scss" scoped>
   .service-selector {

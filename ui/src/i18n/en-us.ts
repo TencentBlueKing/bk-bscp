@@ -634,6 +634,7 @@ export default {
   字段说明: 'Field description',
   格式说明: 'Format description',
   '示例：': 'Example:',
+  查看服务详情: 'View service details',
 
   // 分组管理
   新增分组: 'New group',
