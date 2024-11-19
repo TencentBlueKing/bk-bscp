@@ -34,7 +34,7 @@
       </li>
     </ul>
     <div>
-      <div class="textarea-title">{{ t('说明') }}</div>
+      <div class="textarea-title">{{ t('撤销说明') }}</div>
       <bk-input
         v-model="reason"
         class="textarea-content"
