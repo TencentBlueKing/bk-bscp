@@ -96,7 +96,7 @@
     const { content_spec, revision, spec } = props.config;
     const { create_at, creator, update_at, reviser } = revision;
     const { byte_size, signature, md5 } = content_spec;
-    const { key, kv_type, memo } = spec;
+    const { key, kv_type, memo, certificate_expiration_date } = spec;
     return sortObjectKeysByAscii({
       key,
       kv_type,
@@ -108,6 +108,7 @@
       update_at: datetimeFormat(update_at),
       md5,
       memo,
+      ...(certificate_expiration_date && { expiration_date: datetimeFormat(certificate_expiration_date) }),
     });
   });
 

@@ -30,14 +30,19 @@
       </bk-table-column>
       <bk-table-column :label="t('配置项名称')" prop="spec.key" :min-width="240">
         <template #default="{ row }">
-          <bk-overflow-title
-            v-if="row.spec"
-            :disabled="row.kv_state === 'DELETE'"
-            type="tips"
-            class="key-name"
-            @click="handleView(row)">
-            {{ row.spec.key }}
-          </bk-overflow-title>
+          <div v-if="row.spec" class="config-name">
+            <bk-overflow-title
+              :disabled="row.kv_state === 'DELETE'"
+              type="tips"
+              class="key-name"
+              @click="handleView(row)">
+              {{ row.spec.key }}
+            </bk-overflow-title>
+            <exclamation-circle-shape
+              v-if="row.spec.secret_type === 'certificate'"
+              :class="['warn-icon', { error: row.spec?.certificate_info?.isExpiration }]"
+              v-bk-tooltips="{ content: row.spec?.certificate_info?.tooltips }" />
+          </div>
         </template>
       </bk-table-column>
       <bk-table-column :label="t('配置项值预览')" prop="spec.value">
@@ -187,6 +192,7 @@
   import { datetimeFormat } from '../../../../../../../../utils/index';
   import { getDefaultKvItem } from '../../../../../../../../utils/config';
   import { CONFIG_KV_TYPE } from '../../../../../../../../constants/config';
+  import { ExclamationCircleShape } from 'bkui-vue/lib/icon';
   import StatusTag from './status-tag';
   import EditConfig from '../edit-config-kv.vue';
   import ViewConfigKv from '../view-config-kv.vue';
@@ -197,6 +203,7 @@
   import useTableAcrossCheck from '../../../../../../../../utils/hooks/use-table-acrosscheck';
   import acrossCheckBox from '../../../../../../../../components/across-checkbox.vue';
   import CheckType from '../../../../../../../../../types/across-checked';
+  import dayjs from 'dayjs';
 
   const configStore = useConfigStore();
   const serviceStore = useServiceStore();
@@ -392,6 +399,11 @@
         }
         return 0;
       });
+      configList.value.forEach((item) => {
+        if (item.spec.secret_type === 'certificate') {
+          item.spec.certificate_info = getCertificateInfo(item.spec.certificate_expiration_date!);
+        }
+      });
       configsCount.value = res.count;
       allExistConfigCount.value = res.exclusion_count;
       allDeleteConfigCount.value = res.count - res.exclusion_count;
@@ -407,6 +419,22 @@
     } finally {
       loading.value = false;
     }
+  };
+
+  const getCertificateInfo = (date: string) => {
+    const expirationTime = datetimeFormat(date);
+    const givenTime = dayjs(expirationTime, 'YYYY-MM-DD HH:mm:ss');
+    const remainingDays = givenTime.diff(dayjs(), 'second');
+    if (remainingDays > 0) {
+      return {
+        tooltips: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: expirationTime, m: remainingDays }),
+        isExpiration: false,
+      };
+    }
+    return {
+      tooltips: t('此证书已于 {n} 过期，请尽快更换证书', { n: expirationTime }),
+      isExpiration: true,
+    };
   };
 
   // 选中状态
@@ -602,8 +630,21 @@
     }
   }
   .config-table {
-    .key-name {
-      color: #3a84ff;
+    .config-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      .key-name {
+        color: #3a84ff;
+        max-width: calc(100% - 20px);
+      }
+      .warn-icon {
+        font-size: 14px;
+        color: #ff9c01;
+        &.error {
+          color: #ea3636;
+        }
+      }
     }
     :deep(.bk-table-body) {
       max-height: calc(100vh - 280px);

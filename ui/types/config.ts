@@ -231,7 +231,12 @@ export interface IConfigKvItem {
   memo: string;
   secret_hidden: boolean;
   secret_type: string;
+  certificate_expiration_date: string;
   is_exist?: boolean;
+  certificate_info?: {
+    tooltips: string;
+    isExpiration: boolean;
+  };
 }
 
 // 单个kv配置详情

@@ -600,6 +600,7 @@ export default {
   '请输入访问令牌，目前只支持 OAuth2.0 与 JWT 类型的访问令牌': 'Please enter the access token, currently only OAuth2.0 and JWT type access tokens are supported',
   '此证书将于 {n} 到期，距离到期仅剩 {m} 天': 'This certificate will expire on {n}, and there are only {m} days left until expiration',
   '此证书已于 {n} 过期，请更换其它证书': 'This certificate has expired on {n}, please replace it with another certificate',
+  '此证书已于 {n} 过期，请尽快更换证书': 'This certificate has expired on {n}, please replace it as soon as possible',
   '证书格式不正确（只支持 X.509 类型证书）': 'The certificate format is incorrect (only X.509 type certificates are supported)',
   '证书未经受信任的证书颁发机构签发，在生产环境中建议使用经权威证书颁发机构签发的证书': 'The certificate is not issued by a trusted certificate authority, and it is recommended to use a certificate issued by an authoritative certificate authority in a production environment',
   '目前只支持 X.509 类型证书': 'Currently only X.509 type certificates are supported',
