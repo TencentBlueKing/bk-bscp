@@ -2,7 +2,7 @@
   <section class="version-container">
     <div class="service-selector-wrapper">
       <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="editingService = $event" />
-      <div class="details-btn" v-bk-tooltips="{ content: t('查看服务详情') }" @click="isEditServicePopShow = true">
+      <div class="details-btn" v-bk-tooltips="{ content: t('查看服务属性') }" @click="isEditServicePopShow = true">
         <span class="bk-bscp-icon icon-view-detail"></span>
       </div>
     </div>
