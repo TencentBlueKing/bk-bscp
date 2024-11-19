@@ -57,7 +57,13 @@
         <bk-table-column :label="t('类型')" prop="spec.type" width="180"></bk-table-column>
         <bk-table-column :label="t('默认值')" prop="spec.default_val">
           <template #default="{ row }">
-            <span v-if="row.spec">{{ row.spec.default_val || '--' }}</span>
+            <VarValuePreview
+              v-if="row.spec"
+              :is-visible="true"
+              type="text"
+              :value="row.spec.default_val || '--'"
+              :is-kv-value="false"
+              @view-all="handleEditVar(row)" />
           </template>
         </bk-table-column>
         <bk-table-column :label="t('描述')">
@@ -119,6 +125,7 @@
   import acrossCheckBox from '../../../components/across-checkbox.vue';
   import CheckType from '../../../../types/across-checked';
   import ExportVariables from '../service/detail/config/config-list/config-table-list/variables/export-variables.vue';
+  import VarValuePreview from '../service/detail/config/config-list/config-table-list/tables/kv-value-preview.vue';
 
   const { spaceId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();

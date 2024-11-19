@@ -691,6 +691,7 @@ export default {
   '变量名 变量类型 变量值 变量描述（可选）': '变量名 变量类型 变量值 变量描述（可选）',
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx端口',
   导出变量: '导出变量',
+  变量值已复制: '变量值已复制',
 
 
   // 配置模板

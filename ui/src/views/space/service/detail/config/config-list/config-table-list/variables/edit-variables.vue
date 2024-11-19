@@ -93,11 +93,12 @@
     loading.value = false;
   };
 
-  const handleOpenSlider = () => {
+  const handleOpenSlider = async () => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     isSliderShow.value = true;
+    await getVariableList();
   };
 
   const handleVariablesChange = (variables: IVariableEditParams[]) => {
@@ -155,6 +156,7 @@
   };
 
   const close = () => {
+    variableList.value = initialVariables.value.slice();
     isSliderShow.value = false;
     isFormChange.value = false;
   };
@@ -174,7 +176,7 @@
     margin-bottom: 16px;
     padding: 0 24px;
   }
-  .variables-table-wrapper {
+  :deep(.variables-table-wrapper) {
     padding: 0 24px;
     max-height: calc(100% - 68px);
     overflow: auto;

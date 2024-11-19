@@ -90,7 +90,7 @@
     margin-bottom: 16px;
     padding: 0 24px;
   }
-  .variables-table-content {
+  :deep(.variables-table-wrapper) {
     padding: 0 24px;
     max-height: calc(100% - 68px);
     overflow: auto;

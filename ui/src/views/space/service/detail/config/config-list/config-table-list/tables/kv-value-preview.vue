@@ -16,7 +16,7 @@
           <bk-button v-else text theme="primary" @click="isExpanded = true">{{ $t('展开') }}</bk-button>
         </template>
         <bk-button v-if="showViewAllBtn" text theme="primary" @click="emits('viewAll')">
-          {{ $t('查看完整配置') }}
+          {{ isKvValue ? $t('查看完整配置') : $t('编辑变量') }}
         </bk-button>
       </div>
     </div>
@@ -44,6 +44,7 @@
     value: string;
     type: string;
     isVisible: boolean;
+    isKvValue: boolean;
   }>();
 
   const isExpanded = ref(false); // 是否已展开
@@ -73,7 +74,7 @@
     copyToClipBoard(props.value);
     Message({
       theme: 'success',
-      message: t('配置项值已复制'),
+      message: props.isKvValue ? t('配置项值已复制') : t('变量值已复制'),
     });
   };
 </script>
