@@ -171,7 +171,7 @@ func (dao *kvDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, kv *table.Kv) erro
 	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareUpdate(kv, oldOne)
 
 	_, err = q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).Select(m.Version, m.UpdatedAt,
-		m.Reviser, m.KvState, m.Signature, m.Md5, m.ByteSize).Updates(kv)
+		m.Reviser, m.KvState, m.Signature, m.Md5, m.ByteSize, m.CertificateExpirationDate).Updates(kv)
 	if err != nil {
 		return err
 	}
@@ -234,8 +234,10 @@ func (dao *kvDao) Update(kit *kit.Kit, kv *table.Kv) error {
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
 		q = tx.Kv.WithContext(kit.Ctx)
-		if _, e := q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).Select(m.Version, m.UpdatedAt,
-			m.Reviser, m.KvState, m.Signature, m.Md5, m.ByteSize, m.Memo, m.SecretHidden).Updates(kv); e != nil {
+		if _, e := q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).
+			Select(m.Version, m.UpdatedAt, m.Reviser, m.KvState, m.Signature, m.Md5, m.ByteSize,
+				m.Memo, m.SecretHidden, m.CertificateExpirationDate).
+			Updates(kv); e != nil {
 			return e
 		}
 
@@ -263,7 +265,8 @@ func (dao *kvDao) List(kit *kit.Kit, opt *types.ListKvOption) ([]*table.Kv, int6
 	}
 
 	orderStr := "CASE WHEN kv_state = 'ADD' THEN 1 WHEN kv_state = 'REVISE' THEN 2 " +
-		"WHEN kv_state = 'DELETE' THEN 3 WHEN kv_state = 'UNCHANGE' THEN 4 END,`key` asc"
+		"WHEN kv_state = 'DELETE' THEN 3 WHEN kv_state = 'UNCHANGE' THEN 4 END," +
+		"certificate_expiration_date IS NULL, certificate_expiration_date asc, `key` asc"
 
 	if opt.Page.Order == types.Descending {
 		q = q.Order(orderCol.Desc())

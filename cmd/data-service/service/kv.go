@@ -161,6 +161,7 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 		ByteSize:  uint64(len(req.Spec.Value)),
 	}
 	kv.Spec.SecretHidden = req.Spec.SecretHidden
+	kv.Spec.CertificateExpirationDate = req.Spec.KvSpec().CertificateExpirationDate
 	if e := s.dao.Kv().Update(kt, kv); e != nil {
 		logs.Errorf("update kv failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "update kv failed, err: %v", err))
@@ -276,6 +277,7 @@ func (s *Service) DeleteKv(ctx context.Context, req *pbds.DeleteKvReq) (*pbbase.
 // 1.键存在则更新, 类型不一致直接提示错误
 // 2.键不存在则新增
 // replace_all为true时，清空表中的数据，但保证前面两条逻辑
+// nolint:funlen
 func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsReq) (*pbds.BatchUpsertKvsResp, error) {
 
 	// FromGrpcContext used only to obtain Kit through grpc context.
@@ -504,12 +506,13 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 
 		now := time.Now().UTC()
 		kvSpec := &table.KvSpec{
-			Key:          kv.KvSpec.Key,
-			KvType:       table.DataType(kv.KvSpec.KvType),
-			Version:      uint32(version),
-			Memo:         kv.KvSpec.Memo,
-			SecretType:   table.SecretType(kv.KvSpec.SecretType),
-			SecretHidden: kv.KvSpec.SecretHidden,
+			Key:                       kv.KvSpec.Key,
+			KvType:                    table.DataType(kv.KvSpec.KvType),
+			Version:                   uint32(version),
+			Memo:                      kv.KvSpec.Memo,
+			SecretType:                table.SecretType(kv.KvSpec.SecretType),
+			SecretHidden:              kv.KvSpec.SecretHidden,
+			CertificateExpirationDate: kv.GetKvSpec().KvSpec().CertificateExpirationDate,
 		}
 		kvAttachment := &table.KvAttachment{
 			BizID: req.BizId,

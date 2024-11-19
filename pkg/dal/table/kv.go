@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -39,12 +40,13 @@ type Kv struct {
 
 // KvSpec is kv specific which is defined by user.
 type KvSpec struct {
-	Key          string     `json:"key" gorm:"column:key"`
-	Memo         string     `json:"memo" gorm:"column:memo"`
-	KvType       DataType   `json:"kv_type" gorm:"column:kv_type"`
-	Version      uint32     `json:"version" gorm:"column:version"`
-	SecretType   SecretType `json:"secret_type" gorm:"column:secret_type"`
-	SecretHidden bool       `json:"secret_hidden" gorm:"column:secret_hidden"`
+	Key                       string     `json:"key" gorm:"column:key"`
+	Memo                      string     `json:"memo" gorm:"column:memo"`
+	KvType                    DataType   `json:"kv_type" gorm:"column:kv_type"`
+	Version                   uint32     `json:"version" gorm:"column:version"`
+	SecretType                SecretType `json:"secret_type" gorm:"column:secret_type"`
+	SecretHidden              bool       `json:"secret_hidden" gorm:"column:secret_hidden"`
+	CertificateExpirationDate *time.Time `json:"certificate_expiration_date" gorm:"column:certificate_expiration_date"`
 }
 
 // KvAttachment is a kv attachment

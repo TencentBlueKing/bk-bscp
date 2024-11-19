@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
@@ -51,8 +52,8 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
-
-	if err := verifySecretVaule(grpcKit, req.SecretType, req.Value); err != nil {
+	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Value)
+	if err != nil {
 		return nil, err
 	}
 
@@ -62,12 +63,13 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 			AppId: req.AppId,
 		},
 		Spec: &pbkv.KvSpec{
-			Key:          req.Key,
-			Memo:         req.Memo,
-			KvType:       req.KvType,
-			Value:        req.Value,
-			SecretType:   req.SecretType,
-			SecretHidden: req.SecretHidden,
+			Key:                       req.Key,
+			Memo:                      req.Memo,
+			KvType:                    req.KvType,
+			Value:                     req.Value,
+			SecretType:                req.SecretType,
+			SecretHidden:              req.SecretHidden,
+			CertificateExpirationDate: expirationTime,
 		},
 	}
 	rp, err := s.client.DS.CreateKv(grpcKit.RpcCtx(), r)
@@ -94,7 +96,8 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 		return nil, err
 	}
 
-	if err := verifySecretVaule(grpcKit, req.SecretType, req.Value); err != nil {
+	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Value)
+	if err != nil {
 		return nil, err
 	}
 
@@ -104,10 +107,11 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 			AppId: req.AppId,
 		},
 		Spec: &pbkv.KvSpec{
-			Key:          req.Key,
-			Value:        req.Value,
-			Memo:         req.Memo,
-			SecretHidden: req.SecretHidden,
+			Key:                       req.Key,
+			Value:                     req.Value,
+			Memo:                      req.Memo,
+			SecretHidden:              req.SecretHidden,
+			CertificateExpirationDate: expirationTime,
 		},
 	}
 	if _, err := s.client.DS.UpdateKv(grpcKit.RpcCtx(), r); err != nil {
@@ -306,12 +310,13 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 				AppId: req.AppId,
 			},
 			KvSpec: &pbkv.KvSpec{
-				Key:          kv.Key,
-				KvType:       kv.KvType,
-				Value:        kv.Value,
-				Memo:         kv.Memo,
-				SecretType:   kv.SecretType,
-				SecretHidden: kv.SecretHidden,
+				Key:                       kv.Key,
+				KvType:                    kv.KvType,
+				Value:                     kv.Value,
+				Memo:                      kv.Memo,
+				SecretType:                kv.SecretType,
+				SecretHidden:              kv.SecretHidden,
+				CertificateExpirationDate: kv.CertificateExpirationDate,
 			},
 		})
 	}
@@ -552,7 +557,7 @@ func handleKv(kit *kit.Kit, result map[string]interface{}) ([]*pbcs.BatchUpsertK
 				return nil, err
 			}
 
-			secretType, secretHidden, err := checkSecret(kit, kvType, key, entry)
+			secretType, expirationTime, secretHidden, err := checkSecret(kit, kvType, key, entry)
 			if err != nil {
 				return nil, err
 			}
@@ -560,12 +565,13 @@ func handleKv(kit *kit.Kit, result map[string]interface{}) ([]*pbcs.BatchUpsertK
 			kvMemo, _ := entry["memo"].(string)
 
 			kvMap = append(kvMap, &pbcs.BatchUpsertKvsReq_Kv{
-				Key:          key,
-				Value:        kvValue,
-				KvType:       kvType,
-				Memo:         kvMemo,
-				SecretType:   secretType,
-				SecretHidden: secretHidden,
+				Key:                       key,
+				Value:                     kvValue,
+				KvType:                    kvType,
+				Memo:                      kvMemo,
+				SecretType:                secretType,
+				SecretHidden:              secretHidden,
+				CertificateExpirationDate: expirationTime,
 			})
 		}
 	}
@@ -630,41 +636,42 @@ func checkKv(kit *kit.Kit, kvType, key string, entry map[string]interface{}) (st
 	return val, nil
 }
 
-func checkSecret(kit *kit.Kit, kvType, key string, entry map[string]interface{}) (string, bool, error) {
+func checkSecret(kit *kit.Kit, kvType, key string, entry map[string]interface{}) (string, string, bool, error) {
 
 	var secretHidden bool
 
 	// 不是密钥类型
 	if kvType != string(table.KvSecret) {
-		return "", secretHidden, nil
+		return "", "", secretHidden, nil
 	}
 
 	// 判断是否隐藏
 	secretHidden, okSecretHidden := entry["secret_hidden"].(bool)
 	if !okSecretHidden {
-		return "", secretHidden, errors.New(i18n.T(kit, "config item %s secret hidden error", key))
+		return "", "", secretHidden, errors.New(i18n.T(kit, "config item %s secret hidden error", key))
 	}
 
 	secretType, ok := entry["secret_type"].(string)
 	if !ok || secretType == "" {
-		return secretType, secretHidden, errors.New(i18n.T(kit, "the key type for config item %s cannot be empty", key))
+		return secretType, "", secretHidden, errors.New(i18n.T(kit, "the key type for config item %s cannot be empty", key))
 	}
 
 	// 验证密钥类型
 	if err := validateSecretType(secretType); err != nil {
-		return secretType, secretHidden, errors.New(i18n.T(kit, "config item %s secret type error, err: %v", key, err))
+		return secretType, "", secretHidden, errors.New(i18n.T(kit, "config item %s secret type error, err: %v", key, err))
 	}
 
 	// 验证密钥值
 	kvValue, okVal := entry["value"].(string)
 	if !okVal {
-		return secretType, secretHidden, errors.New(i18n.T(kit, "config item %s value error", key))
+		return secretType, "", secretHidden, errors.New(i18n.T(kit, "config item %s value error", key))
 	}
-	if err := verifySecretVaule(kit, secretType, kvValue); err != nil {
-		return secretType, secretHidden, fmt.Errorf("config item %s %v", key, err)
+	expirationTime, err := verifySecretVaule(kit, secretType, kvValue)
+	if err != nil {
+		return secretType, "", secretHidden, fmt.Errorf("config item %s %v", key, err)
 	}
 
-	return secretType, secretHidden, nil
+	return secretType, expirationTime, secretHidden, nil
 }
 
 // 验证kv类型
@@ -759,32 +766,34 @@ func isNumber(value interface{}) bool {
 }
 
 // 验证密钥的值
-func verifySecretVaule(kit *kit.Kit, secretType, value string) error {
+func verifySecretVaule(kit *kit.Kit, secretType, value string) (string, error) {
 	if value == "敏感信息无法导出" {
-		return errors.New(i18n.T(kit, `please set a password`))
+		return "", errors.New(i18n.T(kit, `please set a password`))
 	}
 
-	if secretType == string(table.SecretTypeCertificate) && !validateCertificate(value) {
-		return errors.New(i18n.T(kit, `the certificate format is incorrect, only X.509 format is supported`))
+	expirationTime, ok := validateCertificate(value)
+	if secretType == string(table.SecretTypeCertificate) && !ok {
+		return "", errors.New(i18n.T(kit, `the certificate format is incorrect, only X.509 format is supported`))
 	}
 
-	return nil
+	return expirationTime, nil
 }
 
 // 验证证书
-func validateCertificate(certPEM string) bool {
+func validateCertificate(certPEM string) (string, bool) {
 	// 解析PEM编码的证书
 	block, _ := pem.Decode([]byte(certPEM))
 	if block == nil || block.Type != "CERTIFICATE" {
-		return false
+		return "", false
 	}
 
 	// 尝试解析X.509证书
-	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
-		return false
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", false
 	}
 
-	return true
+	return cert.NotAfter.Format(time.RFC3339), true
 }
 
 // BatchUnDeleteKv 批量恢复删除的kv

@@ -14,6 +14,8 @@
 package pbkv
 
 import (
+	"time"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
@@ -44,6 +46,13 @@ func (k *KvSpec) KvSpec() *table.KvSpec {
 		SecretType:   table.SecretType(k.SecretType),
 		SecretHidden: k.SecretHidden,
 		Memo:         k.Memo,
+		CertificateExpirationDate: func() *time.Time {
+			parsedTime, _ := time.Parse(time.RFC3339, k.GetCertificateExpirationDate())
+			if !parsedTime.IsZero() {
+				return &parsedTime
+			}
+			return nil
+		}(),
 	}
 }
 
@@ -76,8 +85,7 @@ func PbKv(k *table.Kv, value string) *Kv {
 }
 
 // PbKvSpec convert table KvSpec to pb KvSpec
-//
-//nolint:revive
+// nolint:revive
 func PbKvSpec(spec *table.KvSpec, value string) *KvSpec {
 	if spec == nil {
 		return nil
@@ -90,6 +98,12 @@ func PbKvSpec(spec *table.KvSpec, value string) *KvSpec {
 		Memo:         spec.Memo,
 		SecretType:   string(spec.SecretType),
 		SecretHidden: spec.SecretHidden,
+		CertificateExpirationDate: func() string {
+			if spec.CertificateExpirationDate != nil {
+				return spec.CertificateExpirationDate.Format(time.RFC3339)
+			}
+			return ""
+		}(),
 	}
 }
 
