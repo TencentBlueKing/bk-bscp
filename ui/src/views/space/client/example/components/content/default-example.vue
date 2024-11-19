@@ -108,7 +108,7 @@
         if (!activeTab.value) {
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
-            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1724 : 1006,
+            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1614 : 1006,
           };
         }
         return {
