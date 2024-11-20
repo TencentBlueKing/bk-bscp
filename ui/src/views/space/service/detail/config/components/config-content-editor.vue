@@ -9,6 +9,15 @@
           </template>
         </div>
         <div class="btns">
+          <bk-select
+            class="charset-select"
+            v-model="currentCharset"
+            auto-focus
+            :filterable="false"
+            :clearable="false"
+            @change="emits('update:charset', currentCharset)">
+            <bk-option v-for="item in charsetList" :id="item" :key="item" :name="item" />
+          </bk-select>
           <ReadFileContent
             v-if="editable"
             v-bk-tooltips="{
@@ -61,6 +70,7 @@
     defineProps<{
       content: string;
       editable: boolean;
+      charset: string;
       variables?: IVariableEditParams[];
       sizeLimit?: number;
       language?: string;
@@ -74,13 +84,16 @@
       language: '',
       showTips: true,
       height: 640,
+      charset: 'UTF-8',
     },
   );
 
-  const emits = defineEmits(['change']);
+  const emits = defineEmits(['change', 'update:charset']);
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
+  const charsetList = ['UTF-8', 'GBK'];
+  const currentCharset = ref(props.charset);
 
   const editorStyle = computed(() => {
     return {
@@ -158,6 +171,19 @@
     }
     .editor-content {
       height: calc(100% - 40px);
+    }
+  }
+  .charset-select {
+    :deep(.bk-input) {
+      width: 80px;
+      height: 26px;
+      background: #2e2e2e;
+      border: 1px solid #4d4f56;
+      border-radius: 2px;
+      .bk-input--text {
+        background: #2e2e2e;
+        color: #979ba5;
+      }
     }
   }
 </style>

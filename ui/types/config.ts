@@ -78,6 +78,7 @@ export interface IConfigEditParams {
   name: string;
   memo: string;
   file_type: string;
+  charset: string;
   path?: string;
   file_mode?: string;
   user?: string;

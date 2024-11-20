@@ -144,6 +144,7 @@
         </div>
       </template>
       <ConfigContentEditor
+        v-model:charset="localVal.charset"
         :content="stringContent"
         :editable="true"
         :variables="props.variables"

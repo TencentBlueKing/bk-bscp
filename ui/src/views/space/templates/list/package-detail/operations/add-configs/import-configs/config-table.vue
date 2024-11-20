@@ -413,6 +413,7 @@
     if (!props.isExsitTable) return;
     const newConfig = data.value.find((config) => config.id === id);
     const oldConfig = initData.value.find((config) => config.id === id);
+    console.log(newConfig, oldConfig);
     return newConfig![key as keyof IConfigImportItem] !== oldConfig![key as keyof IConfigImportItem];
   };
 </script>

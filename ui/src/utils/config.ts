@@ -75,6 +75,7 @@ export function getConfigEditParams() {
     user: 'root',
     user_group: 'root',
     privilege: '644',
+    charset: 'UTF-8',
     revision_name: `v${dayjs().format('YYYYMMDDHHmmss')}`,
   };
 }
