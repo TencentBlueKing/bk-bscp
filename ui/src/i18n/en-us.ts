@@ -630,6 +630,8 @@ export default {
   字段说明: 'Field description',
   格式说明: 'Format description',
   '示例：': 'Example:',
+  编码: 'Encoding',
+  批量设置编码: 'Batch set encoding',
 
   // 分组管理
   新增分组: 'New group',

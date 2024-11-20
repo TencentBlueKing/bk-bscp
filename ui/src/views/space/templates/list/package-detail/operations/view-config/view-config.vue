@@ -100,6 +100,7 @@
     user: string;
     user_group: string;
     privilege: string;
+    charset?: string;
   }
 
   const { t } = useI18n();
@@ -128,6 +129,7 @@
     user: '',
     user_group: '',
     privilege: '',
+    charset: '',
   });
   const content = ref<string | IFileConfigContentSummary>('');
   const variables = ref<IVariableEditParams[]>([]);

@@ -10,6 +10,7 @@
         </div>
         <div class="btns">
           <bk-select
+            v-if="charset"
             class="charset-select"
             v-model="currentCharset"
             auto-focus
@@ -70,7 +71,7 @@
     defineProps<{
       content: string;
       editable: boolean;
-      charset: string;
+      charset?: string;
       variables?: IVariableEditParams[];
       sizeLimit?: number;
       language?: string;
@@ -84,7 +85,6 @@
       language: '',
       showTips: true,
       height: 640,
-      charset: 'UTF-8',
     },
   );
 

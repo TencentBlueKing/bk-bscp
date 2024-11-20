@@ -117,6 +117,7 @@
     user: string;
     user_group: string;
     privilege: string;
+    charset?: string;
   }
 
   const { versionData } = storeToRefs(useConfigStore());
@@ -151,6 +152,7 @@
     user: '',
     user_group: '',
     privilege: '',
+    charset: '',
   });
   const content = ref<string | IFileConfigContentSummary>('');
   const variables = ref<IVariableEditParams[]>([]);
@@ -203,7 +205,7 @@
         const { content, memo } = res.config_item.commit_spec;
         const { byte_size, origin_byte_size, signature, origin_signature, md5 } = content;
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
-        const { name, path, file_type, file_mode, permission } = res.config_item.spec;
+        const { name, path, file_type, file_mode, permission, charset } = res.config_item.spec;
         const { user, user_group, privilege } = permission;
         configDetail.value = sortObjectKeysByAscii({
           name,
@@ -223,11 +225,12 @@
           user,
           user_group,
           privilege,
+          charset,
         });
       } else {
         const res = await getConfigItemDetail(props.bkBizId, props.id, props.appId);
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
-        const { name, memo, path, file_type, file_mode, permission } = res.config_item.spec;
+        const { name, memo, path, file_type, file_mode, permission, charset } = res.config_item.spec;
         const { user, user_group, privilege } = permission;
         const { byte_size, signature, md5 } = res.content;
         configDetail.value = sortObjectKeysByAscii({
@@ -246,6 +249,7 @@
           user,
           user_group,
           privilege,
+          charset,
         });
       }
       const signature = versionData.value.id

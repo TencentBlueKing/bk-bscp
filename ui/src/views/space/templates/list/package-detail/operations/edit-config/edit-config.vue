@@ -89,8 +89,18 @@
     try {
       configDetailLoading.value = true;
       const res = await getTemplateConfigMeta(props.spaceId, props.id);
-      const { name, path, file_type, user, user_group, privilege, signature, byte_size, template_revision_id } =
-        res.data.detail;
+      const {
+        name,
+        path,
+        file_type,
+        user,
+        user_group,
+        privilege,
+        signature,
+        byte_size,
+        template_revision_id,
+        charset,
+      } = res.data.detail;
       configForm.value = {
         ...configForm.value,
         id: props.id,
@@ -102,6 +112,7 @@
         user_group,
         privilege,
         template_revision_id,
+        charset: charset || 'UTF-8',
       };
       if (file_type === 'binary') {
         content.value = { name, signature, size: byte_size };

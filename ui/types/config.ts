@@ -222,6 +222,8 @@ export interface IConfigImportItem {
   file_name?: string;
   is_exist: boolean;
   fileAP?: string;
+  charset: string;
+  customId?: string;
 }
 
 // kv类型

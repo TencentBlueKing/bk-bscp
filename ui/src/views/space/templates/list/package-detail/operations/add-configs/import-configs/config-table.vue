@@ -15,160 +15,42 @@
         <div class="th-cell memo">
           <div class="th-cell-edit">
             <span>{{ t('配置文件描述') }}</span>
-            <bk-popover
-              ext-cls="popover-wrap"
-              theme="light"
-              trigger="manual"
-              placement="bottom"
-              :is-show="batchSet.isShowMemoPop">
-              <edit-line class="edit-line" @click="batchSet.isShowMemoPop = true" />
-              <template #content>
-                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowMemoPop = false)">
-                  <div class="pop-content">
-                    <div class="pop-title">{{ t('批量设置配置文件描述') }}</div>
-                    <bk-input v-model="batchSet.memo" :placeholder="t('请输入')"></bk-input>
-                  </div>
-                  <div class="pop-footer">
-                    <div class="button">
-                      <bk-button
-                        theme="primary"
-                        style="margin-right: 8px; width: 80px"
-                        size="small"
-                        @click="handleConfirmPop('memo')">
-                        {{ t('确定') }}
-                      </bk-button>
-                      <bk-button size="small" @click="batchSet.isShowMemoPop = false">{{ t('取消') }}</bk-button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
+            <BatchSetPop :title="t('批量设置配置文件描述')" @confirm="handleConfirmPop('memo', $event)" />
           </div>
         </div>
         <div class="th-cell privilege">
           <div class="th-cell-edit">
             <span class="required">{{ t('文件权限') }}</span>
-            <bk-popover
-              ext-cls="popover-wrap"
-              theme="light"
-              trigger="manual"
-              placement="bottom"
-              :is-show="batchSet.isShowPrivilege">
-              <edit-line class="edit-line" @click="batchSet.isShowPrivilege = true" />
-              <template #content>
-                <div class="pop-wrap privilege-wrap" v-click-outside="() => (batchSet.isShowPrivilege = false)">
-                  <div class="pop-content">
-                    <div class="pop-title">{{ t('批量设置文件权限') }}</div>
-                    <bk-input
-                      v-model="batchSet.privilege"
-                      :placeholder="t('请输入')"
-                      style="width: 184px; margin-bottom: 16px"
-                      @blur="testPrivilegeInput(batchSet.privilege)"></bk-input>
-                    <span class="error-tip" style="margin-left: 10px" v-if="batchSet.isShowPrivilegeError">
-                      {{ t('只能输入三位 0~7 数字且文件own必须有读取权限') }}
-                    </span>
-                    <div class="privilege-select-panel">
-                      <div v-for="(item, index) in PRIVILEGE_GROUPS" class="group-item" :key="index" :label="item">
-                        <div class="header">{{ item }}</div>
-                        <div class="checkbox-area">
-                          <bk-checkbox-group
-                            class="group-checkboxs"
-                            :model-value="privilegeGroupsValue(batchSet.privilege)[index]"
-                            @change="handleSelectPrivilege(index, $event)">
-                            <bk-checkbox size="small" :label="4" :disabled="index === 0">{{ t('读') }}</bk-checkbox>
-                            <bk-checkbox size="small" :label="2">{{ t('写') }}</bk-checkbox>
-                            <bk-checkbox size="small" :label="1">{{ t('执行') }}</bk-checkbox>
-                          </bk-checkbox-group>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="pop-footer">
-                    <div class="button">
-                      <bk-button
-                        theme="primary"
-                        style="margin-right: 8px; width: 80px"
-                        size="small"
-                        @click="handleConfirmPop('privilege')">
-                        {{ t('确定') }}
-                      </bk-button>
-                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
+            <BatchSetPop
+              :title="t('批量设置文件权限')"
+              :set-type="'privilege'"
+              @confirm="handleConfirmPop('privilege', $event)" />
           </div>
         </div>
         <div class="th-cell user">
           <div class="th-cell-edit">
             <span class="required">{{ t('用户') }}</span>
-            <bk-popover
-              ext-cls="popover-wrap"
-              theme="light"
-              trigger="manual"
-              placement="bottom"
-              :is-show="batchSet.isShowUserPop">
-              <edit-line class="edit-line" @click="batchSet.isShowUserPop = true" />
-              <template #content>
-                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserPop = false)">
-                  <div class="pop-content">
-                    <div class="pop-title">{{ t('批量设置用户') }}</div>
-                    <bk-input v-model="batchSet.user" :placeholder="t('请输入')"></bk-input>
-                  </div>
-                  <div class="pop-footer">
-                    <div class="button">
-                      <bk-button
-                        theme="primary"
-                        style="margin-right: 8px; width: 80px"
-                        size="small"
-                        @click="handleConfirmPop('user')">
-                        {{ t('确定') }}
-                      </bk-button>
-                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
+            <BatchSetPop :title="t('批量设置用户')" @confirm="handleConfirmPop('user', $event)" />
           </div>
         </div>
         <div class="th-cell user-group">
           <div class="th-cell-edit">
             <span class="required">{{ t('用户组') }}</span>
-            <bk-popover
-              ext-cls="popover-wrap"
-              theme="light"
-              trigger="manual"
-              placement="bottom"
-              :is-show="batchSet.isShowUserGroupPop">
-              <edit-line class="edit-line" @click="batchSet.isShowUserGroupPop = true" />
-              <template #content>
-                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserGroupPop = false)">
-                  <div class="pop-content">
-                    <div class="pop-title">{{ t('批量设置用户组') }}</div>
-                    <bk-input v-model="batchSet.user_group" :placeholder="t('请输入')"></bk-input>
-                  </div>
-                  <div class="pop-footer">
-                    <div class="button">
-                      <bk-button
-                        theme="primary"
-                        style="margin-right: 8px; width: 80px"
-                        size="small"
-                        @click="handleConfirmPop('user_group')">
-                        {{ t('确定') }}
-                      </bk-button>
-                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
+            <BatchSetPop :title="t('批量设置用户组')" @confirm="handleConfirmPop('user_group', $event)" />
+          </div>
+        </div>
+        <div class="th-cell charset">
+          <div class="th-cell-edit">
+            <span class="required">{{ t('编码') }}</span>
+            <BatchSetPop
+              :title="t('批量设置编码')"
+              :set-type="'charset'"
+              @confirm="handleConfirmPop('charset', $event)" />
           </div>
         </div>
         <div class="th-cell delete"></div>
       </div>
-      <RecycleScroller class="table-body" :items="data" :item-size="44" key-field="fileAP" v-slot="{ item, index }">
+      <RecycleScroller class="table-body" :items="data" :item-size="44" key-field="customId" v-slot="{ item, index }">
         <div class="table-row">
           <div class="not-editable td-cell name">
             <span class="text-ov">
@@ -179,11 +61,11 @@
             {{ item.file_type === 'text' ? t('文本') : t('二进制') }}
           </div>
           <div class="td-cell-editable td-cell memo" :class="{ change: isContentChange(item.id, 'memo') }">
-            <bk-input v-model="item.memo" :placeholder="t('请输入')"></bk-input>
+            <bk-input v-model="item.memo"></bk-input>
           </div>
           <div class="td-cell-editable td-cell privilege" :class="{ change: isContentChange(item.id, 'privilege') }">
             <div class="perm-input">
-              <bk-input v-model="item.privilege" :placeholder="t('请输入')" @blur="handlePrivilegeInputBlur(item)" />
+              <bk-input v-model="item.privilege" @blur="handlePrivilegeInputBlur(item)" />
               <bk-popover ext-cls="privilege-select-popover" theme="light" trigger="click" placement="bottom">
                 <div class="perm-panel-trigger">
                   <i class="bk-bscp-icon icon-configuration-line"></i>
@@ -209,10 +91,28 @@
             </div>
           </div>
           <div class="td-cell-editable td-cell user" :class="{ change: isContentChange(item.id, 'user') }">
-            <bk-input v-model="item.user" :placeholder="t('请输入')"></bk-input>
+            <bk-input v-model="item.user"></bk-input>
           </div>
           <div class="td-cell-editable td-cell user-group" :class="{ change: isContentChange(item.id, 'user_group') }">
-            <bk-input v-model="item.user_group" :placeholder="t('请输入')"></bk-input>
+            <bk-input v-model="item.user_group"></bk-input>
+          </div>
+          <div
+            :class="[
+              'td-cell-editable',
+              'td-cell',
+              'charset',
+              { change: isContentChange(item.id, 'charset'), empty: item.file_type !== 'text' },
+            ]">
+            <bk-select
+              v-if="item.file_type === 'text'"
+              class="charset-select"
+              v-model="item.charset"
+              auto-focus
+              :filterable="false"
+              :clearable="false">
+              <bk-option v-for="charset in charsetList" :id="charset" :key="charset" :name="charset" />
+            </bk-select>
+            <span v-else class="empty">--</span>
           </div>
           <div class="td-cell-delete delete td-cell">
             <i class="bk-bscp-icon icon-reduce delete-icon" @click="handleDeleteConfig(index)"></i>
@@ -224,12 +124,14 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { DownShape, EditLine } from 'bkui-vue/lib/icon';
+  import { DownShape } from 'bkui-vue/lib/icon';
   import { IConfigImportItem } from '../../../../../../../../../types/config';
   import { cloneDeep, isEqual } from 'lodash';
+  import { joinPathName } from '../../../../../../../../utils/config';
   import Message from 'bkui-vue/lib/message';
+  import BatchSetPop from './batch-set-pop.vue';
 
   const { t } = useI18n();
   const PRIVILEGE_GROUPS = [t('属主（own）'), t('属组（group）'), t('其他人（other）')];
@@ -243,21 +145,11 @@
     6: [2, 4],
     7: [1, 2, 4],
   };
-  const batchSet = ref({
-    memo: '',
-    privilege: '644',
-    user: '',
-    user_group: '',
-    isShowMemoPop: false,
-    isShowUserPop: false,
-    isShowUserGroupPop: false,
-    isShowPrivilege: false,
-    isShowPrivilegeError: false,
-  });
 
   const data = ref<IConfigImportItem[]>([]);
   const initData = ref<IConfigImportItem[]>([]);
   const expand = ref(true);
+  const charsetList = ['UTF-8', 'GBK'];
 
   const props = withDefaults(
     defineProps<{
@@ -269,26 +161,38 @@
 
   const emits = defineEmits(['change']);
 
+  onMounted(() => {
+    const configList = props.tableData.map((item) => {
+      const { path, name } = item;
+      return {
+        ...item,
+        fileAP: joinPathName(path, name),
+        customId: `${name}-${Date.now()}`,
+      };
+    });
+    data.value = cloneDeep(configList);
+    initData.value = cloneDeep(configList);
+  });
+
   watch(
     () => props.tableData,
     () => {
-      const configList = props.tableData.map((item) => {
+      const newConfig = props.tableData.filter((item) => !initData.value.find((i) => i.name === item.name));
+      const deleteConfig = initData.value.filter((item) => !props.tableData.find((i) => i.name === item.name));
+      const configList = newConfig.map((item) => {
         const { path, name } = item;
-        let fileAP;
-        if (path.endsWith('/')) {
-          fileAP = `${path}${name}`;
-        } else {
-          fileAP = `${path}/${name}`;
-        }
         return {
           ...item,
-          fileAP,
+          fileAP: joinPathName(path, name),
+          customId: `${name}-${Date.now()}`,
         };
       });
-      data.value = cloneDeep(configList);
-      initData.value = cloneDeep(configList);
+      data.value = data.value.filter((item) => !deleteConfig.find((i) => i.name === item.name));
+      data.value.push(...configList);
+      initData.value = initData.value.filter((item) => !deleteConfig.find((i) => i.name === item.name));
+      initData.value.push(...configList);
     },
-    { deep: true, immediate: true },
+    { deep: true },
   );
 
   watch(
@@ -314,26 +218,9 @@
     return data;
   });
 
-  const testPrivilegeInput = (privilege: string) => {
-    const val = String(privilege);
-    const own = parseInt(privilege[0], 10);
-    if (/^[0-7]{3}$/.test(val) && own >= 4) {
-      batchSet.value.isShowPrivilegeError = false;
-    } else {
-      batchSet.value.privilege = '644';
-      batchSet.value.isShowPrivilegeError = true;
-    }
-  };
-
   // 选择文件权限
-  const handleSelectPrivilege = (index: number, val: number[], item?: IConfigImportItem) => {
-    let groupsValue;
-    if (item) {
-      groupsValue = { ...privilegeGroupsValue.value(item.privilege) };
-    } else {
-      groupsValue = { ...privilegeGroupsValue.value(batchSet.value.privilege) };
-    }
-
+  const handleSelectPrivilege = (index: number, val: number[], item: IConfigImportItem) => {
+    const groupsValue = { ...privilegeGroupsValue.value(item.privilege) };
     groupsValue[index] = val;
     const digits = [];
     for (let i = 0; i < 3; i++) {
@@ -343,56 +230,42 @@
       }
       digits.push(sum);
     }
-    const newVal = digits.join('');
-    if (item) {
-      item.privilege = newVal;
-    } else {
-      batchSet.value.privilege = newVal;
-      batchSet.value.isShowPrivilegeError = false;
-    }
+    item.privilege = digits.join('');
   };
 
-  const handleConfirmPop = (prop: string) => {
+  const handleConfirmPop = (prop: string, val: string) => {
     if (prop === 'memo') {
       data.value.forEach((item) => {
-        item.memo = batchSet.value.memo;
+        item.memo = val;
       });
     }
     if (prop === 'user') {
       data.value.forEach((item) => {
-        item.user = batchSet.value.user;
+        item.user = val;
       });
     }
     if (prop === 'privilege') {
-      if (batchSet.value.isShowPrivilegeError) return;
       data.value.forEach((item) => {
-        item.privilege = batchSet.value.privilege;
+        item.privilege = val;
       });
     }
     if (prop === 'user_group') {
       data.value.forEach((item) => {
-        item.user_group = batchSet.value.user_group;
+        item.user_group = val;
       });
     }
-    handleCancelPop();
-  };
-
-  const handleCancelPop = () => {
-    batchSet.value = {
-      memo: '',
-      privilege: '644',
-      user: '',
-      user_group: '',
-      isShowMemoPop: false,
-      isShowUserPop: false,
-      isShowUserGroupPop: false,
-      isShowPrivilege: false,
-      isShowPrivilegeError: false,
-    };
+    if (prop === 'charset') {
+      data.value.forEach((item) => {
+        if (item.file_type === 'text') {
+          item.charset = val;
+        }
+      });
+    }
   };
 
   const handleDeleteConfig = (index: number) => {
     data.value = data.value.filter((item, i) => i !== index);
+    initData.value = initData.value.filter((item, i) => i !== index);
   };
 
   // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
@@ -413,7 +286,6 @@
     if (!props.isExsitTable) return;
     const newConfig = data.value.find((config) => config.id === id);
     const oldConfig = initData.value.find((config) => config.id === id);
-    console.log(newConfig, oldConfig);
     return newConfig![key as keyof IConfigImportItem] !== oldConfig![key as keyof IConfigImportItem];
   };
 </script>
@@ -450,20 +322,24 @@
     }
   }
   .table-container {
-    width: 100%;
     font-size: 12px;
     line-height: 20px;
     border: 1px solid #dcdee5;
+    overflow: auto;
     .table-head {
       display: flex;
+      width: fit-content;
     }
     .table-row {
       display: flex;
+      width: fit-content;
     }
     .table-body {
+      width: 1010px;
       max-height: 400px;
     }
     .th-cell {
+      white-space: nowrap;
       padding-left: 16px;
       height: 42px;
       color: #313238;
@@ -504,31 +380,38 @@
       width: 100px;
     }
     .memo {
-      width: 188px;
+      width: 180px;
     }
     .privilege {
       width: 100px;
     }
     .user {
-      width: 78px;
+      width: 100px;
     }
     .user-group {
-      width: 91px;
+      width: 100px;
+    }
+    .charset {
+      width: 100px;
     }
     .delete {
-      flex: 1;
-      margin: 0;
+      width: 30px;
     }
     .not-editable {
       background-color: #f5f7fa;
     }
     .td-cell {
+      white-space: nowrap;
       padding-left: 16px;
       line-height: 42px;
       border-bottom: none;
       border-top: 1px solid #dcdee5;
       &:not(:last-child) {
         border-right: 1px solid #dcdee5;
+      }
+      &.empty {
+        background: #f5f7fa;
+        padding-left: 16px;
       }
     }
     .td-cell-editable {
@@ -604,7 +487,6 @@
       cursor: pointer;
     }
   }
-
   .privilege-select-panel {
     display: flex;
     align-items: top;
@@ -642,12 +524,6 @@
         font-size: 12px;
       }
     }
-  }
-  .error-tip {
-    color: red;
-  }
-  .privilege-wrap {
-    width: auto;
   }
 </style>
 
