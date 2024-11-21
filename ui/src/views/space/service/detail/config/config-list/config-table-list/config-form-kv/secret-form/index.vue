@@ -352,7 +352,6 @@
 
   defineExpose({
     validate: () => {
-      console.log(1);
       return !selectTypeContent.value?.infoList.some((info) => info.status === 'error');
     },
   });

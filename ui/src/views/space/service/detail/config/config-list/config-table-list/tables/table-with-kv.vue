@@ -437,7 +437,7 @@
     return {
       tooltips: t('此证书已于 {n} 过期，请尽快更换证书', { n: expirationTime }),
       isExpiration: true,
-      remainingDays: 29,
+      remainingDays,
     };
   };
 
