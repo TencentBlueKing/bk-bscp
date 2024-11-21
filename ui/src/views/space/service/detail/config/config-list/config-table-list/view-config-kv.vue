@@ -19,6 +19,14 @@
               {{ props.config.spec.kv_type === 'secret' ? t('敏感信息') : props.config.spec.kv_type }}
             </bk-form-item>
             <bk-form-item :label="t('配置项值')">
+              <div class="secret-list disabled">
+                <div
+                  :class="['secret-item', { active: config.spec.secret_type === item.value }]"
+                  v-for="item in secretType"
+                  :key="item.value">
+                  {{ item.label }}
+                </div>
+              </div>
               <div v-if="props.config.spec.kv_type === 'secret'" class="secret-value">
                 <span v-if="props.config.spec.secret_hidden" class="un-view-value">
                   {{ t('敏感数据不可见，无法查看实际内容') }}
@@ -85,6 +93,29 @@
   }>();
 
   const emits = defineEmits(['update:show', 'confirm', 'openEdit']);
+
+  const secretType = [
+    {
+      label: t('密码'),
+      value: 'password',
+    },
+    {
+      label: t('证书'),
+      value: 'certificate',
+    },
+    {
+      label: t('API密钥'),
+      value: 'secret_key',
+    },
+    {
+      label: t('访问令牌'),
+      value: 'token',
+    },
+    {
+      label: t('自定义'),
+      value: 'custom',
+    },
+  ];
 
   const activeTab = ref('content');
   const isFormChange = ref(false);
@@ -211,6 +242,38 @@
     }
     .un-view-value {
       color: #c4c6cc;
+    }
+  }
+  .secret-list {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    &.disabled {
+      .secret-item {
+        cursor: not-allowed;
+        background: #f0f1f5;
+        color: #979ba5;
+      }
+    }
+    .secret-item {
+      padding: 0 10px;
+      height: 26px;
+      min-width: 80px;
+      line-height: 26px;
+      background: #f8f8f8;
+      text-align: center;
+      background: #ffffff;
+      border: 1px solid #c4c6cc;
+      color: #63656e;
+      cursor: pointer;
+      &:not(:last-child) {
+        border-right: none;
+      }
+      &.active {
+        background: #e1ecff;
+        border: 1px solid #3a84ff;
+        color: #3a84ff;
+      }
     }
   }
 </style>

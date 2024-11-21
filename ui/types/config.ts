@@ -236,6 +236,7 @@ export interface IConfigKvItem {
   certificate_info?: {
     tooltips: string;
     isExpiration: boolean;
+    remainingDays: number;
   };
 }
 

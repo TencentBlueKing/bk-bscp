@@ -335,7 +335,7 @@
       if (remainingDays > 0) {
         selectTypeContent.value!.infoList = [
           {
-            status: 'warn',
+            status: remainingDays > 30 ? 'normal' : 'warn',
             text: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: datetimeFormat(notAfter), m: remainingDays }),
           },
         ];
@@ -476,6 +476,9 @@
     font-size: 12px;
     line-height: 20px;
     padding: 4px 0;
+    &.normal {
+      color: #c4c6cc;
+    }
     &.warn {
       color: #ff9c01;
     }

@@ -39,7 +39,7 @@
               {{ row.spec.key }}
             </bk-overflow-title>
             <exclamation-circle-shape
-              v-if="row.spec.secret_type === 'certificate'"
+              v-if="row.spec.secret_type === 'certificate' && row.spec.certificate_info?.remainingDays < 30"
               :class="['warn-icon', { error: row.spec?.certificate_info?.isExpiration }]"
               v-bk-tooltips="{ content: row.spec?.certificate_info?.tooltips }" />
           </div>
@@ -401,8 +401,8 @@
         return 0;
       });
       configList.value.forEach((item) => {
-        if (item.spec.secret_type === 'certificate') {
-          item.spec.certificate_info = getCertificateInfo(item.spec.certificate_expiration_date!);
+        if (item.spec.secret_type === 'certificate' && item.spec.certificate_expiration_date) {
+          item.spec.certificate_info = getCertificateInfo(item.spec.certificate_expiration_date);
         }
       });
       configsCount.value = res.count;
@@ -425,16 +425,19 @@
   const getCertificateInfo = (date: string) => {
     const expirationTime = datetimeFormat(date);
     const givenTime = dayjs(expirationTime, 'YYYY-MM-DD HH:mm:ss');
-    const remainingDays = givenTime.diff(dayjs(), 'second');
-    if (remainingDays > 0) {
+    const remainingSeconds = givenTime.diff(dayjs(), 'second');
+    const remainingDays = Math.ceil(remainingSeconds / 60 / 60 / 24);
+    if (remainingSeconds > 0) {
       return {
         tooltips: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: expirationTime, m: remainingDays }),
         isExpiration: false,
+        remainingDays,
       };
     }
     return {
       tooltips: t('此证书已于 {n} 过期，请尽快更换证书', { n: expirationTime }),
       isExpiration: true,
+      remainingDays: 29,
     };
   };
 
@@ -638,6 +641,7 @@
       .key-name {
         color: #3a84ff;
         max-width: calc(100% - 20px);
+        cursor: pointer;
       }
       .warn-icon {
         font-size: 14px;
