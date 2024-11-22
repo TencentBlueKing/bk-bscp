@@ -170,7 +170,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 	// 扫描某个目录大小
 	// 暴露 metrics
 	totalSize, _ := getDirSize(dirPath)
-	c.uploadFileMetrics(kt.BizID, tmplSpaceIdStr, dirPath, totalSize)
+	c.uploadFileMetrics(kt.BizID, tmplSpaceIdStr, totalSize)
 
 	if err = c.checkFileConfictsWithTemplates(kt, uint32(tmplSpaceID), fileItems); err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -370,7 +370,7 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 	// 扫描某个目录大小
 	// 暴露 metrics
 	totalSize, _ := getDirSize(dirPath)
-	c.uploadFileMetrics(kt.BizID, appIdStr, dirPath, totalSize)
+	c.uploadFileMetrics(kt.BizID, appIdStr, totalSize)
 
 	if err = c.checkFileConfictsWithNonTemplates(kt, fileItems); err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -842,10 +842,9 @@ func getDirSize(path string) (int64, error) {
 }
 
 // 上传文件夹时暴露 metrics
-func (c *configImport) uploadFileMetrics(bizID uint32, resourceID, directory string,
-	directorySize int64) {
+func (c *configImport) uploadFileMetrics(bizID uint32, resourceID string, directorySize int64) {
 	c.mc.currentUploadedFolderSize.WithLabelValues(strconv.Itoa(int(bizID)),
-		resourceID, directory).Set(float64(directorySize))
+		resourceID).Set(float64(directorySize))
 }
 
 func getUploadConfig(bizID uint32) (maxUploadContentLength, maxFileSize int64) {

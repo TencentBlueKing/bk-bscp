@@ -195,8 +195,7 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 	switch sfs.MessagingType(msg.Type) {
 	case sfs.VersionChangeMessage:
 		vc := new(sfs.VersionChangePayload)
-		err = vc.Decode(msg.Payload)
-		if err != nil {
+		if err = vc.Decode(msg.Payload); err != nil {
 			logs.Errorf("version change message decoding failed, %s", err.Error())
 			return nil, err
 		}
@@ -239,11 +238,12 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 				MessagingType: msg.Type,
 				Payload:       payload,
 			}
+
+			s.clientEventChangeRecord(vc.BasicData, vc.Application)
 		}
 	case sfs.Heartbeat:
 		hb := new(sfs.HeartbeatPayload)
-		err = hb.Decode(msg.Payload)
-		if err != nil {
+		if err = hb.Decode(msg.Payload); err != nil {
 			return nil, err
 		}
 
@@ -961,13 +961,6 @@ func (s *Service) GetSingleKvValue(ctx context.Context, req *pbfs.GetSingleKvVal
 	return kv, nil
 }
 
-func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resource sfs.ResourceUsage) {
-	s.mc.clientMaxCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuMaxUsage)
-	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
-	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
-	s.mc.clientCurrentMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryUsage))
-}
-
 // GetSingleFileContent 获取单文件内容
 // nolint:funlen
 func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
@@ -1072,4 +1065,34 @@ func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
 	}
 
 	return nil
+}
+
+func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resource sfs.ResourceUsage) {
+	s.mc.clientMaxCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuMaxUsage)
+	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
+	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
+	s.mc.clientCurrentMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryUsage))
+}
+
+// 暴露客户端版本变更事件到metrics
+func (s *Service) clientEventChangeRecord(basicData *sfs.BasicData, appMeta *sfs.SideAppMeta) {
+	if basicData == nil && appMeta == nil {
+		return
+	}
+
+	versionChange := prm.Labels{
+		"biz":                 fmt.Sprint(basicData.BizID),
+		"app":                 appMeta.App,
+		"clientType":          string(basicData.ClientType),
+		"clientMode":          basicData.ClientMode.String(),
+		"originalReleaseID":   fmt.Sprint(appMeta.CurrentReleaseID),
+		"targetReleaseID":     fmt.Sprint(appMeta.TargetReleaseID),
+		"releaseChangeStatus": appMeta.ReleaseChangeStatus.String(),
+	}
+
+	s.mc.changeTotalNumber.With(versionChange).Inc()
+	s.mc.changeTotalFileNumber.With(versionChange).Add(float64(appMeta.TotalFileNum))
+	s.mc.changeTotalFileSize.With(versionChange).Observe(float64(appMeta.TotalFileSize))
+	s.mc.changeTotalSeconds.With(versionChange).Observe(float64(appMeta.TotalSeconds))
+
 }
