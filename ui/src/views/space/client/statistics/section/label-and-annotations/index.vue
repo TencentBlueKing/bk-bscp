@@ -173,6 +173,7 @@
       });
       res.data.annotations.sort(sortByLowerCase);
       res.data.labels.sort(sortByLowerCase);
+      res.data.labels = res.data.labels.filter((item: string) => !['ip', 'pod_name', 'pod_ip'].includes(item));
       addChartData.value = res.data;
     } catch (e) {
       console.error(e);
