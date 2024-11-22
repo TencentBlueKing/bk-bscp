@@ -17,11 +17,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 	"golang.org/x/text/message"
-
-	// import the package translations so that it's init() function is run.
-	// it ensures default message catalog is updated to use our translations
-	// before we initialize the message.Printer instances below.
-	_ "github.com/TencentBlueKing/bk-bscp/pkg/i18n/translations"
 )
 
 // supportedLangs are languages the server supports.

@@ -15,6 +15,7 @@ package main
 
 import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/cmd"
+	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
 )
 
 func main() {

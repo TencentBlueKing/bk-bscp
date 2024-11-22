@@ -53,7 +53,7 @@ init:
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
 	go install github.com/ifooth/grpc-gateway/v2/protoc-gen-openapiv2@v2.20.0-r2
 	@echo Download gotext
-	go install golang.org/x/text/cmd/gotext@v0.14.0
+	go install golang.org/x/text/cmd/gotext@v0.20.0
 
 .PHONY: tidy
 tidy:
@@ -194,5 +194,5 @@ docker:
 
 .PHONY: i18n
 i18n:
-	@go generate ./pkg/i18n/translations/translations.go
-	@cp ./pkg/i18n/translations/locales/zh/out.gotext.json ./pkg/i18n/translations/locales/zh/messages.gotext.json
+	@go generate ./internal/i18n/translations/translations.go
+	@cp ./internal/i18n/translations/locales/zh/out.gotext.json ./pkg/internal/translations/locales/zh/messages.gotext.json

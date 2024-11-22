@@ -19,6 +19,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/app"
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/options"
+	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )

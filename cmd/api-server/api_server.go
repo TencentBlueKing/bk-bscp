@@ -13,7 +13,10 @@
 // Package main is the entry point of the API server.
 package main
 
-import "github.com/TencentBlueKing/bk-bscp/cmd/api-server/cmd"
+import (
+	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/cmd"
+	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
+)
 
 func main() {
 	cmd.Execute()

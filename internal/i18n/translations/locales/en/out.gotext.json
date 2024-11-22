@@ -1,20 +1,25 @@
 {
-    "language": "zh",
+    "language": "en",
     "messages": [
         {
             "id": "id is required",
             "message": "id is required",
-            "translation": "id不能为空"
+            "translation": "id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid file name",
             "message": "invalid file name",
-            "translation": "无效的文件名"
+            "translation": "invalid file name",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "read file failed, err: {ErrR}",
             "message": "read file failed, err: {ErrR}",
-            "translation": "读取文件失败, err: {ErrR}",
+            "translation": "read file failed, err: {ErrR}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ErrR",
@@ -24,12 +29,14 @@
                     "argNum": 1,
                     "expr": "errR"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "create directory failed, err: {Err}",
             "message": "create directory failed, err: {Err}",
-            "translation": "创建目录失败, err: {Err}",
+            "translation": "create directory failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -39,12 +46,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "create temporary directory failed, err: {Err}",
             "message": "create temporary directory failed, err: {Err}",
-            "translation": "创建临时目录失败, err: {Err}",
+            "translation": "create temporary directory failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -54,12 +63,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "decompress the file. The size of file {Message} exceeds the maximum limit of {MB}",
             "message": "decompress the file. The size of file {Message} exceeds the maximum limit of {MB}",
-            "translation": "解压文件失败, 文件 {Message} 的大小超过了最大限制阈值 {MB}",
+            "translation": "decompress the file. The size of file {Message} exceeds the maximum limit of {MB}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Message",
@@ -77,12 +88,14 @@
                     "argNum": 2,
                     "expr": "tools.BytesToHumanReadable(uint64(singleContentLength * constant.MB))"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "decompression failed, err: {Err}",
             "message": "decompression failed, err: {Err}",
-            "translation": "解压失败, err: {Err}",
+            "translation": "decompression failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -92,12 +105,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "upload file failed, err: {Err}",
             "message": "upload file failed, err: {Err}",
-            "translation": "上传文件失败, err: {Err}",
+            "translation": "upload file failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -107,12 +122,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list template config failed, err: {Err}",
             "message": "list template config failed, err: {Err}",
-            "translation": "获取模板配置失败, err: {Err}",
+            "translation": "list template config failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -122,17 +139,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "upload completed",
             "message": "upload completed",
-            "translation": "上传完成"
+            "translation": "upload completed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "upload completed, {UploadErrCount} failed",
             "message": "upload completed, {UploadErrCount} failed",
-            "translation": "上传完成, {UploadErrCount} 失败",
+            "translation": "upload completed, {UploadErrCount} failed",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "UploadErrCount",
@@ -142,12 +163,14 @@
                     "argNum": 1,
                     "expr": "uploadErrCount"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list config item failed, err: {ErrC}",
             "message": "list config item failed, err: {ErrC}",
-            "translation": "获取配置项失败, err: {ErrC}",
+            "translation": "list config item failed, err: {ErrC}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ErrC",
@@ -157,12 +180,14 @@
                     "argNum": 1,
                     "expr": "errC"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get the current number of service config items failed, err: {Err}",
             "message": "get the current number of service config items failed, err: {Err}",
-            "translation": "获取当前服务配置项总数失败, err: {Err}",
+            "translation": "get the current number of service config items failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -172,12 +197,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "decompress file failed, exceeding the maximum file limit threshold of {Limit}",
             "message": "decompress file failed, exceeding the maximum file limit threshold of {Limit}",
-            "translation": "解压文件失败, 超过了文件数量最大限制阈值 {Limit}",
+            "translation": "decompress file failed, exceeding the maximum file limit threshold of {Limit}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Limit",
@@ -187,12 +214,14 @@
                     "argNum": 1,
                     "expr": "limit"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "upload failed, please make sure the file size does not exceed {BytesToHumanReadableuint64maxSize}",
             "message": "upload failed, please make sure the file size does not exceed {BytesToHumanReadableuint64maxSize}",
-            "translation": "上传失败, 请确保文件大小不超过 {BytesToHumanReadableuint64maxSize}",
+            "translation": "upload failed, please make sure the file size does not exceed {BytesToHumanReadableuint64maxSize}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "BytesToHumanReadableuint64maxSize",
@@ -202,12 +231,14 @@
                     "argNum": 1,
                     "expr": "tools.BytesToHumanReadable(uint64(maxSize))"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list templates failed, err: {Err}",
             "message": "list templates failed, err: {Err}",
-            "translation": "获取模板数据失败, err: {Err}",
+            "translation": "list templates failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -217,37 +248,49 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "sensitive information cannot be exported",
             "message": "sensitive information cannot be exported",
-            "translation": "敏感信息无法导出"
+            "translation": "sensitive information cannot be exported",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "client ids is empty",
             "message": "client ids is empty",
-            "translation": "客户端 id 为空"
+            "translation": "client ids is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "batch delete config items failed",
             "message": "batch delete config items failed",
-            "translation": "批量删除配置项失败"
+            "translation": "batch delete config items failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "batch recovery config items failed",
             "message": "batch recovery config items failed",
-            "translation": ""
+            "translation": "batch recovery config items failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "batch delete groups failed",
             "message": "batch delete groups failed",
-            "translation": "批量删除群组失败"
+            "translation": "batch delete groups failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "message": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
-            "translation": "脚本id列表的长度为{IdsLen}, 长度范围必须为[1,{ArrayInputLenLimit}]",
+            "translation": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "IdsLen",
@@ -265,27 +308,35 @@
                     "argNum": 2,
                     "expr": "constant.ArrayInputLenLimit"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "batch delete failed",
             "message": "batch delete failed",
-            "translation": "批量删除失败"
+            "translation": "batch delete failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "sensitive data is not visible, unable to view actual content",
             "message": "sensitive data is not visible, unable to view actual content",
-            "translation": "敏感数据不可见，无法查看实际内容"
+            "translation": "sensitive data is not visible, unable to view actual content",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "not legal JSON data",
             "message": "not legal JSON data",
-            "translation": "JSON数据不合法"
+            "translation": "not legal JSON data",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "json format error, err: {Err}",
             "message": "json format error, err: {Err}",
-            "translation": "json 格式化错误, err: {Err}",
+            "translation": "json format error, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -295,12 +346,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "yaml format error, err: {Err}",
             "message": "yaml format error, err: {Err}",
-            "translation": "yaml 格式化错误, err: {Err}",
+            "translation": "yaml format error, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -310,12 +363,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "{Format} type not supported",
             "message": "{Format} type not supported",
-            "translation": "{Format} 类型不支持",
+            "translation": "{Format} type not supported",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Format",
@@ -325,12 +380,14 @@
                     "argNum": 1,
                     "expr": "req.Format"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} kv type error",
             "message": "config item {Key} kv type error",
-            "translation": "配置项 {Key} 类型错误",
+            "translation": "config item {Key} kv type error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -340,12 +397,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "format error, please check the key: {Key}",
             "message": "format error, please check the key: {Key}",
-            "translation": "格式错误, 请检查键：{Key}",
+            "translation": "format error, please check the key: {Key}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -355,12 +414,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} format error",
             "message": "config item {Key} format error",
-            "translation": "配置项 {Key} 格式错误",
+            "translation": "config item {Key} format error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -370,12 +431,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} json format error",
             "message": "config item {Key} json format error",
-            "translation": "配置项 {Key} json格式错误",
+            "translation": "config item {Key} json format error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -385,12 +448,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} yaml format error",
             "message": "config item {Key} yaml format error",
-            "translation": "配置项 {Key} yaml格式错误",
+            "translation": "config item {Key} yaml format error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -400,12 +465,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} secret hidden error",
             "message": "config item {Key} secret hidden error",
-            "translation": "配置项 {Key} 密钥是否显示设置错误",
+            "translation": "config item {Key} secret hidden error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -415,12 +482,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the key type for config item {Key} cannot be empty",
             "message": "the key type for config item {Key} cannot be empty",
-            "translation": "配置项 {Key} 的密钥类型不能为空",
+            "translation": "the key type for config item {Key} cannot be empty",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -430,12 +499,14 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} secret type error, err: {Err}",
             "message": "config item {Key} secret type error, err: {Err}",
-            "translation": "配置项 {Key} 密钥类型错误, err: {Err}",
+            "translation": "config item {Key} secret type error, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -453,12 +524,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "config item {Key} value error",
             "message": "config item {Key} value error",
-            "translation": "配置项 {Key} 值错误",
+            "translation": "config item {Key} value error",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -468,37 +541,49 @@
                     "argNum": 1,
                     "expr": "key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "please set a password",
             "message": "please set a password",
-            "translation": "请设置密码"
+            "translation": "please set a password",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "the certificate format is incorrect, only X.509 format is supported",
             "message": "the certificate format is incorrect, only X.509 format is supported",
-            "translation": "证书格式不正确, 仅支持X.509格式"
+            "translation": "the certificate format is incorrect, only X.509 format is supported",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "keys is required",
             "message": "keys is required",
-            "translation": ""
+            "translation": "keys is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "batch recovery kv failed",
             "message": "batch recovery kv failed",
-            "translation": ""
+            "translation": "batch recovery kv failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
-            "translation": ""
+            "translation": "delete template from template sets failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "template variable name must start with {TemplateVariablePrefix}",
             "message": "template variable name must start with {TemplateVariablePrefix}",
-            "translation": "模版变量名必须以{TemplateVariablePrefix}前缀开头",
+            "translation": "template variable name must start with {TemplateVariablePrefix}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "TemplateVariablePrefix",
@@ -508,12 +593,14 @@
                     "argNum": 1,
                     "expr": "constant.TemplateVariablePrefix"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the length of template variable ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "message": "the length of template variable ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
-            "translation": "全局变量id列表的长度为{IdsLen}, 长度范围必须为[1,{ArrayInputLenLimit}]",
+            "translation": "the length of template variable ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "IdsLen",
@@ -531,12 +618,48 @@
                     "argNum": 2,
                     "expr": "constant.ArrayInputLenLimit"
                 }
-            ]
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "template variable {Key} type error",
+            "message": "template variable {Key} type error",
+            "translation": "template variable {Key} type error",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported variable type: {VariableType}",
+            "message": "unsupported variable type: {VariableType}",
+            "translation": "unsupported variable type: {VariableType}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "VariableType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "variableType"
+                }
+            ],
+            "fuzzy": true
         },
         {
             "id": "app name {Name} already exists",
             "message": "app name {Name} already exists",
-            "translation": "服务名称 {Name} 已存在",
+            "translation": "app name {Name} already exists",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -546,12 +669,14 @@
                     "argNum": 1,
                     "expr": "req.Spec.Name"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "app alias {Alias} already exists",
             "message": "app alias {Alias} already exists",
-            "translation": "服务别名 {Alias} 已存在",
+            "translation": "app alias {Alias} already exists",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Alias",
@@ -561,12 +686,14 @@
                     "argNum": 1,
                     "expr": "req.Spec.Alias"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get app failed, err: {Err}",
             "message": "get app failed, err: {Err}",
-            "translation": "获取服务失败, err: {Err}",
+            "translation": "get app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -576,17 +703,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the specified type does not match the actual configuration",
             "message": "the specified type does not match the actual configuration",
-            "translation": "指定的类型与实际配置不匹配"
+            "translation": "the specified type does not match the actual configuration",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "delete app related resources failed, err: {Err}",
             "message": "delete app related resources failed, err: {Err}",
-            "translation": "删除服务相关资源失败, err: {Err}",
+            "translation": "delete app related resources failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -596,12 +727,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "delete app failed, err: {Err}",
             "message": "delete app failed, err: {Err}",
-            "translation": "删除服务失败, err: {Err}",
+            "translation": "delete app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -611,12 +744,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "app {AppId} not found",
             "message": "app {AppId} not found",
-            "translation": "ID为{AppId}的服务不存在",
+            "translation": "app {AppId} not found",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppId",
@@ -626,12 +761,14 @@
                     "argNum": 1,
                     "expr": "req.AppId"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "business query failed, err: {Err}",
             "message": "business query failed, err: {Err}",
-            "translation": "业务查询失败, err: {Err}",
+            "translation": "business query failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -641,12 +778,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "app related biz {BizID} is not exist",
             "message": "app related biz {BizID} is not exist",
-            "translation": "服务相关的业务 {BizID} 不存在",
+            "translation": "app related biz {BizID} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "BizID",
@@ -656,12 +795,14 @@
                     "argNum": 1,
                     "expr": "bizID"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the config file {Joindir_name} already exists in this space and cannot be created again",
             "message": "the config file {Joindir_name} already exists in this space and cannot be created again",
-            "translation": "此空间下配置文件 {Joindir_name} 已存在, 无法重复创建",
+            "translation": "the config file {Joindir_name} already exists in this space and cannot be created again",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Joindir_name",
@@ -671,12 +812,14 @@
                     "argNum": 1,
                     "expr": "path.Join(dir, name)"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list template sets by template set ids failed, err: {Err}",
             "message": "list template sets by template set ids failed, err: {Err}",
-            "translation": "按模板套餐ID列出模板套餐失败, err: {Err}",
+            "translation": "list template sets by template set ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -686,12 +829,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "update app template binding failed, err: {Err}",
             "message": "update app template binding failed, err: {Err}",
-            "translation": "更新服务模板绑定失败, err: {Err}",
+            "translation": "update app template binding failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -701,12 +846,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list template spaces failed, err: {Err}",
             "message": "list template spaces failed, err: {Err}",
-            "translation": "列出模板空间失败, err: {Err}",
+            "translation": "list template spaces failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -716,12 +863,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template space {V} not found",
             "message": "template space {V} not found",
-            "translation": "模板空间 {V} 不存在",
+            "translation": "template space {V} not found",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "V",
@@ -731,12 +880,14 @@
                     "argNum": 1,
                     "expr": "v"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template set {V} not found",
             "message": "template set {V} not found",
-            "translation": "模板套餐 {V} 不存在",
+            "translation": "template set {V} not found",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "V",
@@ -746,12 +897,14 @@
                     "argNum": 1,
                     "expr": "v"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list templates of template set failed, err: {Err}",
             "message": "list templates of template set failed, err: {Err}",
-            "translation": "获取模板套餐下的模板失败, err: {Err}",
+            "translation": "list templates of template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -761,12 +914,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
-            "id": "the template file {ValidatedTemplateSetNamessId} in the template set \n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
-            "message": "the template file {ValidatedTemplateSetNamessId} in the template set \n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
-            "translation": "模板套餐 {TemplateNamesv} 中的模板文件 {ValidatedTemplateSetNamessId} 被移除, 请重新导入套餐",
+            "id": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
+            "message": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
+            "translation": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ValidatedTemplateSetNamessId",
@@ -784,12 +939,14 @@
                     "argNum": 2,
                     "expr": "templateNames[v]"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list template revisions failed, err: {Err}",
             "message": "list template revisions failed, err: {Err}",
-            "translation": "获取模板版本失败, err: {Err}",
+            "translation": "list template revisions failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -799,12 +956,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
-            "id": "template version {RevisionNamesv} in template file {TemplateNamestId} \n\t\t\t\thas been removed. Please import the set again",
-            "message": "template version {RevisionNamesv} in template file {TemplateNamestId} \n\t\t\t\thas been removed. Please import the set again",
-            "translation": "模板文件 {TemplateNamestId} 中的模板版本 {RevisionNamesv} 被移除, 请重新导入套餐",
+            "id": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
+            "message": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
+            "translation": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "RevisionNamesv",
@@ -822,12 +981,14 @@
                     "argNum": 2,
                     "expr": "templateNames[tId]"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
-            "id": "the version number {TemplateID} in the template file {ID} is not the \n\t\tlatest version. Please import the set again",
-            "message": "the version number {TemplateID} in the template file {ID} is not the \n\t\tlatest version. Please import the set again",
-            "translation": "模板文件 {ID} 中的版本号 {TemplateID} 不是最新版本, 请重新导入套餐",
+            "id": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
+            "message": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
+            "translation": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "TemplateID",
@@ -845,12 +1006,14 @@
                     "argNum": 2,
                     "expr": "revisionNames[v.ID]"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "count the number of service configurations failed, err: {Err}",
             "message": "count the number of service configurations failed, err: {Err}",
-            "translation": "统计服务配置数量失败, err: {Err}",
+            "translation": "count the number of service configurations failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -860,12 +1023,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "app {Name} is not file type",
             "message": "app {Name} is not file type",
-            "translation": "该服务 {Name} 不是文件类型",
+            "translation": "app {Name} is not file type",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -875,12 +1040,14 @@
                     "argNum": 1,
                     "expr": "app.Spec.Name"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the total number of app {Name} config items(including template and non-template)exceeded the limit {AppConfigCnt}",
             "message": "the total number of app {Name} config items(including template and non-template)exceeded the limit {AppConfigCnt}",
-            "translation": "服务 {Name} 的配置项总数（包括模板和非模板）超过单服务最大配置文件数量限制 {AppConfigCnt}",
+            "translation": "the total number of app {Name} config items(including template and non-template)exceeded the limit {AppConfigCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -898,12 +1065,14 @@
                     "argNum": 2,
                     "expr": "appConfigCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "delete one app template binding instance by app id failed, err: {Err}",
             "message": "delete one app template binding instance by app id failed, err: {Err}",
-            "translation": "移除服务模板套餐失败, err: {Err}",
+            "translation": "delete one app template binding instance by app id failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -913,12 +1082,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "batch create contents failed, err: {Error}",
             "message": "batch create contents failed, err: {Error}",
-            "translation": "批量创建内容失败, err: {Error}",
+            "translation": "batch create contents failed, err: {Error}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Error",
@@ -928,12 +1099,14 @@
                     "argNum": 1,
                     "expr": "e"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "delete one app template variable failed, err: {Error}",
             "message": "delete one app template variable failed, err: {Error}",
-            "translation": "删除模板变量失败, err: {Error}",
+            "translation": "delete one app template variable failed, err: {Error}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Error",
@@ -943,12 +1116,14 @@
                     "argNum": 1,
                     "expr": "e"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get config item failed, err: {Err}",
             "message": "get config item failed, err: {Err}",
-            "translation": "获取配置项失败, err: {Err}",
+            "translation": "get config item failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -958,17 +1133,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the data has not been deleted",
             "message": "the data has not been deleted",
-            "translation": "配置项没有被删除"
+            "translation": "the data has not been deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "get the latest released version failed, err: {Err}",
             "message": "get the latest released version failed, err: {Err}",
-            "translation": "获取最新发布版本失败, err: {Err}",
+            "translation": "get the latest released version failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -978,12 +1157,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get the published config failed, err: {Err}",
             "message": "get the published config failed, err: {Err}",
-            "translation": "获取已发布的配置失败, err: {Err}",
+            "translation": "get the published config failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -993,17 +1174,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "recovery failed. A file with the same path exists and is not in a new state",
             "message": "recovery failed. A file with the same path exists and is not in a new state",
-            "translation": "恢复失败。具有相同路径的文件已存在，但未处于新状态"
+            "translation": "recovery failed. A file with the same path exists and is not in a new state",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "recover config item failed, err: {Err}",
             "message": "recover config item failed, err: {Err}",
-            "translation": "恢复配置项失败, err: {Err}",
+            "translation": "recover config item failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1013,12 +1198,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get records greater than the latest released version failed, err: {Err}",
             "message": "get records greater than the latest released version failed, err: {Err}",
-            "translation": "获取大于最新发布版本的记录失败, err: {Err}",
+            "translation": "get records greater than the latest released version failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1028,12 +1215,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
-            "id": "the total number of config items(including template and non-template) \n\t\t\texceeded the limit {AppConfigCnt}",
-            "message": "the total number of config items(including template and non-template) \n\t\t\texceeded the limit {AppConfigCnt}",
-            "translation": "该服务配置项的总数（包括模板和非模板）超出限制 {AppConfigCnt}",
+            "id": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
+            "message": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
+            "translation": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1043,17 +1232,21 @@
                     "argNum": 1,
                     "expr": "appConfigCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "obtain the number of configuration items",
             "message": "obtain the number of configuration items",
-            "translation": "获取配置项数量"
+            "translation": "obtain the number of configuration items",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "get template binding relationships through business and service IDs failed, err: {Err}",
             "message": "get template binding relationships through business and service IDs failed, err: {Err}",
-            "translation": "通过业务和服务ID获取模板绑定关系失败, err: {Err}",
+            "translation": "get template binding relationships through business and service IDs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1063,12 +1256,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get reference template set under this app failed, err: {Err}",
             "message": "get reference template set under this app failed, err: {Err}",
-            "translation": "获取该服务下的引用模板集失败, err: {Err}",
+            "translation": "get reference template set under this app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1078,12 +1273,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "remove the template set bound to the app failed, err: {Err}",
             "message": "remove the template set bound to the app failed, err: {Err}",
-            "translation": "移除套餐失败, err: {Err}",
+            "translation": "remove the template set bound to the app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1093,12 +1290,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "hook name {Name} already exists",
             "message": "hook name {Name} already exists",
-            "translation": "脚本名称 {Name} 已存在",
+            "translation": "hook name {Name} already exists",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -1108,12 +1307,14 @@
                     "argNum": 1,
                     "expr": "req.Spec.Name"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get excluded hook failed, err: {Err}",
             "message": "get excluded hook failed, err: {Err}",
-            "translation": "获取排除后的脚本失败, err: {Err}",
+            "translation": "get excluded hook failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1123,12 +1324,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "retrieve the referenced script failed, err: {Err}",
             "message": "retrieve the referenced script failed, err: {Err}",
-            "translation": "检索引用的脚本失败, err: {Err}",
+            "translation": "retrieve the referenced script failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1138,12 +1341,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get kv ({Key}) failed, err: {Err}",
             "message": "get kv ({Key}) failed, err: {Err}",
-            "translation": "获取 kv ({Key}) 失败, err: {Err}",
+            "translation": "get kv ({Key}) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -1161,12 +1366,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the config item {Key} under this service already exists and cannot be created again",
             "message": "the config item {Key} under this service already exists and cannot be created again",
-            "translation": "该服务下的配置项{Key}已存在, 无法重复创建",
+            "translation": "the config item {Key} under this service already exists and cannot be created again",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -1176,12 +1383,14 @@
                     "argNum": 1,
                     "expr": "req.Spec.Key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get app fail, key: {Key}, err: {Err}",
             "message": "get app fail, key: {Key}, err: {Err}",
-            "translation": "获取服务失败, key: {Key}, err: {Err}",
+            "translation": "get app fail, key: {Key}, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -1199,17 +1408,21 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "kv type does not match the data type defined in the application",
             "message": "kv type does not match the data type defined in the application",
-            "translation": "kv 类型与服务类型中定义的数据类型不匹配"
+            "translation": "kv type does not match the data type defined in the application",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "create kv failed, err: {Err}",
             "message": "create kv failed, err: {Err}",
-            "translation": "创建kv失败, err: {Err}",
+            "translation": "create kv failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1219,12 +1432,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "update kv failed, err: {Err}",
             "message": "update kv failed, err: {Err}",
-            "translation": "更新kv失败, err: {Err}",
+            "translation": "update kv failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1234,17 +1449,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "not a KV type service",
             "message": "not a KV type service",
-            "translation": "不是kv类型的服务"
+            "translation": "not a KV type service",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "list kv failed, err: {Err}",
             "message": "list kv failed, err: {Err}",
-            "translation": "获取kv列表失败, err: {Err}",
+            "translation": "list kv failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1254,12 +1473,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "batch import of KV config failed, err: {Err}",
             "message": "batch import of KV config failed, err: {Err}",
-            "translation": "批量导入KV配置失败, err: {Err}",
+            "translation": "batch import of KV config failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1269,12 +1490,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the type of config item {Key} is incorrect",
             "message": "the type of config item {Key} is incorrect",
-            "translation": "配置项 {Key} 的类型不正确",
+            "translation": "the type of config item {Key} is incorrect",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Key",
@@ -1284,12 +1507,14 @@
                     "argNum": 1,
                     "expr": "v.KvSpec.Key"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "clearing draft area failed, err: {Err}",
             "message": "clearing draft area failed, err: {Err}",
-            "translation": "清除草稿区失败, err: {Err}",
+            "translation": "clearing draft area failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1299,17 +1524,38 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch upsert vault failed, err: {Err}",
+            "message": "batch upsert vault failed, err: {Err}",
+            "translation": "batch upsert vault failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
         },
         {
             "id": "save kv failed",
             "message": "save kv failed",
-            "translation": "kv保持失败"
+            "translation": "save kv failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "get excluded kv failed, err: {Err}",
             "message": "get excluded kv failed, err: {Err}",
-            "translation": "获取排除后的kv失败, err: {Err}",
+            "translation": "get excluded kv failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1319,12 +1565,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "count the number of kV files that have not been deleted failed, err: {Err}",
             "message": "count the number of kV files that have not been deleted failed, err: {Err}",
-            "translation": "",
+            "translation": "count the number of kV files that have not been deleted failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1334,12 +1582,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the total number of config items exceeded the limit {AppConfigCnt}",
             "message": "the total number of config items exceeded the limit {AppConfigCnt}",
-            "translation": "",
+            "translation": "the total number of config items exceeded the limit {AppConfigCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1349,12 +1599,14 @@
                     "argNum": 1,
                     "expr": "appConfigCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "release {Name} is deprecated, can not be submited",
             "message": "release {Name} is deprecated, can not be submited",
-            "translation": "版本{Name}已弃用，无法提交",
+            "translation": "release {Name} is deprecated, can not be submited",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -1364,17 +1616,21 @@
                     "argNum": 1,
                     "expr": "release.Spec.Name"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "there is a release in publishing currently",
             "message": "there is a release in publishing currently",
-            "translation": "当前有版本在上线"
+            "translation": "there is a release in publishing currently",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "release {Name} is deprecated, can not be revoke",
             "message": "release {Name} is deprecated, can not be revoke",
-            "translation": "版本{Name}已弃用，无法撤消",
+            "translation": "release {Name} is deprecated, can not be revoke",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -1384,12 +1640,14 @@
                     "argNum": 1,
                     "expr": "release.Spec.Name"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "invalid publish_status: {PublishStatus}",
             "message": "invalid publish_status: {PublishStatus}",
-            "translation": "上线状态无效：{PublishStatus}",
+            "translation": "invalid publish_status: {PublishStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "PublishStatus",
@@ -1399,12 +1657,14 @@
                     "argNum": 1,
                     "expr": "req.PublishStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "release name {ReleaseName} already exists",
             "message": "release name {ReleaseName} already exists",
-            "translation": "版本名称{ReleaseName}已存在",
+            "translation": "release name {ReleaseName} already exists",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ReleaseName",
@@ -1414,17 +1674,14 @@
                     "argNum": 1,
                     "expr": "req.ReleaseName"
                 }
-            ]
-        },
-        {
-            "id": "no permission to revoke",
-            "message": "no permission to revoke",
-            "translation": "没有撤销权限"
+            ],
+            "fuzzy": true
         },
         {
             "id": "revoked not allowed, current publish status is: {PublishStatus}",
             "message": "revoked not allowed, current publish status is: {PublishStatus}",
-            "translation": "不允许撤销，当前上线状态为：{PublishStatus}",
+            "translation": "revoked not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "PublishStatus",
@@ -1434,12 +1691,14 @@
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "rejected not allowed, current publish status is: {PublishStatus}",
             "message": "rejected not allowed, current publish status is: {PublishStatus}",
-            "translation": "无法拒绝，当前上线状态为：{PublishStatus}",
+            "translation": "rejected not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "PublishStatus",
@@ -1449,22 +1708,28 @@
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "reason can not empty",
             "message": "reason can not empty",
-            "translation": "原因不能为空"
+            "translation": "reason can not empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "no permission to approve",
             "message": "no permission to approve",
-            "translation": "无权限审批"
+            "translation": "no permission to approve",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "pass not allowed, current publish status is: {PublishStatus}",
             "message": "pass not allowed, current publish status is: {PublishStatus}",
-            "translation": "无法通过，当前上线状态为：{PublishStatus}",
+            "translation": "pass not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "PublishStatus",
@@ -1474,12 +1739,14 @@
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "publish not allowed, current publish status is: {PublishStatus}",
             "message": "publish not allowed, current publish status is: {PublishStatus}",
-            "translation": "不允许上线，当前上线状态为：{PublishStatus}",
+            "translation": "publish not allowed, current publish status is: {PublishStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "PublishStatus",
@@ -1489,32 +1756,42 @@
                     "argNum": 1,
                     "expr": "strategy.Spec.PublishStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "biz list is empty",
             "message": "biz list is empty",
-            "translation": "业务列表为空"
+            "translation": "biz list is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "this ticket has been approved, no further processing is required",
             "message": "this ticket has been approved, no further processing is required",
-            "translation": "此单据已审批完成，无需进一步处理"
+            "translation": "this ticket has been approved, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "this ticket has been revoked, no further processing is required",
             "message": "this ticket has been revoked, no further processing is required",
-            "translation": "此单据已撤销，无需进一步处理"
+            "translation": "this ticket has been revoked, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "this ticket has been finished, no further processing is required",
             "message": "this ticket has been finished, no further processing is required",
-            "translation": "此单据已结束，无需进一步处理"
+            "translation": "this ticket has been finished, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
             "message": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
-            "translation": "此单据已撤销，无效的单据状态: {CurrentStatus}",
+            "translation": "approval has been revoked, invalid tikcet status: {CurrentStatus}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "CurrentStatus",
@@ -1524,12 +1801,14 @@
                     "argNum": 1,
                     "expr": "ticketStatus.Data.CurrentStatus"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get app template bindings by template set ids, err: {Err}",
             "message": "get app template bindings by template set ids, err: {Err}",
-            "translation": "按模板集ID获取应用程序模板绑定, err: {Err}",
+            "translation": "get app template bindings by template set ids, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1539,12 +1818,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "batch update app template binding's failed, err: {Err}",
             "message": "batch update app template binding's failed, err: {Err}",
-            "translation": "批量更新应用模板绑定失败, err: {Err}",
+            "translation": "batch update app template binding's failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1554,12 +1835,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "batch add templates to template sets failed, err: {Err}",
             "message": "batch add templates to template sets failed, err: {Err}",
-            "translation": "模板集批量添加模板失败, err: {Err}",
+            "translation": "batch add templates to template sets failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1569,12 +1852,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get template set data failed, err: {Err}",
             "message": "get template set data failed, err: {Err}",
-            "translation": "获取模板集数据失败, err: {Err}",
+            "translation": "get template set data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1584,17 +1869,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "there is no template file under this template set",
             "message": "there is no template file under this template set",
-            "translation": "此模板集下没有模板文件"
+            "translation": "there is no template file under this template set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "delete template from template sets failed, err: {Err}",
             "message": "delete template from template sets failed, err: {Err}",
-            "translation": "从模板套餐中删除模板失败, err: {Err}",
+            "translation": "delete template from template sets failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1604,12 +1893,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list templates by tuple failed, err: {Err}",
             "message": "list templates by tuple failed, err: {Err}",
-            "translation": "列出模板失败, err: {Err}",
+            "translation": "list templates by tuple failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1619,12 +1910,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list app template bindings by app ids failed, err: {Err}",
             "message": "list app template bindings by app ids failed, err: {Err}",
-            "translation": "按服务ID列出应用模板绑定失败, err: {Err}",
+            "translation": "list app template bindings by app ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1634,12 +1927,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get template set failed, err: {Err}",
             "message": "get template set failed, err: {Err}",
-            "translation": "获取模板集失败, err: {Err}",
+            "translation": "get template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1649,12 +1944,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the total number of template set {Name} templates exceeded the limit {TmplSetTmplCnt}",
             "message": "the total number of template set {Name} templates exceeded the limit {TmplSetTmplCnt}",
-            "translation": "模板套餐 {Name} 超过单套餐最大配置文件数量限制 {TmplSetTmplCnt}",
+            "translation": "the total number of template set {Name} templates exceeded the limit {TmplSetTmplCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -1672,12 +1969,14 @@
                     "argNum": 2,
                     "expr": "tmplSetTmplCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "list apps by app ids failed, err: {Err}",
             "message": "list apps by app ids failed, err: {Err}",
-            "translation": "按服务ID列出服务失败, err: {Err}",
+            "translation": "list apps by app ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1687,12 +1986,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "count the number of app configs failed, err: {Err}",
             "message": "count the number of app configs failed, err: {Err}",
-            "translation": "统计服务配置数量失败, err: {Err}",
+            "translation": "count the number of app configs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1702,17 +2003,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template set data is empty",
             "message": "template set data is empty",
-            "translation": "模板套餐数据为空"
+            "translation": "template set data is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "list templates data failed, err: {Err}",
             "message": "list templates data failed, err: {Err}",
-            "translation": "列出模板数据失败, err: {Err}",
+            "translation": "list templates data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1722,17 +2027,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template data is empty",
             "message": "template data is empty",
-            "translation": "模板数据为空"
+            "translation": "template data is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "list templates revisions data failed, err: {Err}",
             "message": "list templates revisions data failed, err: {Err}",
-            "translation": "列出模板版本数据失败, err: {Err}",
+            "translation": "list templates revisions data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1742,12 +2051,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "same template variable name {Name} already exists",
             "message": "same template variable name {Name} already exists",
-            "translation": "同名的模版变量名称{Name}已存在",
+            "translation": "same template variable name {Name} already exists",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Name",
@@ -1757,300 +2068,21 @@
                     "argNum": 1,
                     "expr": "req.Spec.Name"
                 }
-            ]
-        },
-        {
-            "id": "db operation failed",
-            "message": "db operation failed",
-            "translation": "db操作失败"
-        },
-        {
-            "id": "invalid argument",
-            "message": "invalid argument",
-            "translation": "无效参数"
-        },
-        {
-            "id": "id should not be set",
-            "message": "id should not be set",
-            "translation": "id不应该被设置"
-        },
-        {
-            "id": "spec not set",
-            "message": "spec not set",
-            "translation": "spec没有被设置"
-        },
-        {
-            "id": "attachment not set",
-            "message": "attachment not set",
-            "translation": "attachment没有被设置"
-        },
-        {
-            "id": "revision not set",
-            "message": "revision not set",
-            "translation": "revision没有被设置"
-        },
-        {
-            "id": "invalid path {Path}, length should \u003e= 1",
-            "message": "invalid path {Path}, length should \u003e= 1",
-            "translation": "路径 {Path} 无效，长度应为 \u003e= 1",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, length should \u003c= 1024",
-            "message": "invalid path {Path}, length should \u003c= 1024",
-            "translation": "路径 {Path} 无效，长度应为 \u003c= 1024",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, the path must start with '/'",
-            "message": "invalid path {Path}, the path must start with '/'",
-            "translation": "路径 {Path} 无效，路径必须以“/”开头",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, the pathcannot contain consecutive '/'",
-            "message": "invalid path {Path}, the pathcannot contain consecutive '/'",
-            "translation": "路径 {Path} 无效，路径不能包含连续的“/”",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path, length should \u003e= 1",
-            "message": "invalid path, length should \u003e= 1",
-            "translation": "路径无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid path, length should \u003c= 256",
-            "message": "invalid path, length should \u003c= 256",
-            "translation": "路径无效, 长度应为 \u003c= 256"
-        },
-        {
-            "id": "invalid path,path does not conform to the win file path format specification",
-            "message": "invalid path,path does not conform to the win file path format specification",
-            "translation": "路径无效, 路径不符合win文件路径格式规范"
-        },
-        {
-            "id": "reload file path is required",
-            "message": "reload file path is required",
-            "translation": "需要重新加载文件路径"
-        },
-        {
-            "id": "invalid reload file path, should \u003c= 128",
-            "message": "invalid reload file path, should \u003c= 128",
-            "translation": "重新加载文件路径无效, 应该 \u003c= 128"
-        },
-        {
-            "id": "reload file path is not the absolute path",
-            "message": "reload file path is not the absolute path",
-            "translation": "重新加载文件路径不是绝对路径"
-        },
-        {
-            "id": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
-            "message": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
-            "translation": "{SideWorkspaceDir} 子路径为系统保留路径, 不允许使用",
-            "placeholders": [
-                {
-                    "id": "SideWorkspaceDir",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "constant.SideWorkspaceDir"
-                }
-            ]
-        },
-        {
-            "id": "memo is required, can not be empty",
-            "message": "memo is required, can not be empty",
-            "translation": "描述为必填项, 不能为空"
-        },
-        {
-            "id": "invalid memo, length should \u003c= 200",
-            "message": "invalid memo, length should \u003c= 200",
-            "translation": "描述无效, 长度应为 \u003c= 200"
-        },
-        {
-            "id": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
-            "message": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
-            "translation": "资源名称“{LowerName}”以“{Prefix}”为前缀, 是保留名称, 不允许使用",
-            "placeholders": [
-                {
-                    "id": "LowerName",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "lowerName"
-                },
-                {
-                    "id": "Prefix",
-                    "string": "%[2]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "prefix"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003e= 1",
-            "message": "invalid name, length should \u003e= 1",
-            "translation": "名称无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid name, length should \u003c= 128",
-            "message": "invalid name, length should \u003c= 128",
-            "translation": "无效名称, 长度应该\u003c=128"
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
-            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
-            "translation": "无效名称：{Name}, 只允许包含英文、数字、下划线（_）、连字符（-）, 且必须以英文、数字开头和结尾",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
-            "message": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
-            "translation": "无效名称, 长度应该\u003e=9且必须以bk_bscp_前缀开头（忽略大小写）"
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
-            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
-            "translation": "无效名称：{Name}, 只允许英文、数字、下划线（_）, 且必须以bk_bscp_前缀开头（忽略大小写）",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
-            "message": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
-            "translation": "无效名称：{Name}, 只允许包含中文、英文、数字、下划线（_）、连字符（-）, 且必须以中文、英文或数字开头和结尾",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003c= 64",
-            "message": "invalid name, length should \u003c= 64",
-            "translation": "名称无效, 长度应为 \u003c= 64"
-        },
-        {
-            "id": "invalid name {Name}, name cannot all be '.'",
-            "message": "invalid name {Name}, name cannot all be '.'",
-            "translation": "名称 {Name} 无效, 名称不能全部为“.”",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name {Name}, there can't be any /",
-            "message": "invalid name {Name}, there can't be any /",
-            "translation": "名称 {Name} 无效，不能有 /",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid namespace, length should \u003e= 1",
-            "message": "invalid namespace, length should \u003e= 1",
-            "translation": "命名空间无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid namespace, length should \u003c= 128",
-            "message": "invalid namespace, length should \u003c= 128",
-            "translation": "命名空间无效, 长度应为 \u003c= 128"
-        },
-        {
-            "id": "invalid username, length should \u003e= 1",
-            "message": "invalid username, length should \u003e= 1",
-            "translation": "用户名无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid username, length should \u003c= 32",
-            "message": "invalid username, length should \u003c= 32",
-            "translation": "用户名无效, 长度应为 \u003c= 32"
+            ],
+            "fuzzy": true
         },
         {
             "id": "app is nil",
             "message": "app is nil",
-            "translation": "服务为空"
+            "translation": "app is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "create data failed, err: {Err}",
             "message": "create data failed, err: {Err}",
-            "translation": "创建失败, err: {Err}",
+            "translation": "create data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2060,12 +2092,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "create app failed, err: {Err}",
             "message": "create app failed, err: {Err}",
-            "translation": "创建服务失败, err: {Err}",
+            "translation": "create app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2075,12 +2109,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "update app failed, err: {Err}",
             "message": "update app failed, err: {Err}",
-            "translation": "更新服务失败, err: {Err}",
+            "translation": "update app failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2090,12 +2126,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "count app {AppID}'s config items failed, err: {Err}",
             "message": "count app {AppID}'s config items failed, err: {Err}",
-            "translation": "统计服务 {AppID} 的配置项失败, err: {Err}",
+            "translation": "count app {AppID}'s config items failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppID",
@@ -2113,12 +2151,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get app {AppID}'s template binding failed, err: {Err}",
             "message": "get app {AppID}'s template binding failed, err: {Err}",
-            "translation": "获取服务 {AppID} 的模板绑定失败,  err: {Err}",
+            "translation": "get app {AppID}'s template binding failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppID",
@@ -2136,12 +2176,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "the total number of app {AppID}'s config items(including template and non-template)exceeded the limit {AppConfigCnt}",
             "message": "the total number of app {AppID}'s config items(including template and non-template)exceeded the limit {AppConfigCnt}",
-            "translation": "服务 {AppID} 的配置项总数（包括模板和非模板）超出限制 {AppConfigCnt}",
+            "translation": "the total number of app {AppID}'s config items(including template and non-template)exceeded the limit {AppConfigCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppID",
@@ -2159,32 +2201,42 @@
                     "argNum": 2,
                     "expr": "appConfigCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "hook is nil",
             "message": "hook is nil",
-            "translation": "脚本不存在"
+            "translation": "hook is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "Unnamed Version",
             "message": "Unnamed Version",
-            "translation": "未命名版本"
+            "translation": "Unnamed Version",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "appID can not be 0",
             "message": "appID can not be 0",
-            "translation": "appID不能为0"
+            "translation": "appID can not be 0",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "bizID can not be 0",
             "message": "bizID can not be 0",
-            "translation": ""
+            "translation": "bizID can not be 0",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",
             "message": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",
-            "translation": "模板套餐 {TmplSetID}'s 超过单套餐最大配置文件数量限制 {TmplSetTmplCnt}",
+            "translation": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "TmplSetID",
@@ -2202,12 +2254,14 @@
                     "argNum": 2,
                     "expr": "tmplSetTmplCnt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "validate templates exist failed, err: {Err}",
             "message": "validate templates exist failed, err: {Err}",
-            "translation": "验证模板是否存在失败, err: {Err}",
+            "translation": "validate templates exist failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2217,12 +2271,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template space id in {DiffIDs} is not exist",
             "message": "template space id in {DiffIDs} is not exist",
-            "translation": "{DiffIDs} 中的模板空间 ID 不存在",
+            "translation": "template space id in {DiffIDs} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DiffIDs",
@@ -2232,12 +2288,14 @@
                     "argNum": 1,
                     "expr": "diffIDs"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template id in {DiffIDs} is not exist",
             "message": "template id in {DiffIDs} is not exist",
-            "translation": "{DiffIDs} 中的模板 ID 不存在",
+            "translation": "template id in {DiffIDs} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DiffIDs",
@@ -2247,12 +2305,14 @@
                     "argNum": 1,
                     "expr": "diffIDs"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "validate template releases exist failed, err: {Err}",
             "message": "validate template releases exist failed, err: {Err}",
-            "translation": "验证模板版本是否存在失败, err: {Err}",
+            "translation": "validate template releases exist failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2262,12 +2322,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template revision id in {DiffIDs} is not exist",
             "message": "template revision id in {DiffIDs} is not exist",
-            "translation": "{DiffIDs} 中的模板版本 ID 不存在",
+            "translation": "template revision id in {DiffIDs} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DiffIDs",
@@ -2277,12 +2339,14 @@
                     "argNum": 1,
                     "expr": "diffIDs"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "validate template sets exist failed, err: {Err}",
             "message": "validate template sets exist failed, err: {Err}",
-            "translation": "验证模板套餐是否存在失败, err: {Err}",
+            "translation": "validate template sets exist failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2292,12 +2356,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template set id in {DiffIDs} is not exist",
             "message": "template set id in {DiffIDs} is not exist",
-            "translation": "{DiffIDs} 中的模板套餐 ID 不存在",
+            "translation": "template set id in {DiffIDs} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DiffIDs",
@@ -2307,12 +2373,14 @@
                     "argNum": 1,
                     "expr": "diffIDs"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template {Id} is not exist",
             "message": "template {Id} is not exist",
-            "translation": "模板 {Id} 不存在",
+            "translation": "template {Id} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Id",
@@ -2322,12 +2390,14 @@
                     "argNum": 1,
                     "expr": "id"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get template failed, err: {Err}",
             "message": "get template failed, err: {Err}",
-            "translation": "获取模板失败, err: {Err}",
+            "translation": "get template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2337,12 +2407,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template release {Id} is not exist",
             "message": "template release {Id} is not exist",
-            "translation": "模板版本 {Id} 不存在",
+            "translation": "template release {Id} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Id",
@@ -2352,12 +2424,14 @@
                     "argNum": 1,
                     "expr": "id"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get template release failed, err: {Err}",
             "message": "get template release failed, err: {Err}",
-            "translation": "获取模板版本失败, err: {Err}",
+            "translation": "get template release failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2367,12 +2441,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template set {Id} is not exist",
             "message": "template set {Id} is not exist",
-            "translation": "模板套餐 {Id} 不存在",
+            "translation": "template set {Id} is not exist",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Id",
@@ -2382,12 +2458,14 @@
                     "argNum": 1,
                     "expr": "id"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "get template set count failed, err: {Err}",
             "message": "get template set count failed, err: {Err}",
-            "translation": "统计模板套餐数量失败, err: {Err}",
+            "translation": "get template set count failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2397,17 +2475,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "there are template sets under the template space, need to delete them first",
             "message": "there are template sets under the template space, need to delete them first",
-            "translation": "模板空间下有模板套餐, 需要先删除"
+            "translation": "there are template sets under the template space, need to delete them first",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "get template count failed, err: {Err}",
             "message": "get template count failed, err: {Err}",
-            "translation": "获取模板数量失败, err: {Err}",
+            "translation": "get template count failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2417,17 +2499,21 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "there are templates under the template space, need to delete them first",
             "message": "there are templates under the template space, need to delete them first",
-            "translation": "模板空间下有模板, 需要先删除"
+            "translation": "there are templates under the template space, need to delete them first",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "validate templates in a template set failed, err: {Err}",
             "message": "validate templates in a template set failed, err: {Err}",
-            "translation": "验证模板套餐中的模板失败, err: {Err}",
+            "translation": "validate templates in a template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2437,12 +2523,14 @@
                     "argNum": 1,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "template id in {DiffIDs} is not belong to template set id {TemplateSetID}",
             "message": "template id in {DiffIDs} is not belong to template set id {TemplateSetID}",
-            "translation": "{DiffIDs} 中的模板 ID 不属于模板套餐 ID {TemplateSetID}",
+            "translation": "template id in {DiffIDs} is not belong to template set id {TemplateSetID}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DiffIDs",
@@ -2460,32 +2548,466 @@
                     "argNum": 2,
                     "expr": "templateSetID"
                 }
-            ]
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
+            "message": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
+            "translation": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "value type assertion failed, err: {Err}",
+            "message": "value type assertion failed, err: {Err}",
+            "translation": "value type assertion failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "authorize failed",
+            "message": "authorize failed",
+            "translation": "authorize failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get permission to apply failed, err: {Err}",
+            "message": "get permission to apply failed, err: {Err}",
+            "translation": "get permission to apply failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "grpc status with details failed, err: {Err}",
+            "message": "grpc status with details failed, err: {Err}",
+            "translation": "grpc status with details failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "db operation failed",
+            "message": "db operation failed",
+            "translation": "db operation failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid argument",
+            "message": "invalid argument",
+            "translation": "invalid argument",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "id should not be set",
+            "message": "id should not be set",
+            "translation": "id should not be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "spec not set",
+            "message": "spec not set",
+            "translation": "spec not set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "attachment not set",
+            "message": "attachment not set",
+            "translation": "attachment not set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "revision not set",
+            "message": "revision not set",
+            "translation": "revision not set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path {Path}, length should \u003e= 1",
+            "message": "invalid path {Path}, length should \u003e= 1",
+            "translation": "invalid path {Path}, length should \u003e= 1",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path {Path}, length should \u003c= 1024",
+            "message": "invalid path {Path}, length should \u003c= 1024",
+            "translation": "invalid path {Path}, length should \u003c= 1024",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path {Path}, the path must start with '/'",
+            "message": "invalid path {Path}, the path must start with '/'",
+            "translation": "invalid path {Path}, the path must start with '/'",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path {Path}, the pathcannot contain consecutive '/'",
+            "message": "invalid path {Path}, the pathcannot contain consecutive '/'",
+            "translation": "invalid path {Path}, the pathcannot contain consecutive '/'",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path, length should \u003e= 1",
+            "message": "invalid path, length should \u003e= 1",
+            "translation": "invalid path, length should \u003e= 1",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path, length should \u003c= 256",
+            "message": "invalid path, length should \u003c= 256",
+            "translation": "invalid path, length should \u003c= 256",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid path,path does not conform to the win file path format specification",
+            "message": "invalid path,path does not conform to the win file path format specification",
+            "translation": "invalid path,path does not conform to the win file path format specification",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "reload file path is required",
+            "message": "reload file path is required",
+            "translation": "reload file path is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid reload file path, should \u003c= 128",
+            "message": "invalid reload file path, should \u003c= 128",
+            "translation": "invalid reload file path, should \u003c= 128",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "reload file path is not the absolute path",
+            "message": "reload file path is not the absolute path",
+            "translation": "reload file path is not the absolute path",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
+            "message": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
+            "translation": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "SideWorkspaceDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "constant.SideWorkspaceDir"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "memo is required, can not be empty",
+            "message": "memo is required, can not be empty",
+            "translation": "memo is required, can not be empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid memo, length should \u003c= 200",
+            "message": "invalid memo, length should \u003c= 200",
+            "translation": "invalid memo, length should \u003c= 200",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
+            "message": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
+            "translation": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "LowerName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lowerName"
+                },
+                {
+                    "id": "Prefix",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "prefix"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name, length should \u003e= 1",
+            "message": "invalid name, length should \u003e= 1",
+            "translation": "invalid name, length should \u003e= 1",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name, length should \u003c= 128",
+            "message": "invalid name, length should \u003c= 128",
+            "translation": "invalid name, length should \u003c= 128",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
+            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
+            "translation": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
+            "message": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
+            "translation": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
+            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
+            "translation": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
+            "message": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
+            "translation": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name, length should \u003c= 64",
+            "message": "invalid name, length should \u003c= 64",
+            "translation": "invalid name, length should \u003c= 64",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name {Name}, name cannot all be '.'",
+            "message": "invalid name {Name}, name cannot all be '.'",
+            "translation": "invalid name {Name}, name cannot all be '.'",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid name {Name}, there can't be any /",
+            "message": "invalid name {Name}, there can't be any /",
+            "translation": "invalid name {Name}, there can't be any /",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid namespace, length should \u003e= 1",
+            "message": "invalid namespace, length should \u003e= 1",
+            "translation": "invalid namespace, length should \u003e= 1",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid namespace, length should \u003c= 128",
+            "message": "invalid namespace, length should \u003c= 128",
+            "translation": "invalid namespace, length should \u003c= 128",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid username, length should \u003e= 1",
+            "message": "invalid username, length should \u003e= 1",
+            "translation": "invalid username, length should \u003e= 1",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid username, length should \u003c= 32",
+            "message": "invalid username, length should \u003c= 32",
+            "translation": "invalid username, length should \u003c= 32",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "id can not be set",
             "message": "id can not be set",
-            "translation": "ID 不能为空"
+            "translation": "id can not be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid biz id",
             "message": "invalid biz id",
-            "translation": "无法验证业务ID"
+            "translation": "invalid biz id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid spec, is nil",
             "message": "invalid spec, is nil",
-            "translation": "参数为空"
+            "translation": "invalid spec, is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "app spec is nil",
             "message": "app spec is nil",
-            "translation": "服务参数为空"
+            "translation": "app spec is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "unknown config type: {ConfigType}",
             "message": "unknown config type: {ConfigType}",
-            "translation": "未知的配置类型：{ConfigType}",
+            "translation": "unknown config type: {ConfigType}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ConfigType",
@@ -2495,22 +3017,28 @@
                     "argNum": 1,
                     "expr": "as.ConfigType"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "app's type can not be updated",
             "message": "app's type can not be updated",
-            "translation": "服务类型不能编辑"
+            "translation": "app's type can not be updated",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "not support table config type for now",
             "message": "not support table config type for now",
-            "translation": "暂不支持表配置类型"
+            "translation": "not support table config type for now",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "unsupported config type: {ConfigType}",
             "message": "unsupported config type: {ConfigType}",
-            "translation": "不支持的配置类型：{ConfigType}",
+            "translation": "unsupported config type: {ConfigType}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "ConfigType",
@@ -2520,12 +3048,14 @@
                     "argNum": 1,
                     "expr": "c"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "unsupported app reload type: {AppReloadType}",
             "message": "unsupported app reload type: {AppReloadType}",
-            "translation": "不支持的服务类型：{AppReloadType}",
+            "translation": "unsupported app reload type: {AppReloadType}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "AppReloadType",
@@ -2535,32 +3065,42 @@
                     "argNum": 1,
                     "expr": "rt"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "invalid data-type",
             "message": "invalid data-type",
-            "translation": "无法验证数据类型"
+            "translation": "invalid data-type",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "spec should be set",
             "message": "spec should be set",
-            "translation": "参数为空"
+            "translation": "spec should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid commit spec's content id",
             "message": "invalid commit spec's content id",
-            "translation": "无法验证参数"
+            "translation": "invalid commit spec's content id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "commit spec's content is empty",
             "message": "commit spec's content is empty",
-            "translation": "参数为空"
+            "translation": "commit spec's content is empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "verify Windows file paths failed, path: {Path}, err: {Err}",
             "message": "verify Windows file paths failed, path: {Path}, err: {Err}",
-            "translation": "验证 Windows 文件路径失败, path: {Path}, err: {Err}",
+            "translation": "verify Windows file paths failed, path: {Path}, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Path",
@@ -2578,12 +3118,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "verify Unix file paths failed, path: {Path}, err: {Err}",
             "message": "verify Unix file paths failed, path: {Path}, err: {Err}",
-            "translation": "验证 Unix 文件路径失败, path: {Path}, err: {Err}",
+            "translation": "verify Unix file paths failed, path: {Path}, err: {Err}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Path",
@@ -2601,12 +3143,14 @@
                     "argNum": 2,
                     "expr": "err"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "unsupported file format: {FileFormat}",
             "message": "unsupported file format: {FileFormat}",
-            "translation": "不支持的文件格式：{FileFormat}",
+            "translation": "unsupported file format: {FileFormat}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "FileFormat",
@@ -2616,12 +3160,14 @@
                     "argNum": 1,
                     "expr": "f"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "unsupported file mode: {FileMode}",
             "message": "unsupported file mode: {FileMode}",
-            "translation": "不支持的文件模式：{FileMode}",
+            "translation": "unsupported file mode: {FileMode}",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "FileMode",
@@ -2631,47 +3177,63 @@
                     "argNum": 1,
                     "expr": "f"
                 }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "content id can not set",
             "message": "content id can not set",
-            "translation": "参数为空"
+            "translation": "content id can not set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid content signature, should be config's sha256 value",
             "message": "invalid content signature, should be config's sha256 value",
-            "translation": "内容签名无效, 应为配置的 sha256 值"
+            "translation": "invalid content signature, should be config's sha256 value",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "content signature should be lowercase",
             "message": "content signature should be lowercase",
-            "translation": "内容签名应小写"
+            "translation": "content signature should be lowercase",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid origin content signature, should be config's sha256 value",
             "message": "invalid origin content signature, should be config's sha256 value",
-            "translation": "无效的原始内容签名, 应为配置的 sha256 值"
+            "translation": "invalid origin content signature, should be config's sha256 value",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "origin content signature should be lowercase",
             "message": "origin content signature should be lowercase",
-            "translation": "原始内容签名应小写"
+            "translation": "origin content signature should be lowercase",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid app id",
             "message": "invalid app id",
-            "translation": "无效的服务ID"
+            "translation": "invalid app id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "invalid config item id",
             "message": "invalid config item id",
-            "translation": "无效的配置项ID"
+            "translation": "invalid config item id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
         },
         {
             "id": "default_val {DefaultVal} is not a number type",
             "message": "default_val {DefaultVal} is not a number type",
-            "translation": "default_val {DefaultVal} 不是数字类型",
+            "translation": "default_val {DefaultVal} is not a number type",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "DefaultVal",
@@ -2681,92 +3243,14 @@
                     "argNum": 1,
                     "expr": "t.DefaultVal"
                 }
-            ]
-        },
-        {
-            "id": "unsupported variable type: {VariableType}",
-            "message": "unsupported variable type: {VariableType}",
-            "translation": "不支持的变量类型：{VariableType}",
-            "placeholders": [
-                {
-                    "id": "VariableType",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.VariableType",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "t"
-                }
-            ]
-        },
-        {
-            "id": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
-            "message": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
-            "translation": "从 kv.Data 获取“kv_type”作为字符串失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "value type assertion failed, err: {Err}",
-            "message": "value type assertion failed, err: {Err}",
-            "translation": "值类型断言失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "authorize failed",
-            "message": "authorize failed",
-            "translation": "授权失败"
-        },
-        {
-            "id": "get permission to apply failed, err: {Err}",
-            "message": "get permission to apply failed, err: {Err}",
-            "translation": "获取权限失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "grpc status with details failed, err: {Err}",
-            "message": "grpc status with details failed, err: {Err}",
-            "translation": "grpc 状态详细信息失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
+            ],
+            "fuzzy": true
         },
         {
             "id": "{Path2} and {Path1} path file conflict",
             "message": "{Path2} and {Path1} path file conflict",
-            "translation": "{Path2} 与 {Path1} 路径文件冲突",
+            "translation": "{Path2} and {Path1} path file conflict",
+            "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Path2",
@@ -2784,7 +3268,8 @@
                     "argNum": 2,
                     "expr": "path1"
                 }
-            ]
+            ],
+            "fuzzy": true
         }
     ]
 }
