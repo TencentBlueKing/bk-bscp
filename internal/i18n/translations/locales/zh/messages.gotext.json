@@ -237,7 +237,7 @@
         {
             "id": "batch recovery config items failed",
             "message": "batch recovery config items failed",
-            "translation": ""
+            "translation": "批量恢复配置项失败"
         },
         {
             "id": "batch delete groups failed",
@@ -483,17 +483,27 @@
         {
             "id": "keys is required",
             "message": "keys is required",
-            "translation": ""
+            "translation": "key 不能为空"
         },
         {
             "id": "batch recovery kv failed",
             "message": "batch recovery kv failed",
-            "translation": ""
+            "translation": "批量恢复 kv 失败"
+        },
+        {
+            "id": "create release failed there is a file conflict",
+            "message": "create release failed there is a file conflict",
+            "translation": "创建发布失败，存在文件冲突"
+        },
+        {
+            "id": "create release failed there is a certificate expiration exists",
+            "message": "create release failed there is a certificate expiration exists",
+            "translation": "创建发布失败，存在证书过期问题"
         },
         {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
-            "translation": ""
+            "translation": "从模板集中删除模板失败"
         },
         {
             "id": "template variable name must start with {TemplateVariablePrefix}",
@@ -530,6 +540,36 @@
                     "underlyingType": "int",
                     "argNum": 2,
                     "expr": "constant.ArrayInputLenLimit"
+                }
+            ]
+        },
+        {
+            "id": "template variable {Key} type error",
+            "message": "template variable {Key} type error",
+            "translation": "模板变量{Key}类型错误",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ]
+        },
+        {
+            "id": "unsupported variable type: {VariableType}",
+            "message": "unsupported variable type: {VariableType}",
+            "translation": "不支持的变量类型：{VariableType}",
+            "placeholders": [
+                {
+                    "id": "VariableType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "variableType"
                 }
             ]
         },
@@ -764,9 +804,9 @@
             ]
         },
         {
-            "id": "the template file {ValidatedTemplateSetNamessId} in the template set \n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
-            "message": "the template file {ValidatedTemplateSetNamessId} in the template set \n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
-            "translation": "模板套餐 {TemplateNamesv} 中的模板文件 {ValidatedTemplateSetNamessId} 被移除, 请重新导入套餐",
+            "id": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
+            "message": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
+            "translation": "模板集{TemplateNamesv} 中的模板文件 {ValidatedTemplateSetNamessId} 已被移除。请重新导入该集",
             "placeholders": [
                 {
                     "id": "ValidatedTemplateSetNamessId",
@@ -802,9 +842,9 @@
             ]
         },
         {
-            "id": "template version {RevisionNamesv} in template file {TemplateNamestId} \n\t\t\t\thas been removed. Please import the set again",
-            "message": "template version {RevisionNamesv} in template file {TemplateNamestId} \n\t\t\t\thas been removed. Please import the set again",
-            "translation": "模板文件 {TemplateNamestId} 中的模板版本 {RevisionNamesv} 被移除, 请重新导入套餐",
+            "id": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
+            "message": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
+            "translation": "模板文件 {TemplateNamestId} 中的模板版本 {RevisionNamesv} 已被删除。请重新导入该集合",
             "placeholders": [
                 {
                     "id": "RevisionNamesv",
@@ -825,9 +865,9 @@
             ]
         },
         {
-            "id": "the version number {TemplateID} in the template file {ID} is not the \n\t\tlatest version. Please import the set again",
-            "message": "the version number {TemplateID} in the template file {ID} is not the \n\t\tlatest version. Please import the set again",
-            "translation": "模板文件 {ID} 中的版本号 {TemplateID} 不是最新版本, 请重新导入套餐",
+            "id": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
+            "message": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
+            "translation": "模板文件 {ID} 中的版本号 {TemplateID} 不是最新版本。请重新导入该集合",
             "placeholders": [
                 {
                     "id": "TemplateID",
@@ -1031,9 +1071,9 @@
             ]
         },
         {
-            "id": "the total number of config items(including template and non-template) \n\t\t\texceeded the limit {AppConfigCnt}",
-            "message": "the total number of config items(including template and non-template) \n\t\t\texceeded the limit {AppConfigCnt}",
-            "translation": "该服务配置项的总数（包括模板和非模板）超出限制 {AppConfigCnt}",
+            "id": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
+            "message": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
+            "translation": "配置项总数（包括模板和非模板）超出限制{AppConfigCnt}",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1237,6 +1277,20 @@
             ]
         },
         {
+            "id": "get a list of expired certificates failed, err: {Arg_1}",
+            "message": "get a list of expired certificates failed, err: {Arg_1}",
+            "translation": "获取过期证书列表失败，错误：{Arg_1}",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ]
+        },
+        {
             "id": "not a KV type service",
             "message": "not a KV type service",
             "translation": "不是kv类型的服务"
@@ -1302,6 +1356,21 @@
             ]
         },
         {
+            "id": "batch upsert vault failed, err: {Err}",
+            "message": "batch upsert vault failed, err: {Err}",
+            "translation": "批量更新vault失败，错误：{Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
             "id": "save kv failed",
             "message": "save kv failed",
             "translation": "kv保持失败"
@@ -1324,7 +1393,7 @@
         {
             "id": "count the number of kV files that have not been deleted failed, err: {Err}",
             "message": "count the number of kV files that have not been deleted failed, err: {Err}",
-            "translation": "",
+            "translation": "统计未删除的kV文件数量失败，错误：{Err}",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1339,7 +1408,7 @@
         {
             "id": "the total number of config items exceeded the limit {AppConfigCnt}",
             "message": "the total number of config items exceeded the limit {AppConfigCnt}",
-            "translation": "",
+            "translation": "配置项总数超出限制 {AppConfigCnt}",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1415,11 +1484,6 @@
                     "expr": "req.ReleaseName"
                 }
             ]
-        },
-        {
-            "id": "no permission to revoke",
-            "message": "no permission to revoke",
-            "translation": "没有撤销权限"
         },
         {
             "id": "revoked not allowed, current publish status is: {PublishStatus}",
@@ -1760,289 +1824,6 @@
             ]
         },
         {
-            "id": "db operation failed",
-            "message": "db operation failed",
-            "translation": "db操作失败"
-        },
-        {
-            "id": "invalid argument",
-            "message": "invalid argument",
-            "translation": "无效参数"
-        },
-        {
-            "id": "id should not be set",
-            "message": "id should not be set",
-            "translation": "id不应该被设置"
-        },
-        {
-            "id": "spec not set",
-            "message": "spec not set",
-            "translation": "spec没有被设置"
-        },
-        {
-            "id": "attachment not set",
-            "message": "attachment not set",
-            "translation": "attachment没有被设置"
-        },
-        {
-            "id": "revision not set",
-            "message": "revision not set",
-            "translation": "revision没有被设置"
-        },
-        {
-            "id": "invalid path {Path}, length should \u003e= 1",
-            "message": "invalid path {Path}, length should \u003e= 1",
-            "translation": "路径 {Path} 无效，长度应为 \u003e= 1",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, length should \u003c= 1024",
-            "message": "invalid path {Path}, length should \u003c= 1024",
-            "translation": "路径 {Path} 无效，长度应为 \u003c= 1024",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, the path must start with '/'",
-            "message": "invalid path {Path}, the path must start with '/'",
-            "translation": "路径 {Path} 无效，路径必须以“/”开头",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path {Path}, the pathcannot contain consecutive '/'",
-            "message": "invalid path {Path}, the pathcannot contain consecutive '/'",
-            "translation": "路径 {Path} 无效，路径不能包含连续的“/”",
-            "placeholders": [
-                {
-                    "id": "Path",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "path"
-                }
-            ]
-        },
-        {
-            "id": "invalid path, length should \u003e= 1",
-            "message": "invalid path, length should \u003e= 1",
-            "translation": "路径无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid path, length should \u003c= 256",
-            "message": "invalid path, length should \u003c= 256",
-            "translation": "路径无效, 长度应为 \u003c= 256"
-        },
-        {
-            "id": "invalid path,path does not conform to the win file path format specification",
-            "message": "invalid path,path does not conform to the win file path format specification",
-            "translation": "路径无效, 路径不符合win文件路径格式规范"
-        },
-        {
-            "id": "reload file path is required",
-            "message": "reload file path is required",
-            "translation": "需要重新加载文件路径"
-        },
-        {
-            "id": "invalid reload file path, should \u003c= 128",
-            "message": "invalid reload file path, should \u003c= 128",
-            "translation": "重新加载文件路径无效, 应该 \u003c= 128"
-        },
-        {
-            "id": "reload file path is not the absolute path",
-            "message": "reload file path is not the absolute path",
-            "translation": "重新加载文件路径不是绝对路径"
-        },
-        {
-            "id": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
-            "message": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
-            "translation": "{SideWorkspaceDir} 子路径为系统保留路径, 不允许使用",
-            "placeholders": [
-                {
-                    "id": "SideWorkspaceDir",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "constant.SideWorkspaceDir"
-                }
-            ]
-        },
-        {
-            "id": "memo is required, can not be empty",
-            "message": "memo is required, can not be empty",
-            "translation": "描述为必填项, 不能为空"
-        },
-        {
-            "id": "invalid memo, length should \u003c= 200",
-            "message": "invalid memo, length should \u003c= 200",
-            "translation": "描述无效, 长度应为 \u003c= 200"
-        },
-        {
-            "id": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
-            "message": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
-            "translation": "资源名称“{LowerName}”以“{Prefix}”为前缀, 是保留名称, 不允许使用",
-            "placeholders": [
-                {
-                    "id": "LowerName",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "lowerName"
-                },
-                {
-                    "id": "Prefix",
-                    "string": "%[2]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "prefix"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003e= 1",
-            "message": "invalid name, length should \u003e= 1",
-            "translation": "名称无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid name, length should \u003c= 128",
-            "message": "invalid name, length should \u003c= 128",
-            "translation": "无效名称, 长度应该\u003c=128"
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
-            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
-            "translation": "无效名称：{Name}, 只允许包含英文、数字、下划线（_）、连字符（-）, 且必须以英文、数字开头和结尾",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
-            "message": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
-            "translation": "无效名称, 长度应该\u003e=9且必须以bk_bscp_前缀开头（忽略大小写）"
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
-            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
-            "translation": "无效名称：{Name}, 只允许英文、数字、下划线（_）, 且必须以bk_bscp_前缀开头（忽略大小写）",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
-            "message": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
-            "translation": "无效名称：{Name}, 只允许包含中文、英文、数字、下划线（_）、连字符（-）, 且必须以中文、英文或数字开头和结尾",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name, length should \u003c= 64",
-            "message": "invalid name, length should \u003c= 64",
-            "translation": "名称无效, 长度应为 \u003c= 64"
-        },
-        {
-            "id": "invalid name {Name}, name cannot all be '.'",
-            "message": "invalid name {Name}, name cannot all be '.'",
-            "translation": "名称 {Name} 无效, 名称不能全部为“.”",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid name {Name}, there can't be any /",
-            "message": "invalid name {Name}, there can't be any /",
-            "translation": "名称 {Name} 无效，不能有 /",
-            "placeholders": [
-                {
-                    "id": "Name",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "name"
-                }
-            ]
-        },
-        {
-            "id": "invalid namespace, length should \u003e= 1",
-            "message": "invalid namespace, length should \u003e= 1",
-            "translation": "命名空间无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid namespace, length should \u003c= 128",
-            "message": "invalid namespace, length should \u003c= 128",
-            "translation": "命名空间无效, 长度应为 \u003c= 128"
-        },
-        {
-            "id": "invalid username, length should \u003e= 1",
-            "message": "invalid username, length should \u003e= 1",
-            "translation": "用户名无效, 长度应为 \u003e= 1"
-        },
-        {
-            "id": "invalid username, length should \u003c= 32",
-            "message": "invalid username, length should \u003c= 32",
-            "translation": "用户名无效, 长度应为 \u003c= 32"
-        },
-        {
             "id": "app is nil",
             "message": "app is nil",
             "translation": "服务为空"
@@ -2179,7 +1960,7 @@
         {
             "id": "bizID can not be 0",
             "message": "bizID can not be 0",
-            "translation": ""
+            "translation": "bizID不能为0"
         },
         {
             "id": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",
@@ -2463,6 +2244,354 @@
             ]
         },
         {
+            "id": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
+            "message": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
+            "translation": "从 kv.Data 获取“kv_type”作为字符串失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "value type assertion failed, err: {Err}",
+            "message": "value type assertion failed, err: {Err}",
+            "translation": "值类型断言失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "authorize failed",
+            "message": "authorize failed",
+            "translation": "授权失败"
+        },
+        {
+            "id": "get permission to apply failed, err: {Err}",
+            "message": "get permission to apply failed, err: {Err}",
+            "translation": "获取权限失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "grpc status with details failed, err: {Err}",
+            "message": "grpc status with details failed, err: {Err}",
+            "translation": "grpc 状态详细信息失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "db operation failed",
+            "message": "db operation failed",
+            "translation": "db操作失败"
+        },
+        {
+            "id": "invalid argument",
+            "message": "invalid argument",
+            "translation": "无效参数"
+        },
+        {
+            "id": "id should not be set",
+            "message": "id should not be set",
+            "translation": "id不应该被设置"
+        },
+        {
+            "id": "spec not set",
+            "message": "spec not set",
+            "translation": "spec没有被设置"
+        },
+        {
+            "id": "attachment not set",
+            "message": "attachment not set",
+            "translation": "attachment没有被设置"
+        },
+        {
+            "id": "revision not set",
+            "message": "revision not set",
+            "translation": "revision没有被设置"
+        },
+        {
+            "id": "invalid path {Path}, length should \u003e= 1",
+            "message": "invalid path {Path}, length should \u003e= 1",
+            "translation": "路径 {Path} 无效，长度应为 \u003e= 1",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ]
+        },
+        {
+            "id": "invalid path {Path}, length should \u003c= 1024",
+            "message": "invalid path {Path}, length should \u003c= 1024",
+            "translation": "路径 {Path} 无效，长度应为 \u003c= 1024",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ]
+        },
+        {
+            "id": "invalid path {Path}, the path must start with '/'",
+            "message": "invalid path {Path}, the path must start with '/'",
+            "translation": "路径 {Path} 无效，路径必须以“/”开头",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ]
+        },
+        {
+            "id": "invalid path {Path}, the pathcannot contain consecutive '/'",
+            "message": "invalid path {Path}, the pathcannot contain consecutive '/'",
+            "translation": "路径 {Path} 无效，路径不能包含连续的“/”",
+            "placeholders": [
+                {
+                    "id": "Path",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path"
+                }
+            ]
+        },
+        {
+            "id": "invalid path, length should \u003e= 1",
+            "message": "invalid path, length should \u003e= 1",
+            "translation": "路径无效, 长度应为 \u003e= 1"
+        },
+        {
+            "id": "invalid path, length should \u003c= 256",
+            "message": "invalid path, length should \u003c= 256",
+            "translation": "路径无效, 长度应为 \u003c= 256"
+        },
+        {
+            "id": "invalid path,path does not conform to the win file path format specification",
+            "message": "invalid path,path does not conform to the win file path format specification",
+            "translation": "路径无效, 路径不符合win文件路径格式规范"
+        },
+        {
+            "id": "reload file path is required",
+            "message": "reload file path is required",
+            "translation": "需要重新加载文件路径"
+        },
+        {
+            "id": "invalid reload file path, should \u003c= 128",
+            "message": "invalid reload file path, should \u003c= 128",
+            "translation": "重新加载文件路径无效, 应该 \u003c= 128"
+        },
+        {
+            "id": "reload file path is not the absolute path",
+            "message": "reload file path is not the absolute path",
+            "translation": "重新加载文件路径不是绝对路径"
+        },
+        {
+            "id": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
+            "message": "{SideWorkspaceDir} sub path is system reserved path, do not allow to use",
+            "translation": "{SideWorkspaceDir} 子路径为系统保留路径, 不允许使用",
+            "placeholders": [
+                {
+                    "id": "SideWorkspaceDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "constant.SideWorkspaceDir"
+                }
+            ]
+        },
+        {
+            "id": "memo is required, can not be empty",
+            "message": "memo is required, can not be empty",
+            "translation": "描述为必填项, 不能为空"
+        },
+        {
+            "id": "invalid memo, length should \u003c= 200",
+            "message": "invalid memo, length should \u003c= 200",
+            "translation": "描述无效, 长度应为 \u003c= 200"
+        },
+        {
+            "id": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
+            "message": "resource name '{LowerName}' is prefixed with '{Prefix}' is reserved name, which is not allows to use",
+            "translation": "资源名称“{LowerName}”以“{Prefix}”为前缀, 是保留名称, 不允许使用",
+            "placeholders": [
+                {
+                    "id": "LowerName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lowerName"
+                },
+                {
+                    "id": "Prefix",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "prefix"
+                }
+            ]
+        },
+        {
+            "id": "invalid name, length should \u003e= 1",
+            "message": "invalid name, length should \u003e= 1",
+            "translation": "名称无效, 长度应为 \u003e= 1"
+        },
+        {
+            "id": "invalid name, length should \u003c= 128",
+            "message": "invalid name, length should \u003c= 128",
+            "translation": "无效名称, 长度应该\u003c=128"
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
+            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers",
+            "translation": "无效名称：{Name}, 只允许包含英文、数字、下划线（_）、连字符（-）, 且必须以英文、数字开头和结尾",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ]
+        },
+        {
+            "id": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
+            "message": "invalid name, length should \u003e= 9 and must start with prefix bk_bscp_ (ignore case)",
+            "translation": "无效名称, 长度应该\u003e=9且必须以bk_bscp_前缀开头（忽略大小写）"
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
+            "message": "invalid name: {Name}, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)",
+            "translation": "无效名称：{Name}, 只允许英文、数字、下划线（_）, 且必须以bk_bscp_前缀开头（忽略大小写）",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ]
+        },
+        {
+            "id": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
+            "message": "invalid name: {Name}, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number",
+            "translation": "无效名称：{Name}, 只允许包含中文、英文、数字、下划线（_）、连字符（-）, 且必须以中文、英文或数字开头和结尾",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ]
+        },
+        {
+            "id": "invalid name, length should \u003c= 64",
+            "message": "invalid name, length should \u003c= 64",
+            "translation": "名称无效, 长度应为 \u003c= 64"
+        },
+        {
+            "id": "invalid name {Name}, name cannot all be '.'",
+            "message": "invalid name {Name}, name cannot all be '.'",
+            "translation": "名称 {Name} 无效, 名称不能全部为“.”",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ]
+        },
+        {
+            "id": "invalid name {Name}, there can't be any /",
+            "message": "invalid name {Name}, there can't be any /",
+            "translation": "名称 {Name} 无效，不能有 /",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "name"
+                }
+            ]
+        },
+        {
+            "id": "invalid namespace, length should \u003e= 1",
+            "message": "invalid namespace, length should \u003e= 1",
+            "translation": "命名空间无效, 长度应为 \u003e= 1"
+        },
+        {
+            "id": "invalid namespace, length should \u003c= 128",
+            "message": "invalid namespace, length should \u003c= 128",
+            "translation": "命名空间无效, 长度应为 \u003c= 128"
+        },
+        {
+            "id": "invalid username, length should \u003e= 1",
+            "message": "invalid username, length should \u003e= 1",
+            "translation": "用户名无效, 长度应为 \u003e= 1"
+        },
+        {
+            "id": "invalid username, length should \u003c= 32",
+            "message": "invalid username, length should \u003c= 32",
+            "translation": "用户名无效, 长度应为 \u003c= 32"
+        },
+        {
             "id": "id can not be set",
             "message": "id can not be set",
             "translation": "ID 不能为空"
@@ -2680,86 +2809,6 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "t.DefaultVal"
-                }
-            ]
-        },
-        {
-            "id": "unsupported variable type: {VariableType}",
-            "message": "unsupported variable type: {VariableType}",
-            "translation": "不支持的变量类型：{VariableType}",
-            "placeholders": [
-                {
-                    "id": "VariableType",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.VariableType",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "t"
-                }
-            ]
-        },
-        {
-            "id": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
-            "message": "get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: {Err}",
-            "translation": "从 kv.Data 获取“kv_type”作为字符串失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "value type assertion failed, err: {Err}",
-            "message": "value type assertion failed, err: {Err}",
-            "translation": "值类型断言失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "authorize failed",
-            "message": "authorize failed",
-            "translation": "授权失败"
-        },
-        {
-            "id": "get permission to apply failed, err: {Err}",
-            "message": "get permission to apply failed, err: {Err}",
-            "translation": "获取权限失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "grpc status with details failed, err: {Err}",
-            "message": "grpc status with details failed, err: {Err}",
-            "translation": "grpc 状态详细信息失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
                 }
             ]
         },

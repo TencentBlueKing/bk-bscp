@@ -15,6 +15,7 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
@@ -69,6 +70,9 @@ type Kv interface {
 	// ListAllByAppIDWithTx list all Kv by appID using a transaction
 	ListAllByAppIDWithTx(kit *kit.Kit, tx *gen.QueryTx, appID uint32, bizID uint32,
 		kvState []string) ([]*table.Kv, error)
+	// FindNearExpiryCertKvs 查找临近到期证书
+	FindNearExpiryCertKvs(kit *kit.Kit, bizID, appID uint32, days uint32, opt *types.BasePage) (
+		[]*table.Kv, int64, error)
 }
 
 var _ Kv = new(kvDao)
@@ -77,6 +81,42 @@ type kvDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// FindNearExpiryCertKvs 查找临近到期证书
+func (dao *kvDao) FindNearExpiryCertKvs(kit *kit.Kit, bizID uint32, appID uint32, days uint32,
+	opt *types.BasePage) ([]*table.Kv, int64, error) {
+	m := dao.genQ.Kv
+
+	kvStateArr := []string{
+		string(table.KvStateUnchange),
+		string(table.KvStateAdd),
+		string(table.KvStateRevise),
+	}
+
+	q := dao.genQ.Kv.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID),
+		m.SecretType.Eq(string(table.SecretTypeCertificate)),
+		m.KvState.In(kvStateArr...))
+
+	// 已过期（小于等于当前时间）
+	if days == 0 {
+		q = q.Where(m.CertificateExpirationDate.Lte(time.Now().UTC()))
+	} else {
+		startDate := time.Now().UTC()
+		endDate := startDate.AddDate(0, 0, +int(days))
+		q = q.Where(m.CertificateExpirationDate.Between(startDate, endDate))
+	}
+
+	if opt.All {
+		result, err := q.Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+
+	return q.FindByPage(opt.Offset(), opt.LimitInt())
+
 }
 
 // FetchKeysExcluding 获取指定keys后排除的keys

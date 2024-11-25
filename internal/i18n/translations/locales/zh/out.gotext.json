@@ -237,7 +237,7 @@
         {
             "id": "batch recovery config items failed",
             "message": "batch recovery config items failed",
-            "translation": ""
+            "translation": "批量恢复配置项失败"
         },
         {
             "id": "batch delete groups failed",
@@ -483,17 +483,27 @@
         {
             "id": "keys is required",
             "message": "keys is required",
-            "translation": ""
+            "translation": "key 不能为空"
         },
         {
             "id": "batch recovery kv failed",
             "message": "batch recovery kv failed",
-            "translation": ""
+            "translation": "批量恢复 kv 失败"
+        },
+        {
+            "id": "create release failed there is a file conflict",
+            "message": "create release failed there is a file conflict",
+            "translation": "创建发布失败，存在文件冲突"
+        },
+        {
+            "id": "create release failed there is a certificate expiration exists",
+            "message": "create release failed there is a certificate expiration exists",
+            "translation": "创建发布失败，存在证书过期问题"
         },
         {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
-            "translation": ""
+            "translation": "从模板集中删除模板失败"
         },
         {
             "id": "template variable name must start with {TemplateVariablePrefix}",
@@ -536,7 +546,7 @@
         {
             "id": "template variable {Key} type error",
             "message": "template variable {Key} type error",
-            "translation": "",
+            "translation": "模板变量{Key}类型错误",
             "placeholders": [
                 {
                     "id": "Key",
@@ -796,7 +806,7 @@
         {
             "id": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
             "message": "the template file {ValidatedTemplateSetNamessId} in the template set\n\t\t\t\t{TemplateNamesv} has been removed. Please import the set again",
-            "translation": "",
+            "translation": "模板集{TemplateNamesv} 中的模板文件 {ValidatedTemplateSetNamessId} 已被移除。请重新导入该集",
             "placeholders": [
                 {
                     "id": "ValidatedTemplateSetNamessId",
@@ -834,7 +844,7 @@
         {
             "id": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
             "message": "template version {RevisionNamesv} in template file {TemplateNamestId}\n\t\t\t\thas been removed. Please import the set again",
-            "translation": "",
+            "translation": "模板文件 {TemplateNamestId} 中的模板版本 {RevisionNamesv} 已被删除。请重新导入该集合",
             "placeholders": [
                 {
                     "id": "RevisionNamesv",
@@ -857,7 +867,7 @@
         {
             "id": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
             "message": "the version number {TemplateID} in the template file {ID} is not the\n\t\tlatest version. Please import the set again",
-            "translation": "",
+            "translation": "模板文件 {ID} 中的版本号 {TemplateID} 不是最新版本。请重新导入该集合",
             "placeholders": [
                 {
                     "id": "TemplateID",
@@ -1063,7 +1073,7 @@
         {
             "id": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
             "message": "the total number of config items(including template and non-template)\n\t\t\texceeded the limit {AppConfigCnt}",
-            "translation": "",
+            "translation": "配置项总数（包括模板和非模板）超出限制{AppConfigCnt}",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1267,6 +1277,20 @@
             ]
         },
         {
+            "id": "get a list of expired certificates failed, err: {Arg_1}",
+            "message": "get a list of expired certificates failed, err: {Arg_1}",
+            "translation": "获取过期证书列表失败，错误：{Arg_1}",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ]
+        },
+        {
             "id": "not a KV type service",
             "message": "not a KV type service",
             "translation": "不是kv类型的服务"
@@ -1334,7 +1358,7 @@
         {
             "id": "batch upsert vault failed, err: {Err}",
             "message": "batch upsert vault failed, err: {Err}",
-            "translation": "",
+            "translation": "批量更新vault失败，错误：{Err}",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1369,7 +1393,7 @@
         {
             "id": "count the number of kV files that have not been deleted failed, err: {Err}",
             "message": "count the number of kV files that have not been deleted failed, err: {Err}",
-            "translation": "",
+            "translation": "统计未删除的kV文件数量失败，错误：{Err}",
             "placeholders": [
                 {
                     "id": "Err",
@@ -1384,7 +1408,7 @@
         {
             "id": "the total number of config items exceeded the limit {AppConfigCnt}",
             "message": "the total number of config items exceeded the limit {AppConfigCnt}",
-            "translation": "",
+            "translation": "配置项总数超出限制 {AppConfigCnt}",
             "placeholders": [
                 {
                     "id": "AppConfigCnt",
@@ -1936,7 +1960,7 @@
         {
             "id": "bizID can not be 0",
             "message": "bizID can not be 0",
-            "translation": ""
+            "translation": "bizID不能为0"
         },
         {
             "id": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",

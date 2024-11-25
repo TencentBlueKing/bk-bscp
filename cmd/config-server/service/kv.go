@@ -125,7 +125,6 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 
 // ListKvs is used to list key-value data.
 func (s *Service) ListKvs(ctx context.Context, req *pbcs.ListKvsReq) (*pbcs.ListKvsResp, error) {
-
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
@@ -178,9 +177,10 @@ func (s *Service) ListKvs(ctx context.Context, req *pbcs.ListKvsReq) (*pbcs.List
 		Count:          rp.Count,
 		Details:        rp.Details,
 		ExclusionCount: rp.GetExclusionCount(),
+		IsCertExpired:  rp.GetIsCertExpired(),
 	}
-	return resp, nil
 
+	return resp, nil
 }
 
 // DeleteKv is used to delete key-value data.
@@ -874,5 +874,35 @@ func (s *Service) BatchUnDeleteKv(ctx context.Context, req *pbcs.BatchUnDeleteKv
 	return &pbcs.BatchUnDeleteKvResp{
 		SuccessfulKeys: successfulKeys,
 		FailedKeys:     failedKeys,
+	}, nil
+}
+
+// FindNearExpiryCertKvs 查找临近到期证书
+func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearExpiryCertKvsReq) (
+	*pbcs.FindNearExpiryCertKvsResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.FindNearExpiryCertKvs(kit.RpcCtx(), &pbds.FindNearExpiryCertKvsReq{
+		BizId: req.BizId,
+		AppId: req.AppId,
+		All:   req.All,
+		Start: req.Start,
+		Limit: req.Limit,
+		Days:  req.Days,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.FindNearExpiryCertKvsResp{
+		Details: resp.GetDetails(),
+		Count:   resp.GetCount(),
 	}, nil
 }

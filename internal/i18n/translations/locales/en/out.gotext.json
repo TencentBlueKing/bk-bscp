@@ -573,6 +573,20 @@
             "fuzzy": true
         },
         {
+            "id": "create release failed there is a file conflict",
+            "message": "create release failed there is a file conflict",
+            "translation": "create release failed there is a file conflict",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "create release failed there is a certificate expiration exists",
+            "message": "create release failed there is a certificate expiration exists",
+            "translation": "create release failed there is a certificate expiration exists",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "delete template from template sets failed",
@@ -1448,6 +1462,22 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get a list of expired certificates failed, err: {Arg_1}",
+            "message": "get a list of expired certificates failed, err: {Arg_1}",
+            "translation": "get a list of expired certificates failed, err: {Arg_1}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
                 }
             ],
             "fuzzy": true

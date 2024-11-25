@@ -182,6 +182,7 @@ const (
 	Config_BatchUnDeleteKv_FullMethodName                    = "/pbcs.Config/BatchUnDeleteKv"
 	Config_UndoKv_FullMethodName                             = "/pbcs.Config/UndoKv"
 	Config_ImportKvs_FullMethodName                          = "/pbcs.Config/ImportKvs"
+	Config_FindNearExpiryCertKvs_FullMethodName              = "/pbcs.Config/FindNearExpiryCertKvs"
 	Config_ListClients_FullMethodName                        = "/pbcs.Config/ListClients"
 	Config_ListClientEvents_FullMethodName                   = "/pbcs.Config/ListClientEvents"
 	Config_RetryClients_FullMethodName                       = "/pbcs.Config/RetryClients"
@@ -207,7 +208,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	//  创建服务
+	// 创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -510,6 +511,8 @@ type ConfigClient interface {
 	UndoKv(ctx context.Context, in *UndoKvReq, opts ...grpc.CallOption) (*UndoKvResp, error)
 	// 批量导出文本格式键值配置项
 	ImportKvs(ctx context.Context, in *ImportKvsReq, opts ...grpc.CallOption) (*ImportKvsResp, error)
+	// 查找临近到期证书
+	FindNearExpiryCertKvs(ctx context.Context, in *FindNearExpiryCertKvsReq, opts ...grpc.CallOption) (*FindNearExpiryCertKvsResp, error)
 	// 获取客户端列表
 	ListClients(ctx context.Context, in *ListClientsReq, opts ...grpc.CallOption) (*ListClientsResp, error)
 	// 获取客户端拉取记录列表
@@ -1953,6 +1956,15 @@ func (c *configClient) ImportKvs(ctx context.Context, in *ImportKvsReq, opts ...
 	return out, nil
 }
 
+func (c *configClient) FindNearExpiryCertKvs(ctx context.Context, in *FindNearExpiryCertKvsReq, opts ...grpc.CallOption) (*FindNearExpiryCertKvsResp, error) {
+	out := new(FindNearExpiryCertKvsResp)
+	err := c.cc.Invoke(ctx, Config_FindNearExpiryCertKvs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ListClients(ctx context.Context, in *ListClientsReq, opts ...grpc.CallOption) (*ListClientsResp, error) {
 	out := new(ListClientsResp)
 	err := c.cc.Invoke(ctx, Config_ListClients_FullMethodName, in, out, opts...)
@@ -2128,7 +2140,7 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	//  创建服务
+	// 创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2431,6 +2443,8 @@ type ConfigServer interface {
 	UndoKv(context.Context, *UndoKvReq) (*UndoKvResp, error)
 	// 批量导出文本格式键值配置项
 	ImportKvs(context.Context, *ImportKvsReq) (*ImportKvsResp, error)
+	// 查找临近到期证书
+	FindNearExpiryCertKvs(context.Context, *FindNearExpiryCertKvsReq) (*FindNearExpiryCertKvsResp, error)
 	// 获取客户端列表
 	ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error)
 	// 获取客户端拉取记录列表
@@ -2939,6 +2953,9 @@ func (UnimplementedConfigServer) UndoKv(context.Context, *UndoKvReq) (*UndoKvRes
 }
 func (UnimplementedConfigServer) ImportKvs(context.Context, *ImportKvsReq) (*ImportKvsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportKvs not implemented")
+}
+func (UnimplementedConfigServer) FindNearExpiryCertKvs(context.Context, *FindNearExpiryCertKvsReq) (*FindNearExpiryCertKvsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindNearExpiryCertKvs not implemented")
 }
 func (UnimplementedConfigServer) ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListClients not implemented")
@@ -5799,6 +5816,24 @@ func _Config_ImportKvs_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_FindNearExpiryCertKvs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindNearExpiryCertKvsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).FindNearExpiryCertKvs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_FindNearExpiryCertKvs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).FindNearExpiryCertKvs(ctx, req.(*FindNearExpiryCertKvsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_ListClients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListClientsReq)
 	if err := dec(in); err != nil {
@@ -6767,6 +6802,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ImportKvs",
 			Handler:    _Config_ImportKvs_Handler,
+		},
+		{
+			MethodName: "FindNearExpiryCertKvs",
+			Handler:    _Config_FindNearExpiryCertKvs_Handler,
 		},
 		{
 			MethodName: "ListClients",

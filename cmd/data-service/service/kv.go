@@ -173,7 +173,6 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 
 // ListKvs is used to list key-value data.
 func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.ListKvsResp, error) {
-
 	// FromGrpcContext used only to obtain Kit through grpc context.
 	kt := kit.FromGrpcContext(ctx)
 
@@ -197,12 +196,27 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 		TopIDs:    req.TopIds,
 		Status:    req.Status,
 	}
+
+	// 该方法被生成版本接口调用。移至到查询列表前面提前返回判断
+	uncitedCount, err := s.dao.Kv().CountNumberUnDeleted(kt, req.BizId, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	_, expirationNumber, err := s.dao.Kv().FindNearExpiryCertKvs(kt, req.BizId, req.AppId, 0,
+		&types.BasePage{All: true})
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed,
+			i18n.T(kt, "get a list of expired certificates failed, err: %v"), err)
+	}
+
 	po := &types.PageOption{
 		EnableUnlimitedLimit: true,
 	}
-	if err := opt.Validate(po); err != nil {
+	if err = opt.Validate(po); err != nil {
 		return nil, err
 	}
+
 	details, count, err := s.dao.Kv().List(kt, opt)
 	if err != nil {
 		logs.Errorf("list kv failed, err: %v, rid: %s", err, kt.Rid)
@@ -214,15 +228,13 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 		return nil, err
 	}
 
-	uncitedCount, err := s.dao.Kv().CountNumberUnDeleted(kt, req.BizId, opt)
-	if err != nil {
-		return nil, err
-	}
-
 	resp := &pbds.ListKvsResp{
 		Count:          uint32(count),
 		Details:        kvs,
 		ExclusionCount: uint32(uncitedCount),
+		IsCertExpired: func() bool {
+			return expirationNumber > 0
+		}(),
 	}
 
 	return resp, nil
@@ -738,4 +750,27 @@ func (s *Service) KvFetchKeysExcluding(ctx context.Context, req *pbds.KvFetchKey
 	return &pbds.KvFetchKeysExcludingResp{
 		Keys: keys,
 	}, nil
+}
+
+// FindNearExpiryCertKvs 查找临近到期证书
+func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbds.FindNearExpiryCertKvsReq) (
+	*pbds.FindNearExpiryCertKvsResp, error) {
+	// FromGrpcContext used only to obtain Kit through grpc context.
+	kit := kit.FromGrpcContext(ctx)
+
+	details, count, err := s.dao.Kv().FindNearExpiryCertKvs(kit, req.BizId, req.AppId, req.Days, &types.BasePage{
+		Start: req.Start,
+		Limit: uint(req.Limit),
+		All:   req.All,
+	})
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kit, "get a list of expired certificates failed, err: %v"), err)
+	}
+
+	kvs, err := s.setKvTypeAndValue(kit, details)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.FindNearExpiryCertKvsResp{Details: kvs, Count: count}, nil
 }

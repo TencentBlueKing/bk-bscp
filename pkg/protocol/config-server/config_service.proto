@@ -1128,6 +1128,12 @@ option (google.api.http) = {
       body: "*"
     };
   };
+  // 查找临近到期证书
+  rpc FindNearExpiryCertKvs(FindNearExpiryCertKvsReq) returns (FindNearExpiryCertKvsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/near_certificate"
+    };
+  };
   // 获取客户端列表
   rpc ListClients(ListClientsReq) returns (ListClientsResp) {
     option (google.api.http) = {
@@ -3611,7 +3617,8 @@ message CreateKvReq {
   }];
   bool secret_hidden = 8
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
-  string certificate_expiration_date = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+  string certificate_expiration_date = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
 }
 
 message CreateKvResp {
@@ -3673,6 +3680,9 @@ message ListKvsResp {
   repeated pbkv.Kv details = 2;
   uint32 exclusion_count = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排除删除后的数量" }];
+  bool is_cert_expired = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否有证书过期：是=true，否=false" }
+  ];
 }
 
 message DeleteKvReq {
@@ -3725,7 +3735,8 @@ message BatchUpsertKvsReq {
     bool secret_hidden = 6 [
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }
     ];
-    string certificate_expiration_date = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+    string certificate_expiration_date = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
   }
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
@@ -3810,6 +3821,23 @@ message ListClientsReq {
     example: "\"2024-11-14 17:53:47\""
   }];
   pbclient.ClientQueryCondition search = 8;
+}
+
+message FindNearExpiryCertKvsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  bool all = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  uint32 days = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "单位天，获取在指定天数内即将过期的证书"
+  }];
+}
+
+message FindNearExpiryCertKvsResp {
+  repeated pbkv.Kv details = 1;
+  int64 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
 }
 
 message ListClientsResp {
