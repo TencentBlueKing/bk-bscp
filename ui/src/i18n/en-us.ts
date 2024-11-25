@@ -637,6 +637,14 @@ export default {
   格式说明: 'Format description',
   '示例：': 'Example:',
   查看服务属性: 'View service attributes',
+  '在未命名版本中发现过期证书，请处理证书问题后再生成版本': 'Expired certificates found in the unnamed version. Please handle the certificate issue before generating the version',
+  '30天内过期的证书列表': 'List of certificates expiring within 30 days',
+  剩余时间: 'Remaining time',
+  证书名称: 'Certificate name',
+  过期时间: 'Expiration time',
+  '{n} 天': '{n} days',
+  继续生成版本: 'Continue build version',
+  证书即将过期: 'Certificate is about to expire',
 
   // 分组管理
   新增分组: 'New group',

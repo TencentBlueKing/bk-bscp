@@ -411,6 +411,8 @@
       configStore.$patch((state) => {
         state.allConfigCount = res.count;
         state.allExistConfigCount = res.exclusion_count;
+        state.hasExpiredCert = res.is_cert_expired;
+        state.refreshHasExpiredCertFlag = true;
       });
       selecTableDataCount.value = Number(res.count);
       emits('sendTableDataCount', selecTableDataCount.value);

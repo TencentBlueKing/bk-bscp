@@ -32,6 +32,12 @@ export default defineStore('config', () => {
   // 生成版本按钮loading
   const createVersionBtnLoading = ref(false);
 
+  // kv配置项是否有存在过期证书
+  const hasExpiredCert = ref(false);
+
+  // 是否需要刷新kv配置项是否有存在过期证书
+  const refreshHasExpiredCertFlag = ref(false);
+
   return {
     allConfigCount,
     versionData,
@@ -42,5 +48,7 @@ export default defineStore('config', () => {
     allExistConfigCount,
     onlyViewConflict,
     createVersionBtnLoading,
+    hasExpiredCert,
+    refreshHasExpiredCertFlag,
   };
 });

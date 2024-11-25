@@ -279,3 +279,10 @@ export interface ITemplatePkgs {
   template_space_id: number;
   template_show_title: string;
 }
+
+export interface IExpiredCert {
+  id: number;
+  name: string;
+  remainingDays: number;
+  expirationTime: string;
+}

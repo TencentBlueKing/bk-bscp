@@ -19,15 +19,15 @@
               {{ props.config.spec.kv_type === 'secret' ? t('敏感信息') : props.config.spec.kv_type }}
             </bk-form-item>
             <bk-form-item :label="t('配置项值')">
-              <div class="secret-list disabled">
-                <div
-                  :class="['secret-item', { active: config.spec.secret_type === item.value }]"
-                  v-for="item in secretType"
-                  :key="item.value">
-                  {{ item.label }}
-                </div>
-              </div>
               <div v-if="props.config.spec.kv_type === 'secret'" class="secret-value">
+                <div class="secret-list disabled">
+                  <div
+                    :class="['secret-item', { active: config.spec.secret_type === item.value }]"
+                    v-for="item in secretType"
+                    :key="item.value">
+                    {{ item.label }}
+                  </div>
+                </div>
                 <span v-if="props.config.spec.secret_hidden" class="un-view-value">
                   {{ t('敏感数据不可见，无法查看实际内容') }}
                 </span>
