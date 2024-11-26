@@ -258,6 +258,7 @@
     () => props.show,
     (val) => {
       if (val) {
+        localVal.value.groups = props.groups.map((item) => item.id);
         const previewList = aggregatePreviewData(
           props.groups,
           props.groupList,
@@ -285,13 +286,6 @@
     },
   );
 
-  watch(
-    () => props.groups,
-    () => {
-      localVal.value.groups = props.groups.map((item) => item.id);
-    },
-    { immediate: true },
-  );
 
   const disabledDate = (date: any) => {
     return date && dayjs(date).isBefore(dayjs().subtract(1, 'day'));
