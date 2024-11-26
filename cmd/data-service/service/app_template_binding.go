@@ -168,8 +168,7 @@ func (s *Service) DeleteAppTemplateBinding(ctx context.Context, req *pbds.Delete
 }
 
 // ListAppBoundTmplRevisions list app bound template revisions.
-//
-//nolint:funlen,gocyclo
+// nolint:funlen,gocyclo
 func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 	req *pbds.ListAppBoundTmplRevisionsReq) (*pbds.ListAppBoundTmplRevisionsResp, error) {
 
@@ -269,6 +268,7 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 				ByteSize:             d.Spec.ContentSpec.ByteSize,
 				Creator:              d.Revision.Creator,
 				CreateAt:             d.Revision.CreatedAt.Format(time.RFC3339),
+				Charset:              string(d.Spec.Charset),
 			})
 		}
 	}

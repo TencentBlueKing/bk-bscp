@@ -69,6 +69,7 @@ func (s *Service) CreateTemplateRevision(ctx context.Context, req *pbcs.CreateTe
 				ByteSize:  req.ByteSize,
 				Md5:       metadata.Md5,
 			},
+			Charset: req.Charset,
 		},
 	}
 	rp, err := s.client.DS.CreateTemplateRevision(grpcKit.RpcCtx(), r)
@@ -254,6 +255,7 @@ func (s *Service) GetTemplateRevision(ctx context.Context, req *pbcs.GetTemplate
 			CreateAt:             tr.GetDetail().GetCreateAt(),
 			Md5:                  tr.GetDetail().GetMd5(),
 			IsLatest:             tr.GetDetail().GetIsLatest(),
+			Charset:              tr.GetDetail().GetCharset(),
 		},
 	}, nil
 }
@@ -299,6 +301,7 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbcs.UpdateTe
 				ByteSize:  req.ByteSize,
 				Md5:       metadata.Md5,
 			},
+			Charset: req.Charset,
 		},
 		TemplateRevisionId: req.GetTemplateRevisionId(),
 	}

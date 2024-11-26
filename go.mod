@@ -9,6 +9,7 @@ replace (
 
 require (
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20240418123107-72b120390195
+	github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp v0.0.0-20241120081801-a9969caf41d5
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v0.1.6
 	github.com/bluele/gcache v0.0.2
@@ -34,6 +35,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.8.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
+	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/samber/lo v1.39.0
 	github.com/shimingyah/pool v1.0.0
 	github.com/sirupsen/logrus v1.9.3

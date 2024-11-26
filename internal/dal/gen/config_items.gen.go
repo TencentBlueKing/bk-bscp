@@ -36,6 +36,7 @@ func newConfigItem(db *gorm.DB, opts ...gen.DOOption) configItem {
 	_configItem.User = field.NewString(tableName, "user")
 	_configItem.UserGroup = field.NewString(tableName, "user_group")
 	_configItem.Privilege = field.NewString(tableName, "privilege")
+	_configItem.Charset = field.NewString(tableName, "charset")
 	_configItem.BizID = field.NewUint32(tableName, "biz_id")
 	_configItem.AppID = field.NewUint32(tableName, "app_id")
 	_configItem.Creator = field.NewString(tableName, "creator")
@@ -61,6 +62,7 @@ type configItem struct {
 	User      field.String
 	UserGroup field.String
 	Privilege field.String
+	Charset   field.String
 	BizID     field.Uint32
 	AppID     field.Uint32
 	Creator   field.String
@@ -92,6 +94,7 @@ func (c *configItem) updateTableName(table string) *configItem {
 	c.User = field.NewString(table, "user")
 	c.UserGroup = field.NewString(table, "user_group")
 	c.Privilege = field.NewString(table, "privilege")
+	c.Charset = field.NewString(table, "charset")
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.AppID = field.NewUint32(table, "app_id")
 	c.Creator = field.NewString(table, "creator")
@@ -124,7 +127,7 @@ func (c *configItem) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *configItem) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 15)
+	c.fieldMap = make(map[string]field.Expr, 16)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["name"] = c.Name
 	c.fieldMap["path"] = c.Path
@@ -134,6 +137,7 @@ func (c *configItem) fillFieldMap() {
 	c.fieldMap["user"] = c.User
 	c.fieldMap["user_group"] = c.UserGroup
 	c.fieldMap["privilege"] = c.Privilege
+	c.fieldMap["charset"] = c.Charset
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["app_id"] = c.AppID
 	c.fieldMap["creator"] = c.Creator

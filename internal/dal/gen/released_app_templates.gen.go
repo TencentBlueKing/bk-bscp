@@ -50,6 +50,7 @@ func newReleasedAppTemplate(db *gorm.DB, opts ...gen.DOOption) releasedAppTempla
 	_releasedAppTemplate.OriginSignature = field.NewString(tableName, "origin_signature")
 	_releasedAppTemplate.OriginByteSize = field.NewUint64(tableName, "origin_byte_size")
 	_releasedAppTemplate.Md5 = field.NewString(tableName, "md5")
+	_releasedAppTemplate.Charset = field.NewString(tableName, "charset")
 	_releasedAppTemplate.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedAppTemplate.AppID = field.NewUint32(tableName, "app_id")
 	_releasedAppTemplate.Creator = field.NewString(tableName, "creator")
@@ -89,6 +90,7 @@ type releasedAppTemplate struct {
 	OriginSignature      field.String
 	OriginByteSize       field.Uint64
 	Md5                  field.String
+	Charset              field.String
 	BizID                field.Uint32
 	AppID                field.Uint32
 	Creator              field.String
@@ -134,6 +136,7 @@ func (r *releasedAppTemplate) updateTableName(table string) *releasedAppTemplate
 	r.OriginSignature = field.NewString(table, "origin_signature")
 	r.OriginByteSize = field.NewUint64(table, "origin_byte_size")
 	r.Md5 = field.NewString(table, "md5")
+	r.Charset = field.NewString(table, "charset")
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.AppID = field.NewUint32(table, "app_id")
 	r.Creator = field.NewString(table, "creator")
@@ -168,7 +171,7 @@ func (r *releasedAppTemplate) GetFieldByName(fieldName string) (field.OrderExpr,
 }
 
 func (r *releasedAppTemplate) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 29)
+	r.fieldMap = make(map[string]field.Expr, 30)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["release_id"] = r.ReleaseID
 	r.fieldMap["template_space_id"] = r.TemplateSpaceID
@@ -192,6 +195,7 @@ func (r *releasedAppTemplate) fillFieldMap() {
 	r.fieldMap["origin_signature"] = r.OriginSignature
 	r.fieldMap["origin_byte_size"] = r.OriginByteSize
 	r.fieldMap["md5"] = r.Md5
+	r.fieldMap["charset"] = r.Charset
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["app_id"] = r.AppID
 	r.fieldMap["creator"] = r.Creator

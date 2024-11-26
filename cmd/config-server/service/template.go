@@ -89,6 +89,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbcs.CreateTemplateRe
 				ByteSize:  req.ByteSize,
 				Md5:       metadata.Md5,
 			},
+			Charset: req.Charset,
 		},
 		TemplateSetIds: req.TemplateSetIds,
 	}
@@ -535,6 +536,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbcs.BatchUpser
 						ByteSize:  item.ByteSize,
 						Md5:       item.Md5,
 					},
+					Charset: item.Charset,
 				},
 				Attachment: &pbtr.TemplateRevisionAttachment{
 					BizId:           req.BizId,

@@ -68,6 +68,7 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbcs.CreateConfigIt
 				UserGroup: req.UserGroup,
 				Privilege: req.Privilege,
 			},
+			Charset: req.Charset,
 		},
 		ContentSpec: &pbcontent.ContentSpec{
 			Signature: req.Sign,
@@ -122,6 +123,7 @@ func (s *Service) BatchUpsertConfigItems(ctx context.Context, req *pbcs.BatchUps
 					UserGroup: item.UserGroup,
 					Privilege: item.Privilege,
 				},
+				Charset: item.Charset,
 			},
 			ContentSpec: &pbcontent.ContentSpec{
 				Signature: item.Sign,
@@ -191,6 +193,7 @@ func (s *Service) UpdateConfigItem(ctx context.Context, req *pbcs.UpdateConfigIt
 				UserGroup: req.UserGroup,
 				Privilege: req.Privilege,
 			},
+			Charset: req.Charset,
 		},
 	}
 	_, err = s.client.DS.UpdateConfigItem(grpcKit.RpcCtx(), r)

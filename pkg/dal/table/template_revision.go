@@ -107,6 +107,7 @@ type TemplateRevisionSpec struct {
 	FileMode     FileMode        `json:"file_mode" gorm:"column:file_mode"`
 	Permission   *FilePermission `json:"permission" gorm:"embedded"`
 	ContentSpec  *ContentSpec    `json:"content" gorm:"embedded"`
+	Charset      FileCharset     `json:"charset" gorm:"column:charset"`
 }
 
 // ValidateCreate validate template revision spec when it is created.

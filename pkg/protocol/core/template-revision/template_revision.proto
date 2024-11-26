@@ -37,6 +37,7 @@ message TemplateRevisionSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
   pbci.FilePermission permission = 7;
   pbcontent.ContentSpec content_spec = 8;
+  string charset = 9;
 }
 
 // TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go

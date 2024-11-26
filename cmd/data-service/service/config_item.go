@@ -1556,6 +1556,7 @@ func (s *Service) handleNonTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherA
 					UserGroup: v.ConfigItemSpec.Permission.UserGroup,
 					Privilege: v.ConfigItemSpec.Permission.Privilege,
 				},
+				Charset: string(v.ConfigItemSpec.Charset),
 			},
 			Variables: vars[path.Join(v.ConfigItemSpec.Path, v.ConfigItemSpec.Name)],
 			IsExist:   conflicts[path.Join(v.ConfigItemSpec.Path, v.ConfigItemSpec.Name)],

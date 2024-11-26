@@ -1166,6 +1166,7 @@ message GetTemplateRevisionResp {
     string create_at = 15;
     string md5 = 16;
     bool is_latest = 17;
+    string charset = 18;
   }
   TemplateRevision detail = 1;
 }

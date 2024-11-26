@@ -36,6 +36,7 @@ message ConfigItemSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
   string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件描述" }];
   FilePermission permission = 6;
+  string charset = 7;
 }
 
 // ConfigItemAttachment source resource reference: pkg/dal/table/config_item.go

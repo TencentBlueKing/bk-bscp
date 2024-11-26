@@ -33,6 +33,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/panjf2000/ants/v2"
+	"github.com/saintfish/chardet"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
@@ -64,8 +65,7 @@ type configImport struct {
 }
 
 // TemplateConfigFileImport Import template config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 
@@ -263,8 +263,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 }
 
 // ConfigFileImport Import config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) {
 
 	kt := kit.MustGetKit(r.Context())
@@ -595,7 +594,7 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 	}
 
 	// NOCC:ineffassign/assign(设计如此)
-	fileType := ""
+	fileType, charest := "", ""
 	// Check if the file size is greater than 5MB (5 * 1024 * 1024 bytes)
 	if fileInfo.Size() > constant.MaxUploadTextFileSize {
 		fileType = string(table.Binary)
@@ -611,6 +610,8 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 		_, _ = fileContent.Seek(0, 0)
 		_, _ = io.Copy(fileBuffer, fileContent)
 		fileType = detectFileType(fileBuffer.Bytes())
+		// 检测文件编码
+		charest = detectFileCharest(fileBuffer.Bytes())
 	}
 	_, _ = fileContent.Seek(0, 0)
 
@@ -644,6 +645,7 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 	resp.ByteSize = uint64(fileInfo.Size())
 	resp.Sign = result.Sha256
 	resp.Md5 = repoRes.Md5
+	resp.Chartset = charest
 
 	return resp, nil
 }
@@ -693,6 +695,22 @@ func detectFileType(buf []byte) string {
 	}
 
 	return fileType
+}
+
+// 检测文件编码
+func detectFileCharest(buf []byte) string {
+	// 使用 chardet 检测字符集
+	detector := chardet.NewTextDetector()
+	results, err := detector.DetectAll(buf)
+	if err != nil {
+		return "UTF-8"
+	}
+
+	// 返回置信度最高的结果
+	if len(results) > 0 {
+		return results[0].Charset
+	}
+	return "UTF-8"
 }
 
 // 判断内容类型是否为文本类型

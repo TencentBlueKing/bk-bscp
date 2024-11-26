@@ -186,6 +186,7 @@ message AppBoundTmplRevision {
   }];
   string md5 = 22 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
   bool is_conflict = 23 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否冲突" }];
+  string charset = 24 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
 }
 
 // ReleasedAppBoundTmplRevision is released app bound template revision

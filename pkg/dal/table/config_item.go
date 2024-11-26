@@ -216,6 +216,7 @@ type ConfigItemSpec struct {
 	Memo     string     `db:"memo" json:"memo" gorm:"column:memo"`
 	// KV类型，不能有Permission
 	Permission *FilePermission `db:"permission" json:"permission" gorm:"embedded"`
+	Charset    FileCharset     `db:"charset" json:"charset" gorm:"column:charset"`
 }
 
 // ValidateCreate validate the config item's specifics
@@ -432,4 +433,26 @@ type ListConfigItemCounts struct {
 	AppId     uint32    `gorm:"column:app_id" json:"app_id"`
 	Count     uint32    `gorm:"column:count" json:"count"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
+}
+
+// FileCharset is config item charset type
+type FileCharset string
+
+const (
+	// UTF8 file charset
+	UTF8 FileCharset = "UTF-8"
+	// GBK file charset
+	GBK FileCharset = "GBK"
+)
+
+// Validate the file charset is supported or not.
+func (f FileCharset) Validate(kit *kit.Kit) error {
+	switch f {
+	case UTF8:
+	case GBK:
+	default:
+		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "unsupported file charset: %s", f))
+	}
+
+	return nil
 }

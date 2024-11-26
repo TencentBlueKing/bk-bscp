@@ -305,6 +305,7 @@ func (s *Service) GetTemplateRevision(ctx context.Context, req *pbds.GetTemplate
 			CreateAt:             revision.Revision.CreatedAt.Format(time.RFC3339),
 			Md5:                  revision.Spec.ContentSpec.Md5,
 			IsLatest:             isLatest,
+			Charset:              string(revision.Spec.Charset),
 		},
 	}, nil
 }

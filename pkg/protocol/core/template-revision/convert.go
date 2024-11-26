@@ -48,6 +48,7 @@ func (m *TemplateRevisionSpec) TemplateRevisionSpec() *table.TemplateRevisionSpe
 		FileMode:     table.FileMode(m.FileMode),
 		Permission:   m.Permission.FilePermission(),
 		ContentSpec:  m.ContentSpec.ContentSpec(),
+		Charset:      table.FileCharset(m.Charset),
 	}
 }
 
@@ -66,6 +67,7 @@ func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec) *TemplateRevisionS
 		FileMode:     string(spec.FileMode),
 		Permission:   pbci.PbFilePermission(spec.Permission),
 		ContentSpec:  pbcontent.PbContentSpec(spec.ContentSpec),
+		Charset:      string(spec.Charset),
 	}
 }
 

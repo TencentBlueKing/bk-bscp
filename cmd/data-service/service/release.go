@@ -381,6 +381,7 @@ func (s *Service) createReleasedRenderedTemplateCIs(kt *kit.Kit, tx *gen.QueryTx
 				FileMode:   r.Spec.FileMode,
 				Memo:       r.Spec.RevisionMemo,
 				Permission: r.Spec.Permission,
+				Charset:    r.Spec.Charset,
 			},
 			Attachment: &table.ConfigItemAttachment{
 				BizID: kt.BizID,
@@ -462,6 +463,7 @@ func (s *Service) createReleasedRenderedCIs(kt *kit.Kit, tx *gen.QueryTx, releas
 					UserGroup: ci.Spec.Permission.UserGroup,
 					Privilege: ci.Spec.Permission.Privilege,
 				},
+				Charset: ci.Spec.ConfigItemSpec().Charset,
 			},
 			Attachment: &table.ConfigItemAttachment{
 				BizID: ci.Attachment.BizId,
@@ -543,6 +545,7 @@ func (s *Service) createReleasedAppTemplates(kt *kit.Kit, tx *gen.QueryTx, relea
 				OriginSignature:      r.Signature,
 				OriginByteSize:       r.ByteSize,
 				Md5:                  md5Map[r.TemplateRevisionId],
+				Charset:              r.Charset,
 			},
 			Attachment: &table.ReleasedAppTemplateAttachment{
 				BizID: kt.BizID,

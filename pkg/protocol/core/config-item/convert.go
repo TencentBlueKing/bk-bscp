@@ -33,6 +33,7 @@ func (m *ConfigItemSpec) ConfigItemSpec() *table.ConfigItemSpec {
 		FileMode:   table.FileMode(m.FileMode),
 		Memo:       m.Memo,
 		Permission: m.Permission.FilePermission(),
+		Charset:    table.FileCharset(m.Charset),
 	}
 }
 
@@ -49,6 +50,7 @@ func PbConfigItemSpec(spec *table.ConfigItemSpec) *ConfigItemSpec {
 		FileMode:   string(spec.FileMode),
 		Memo:       spec.Memo,
 		Permission: PbFilePermission(spec.Permission),
+		Charset:    string(spec.Charset),
 	}
 }
 
