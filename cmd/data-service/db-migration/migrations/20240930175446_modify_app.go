@@ -15,7 +15,7 @@ package migrations
 import (
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 )
 
 func init() {
@@ -66,21 +66,21 @@ func mig20240930175446Up(tx *gorm.DB) error {
 // mig20240930175446Down for down migration
 func mig20240930175446Down(tx *gorm.DB) error {
 	// Applications add new column
-	if !tx.Migrator().HasColumn(&Applications{}, "is_approve") {
+	if tx.Migrator().HasColumn(&Applications{}, "is_approve") {
 		if err := tx.Migrator().DropColumn(&Applications{}, "is_approve"); err != nil {
 			return err
 		}
 	}
 
 	// Applications add new column
-	if !tx.Migrator().HasColumn(&Applications{}, "approve_type") {
+	if tx.Migrator().HasColumn(&Applications{}, "approve_type") {
 		if err := tx.Migrator().DropColumn(&Applications{}, "approve_type"); err != nil {
 			return err
 		}
 	}
 
 	// Applications add new column
-	if !tx.Migrator().HasColumn(&Applications{}, "approver") {
+	if tx.Migrator().HasColumn(&Applications{}, "approver") {
 		if err := tx.Migrator().DropColumn(&Applications{}, "approver"); err != nil {
 			return err
 		}

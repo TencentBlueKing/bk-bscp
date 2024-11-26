@@ -200,6 +200,9 @@
     () => props.formData,
     (val) => {
       localData.value = { ...val };
+      if (!['or_sign', 'count_sign'].includes(val.approve_type)) {
+        localData.value.approve_type = 'or_sign';
+      }
     },
   );
   onBeforeMount(() => {

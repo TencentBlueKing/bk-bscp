@@ -13,6 +13,10 @@
 // main ...
 package main
 
+import (
+	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
+)
+
 func main() {
 	_ = rootCmd.Execute()
 }

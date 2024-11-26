@@ -19,10 +19,8 @@
       <bk-select v-model="localVal.type" :clearable="false" :disabled="isEditMode" @change="change">
         <bk-option id="string" label="string"></bk-option>
         <bk-option id="number" label="number"></bk-option>
+        <bk-option id="text" label="text"></bk-option>
       </bk-select>
-    </bk-form-item>
-    <bk-form-item :label="t('默认值')" property="default_val" :required="localVal.type === 'number'">
-      <bk-input v-model="localVal.default_val" :placeholder="t('请输入')" @input="change" />
     </bk-form-item>
     <bk-form-item :label="t('描述')" property="memo">
       <bk-input
@@ -34,12 +32,22 @@
         :resize="true"
         @input="change" />
     </bk-form-item>
+    <bk-form-item :label="t('默认值')" property="default_val" :required="localVal.type !== 'string'">
+      <varContentEditor
+        v-if="localVal.type === 'text'"
+        :content="localVal.default_val"
+        :editable="true"
+        :show-tips="false"
+        @change="handleDefaultValChange" />
+      <bk-input v-else v-model="localVal.default_val" :placeholder="t('请输入')" @input="change" />
+    </bk-form-item>
   </bk-form>
 </template>
 <script lang="ts" setup>
   import { ref, computed, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { IVariableEditParams } from '../../../../types/variable';
+  import varContentEditor from '../../space/service/detail/config/components/config-content-editor.vue';
 
   const { t } = useI18n();
   const props = defineProps<{
@@ -89,7 +97,7 @@
     default_val: [
       {
         validator: (value: string) => {
-          if (localVal.value.type === 'string') return true;
+          if (localVal.value.type === 'string' || localVal.value.type === 'text') return true;
           return /^-?\d+(\.\d+)?$/.test(value);
         },
         message: t('无效默认值，类型为number值不为数字'),
@@ -116,6 +124,11 @@
 
   const change = () => {
     emits('change', { ...localVal.value }, localPrefix.value);
+  };
+
+  const handleDefaultValChange = (value: string) => {
+    localVal.value.default_val = value;
+    change();
   };
 
   const validate = () => formRef.value.validate();

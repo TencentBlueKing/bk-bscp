@@ -16,12 +16,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 func TestUnixFilePath(t *testing.T) {
-	unixPath := "/root/code/go/src/github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/test/benchmark/tools/gen-data"
+	unixPath := "/root/code/go/src/github.com/TencentBlueKing/bk-bscp/test/benchmark/tools/gen-data"
 	if err := ValidateUnixFilePath(kit.New(), unixPath); err != nil {
 		t.Log(err)
 		return
@@ -41,7 +41,7 @@ func TestWinFilePath(t *testing.T) {
 		return
 	}
 
-	unixPath := "/root/code/go/src/github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/test/benchmark/tools/gen-data"
+	unixPath := "/root/code/go/src/github.com/TencentBlueKing/bk-bscp/test/benchmark/tools/gen-data"
 	if err := ValidateWinFilePath(kit.New(), unixPath); err == nil {
 		t.Log("win file path validate failed")
 		return

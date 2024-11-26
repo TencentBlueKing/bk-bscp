@@ -47,7 +47,7 @@
           <template #prepend>
             <render-table-tip />
           </template>
-          <bk-table-column :width="100" :label="renderSelection">
+          <bk-table-column :width="100" :label="renderSelection" :show-overflow-tooltip="false">
             <template #default="{ row }">
               <across-check-box
                 :checked="selections.some((item) => item.name === row.name && item.id === row.id)"
@@ -466,7 +466,7 @@
   const goGroupDoc = () => window.open(BSCP_CONFIG.group_doc);
 
   const getRowCls = (group: IGroupItem) => {
-    if (topId.value === group.id) {
+    if (topId.value === group.id && !isCategorizedView.value) {
       return 'new-row-marked';
     }
   };

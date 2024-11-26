@@ -19,8 +19,8 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/cache-service/service/cache/keys"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // PublishInfo publish info

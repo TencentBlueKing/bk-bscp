@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbclient;
 
@@ -9,7 +10,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client
 
 // Client source resource reference: pkg/dal/table/client.go
 message Client {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
   ClientSpec spec = 2;
   ClientAttachment attachment = 3;
   string message_type = 4;
@@ -17,71 +18,111 @@ message Client {
 
 // ClientSpec source resource reference: pkg/dal/table/client.go
 message ClientSpec {
-  string client_version = 1;
-  string ip = 2;
-  string labels = 3;
-  string annotations = 4;
-  google.protobuf.Timestamp first_connect_time = 5;
-  google.protobuf.Timestamp last_heartbeat_time = 6;
-  string online_status = 7;
+  string client_version = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端组件版本" }];
+  string ip = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端IP" }];
+  string labels = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端标签" }];
+  string annotations = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "附加信息" }];
+  google.protobuf.Timestamp first_connect_time = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "首次拉取时间" }];
+  google.protobuf.Timestamp last_heartbeat_time = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最后一次拉取时间" }];
+  string online_status = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "在线状态：online、offline" }];
   ClientResource resource = 8;
-  uint32 current_release_id = 9;
-  uint32 target_release_id = 10;
-  string release_change_status = 11;
-  string release_change_failed_reason = 12;
-  string failed_detail_reason = 13;
-  string client_type = 14;
-  string current_release_name = 15;
-  string specific_failed_reason = 16;
-  string target_release_name = 17;
-  double total_seconds = 18;
+  uint32 current_release_id = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前版本ID" }];
+  uint32 target_release_id = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标版本ID" }];
+  string release_change_status = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "最近一次拉取状态：Success、Failed、Processing、Skip"
+  }];
+  string release_change_failed_reason = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "发布变更失败原因" }];
+  string failed_detail_reason = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "失败详细信息原因" }];
+  string client_type = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端组件类型" }];
+  string current_release_name = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前版本" }];
+  string specific_failed_reason = 16
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "具体失败原因" }];
+  string target_release_name = 17
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标版本" }];
+  double total_seconds = 18
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变更总耗时" }];
 }
 
 // ClientAttachment source resource reference: pkg/dal/table/client.go
 message ClientAttachment {
-  string uid = 1;
-  uint32 biz_id = 2;
-  uint32 app_id = 3;
+  string uid = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端UID" }];
+  uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
 
 // ClientResource source resource reference: pkg/dal/table/client.go
 message ClientResource {
-  double cpu_usage = 1;         // 当前cpu使用率
-  double cpu_max_usage = 2;     // 最大cpu使用率
-  double cpu_min_usage = 3;     // 最小cpu使用率
-  double cpu_avg_usage = 4;     // 平均cpu使用率
-  uint64 memory_usage = 5;      // 当前内存使用率
-  uint64 memory_max_usage = 6;  // 最大内存使用率
-  uint64 memory_min_usage = 7;  // 最小内存使用率
-  uint64 memory_avg_usage = 8;  // 平均内存使用率
+  double cpu_usage = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前cpu使用率" }];
+  double cpu_max_usage = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最大cpu使用率" }];
+  double cpu_min_usage = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最小cpu使用率" }];
+  double cpu_avg_usage = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "平均cpu使用率" }];
+  uint64 memory_usage = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前内存使用率" }];
+  uint64 memory_max_usage = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最大内存使用率" }];
+  uint64 memory_min_usage = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最小内存使用率" }];
+  uint64 memory_avg_usage = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "平均内存使用率" }];
 }
 
 // ClientQueryCondition 客户端查询条件
 message ClientQueryCondition {
-  string uid = 1;
-  string ip = 2;
-  repeated string label = 3;                  // 标签
-  string current_release_name = 4;            // 当前版本
-  string target_release_name = 5;             // 目标版本
-  repeated string release_change_status = 6;  // 最近一次拉取状态：Success、Failed、Processing、Skip
-  google.protobuf.Struct annotations = 7;     // 附加信息
-  repeated string online_status = 8;          // 在线状态：online、offline
-  string client_version = 9;                  // 客户端组件版本
-  string client_type = 10;                    // 客户端组件类型
-  string failed_reason = 11;                  // 客户端失败主类原因
-  string start_pull_time = 12;                // 开始拉取时间
-  string end_pull_time = 13;                  // 结束拉取时间
-  repeated uint32 client_ids = 14;            // client id
+  string uid = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端UID" }];
+  string ip = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端IP" }];
+  repeated string label = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端标签" }];
+  string current_release_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前版本" }];
+  string target_release_name = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标版本" }];
+  repeated string release_change_status = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "最近一次拉取状态：Success、Failed、Processing、Skip"
+  }];
+  google.protobuf.Struct annotations = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "附加信息" }];
+  repeated string online_status = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "在线状态：online、offline" }];
+  string client_version = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端组件版本" }];
+  string client_type = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端组件类型" }];
+  string failed_reason = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端失败主类原因" }];
+  string start_pull_time = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始拉取时间" }];
+  string end_pull_time = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束拉取时间" }];
+  repeated uint32 client_ids = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
 }
 
 // ClientCommonReq request param
 message ClientCommonReq {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
-  pbclient.ClientQueryCondition search = 3;
-  int64 last_heartbeat_time = 4;            // 心跳时间
-  int64 pull_time = 5;                      // 拉取趋势时间
-  bool is_duplicates = 6;                   // 拉取趋势是否去重
-  string primary_key = 7;                   // 区分标签的主维度
-  google.protobuf.Struct foreign_keys = 8;  // 副维度的数据
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  pbclient.ClientQueryCondition search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
+  int64 last_heartbeat_time = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "心跳时间" }];
+  int64 pull_time = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "拉取趋势时间" }];
+  bool is_duplicates = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "拉取趋势是否去重" }];
+  string primary_key = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "区分标签的主维度" }];
+  google.protobuf.Struct foreign_keys = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "副维度的数据" }];
 }

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbtemplate;
 
@@ -8,7 +9,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/templa
 
 // Template source resource reference: pkg/dal/table/template.go
 message Template {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
   TemplateSpec spec = 2;
   TemplateAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -16,13 +17,14 @@ message Template {
 
 // TemplateSpec source resource reference: pkg/dal/table/template.go
 message TemplateSpec {
-  string name = 1;
-  string path = 2;
-  string memo = 3;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string path = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件描述" }];
 }
 
 // TemplateAttachment source resource reference: pkg/dal/table/template.go
 message TemplateAttachment {
-  uint32 biz_id = 1;
-  uint32 template_space_id = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 template_space_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
 }

@@ -110,13 +110,22 @@
             </template>
           </bk-radio-group>
           <bk-date-picker
-            v-if="localVal.publish_type === 'scheduled'"
+            ref="datePickerRef"
+            v-show="localVal.publish_type === 'scheduled'"
             v-model="localVal.publish_time"
+            append-to-body
+            type="datetime"
+            ext-popover-cls="date-picker-popover"
+            placement="top-start"
             :editable="false"
             :clearable="false"
             :disabled-date="disabledDate"
-            :hide-disabled-options="true"
-            type="datetime">
+            :open="datePickerShow"
+            @open-change="datePickerShow = true"
+            @pick-success="datePickerShow = false">
+            <template #header>
+              <div v-if="isTimeMode" @click="getCurrentTime" data-no-close="true">此刻</div>
+            </template>
           </bk-date-picker>
         </bk-loading>
       </bk-form-item>
@@ -203,6 +212,8 @@
   const pending = ref(false);
   const formRef = ref();
   const isApprove = ref(false); // 服务的审批状态
+  const datePickerRef = ref();
+  const datePickerShow = ref(false);
 
   const rules = {
     memo: [
@@ -239,10 +250,15 @@
 
   const isCompare = computed(() => previewData.value.some((item) => item.type !== 'plain'));
 
+  const isTimeMode = computed(() => {
+    return datePickerRef.value && datePickerRef.value.selectionMode === 'time';
+  });
+
   watch(
     () => props.show,
     (val) => {
       if (val) {
+        localVal.value.groups = props.groups.map((item) => item.id);
         const previewList = aggregatePreviewData(
           props.groups,
           props.groupList,
@@ -270,13 +286,6 @@
     },
   );
 
-  watch(
-    () => props.groups,
-    () => {
-      localVal.value.groups = props.groups.map((item) => item.id);
-    },
-    { immediate: true },
-  );
 
   const disabledDate = (date: any) => {
     return date && dayjs(date).isBefore(dayjs().subtract(1, 'day'));
@@ -291,6 +300,7 @@
       publish_type: '',
       publish_time: '',
     };
+    datePickerShow.value = false;
   };
 
   const handleConfirm = async () => {
@@ -344,6 +354,17 @@
     setTimeout(() => {
       emits('secondConfirm');
     }, 300);
+  };
+
+  const getCurrentTime = () => {
+    const hour = dayjs().hour();
+    const minute = dayjs().minute();
+    const second = dayjs().second();
+    localVal.value.publish_time = dayjs(localVal.value.publish_time)
+      .set('hour', hour)
+      .set('minute', minute)
+      .set('second', second)
+      .toDate();
   };
 
   const loadPublishType = async () => {
@@ -483,5 +504,14 @@
 <style lang="scss">
   .release-version-dialog.bk-modal-wrapper .bk-dialog-header {
     padding-bottom: 20px;
+  }
+  .date-picker-popover {
+    .bk-date-picker-top-wrapper {
+      position: absolute;
+      right: 54px;
+      top: 22px;
+      color: #3a84ff;
+      cursor: pointer;
+    }
   }
 </style>

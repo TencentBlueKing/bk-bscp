@@ -33,21 +33,22 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/panjf2000/ants/v2"
+	"github.com/saintfish/chardet"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/repository"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/auth"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/archive"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/archive"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 var bufferPool = sync.Pool{
@@ -64,8 +65,7 @@ type configImport struct {
 }
 
 // TemplateConfigFileImport Import template config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 
@@ -170,7 +170,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 	// 扫描某个目录大小
 	// 暴露 metrics
 	totalSize, _ := getDirSize(dirPath)
-	c.uploadFileMetrics(kt.BizID, tmplSpaceIdStr, dirPath, totalSize)
+	c.uploadFileMetrics(kt.BizID, tmplSpaceIdStr, totalSize)
 
 	if err = c.checkFileConfictsWithTemplates(kt, uint32(tmplSpaceID), fileItems); err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -263,8 +263,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 }
 
 // ConfigFileImport Import config file
-//
-//nolint:funlen
+// nolint:funlen
 func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) {
 
 	kt := kit.MustGetKit(r.Context())
@@ -370,7 +369,7 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 	// 扫描某个目录大小
 	// 暴露 metrics
 	totalSize, _ := getDirSize(dirPath)
-	c.uploadFileMetrics(kt.BizID, appIdStr, dirPath, totalSize)
+	c.uploadFileMetrics(kt.BizID, appIdStr, totalSize)
 
 	if err = c.checkFileConfictsWithNonTemplates(kt, fileItems); err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -595,7 +594,7 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 	}
 
 	// NOCC:ineffassign/assign(设计如此)
-	fileType := ""
+	fileType, charest := "", ""
 	// Check if the file size is greater than 5MB (5 * 1024 * 1024 bytes)
 	if fileInfo.Size() > constant.MaxUploadTextFileSize {
 		fileType = string(table.Binary)
@@ -611,6 +610,8 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 		_, _ = fileContent.Seek(0, 0)
 		_, _ = io.Copy(fileBuffer, fileContent)
 		fileType = detectFileType(fileBuffer.Bytes())
+		// 检测文件编码
+		charest = detectFileCharest(fileBuffer.Bytes())
 	}
 	_, _ = fileContent.Seek(0, 0)
 
@@ -644,6 +645,7 @@ func (c *configImport) fileScannerHasherUploader(kt *kit.Kit, path, rootDir stri
 	resp.ByteSize = uint64(fileInfo.Size())
 	resp.Sign = result.Sha256
 	resp.Md5 = repoRes.Md5
+	resp.Chartset = charest
 
 	return resp, nil
 }
@@ -693,6 +695,22 @@ func detectFileType(buf []byte) string {
 	}
 
 	return fileType
+}
+
+// 检测文件编码
+func detectFileCharest(buf []byte) string {
+	// 使用 chardet 检测字符集
+	detector := chardet.NewTextDetector()
+	results, err := detector.DetectAll(buf)
+	if err != nil {
+		return "UTF-8"
+	}
+
+	// 返回置信度最高的结果
+	if len(results) > 0 {
+		return results[0].Charset
+	}
+	return "UTF-8"
 }
 
 // 判断内容类型是否为文本类型
@@ -842,10 +860,9 @@ func getDirSize(path string) (int64, error) {
 }
 
 // 上传文件夹时暴露 metrics
-func (c *configImport) uploadFileMetrics(bizID uint32, resourceID, directory string,
-	directorySize int64) {
+func (c *configImport) uploadFileMetrics(bizID uint32, resourceID string, directorySize int64) {
 	c.mc.currentUploadedFolderSize.WithLabelValues(strconv.Itoa(int(bizID)),
-		resourceID, directory).Set(float64(directorySize))
+		resourceID).Set(float64(directorySize))
 }
 
 func getUploadConfig(bizID uint32) (maxUploadContentLength, maxFileSize int64) {

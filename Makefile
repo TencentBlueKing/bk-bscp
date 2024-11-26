@@ -22,16 +22,16 @@ GOBUILD=CGO_ENABLED=0 go build -trimpath
 # output directory for release package and version for command line
 ifeq ("$(VERSION)", "")
 	export OUTPUT_DIR = ${PRO_DIR}/build/bk-bscp
-	export LDVersionFLAG = "-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.BUILDTIME=${BUILDTIME} \
-    	-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.GITHASH=${GITHASH} \
-    	-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.GITTAG=${GITTAG} \
-		-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.DEBUG=${DEBUG}"
+	export LDVersionFLAG = "-X github.com/TencentBlueKing/bk-bscp/pkg/version.BUILDTIME=${BUILDTIME} \
+    	-X github.com/TencentBlueKing/bk-bscp/pkg/version.GITHASH=${GITHASH} \
+    	-X github.com/TencentBlueKing/bk-bscp/pkg/version.GITTAG=${GITTAG} \
+		-X github.com/TencentBlueKing/bk-bscp/pkg/version.DEBUG=${DEBUG}"
 else
 	export OUTPUT_DIR = ${PRO_DIR}/build/bk-bscp-${VERSION}
-	export LDVersionFLAG = "-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.VERSION=${VERSION} \
-    	-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.BUILDTIME=${BUILDTIME} \
-    	-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.GITHASH=${GITHASH} \
-    	-X github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/version.DEBUG=${DEBUG}"
+	export LDVersionFLAG = "-X github.com/TencentBlueKing/bk-bscp/pkg/version.VERSION=${VERSION} \
+    	-X github.com/TencentBlueKing/bk-bscp/pkg/version.BUILDTIME=${BUILDTIME} \
+    	-X github.com/TencentBlueKing/bk-bscp/pkg/version.GITHASH=${GITHASH} \
+    	-X github.com/TencentBlueKing/bk-bscp/pkg/version.DEBUG=${DEBUG}"
 endif
 
 include ./scripts/makefile/uname.mk
@@ -53,7 +53,7 @@ init:
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
 	go install github.com/ifooth/grpc-gateway/v2/protoc-gen-openapiv2@v2.20.0-r2
 	@echo Download gotext
-	go install golang.org/x/text/cmd/gotext@v0.14.0
+	go install golang.org/x/text/cmd/gotext@v0.20.0
 
 .PHONY: tidy
 tidy:
@@ -93,7 +93,7 @@ docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@protoc --proto_path=. --proto_path=pkg/thirdparty/protobuf/ \
+	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \
@@ -105,7 +105,7 @@ api_docs:
 
 bkapigw_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@protoc --proto_path=. --proto_path=pkg/thirdparty/protobuf/ \
+	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \
@@ -194,5 +194,5 @@ docker:
 
 .PHONY: i18n
 i18n:
-	@go generate ./pkg/i18n/translations/translations.go
-	@cp ./pkg/i18n/translations/locales/zh/out.gotext.json ./pkg/i18n/translations/locales/zh/messages.gotext.json
+	@go generate ./internal/i18n/translations/translations.go
+	@cp ./internal/i18n/translations/locales/zh/out.gotext.json ./internal/i18n/translations/locales/zh/messages.gotext.json

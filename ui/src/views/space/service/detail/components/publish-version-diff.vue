@@ -8,6 +8,7 @@
     :show-publish-btn="true"
     :version-diff-list="props.versionList"
     :is-approval-mode="props.isApprovalMode"
+    :app-id="props.appId"
     @publish="emits('publish')"
     @update:show="emits('close')">
     <template #baseHead>

@@ -13,6 +13,7 @@ export interface IScriptListQuery {
   tag?: string;
   not_tag?: boolean;
   name?: string;
+  top_ids?: number;
 }
 
 // 新建脚本编辑参数

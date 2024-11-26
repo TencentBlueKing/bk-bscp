@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbcontent;
 
@@ -8,7 +9,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/conten
 
 // Content source resource reference: pkg/dal/table/content.go
 message Content {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件内容ID" }];
   ContentSpec spec = 2;
   ContentAttachment attachment = 3;
   pbbase.CreatedRevision revision = 4;
@@ -16,23 +17,25 @@ message Content {
 
 // ContentSpec source resource reference: pkg/dal/table/content.go
 message ContentSpec {
-  string signature = 1;
-  uint64 byte_size = 2;
-  string md5 = 3;
+  string signature = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string md5 = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
 }
 
 // ReleasedContentSpec source resource reference: pkg/dal/table/content.go
 message ReleasedContentSpec {
-  string signature = 1;
-  uint64 byte_size = 2;
-  string origin_signature = 3;
-  uint64 origin_byte_size = 4;
-  string md5 = 5;
+  string signature = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string origin_signature = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件sha256" }];
+  uint64 origin_byte_size = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源文件大小" }];
+  string md5 = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
 }
 
 // ContentAttachment source resource reference: pkg/dal/table/content.go
 message ContentAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
-  uint32 config_item_id = 3;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 config_item_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项ID" }];
 }

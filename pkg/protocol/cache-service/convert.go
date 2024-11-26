@@ -14,8 +14,8 @@
 package pbcs
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbevent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/event"
 )
 

@@ -15,7 +15,7 @@ package migrations
 import (
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 )
 
 func init() {
@@ -87,43 +87,52 @@ func mig20240930182341Up(tx *gorm.DB) error {
 
 // mig20240930182341Down for down migration
 func mig20240930182341Down(tx *gorm.DB) error {
+	// Audits  : audits
+	type Audits struct {
+		ResInstance string `gorm:"column:res_instance;type:varchar(256);default:'';NOT NULL"`
+		OperateWay  string `gorm:"column:operate_way;type:varchar(20);default:'';NOT NULL"`
+		Status      string `gorm:"column:status;type:varchar(20);default:'';NOT NULL"`
+		StrategyId  uint   `gorm:"column:strategy_id;type:bigint(1) unsigned;default:NULL;index:idx_strategyID,priority:1"`
+		IsCompare   uint   `gorm:"column:is_compare;type:tinyint(1) unsigned;default:0;NOT NULL"`
+		Action      string `gorm:"column:action;type:varchar(20);default:'';NOT NULL"`
+	}
 	// Audits add new column
-	if !tx.Migrator().HasColumn(&Audits{}, "res_instance") {
+	if tx.Migrator().HasColumn(&Audits{}, "res_instance") {
 		if err := tx.Migrator().DropColumn(&Audits{}, "res_instance"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
-	if !tx.Migrator().HasColumn(&Audits{}, "operate_way") {
+	if tx.Migrator().HasColumn(&Audits{}, "operate_way") {
 		if err := tx.Migrator().DropColumn(&Audits{}, "operate_way"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
-	if !tx.Migrator().HasColumn(&Audits{}, "status") {
+	if tx.Migrator().HasColumn(&Audits{}, "status") {
 		if err := tx.Migrator().DropColumn(&Audits{}, "status"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
-	if !tx.Migrator().HasColumn(&Audits{}, "strategy_id") {
+	if tx.Migrator().HasColumn(&Audits{}, "strategy_id") {
 		if err := tx.Migrator().DropColumn(&Audits{}, "strategy_id"); err != nil {
 			return err
 		}
 	}
 
 	// Audits add new column
-	if !tx.Migrator().HasColumn(&Audits{}, "is_compare") {
+	if tx.Migrator().HasColumn(&Audits{}, "is_compare") {
 		if err := tx.Migrator().DropColumn(&Audits{}, "is_compare"); err != nil {
 			return err
 		}
 	}
 
 	if tx.Migrator().HasColumn(&Audits{}, "action") {
-		if err := tx.Migrator().DropColumn(&Audits{}, "action"); err != nil {
+		if err := tx.Migrator().AlterColumn(&Audits{}, "action"); err != nil {
 			return err
 		}
 	}

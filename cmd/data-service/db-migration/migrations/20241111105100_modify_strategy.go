@@ -15,7 +15,7 @@ package migrations
 import (
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 )
 
 func init() {
@@ -31,7 +31,7 @@ func init() {
 
 // mig20241111105100Up for up migration
 func mig20241111105100Up(tx *gorm.DB) error {
-	// StrategiesAddApproveType  : strategies add approve_type
+	// Strategies  : strategies add approve_type
 	type Strategies struct {
 		ApproveType string `gorm:"column:approve_type;type:varchar(20);default:'';NOT NULL"`
 	}
@@ -47,12 +47,12 @@ func mig20241111105100Up(tx *gorm.DB) error {
 
 // mig20241111105100Down for down migration
 func mig20241111105100Down(tx *gorm.DB) error {
-	// StrategiesAddApproveType  : strategies add approve_type
+	// Strategies  : strategies add approve_type
 	type Strategies struct {
 		ApproveType string `gorm:"column:approve_type;type:varchar(20);default:'';NOT NULL"`
 	}
 	// Strategies drop column
-	if !tx.Migrator().HasColumn(&Strategies{}, "approve_type") {
+	if tx.Migrator().HasColumn(&Strategies{}, "approve_type") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "approve_type"); err != nil {
 			return err
 		}

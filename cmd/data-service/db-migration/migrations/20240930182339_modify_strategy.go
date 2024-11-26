@@ -17,7 +17,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 )
 
 func init() {
@@ -138,84 +138,84 @@ func mig20240930182339Up(tx *gorm.DB) error {
 // mig20240930182339Down for down migration
 func mig20240930182339Down(tx *gorm.DB) error {
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "publish_type") {
+	if tx.Migrator().HasColumn(&Strategies{}, "publish_type") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "publish_type"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "publish_time") {
+	if tx.Migrator().HasColumn(&Strategies{}, "publish_time") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "publish_time"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "publish_status") {
+	if tx.Migrator().HasColumn(&Strategies{}, "publish_status") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "publish_status"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "reject_reason") {
+	if tx.Migrator().HasColumn(&Strategies{}, "reject_reason") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "reject_reason"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "approver") {
+	if tx.Migrator().HasColumn(&Strategies{}, "approver") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "approver"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "approver_progress") {
+	if tx.Migrator().HasColumn(&Strategies{}, "approver_progress") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "approver_progress"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "final_approval_time") {
+	if tx.Migrator().HasColumn(&Strategies{}, "final_approval_time") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "final_approval_time"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_type") {
+	if tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_type") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "itsm_ticket_type"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_url") {
+	if tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_url") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "itsm_ticket_url"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_sn") {
+	if tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_sn") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "itsm_ticket_sn"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_status") {
+	if tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_status") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "itsm_ticket_status"); err != nil {
 			return err
 		}
 	}
 
 	// Strategies add new column
-	if !tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_state_id") {
+	if tx.Migrator().HasColumn(&Strategies{}, "itsm_ticket_state_id") {
 		if err := tx.Migrator().DropColumn(&Strategies{}, "itsm_ticket_state_id"); err != nil {
 			return err
 		}

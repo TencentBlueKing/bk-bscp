@@ -5,7 +5,7 @@
       :btn-loading="btnLoading"
       :is-approval-mode="true"
       :bk-biz-id="spaceId"
-      :app-id="appId"
+      :app-id="props.appId"
       :show="show"
       :current-version="versionData"
       :base-version-id="baseVersionId"
@@ -18,7 +18,7 @@
   <DialogReject
     v-model:show="RejectDialogShow"
     :space-id="spaceId"
-    :app-id="appId"
+    :app-id="props.appId"
     :release-id="versionData.id"
     :release-name="versionData.spec.name"
     @reject="handleReject" />
@@ -121,6 +121,7 @@
       version.status.released_groups.some((group) => {
         if (releasedGroups.value.includes(group.id)) {
           list.push(version);
+          return true;
         }
         // 全量分组上线的版本中 含有 待上线版本的的分组, 也需要对比
         if (version.status.fully_released) {
@@ -188,7 +189,7 @@
       const { message } = resp;
       BkMessage({
         theme: message ? 'primary' : 'success',
-        message: message ? t(message) : t('操作成功'),
+        message: message ? t(message) : t('版本已审批通过'),
       });
       emits('close', 'refresh');
     } catch (e) {

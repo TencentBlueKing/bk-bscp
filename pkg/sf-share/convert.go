@@ -17,7 +17,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/jsoni"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	pbclient "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client"
 	pbce "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client-event"
 )

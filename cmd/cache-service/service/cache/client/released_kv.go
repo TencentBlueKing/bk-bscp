@@ -18,13 +18,13 @@ import (
 
 	prm "github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/cache-service/service/cache/keys"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/jsoni"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
@@ -86,7 +86,8 @@ func (c *client) GetReleasedKvValue(kt *kit.Kit, bizID, appID, releaseID uint32,
 	}
 	rkv, err := c.db.GetReleasedKv(kt.RpcCtx(), r)
 	if err != nil {
-		logs.Errorf("get biz: %d release: %d Kv from db failed, err: %v, rid: %s", bizID, releaseID, err, kt.Rid)
+		logs.Errorf("get biz: %d release: %d key: %s Kv from db failed, err: %v, rid: %s",
+			bizID, releaseID, key, err, kt.Rid)
 		return "", err
 	}
 	c.mc.refreshLagMS.With(prm.Labels{"rsc": releasedKvValueRes, "biz": tools.Itoa(bizID)}).Observe(tools.SinceMS(start))

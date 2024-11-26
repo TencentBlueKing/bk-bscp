@@ -23,20 +23,20 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/components/itsm"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/enumor"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/selector"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	pbgroup "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // Publish exec publish strategy.
@@ -140,7 +140,7 @@ func (s *Service) SubmitPublishApprove(
 	}
 
 	if req.All {
-		groupName = []string{"All"}
+		groupName = []string{"ALL"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
@@ -169,7 +169,7 @@ func (s *Service) SubmitPublishApprove(
 	if app.Spec.IsApprove {
 		scope := strings.Join(groupName, ",")
 		ticketData, errCreate := s.submitCreateApproveTicket(
-			grpcKit, app, release.Spec.Name, scope, ad.GetAuditID(), release.ID)
+			grpcKit, app, release.Spec.Name, scope, req.Memo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
 			logs.Errorf("submit create approve ticket, err: %v, rid: %s", errCreate, grpcKit.Rid)
 			return nil, errCreate
@@ -279,7 +279,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		}
 		itsmUpdata = map[string]interface{}{
 			"sn":             strategy.Spec.ItsmTicketSn,
-			"operator":       grpcKit.User,
+			"operator":       strategy.Revision.Creator,
 			"action_type":    "WITHDRAW",
 			"action_message": fmt.Sprintf("BSCP 代理用户 %s 撤回: %s", grpcKit.User, req.Reason),
 		}
@@ -517,7 +517,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	if req.All {
-		groupName = []string{"All"}
+		groupName = []string{"ALL"}
 	}
 
 	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
@@ -539,7 +539,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	if app.Spec.IsApprove {
 		scope := strings.Join(groupName, ",")
 		ticketData, errCreate := s.submitCreateApproveTicket(
-			grpcKit, app, release.Spec.Name, scope, ad.GetAuditID(), release.ID)
+			grpcKit, app, release.Spec.Name, scope, req.ReleaseMemo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
 			logs.Errorf("submit create approve ticket, err: %v, rid: %s", errCreate, grpcKit.Rid)
 			return nil, errCreate
@@ -570,11 +570,6 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 // revokeApprove revoke publish approve.
 func (s *Service) revokeApprove(
 	kit *kit.Kit, req *pbds.ApproveReq, strategy *table.Strategy) (map[string]interface{}, error) {
-
-	// 提单的人才能撤销
-	if strategy.Revision.Creator != kit.User && kit.OperateWay == string(enumor.WebUI) {
-		return nil, errors.New(i18n.T(kit, "no permission to revoke"))
-	}
 
 	// 只有待上线以及待审批的类型才允许撤回
 	if strategy.Spec.PublishStatus != table.PendingPublish && strategy.Spec.PublishStatus != table.PendingApproval {
@@ -962,8 +957,8 @@ func (s *Service) createReleasedHook(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, a
 
 // submitCreateApproveTicket create new itsm create approve ticket
 // nolint: funlen
-func (s *Service) submitCreateApproveTicket(
-	kt *kit.Kit, app *table.App, releaseName, scope string, aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
+func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, releaseName, scope, memo string,
+	aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
 
 	// 或签和会签是不同的模板
 	stateIDKey := constant.CreateOrSignApproveItsmStateID
@@ -1032,6 +1027,9 @@ func (s *Service) submitCreateApproveTicket(
 		}, {
 			"key":   "APPROVE_TYPE",
 			"value": approveType,
+		}, {
+			"key":   "MEMO",
+			"value": memo,
 		},
 	}
 
@@ -1133,11 +1131,6 @@ func checkTicketStatus(grpcKit *kit.Kit,
 		return req, message, nil
 	}
 
-	// 如果从页面来的是撤回，直接返回，itsm撤销不会回调
-	if grpcKit.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RevokedPublish) {
-		return req, message, nil
-	}
-
 	// 先获取tikect status
 	ticketStatus, err := itsm.GetTicketStatus(grpcKit.Ctx, sn)
 	if err != nil {
@@ -1146,6 +1139,10 @@ func checkTicketStatus(grpcKit *kit.Kit,
 
 	switch ticketStatus.Data.CurrentStatus {
 	case constant.TicketRunningStatu:
+		// 如果从页面来的是撤回，直接返回，itsm撤销不会回调
+		if grpcKit.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RevokedPublish) {
+			return req, message, nil
+		}
 		// 统计itsm有多少人已经审批通过,有可能处于回调过程中
 		approveData, err := itsm.GetTicketLogs(grpcKit.Ctx, sn)
 		if err != nil {
@@ -1163,6 +1160,10 @@ func checkTicketStatus(grpcKit *kit.Kit,
 			return req, i18n.T(grpcKit, "this ticket has been approved, no further processing is required"), nil
 		}
 		if _, ok := approveData[constant.ItsmPassedApproveResult]; ok {
+			// 驳回的情况直接忽略审批过的人
+			if grpcKit.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RejectedApproval) {
+				return req, message, err
+			}
 			req.ApprovedBy = approveData[constant.ItsmPassedApproveResult]
 			req.PublishStatus = string(table.PendingPublish)
 			for _, v := range req.ApprovedBy {

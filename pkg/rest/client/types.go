@@ -17,7 +17,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/rest/discovery"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest/discovery"
 )
 
 // Capability http request limit.

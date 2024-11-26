@@ -16,9 +16,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/app"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/flags"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/app"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/flags"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // SysOpt is the system option

@@ -56,6 +56,7 @@
           :class="memoEditHookId > 0 || tagEditHookId > 0 ? 'table-with-memo-edit' : ''"
           show-overflow-tooltip
           :cell-class="getCellCls"
+          :row-class="getRowCls"
           @page-limit-change="handlePageLimitChange"
           @page-value-change="refreshList($event, true)">
           <template #prepend>
@@ -271,6 +272,7 @@
   const editMemoStr = ref(''); // 编辑描述内容
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
+  const topIds = ref<number>();
 
   const maxTableHeight = computed(() => {
     const windowHeight = window.innerHeight;
@@ -324,7 +326,7 @@
   });
 
   // 获取脚本列表
-  const getScripts = async () => {
+  const getScripts = async (isCreate?: boolean) => {
     scriptsLoading.value = true;
     const params: IScriptListQuery = {
       start: (pagination.value.current - 1) * pagination.value.limit,
@@ -338,6 +340,12 @@
     if (searchStr.value) {
       params.name = searchStr.value;
     }
+    if (isCreate) {
+      params.top_ids = topIds.value;
+    } else {
+      topIds.value = undefined;
+    }
+
     const res = await getScriptList(spaceId.value, params);
     scriptsData.value = res.details;
     scriptsData.value.forEach((item) => {
@@ -492,8 +500,9 @@
 
   const handleNameInputChange = debounce(() => refreshList(), 300);
 
-  const handleCreatedScript = () => {
-    refreshList();
+  const handleCreatedScript = (topId: number) => {
+    topIds.value = topId;
+    refreshList(1, false, true);
     getTags();
   };
 
@@ -506,14 +515,14 @@
     refreshList(pagination.value.current);
   };
 
-  const refreshList = (current = 1, pageChange = false) => {
+  const refreshList = (current = 1, pageChange = false, isCreate = false) => {
     // 非跨页全选/半选 需要重置全选状态
     if (![CheckType.HalfAcrossChecked, CheckType.AcrossChecked].includes(selectType.value) || !pageChange) {
       handleClearSelection();
     }
     isSearchEmpty.value = searchStr.value !== '';
     pagination.value.current = current;
-    getScripts();
+    getScripts(isCreate);
   };
 
   const handlePageLimitChange = (val: number) => {
@@ -533,6 +542,12 @@
     }
     // 跨页状态传递
     return !selections.value.some((item) => item.hook?.id === row.hook?.id);
+  };
+
+  const getRowCls = (script: IScriptItem) => {
+    if (topIds.value === script.hook.id) {
+      return 'new-row-marked';
+    }
   };
 </script>
 <style lang="scss" scoped>
@@ -618,6 +633,9 @@
     :deep(.bk-table-body) {
       max-height: calc(100vh - 280px);
       overflow: auto;
+      tr.new-row-marked td {
+        background: #f2fff4 !important;
+      }
     }
   }
   .operate-area {

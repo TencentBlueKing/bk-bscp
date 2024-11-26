@@ -16,11 +16,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
@@ -69,6 +69,7 @@ func (s *Service) CreateTemplateRevision(ctx context.Context, req *pbcs.CreateTe
 				ByteSize:  req.ByteSize,
 				Md5:       metadata.Md5,
 			},
+			Charset: req.Charset,
 		},
 	}
 	rp, err := s.client.DS.CreateTemplateRevision(grpcKit.RpcCtx(), r)
@@ -254,6 +255,7 @@ func (s *Service) GetTemplateRevision(ctx context.Context, req *pbcs.GetTemplate
 			CreateAt:             tr.GetDetail().GetCreateAt(),
 			Md5:                  tr.GetDetail().GetMd5(),
 			IsLatest:             tr.GetDetail().GetIsLatest(),
+			Charset:              tr.GetDetail().GetCharset(),
 		},
 	}, nil
 }
@@ -299,6 +301,7 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbcs.UpdateTe
 				ByteSize:  req.ByteSize,
 				Md5:       metadata.Md5,
 			},
+			Charset: req.Charset,
 		},
 		TemplateRevisionId: req.GetTemplateRevisionId(),
 	}

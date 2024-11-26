@@ -106,6 +106,8 @@ type BasePage struct {
 	Order Order `json:"order"`
 	// All defines whether query all the resources at once.
 	All bool `json:"all"`
+	// TopIds 需要置顶的id
+	TopIds []uint32 `json:"top_ids"`
 }
 
 // Offset 偏移量

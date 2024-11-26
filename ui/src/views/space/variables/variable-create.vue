@@ -73,9 +73,9 @@
     try {
       pending.value = true;
       const params = { ...variableConfig.value, name: `${prefix.value}${variableConfig.value.name}` };
-      await createVariable(spaceId.value, params);
+      const res = await createVariable(spaceId.value, params);
       close();
-      emits('created');
+      emits('created', res.data.id);
       Message({
         theme: 'success',
         message: t('创建变量成功'),

@@ -17,17 +17,17 @@ package bll
 import (
 	"fmt"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/asyncdownload"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/auth"
-	clientset "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/client-set"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/eventc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/lcache"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/observer"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/feed-server/bll/release"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	iamauth "github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/auth"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/runtime/lock"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/serviced"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/asyncdownload"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/auth"
+	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/eventc"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/lcache"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/observer"
+	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/release"
+	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
+	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
 // New create a new BLL instance.

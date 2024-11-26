@@ -175,13 +175,13 @@
       if (!formData.value.content.endsWith('\n')) {
         formData.value.content += '\n';
       }
-      await createScript(spaceId.value, formData.value);
+      const res = await createScript(spaceId.value, formData.value);
       BkMessage({
         theme: 'success',
         message: t('脚本创建成功'),
       });
       handleClose();
-      emits('created');
+      emits('created', res.id);
     } catch (e) {
       console.error(e);
     } finally {

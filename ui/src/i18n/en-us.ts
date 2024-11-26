@@ -530,7 +530,7 @@ export default {
   '提示-待审批': 'Approver({approveType})：{approver}',
   '提示-已上线文案': 'Publish Time: {time}',
   '提示-审批驳回': 'Approval has been rejected\nApprover: {reviser}\nPublish time: {time}\nRejection reason: {reason}',
-  '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}',
+  '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}\nCancellation reason: {reason}',
   '提示-失败': 'This script version is currently being used by the service, deletion failed',
   配置版本名称: 'Configuration version name',
   配置上线范围: 'Configuration publish scope',
@@ -572,6 +572,11 @@ export default {
   审批时间: 'Approval time',
   驳回原因: 'Reason for rejection',
   请输入驳回理由: 'Please enter the reason for rejection',
+  无确认上线权限文案: 'Please contact the service go-live submitter, {creator}, for confirmation of the go-live operation\nIf you are unable to reach the submitter and there are urgent configurations that need to be published\nyou may perform a revoke go-live and then resubmit the service go-live process',
+  审批版本详情: 'Approval version information',
+  待上线分组: 'Pending go live groups',
+  版本已审批通过: 'Version approved',
+  撤销说明: '撤销说明',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',
@@ -595,6 +600,7 @@ export default {
   '请输入访问令牌，目前只支持 OAuth2.0 与 JWT 类型的访问令牌': 'Please enter the access token, currently only OAuth2.0 and JWT type access tokens are supported',
   '此证书将于 {n} 到期，距离到期仅剩 {m} 天': 'This certificate will expire on {n}, and there are only {m} days left until expiration',
   '此证书已于 {n} 过期，请更换其它证书': 'This certificate has expired on {n}, please replace it with another certificate',
+  '此证书已于 {n} 过期，请尽快更换证书': 'This certificate has expired on {n}, please replace it as soon as possible',
   '证书格式不正确（只支持 X.509 类型证书）': 'The certificate format is incorrect (only X.509 type certificates are supported)',
   '证书未经受信任的证书颁发机构签发，在生产环境中建议使用经权威证书颁发机构签发的证书': 'The certificate is not issued by a trusted certificate authority, and it is recommended to use a certificate issued by an authoritative certificate authority in a production environment',
   '目前只支持 X.509 类型证书': 'Currently only X.509 type certificates are supported',
@@ -698,6 +704,9 @@ export default {
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx port',
   导出变量: 'Export variables',
   全局变量: 'Global variables',
+  变量值已复制: '变量值已复制',
+  设置: 'Set',
+  复制变量值: 'Copy variable value',
 
   // 配置模板
   '配置模板用于同一业务下服务间配置文件复用，可以在创建服务配置时引用配置模板。': 'Configuration templates are used to reuse configuration files between services under same services, and can be referenced when creating service configurations.',

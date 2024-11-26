@@ -45,8 +45,6 @@ public class Main {
                         kv.getKey() + "=" + bscp.get(app, kv.getKey(), opts.toArray(new AppOption[0])));
             }
 
-            bscp.close();
-
             System.out.println("get success");
 
         } catch (Exception e) {

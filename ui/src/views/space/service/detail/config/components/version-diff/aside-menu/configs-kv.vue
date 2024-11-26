@@ -81,6 +81,7 @@
 
   const props = withDefaults(
     defineProps<{
+      appId?: number;
       currentVersionId: number;
       baseVersionId: number | undefined;
       selectedId: number;
@@ -159,10 +160,14 @@
 
   // 获取某一版本下配置文件
   const getConfigsOfVersion = async (releaseId: number | undefined) => {
+    const currentAppId = appId.value || props.appId;
     if (typeof releaseId !== 'number') {
       return [];
     }
-    const res = await getReleaseKvList(bkBizId.value, appId.value, releaseId, { start: 0, all: true });
+    const res = await getReleaseKvList(bkBizId.value, Number(currentAppId), releaseId, {
+      start: 0,
+      all: true,
+    });
     return res.details;
   };
 

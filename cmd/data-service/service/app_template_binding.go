@@ -20,20 +20,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/search"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/search"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbatb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-template-binding"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbrci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-ci"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateAppTemplateBinding create app template binding.
@@ -168,8 +168,7 @@ func (s *Service) DeleteAppTemplateBinding(ctx context.Context, req *pbds.Delete
 }
 
 // ListAppBoundTmplRevisions list app bound template revisions.
-//
-//nolint:funlen,gocyclo
+// nolint:funlen,gocyclo
 func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 	req *pbds.ListAppBoundTmplRevisionsReq) (*pbds.ListAppBoundTmplRevisionsResp, error) {
 
@@ -269,6 +268,7 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 				ByteSize:             d.Spec.ContentSpec.ByteSize,
 				Creator:              d.Revision.Creator,
 				CreateAt:             d.Revision.CreatedAt.Format(time.RFC3339),
+				Charset:              string(d.Spec.Charset),
 			})
 		}
 	}
@@ -1196,7 +1196,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 	for sId, tId := range templateSetAndTemplateIds {
 		for _, v := range tId {
 			if !existsTemplateIds[v] {
-				return errors.New(i18n.T(kit, `the template file %s in the template set 
+				return errors.New(i18n.T(kit, `the template file %s in the template set
 				%s has been removed. Please import the set again`,
 					validatedTemplateSetNames[sId], templateNames[v]))
 			}
@@ -1216,7 +1216,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 	for tId, rId := range templateAndRevisionIds {
 		for _, v := range rId {
 			if !existsRevisionsIds[v] {
-				return errors.New(i18n.T(kit, `template version %s in template file %s 
+				return errors.New(i18n.T(kit, `template version %s in template file %s
 				has been removed. Please import the set again`,
 					revisionNames[v], templateNames[tId]))
 			}
@@ -1232,7 +1232,7 @@ func (s *Service) verifyTemplateSetAndRevisions(kit *kit.Kit, validatedTemplateS
 		if rid, ok := validatedLatest[v.Attachment.TemplateID]; ok && rid == v.ID {
 			continue
 		}
-		return errors.New(i18n.T(kit, `the version number %s in the template file %s is not the 
+		return errors.New(i18n.T(kit, `the version number %s in the template file %s is not the
 		latest version. Please import the set again`,
 			templateNames[v.Attachment.TemplateID], revisionNames[v.ID]))
 	}

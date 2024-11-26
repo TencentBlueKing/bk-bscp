@@ -16,7 +16,7 @@ package pbci
 import (
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 
@@ -33,6 +33,7 @@ func (m *ConfigItemSpec) ConfigItemSpec() *table.ConfigItemSpec {
 		FileMode:   table.FileMode(m.FileMode),
 		Memo:       m.Memo,
 		Permission: m.Permission.FilePermission(),
+		Charset:    table.FileCharset(m.Charset),
 	}
 }
 
@@ -49,6 +50,7 @@ func PbConfigItemSpec(spec *table.ConfigItemSpec) *ConfigItemSpec {
 		FileMode:   string(spec.FileMode),
 		Memo:       spec.Memo,
 		Permission: PbFilePermission(spec.Permission),
+		Charset:    string(spec.Charset),
 	}
 }
 

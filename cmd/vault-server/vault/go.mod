@@ -1,4 +1,4 @@
-module github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/vault
+module github.com/TencentBlueKing/bk-bscp/cmd/vault-server/vault
 
 go 1.20
 

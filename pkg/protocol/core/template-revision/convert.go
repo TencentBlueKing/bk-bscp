@@ -14,7 +14,7 @@
 package pbtr
 
 import (
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
@@ -48,6 +48,7 @@ func (m *TemplateRevisionSpec) TemplateRevisionSpec() *table.TemplateRevisionSpe
 		FileMode:     table.FileMode(m.FileMode),
 		Permission:   m.Permission.FilePermission(),
 		ContentSpec:  m.ContentSpec.ContentSpec(),
+		Charset:      table.FileCharset(m.Charset),
 	}
 }
 
@@ -66,6 +67,7 @@ func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec) *TemplateRevisionS
 		FileMode:     string(spec.FileMode),
 		Permission:   pbci.PbFilePermission(spec.Permission),
 		ContentSpec:  pbcontent.PbContentSpec(spec.ContentSpec),
+		Charset:      string(spec.Charset),
 	}
 }
 

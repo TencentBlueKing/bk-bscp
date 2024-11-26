@@ -50,7 +50,7 @@
                 :handle-change="() => handleSelectionChange(row)" />
             </template>
           </bk-table-column>
-          <bk-table-column label="UID" fixed="left" :width="254" prop="client.attachment.uid"></bk-table-column>
+          <bk-table-column label="UID" fixed="left" :width="264" prop="client.attachment.uid"></bk-table-column>
           <bk-table-column
             v-if="selectedShowColumn.includes('ip')"
             label="IP"

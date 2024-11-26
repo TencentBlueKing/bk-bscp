@@ -17,10 +17,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/app"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/vault-server/options"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/app"
+	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/options"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 func main() {

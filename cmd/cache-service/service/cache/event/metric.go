@@ -15,7 +15,7 @@ package event
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/metrics"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
 func initMetric() *metric {

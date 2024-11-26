@@ -9,14 +9,13 @@
       <span @click="goVariablesDoc" class="hyperlink">{{ t('配置模板与变量') }}</span>
     </bk-alert>
     <div class="operation-area">
-      <div class="button">
+      <div class="buttons">
         <bk-button theme="primary" @click="isCreateSliderShow = true">
           <Plus class="button-icon" />
           {{ t('新增变量') }}
         </bk-button>
         <bk-button @click="isImportVariableShow = true">{{ t('导入变量') }}</bk-button>
-        <!-- <VaribaleExport :biz-id="spaceId" /> -->
-        <bk-button :disabled="list.length === 0" @click="handleExport">{{ t('导出变量') }} </bk-button>
+        <ExportVariables :disabled="list.length === 0" @export="handleExport" />
         <BatchDeleteBtn
           :bk-biz-id="spaceId"
           :selected-ids="selectedIds"
@@ -33,6 +32,7 @@
         :remote-pagination="true"
         :pagination="pagination"
         show-overflow-tooltip
+        :row-class="getRowCls"
         @page-limit-change="handlePageLimitChange"
         @page-value-change="refreshList($event, true)">
         <template #prepend>
@@ -57,7 +57,13 @@
         <bk-table-column :label="t('类型')" prop="spec.type" width="180"></bk-table-column>
         <bk-table-column :label="t('默认值')" prop="spec.default_val">
           <template #default="{ row }">
-            <span v-if="row.spec">{{ row.spec.default_val || '--' }}</span>
+            <VarValuePreview
+              v-if="row.spec"
+              :is-visible="true"
+              type="text"
+              :value="row.spec.default_val || '--'"
+              :is-kv-value="false"
+              @view-all="handleEditVar(row)" />
           </template>
         </bk-table-column>
         <bk-table-column :label="t('描述')">
@@ -78,13 +84,13 @@
         </template>
       </bk-table>
     </div>
-    <VariableCreate v-model:show="isCreateSliderShow" @created="refreshList" />
+    <VariableCreate v-model:show="isCreateSliderShow" @created="handleCreateVar" />
     <VariableEdit
       v-model:show="editSliderData.open"
       :id="editSliderData.id"
       :data="editSliderData.data"
       @edited="refreshList" />
-    <VariableImport v-model:show="isImportVariableShow" @edited="refreshList" />
+    <VariableImport v-model:show="isImportVariableShow" @imported="refreshList" @top-ids="topIds = $event" />
   </section>
   <DeleteConfirmDialog
     v-model:is-show="isDeleteVariableDialogShow"
@@ -105,13 +111,12 @@
   import useGlobalStore from '../../../store/global';
   import { ICommonQuery } from '../../../../types/index';
   import { IVariableEditParams, IVariableItem } from '../../../../types/variable';
-  import { getVariableList, deleteVariable } from '../../../api/variable';
+  import { getVariableList, deleteVariable, exportVariables } from '../../../api/variable';
   import useTablePagination from '../../../utils/hooks/use-table-pagination';
-  import { copyToClipBoard } from '../../../utils/index';
-  import { fileDownload } from '../../../utils/file';
+  import { copyToClipBoard, downloadFile } from '../../../utils/index';
   import VariableCreate from './variable-create.vue';
   import VariableEdit from './variable-edit.vue';
-  import VariableImport from './variable-import.vue';
+  import VariableImport from './variable-import/index.vue';
   import BatchDeleteBtn from './batch-delete-btn.vue';
   import SearchInput from '../../../components/search-input.vue';
   import TableEmpty from '../../../components/table/table-empty.vue';
@@ -119,6 +124,8 @@
   import useTableAcrossCheck from '../../../utils/hooks/use-table-acrosscheck';
   import acrossCheckBox from '../../../components/across-checkbox.vue';
   import CheckType from '../../../../types/across-checked';
+  import ExportVariables from '../service/detail/config/config-list/config-table-list/variables/export-variables.vue';
+  import VarValuePreview from '../service/detail/config/config-list/config-table-list/tables/kv-value-preview.vue';
 
   const { spaceId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
@@ -144,6 +151,7 @@
   });
   const isSearchEmpty = ref(false);
   const isAcrossChecked = ref(false);
+  const topIds = ref<number[]>([]);
 
   const crossPageSelect = computed(() => pagination.value.limit < pagination.value.count);
 
@@ -187,24 +195,50 @@
   };
 
   const getVariables = async () => {
-    loading.value = true;
-    const params: ICommonQuery = {
-      start: (pagination.value.current - 1) * pagination.value.limit,
-      limit: pagination.value.limit,
-    };
-    if (searchStr.value) {
-      params.search_fields = 'name';
-      params.search_value = searchStr.value;
+    try {
+      loading.value = true;
+      const params: ICommonQuery = {
+        start: (pagination.value.current - 1) * pagination.value.limit,
+        limit: pagination.value.limit,
+      };
+      if (searchStr.value) {
+        params.search_fields = 'name';
+        params.search_value = searchStr.value;
+      }
+      if (topIds.value.length > 0) {
+        params.top_ids = topIds.value;
+      }
+      const res = await getVariableList(spaceId.value, params);
+      list.value = res.details;
+      pagination.value.count = res.count;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
     }
-    const res = await getVariableList(spaceId.value, params);
-    list.value = res.details;
-    pagination.value.count = res.count;
-    loading.value = false;
+  };
+
+  const handleCreateVar = (id: number) => {
+    topIds.value = [id];
+    refreshList();
   };
 
   // 导出变量
-  const handleExport = async () => {
-    fileDownload(`${(window as any).BK_BCS_BSCP_API}/api/v1/config/biz/${spaceId.value}/variables/export`, '', false);
+  const handleExport = async (type: string) => {
+    const res = await exportVariables(spaceId.value, type);
+    let content: any;
+    let mimeType: string;
+    let extension: string;
+    if (type === 'json') {
+      content = JSON.stringify(res, null, 2);
+      mimeType = 'application/json';
+      extension = 'json';
+    } else {
+      content = res;
+      mimeType = 'text/yaml';
+      extension = 'yaml';
+    }
+    downloadFile(content, mimeType, `bscp_variables_${spaceId.value}.${extension}`);
   };
 
   const handleEditVar = (variable: IVariableItem) => {
@@ -285,6 +319,12 @@
   // @ts-ignore
   // eslint-disable-next-line
   const goVariablesDoc = () => window.open(BSCP_CONFIG.variable_template_doc);
+
+  const getRowCls = (variable: IVariableItem) => {
+    if (topIds.value.includes(variable.id)) {
+      return 'new-row-marked';
+    }
+  };
 </script>
 <style lang="scss" scoped>
   .variables-management-page {
@@ -320,13 +360,11 @@
     justify-content: space-between;
     margin-top: 24px;
     padding: 0 24px;
-    .button {
+    .buttons {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      .bk-button {
-        margin-right: 8px;
-      }
+      gap: 8px;
       .button-icon {
         font-size: 18px;
       }
@@ -344,6 +382,9 @@
     :deep(.bk-table-body) {
       max-height: calc(100vh - 300px);
       overflow: auto;
+      tr.new-row-marked td {
+        background: #f2fff4 !important;
+      }
     }
     padding: 16px 24px 24px;
   }

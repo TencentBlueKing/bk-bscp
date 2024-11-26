@@ -748,3 +748,12 @@ export const batchUndeleteKv = (bizId: string, appId: number, keys: string[], ex
  */
 export const batchUndeleteFile = (bizId: string, appId: number, ids: number[]) =>
   http.post(`config/biz_id/${bizId}/app_id/${appId}/config_items/batch_undelete`, { ids });
+
+/**
+ * 获取即将过期证书列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @returns
+ */
+export const getUnExpiredCertList = (bizId: string, appId: number, params: any) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/kvs/near_certificate`, { params });

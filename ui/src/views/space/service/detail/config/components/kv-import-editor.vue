@@ -87,7 +87,7 @@
   import BkMessage from 'bkui-vue/lib/message';
   import { InfoLine, FilliscreenLine, UnfullScreen, Search, Upload } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../../../components/code-editor/index.vue';
-  import SeparatorSelect from '../../../../variables/separator-select.vue';
+  import SeparatorSelect from '../../../../variables/variable-import/separator-select.vue';
   import { IConfigKvItem } from '../../../../../../../types/config';
   import { importKvFormText, importKvFormJson, importKvFormYaml } from '../../../../../../api/config';
   import useServiceStore from '../../../../../../store/service';

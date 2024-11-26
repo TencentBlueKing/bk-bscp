@@ -1,48 +1,57 @@
 <template>
-  <bk-loading
+  <div
     v-if="approverList && route.params.versionId && showStatusIdArr.includes(Number(route.params.versionId))"
-    :loading="loading"
-    size="mini">
-    <div class="version-approve-status">
-      <Spinner v-show="approveStatus === 0" class="spinner" />
-      <div
-        v-show="approveStatus !== 0"
-        :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
-      <span class="approve-status-text">{{ approveText }}</span>
-      <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
-        <text-file v-show="approveStatus > -1 && approveStatus !== 1" class="text-file" />
-        <template #content>
-          <div class="popover-content">
-            <template v-if="itsmData?.itsm_ticket_sn">
-              <div class="itsm-title">{{ $t('审批单') }}：</div>
-              <div class="itsm-content em">
-                <div class="itsm-sn">{{ itsmData?.itsm_ticket_sn }}</div>
-                <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
+    class="version-approve-status">
+    <Spinner v-show="approveStatus === 0" class="spinner" />
+    <div
+      v-show="![0, 1].includes(approveStatus)"
+      :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
+    <span class="approve-status-text" v-show="approveStatus !== 1">{{ approveText }}</span>
+    <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
+      <text-file v-show="[0, 2].includes(approveStatus)" class="text-file" />
+      <template #content>
+        <div class="popover-content">
+          <template v-if="itsmData?.itsm_ticket_sn">
+            <div class="itsm-title">{{ $t('审批单') }}：</div>
+            <div class="itsm-content em">
+              <div class="itsm-sn" @click="handleLinkTo(itsmData?.itsm_ticket_url)">
+                {{ itsmData?.itsm_ticket_sn }}
               </div>
-            </template>
-            <div class="itsm-title">
-              {{
-                `${approveStatus === 3 ? t('撤销人') : t('审批人')}（${approveType === 'or_sign' ? $t('或签') : $t('会签')}）`
-              }}：
+              <div class="itsm-action" @click="handleCopy(itsmData?.itsm_ticket_url)"><Copy /></div>
             </div>
-            <div class="itsm-content">{{ approverList }}</div>
-            <template v-if="approveStatus === 0 && publishTime">
-              <div class="itsm-title">{{ $t('定时上线') }}：</div>
-              <div class="itsm-content">
-                {{ convertTime(publishTime, 'local') || '--' }}
-              </div>
-            </template>
-            <template v-if="approveStatus === 2">
-              <div class="itsm-title">{{ $t('驳回原因') }}：</div>
-              <div class="itsm-content">
-                {{ rejectionReason || '--' }}
-              </div>
-            </template>
+          </template>
+          <div class="itsm-title">
+            {{ t('审批人') }}
+            （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}） ：
           </div>
-        </template>
-      </bk-popover>
-    </div>
-  </bk-loading>
+          <div class="itsm-content">{{ approverList }}</div>
+          <template v-if="approveStatus === 0 && publishTime">
+            <div class="itsm-title">{{ $t('定时上线') }}：</div>
+            <div class="itsm-content">
+              {{ convertTime(publishTime, 'local') || '--' }}
+            </div>
+          </template>
+          <template v-if="approveStatus === 2">
+            <div class="itsm-title">{{ $t('驳回原因') }}：</div>
+            <div class="itsm-content">
+              {{ rejectionReason || '--' }}
+            </div>
+          </template>
+        </div>
+      </template>
+    </bk-popover>
+    <text-file
+      v-if="approveStatus === 3"
+      v-bk-tooltips="{
+        content: t('提示-已撤销', {
+          reviser,
+          time: convertTime(finalApprovalTime, 'local'),
+          reason: rejectionReason,
+        }),
+        placement: 'bottom',
+      }"
+      class="text-file" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -58,11 +67,10 @@
   import { storeToRefs } from 'pinia';
   import useConfigStore from '../../../../../store/config';
 
-  const emits = defineEmits(['send-data']);
+  const emits = defineEmits(['send-data', 'refresh-version']);
 
   const props = defineProps<{
     showStatusId: number; // 操作 提交上线/调整分组上线/撤销上线时的id
-    refreshVer: Function; // 刷新左侧版本列表
   }>();
 
   const route = useRoute();
@@ -70,18 +78,19 @@
   const versionStore = useConfigStore();
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
 
+  const reviser = ref(''); // 撤销人
   const approverList = ref(''); // 审批人
   const approveStatus = ref(-1); // 审批图标状态展示 0待审批 1待上线(审批通过) 2驳回 3撤销
   const approveText = ref(''); // 审批文案
   const approveType = ref(''); // 审批方式
-  const rejectionReason = ref(''); // 拒绝理由
+  const rejectionReason = ref('--'); // 拒绝理由/撤销原因
   const publishTime = ref(''); // 定时上线时间
   const showStatusIdArr = ref<number[]>([]); // 提交上线/调整分组上线/撤销上线的id集合
   const itsmData = ref<{
     itsm_ticket_sn: string;
     itsm_ticket_url: string;
   }>();
-  const loading = ref(true);
+  const finalApprovalTime = ref('--');
   let interval = 0;
 
   watch(
@@ -97,7 +106,7 @@
     // 轮询中 且 状态发生变化才需要刷新版本列表状态
     if (newV !== oldV && interval) {
       publishedVersionId.value = versionData.value.id;
-      props.refreshVer();
+      emits('refresh-version');
     }
   });
 
@@ -114,7 +123,6 @@
   });
 
   const loadStatus = debounce(async () => {
-    loading.value = true;
     if (interval) {
       clearInterval(interval);
     }
@@ -125,32 +133,33 @@
         const {
           app,
           spec,
-          spec: { itsm_ticket_sn, itsm_ticket_url, publish_time, reject_reason },
+          spec: { itsm_ticket_sn, itsm_ticket_url, publish_time, reject_reason, final_approval_time },
+          revision,
         } = resp.data;
         // 审批人
         approverList.value = spec.approver_progress;
         approveText.value = publishStatusText(spec.publish_status);
         approveType.value = app?.approve_type || '';
-        rejectionReason.value = reject_reason;
+        rejectionReason.value = reject_reason || '--';
         publishTime.value = publish_time;
+        finalApprovalTime.value = final_approval_time;
+        reviser.value = revision.reviser;
         // itsm信息
         itsmData.value = { itsm_ticket_sn, itsm_ticket_url };
         sendData(resp.data);
         // 需要展示状态的版本
         filterShowVer();
         // 待审批/待上线状态 且 待上线为定时上线才需要轮询
-        if (approveStatus.value === 0 || (approveStatus.value === 1 && publishTime.value)) {
-          interval = setTimeout(loadStatus, 5000);
-        }
-        // 带审批/待上线状态轮询
-        // if ([0, 1].includes(approveStatus.value)) {
+        // if (approveStatus.value === 0 || (approveStatus.value === 1 && publishTime.value)) {
         //   interval = setTimeout(loadStatus, 5000);
         // }
+        // 带审批/待上线状态轮询
+        if ([0, 1].includes(approveStatus.value)) {
+          interval = setTimeout(loadStatus, 5000);
+        }
       } catch (error) {
         console.log(error);
         clearInterval(interval);
-      } finally {
-        loading.value = false;
       }
     }
   }, 300);
@@ -197,6 +206,13 @@
     });
   };
 
+  // 跳转审批页面
+  const handleLinkTo = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   const sendData = (data: any) => {
     const { spec, revision } = data;
     const releaseGroupIds = spec.scope?.groups.map((item: any) => item.id);
@@ -206,6 +222,7 @@
       type: spec.publish_type,
       groupIds: releaseGroupIds,
       memo: spec.memo,
+      targetGroups: spec.scope?.groups || [],
     };
     emits('send-data', approveData, revision?.creator || '');
   };
@@ -252,6 +269,9 @@
     font-size: 12px;
     line-height: 16px;
     color: #4d4f56;
+    .itsm-sn {
+      cursor: pointer;
+    }
     .itsm-content {
       display: flex;
       justify-content: flex-start;

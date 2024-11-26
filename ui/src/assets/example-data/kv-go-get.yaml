@@ -38,14 +38,12 @@ func main() {
 
 	opts := []client.AppOption{}
 
-	release, err := bscp.PullKvs(app, []string{}, opts...)
-
 	value, err := bscp.Get(app, key, opts...)
 	if err != nil {
 		logger.Error("get value", logger.ErrAttr(err))
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s=%s\n", kv.Key, value)
+	fmt.Printf("%s=%s\n", key, value)
 	
 }

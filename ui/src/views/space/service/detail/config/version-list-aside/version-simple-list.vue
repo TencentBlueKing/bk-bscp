@@ -1,7 +1,10 @@
 <template>
   <section class="version-container">
     <div class="service-selector-wrapper">
-      <ServiceSelector :value="props.appId" />
+      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="editingService = $event" />
+      <div class="details-btn" v-bk-tooltips="{ content: t('查看服务属性') }" @click="isEditServicePopShow = true">
+        <span class="bk-bscp-icon icon-view-detail"></span>
+      </div>
     </div>
     <bk-loading :loading="versionListLoading">
       <div class="version-search-wrapper">
@@ -44,7 +47,7 @@
             v-bk-tooltips="{
               content: version.status.fully_release ? t('当前线上全量版本') : t('历史全量上线过的版本'),
             }">
-            All
+            ALL
           </div>
           <Ellipsis class="action-more-icon" @mouseenter="handlePopShow(version, $event)" @mouseleave="handlePopHide" />
         </section>
@@ -76,6 +79,10 @@
         {{ t('版本废弃') }}
       </div>
     </div>
+    <EditService
+      v-model:show="isEditServicePopShow"
+      :service="editingService"
+      @reload="handleReloadService"></EditService>
   </section>
 </template>
 <script setup lang="ts">
@@ -89,11 +96,13 @@
   import { getConfigVersionList, deprecateVersion } from '../../../../../../api/config';
   import { GET_UNNAMED_VERSION_DATA } from '../../../../../../constants/config';
   import { IConfigVersion } from '../../../../../../../types/config';
+  import { IAppItem } from '../../../../../../../types/app';
   import ServiceSelector from '../../components/service-selector.vue';
   import SearchInput from '../../../../../../components/search-input.vue';
   import TableEmpty from '../../../../../../components/table/table-empty.vue';
   import VersionDiff from '../../config/components/version-diff/index.vue';
   import VersionOperateConfirmDialog from './version-operate-confirm-dialog.vue';
+  import EditService from '../../../list/components/edit-service.vue';
 
   const configStore = useConfigStore();
   const { versionData, refreshVersionListFlag, publishedVersionId } = storeToRefs(configStore);
@@ -119,6 +128,30 @@
   const popover = ref<HTMLInputElement | null>(null);
   const popHideTimerId = ref(0);
   const isMouseenter = ref(false);
+  const isEditServicePopShow = ref(false);
+  const serviceSelectorRef = ref();
+  const editingService = ref<IAppItem>({
+    id: 0,
+    biz_id: 0,
+    space_id: '',
+    spec: {
+      name: '',
+      config_type: '',
+      memo: '',
+      alias: '',
+      data_type: '',
+      is_approve: true,
+      approver: '',
+      approve_type: 'or_sign',
+    },
+    revision: {
+      creator: '',
+      reviser: '',
+      create_at: '',
+      update_at: '',
+    },
+    permissions: {},
+  });
 
   const versionsInView = computed(() => {
     if (searchStr.value === '') {
@@ -218,11 +251,11 @@
           version.status.strategy_status = newVersion.status.strategy_status;
         }
       });
-      console.log(versionList.value, 111);
     } catch (error) {}
   };
 
   const handleSelectVersion = (version: IConfigVersion) => {
+    if (version.id === versionData.value.id) return;
     configStore.$patch((state) => {
       state.allExistConfigCount = 0;
       state.conflictFileCount = 0;
@@ -314,6 +347,10 @@
       isMouseenter.value = false;
     }
   };
+
+  const handleReloadService = () => {
+    serviceSelectorRef.value.reloadService();
+  };
 </script>
 
 <style lang="scss" scoped>
@@ -321,9 +358,29 @@
     height: 100%;
   }
   .service-selector-wrapper {
+    display: flex;
     padding: 10px 8px 9px;
     width: 280px;
     border-bottom: 1px solid #eaebf0;
+    :deep(.service-selector) {
+      flex: 1;
+    }
+    .details-btn {
+      width: 32px;
+      height: 32px;
+      background: #f0f1f5;
+      border-radius: 2px;
+      font-size: 14px;
+      margin: 0 8px;
+      text-align: center;
+      line-height: 32px;
+      color: #979ba5;
+      cursor: pointer;
+      &:hover {
+        color: #3a84ff;
+        background: #e1ecff;
+      }
+    }
   }
   .bk-nested-loading {
     height: calc(100% - 52px);

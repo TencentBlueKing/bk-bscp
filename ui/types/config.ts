@@ -234,7 +234,13 @@ export interface IConfigKvItem {
   memo: string;
   secret_hidden: boolean;
   secret_type: string;
+  certificate_expiration_date: string;
   is_exist?: boolean;
+  certificate_info?: {
+    tooltips: string;
+    isExpiration: boolean;
+    remainingDays: number;
+  };
 }
 
 // 单个kv配置详情
@@ -275,4 +281,11 @@ export interface ITemplatePkgs {
   template_space_name: string;
   template_space_id: number;
   template_show_title: string;
+}
+
+export interface IExpiredCert {
+  id: number;
+  name: string;
+  remainingDays: number;
+  expirationTime: string;
 }

@@ -3,12 +3,13 @@ syntax = "proto3";
 package pbhook;
 
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/hook;pbhook";
 
 // Hook source resource reference: pkg/dal/table/hook.go
 message Hook {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
   HookSpec spec = 2;
   HookAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -16,28 +17,31 @@ message Hook {
 
 // HookSpec source resource reference: pkg/dal/table/hook.go
 message HookSpec {
-  string name = 1;
-  string type = 2;
-  repeated string tags = 3;
-  string memo = 4;
-  string content = 5;
-  string revision_name = 6;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本名称" }];
+  string type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "脚本类型：(shell、python、bat、powershell)"
+  }];
+  repeated string tags = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本标签" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本描述" }];
+  string content = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本内容" }];
+  string revision_name = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本版本号" }];
 }
 
 // HookAttachment source resource reference: pkg/dal/table/hook.go
 message HookAttachment {
-  uint32 biz_id = 1;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
 }
 
 // ListConfigItemCounts source resource reference: pkg/dal/table/config_item.go
 message ListHookTagCounts {
-  uint32 app_id = 1;
-  string tag = 2;
-  uint32 count = 3;
-  string update_at = 4;
+  uint32 app_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  string tag = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本标签" }];
+  uint32 count = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  string update_at = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
 }
 
 message CountHookTags {
-  string tag = 1;
-  uint32 counts = 2;
+  string tag = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本标签" }];
+  uint32 counts = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
 }

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/struct.proto";
 import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbgroup;
 
@@ -9,7 +10,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group;
 
 // Group source resource reference: pkg/dal/table/group.go
 message Group {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组ID" }];
   GroupSpec spec = 2;
   GroupAttachment attachment = 3;
   pbbase.Revision revision = 4;
@@ -17,9 +18,13 @@ message Group {
 
 // GroupSpec source resource reference: pkg/dal/table/group.go
 message GroupSpec {
-  string name = 1;
-  bool public = 2;
-  repeated uint32 bind_apps = 3;
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组名" }];
+  bool public = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "服务可见范围，公开=true，指定服务=false",
+    default: "true"
+  }];
+  repeated uint32 bind_apps = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定的服务" }];
   string mode = 4;
   google.protobuf.Struct selector = 5;
   string uid = 6;
@@ -27,5 +32,5 @@ message GroupSpec {
 
 // GroupAttachment source resource reference: pkg/dal/table/group.go
 message GroupAttachment {
-  uint32 biz_id = 1;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
 }

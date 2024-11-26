@@ -9,7 +9,7 @@ import { IVariableEditParams, IVariableImportParams } from '../../types/variable
  * @returns
  */
 export const getVariableList = (biz_id: string, params: ICommonQuery) =>
-  http.get(`/config/biz/${biz_id}/template_variables`, { params }).then((res) => res.data);
+  http.post(`/config/biz/${biz_id}/template_variables/list`, params).then((res) => res.data);
 
 /**
  * 创建变量
@@ -103,12 +103,58 @@ export const getReleasedAppVariablesCitedDetail = (biz_id: string, app_id: numbe
     .then((res) => res.data);
 
 /**
- * 批量导入变量
+ * 批量导入变量文本
  * @param biz_id 业务ID
- * @param app_id 应用ID
  * @param release_id 服务版本ID
  * @returns
  */
-export const batchImportTemplateVariables = (biz_id: string, params: IVariableImportParams) =>
+export const importVariablesText = (biz_id: string, params: IVariableImportParams) =>
   http.post(`config/biz/${biz_id}/template_variables/import`, params);
-// @todo 待接口支持
+
+/**
+ * 批量导入JSON
+ * @param biz_id 业务ID
+ * @param release_id 服务版本ID
+ * @returns
+ */
+export const importVariablesJSON = (biz_id: string, content: string) =>
+  http.post(`config/biz/${biz_id}/template_variables/json/import`, { data: content });
+
+/**
+ * 批量导入YAML
+ * @param biz_id 业务ID
+ * @param release_id 服务版本ID
+ * @returns
+ */
+export const importVariablesYaml = (biz_id: string, content: string) =>
+  http.post(`config/biz/${biz_id}/template_variables/yaml/import`, { data: content });
+
+/**
+ * 导出变量
+ * @param biz_id 业务ID
+ * @param type 导出格式
+ * @returns
+ */
+export const exportVariables = (biz_id: string, type: string) =>
+  http.get(`config/biz/${biz_id}/variables/export?format=${type}`);
+
+/**
+ * 导出未命名版本变量
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param format 导出格式
+ * @returns
+ */
+export const exportUnReleasedVariables = (bizId: string, appId: number, format: string) =>
+  http.get(`config/biz/${bizId}/apps/${appId}/variables/export`, { params: { format } });
+
+/**
+ * 导出已发布版本变量
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param release_id 服务版本ID
+ * @param format 导出格式
+ * @returns
+ */
+export const exportReleasedVaribles = (bizId: string, appId: number, release_id: number, format: string) =>
+  http.get(`config/biz/${bizId}/apps/${appId}/releases/${release_id}/variables/export`, { params: { format } });

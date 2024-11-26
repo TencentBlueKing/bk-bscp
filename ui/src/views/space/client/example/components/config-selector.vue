@@ -161,7 +161,7 @@
       font-size: 14px;
       border: 1px solid #c4c6cc;
       .config-name {
-        max-width: 220px;
+        max-width: 480px;
         color: #313238;
       }
       .empty {

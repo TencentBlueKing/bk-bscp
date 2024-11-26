@@ -19,11 +19,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
@@ -68,6 +68,7 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbcs.CreateConfigIt
 				UserGroup: req.UserGroup,
 				Privilege: req.Privilege,
 			},
+			Charset: req.Charset,
 		},
 		ContentSpec: &pbcontent.ContentSpec{
 			Signature: req.Sign,
@@ -122,6 +123,7 @@ func (s *Service) BatchUpsertConfigItems(ctx context.Context, req *pbcs.BatchUps
 					UserGroup: item.UserGroup,
 					Privilege: item.Privilege,
 				},
+				Charset: item.Charset,
 			},
 			ContentSpec: &pbcontent.ContentSpec{
 				Signature: item.Sign,
@@ -191,6 +193,7 @@ func (s *Service) UpdateConfigItem(ctx context.Context, req *pbcs.UpdateConfigIt
 				UserGroup: req.UserGroup,
 				Privilege: req.Privilege,
 			},
+			Charset: req.Charset,
 		},
 	}
 	_, err = s.client.DS.UpdateConfigItem(grpcKit.RpcCtx(), r)

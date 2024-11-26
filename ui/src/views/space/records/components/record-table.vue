@@ -97,13 +97,15 @@
                       <template v-if="row.strategy.itsm_ticket_sn">
                         <div>{{ $t('审批单') }}：</div>
                         <div class="itsm-content em">
-                          <div class="itsm-sn">{{ row.strategy.itsm_ticket_sn }}</div>
+                          <div class="itsm-sn" @click="handleLinkTo(row.strategy.itsm_ticket_url)">
+                            {{ row.strategy.itsm_ticket_sn }}
+                          </div>
                           <div class="itsm-action" @click="handleCopy(row.strategy.itsm_ticket_url)"><Copy /></div>
                         </div>
                       </template>
                       <div class="itsm-title">
                         {{ $t('审批人') }}
-                        ({{ row.app.approve_type === 'or_sigh' ? $t('或签') : $t('会签') }})：
+                        ({{ row.app.approve_type === 'or_sign' ? $t('或签') : $t('会签') }})：
                       </div>
                       <div class="itsm-content">
                         {{ row.strategy.approver_progress }}
@@ -150,7 +152,7 @@
             fixed="right"
             :show-overflow-tooltip="false"
             :label="t('操作')"
-            :width="locale === 'zh-cn' ? '160' : '200'">
+            :width="locale === 'zh-cn' ? '160' : '260'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
               <div v-if="row.audit && row.audit.spec.action === 'publish_release_config'" class="action-btns">
@@ -158,12 +160,17 @@
                 <bk-button
                   v-if="
                     row.audit.spec.status === APPROVE_STATUS.pending_publish &&
-                    row.app.creator === userInfo.username &&
                     (!row.strategy.publish_time || isTimeout(row.strategy.publish_time))
                   "
+                  v-bk-tooltips="{
+                    content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
+                    placement: 'top',
+                    disabled: row.strategy.creator === userInfo.username,
+                  }"
                   class="action-btn"
                   text
                   theme="primary"
+                  :disabled="row.strategy.creator !== userInfo.username"
                   @click="handlePublishClick(row)">
                   {{ t('确认上线') }}
                 </bk-button>
@@ -175,26 +182,24 @@
                     row.audit.spec.status === APPROVE_STATUS.pending_approval &&
                     row.strategy.approver_progress.includes(userInfo.username)
                   ">
-                  <!-- 当前的记录在目标分组首次上线，直接审批通过 -->
+                  <!--
+                    row.audit.spec.is_compare：true需要对比(非首次上线)
+                    目标分组非首次上线，打开对比抽屉
+                    目标分组首次上线，打开版本详情抽屉
+                   -->
                   <bk-button
-                    v-if="row.audit.spec.is_compare"
                     class="action-btn"
                     text
                     theme="primary"
-                    @click="handleApproval(row)">
+                    @click="handleApproval(row, !row.audit.spec.is_compare)">
                     {{ t('去审批') }}
                   </bk-button>
-                  <!-- 非首次上线，需要打开对比抽屉 -->
-                  <bk-button v-else class="action-btn" text theme="primary" @click="handleApproved(row)">
-                    {{ t('审批') }}
-                  </bk-button>
+                  <!-- 目标分组首次上线，打开版本详情抽屉 -->
                 </template>
                 <!-- 审批驳回/已撤销才可显示 -->
                 <bk-button
                   v-else-if="
-                    [APPROVE_STATUS.rejected_approval, APPROVE_STATUS.revoked_publish].includes(
-                      row.audit.spec.status,
-                    ) && row.app.creator === userInfo.username
+                    [APPROVE_STATUS.rejected_approval, APPROVE_STATUS.revoked_publish].includes(row.audit.spec.status)
                   "
                   class="action-btn"
                   text
@@ -204,11 +209,7 @@
                 </bk-button>
                 <span
                   v-else-if="
-                    !(
-                      [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
-                        row.audit.spec.status,
-                      ) && row.strategy.creator === userInfo.username
-                    )
+                    ![APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
                   "
                   class="empty-action">
                   --
@@ -216,14 +217,13 @@
                 <!-- 待上线/去审批状态且版本创建者才显示撤销 -->
                 <bk-button
                   v-if="
-                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status) &&
-                    row.strategy.creator === userInfo.username
+                    [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(row.audit.spec.status)
                   "
                   text
                   class="action-btn"
                   theme="primary"
                   @click="handleConfirm(row)">
-                  撤销
+                  {{ $t('撤销上线') }}
                 </bk-button>
                 <!-- <MoreActions
                   v-if="
@@ -269,9 +269,17 @@
       :memo="confirmData.memo"
       :version="confirmData.version"
       @second-confirm="handleConfirmPublish" />
-    <!-- 审批对比弹窗 -->
+    <!-- 审批对比抽屉 -->
     <VersionDiff
       :show="approvalShow"
+      :space-id="spaceId"
+      :app-id="rowAppId"
+      :release-id="rowReleaseId"
+      :released-groups="rowReleaseGroups"
+      @close="closeApprovalDialog" />
+    <!-- 首次目标分组上线审批信息展示抽屉 -->
+    <VersionInfo
+      :show="firstApprovalShow"
       :space-id="spaceId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
@@ -295,6 +303,7 @@
   import RepealDialog from './dialog-confirm.vue';
   import { InfoLine, Copy, TextFile } from 'bkui-vue/lib/icon';
   import VersionDiff from './version-diff.vue';
+  import VersionInfo from './version-info.vue';
   import BkMessage from 'bkui-vue/lib/message';
   import { convertTime, copyToClipBoard } from '../../../../utils';
   import { getServiceGroupList } from '../../../../api/group';
@@ -327,6 +336,7 @@
   const actionTimeSrotMode = ref('');
   const tableData = ref<IRowData[]>([]);
   const approvalShow = ref(false);
+  const firstApprovalShow = ref(false);
   const rowAppId = ref(-1);
   const rowReleaseId = ref(-1);
   const rowReleaseGroups = ref<number[]>([]);
@@ -425,6 +435,7 @@
   // 关闭审批对比弹窗
   const closeApprovalDialog = (refresh: string) => {
     approvalShow.value = false;
+    firstApprovalShow.value = false;
     // 去除url操作记录id
     if (route.query.id) {
       const newQuery = { ...route.query };
@@ -459,7 +470,7 @@
     }
     const { status } = row.audit.spec;
     // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
-    const { final_approval_time: time, reviser } = row.strategy;
+    const { final_approval_time: time, reviser, reject_reason: reason } = row.strategy;
     switch (status) {
       // case APPROVE_STATUS.pending_approval:
       //   return t('提示-待审批', { approver_progress, approveType });
@@ -472,7 +483,7 @@
       //     reason,
       //   });
       case APPROVE_STATUS.revoked_publish:
-        return t('提示-已撤销', { reviser, time: convertTime(time, 'local') });
+        return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
       case APPROVE_STATUS.failure:
         return t('提示-失败');
       default:
@@ -546,6 +557,7 @@
     const resp = await approve(props.spaceId, confirmData.value.serviceId, confirmData.value.releaseId, {
       publish_status: APPROVE_STATUS.already_publish,
     });
+    loadRecordList();
     // 这里有两种情况且不会同时出现：
     // 1. itsm已经审批了，但我们产品页面还没有刷新
     // 2. itsm已经撤销了，但我们产品页面还没有刷新
@@ -629,36 +641,41 @@
   };
 
   // 审批通过
-  const handleApproved = debounce(async (row: IRowData) => {
-    try {
-      const { biz_id, app_id } = row.audit.attachment;
-      const { release_id } = row.strategy;
-      const resp = await approve(String(biz_id), app_id, release_id, {
-        publish_status: APPROVE_STATUS.pending_publish,
-      });
-      // 这里有两种情况且不会同时出现：
-      // 1. itsm已经审批了，但我们产品页面还没有刷新
-      // 2. itsm已经撤销了，但我们产品页面还没有刷新
-      // 如果存在以上两种情况之一，提示使用message，否则message的值为空
-      const { message } = resp;
-      BkMessage({
-        theme: message ? 'primary' : 'success',
-        message: message ? t(message) : t('操作成功'),
-      });
-      loadRecordList();
-    } catch (e) {
-      console.log(e);
-    }
-  }, 300);
+  // const handleApproved = debounce(async (row: IRowData) => {
+  //   try {
+  //     const { biz_id, app_id } = row.audit.attachment;
+  //     const { release_id } = row.strategy;
+  //     const resp = await approve(String(biz_id), app_id, release_id, {
+  //       publish_status: APPROVE_STATUS.pending_publish,
+  //     });
+  //     // 这里有两种情况且不会同时出现：
+  //     // 1. itsm已经审批了，但我们产品页面还没有刷新
+  //     // 2. itsm已经撤销了，但我们产品页面还没有刷新
+  //     // 如果存在以上两种情况之一，提示使用message，否则message的值为空
+  //     const { message } = resp;
+  //     BkMessage({
+  //       theme: message ? 'primary' : 'success',
+  //       message: message ? t(message) : t('操作成功'),
+  //     });
+  //     loadRecordList();
+  //   } catch (e) {
+  //     console.log(e);
+  //   }
+  // }, 300);
 
   // 去审批
   const handleApproval = debounce(
-    (row: IRowData) => {
+    (row: IRowData, firstPublish = false) => {
       rowAppId.value = row.audit?.attachment.app_id;
       rowReleaseId.value = row.strategy?.release_id;
       // 当前row已上线版本的分组id,为空表示全部分组上线
       rowReleaseGroups.value = row.strategy.scope.groups.map((group) => group.id);
-      approvalShow.value = true;
+      // 目标分组是否首次上线
+      if (firstPublish) {
+        firstApprovalShow.value = true;
+      } else {
+        approvalShow.value = true;
+      }
       router.replace({
         query: {
           ...route.query,
@@ -676,8 +693,8 @@
     const isCompare = tableData.value[0]?.audit.spec.is_compare; // 是否可以对比版本不同
     const pendingApproval = tableData.value[0]?.strategy.publish_status === APPROVE_STATUS.pending_approval; // 是否待审批状态
     const isAuthorized = tableData.value[0]?.strategy.approver_progress.includes(userInfo.value.username); // 当前用户是否有权限审批
-    if (isCompare && pendingApproval && isAuthorized) {
-      handleApproval(tableData.value[0]);
+    if (pendingApproval && isAuthorized) {
+      handleApproval(tableData.value[0], !isCompare);
     }
   };
 
@@ -741,6 +758,13 @@
         : '',
       status === APPROVE_STATUS.pending_approval ? 'orange' : '',
     ];
+  };
+
+  // 跳转审批页面
+  const handleLinkTo = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   //  翻页
@@ -879,6 +903,9 @@
     font-size: 12px;
     line-height: 16px;
     color: #4d4f56;
+    .itsm-sn {
+      cursor: pointer;
+    }
     .itsm-content {
       display: flex;
       justify-content: flex-start;

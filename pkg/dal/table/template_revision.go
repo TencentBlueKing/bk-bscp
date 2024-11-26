@@ -15,8 +15,8 @@ package table
 import (
 	"errors"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/validator"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // TemplateRevision 模版版本
@@ -107,6 +107,7 @@ type TemplateRevisionSpec struct {
 	FileMode     FileMode        `json:"file_mode" gorm:"column:file_mode"`
 	Permission   *FilePermission `json:"permission" gorm:"embedded"`
 	ContentSpec  *ContentSpec    `json:"content" gorm:"embedded"`
+	Charset      FileCharset     `json:"charset" gorm:"column:charset"`
 }
 
 // ValidateCreate validate template revision spec when it is created.

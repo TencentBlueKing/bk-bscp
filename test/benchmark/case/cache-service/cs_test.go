@@ -24,8 +24,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/test/benchmark/run"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/test/util"
+	"github.com/TencentBlueKing/bk-bscp/test/benchmark/run"
+	"github.com/TencentBlueKing/bk-bscp/test/util"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 

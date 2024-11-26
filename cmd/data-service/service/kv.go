@@ -21,17 +21,17 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/gen"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateKv is used to create key-value data.
@@ -161,6 +161,7 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 		ByteSize:  uint64(len(req.Spec.Value)),
 	}
 	kv.Spec.SecretHidden = req.Spec.SecretHidden
+	kv.Spec.CertificateExpirationDate = req.Spec.KvSpec().CertificateExpirationDate
 	if e := s.dao.Kv().Update(kt, kv); e != nil {
 		logs.Errorf("update kv failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "update kv failed, err: %v", err))
@@ -172,7 +173,6 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 
 // ListKvs is used to list key-value data.
 func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.ListKvsResp, error) {
-
 	// FromGrpcContext used only to obtain Kit through grpc context.
 	kt := kit.FromGrpcContext(ctx)
 
@@ -196,12 +196,27 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 		TopIDs:    req.TopIds,
 		Status:    req.Status,
 	}
+
+	// 该方法被生成版本接口调用。移至到查询列表前面提前返回判断
+	uncitedCount, err := s.dao.Kv().CountNumberUnDeleted(kt, req.BizId, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	_, expirationNumber, err := s.dao.Kv().FindNearExpiryCertKvs(kt, req.BizId, req.AppId, 0,
+		&types.BasePage{All: true})
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed,
+			i18n.T(kt, "get a list of expired certificates failed, err: %v"), err)
+	}
+
 	po := &types.PageOption{
 		EnableUnlimitedLimit: true,
 	}
-	if err := opt.Validate(po); err != nil {
+	if err = opt.Validate(po); err != nil {
 		return nil, err
 	}
+
 	details, count, err := s.dao.Kv().List(kt, opt)
 	if err != nil {
 		logs.Errorf("list kv failed, err: %v, rid: %s", err, kt.Rid)
@@ -213,15 +228,13 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 		return nil, err
 	}
 
-	uncitedCount, err := s.dao.Kv().CountNumberUnDeleted(kt, req.BizId, opt)
-	if err != nil {
-		return nil, err
-	}
-
 	resp := &pbds.ListKvsResp{
 		Count:          uint32(count),
 		Details:        kvs,
 		ExclusionCount: uint32(uncitedCount),
+		IsCertExpired: func() bool {
+			return expirationNumber > 0
+		}(),
 	}
 
 	return resp, nil
@@ -276,6 +289,7 @@ func (s *Service) DeleteKv(ctx context.Context, req *pbds.DeleteKvReq) (*pbbase.
 // 1.键存在则更新, 类型不一致直接提示错误
 // 2.键不存在则新增
 // replace_all为true时，清空表中的数据，但保证前面两条逻辑
+// nolint:funlen
 func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsReq) (*pbds.BatchUpsertKvsResp, error) {
 
 	// FromGrpcContext used only to obtain Kit through grpc context.
@@ -504,12 +518,13 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 
 		now := time.Now().UTC()
 		kvSpec := &table.KvSpec{
-			Key:          kv.KvSpec.Key,
-			KvType:       table.DataType(kv.KvSpec.KvType),
-			Version:      uint32(version),
-			Memo:         kv.KvSpec.Memo,
-			SecretType:   table.SecretType(kv.KvSpec.SecretType),
-			SecretHidden: kv.KvSpec.SecretHidden,
+			Key:                       kv.KvSpec.Key,
+			KvType:                    table.DataType(kv.KvSpec.KvType),
+			Version:                   uint32(version),
+			Memo:                      kv.KvSpec.Memo,
+			SecretType:                table.SecretType(kv.KvSpec.SecretType),
+			SecretHidden:              kv.KvSpec.SecretHidden,
+			CertificateExpirationDate: kv.GetKvSpec().KvSpec().CertificateExpirationDate,
 		}
 		kvAttachment := &table.KvAttachment{
 			BizID: req.BizId,
@@ -735,4 +750,27 @@ func (s *Service) KvFetchKeysExcluding(ctx context.Context, req *pbds.KvFetchKey
 	return &pbds.KvFetchKeysExcludingResp{
 		Keys: keys,
 	}, nil
+}
+
+// FindNearExpiryCertKvs 查找临近到期证书
+func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbds.FindNearExpiryCertKvsReq) (
+	*pbds.FindNearExpiryCertKvsResp, error) {
+	// FromGrpcContext used only to obtain Kit through grpc context.
+	kit := kit.FromGrpcContext(ctx)
+
+	details, count, err := s.dao.Kv().FindNearExpiryCertKvs(kit, req.BizId, req.AppId, req.Days, &types.BasePage{
+		Start: req.Start,
+		Limit: uint(req.Limit),
+		All:   req.All,
+	})
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kit, "get a list of expired certificates failed, err: %v"), err)
+	}
+
+	kvs, err := s.setKvTypeAndValue(kit, details)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.FindNearExpiryCertKvsResp{Details: kvs, Count: count}, nil
 }

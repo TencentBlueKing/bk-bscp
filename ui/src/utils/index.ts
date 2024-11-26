@@ -103,3 +103,13 @@ export const sortObjectKeysByAscii = (obj: any) => {
 
   return sortedObj;
 };
+
+export const downloadFile = (content: any, mimeType: string, fileName: string) => {
+  const blob = new Blob([content], { type: mimeType });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(downloadUrl);
+};

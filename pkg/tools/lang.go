@@ -15,7 +15,7 @@ package tools
 import (
 	"net/http"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 )
 
 // GetLangFromReq get language from request, priority: cookie > header

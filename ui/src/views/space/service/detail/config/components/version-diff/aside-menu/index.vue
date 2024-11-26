@@ -13,6 +13,7 @@
         @render="emits('render', $event)" />
       <ConfigsKv
         v-else
+        :app-id="props.appId"
         :base-version-id="props.baseVersionId"
         :current-version-id="props.currentVersionId"
         :selected-id="props.selectedKvConfigId"
@@ -45,6 +46,7 @@
   const { isFileType } = serviceStore;
 
   const props = defineProps<{
+    appId?: number;
     baseVersionId: number;
     currentVersionId: number;
     unNamedVersionVariables?: IVariableEditParams[];

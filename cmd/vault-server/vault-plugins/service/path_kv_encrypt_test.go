@@ -19,7 +19,7 @@ import (
 
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // 创建kv

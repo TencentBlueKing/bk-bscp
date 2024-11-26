@@ -9,10 +9,10 @@
           v-if="
             [APPROVE_STATUS.pending_approval, APPROVE_STATUS.pending_publish].includes(
               props.approveStatus as APPROVE_STATUS,
-            ) && creator === userInfo.username
+            )
           "
           @click="handleConfirm">
-          {{ $t('撤销') }}
+          {{ $t('撤销上线') }}
         </li>
       </bk-loading>
     </ul>
@@ -31,26 +31,25 @@
   import { ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import useUserStore from '../../../../../store/user';
   import useConfigStore from '../../../../../store/config';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { APPROVE_STATUS } from '../../../../../constants/record';
-  import { getRecordList } from '../../../../../api/record';
   import { IDialogData } from '../../../../../../types/record';
   import DialogConfirm from '../../../records/components/dialog-confirm.vue';
+  import useServiceStore from '../../../../../store/service';
 
   const versionStore = useConfigStore();
-  const { userInfo } = storeToRefs(useUserStore());
   const { versionData, publishedVersionId } = storeToRefs(versionStore);
+  const { appData } = storeToRefs(useServiceStore());
 
   const props = withDefaults(
     defineProps<{
       approveStatus: string;
-      creator: string;
+      targetGroups: [];
     }>(),
     {
       approveStatus: '',
-      creator: '',
+      targetGroups: () => [],
     },
   );
 
@@ -65,6 +64,9 @@
     service: '',
     version: '',
     group: '',
+    serviceId: 0,
+    releaseId: 0,
+    memo: '',
   });
 
   // 跳转到服务记录页面
@@ -83,27 +85,16 @@
 
   // 撤回提示框
   const handleConfirm = async () => {
-    loading.value = true;
     confirmShow.value = true;
-    try {
-      const res = await getRecordList(String(route.params.spaceId), {
-        limit: 1,
-        app_id: Number(route.params.appId),
-      });
-      const versionId = Number(route.params.versionId);
-      const currentVerData = res.details.find((item: any) => item.strategy.release_id === versionId);
-      const matchVersion = currentVerData.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
-      const matchGroup = currentVerData.audit.spec.res_instance.match(/group:([^\n]*)/);
-      confirmData.value = {
-        service: currentVerData.app.name || '--',
-        version: matchVersion ? matchVersion[1] : '--',
-        group: matchGroup ? matchGroup[1] : '--',
-      };
-    } catch (e) {
-      console.log(e);
-    } finally {
-      loading.value = false;
-    }
+    const group = props.targetGroups.map((item: any) => item.spec.name).join(',');
+    confirmData.value = {
+      service: appData.value.spec.name || '--',
+      version: versionData.value.spec?.name || '--',
+      group: group.length ? group : '--',
+      serviceId: 0,
+      releaseId: 0,
+      memo: '',
+    };
   };
 
   // 撤销审批

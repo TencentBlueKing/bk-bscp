@@ -20,6 +20,7 @@ type FileInfo struct {
 	Sign     string
 	ByteSize uint64
 	Md5      string
+	Chartset string
 }
 
 // TemplateItem Template info

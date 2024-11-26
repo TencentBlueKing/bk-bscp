@@ -43,7 +43,7 @@
         <VersionApproveStatus
           ref="verAppStatus"
           :show-status-id="showStatusId"
-          :refresh-ver="refreshVesionList"
+          @refresh-version="refreshVesionList"
           @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
@@ -58,6 +58,7 @@
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
+          :creator="creator"
           @confirm="handleRefresh" />
         <ModifyGroupPublish
           :bk-biz-id="props.bkBizId"
@@ -65,10 +66,14 @@
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
           :approve-data="approveData"
+          :creator="creator"
           @confirm="handleRefresh" />
         <!-- 更多选项 -->
         <!-- <HeaderMoreOptions v-show="['partial_released', 'not_released'].includes(publishStatus)" /> -->
-        <HeaderMoreOptions :approve-status="approveData.status" :creator="creator" @handle-undo="handleRefresh" />
+        <HeaderMoreOptions
+          :approve-status="approveData.status"
+          :target-groups="approveData.targetGroups"
+          @handle-undo="handleRefresh" />
       </section>
     </template>
   </div>
@@ -122,12 +127,14 @@
     type: string;
     memo: string;
     groupIds: number[];
+    targetGroups: [];
   }>({
     status: '',
     time: '',
     type: '',
     memo: '',
     groupIds: [],
+    targetGroups: [],
   });
 
   const creator = ref('');

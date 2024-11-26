@@ -180,11 +180,19 @@
     border: 1px solid #c4c6cc;
     border-radius: 2px;
     font-size: 12px;
+    & > span {
+      word-wrap: break-word;
+      word-break: break-all;
+    }
     .secret-content {
       width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      & > span {
+        word-wrap: break-word;
+        word-break: break-all;
+      }
       .view-icon {
         cursor: pointer;
         font-size: 14px;

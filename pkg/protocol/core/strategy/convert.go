@@ -16,7 +16,7 @@ package pbstrategy
 import (
 	"time"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	group "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
 )
 

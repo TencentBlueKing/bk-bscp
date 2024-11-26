@@ -45,6 +45,7 @@ export function getDefaultKvItem() {
       value: '',
       secret_type: '',
       secret_hidden: false,
+      certificate_expiration_date: '',
     },
     content_spec: {
       byte_size: '',

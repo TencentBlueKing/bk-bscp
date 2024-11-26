@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/content/content.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbcommit;
 
@@ -9,7 +10,7 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit
 
 // Commit source resource reference: pkg/dal/table/commit.go
 message Commit {
-  uint32 id = 1;
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项版本记录ID" }];
   CommitSpec spec = 2;
   CommitAttachment attachment = 3;
   pbbase.CreatedRevision revision = 4;
@@ -17,21 +18,24 @@ message Commit {
 
 // CommitSpec source resource reference: pkg/dal/table/commit.go
 message CommitSpec {
-  uint32 content_id = 1;
+  uint32 content_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项内容ID" }];
   pbcontent.ContentSpec content = 2;
-  string memo = 3;
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
 }
 
 // ReleasedCommitSpec source resource reference: pkg/dal/table/commit.go
 message ReleasedCommitSpec {
-  uint32 content_id = 1;
+  uint32 content_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项内容ID" }];
   pbcontent.ReleasedContentSpec content = 2;
-  string memo = 3;
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
 }
 
 // CommitAttachment source resource reference: pkg/dal/table/commit.go
 message CommitAttachment {
-  uint32 biz_id = 1;
-  uint32 app_id = 2;
-  uint32 config_item_id = 3;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 config_item_id = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
 }

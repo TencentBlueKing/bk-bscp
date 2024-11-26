@@ -15,17 +15,17 @@ package service
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/pkg/metrics"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
 func initMetric() *metric {
 	m := new(metric)
 	m.currentUploadedFolderSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: metrics.Namespace,
-		Subsystem: metrics.FSConfigConsume,
+		Subsystem: "upload",
 		Name:      "upload_file_directory_size_bytes",
 		Help:      "Size of the directory in bytes",
-	}, []string{"bizID", "resourceID", "directory"})
+	}, []string{"bizID", "resourceID"})
 	metrics.Register().MustRegister(m.currentUploadedFolderSize)
 
 	return m
