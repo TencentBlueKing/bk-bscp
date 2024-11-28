@@ -15,22 +15,22 @@ package migrations
 import (
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 )
 
 func init() {
 	// add current migration to migrator
 	migrator.GetMigrator().AddMigration(&migrator.Migration{
-		Version: "20241122104755",
-		Name:    "20241122104755_modif_config_items",
+		Version: "20241128105851",
+		Name:    "20241128105851_modify_config_items",
 		Mode:    migrator.GormMode,
-		Up:      mig20241122104755Up,
-		Down:    mig20241122104755Down,
+		Up:      mig20241128105851Up,
+		Down:    mig20241128105851Down,
 	})
 }
 
-// mig20241122104755Up for up migration
-func mig20241122104755Up(tx *gorm.DB) error {
+// mig20241128105851Up for up migration
+func mig20241128105851Up(tx *gorm.DB) error {
 	// ConfigItems  : config_items
 	type ConfigItems struct {
 		Charset string `gorm:"column:charset;type:varchar(20);default:'';NOT NULL"`
@@ -82,8 +82,8 @@ func mig20241122104755Up(tx *gorm.DB) error {
 	return nil
 }
 
-// mig20241122104755Down for down migration
-func mig20241122104755Down(tx *gorm.DB) error {
+// mig20241128105851Down for down migration
+func mig20241128105851Down(tx *gorm.DB) error {
 	// ConfigItems  : config_items
 	type ConfigItems struct {
 		Charset string `gorm:"column:charset;type:varchar(20);default:'';NOT NULL"`
