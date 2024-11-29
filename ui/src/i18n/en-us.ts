@@ -823,7 +823,7 @@ export default {
   脚本内容: 'Script content',
   不能超过64个字符: 'Cannot exceed 64 characters',
   脚本创建成功: 'Script created successfully',
-  关联配置文件: 'Associated configuration files',
+  关联服务: 'Associated service',
   '服务名称/版本名称/被引用的版本': 'Service name/version name/referenced version',
   脚本版本: 'script version',
   复制并新建: 'Copy and create new',

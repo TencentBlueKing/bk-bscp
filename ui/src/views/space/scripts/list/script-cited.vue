@@ -1,5 +1,5 @@
 <template>
-  <bk-sideslider :title="t('关联配置文件')" width="640" :is-show="props.show" @closed="handleClose">
+  <bk-sideslider :title="t('关联服务')" width="640" :is-show="props.show" @closed="handleClose">
     <div class="search-area">
       <SearchInput v-model="searchStr" :placeholder="t('服务名称/版本名称/被引用的版本')" @search="refreshList()" />
     </div>
