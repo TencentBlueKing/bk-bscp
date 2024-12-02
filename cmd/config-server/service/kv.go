@@ -52,7 +52,7 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
-	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Value)
+	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Key, req.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 		return nil, err
 	}
 
-	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Value)
+	expirationTime, err := verifySecretVaule(grpcKit, req.SecretType, req.Key, req.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -666,7 +666,7 @@ func checkSecret(kit *kit.Kit, kvType, key string, entry map[string]interface{})
 	if !okVal {
 		return secretType, "", secretHidden, errors.New(i18n.T(kit, "config item %s value error", key))
 	}
-	expirationTime, err := verifySecretVaule(kit, secretType, kvValue)
+	expirationTime, err := verifySecretVaule(kit, secretType, key, kvValue)
 	if err != nil {
 		return secretType, "", secretHidden, fmt.Errorf("config item %s %v", key, err)
 	}
@@ -766,9 +766,9 @@ func isNumber(value interface{}) bool {
 }
 
 // 验证密钥的值
-func verifySecretVaule(kit *kit.Kit, secretType, value string) (string, error) {
-	if value == "敏感信息无法导出" {
-		return "", errors.New(i18n.T(kit, `please set a password`))
+func verifySecretVaule(kit *kit.Kit, secretType, key, value string) (string, error) {
+	if value == "不可见敏感信息无法导出" {
+		return "", errors.New(i18n.T(kit, `please fill in the value of configuration item %s first`, key))
 	}
 
 	expirationTime, ok := validateCertificate(value)
