@@ -67,10 +67,10 @@
       verticalScrollbarSize?: number;
       horizonScrollbarSize?: number;
       renderLineHighlight?: 'none' | 'gutter' | 'line' | 'all' | undefined;
-      renderIndentGuides?: boolean;
       folding?: boolean;
       alwaysConsumeMouseWheel?: boolean;
       contextmenu?: boolean;
+      fileEditor?: boolean;
     }>(),
     {
       variables: () => [],
@@ -82,10 +82,10 @@
       verticalScrollbarSize: 10,
       horizonScrollbarSize: 10,
       renderLineHighlight: 'all',
-      renderIndentGuides: true,
       folding: true,
       alwaysConsumeMouseWheel: true,
       contextmenu: true,
+      fileEditor: true,
     },
   );
 
@@ -176,8 +176,10 @@
   });
 
   onMounted(() => {
-    handleVariableList();
-    autoCompletion();
+    if (props.fileEditor) {
+      handleVariableList();
+      autoCompletion();
+    }
     if (!editor) {
       registerLanguage();
       editor = monaco.editor.create(codeEditorRef.value as HTMLElement, {
@@ -201,7 +203,6 @@
           alwaysConsumeMouseWheel: props.alwaysConsumeMouseWheel,
         },
         renderLineHighlight: props.renderLineHighlight,
-        renderIndentGuides: props.renderIndentGuides,
         folding: props.folding,
         contextmenu: props.contextmenu,
       });

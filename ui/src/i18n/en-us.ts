@@ -647,6 +647,7 @@ export default {
   '{n} 天': '{n} days',
   继续生成版本: 'Continue build version',
   证书即将过期: 'Certificate is about to expire',
+  '请先填写配置项 {n} 的值，然后再尝试导入': 'Please fill in the value of configuration item {n} first, and then try to import',
 
   // 分组管理
   新增分组: 'New group',
