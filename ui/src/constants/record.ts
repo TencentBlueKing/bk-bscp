@@ -2,16 +2,23 @@ import { localT } from '../i18n';
 
 // 资源类型
 export const RECORD_RES_TYPE = {
-  app_config: localT('服务配置'), // 2024.9 第一版只有这个字段
+  app: localT('服务'), // 2024.9 第一版只有这个字段
+  config_item: localT('配置'),
+  hook: localT('脚本'),
+  variable: localT('变量'),
+  release: localT('版本'),
+  group: localT('分组'),
+  template: localT('模板'),
+  credential: localT('客户端秘钥'),
+  instance: localT('客户端实例'),
 };
 
 // 操作行为
 export const ACTION = {
-  // create_app: localT('创建服务'),
-  // publish_app: localT('上线服务'),
-  // update_app: localT('更新服务'),
-  // delete_app: localT('删除服务'),
-  publish_release_config: localT('上线版本配置'),
+  create: localT('创建'),
+  publish: localT('发布'),
+  update: localT('更新'),
+  delete: localT('删除'),
 };
 
 // 资源实例
@@ -24,6 +31,12 @@ export const INSTANCE = {
 export const OPERATE_WAY = {
   WebUI: 'WebUI',
   API: 'API',
+};
+
+// 查看操作
+export const OPERATE = {
+  publish: localT('上线'),
+  failure: localT('失败'),
 };
 
 // 状态
@@ -71,4 +84,5 @@ export enum SEARCH_ID {
   res_instance = 'res_instance', // 资源实例
   operator = 'operator', // 操作人
   operate_way = 'operate_way', // 操作途径
+  operate = 'operate', // 查看操作
 }
