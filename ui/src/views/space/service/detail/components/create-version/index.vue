@@ -131,7 +131,7 @@
           id,
         } = item;
 
-        const expirationTime = datetimeFormat(certificate_expiration_date);
+        const expirationTime = datetimeFormat(certificate_expiration_date as string);
         const remainingDays = Math.ceil(
           dayjs(expirationTime, 'YYYY-MM-DD HH:mm:ss').diff(dayjs(), 'second') / (60 * 60 * 24),
         );
