@@ -230,7 +230,7 @@
       } else {
         const res = await getConfigItemDetail(props.bkBizId, props.id, props.appId);
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
-        const { name, memo, path, file_type, file_mode, permission, charset } = res.config_item.spec;
+        const { name, memo, path, file_type, file_mode, permission } = res.config_item.spec;
         const { user, user_group, privilege } = permission;
         const { byte_size, signature, md5 } = res.content;
         configDetail.value = sortObjectKeysByAscii({
@@ -249,7 +249,7 @@
           user,
           user_group,
           privilege,
-          charset,
+          // charset,
         });
       }
       const signature = versionData.value.id

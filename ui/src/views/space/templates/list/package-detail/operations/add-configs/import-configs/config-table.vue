@@ -53,7 +53,7 @@
       <RecycleScroller class="table-body" :items="data" :item-size="44" key-field="customId" v-slot="{ item, index }">
         <div class="table-row">
           <div class="not-editable td-cell name">
-            <span class="text-ov">
+            <span v-overflow-title>
               {{ item.fileAP }}
             </span>
           </div>
@@ -162,12 +162,12 @@
   const emits = defineEmits(['change']);
 
   onMounted(() => {
-    const configList = props.tableData.map((item) => {
+    const configList = props.tableData.map((item, index) => {
       const { path, name } = item;
       return {
         ...item,
         fileAP: joinPathName(path, name),
-        customId: `${name}-${Date.now()}`,
+        customId: `${joinPathName(path, name)}-${Date.now() + index}`,
       };
     });
     data.value = cloneDeep(configList);
@@ -179,12 +179,12 @@
     () => {
       const newConfig = props.tableData.filter((item) => !initData.value.find((i) => i.name === item.name));
       const deleteConfig = initData.value.filter((item) => !props.tableData.find((i) => i.name === item.name));
-      const configList = newConfig.map((item) => {
+      const configList = newConfig.map((item, index) => {
         const { path, name } = item;
         return {
           ...item,
           fileAP: joinPathName(path, name),
-          customId: `${name}-${Date.now()}`,
+          customId: `${name}-${Date.now() + index}`,
         };
       });
       data.value = data.value.filter((item) => !deleteConfig.find((i) => i.name === item.name));
