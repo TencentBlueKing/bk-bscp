@@ -16,15 +16,28 @@ export const RECORD_RES_TYPE = {
 // 操作行为
 export const ACTION = {
   create: localT('创建'),
-  publish: localT('发布'),
+  publish: localT('上线'),
   update: localT('更新'),
   delete: localT('删除'),
 };
 
 // 资源实例
 export const INSTANCE = {
-  releases_name: localT('配置版本名称'),
-  group: localT('配置上线范围'),
+  app_name: localT('服务名称'),
+  config_file_absolute_path: localT('配置文件绝对路径'),
+  config_item_name: localT('配置项名称'),
+  hook_name: localT('脚本名称'),
+  variable_name: localT('变量名称'),
+  config_release_name: localT('配置版本名称'),
+  config_release_scope: localT('配置上线范围'),
+  group_name: localT('分组名称'),
+  template_space_name: localT('模版空间名称'),
+  template_set_name: localT('模版套餐名称'),
+  template_absolute_path: localT('模版文件绝对路径'),
+  template_revision: localT('模版版本号'),
+  credential_scope: localT('秘钥关联规则'),
+  credential_name: localT('秘钥名称'),
+  hook_revision_name: localT('脚本版本名称'),
 };
 
 // 操作途径

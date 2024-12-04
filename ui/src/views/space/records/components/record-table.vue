@@ -155,7 +155,7 @@
             :width="locale === 'zh-cn' ? '160' : '260'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
-              <div v-if="row.audit && row.audit.spec.action === 'publish_release_config'" class="action-btns">
+              <div v-if="row.audit && row.audit.spec.action === 'publish'" class="action-btns">
                 <!-- 创建者且版本待上线 才展示上线按钮;审批通过的时间在定时上线的时间以前，上线按钮置灰 -->
                 <bk-button
                   v-if="
