@@ -304,6 +304,10 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 
 	kvs := make([]*pbds.BatchUpsertKvsReq_Kv, 0, len(req.Kvs))
 	for _, kv := range req.Kvs {
+		expirationTime, err := verifySecretVaule(grpcKit, kv.SecretType, kv.Key, kv.Value)
+		if err != nil {
+			return nil, err
+		}
 		kvs = append(kvs, &pbds.BatchUpsertKvsReq_Kv{
 			KvAttachment: &pbkv.KvAttachment{
 				BizId: req.BizId,
@@ -316,7 +320,7 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 				Memo:                      kv.Memo,
 				SecretType:                kv.SecretType,
 				SecretHidden:              kv.SecretHidden,
-				CertificateExpirationDate: kv.CertificateExpirationDate,
+				CertificateExpirationDate: expirationTime,
 			},
 		})
 	}
