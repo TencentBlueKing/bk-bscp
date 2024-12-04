@@ -682,7 +682,7 @@ func (s *Service) getLatestReleasedKV(kt *kit.Kit, bizID, appID uint32, kv *tabl
 	}
 
 	kv.KvState = table.KvStateUnchange
-
+	kv.Spec.CertificateExpirationDate = rkv.Spec.CertificateExpirationDate
 	kv.Revision = &table.Revision{
 		Reviser:   kt.User,
 		UpdatedAt: time.Now().UTC(),
