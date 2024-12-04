@@ -447,6 +447,7 @@ message ListAppsRestReq {
   string operator = 4;
   string name = 5;
   bool all = 6;
+  string top_ids = 7;
 }
 
 message ListAppsResp {

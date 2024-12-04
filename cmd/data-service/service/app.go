@@ -341,10 +341,13 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		limit = 50
 	}
 
+	// StrToUint32Slice the comma separated string goes to uint32 slice
+	topIds, _ := tools.StrToUint32Slice(req.TopIds)
 	opt := &types.BasePage{
-		Start: req.Start,
-		Limit: limit,
-		All:   req.All,
+		Start:  req.Start,
+		Limit:  limit,
+		All:    req.All,
+		TopIds: topIds,
 	}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err

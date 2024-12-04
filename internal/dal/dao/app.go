@@ -20,6 +20,7 @@ import (
 	rawgen "gorm.io/gen"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -102,6 +103,10 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, o
 		count  int64
 		err    error
 	)
+
+	if len(opt.TopIds) != 0 {
+		q = q.Order(utils.NewCustomExpr(`CASE WHEN id IN (?) THEN 0 ELSE 1 END,name ASC`, []interface{}{opt.TopIds}))
+	}
 
 	if opt.All {
 		result, err = q.Where(conds...).Find()
