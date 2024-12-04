@@ -129,7 +129,7 @@
     user: '',
     user_group: '',
     privilege: '',
-    charset: '',
+    // charset: '',
   });
   const content = ref<string | IFileConfigContentSummary>('');
   const variables = ref<IVariableEditParams[]>([]);

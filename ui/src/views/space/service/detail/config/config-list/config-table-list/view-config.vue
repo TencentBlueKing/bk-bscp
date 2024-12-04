@@ -152,7 +152,7 @@
     user: '',
     user_group: '',
     privilege: '',
-    charset: '',
+    // charset: '',
   });
   const content = ref<string | IFileConfigContentSummary>('');
   const variables = ref<IVariableEditParams[]>([]);
@@ -205,7 +205,7 @@
         const { content, memo } = res.config_item.commit_spec;
         const { byte_size, origin_byte_size, signature, origin_signature, md5 } = content;
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
-        const { name, path, file_type, file_mode, permission, charset } = res.config_item.spec;
+        const { name, path, file_type, file_mode, permission } = res.config_item.spec;
         const { user, user_group, privilege } = permission;
         configDetail.value = sortObjectKeysByAscii({
           name,
@@ -225,7 +225,7 @@
           user,
           user_group,
           privilege,
-          charset,
+          // charset,
         });
       } else {
         const res = await getConfigItemDetail(props.bkBizId, props.id, props.appId);

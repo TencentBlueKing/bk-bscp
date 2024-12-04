@@ -39,7 +39,7 @@
             <BatchSetPop :title="t('批量设置用户组')" @confirm="handleConfirmPop('user_group', $event)" />
           </div>
         </div>
-        <div class="th-cell charset">
+        <!-- <div class="th-cell charset">
           <div class="th-cell-edit">
             <span class="required">{{ t('编码') }}</span>
             <BatchSetPop
@@ -47,7 +47,7 @@
               :set-type="'charset'"
               @confirm="handleConfirmPop('charset', $event)" />
           </div>
-        </div>
+        </div> -->
         <div class="th-cell delete"></div>
       </div>
       <RecycleScroller class="table-body" :items="data" :item-size="44" key-field="customId" v-slot="{ item, index }">
@@ -61,7 +61,7 @@
             {{ item.file_type === 'text' ? t('文本') : t('二进制') }}
           </div>
           <div class="td-cell-editable td-cell memo" :class="{ change: isContentChange(item.id, 'memo') }">
-            <bk-input v-model="item.memo"></bk-input>
+            <bk-input v-model="item.memo" @change="emits('change', data)"></bk-input>
           </div>
           <div class="td-cell-editable td-cell privilege" :class="{ change: isContentChange(item.id, 'privilege') }">
             <div class="perm-input">
@@ -91,12 +91,12 @@
             </div>
           </div>
           <div class="td-cell-editable td-cell user" :class="{ change: isContentChange(item.id, 'user') }">
-            <bk-input v-model="item.user"></bk-input>
+            <bk-input v-model="item.user" @change="emits('change', data)"></bk-input>
           </div>
           <div class="td-cell-editable td-cell user-group" :class="{ change: isContentChange(item.id, 'user_group') }">
-            <bk-input v-model="item.user_group"></bk-input>
+            <bk-input v-model="item.user_group" @change="emits('change', data)"></bk-input>
           </div>
-          <div
+          <!-- <div
             :class="[
               'td-cell-editable',
               'td-cell',
@@ -113,7 +113,7 @@
               <bk-option v-for="charset in charsetList" :id="charset" :key="charset" :name="charset" />
             </bk-select>
             <span v-else class="empty">--</span>
-          </div>
+          </div> -->
           <div class="td-cell-delete delete td-cell">
             <i class="bk-bscp-icon icon-reduce delete-icon" @click="handleDeleteConfig(index)"></i>
           </div>
@@ -128,7 +128,7 @@
   import { useI18n } from 'vue-i18n';
   import { DownShape } from 'bkui-vue/lib/icon';
   import { IConfigImportItem } from '../../../../../../../../../types/config';
-  import { cloneDeep, isEqual } from 'lodash';
+  import { cloneDeep } from 'lodash';
   import { joinPathName } from '../../../../../../../../utils/config';
   import Message from 'bkui-vue/lib/message';
   import BatchSetPop from './batch-set-pop.vue';
@@ -149,7 +149,7 @@
   const data = ref<IConfigImportItem[]>([]);
   const initData = ref<IConfigImportItem[]>([]);
   const expand = ref(true);
-  const charsetList = ['UTF-8', 'GBK'];
+  // const charsetList = ['UTF-8', 'GBK'];
 
   const props = withDefaults(
     defineProps<{
@@ -188,20 +188,9 @@
         };
       });
       data.value = data.value.filter((item) => !deleteConfig.find((i) => i.name === item.name));
-      data.value.push(...configList);
+      data.value.push(...cloneDeep(configList));
       initData.value = initData.value.filter((item) => !deleteConfig.find((i) => i.name === item.name));
-      initData.value.push(...configList);
-    },
-    { deep: true },
-  );
-
-  watch(
-    () => data.value,
-    () => {
-      if (isEqual(data.value, initData.value)) {
-        return;
-      }
-      emits('change', data.value);
+      initData.value.push(...cloneDeep(configList));
     },
     { deep: true },
   );
@@ -261,11 +250,13 @@
         }
       });
     }
+    emits('change', data.value);
   };
 
   const handleDeleteConfig = (index: number) => {
     data.value = data.value.filter((item, i) => i !== index);
     initData.value = initData.value.filter((item, i) => i !== index);
+    emits('change', data.value);
   };
 
   // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
@@ -279,6 +270,7 @@
         theme: 'error',
       });
     }
+    emits('change', data.value);
   };
 
   // 判断内容是否改变
@@ -286,7 +278,9 @@
     if (!props.isExsitTable) return;
     const newConfig = data.value.find((config) => config.id === id);
     const oldConfig = initData.value.find((config) => config.id === id);
-    return newConfig![key as keyof IConfigImportItem] !== oldConfig![key as keyof IConfigImportItem];
+    if (newConfig && oldConfig) {
+      return newConfig![key as keyof IConfigImportItem] !== oldConfig![key as keyof IConfigImportItem];
+    }
   };
 </script>
 
@@ -325,7 +319,7 @@
     font-size: 12px;
     line-height: 20px;
     border: 1px solid #dcdee5;
-    overflow: auto;
+    // overflow: auto;
     .table-head {
       display: flex;
       width: fit-content;
@@ -335,7 +329,7 @@
       width: fit-content;
     }
     .table-body {
-      width: 1010px;
+      width: 100%;
       max-height: 400px;
     }
     .th-cell {
