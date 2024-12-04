@@ -167,7 +167,7 @@
       return {
         ...item,
         fileAP: joinPathName(path, name),
-        customId: `${joinPathName(path, name)}-${Date.now() + index}`,
+        customId: `${name}-${Date.now() + index}`,
       };
     });
     data.value = cloneDeep(configList);
