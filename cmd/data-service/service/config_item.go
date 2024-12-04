@@ -1032,14 +1032,14 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		return nil, err
 	}
 
-	existingPaths := []string{}
+	comparisonFiles := []string{}
 	for _, v := range configItems {
 		if v.FileState != constant.FileStateDelete {
-			existingPaths = append(existingPaths, path.Join(v.Spec.Path, v.Spec.Name))
+			comparisonFiles = append(comparisonFiles, path.Join(v.Spec.Path, v.Spec.Name))
 		}
 	}
 
-	conflictNums, conflictPaths, err := s.compareTemplateConfConflicts(grpcKit, req.BizId, req.AppId, existingPaths)
+	conflictNums, conflictPaths, err := s.validateTemplateConflicts(grpcKit, req.BizId, req.AppId, comparisonFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -1110,33 +1110,6 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		ConflictNumber: conflictNums,
 	}
 	return resp, nil
-}
-
-// 检测冲突，非模板配置之间对比、非模板配置对比套餐模板配置、空间套餐之间的对比
-// 1. 先把非配置模板 path+name 添加到 existingPaths 中
-// 2. 把所有关联的空间套餐配置都添加到 existingPaths 中
-func (s *Service) compareTemplateConfConflicts(grpcKit *kit.Kit, bizID, appID uint32, existingPaths []string) (
-	uint32, map[string]bool, error) {
-
-	tmplRevisions, err := s.ListAppBoundTmplRevisions(grpcKit.RpcCtx(), &pbds.ListAppBoundTmplRevisionsReq{
-		BizId:      bizID,
-		AppId:      appID,
-		All:        true,
-		WithStatus: true,
-	})
-	if err != nil {
-		return 0, nil, err
-	}
-
-	for _, revision := range tmplRevisions.GetDetails() {
-		if revision.FileState != constant.FileStateDelete {
-			existingPaths = append(existingPaths, path.Join(revision.Path, revision.Name))
-		}
-	}
-
-	conflictNums, conflictPaths := checkExistingPathConflict(existingPaths)
-
-	return conflictNums, conflictPaths, nil
 }
 
 // setCommitSpecForCIs set commit spec for config items
@@ -1981,30 +1954,42 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbds.RemoveApp
 	return &pbbase.EmptyResp{}, nil
 }
 
-// checkExistingPathConflict Check existing path collections for conflicts.
-func checkExistingPathConflict(existing []string) (uint32, map[string]bool) {
-	conflictPaths := make(map[string]bool, len(existing))
-	var conflictNums uint32
-	conflictMap := make(map[string]bool, 0)
-	// 遍历每一个路径
-	for i := 0; i < len(existing); i++ {
-		// 检查当前路径与后续路径之间是否存在冲突
-		for j := i + 1; j < len(existing); j++ {
-			if strings.HasPrefix(existing[j]+"/", existing[i]+"/") || strings.HasPrefix(existing[i]+"/", existing[j]+"/") {
-				// 相等也算冲突
-				if len(existing[j]) == len(existing[i]) {
-					conflictNums++
-				} else if len(existing[j]) < len(existing[i]) {
-					conflictMap[existing[j]] = true
-				} else {
-					conflictMap[existing[i]] = true
-				}
-
-				conflictPaths[existing[i]] = true
-				conflictPaths[existing[j]] = true
-			}
-		}
+// 检测和模板配置套餐下的文件是否存在冲突
+func (s *Service) validateTemplateConflicts(kit *kit.Kit, bizID, appId uint32,
+	comparisonFiles []string) (uint32, map[string]bool, error) {
+	var (
+		conflictNums  uint32
+		conflictPaths map[string]bool
+	)
+	// 1. 获取服务关联的套餐
+	binding, err := s.dao.AppTemplateBinding().GetAppTemplateBindingByAppID(kit, bizID, appId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+			i18n.T(kit, "get the package associated with the app failed, err: %v"), err)
+	}
+	// 未绑定
+	if binding == nil {
+		return conflictNums, conflictPaths, nil
 	}
 
-	return uint32(len(conflictMap)) + conflictNums, conflictPaths
+	if len(binding.Spec.TemplateIDs) == 0 {
+		return conflictNums, conflictPaths, nil
+	}
+
+	// 如有绑定，根据绑定的模板ID查询模板文件
+	templates, err := s.dao.Template().ListByIDs(kit, binding.Spec.TemplateIDs)
+	if err != nil {
+		return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+			i18n.T(kit, "get template file failed, err: %v"), err)
+	}
+
+	// 把模板文件加入需要对比的切片中
+	for _, v := range templates {
+		comparisonFiles = append(comparisonFiles, path.Join(v.Spec.Path, v.Spec.Name))
+	}
+
+	// 检测文件路径冲突
+	conflictNums, conflictPaths = tools.CheckExistingPathConflict(comparisonFiles)
+
+	return conflictNums, conflictPaths, nil
 }
