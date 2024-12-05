@@ -382,7 +382,8 @@ func (s *Service) compareNonTemplateConfigConflicts(kt *kit.Kit, bizID, appID ui
 		}
 	}
 
-	_, conflictPaths := checkExistingPathConflict(existingPaths)
+	// 检测文件路径冲突
+	_, conflictPaths := tools.CheckExistingPathConflict(existingPaths)
 
 	return conflictPaths, nil
 }
