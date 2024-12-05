@@ -973,6 +973,7 @@
   defineExpose({
     refreshAfterBatchSet,
     refresh: getAllConfigList,
+    refreshBindingId: getBindingId,
   });
 </script>
 <style lang="scss" scoped>
