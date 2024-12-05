@@ -6,7 +6,6 @@
       :data="configList"
       :remote-pagination="true"
       :pagination="pagination"
-      :key="versionData.id"
       selection-key="id"
       row-key="id"
       :row-class="getRowCls"
@@ -88,7 +87,7 @@
         </template>
       </bk-table-column>
       <bk-table-column :label="t('操作')" fixed="right" :width="220">
-        <template #default="{ row }">
+        <template #default="{ row, index }">
           <div class="operate-action-btns">
             <bk-button
               v-if="row.kv_state === 'DELETE'"
@@ -97,7 +96,7 @@
               :disabled="!hasEditServicePerm"
               text
               theme="primary"
-              @click="handleUndelete(row)">
+              @click="handleUndelete(row, index)">
               {{ t('恢复') }}
             </bk-button>
             <template v-else>
@@ -239,6 +238,8 @@
   const statusFilterChecked = ref<string[]>([]);
   const updateSortType = ref('null');
   const recoverConfig = ref<IConfigKvType>();
+  const recoverConfigIndex = ref(0);
+  const replaceConfigIndex = ref(0);
   const isRecoverConfigDialogShow = ref(false);
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
@@ -537,13 +538,16 @@
   };
 
   // 撤销删除单个配置项
-  const handleUndelete = async (config: IConfigKvType) => {
+  const handleUndelete = async (config: IConfigKvType, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     recoverConfig.value = config;
-    const index = configList.value.findIndex((item) => item.spec.key === config.spec.key && item.kv_state !== 'DELETE');
-    if (index === -1) {
+    replaceConfigIndex.value = configList.value.findIndex(
+      (item) => item.spec.key === config.spec.key && item.kv_state !== 'DELETE',
+    );
+    recoverConfigIndex.value = index;
+    if (replaceConfigIndex.value === -1) {
       handleRecoverConfigConfirm();
     } else {
       isRecoverConfigDialogShow.value = true;
@@ -553,16 +557,14 @@
   const handleRecoverConfigConfirm = async () => {
     await undeleteKv(props.bkBizId, props.appId, recoverConfig.value!.spec.key);
     Message({ theme: 'success', message: t('恢复配置项成功') });
-    const index = configList.value.findIndex(
-      (item) => item.spec.key === recoverConfig.value?.spec.key && item.kv_state !== 'DELETE',
-    );
-    if (index !== -1) {
-      configList.value.splice(index, 1);
-    }
-    recoverConfig.value!.kv_state = 'UNCHANGE';
     isRecoverConfigDialogShow.value = false;
-
     const res = await getKvList(props.bkBizId, props.appId, { start: 0, all: true });
+    const config = res.details.find((item: IConfigKvType) => item.spec.key === recoverConfig.value?.spec.key);
+    config.spec.certificate_info = getCertificateInfo(config.spec.certificate_expiration_date);
+    if (replaceConfigIndex.value !== -1) {
+      configList.value.splice(replaceConfigIndex.value, 1);
+    }
+    configList.value.splice(recoverConfigIndex.value, 1, config!);
     configStore.$patch((state) => {
       state.allConfigCount = res.count;
       state.allExistConfigCount = res.exclusion_count;
