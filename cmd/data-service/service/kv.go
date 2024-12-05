@@ -242,15 +242,27 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 
 // set Kv Type And Value
 func (s *Service) setKvTypeAndValue(kt *kit.Kit, details []*table.Kv) ([]*pbkv.Kv, error) {
-
 	kvs := make([]*pbkv.Kv, 0)
+	eg, _ := errgroup.WithContext(kt.RpcCtx())
+	eg.SetLimit(10)
+	var mux sync.Mutex
 
 	for _, one := range details {
-		_, kvValue, err := s.getKv(kt, one.Attachment.BizID, one.Attachment.AppID, one.Spec.Version, one.Spec.Key)
-		if err != nil {
-			return nil, err
-		}
-		kvs = append(kvs, pbkv.PbKv(one, kvValue))
+		one := one
+		eg.Go(func() error {
+			_, kvValue, err := s.getKv(kt, one.Attachment.BizID, one.Attachment.AppID, one.Spec.Version, one.Spec.Key)
+			if err != nil {
+				return err
+			}
+			mux.Lock()
+			kvs = append(kvs, pbkv.PbKv(one, kvValue))
+			mux.Unlock()
+
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, errf.Errorf(errf.Aborted, i18n.T(kt, "get key value failed, err: %v"), err)
 	}
 
 	return kvs, nil

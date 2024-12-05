@@ -310,7 +310,7 @@ func (s *Service) GetTemplateRevision(ctx context.Context, req *pbds.GetTemplate
 	}, nil
 }
 
-// UpdateTemplateRevision implements pbds.DataServer.
+// UpdateTemplateRevision 更新模板版本
 func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTemplateRevisionReq) (
 	*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -361,6 +361,25 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 		id, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision)
 		template.Revision.Reviser = kt.User
 		template.Revision.UpdatedAt = time.Now().UTC()
+
+		// update app template bindings if necessary
+		atbs, err := s.dao.TemplateBindingRelation().
+			ListLatestTmplBoundUnnamedApps(kt, req.Attachment.BizId, req.Attachment.TemplateId)
+		if err != nil {
+			logs.Errorf("list latest template bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, err
+		}
+		if len(atbs) > 0 {
+			for _, atb := range atbs {
+				if e := s.CascadeUpdateATB(kt, tx, atb); e != nil {
+					logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", e, kt.Rid)
+					if rErr := tx.Rollback(); rErr != nil {
+						logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+					}
+					return nil, e
+				}
+			}
+		}
 	}
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)

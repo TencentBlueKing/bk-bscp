@@ -14,9 +14,7 @@ package service
 
 import (
 	"context"
-	"errors"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -38,34 +36,6 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbcs.CreateReleaseReq)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
-	}
-
-	// 创建版本前验证非模板配置和模板配置是否存在冲突
-	ci, err := s.ListConfigItems(grpcKit.RpcCtx(), &pbcs.ListConfigItemsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
-		All:   true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if ci.ConflictNumber > 0 {
-		logs.Errorf("create release failed there is a file conflict, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, errors.New(i18n.T(grpcKit, "create release failed there is a file conflict"))
-	}
-
-	// 验证kv服务密钥类型是否存在过期数据
-	kvs, err := s.ListKvs(grpcKit.RpcCtx(), &pbcs.ListKvsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
-		All:   true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if kvs.IsCertExpired {
-		return nil, errors.New(i18n.T(grpcKit, "create release failed there is a certificate expiration exists"))
 	}
 
 	r := &pbds.CreateReleaseReq{

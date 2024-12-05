@@ -9,7 +9,6 @@ replace (
 
 require (
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20240418123107-72b120390195
-	github.com/TencentBlueKing/bk-bcs/bcs-services/bcs-bscp v0.0.0-20241120081801-a9969caf41d5
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v0.1.6
 	github.com/bluele/gcache v0.0.2
