@@ -242,20 +242,24 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 
 // set Kv Type And Value
 func (s *Service) setKvTypeAndValue(kt *kit.Kit, details []*table.Kv) ([]*pbkv.Kv, error) {
-	kvs := make([]*pbkv.Kv, 0)
+	// 预分配切片，确保没有扩展
+	kvs := make([]*pbkv.Kv, len(details))
 	eg, _ := errgroup.WithContext(kt.RpcCtx())
 	eg.SetLimit(10)
 	var mux sync.Mutex
 
-	for _, one := range details {
+	for i, one := range details {
 		one := one
+		i := i
 		eg.Go(func() error {
 			_, kvValue, err := s.getKv(kt, one.Attachment.BizID, one.Attachment.AppID, one.Spec.Version, one.Spec.Key)
 			if err != nil {
 				return err
 			}
+			// 锁住关键部分，避免并发修改切片
 			mux.Lock()
-			kvs = append(kvs, pbkv.PbKv(one, kvValue))
+			// 保证按顺序写入
+			kvs[i] = pbkv.PbKv(one, kvValue)
 			mux.Unlock()
 
 			return nil
