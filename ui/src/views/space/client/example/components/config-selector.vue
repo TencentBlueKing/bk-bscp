@@ -161,17 +161,6 @@
     validateConfig();
   };
 
-  // const handleConfigSelect = (val: string) => {
-  //   console.log(1);
-  //   if (Array.isArray(configName.value) && val) {
-  //     if (val === '*') {
-  //       configName.value = ['*'];
-  //     } else if (configName.value?.includes('*')) {
-  //       configName.value = configName.value.filter((item) => item !== '*');
-  //     }
-  //   }
-  // };
-
   // 表单校验失败检查配置项是否为空
   const validateConfig = () => {
     isError.value = !configName.value;
@@ -210,11 +199,11 @@
       border-radius: 2px;
       transition: all 0.3s;
       background: #ffffff;
-      font-size: 14px;
+      font-size: 12px;
       border: 1px solid #c4c6cc;
       .config-name {
         max-width: 480px;
-        color: #313238;
+        color: #63656e;
       }
       .empty {
         font-size: 12px;
