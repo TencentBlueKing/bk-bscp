@@ -1471,6 +1471,7 @@ message ListAppsBySpaceRestReq {
   string name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
   bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  string top_ids = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "需要置顶ID" }];
 }
 
 message ListAppsResp {

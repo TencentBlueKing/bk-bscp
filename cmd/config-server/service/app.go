@@ -14,7 +14,6 @@ package service
 
 import (
 	"context"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -23,7 +22,6 @@ import (
 
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
-	"github.com/TencentBlueKing/bk-bscp/internal/runtime/natsort"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
@@ -288,6 +286,7 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 		Operator: req.Operator,
 		Name:     req.Name,
 		All:      req.All,
+		TopIds:   req.TopIds,
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -332,10 +331,6 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 			app.SpaceTypeName = sp.SpaceTypeName
 		}
 	}
-
-	sort.SliceStable(rp.Details, func(i, j int) bool {
-		return natsort.NaturalLess(rp.Details[i].Spec.Name, rp.Details[j].Spec.Name)
-	})
 
 	resp := &pbcs.ListAppsResp{
 		Count:   rp.Count,
