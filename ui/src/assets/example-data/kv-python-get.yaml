@@ -1,4 +1,4 @@
-from bk_bscp.client import BscpClient
+from bk_bscp.client import AppOptions, BscpClient
 
 SERVER_ADDRS = ["{{ .Bk_Bscp_Variable_FEED_ADDR }}"]
 TOKEN = {{ .Bk_Bscp_Variable_ClientKey }}
@@ -6,11 +6,27 @@ BIZ_ID = {{ .Bk_Bscp_Variable_BkBizId }}
 APP = "{{ .Bk_Bscp_Variable_ServiceName }}"
 LABELS = {{ .Bk_Bscp_Variable_Leabels }}
 
-def main(key):
+def fetch_configuration_values(keys):
+    """Fetch configuration values for given keys."""
+    options = AppOptions(
+        match=[],
+        labels=LABELS,
+        uid="",
+    )
+    kvs = {}
     with BscpClient(SERVER_ADDRS, TOKEN, BIZ_ID) as client:
-        pair = client.get(APP, key, LABELS)
-        print(pair.value)
+        release = client.pull_kvs(APP_NAME, keys, options)
+        for kv in release.kvs:
+            pair = client.get(APP_NAME, kv.key, LABELS)
+            kvs[pair.key] = pair.value
+    return kvs
+
+def main(keys):
+    """Main function to fetch and print configuration values."""
+    config_values = fetch_configuration_values(keys)
+    print(config_values)
 
 if __name__ == "__main__":
-    key = {{ .Bk_Bscp_Variable_KeyName }}
-    main(key)
+    # 支持获取多个Key，通配符 * 代表获取全部Key
+    keys = {{ .Bk_Bscp_Variable_KeyName }}  # 或者替换为 ["key1", "key2"] 等实际键
+    main(keys)

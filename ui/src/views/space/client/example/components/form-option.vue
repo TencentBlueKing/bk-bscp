@@ -28,7 +28,10 @@
             placement: 'top',
           }" />
       </template>
-      <config-selector ref="configSelectRef" @select-config="formData.configName = $event" />
+      <config-selector
+        ref="configSelectRef"
+        :template-name="props.templateName!"
+        @select-config="formData.configName = $event" />
     </bk-form-item>
     <bk-form-item v-if="props.dualSystemSupport" :label="$t('客户端操作系统')" property="systemType">
       <bk-radio v-model="formData.systemType" label="Unix" @change="handleChangeSys(formData.systemType as string)">
@@ -142,6 +145,7 @@
   const props = withDefaults(
     defineProps<{
       selectedKeyData: newICredentialItem['spec'] | null; // 记忆密钥的信息
+      templateName?: string;
       directoryShow?: boolean; // 临时目录(所有文件型)
       p2pShow?: boolean; // p2p网络加速（Sidecar容器）
       configShow?: boolean; // 配置项名称（Python SDK、http(s)接口调用）

@@ -1025,6 +1025,7 @@ export default {
   'CRLF（Windows换行符 \\r\\n）': 'CRLF（Linux line break \\r\\n）',
   '客户端下载文件时可以选择将文件保存为Linux格式（使用LF换行符）或Windows格式（使用CRLF换行符）\n服务端默认使用Linux换行符进行保存，如果选择将文件保存为Windows格式，可能导致客户端文件的MD5值与服务端的MD5值不一致': 'When downloading files, you can choose to save them in Linux format (using LF line breaks) or Windows format (using CRLF line breaks). \nThe server defaults to saving in Linux line breaks. Choosing to save files in Windows format may result in a mismatch between the MD5 values of the client file and the server file',
   此SDK暂不支持method方法拉取配置文件: 'This SDK does not currently support the {method} method for pulling configuration files',
+  全部配置项: 'All config items',
 
   // 公共组件
   页面不存在: 'Page does not exist',
