@@ -526,6 +526,7 @@
     () => {
       emits('updateSelectedItems', selectedConfigItems.value);
     },
+    { deep: true },
   );
 
   onMounted(async () => {
@@ -822,7 +823,6 @@
   };
 
   const handleDeletePkgConfirm = async () => {
-    // await deleteBoundPkg(props.bkBizId, props.appId, bindingId.value, [deleteTemplatePkgId.value]);
     try {
       removePkgLoading.value = true;
       await deleteCurrBoundPkg(props.bkBizId, props.appId, templateSetId.value);
@@ -949,12 +949,25 @@
     // 获取冲突的非模板配置数据
     await getCommonConfigList();
     const replaceConfig = configList.value.find((config) => config.id === operationConfig.value!.config.id);
-    tableGroupsData.value[0].configs.map((config) => {
-      if (config.id === operationConfig.value!.config.id) {
-        config.file_state = replaceConfig!.file_state;
+    const replaceConfigIndex = tableGroupsData.value[0].configs.findIndex(
+      (config) => config.id === operationConfig.value!.config.id,
+    );
+    if (replaceConfig) {
+      // 非删除操作
+      tableGroupsData.value[0].configs.map((config) => {
+        if (config.id === operationConfig.value!.config.id) {
+          config.file_state = replaceConfig?.file_state;
+        }
+        return config;
+      });
+      if (oldConfigIndex.value !== -1) {
+        tableGroupsData.value.find((group) => group.id === 0)!.configs.splice(oldConfigIndex.value, 1);
       }
-      return config;
-    });
+    } else {
+      // 删除操作
+      tableGroupsData.value[0].configs.splice(replaceConfigIndex, 1);
+    }
+
     const conflictFileIds = configList.value.filter((config) => config.is_conflict).map((config) => config.id);
     tableGroupsData.value
       .find((group) => group.id === 0)
@@ -963,9 +976,6 @@
           config.is_conflict = true;
         }
       });
-    if (oldConfigIndex.value !== -1) {
-      tableGroupsData.value.find((group) => group.id === 0)!.configs.splice(oldConfigIndex.value, 1);
-    }
 
     // 更新配置项数量
     const existConfigCount = configList.value.filter((item) => item.file_state !== 'DELETE').length;
