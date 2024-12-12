@@ -455,10 +455,21 @@
   // 资源示例映射
   const convertInstance = (data: string) => {
     if (data.length) {
-      let result = data.replace(/\n/g, '<br />');
+      // let result = data.replace(/\n/g, '<br />');
+      const resultList = data.split('\n');
+      // 提取操作对象的个数
+      const operateCountMatch = resultList[0].match(/operate_objects: (\d+)/);
+      const operateCount = operateCountMatch ? operateCountMatch[1] : null;
+      if (operateCount) {
+        resultList.shift();
+      }
+      let result = resultList.join('<br />');
       Object.keys(INSTANCE).forEach((key) => {
         result = result.replace(`${key}:`, `${INSTANCE[key as keyof typeof INSTANCE]}：`);
       });
+      if (operateCount) {
+        result = t('对{n}等 {m} 个对象进行操作', { n: result, m: operateCount });
+      }
       return result;
     }
   };
