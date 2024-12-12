@@ -455,18 +455,20 @@
   // 资源示例映射
   const convertInstance = (data: string) => {
     if (data.length) {
-      // let result = data.replace(/\n/g, '<br />');
-      const resultList = data.split('\n');
+      let resultList = data.split('\n');
       // 提取操作对象的个数
       const operateCountMatch = resultList[0].match(/operate_objects: (\d+)/);
       const operateCount = operateCountMatch ? operateCountMatch[1] : null;
       if (operateCount) {
         resultList.shift();
       }
-      let result = resultList.join('<br />');
-      Object.keys(INSTANCE).forEach((key) => {
-        result = result.replace(`${key}:`, `${INSTANCE[key as keyof typeof INSTANCE]}：`);
+      resultList = resultList.map((result) => {
+        const resultSplit = result.split(':');
+        resultSplit[0] = INSTANCE[resultSplit[0] as keyof typeof INSTANCE];
+        return resultSplit.join(':');
       });
+      let result = resultList.join('<br />');
+
       if (operateCount) {
         result = t('对{n}等 {m} 个对象进行操作', { n: result, m: operateCount });
       }
@@ -479,7 +481,7 @@
     if (!row) {
       return '--';
     }
-    const { status } = row.audit.spec;
+    const { status, detail } = row.audit.spec;
     // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
     const { final_approval_time: time, reviser, reject_reason: reason } = row.strategy;
     switch (status) {
@@ -496,7 +498,7 @@
       case APPROVE_STATUS.revoked_publish:
         return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
       case APPROVE_STATUS.failure:
-        return t('提示-失败');
+        return detail;
       default:
         return '--';
     }

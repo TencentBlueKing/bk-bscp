@@ -98,7 +98,7 @@ export enum ONLINE_TYPE {
 
 // 过滤的Key
 export enum FILTER_KEY {
-  publish_release_config = 'publish_release_config', // 上线
+  publish = 'publish', // 上线
   failure = 'failure', // 失败
 }
 

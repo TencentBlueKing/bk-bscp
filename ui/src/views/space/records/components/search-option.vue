@@ -1,6 +1,6 @@
 <template>
   <section class="search-option">
-    <bk-checkbox v-model="publishReleaseConfig" @change="changePublishStatus"> {{ $t('仅看上线操作') }} </bk-checkbox>
+    <bk-checkbox v-model="publish" @change="changePublishStatus"> {{ $t('仅看上线操作') }} </bk-checkbox>
     <bk-checkbox v-model="failure" @change="changeFailedStatus"> {{ $t('仅看失败操作') }} </bk-checkbox>
     <div class="search-input__wrap">
       <bk-search-select
@@ -18,7 +18,15 @@
   import { useRouter, useRoute } from 'vue-router';
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
-  import { RECORD_RES_TYPE, ACTION, STATUS, FILTER_KEY, SEARCH_ID, OPERATE_WAY, OPERATE } from '../../../../constants/record';
+  import {
+    RECORD_RES_TYPE,
+    ACTION,
+    STATUS,
+    FILTER_KEY,
+    SEARCH_ID,
+    OPERATE_WAY,
+    OPERATE,
+  } from '../../../../constants/record';
 
   interface ISearchValueItem {
     id: string;
@@ -32,7 +40,7 @@
   const router = useRouter();
   const route = useRoute();
 
-  const publishReleaseConfig = ref(false);
+  const publish = ref(false);
   const failure = ref(false);
   const searchValue = ref<ISearchValueItem[]>([]);
 
@@ -126,7 +134,7 @@
   const change = (data: ISearchValueItem[]) => {
     const optionIdArr = data.map((item) => item.values.map((i) => i.id));
     const statusMap: { [key: string]: Ref<boolean> } = {
-      [FILTER_KEY.publish_release_config]: publishReleaseConfig,
+      [FILTER_KEY.publish]: publish,
       [FILTER_KEY.failure]: failure,
     };
     Object.keys(statusMap).forEach((id) => {
@@ -158,10 +166,12 @@
 
   // 仅看上线操作
   const changePublishStatus = (status: boolean) => {
+    failure.value = false;
     changeStatus(SEARCH_ID.operate, t('查看操作'), [{ id: 'publish', name: t('上线') }], status);
   };
   // 仅看失败操作
   const changeFailedStatus = (status: boolean) => {
+    publish.value = false;
     changeStatus(SEARCH_ID.operate, t('查看操作'), [{ id: 'failure', name: t('失败') }], status);
   };
 
