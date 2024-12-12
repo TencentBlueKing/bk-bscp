@@ -187,6 +187,32 @@ const routes = [
           },
         ],
       },
+      {
+        path: 'data_source',
+        name: 'data-source-management',
+        meta: {
+          navModule: 'data-source',
+        },
+        component: () => import('./views/space/data-source/index.vue'),
+        children: [
+          {
+            path: 'table',
+            name: 'trusteeship-table',
+            meta: {
+              navModule: 'data-source',
+            },
+            component: () => import('./views/space/data-source/trusteeship-table/index.vue'),
+          },
+          {
+            path: 'manage',
+            name: 'data-source-manage',
+            meta: {
+              navModule: 'data-source',
+            },
+            component: () => import('./views/space/data-source/manage/index.vue'),
+          },
+        ],
+      },
     ],
   },
   {
