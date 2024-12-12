@@ -124,6 +124,12 @@
         },
       ],
     },
+    {
+      formatTitle: t('提示：'),
+      formatContent: t(
+        '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入',
+      ),
+    },
   ];
 
   /* eslint-disable */
@@ -268,7 +274,7 @@ custom:
     return `    配置项名称:
         kv_type: 数据类型，支持以下类型：string、number、text、json、xml、yaml、secret
         value: 配置项的具体值
-        secret_type: 密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token
+        secret_type: 密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token、custom
         secret_hidden: 指示配置项值是否可见，仅在kv_type为secret时有效
         memo: 对配置项的描述`;
   });
