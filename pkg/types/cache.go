@@ -14,10 +14,10 @@ package types
 
 import (
 	"fmt"
-	"path"
 	"strings"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -175,12 +175,12 @@ func (c *CredentialCache) MatchKv(app, key string) bool {
 		return false
 	}
 
-	for _, v := range scopes {
-		ok, err := path.Match(v, key)
+	for _, s := range scopes {
+		g, err := glob.Compile(s)
 		if err != nil {
-			return false
+			continue
 		}
-		if ok {
+		if g.Match(key) {
 			return true
 		}
 	}
