@@ -125,7 +125,7 @@ func (dao *appTemplateBindingDao) ListAppTemplateBindingByAppIds(kit *kit.Kit, b
 // UpsertWithTx create or update one template variable instance with transaction.
 func (dao *appTemplateBindingDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, atb *table.AppTemplateBinding) error {
 	m := dao.genQ.AppTemplateBinding
-	q := dao.genQ.AppTemplateBinding.WithContext(kit.Ctx)
+	q := tx.AppTemplateBinding.WithContext(kit.Ctx)
 	old, findErr := q.Where(m.BizID.Eq(atb.Attachment.BizID), m.AppID.Eq(atb.Attachment.AppID)).Take()
 
 	var ad AuditDo

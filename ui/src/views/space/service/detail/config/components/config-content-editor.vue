@@ -9,7 +9,7 @@
           </template>
         </div>
         <div class="btns">
-          <bk-select
+          <!-- <bk-select
             v-if="charset"
             class="charset-select"
             v-model="currentCharset"
@@ -18,7 +18,7 @@
             :clearable="false"
             @change="emits('update:charset', currentCharset)">
             <bk-option v-for="item in charsetList" :id="item" :key="item" :name="item" />
-          </bk-select>
+          </bk-select> -->
           <ReadFileContent
             v-if="editable"
             v-bk-tooltips="{
@@ -92,8 +92,8 @@
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
-  const charsetList = ['UTF-8', 'GBK'];
-  const currentCharset = ref(props.charset);
+  // const charsetList = ['UTF-8', 'GBK'];
+  // const currentCharset = ref(props.charset);
 
   const editorStyle = computed(() => {
     return {

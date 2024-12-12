@@ -222,7 +222,7 @@
         {
             "id": "sensitive information cannot be exported",
             "message": "sensitive information cannot be exported",
-            "translation": "敏感信息无法导出"
+            "translation": "不可见敏感信息无法导出"
         },
         {
             "id": "client ids is empty",
@@ -471,9 +471,19 @@
             ]
         },
         {
-            "id": "please set a password",
-            "message": "please set a password",
-            "translation": "请设置密码"
+            "id": "please fill in the value of configuration item {Key} first",
+            "message": "please fill in the value of configuration item {Key} first",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ]
         },
         {
             "id": "the certificate format is incorrect, only X.509 format is supported",
@@ -2756,6 +2766,21 @@
                     "id": "FileMode",
                     "string": "%[1]s",
                     "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileMode",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "f"
+                }
+            ]
+        },
+        {
+            "id": "unsupported file charset: {FileCharset}",
+            "message": "unsupported file charset: {FileCharset}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "FileCharset",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileCharset",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"

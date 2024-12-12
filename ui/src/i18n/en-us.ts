@@ -638,7 +638,7 @@ export default {
   '敏感数据不可见，无法查看实际内容': 'Sensitive data is not visible and cannot view the actual content',
   '普通文本格式：': 'Normal text format：',
   'key 数据类型 value 描述（可选）': 'key data_type value description (optional)',
-  '敏感文本格式：': 'Sensitive text format：',
+  '敏感文本格式 （暂只支持password、secret_key、token三种凭证类型）：': 'Sensitive text format (currently only supports three credential types: password, secret_key, token):',
   'key 数据类型 凭证类型 value 是否可见 描述（可选）': 'key data_type credential_type value visibility description (optional)',
   '密码示例：': 'Password example：',
   'API密钥示例：': 'API key example：',
@@ -675,6 +675,7 @@ export default {
   '{n} 天': '{n} days',
   继续生成版本: 'Continue build version',
   证书即将过期: 'Certificate is about to expire',
+  '请先填写配置项 {n} 的值，然后再尝试导入': 'Please fill in the value of configuration item {n} first, and then try to import',
 
   // 分组管理
   新增分组: 'New group',
@@ -1052,6 +1053,7 @@ export default {
   'CRLF（Windows换行符 \\r\\n）': 'CRLF（Linux line break \\r\\n）',
   '客户端下载文件时可以选择将文件保存为Linux格式（使用LF换行符）或Windows格式（使用CRLF换行符）\n服务端默认使用Linux换行符进行保存，如果选择将文件保存为Windows格式，可能导致客户端文件的MD5值与服务端的MD5值不一致': 'When downloading files, you can choose to save them in Linux format (using LF line breaks) or Windows format (using CRLF line breaks). \nThe server defaults to saving in Linux line breaks. Choosing to save files in Windows format may result in a mismatch between the MD5 values of the client file and the server file',
   此SDK暂不支持method方法拉取配置文件: 'This SDK does not currently support the {method} method for pulling configuration files',
+  全部配置项: 'All config items',
 
   // 公共组件
   页面不存在: 'Page does not exist',

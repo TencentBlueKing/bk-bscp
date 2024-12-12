@@ -6,6 +6,7 @@
       :config-show="(['python', 'go'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'"
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
+      :template-name="props.templateName"
       @update-option-data="(data) => getOptionData(data)"
       @selected-key-data="emits('selected-key-data', $event)" />
     <div class="preview-container">
@@ -17,7 +18,7 @@
             :key="item"
             v-bk-tooltips="{
               disabled: !tabDisabled(index),
-              content: t('此SDK暂不支持method方法拉取配置文件', {method: item}),
+              content: t('此SDK暂不支持method方法拉取配置文件', { method: item }),
               placement: 'top',
             }"
             :class="['tab-wrap', { 'is-active': activeTab === index }, { 'is-disabled': tabDisabled(index) }]"
@@ -96,7 +97,7 @@
         if (!activeTab.value) {
           return {
             topTip: `${t('用于主动获取配置项值的场景，此方法不会监听服务器端的配置更改，有关Python SDK的部署环境和依赖组件，请参阅白皮书中的')} <a href="${url}" target="_blank">${t('BSCP Python SDK依赖说明')}</a>`,
-            codePreviewHeight: 336,
+            codePreviewHeight: 660,
           };
         }
         // watch
@@ -206,8 +207,10 @@
           // 文件型的shell需要添加转义符
           labelArrType =
             basicInfo?.serviceType.value === 'file'
-              ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`
-                .replaceAll(' ', '')
+              ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
+                ' ',
+                '',
+              )
               : `'${labelArrType}'`;
         }
         break;
@@ -254,10 +257,23 @@
       {
         name: 'Bk_Bscp_Variable_KeyName',
         type: '',
-        default_val: `"${optionData.value.configName}"`,
+        default_val: getKeyName(optionData.value.configName),
         memo: '',
       },
     ];
+  };
+
+  const getKeyName = (val: string) => {
+    if (!val) {
+      return '""';
+    }
+    if (props.templateName === 'python' && val) {
+      if (val === '*') {
+        return '["*"]';
+      }
+      return JSON.stringify(val.split(','));
+    }
+    return val;
   };
 
   // 复制示例
@@ -386,9 +402,9 @@
         background-color: #fff;
       }
       &.is-disabled {
-        color: #C4C6CC;
+        color: #c4c6cc;
         cursor: not-allowed;
-        background-color: #F0F1F5;
+        background-color: #f0f1f5;
       }
     }
   }

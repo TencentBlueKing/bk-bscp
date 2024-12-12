@@ -6,7 +6,6 @@
       :data="configList"
       :remote-pagination="true"
       :pagination="pagination"
-      :key="versionData.id"
       selection-key="id"
       row-key="id"
       :row-class="getRowCls"
@@ -88,7 +87,7 @@
         </template>
       </bk-table-column>
       <bk-table-column :label="t('操作')" fixed="right" :width="220">
-        <template #default="{ row }">
+        <template #default="{ row, index }">
           <div class="operate-action-btns">
             <bk-button
               v-if="row.kv_state === 'DELETE'"
@@ -97,7 +96,7 @@
               :disabled="!hasEditServicePerm"
               text
               theme="primary"
-              @click="handleUndelete(row)">
+              @click="handleUndelete(row, index)">
               {{ t('恢复') }}
             </bk-button>
             <template v-else>
@@ -107,7 +106,7 @@
                 :disabled="versionData.id === 0 && !hasEditServicePerm"
                 text
                 theme="primary"
-                @click="handleEditOrView(row)">
+                @click="handleEditOrView(row, index)">
                 {{ versionData.id === 0 ? t('编辑') : t('查看') }}
               </bk-button>
               <bk-button
@@ -117,7 +116,7 @@
                 :disabled="!hasEditServicePerm"
                 text
                 theme="primary"
-                @click="handleUnModify(row)">
+                @click="handleUnModify(row, index)">
                 {{ t('撤销') }}
               </bk-button>
               <bk-button
@@ -134,7 +133,7 @@
                 :disabled="!hasEditServicePerm"
                 text
                 theme="primary"
-                @click="handleDel(row)">
+                @click="handleDel(row, index)">
                 {{ t('删除') }}
               </bk-button>
             </template>
@@ -148,14 +147,14 @@
   </bk-loading>
   <edit-config
     v-model:show="editPanelShow"
-    :config="activeConfig.spec as IConfigKvItem"
+    :config="operationConfig.spec as IConfigKvItem"
     :bk-biz-id="props.bkBizId"
     :app-id="props.appId"
     :editable="true"
-    @confirm="getListData" />
+    @confirm="handleUpdateConfig" />
   <ViewConfigKv
     v-model:show="viewPanelShow"
-    :config="activeConfig"
+    :config="operationConfig"
     :show-edit-btn="isUnNamedVersion"
     @open-edit="handleSwitchToEdit" />
   <VersionDiff v-model:show="isDiffPanelShow" :current-version="versionData" :selected-kv-config-id="diffConfig" />
@@ -164,7 +163,7 @@
     :title="t('确认删除该配置项？')"
     @confirm="handleDeleteConfigConfirm">
     <div style="margin-bottom: 8px">
-      {{ t('配置项') }}：<span style="color: #313238">{{ deleteConfig?.spec.key }}</span>
+      {{ t('配置项') }}：<span style="color: #313238">{{ operationConfig?.spec.key }}</span>
     </div>
     <div>{{ deleteConfigTips }}</div>
   </DeleteConfirmDialog>
@@ -174,9 +173,9 @@
     :confirm-text="t('恢复')"
     @confirm="handleRecoverConfigConfirm">
     <div style="margin-bottom: 8px">
-      {{ t('配置项') }}：<span style="color: #313238">{{ recoverConfig?.spec.key }}</span>
+      {{ t('配置项') }}：<span style="color: #313238">{{ operationConfig?.spec.key }}</span>
     </div>
-    <div>{{ t(`配置项恢复后，将覆盖新添加的配置项`) + recoverConfig?.spec.key }}</div>
+    <div>{{ t(`配置项恢复后，将覆盖新添加的配置项`) + operationConfig?.spec.key }}</div>
   </DeleteConfirmDialog>
 </template>
 <script lang="ts" setup>
@@ -224,11 +223,8 @@
 
   const loading = ref(false);
   const configList = ref<IConfigKvType[]>([]);
-  const configsCount = ref(0);
   const editPanelShow = ref(false);
   const viewPanelShow = ref(false);
-  const activeConfig = ref<IConfigKvType>(getDefaultKvItem());
-  const deleteConfig = ref<IConfigKvType>();
   const selectedConfigIds = ref<number[]>([]);
   const selectedConfigKeys = ref<string[]>([]);
   const isDiffPanelShow = ref(false);
@@ -238,12 +234,14 @@
   const typeFilterChecked = ref<string[]>([]);
   const statusFilterChecked = ref<string[]>([]);
   const updateSortType = ref('null');
-  const recoverConfig = ref<IConfigKvType>();
   const isRecoverConfigDialogShow = ref(false);
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
   const allDeleteConfigCount = ref(0);
   const allExistConfigCount = ref(0);
+  const operationConfig = ref<IConfigKvType>(getDefaultKvItem());
+  const operationConfigIndex = ref(0);
+  const oldConfigIndex = ref(-1);
 
   const typeFilterList = computed(() =>
     CONFIG_KV_TYPE.map((item) => ({
@@ -273,12 +271,9 @@
   });
 
   const deleteConfigTips = computed(() => {
-    if (deleteConfig.value) {
-      return deleteConfig.value.kv_state === 'ADD'
-        ? t('一旦删除，该操作将无法撤销，请谨慎操作')
-        : t('配置项删除后，可以通过恢复按钮撤销删除');
-    }
-    return '';
+    return operationConfig.value.kv_state === 'ADD'
+      ? t('一旦删除，该操作将无法撤销，请谨慎操作')
+      : t('配置项删除后，可以通过恢复按钮撤销删除');
   });
 
   // 跨页全选
@@ -303,19 +298,9 @@
   watch(
     () => props.searchStr,
     () => {
-      props.searchStr ? (isSearchEmpty.value = true) : (isSearchEmpty.value = false);
+      isSearchEmpty.value = !!props.searchStr;
       refresh();
     },
-  );
-
-  watch(
-    () => configList.value,
-    () => {
-      configStore.$patch((state) => {
-        state.allConfigCount = configsCount.value;
-      });
-    },
-    { immediate: true, deep: true },
   );
 
   watch(
@@ -405,7 +390,6 @@
           item.spec.certificate_info = getCertificateInfo(item.spec.certificate_expiration_date);
         }
       });
-      configsCount.value = res.count;
       allExistConfigCount.value = res.exclusion_count;
       allDeleteConfigCount.value = res.count - res.exclusion_count;
       configStore.$patch((state) => {
@@ -461,8 +445,9 @@
     handleRowCheckChange(shouldBeChecked, row);
   };
 
-  const handleEditOrView = (config: IConfigKvType) => {
-    activeConfig.value = config;
+  const handleEditOrView = (config: IConfigKvType, index: number) => {
+    operationConfig.value = config;
+    operationConfigIndex.value = index;
     if (isUnNamedVersion.value) {
       if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
         return;
@@ -474,7 +459,7 @@
   };
 
   const handleView = (config: IConfigKvType) => {
-    activeConfig.value = config;
+    operationConfig.value = config;
     viewPanelShow.value = true;
   };
 
@@ -483,21 +468,24 @@
     isDiffPanelShow.value = true;
   };
 
-  const handleDel = (config: IConfigKvType) => {
+  const handleDel = (config: IConfigKvType, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     isDeleteConfigDialogShow.value = true;
-    deleteConfig.value = config;
+    operationConfig.value = config;
+    operationConfigIndex.value = index;
   };
 
-  const handleUnModify = async (config: IConfigKvType) => {
+  const handleUnModify = async (config: IConfigKvType, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     await unModifyKv(props.bkBizId, props.appId, config.spec.key);
     Message({ theme: 'success', message: t('撤销修改配置项成功') });
-    refresh();
+    operationConfig.value = config;
+    operationConfigIndex.value = index;
+    handleUpdateConfig();
   };
 
   // 由查看态切换为编辑态
@@ -510,40 +498,33 @@
 
   // 删除单个配置项
   const handleDeleteConfigConfirm = async () => {
-    if (!deleteConfig.value) {
-      return;
-    }
-    await deleteKv(props.bkBizId, props.appId, deleteConfig.value.id);
+    await deleteKv(props.bkBizId, props.appId, operationConfig.value.id);
 
     // 删除的配置项如果在多选列表里，需要去掉
-    const index = selectedConfigIds.value.findIndex((id) => id === deleteConfig.value?.id);
+    const index = selectedConfigIds.value.findIndex((id) => id === operationConfig.value?.id);
     if (index > -1) {
       selectedConfigIds.value.splice(index, 1);
-    }
-
-    // 新增的配置项被删除后，检查是否需要往前翻一页
-    if (deleteConfig.value.kv_state === 'ADD') {
-      if (configList.value.length === 1 && pagination.value.current > 1) {
-        pagination.value.current -= 1;
-      }
     }
 
     Message({
       theme: 'success',
       message: t('删除配置项成功'),
     });
-    refresh(pagination.value.current);
+    handleUpdateConfig();
     isDeleteConfigDialogShow.value = false;
   };
 
   // 撤销删除单个配置项
-  const handleUndelete = async (config: IConfigKvType) => {
+  const handleUndelete = async (config: IConfigKvType, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
-    recoverConfig.value = config;
-    const index = configList.value.findIndex((item) => item.spec.key === config.spec.key && item.kv_state !== 'DELETE');
-    if (index === -1) {
+    operationConfig.value = config;
+    operationConfigIndex.value = index;
+    oldConfigIndex.value = configList.value.findIndex(
+      (item) => item.spec.key === config.spec.key && item.kv_state !== 'DELETE',
+    );
+    if (oldConfigIndex.value === -1) {
       handleRecoverConfigConfirm();
     } else {
       isRecoverConfigDialogShow.value = true;
@@ -551,22 +532,48 @@
   };
 
   const handleRecoverConfigConfirm = async () => {
-    await undeleteKv(props.bkBizId, props.appId, recoverConfig.value!.spec.key);
+    await undeleteKv(props.bkBizId, props.appId, operationConfig.value!.spec.key);
     Message({ theme: 'success', message: t('恢复配置项成功') });
-    const index = configList.value.findIndex(
-      (item) => item.spec.key === recoverConfig.value?.spec.key && item.kv_state !== 'DELETE',
-    );
-    if (index !== -1) {
-      configList.value.splice(index, 1);
-    }
-    recoverConfig.value!.kv_state = 'UNCHANGE';
     isRecoverConfigDialogShow.value = false;
+    handleUpdateConfig();
+  };
 
+  // 操作配置文件后，更新配置文件内容，不刷新列表
+  const handleUpdateConfig = async () => {
     const res = await getKvList(props.bkBizId, props.appId, { start: 0, all: true });
+    const replaceConfig = res.details.find((item: IConfigKvType) => item.spec.key === operationConfig.value?.spec.key);
+    if (replaceConfig) {
+      // 非删除操作
+      // 证书获取最新的过期时间
+      if (replaceConfig.spec.secret_type === 'certificate' && replaceConfig.spec.certificate_expiration_date) {
+        replaceConfig.spec.certificate_info = getCertificateInfo(replaceConfig.spec.certificate_expiration_date);
+      }
+
+      // 内容替换
+      configList.value.splice(operationConfigIndex.value, 1, replaceConfig!);
+
+      // 恢复需要替换已存在配置项
+      if (oldConfigIndex.value !== -1) {
+        configList.value.splice(oldConfigIndex.value, 1);
+        oldConfigIndex.value = -1;
+      }
+    } else {
+      // 删除操作
+      configList.value.splice(operationConfigIndex.value, 1);
+      if (configList.value.length === 0 && pagination.value.current > 1) {
+        refresh();
+      }
+    }
+    allExistConfigCount.value = res.exclusion_count;
+    allDeleteConfigCount.value = res.count - res.exclusion_count;
     configStore.$patch((state) => {
       state.allConfigCount = res.count;
       state.allExistConfigCount = res.exclusion_count;
+      state.hasExpiredCert = res.is_cert_expired;
+      state.refreshHasExpiredCertFlag = true;
     });
+    selecTableDataCount.value = Number(res.count);
+    pagination.value.count = res.count;
   };
 
   // 批量删除配置项后刷新配置项列表

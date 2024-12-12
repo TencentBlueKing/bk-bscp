@@ -381,9 +381,6 @@ func (dao *configItemDao) GetUniqueKeys(kit *kit.Kit, bizID, appID uint32) ([]ty
 
 // ListAllByAppID list all configItem by appID
 func (dao *configItemDao) ListAllByAppID(kit *kit.Kit, appID uint32, bizID uint32) ([]*table.ConfigItem, error) {
-	if appID == 0 {
-		return nil, errf.New(errf.InvalidParameter, "appID can not be 0")
-	}
 	if bizID == 0 {
 		return nil, errf.New(errf.InvalidParameter, "bizID can not be 0")
 	}

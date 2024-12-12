@@ -9,6 +9,7 @@
     :input-search="false"
     :clearable="false"
     :loading="loading"
+    :multiple="props.templateName === 'python'"
     :search-placeholder="basicInfo?.serviceType.value === 'file' ? $t('配置文件名') : $t('配置项名称')"
     :no-data-text="$t('暂无可用配置')"
     :no-match-text="$t('搜索结果为空')"
@@ -23,6 +24,10 @@
       </div>
     </template>
     <!-- 非模板配置和套餐合并后的数据（configList），配置项名称（文件名）可能一样，这里添加/index做唯一区分，后续使用删除/index -->
+    <bk-option
+      v-if="props.templateName === 'python' && configList.length > 0"
+      value="*"
+      :label="$t('全部配置项')"></bk-option>
     <bk-option
       v-for="(item, index) in configList"
       :key="item.id + index"
@@ -41,7 +46,13 @@
   import { getConfigList, getBoundTemplates, getKvList } from '../../../../../api/config';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
   import { IConfigItem, IBoundTemplateGroup, IConfigKvType } from '../../../../../../types/config';
+  import { useI18n } from 'vue-i18n';
 
+  const props = defineProps<{
+    templateName: string;
+  }>();
+
+  const { t } = useI18n();
   const emits = defineEmits(['select-config']);
 
   const route = useRoute();
@@ -50,13 +61,21 @@
 
   const loading = ref(false);
   const isError = ref(false);
-  const configName = ref('');
+  const configName = ref<string | string[]>();
   const bizId = ref(String(route.params.spaceId));
   const appId = ref(route.params.appId);
   const configList = ref<{ id: number; config: string }[]>([]);
 
   // 选中的配置项（文件名）原始名称
-  const originalConfigName = computed(() => configName.value.replace(/\/[^\\/]*$/, ''));
+  const originalConfigName = computed(() => {
+    if (Array.isArray(configName.value)) {
+      if (configName.value.includes('*')) {
+        return t('全部配置项');
+      }
+      return configName.value.map((item) => item.split('/')[0]).join(',');
+    }
+    return String(configName.value).replace(/\/[^\\/]*$/, '');
+  });
 
   onMounted(async () => {
     await loadConfigList();
@@ -106,6 +125,10 @@
             config: item.spec.key,
           };
         });
+        if (props.templateName === 'python' && configList.value.length > 0) {
+          configName.value = ['*'];
+          handleConfigChange(configName.value);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -115,8 +138,26 @@
   };
 
   // 下拉列表操作
-  const handleConfigChange = async () => {
-    emits('select-config', originalConfigName);
+  const handleConfigChange = async (val: string | string[]) => {
+    configName.value = val;
+    let selectConfig;
+    if (Array.isArray(configName.value)) {
+      if (val.length === 0) {
+        configName.value = '';
+      }
+      if (configName.value[configName.value.length - 1] === '*') {
+        configName.value = ['*'];
+        selectConfig = '*';
+      } else if (configName.value.length > 1 && configName.value[0] === '*') {
+        configName.value = configName.value.slice(1);
+        selectConfig = originalConfigName.value;
+      } else {
+        selectConfig = originalConfigName.value;
+      }
+    } else {
+      selectConfig = originalConfigName.value;
+    }
+    emits('select-config', selectConfig);
     validateConfig();
   };
 
@@ -158,11 +199,11 @@
       border-radius: 2px;
       transition: all 0.3s;
       background: #ffffff;
-      font-size: 14px;
+      font-size: 12px;
       border: 1px solid #c4c6cc;
       .config-name {
         max-width: 480px;
-        color: #313238;
+        color: #63656e;
       }
       .empty {
         font-size: 12px;

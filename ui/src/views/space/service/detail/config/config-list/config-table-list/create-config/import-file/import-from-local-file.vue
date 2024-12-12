@@ -217,11 +217,11 @@
         item.user = 'root';
         item.user_group = 'root';
         item.file_name = option.file.name;
-        item.charset = 'UTF-8';
+        // item.charset = 'UTF-8';
       });
       res.exist.forEach((item: IConfigImportItem) => {
         item.file_name = option.file.name;
-        item.charset = item.charset || 'UTF-8';
+        // item.charset = item.charset || 'UTF-8';
       });
       emits('change', res.exist, res.non_exist);
     } catch (e: any) {

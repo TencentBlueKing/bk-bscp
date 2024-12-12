@@ -43,12 +43,12 @@
     v-model:show="isBatchImportKvDialogOpen"
     :bk-biz-id="props.bkBizId"
     :app-id="props.appId"
-    @confirm="emits('created')" />
+    @confirm="emits('imported')" />
   <BatchImportFile
     v-model:show="isBatchImportDialogOpen"
     :bk-biz-id="props.bkBizId"
     :app-id="props.appId"
-    @confirm="emits('created')" />
+    @confirm="emits('imported')" />
 </template>
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue';
@@ -74,7 +74,7 @@
     appId: number;
   }>();
 
-  const emits = defineEmits(['created']);
+  const emits = defineEmits(['created', 'imported']);
 
   const buttonRef = ref();
   const isPopoverOpen = ref(false);

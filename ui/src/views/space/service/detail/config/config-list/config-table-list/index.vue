@@ -17,7 +17,11 @@
     <div class="operate-area">
       <div class="operate-btns">
         <template v-if="versionData.status.publish_status === 'editing'">
-          <CreateConfig :bk-biz-id="props.bkBizId" :app-id="props.appId" @created="refreshConfigList(true)" />
+          <CreateConfig
+            :bk-biz-id="props.bkBizId"
+            :app-id="props.appId"
+            @created="refreshConfigList(true)"
+            @imported="handleImported" />
           <CountTips
             :max="spaceFeatureFlags.RESOURCE_LIMIT.AppConfigCnt"
             :current="allExistConfigCount"
@@ -133,6 +137,13 @@
     } else {
       tableRef.value.refresh(1, false, createConfig);
     }
+  };
+
+  const handleImported = () => {
+    if (isFileType.value) {
+      tableRef.value.refreshBindingId();
+    }
+    refreshConfigList(true);
   };
 
   const refreshVariable = () => {

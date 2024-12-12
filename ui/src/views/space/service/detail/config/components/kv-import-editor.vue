@@ -70,6 +70,7 @@
           :model-value="editorContent"
           :error-line="errorLine"
           :language="format"
+          :file-editor="false"
           @enter="separatorShow = true"
           @paste="handlePaste"
           @update:model-value="handleContentChange" />
@@ -91,6 +92,7 @@
   import { IConfigKvItem } from '../../../../../../../types/config';
   import { importKvFormText, importKvFormJson, importKvFormYaml } from '../../../../../../api/config';
   import useServiceStore from '../../../../../../store/service';
+  import yaml from 'js-yaml';
 
   interface errorLineItem {
     lineNumber: number;
@@ -136,7 +138,12 @@
       if (props.format === 'text') {
         handleValidateEditor();
       } else {
-        nextTick(() => emits('hasError', !codeEditorRef.value.validate(val)));
+        if (props.format === 'json') {
+          handleValidateJson();
+        } else {
+          handleValidateYaml();
+        }
+        nextTick(() => emits('hasError', errorLine.value.length || !codeEditorRef.value.validate(val)));
       }
     },
     { immediate: true },
@@ -247,6 +254,43 @@
     });
     emits('hasError', textContent.value && errorLine.value.length > 0);
     return hasSeparatorError;
+  };
+
+  const handleValidateJson = () => {
+    const jsonObject = JSON.parse(jsonContent.value);
+    const keys = Object.keys(jsonObject).filter((key) => jsonObject[key].value === '不可见敏感信息无法导出');
+    const lines = jsonContent.value.split('\n');
+    errorLine.value = [];
+    lines.forEach((line, index) => {
+      const match = line.match(/"value":\s*"(不可见敏感信息无法导出)"/);
+      if (match) {
+        errorLine.value.push({
+          errorInfo: t('请先填写配置项 {n} 的值，然后再尝试导入', { n: keys[errorLine.value.length] }),
+          lineNumber: index + 1,
+        });
+      }
+    });
+  };
+
+  const handleValidateYaml = () => {
+    try {
+      const yamlObject = yaml.load(yamlContent.value);
+      const keys = Object.keys(yamlObject).filter((key) => yamlObject[key].value === '不可见敏感信息无法导出');
+      const lines = yamlContent.value.split('\n');
+      errorLine.value = [];
+      lines.forEach((line, index) => {
+        const match = line.match(/value:\s*不可见敏感信息无法导出/);
+        console.log(match);
+        if (match) {
+          errorLine.value.push({
+            errorInfo: t('请先填写配置项 {n} 的值，然后再尝试导入', { n: keys[errorLine.value.length] }),
+            lineNumber: index + 1,
+          });
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // 导入kv

@@ -545,10 +545,20 @@
             "fuzzy": true
         },
         {
-            "id": "please set a password",
-            "message": "please set a password",
-            "translation": "please set a password",
+            "id": "please fill in the value of configuration item {Key} first",
+            "message": "please fill in the value of configuration item {Key} first",
+            "translation": "please fill in the value of configuration item {Key} first",
             "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ],
             "fuzzy": true
         },
         {
@@ -3203,6 +3213,23 @@
                     "id": "FileMode",
                     "string": "%[1]s",
                     "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileMode",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "f"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported file charset: {FileCharset}",
+            "message": "unsupported file charset: {FileCharset}",
+            "translation": "unsupported file charset: {FileCharset}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "FileCharset",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.FileCharset",
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"

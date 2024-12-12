@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"time"
 
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
@@ -112,7 +113,15 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 
 	switch app.Spec.ConfigType {
 	case table.File:
-
+		conflictNums, _, err := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
+			req.Attachment.AppId, []string{})
+		if err != nil {
+			return nil, err
+		}
+		if conflictNums > 0 {
+			logs.Errorf("create release failed there is a file conflict, err: %v, rid: %s", err, grpcKit.Rid)
+			return nil, errors.New(i18n.T(grpcKit, "create release failed there is a file conflict"))
+		}
 		// Note: need to change batch operator to query config item and its commit.
 		// get app's all config items.
 		cis, fErr := s.getAppConfigItems(grpcKit)
@@ -142,6 +151,14 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 			return nil, err
 		}
 	case table.KV:
+		expirationNumber, err := s.checkForExpiredCertificates(grpcKit, req.Attachment.BizId, req.Attachment.AppId)
+		if err != nil {
+			return nil, err
+		}
+		if expirationNumber > 0 {
+			return nil, errors.New(i18n.T(grpcKit, "create release failed there is a certificate expiration exists"))
+		}
+
 		if err = s.doKvOperations(grpcKit, tx, req.Attachment.AppId, req.Attachment.BizId, release.ID); err != nil {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
@@ -1016,4 +1033,78 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbds.CheckReleaseNa
 	return &pbds.CheckReleaseNameResp{
 		Exist: exist,
 	}, nil
+}
+
+// 检测非模板配置和模板配置文件是否存在冲突
+// 生成版本的前置检测条件
+func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
+	comparisonFiles []string) (uint32, map[string]bool, error) {
+	var (
+		conflictNums  uint32
+		conflictPaths map[string]bool
+	)
+
+	if len(comparisonFiles) == 0 {
+		// 1. 查询非模板
+		details, err := s.dao.ConfigItem().ListAllByAppID(kit, appID, bizID)
+		if err != nil {
+			logs.Errorf("list editing config items failed, err: %v, rid: %s", err, kit.Rid)
+			return conflictNums, conflictPaths, err
+		}
+
+		for _, v := range details {
+			comparisonFiles = append(comparisonFiles, path.Join(v.Spec.Path, v.Spec.Name))
+		}
+	}
+
+	// 2. 获取服务关联的套餐
+	binding, err := s.dao.AppTemplateBinding().GetAppTemplateBindingByAppID(kit, bizID, appID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+			i18n.T(kit, "get the package associated with the app failed, err: %v"), err)
+	}
+	// 未绑定
+	if binding == nil {
+		return conflictNums, conflictPaths, nil
+	}
+	// 存在记录，但没有绑定模板
+	if len(binding.Spec.TemplateIDs) == 0 {
+		return conflictNums, conflictPaths, nil
+	}
+
+	// 套餐和套餐之间也会存在冲突
+	for _, v := range binding.Spec.Bindings {
+		templateIDs := []uint32{}
+		for _, v := range v.TemplateRevisions {
+			templateIDs = append(templateIDs, v.TemplateID)
+		}
+		// 如有绑定，根据绑定的模板ID查询模板文件
+		templates, err := s.dao.Template().ListByIDs(kit, templateIDs)
+		if err != nil {
+			return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+				i18n.T(kit, "get template file failed, err: %v"), err)
+		}
+		// 把模板文件加入需要对比的切片中
+		for _, v := range templates {
+			comparisonFiles = append(comparisonFiles, path.Join(v.Spec.Path, v.Spec.Name))
+		}
+	}
+
+	// 检测文件路径冲突
+	conflictNums, conflictPaths = tools.CheckExistingPathConflict(comparisonFiles)
+
+	return conflictNums, conflictPaths, nil
+}
+
+// 检测是否存在过期证书
+// 生成版本的前置检测条件
+func (s Service) checkForExpiredCertificates(kit *kit.Kit, bizID, appID uint32) (int64, error) {
+	// 0 代表过期
+	_, expirationNumber, err := s.dao.Kv().FindNearExpiryCertKvs(kit, bizID, appID, 0, &types.BasePage{All: true})
+	if err != nil {
+		return expirationNumber, errf.Errorf(errf.DBOpFailed,
+			i18n.T(kit, "get a list of expired certificates failed, err: %v"), err)
+	}
+
+	return expirationNumber, nil
 }

@@ -71,6 +71,7 @@
       folding?: boolean;
       alwaysConsumeMouseWheel?: boolean;
       contextmenu?: boolean;
+      fileEditor?: boolean;
     }>(),
     {
       variables: () => [],
@@ -86,6 +87,7 @@
       folding: true,
       alwaysConsumeMouseWheel: true,
       contextmenu: true,
+      fileEditor: true,
     },
   );
 
@@ -176,8 +178,10 @@
   });
 
   onMounted(() => {
-    handleVariableList();
-    autoCompletion();
+    if (props.fileEditor) {
+      handleVariableList();
+      autoCompletion();
+    }
     if (!editor) {
       registerLanguage();
       editor = monaco.editor.create(codeEditorRef.value as HTMLElement, {
@@ -201,6 +205,7 @@
           alwaysConsumeMouseWheel: props.alwaysConsumeMouseWheel,
         },
         renderLineHighlight: props.renderLineHighlight,
+        // @ts-ignore
         renderIndentGuides: props.renderIndentGuides,
         folding: props.folding,
         contextmenu: props.contextmenu,

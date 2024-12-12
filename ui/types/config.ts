@@ -234,7 +234,7 @@ export interface IConfigKvItem {
   memo: string;
   secret_hidden: boolean;
   secret_type: string;
-  certificate_expiration_date: string;
+  certificate_expiration_date?: string;
   is_exist?: boolean;
   certificate_info?: {
     tooltips: string;

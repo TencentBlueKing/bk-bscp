@@ -177,11 +177,10 @@
       border-radius: 2px;
       transition: all 0.3s;
       background: #ffffff;
-      font-size: 14px;
+      font-size: 12px;
       border: 1px solid #c4c6cc;
       .app-name {
         max-width: 220px;
-        color: #313238;
       }
       .no-app {
         font-size: 12px;
