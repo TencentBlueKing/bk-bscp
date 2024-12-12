@@ -31,6 +31,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
+var (
+	// ErrRecordNotFound alias gorm ErrRecordNotFound.
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
+
 // Set defines all the DAO to be operated.
 type Set interface {
 	GenQuery() *gen.Query

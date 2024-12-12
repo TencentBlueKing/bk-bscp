@@ -158,7 +158,8 @@ func (t *curlLogTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	if err != nil {
 		klog.Infof("[%s] RESP: [err] %s", rid, err)
 	} else {
-		klog.Infof("[%s] RESP: %s", rid, respToCurl(resp, st))
+		// klog.Infof("[%s] RESP: %s", rid, respToCurl(resp, st))
+		fmt.Println("leijioamin", st)
 	}
 
 	return resp, err

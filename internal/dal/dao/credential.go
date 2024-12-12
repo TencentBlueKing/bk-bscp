@@ -106,7 +106,7 @@ func (dao *credentialDao) GetByCredentialString(kit *kit.Kit, bizID uint32, str 
 
 	credential, err := q.Where(m.BizID.Eq(bizID), m.EncCredential.Eq(encrypted)).Take()
 	if err != nil {
-		return nil, fmt.Errorf("get credential failed, err: %v", err)
+		return nil, fmt.Errorf("get credential failed, err: %w", err)
 	}
 
 	return credential, nil

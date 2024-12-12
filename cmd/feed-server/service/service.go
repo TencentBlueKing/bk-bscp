@@ -179,7 +179,7 @@ func (s *Service) ListenAndGwServerRest() error {
 	if e := dualStackListener.AddListenerWithAddr(addr); e != nil {
 		return e
 	}
-	logs.Infof("http server listen address: %s", addr)
+	logs.Infof("gw http server listen address: %s", addr)
 
 	for _, ip := range network.BindIPs {
 		if ip == network.BindIP {
@@ -189,7 +189,7 @@ func (s *Service) ListenAndGwServerRest() error {
 		if e := dualStackListener.AddListenerWithAddr(ipAddr); e != nil {
 			return e
 		}
-		logs.Infof("http server listen address: %s", ipAddr)
+		logs.Infof("gw http server listen address: %s", ipAddr)
 	}
 
 	server := &http.Server{Handler: s.handlerGw()}
