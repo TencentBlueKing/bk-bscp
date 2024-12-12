@@ -610,7 +610,7 @@ export default {
   '敏感数据不可见，无法查看实际内容': 'Sensitive data is not visible and cannot view the actual content',
   '普通文本格式：': 'Normal text format：',
   'key 数据类型 value 描述（可选）': 'key data_type value description (optional)',
-  '敏感文本格式：': 'Sensitive text format：',
+  '敏感文本格式 （暂只支持password、secret_key、token三种凭证类型）：': 'Sensitive text format (currently only supports three credential types: password, secret_key, token):',
   'key 数据类型 凭证类型 value 是否可见 描述（可选）': 'key data_type credential_type value visibility description (optional)',
   '密码示例：': 'Password example：',
   'API密钥示例：': 'API key example：',
