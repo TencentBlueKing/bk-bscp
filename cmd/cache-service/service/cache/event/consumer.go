@@ -521,6 +521,7 @@ func (c *consumer) refreshCredentialCache(kt *kit.Kit, events []*table.Event) er
 	for _, event := range events {
 		cred, err := c.op.Credential().GetByCredentialString(kt, event.Attachment.BizID, event.Spec.ResourceUid)
 		if err != nil {
+			// 已经删除的忽略
 			if errors.Is(err, dao.ErrRecordNotFound) {
 				return nil
 			}
@@ -528,6 +529,7 @@ func (c *consumer) refreshCredentialCache(kt *kit.Kit, events []*table.Event) er
 		}
 		details, _, err := c.op.CredentialScope().Get(kt, cred.ID, cred.Attachment.BizID)
 		if err != nil {
+			// 已经删除的忽略
 			if errors.Is(err, dao.ErrRecordNotFound) {
 				return nil
 			}
