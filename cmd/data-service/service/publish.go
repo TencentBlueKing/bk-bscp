@@ -153,7 +153,7 @@ func (s *Service) SubmitPublishApprove(
 		AppId:            app.AppID(),
 		StrategyId:       pshID,
 		IsCompare:        req.IsCompare,
-		Detail:           strings.Join(groupName, constant.NameSeparator),
+		Detail:           req.Memo,
 	}).PreparePublish(strategy)
 	if err = ad.Do(tx.Query); err != nil {
 		return nil, err

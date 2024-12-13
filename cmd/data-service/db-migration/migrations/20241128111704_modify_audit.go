@@ -13,6 +13,8 @@
 package migrations
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
@@ -42,6 +44,15 @@ func mig20241128111704Up(tx *gorm.DB) error {
 		}
 	}
 
+	// 数据更新适应新版本
+	err := tx.Exec("UPDATE audits SET res_type=\"release\", action=\"publish\", " +
+		"res_instance=REPLACE(res_instance,\"releases_name\",\"config_release_name\"), " +
+		"res_instance=REPLACE(res_instance,\"group\",\"config_release_scope\") WHERE " +
+		"action=\"publish_release_config\" and res_type=\"app_config\";").Error
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -56,6 +67,17 @@ func mig20241128111704Down(tx *gorm.DB) error {
 		if err := tx.Migrator().AlterColumn(&Audits{}, "detail"); err != nil {
 			return err
 		}
+	}
+
+	// 回退数据更新适应旧版本
+	err := tx.Exec("UPDATE audits SET res_type=\"app_config\", action=\"publish_release_config\", " +
+		"res_instance=REPLACE(res_instance,\"config_release_name\",\"releases_name\"), " +
+		"res_instance=REPLACE(res_instance,\"config_release_scope\",\"group\") WHERE " +
+		"action=\"publish\" and res_type=\"release\";").Error
+
+	if err != nil {
+		fmt.Println("audits exec sql fail: ", err)
+		return err
 	}
 
 	return nil
