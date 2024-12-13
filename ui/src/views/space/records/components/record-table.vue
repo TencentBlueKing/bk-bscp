@@ -10,17 +10,17 @@
           :data="tableData"
           @column-sort="handleSort"
           @column-filter="handleFilter">
-          <bk-table-column :label="t('操作时间')" min-width="155" :sort="true">
+          <bk-table-column :label="t('操作时间')" width="155" :sort="true">
             <template #default="{ row }">
               {{ convertTime(row.audit?.revision.created_at, 'local') }}
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('所属服务')" min-width="190">
+          <bk-table-column :label="t('所属服务')" width="180">
             <template #default="{ row }"> {{ row.app?.name || '--' }} </template>
           </bk-table-column>
           <bk-table-column
             :label="t('资源类型')"
-            :min-width="locale === 'zh-cn' ? '96' : '160'"
+            :width="locale === 'zh-cn' ? '96' : '160'"
             :filter="{
               filterFn: () => true,
               list: resTypeFilterList,
@@ -32,7 +32,7 @@
           </bk-table-column>
           <bk-table-column
             :label="t('操作行为')"
-            :min-width="locale === 'zh-cn' ? '114' : '240'"
+            :width="locale === 'zh-cn' ? '114' : '240'"
             :filter="{
               filterFn: () => true,
               list: actionFilterList,
@@ -52,7 +52,7 @@
               <!-- <div>{{ row.audit?.spec.res_instance || '--' }}</div> -->
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('操作人')" min-width="140">
+          <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
               {{ row.audit?.spec.operator || '--' }}
             </template>
@@ -454,26 +454,40 @@
 
   // 资源示例映射
   const convertInstance = (data: string) => {
-    if (data.length) {
-      let resultList = data.split('\n');
-      // 提取操作对象的个数
-      const operateCountMatch = resultList[0].match(/operate_objects: (\d+)/);
-      const operateCount = operateCountMatch ? operateCountMatch[1] : null;
-      if (operateCount) {
-        resultList.shift();
-      }
-      resultList = resultList.map((result) => {
-        const resultSplit = result.split(':');
-        resultSplit[0] = INSTANCE[resultSplit[0] as keyof typeof INSTANCE];
-        return resultSplit.join(':');
-      });
-      let result = resultList.join('<br />');
+    if (!data.length) return '';
 
-      if (operateCount) {
-        result = t('对{n}等 {m} 个对象进行操作', { n: result, m: operateCount });
+    let resultList = data.split('\n');
+    let operateCount: string | null = null;
+    let operateIndex: number | null = null;
+
+    // 提取操作对象的个数及其索引
+    resultList.forEach((result, index) => {
+      const match = result.match(/operate_objects: (\d+)/);
+      if (match) {
+        operateCount = match[1];
+        operateIndex = index;
       }
-      return result;
+    });
+
+    if (operateIndex !== null && operateCount) {
+      resultList.splice(operateIndex, 1);
     }
+
+    resultList = resultList.map((result) => {
+      const [key, ...rest] = result.split(':');
+      const mappedKey = INSTANCE[key as keyof typeof INSTANCE] || key;
+      return [mappedKey, ...rest].join(':');
+    });
+
+    if (operateCount && operateIndex !== null) {
+      const operationDescription = t('对{n}等 {m} 个对象进行操作', {
+        n: resultList[operateIndex],
+        m: operateCount,
+      });
+      resultList.splice(operateIndex, 1, operationDescription);
+    }
+
+    return resultList.join('<br />');
   };
 
   // 状态提示信息
