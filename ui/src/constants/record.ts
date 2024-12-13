@@ -3,7 +3,7 @@ import { localT } from '../i18n';
 // 资源类型
 export const RECORD_RES_TYPE = {
   app: localT('服务'), // 2024.9 第一版只有这个字段
-  config_item: localT('配置'),
+  config: localT('配置'),
   hook: localT('脚本'),
   variable: localT('变量'),
   release: localT('版本'),
