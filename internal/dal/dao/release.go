@@ -18,8 +18,10 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/sharding"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -89,7 +91,12 @@ func (dao *releaseDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Rele
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigReleaseName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.Attachment.AppID,
+	}).PrepareCreate(g)
 	if err := ad.Do(tx.Query); err != nil {
 		return 0, err
 	}
@@ -181,17 +188,59 @@ func (dao *releaseDao) validateAttachmentResExist(kit *kit.Kit, am *table.Releas
 
 func (dao *releaseDao) UpdateDeprecated(kit *kit.Kit, bizID, appID, releaseID uint32, deprecated bool) error {
 	m := dao.genQ.Release
-	_, err := m.WithContext(kit.Ctx).
-		Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).
-		Update(m.Deprecated, deprecated)
+	release, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).Take()
+	if err != nil {
+		return err
+	}
+
+	resInstance := fmt.Sprintf(constant.RestoreConfigReleaseName, release.Spec.Name)
+	if deprecated {
+		resInstance = fmt.Sprintf(constant.ObsoleteConfigReleaseName, release.Spec.Name)
+	}
+
+	ad := dao.auditDao.Decorator(kit, bizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		Detail:           release.Spec.Memo,
+		AppId:            appID,
+	}).PrepareUpdate(release)
+	updateTx := func(tx *gen.Query) error {
+		if _, err = tx.Release.WithContext(kit.Ctx).
+			Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).
+			Update(m.Deprecated, deprecated); err != nil {
+			return err
+		}
+
+		return ad.Do(tx)
+	}
+	if err = dao.genQ.Transaction(updateTx); err != nil {
+		return err
+	}
+
 	return err
 }
 
 // DeleteWithTx delete release with tx.
 func (dao *releaseDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, releaseID uint32) error {
 	m := tx.Release
-	_, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).Delete()
-	return err
+
+	release, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).Take()
+	if err != nil {
+		return err
+	}
+
+	_, err = m.WithContext(kit.Ctx).Where(m.ID.Eq(releaseID), m.AppID.Eq(appID), m.BizID.Eq(bizID)).Delete()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, bizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.DeleteConfigReleaseName, release.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           release.Spec.Memo,
+		AppId:            appID,
+	}).PrepareDelete(release)
+	return ad.Do(tx.Query)
 }
 
 // ListReleaseStrategies list release strategie the latest three pieces of data published

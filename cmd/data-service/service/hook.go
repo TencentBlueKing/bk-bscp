@@ -19,16 +19,18 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbhook "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/hook"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateHook create hook.
@@ -86,6 +88,20 @@ func (s *Service) CreateHook(ctx context.Context, req *pbds.CreateHookReq) (*pbd
 	_, err = s.dao.HookRevision().CreateWithTx(kt, tx, revision)
 	if err != nil {
 		logs.Errorf("create hook revision failed, err: %v, rid: %s", err, kt.Rid)
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
+		return nil, err
+	}
+
+	err = s.dao.AuditDao().Decorator(kt, req.Attachment.BizId, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName+constant.ResSeparator+constant.HookRevisionName,
+			hook.Spec.Name, revision.Spec.Name),
+		Status: enumor.Success,
+		Detail: revision.Spec.Memo,
+	}).PrepareCreate(revision).Do(tx.Query)
+	if err != nil {
+		logs.Errorf("PrepareCreate HookRevision failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
 		}

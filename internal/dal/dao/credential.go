@@ -18,9 +18,11 @@ import (
 
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -168,7 +170,11 @@ func (dao *credentialDao) Create(kit *kit.Kit, g *table.Credential) (uint32, err
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.CredentialName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {
@@ -263,7 +269,11 @@ func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id 
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, bizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, bizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.CredentialName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 
 	if _, e := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Delete(); e != nil {
 		return e
@@ -328,7 +338,16 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 		Revision:   &table.CreatedRevision{Creator: kit.User},
 	}
 	eDecorator := dao.event.Eventf(kit)
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+	resInstance := fmt.Sprintf(constant.CredentialEnableName, g.Spec.Name)
+	// 禁用秘钥
+	if !g.Spec.Enable {
+		resInstance = fmt.Sprintf(constant.CredentialUnableName, g.Spec.Name)
+	}
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
