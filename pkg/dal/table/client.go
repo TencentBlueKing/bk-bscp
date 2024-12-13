@@ -16,6 +16,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 )
 
 // Client is a client
@@ -81,7 +83,7 @@ func (c *Client) ResID() uint32 {
 
 // ResType AuditRes interface
 func (c *Client) ResType() string {
-	return "client"
+	return string(enumor.Instance)
 }
 
 // ValidateCreate validate app's info when created.

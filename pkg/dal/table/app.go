@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -53,7 +54,7 @@ func (a *App) ResID() uint32 {
 
 // ResType AuditRes interface
 func (a *App) ResType() string {
-	return "app"
+	return string(enumor.App)
 }
 
 // ValidateCreate validate app's info when created.

@@ -99,15 +99,9 @@ func (dao *commitDao) Create(kit *kit.Kit, commit *table.Commit) (uint32, error)
 
 	commit.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, commit.Attachment.BizID).PrepareCreate(commit)
-
 	createTx := func(tx *gen.Query) error {
 		q := tx.Commit.WithContext(kit.Ctx)
 		if err = q.Create(commit); err != nil {
-			return err
-		}
-
-		if err = ad.Do(tx); err != nil {
 			return err
 		}
 
@@ -141,11 +135,6 @@ func (dao *commitDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, commit *table.
 	commit.ID = id
 	if err := tx.Query.Commit.WithContext(kit.Ctx).Create(commit); err != nil {
 		return 0, err
-	}
-
-	ad := dao.auditDao.DecoratorV2(kit, commit.Attachment.BizID).PrepareCreate(commit)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, fmt.Errorf("audit create commit failed, err: %v", err)
 	}
 
 	return id, nil

@@ -193,6 +193,9 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 	var oldTmplSets []*table.TemplateSet
 	oldTmplSets, err = s.dao.TemplateSet().ListByIDs(kt, []uint32{req.Id})
 	if err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
 		logs.Errorf("list template sets by ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -201,6 +204,9 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 		atbs, err = s.dao.TemplateBindingRelation().
 			ListTemplateSetsBoundATBs(kt, req.Attachment.BizId, []uint32{req.Id})
 		if err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
 			logs.Errorf("list template set bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
@@ -274,6 +280,9 @@ func (s *Service) DeleteTemplateSet(ctx context.Context, req *pbds.DeleteTemplat
 		atbs, err = s.dao.TemplateBindingRelation().
 			ListTemplateSetsBoundATBs(kt, req.Attachment.BizId, []uint32{req.Id})
 		if err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
 			logs.Errorf("list template set bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}

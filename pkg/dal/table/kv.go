@@ -22,6 +22,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
@@ -72,7 +73,7 @@ func (k *Kv) ResID() uint32 {
 
 // ResType KvRes interface
 func (k *Kv) ResType() string {
-	return "kv"
+	return string(enumor.Config)
 }
 
 // ValidateCreate validate kv is valid or not when create it.

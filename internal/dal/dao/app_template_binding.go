@@ -15,12 +15,15 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -31,7 +34,7 @@ type AppTemplateBinding interface {
 	// CreateWithTx create one app template binding instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, atb *table.AppTemplateBinding) (uint32, error)
 	// Update one app template binding's info.
-	Update(kit *kit.Kit, atb *table.AppTemplateBinding) error
+	Update(kit *kit.Kit, atb *table.AppTemplateBinding, removeTemplateSetId uint32) error
 	// UpdateWithTx Update one app template binding's info with transaction.
 	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, atb *table.AppTemplateBinding) error
 	// BatchUpdateWithTx batch update app template binding's instances with transaction.
@@ -124,22 +127,60 @@ func (dao *appTemplateBindingDao) ListAppTemplateBindingByAppIds(kit *kit.Kit, b
 
 // UpsertWithTx create or update one template variable instance with transaction.
 func (dao *appTemplateBindingDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, atb *table.AppTemplateBinding) error {
-	m := dao.genQ.AppTemplateBinding
+	m := tx.AppTemplateBinding
 	q := tx.AppTemplateBinding.WithContext(kit.Ctx)
+
+	tSet := tx.TemplateSet
+	tSpace := tx.TemplateSpace
+	tssn := []types.TemplateSetSpaceName{}
+
+	// 查询空间名称及套餐名称
+	err := tSet.WithContext(kit.Ctx).Select(tSet.Name.As("template_set_name"), tSpace.Name.As("template_space_name")).
+		Join(tSpace.WithContext(kit.Ctx), tSpace.ID.EqCol(tSet.TemplateSpaceID)).
+		Where(tSet.ID.In(atb.Spec.TemplateSetIDs...)).Scan(&tssn)
+	if err != nil {
+		return err
+	}
+
+	var templateSpaceNames []string
+	templateSpaceNamesM := make(map[string]struct{})
+	var templateSetNames []string
+	for _, v := range tssn {
+		// 去重
+		if _, ok := templateSpaceNamesM[v.TemplateSpaceName]; !ok {
+			templateSpaceNames = append(templateSpaceNames, v.TemplateSpaceName)
+			templateSpaceNamesM[v.TemplateSpaceName] = struct{}{}
+		}
+		templateSetNames = append(templateSetNames, v.TemplateSetName)
+	}
+
+	resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+		strings.Join(templateSpaceNames, constant.NameSeparator),
+		strings.Join(templateSetNames, constant.NameSeparator))
+
 	old, findErr := q.Where(m.BizID.Eq(atb.Attachment.BizID), m.AppID.Eq(atb.Attachment.AppID)).Take()
 
-	var ad AuditDo
 	// if old exists, update it.
 	if findErr == nil {
 		atb.ID = old.ID
-		if _, err := tx.AppTemplateBinding.WithContext(kit.Ctx).
+		if _, err = tx.AppTemplateBinding.WithContext(kit.Ctx).
 			Where(m.BizID.Eq(atb.Attachment.BizID), m.ID.Eq(atb.ID)).
 			Select(m.Bindings, m.TemplateSpaceIDs, m.TemplateSetIDs, m.TemplateIDs, m.TemplateRevisionIDs,
 				m.LatestTemplateIDs, m.Creator, m.Reviser, m.UpdatedAt).
 			Updates(atb); err != nil {
 			return err
 		}
-		ad = dao.auditDao.DecoratorV2(kit, atb.Attachment.BizID).PrepareUpdate(atb, old)
+
+		// audit
+		ad := dao.auditDao.Decorator(kit, atb.Attachment.BizID, &table.AuditField{
+			ResourceInstance: resInstance,
+			Status:           enumor.Success,
+			AppId:            atb.Attachment.AppID,
+		}).PrepareUpdate(&table.ConfigItem{ID: atb.ID})
+		if err = ad.Do(tx.Query); err != nil {
+			return err
+		}
+
 	} else if errors.Is(findErr, gorm.ErrRecordNotFound) {
 		// if old not exists, create it.
 		id, err := dao.idGen.One(kit, table.Name(atb.TableName()))
@@ -147,13 +188,21 @@ func (dao *appTemplateBindingDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, at
 			return err
 		}
 		atb.ID = id
-		if err := tx.AppTemplateBinding.WithContext(kit.Ctx).Create(atb); err != nil {
+		if err = tx.AppTemplateBinding.WithContext(kit.Ctx).Create(atb); err != nil {
 			return err
 		}
-		ad = dao.auditDao.DecoratorV2(kit, atb.Attachment.BizID).PrepareCreate(atb)
+		// audit
+		ad := dao.auditDao.Decorator(kit, atb.Attachment.BizID, &table.AuditField{
+			ResourceInstance: resInstance,
+			Status:           enumor.Success,
+			AppId:            atb.Attachment.AppID,
+		}).PrepareCreate(&table.AppTemplateBinding{ID: atb.ID})
+		if err = ad.Do(tx.Query); err != nil {
+			return err
+		}
 	}
 
-	return ad.Do(tx.Query)
+	return nil
 }
 
 // GetAppTemplateBindingByAppID 通过业务和服务ID获取模板绑定关系
@@ -187,7 +236,40 @@ func (dao *appTemplateBindingDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g 
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	tSet := tx.TemplateSet
+	tSpace := tx.TemplateSpace
+	tssn := []types.TemplateSetSpaceName{}
+
+	// 查询空间名称及套餐名称
+	err = tSet.WithContext(kit.Ctx).Select(tSet.Name.As("template_set_name"), tSpace.Name.As("template_space_name")).
+		Join(tSpace.WithContext(kit.Ctx), tSpace.ID.EqCol(tSet.TemplateSpaceID)).
+		Where(tSet.ID.In(g.Spec.TemplateSetIDs...)).Scan(&tssn)
+	if err != nil {
+		return 0, err
+	}
+
+	var templateSpaceNames []string
+	templateSpaceNamesM := make(map[string]struct{})
+	var templateSetNames []string
+	for _, v := range tssn {
+		// 去重
+		if _, ok := templateSpaceNamesM[v.TemplateSpaceName]; !ok {
+			templateSpaceNames = append(templateSpaceNames, v.TemplateSpaceName)
+			templateSpaceNamesM[v.TemplateSpaceName] = struct{}{}
+		}
+		templateSetNames = append(templateSetNames, v.TemplateSetName)
+	}
+
+	resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+		strings.Join(templateSpaceNames, constant.NameSeparator),
+		strings.Join(templateSetNames, constant.NameSeparator))
+	// audit
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		AppId:            g.Attachment.AppID,
+	}).PrepareCreate(&table.AppTemplateBinding{ID: g.ID})
+
 	if err = ad.Do(tx.Query); err != nil {
 		return 0, err
 	}
@@ -196,26 +278,50 @@ func (dao *appTemplateBindingDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g 
 }
 
 // Update one app template binding instance.
-func (dao *appTemplateBindingDao) Update(kit *kit.Kit, g *table.AppTemplateBinding) error {
+func (dao *appTemplateBindingDao) Update(kit *kit.Kit, g *table.AppTemplateBinding, removeTemplateSetId uint32) error {
 	if err := g.ValidateUpdate(); err != nil {
 		return err
 	}
 	if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
 		return err
 	}
+	// 删除操作，当前update接口是被当作删除使用，获取当前记录做审计
 
-	// 更新操作, 获取当前记录做审计
-	m := dao.genQ.AppTemplateBinding
-	q := dao.genQ.AppTemplateBinding.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+	tSet := dao.genQ.TemplateSet
+	tSpace := dao.genQ.TemplateSpace
+	tssn := []types.TemplateSetSpaceName{}
+
+	// 查询空间名称及套餐名称
+	err := tSet.WithContext(kit.Ctx).Select(tSet.Name.As("template_set_name"), tSpace.Name.As("template_space_name")).
+		Join(tSpace.WithContext(kit.Ctx), tSpace.ID.EqCol(tSet.TemplateSpaceID)).
+		Where(tSet.ID.In(removeTemplateSetId)).Scan(&tssn)
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+
+	var templateSpaceNames []string
+	var templateSetNames []string
+	for _, v := range tssn {
+		// 无需去重
+		templateSpaceNames = append(templateSpaceNames, v.TemplateSpaceName)
+		templateSetNames = append(templateSetNames, v.TemplateSetName)
+	}
+
+	resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+		strings.Join(templateSpaceNames, constant.NameSeparator),
+		strings.Join(templateSetNames, constant.NameSeparator))
+
+	// audit
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		AppId:            g.Attachment.AppID,
+	}).PrepareDelete(&table.AppTemplateBinding{ID: g.ID})
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
-		q = tx.AppTemplateBinding.WithContext(kit.Ctx)
+		m := tx.AppTemplateBinding
+		q := tx.AppTemplateBinding.WithContext(kit.Ctx)
 		if _, err = q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
 			Select(m.Bindings, m.TemplateSpaceIDs, m.TemplateSetIDs, m.TemplateIDs, m.TemplateRevisionIDs,
 				m.LatestTemplateIDs, m.Creator, m.Reviser, m.UpdatedAt).
@@ -228,7 +334,7 @@ func (dao *appTemplateBindingDao) Update(kit *kit.Kit, g *table.AppTemplateBindi
 		}
 		return nil
 	}
-	if err = dao.genQ.Transaction(updateTx); err != nil {
+	if err := dao.genQ.Transaction(updateTx); err != nil {
 		return err
 	}
 
@@ -248,20 +354,51 @@ func (dao *appTemplateBindingDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 	// 更新操作, 获取当前记录做审计
 	m := tx.AppTemplateBinding
 	q := tx.AppTemplateBinding.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
-	if err = ad.Do(tx.Query); err != nil {
-		return err
-	}
 
-	q = tx.AppTemplateBinding.WithContext(kit.Ctx)
-	if _, err = q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
+	if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
 		Select(m.Bindings, m.TemplateSpaceIDs, m.TemplateSetIDs, m.TemplateIDs, m.TemplateRevisionIDs,
 			m.LatestTemplateIDs, m.Creator, m.Reviser, m.UpdatedAt).
 		Updates(g); err != nil {
+		return err
+	}
+
+	// 更新操作, 获取当前记录做审计
+	tSet := dao.genQ.TemplateSet
+	tSpace := dao.genQ.TemplateSpace
+	tssn := []types.TemplateSetSpaceName{}
+
+	// 查询空间名称及套餐名称
+	err := tSet.WithContext(kit.Ctx).Select(tSet.Name.As("template_set_name"), tSpace.Name.As("template_space_name")).
+		Join(tSpace.WithContext(kit.Ctx), tSpace.ID.EqCol(tSet.TemplateSpaceID)).
+		Where(tSet.ID.In(g.Spec.TemplateSetIDs...)).Scan(&tssn)
+	if err != nil {
+		return err
+	}
+
+	var templateSpaceNames []string
+	templateSpaceNamesM := make(map[string]struct{})
+	var templateSetNames []string
+	for _, v := range tssn {
+		// 去重
+		if _, ok := templateSpaceNamesM[v.TemplateSpaceName]; !ok {
+			templateSpaceNames = append(templateSpaceNames, v.TemplateSpaceName)
+			templateSpaceNamesM[v.TemplateSpaceName] = struct{}{}
+		}
+		templateSetNames = append(templateSetNames, v.TemplateSetName)
+	}
+
+	resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+		strings.Join(templateSpaceNames, constant.NameSeparator),
+		strings.Join(templateSetNames, constant.NameSeparator))
+
+	// audit
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		AppId:            g.Attachment.AppID,
+	}).PrepareUpdate(&table.AppTemplateBinding{ID: g.ID})
+
+	if err = ad.Do(tx.Query); err != nil {
 		return err
 	}
 
@@ -300,11 +437,46 @@ func (dao *appTemplateBindingDao) Delete(kit *kit.Kit, g *table.AppTemplateBindi
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	// 更新操作, 获取当前记录做审计
+	tSet := dao.genQ.TemplateSet
+	tSpace := dao.genQ.TemplateSpace
+	tssn := []types.TemplateSetSpaceName{}
+
+	// 查询空间名称及套餐名称
+	err = tSet.WithContext(kit.Ctx).Select(tSet.Name.As("template_set_name"), tSpace.Name.As("template_space_name")).
+		Join(tSpace.WithContext(kit.Ctx), tSpace.ID.EqCol(tSet.TemplateSpaceID)).
+		Where(tSet.ID.In(oldOne.Spec.TemplateSetIDs...)).Scan(&tssn)
+	if err != nil {
+		return err
+	}
+
+	var templateSpaceNames []string
+	templateSpaceNamesM := make(map[string]struct{})
+	var templateSetNames []string
+	for _, v := range tssn {
+		// 去重
+		if _, ok := templateSpaceNamesM[v.TemplateSpaceName]; !ok {
+			templateSpaceNames = append(templateSpaceNames, v.TemplateSpaceName)
+			templateSpaceNamesM[v.TemplateSpaceName] = struct{}{}
+		}
+		templateSetNames = append(templateSetNames, v.TemplateSetName)
+	}
+
+	resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+		strings.Join(templateSpaceNames, constant.NameSeparator),
+		strings.Join(templateSetNames, constant.NameSeparator))
+
+	// audit
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: resInstance,
+		Status:           enumor.Success,
+		AppId:            oldOne.Attachment.AppID,
+	}).PrepareDelete(&table.AppTemplateBinding{ID: g.ID})
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
-		q = tx.AppTemplateBinding.WithContext(kit.Ctx)
+		m := tx.AppTemplateBinding
+		q := tx.AppTemplateBinding.WithContext(kit.Ctx)
 		if _, err = q.Where(m.BizID.Eq(g.Attachment.BizID)).Delete(g); err != nil {
 			return err
 		}
@@ -314,7 +486,7 @@ func (dao *appTemplateBindingDao) Delete(kit *kit.Kit, g *table.AppTemplateBindi
 		}
 		return nil
 	}
-	if err = dao.genQ.Transaction(deleteTx); err != nil {
+	if err := dao.genQ.Transaction(deleteTx); err != nil {
 		return err
 	}
 

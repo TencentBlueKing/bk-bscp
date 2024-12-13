@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
 )
 
@@ -46,7 +47,7 @@ func (t *AppTemplateBinding) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *AppTemplateBinding) ResType() string {
-	return "app_template_binding"
+	return string(enumor.Config)
 }
 
 // ValidateCreate validate AppTemplateBinding is valid or not when create it.
