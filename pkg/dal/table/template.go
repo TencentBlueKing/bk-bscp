@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -45,7 +46,7 @@ func (t *Template) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *Template) ResType() string {
-	return "template"
+	return string(enumor.Template)
 }
 
 // ValidateCreate validate template is valid or not when create it.

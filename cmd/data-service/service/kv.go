@@ -336,7 +336,15 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "list kv failed, err: %v", err))
 	}
 
+	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	defer func() {
+		if isRollback {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 	// 2. 检测服务配置项类型（相同的key类型是否一致）
 	if err = s.checkKVConfigItemTypes(kt, req, kvs); err != nil {
 		return nil, err
@@ -344,9 +352,6 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 
 	// 3. 清空草稿区域
 	if err = s.clearDraftKVStore(kt, tx, req, kvs); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -371,18 +376,12 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 	// 5. 创建或更新kv等操作
 	if len(toCreate) > 0 {
 		if err = s.dao.Kv().BatchCreateWithTx(kt, tx, toCreate); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", err))
 		}
 	}
 
 	if len(toUpdate) > 0 {
 		if err = s.dao.Kv().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", err))
 		}
 	}
@@ -391,6 +390,7 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", e))
 	}
+	isRollback = false
 
 	createIds, updateIds := []uint32{}, []uint32{}
 	for _, item := range toCreate {
@@ -618,6 +618,9 @@ func (s *Service) UnDeleteKv(ctx context.Context, req *pbds.UnDeleteKvReq) (*pbb
 
 	toUpdate, err := s.getLatestReleasedKV(kt, req.GetBizId(), req.GetAppId(), kv)
 	if err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
 		return nil, err
 	}
 

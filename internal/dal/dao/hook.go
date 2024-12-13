@@ -14,12 +14,15 @@ package dao
 
 import (
 	"errors"
+	"fmt"
 
 	"gorm.io/datatypes"
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	dtypes "github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
@@ -75,12 +78,12 @@ func (dao *hookDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) e
 	// 更新操作, 获取当前记录做审计
 	m := tx.Hook
 	q := tx.Hook.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Updates(g); err != nil {
 		return err
@@ -165,7 +168,11 @@ func (dao *hookDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) (
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
 
 	// 多个使用事务处理
 
@@ -324,7 +331,11 @@ func (dao *hookDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) e
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, oldOne.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 
 	_, err = q.Where(m.BizID.Eq(g.Attachment.BizID)).Delete(g)
 	if err != nil {
@@ -347,11 +358,12 @@ func (dao *hookDao) Update(kit *kit.Kit, g *table.Hook) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.Hook
 	q := dao.genQ.Hook.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
