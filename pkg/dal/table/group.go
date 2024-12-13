@@ -59,7 +59,7 @@ func (g Group) ResID() uint32 {
 
 // ResType AuditRes interface
 func (g Group) ResType() string {
-	return "app"
+	return string(enumor.Group)
 }
 
 // ValidateCreate validate group is valid or not when create it.

@@ -1200,6 +1200,9 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 		// 更新引用的服务
 		items, err := s.dao.AppTemplateBinding().ListAppTemplateBindingByAppIds(kt, req.GetBizId(), req.GetAppIds())
 		if err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
 			return nil, errf.Errorf(errf.DBOpFailed,
 				i18n.T(kt, "list app template bindings by app ids failed, err: %s", err))
 		}

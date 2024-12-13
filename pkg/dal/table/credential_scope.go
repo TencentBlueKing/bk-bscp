@@ -16,6 +16,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/credential"
 )
 
@@ -45,7 +46,7 @@ func (c *CredentialScope) ResID() uint32 {
 
 // ResType AuditRes interface
 func (c *CredentialScope) ResType() string {
-	return "credential_scope"
+	return string(enumor.Credential)
 }
 
 // ValidateCreate validate Credential is valid or not when create it.

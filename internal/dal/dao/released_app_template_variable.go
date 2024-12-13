@@ -60,11 +60,6 @@ func (dao *releasedAppTemplateVariableDao) CreateWithTx(
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, err
-	}
-
 	return g.ID, nil
 }
 

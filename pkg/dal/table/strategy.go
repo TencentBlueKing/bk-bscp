@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
@@ -82,7 +83,7 @@ func (s *Strategy) ResID() uint32 {
 
 // ResType AuditRes interface
 func (s *Strategy) ResType() string {
-	return "strategy"
+	return string(enumor.Release)
 }
 
 // ValidateCreate validate strategy is valid or not when create it.
