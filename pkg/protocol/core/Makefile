@@ -28,6 +28,7 @@ all:
 	@cd client && make
 	@cd client-event && make
 	@cd client-query && make
+	@cd data-source-mapping && make
 
 clean:
 	@cd base && make clean
@@ -59,3 +60,4 @@ clean:
 	@cd client && make clean
 	@cd client-event && make clean
 	@cd client-query && make clean
+	@cd data-source-mapping && make clean

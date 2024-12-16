@@ -73,6 +73,7 @@ type Set interface {
 	ClientEvent() ClientEvent
 	ClientQuery() ClientQuery
 	Config() Config
+	DataSourceMapping() DataSourceMapping
 }
 
 // NewDaoSet create the DAO set instance.
@@ -510,6 +511,14 @@ func (s *set) ClientQuery() ClientQuery {
 // Config returns the Config scope's DAO
 func (s *set) Config() Config {
 	return &configDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+func (s *set) DataSourceMapping() DataSourceMapping {
+	return &dataSourceMappingDao{
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,

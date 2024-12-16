@@ -31,6 +31,8 @@ var (
 	Content                     *content
 	Credential                  *credential
 	CredentialScope             *credentialScope
+	DataSourceContent           *dataSourceContent
+	DataSourceMapping           *dataSourceMapping
 	Event                       *event
 	Group                       *group
 	GroupAppBind                *groupAppBind
@@ -70,6 +72,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Content = &Q.Content
 	Credential = &Q.Credential
 	CredentialScope = &Q.CredentialScope
+	DataSourceContent = &Q.DataSourceContent
+	DataSourceMapping = &Q.DataSourceMapping
 	Event = &Q.Event
 	Group = &Q.Group
 	GroupAppBind = &Q.GroupAppBind
@@ -110,6 +114,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Content:                     newContent(db, opts...),
 		Credential:                  newCredential(db, opts...),
 		CredentialScope:             newCredentialScope(db, opts...),
+		DataSourceContent:           newDataSourceContent(db, opts...),
+		DataSourceMapping:           newDataSourceMapping(db, opts...),
 		Event:                       newEvent(db, opts...),
 		Group:                       newGroup(db, opts...),
 		GroupAppBind:                newGroupAppBind(db, opts...),
@@ -151,6 +157,8 @@ type Query struct {
 	Content                     content
 	Credential                  credential
 	CredentialScope             credentialScope
+	DataSourceContent           dataSourceContent
+	DataSourceMapping           dataSourceMapping
 	Event                       event
 	Group                       group
 	GroupAppBind                groupAppBind
@@ -193,6 +201,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Content:                     q.Content.clone(db),
 		Credential:                  q.Credential.clone(db),
 		CredentialScope:             q.CredentialScope.clone(db),
+		DataSourceContent:           q.DataSourceContent.clone(db),
+		DataSourceMapping:           q.DataSourceMapping.clone(db),
 		Event:                       q.Event.clone(db),
 		Group:                       q.Group.clone(db),
 		GroupAppBind:                q.GroupAppBind.clone(db),
@@ -242,6 +252,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Content:                     q.Content.replaceDB(db),
 		Credential:                  q.Credential.replaceDB(db),
 		CredentialScope:             q.CredentialScope.replaceDB(db),
+		DataSourceContent:           q.DataSourceContent.replaceDB(db),
+		DataSourceMapping:           q.DataSourceMapping.replaceDB(db),
 		Event:                       q.Event.replaceDB(db),
 		Group:                       q.Group.replaceDB(db),
 		GroupAppBind:                q.GroupAppBind.replaceDB(db),
@@ -281,6 +293,8 @@ type queryCtx struct {
 	Content                     IContentDo
 	Credential                  ICredentialDo
 	CredentialScope             ICredentialScopeDo
+	DataSourceContent           IDataSourceContentDo
+	DataSourceMapping           IDataSourceMappingDo
 	Event                       IEventDo
 	Group                       IGroupDo
 	GroupAppBind                IGroupAppBindDo
@@ -320,6 +334,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Content:                     q.Content.WithContext(ctx),
 		Credential:                  q.Credential.WithContext(ctx),
 		CredentialScope:             q.CredentialScope.WithContext(ctx),
+		DataSourceContent:           q.DataSourceContent.WithContext(ctx),
+		DataSourceMapping:           q.DataSourceMapping.WithContext(ctx),
 		Event:                       q.Event.WithContext(ctx),
 		Group:                       q.Group.WithContext(ctx),
 		GroupAppBind:                q.GroupAppBind.WithContext(ctx),
