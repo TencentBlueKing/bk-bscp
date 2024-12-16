@@ -12,6 +12,7 @@ import "pkg/protocol/core/client/client.proto";
 import "pkg/protocol/core/client-event/client_event.proto";
 import "pkg/protocol/core/client-query/client_query.proto";
 import "pkg/protocol/core/credential-scope/credential-scope.proto";
+import "pkg/protocol/core/data-source-mapping/data_source_mapping.proto";
 import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
@@ -1270,6 +1271,39 @@ option (google.api.http) = {
       returns (GetTemplateAndNonTemplateCICountResp) {
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/apps/{app_id}/config_items/count"
+    };
+  }
+
+  // 键值服务表格型数据
+  // 获取键值型服务表格数据
+  rpc ListDataSourceTable(ListDataSourceTableReq) returns (ListDataSourceTableResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/table"
+    };
+  }
+  // 新建托管表格数据源
+  rpc CreateDataSourceTable(CreateDataSourceTableReq) returns (CreateDataSourceTableResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/table"
+      body: "*"
+    };
+  }
+  rpc GetDataSourceTable(GetDataSourceTableReq) returns (GetDataSourceTableResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
+    };
+  }
+  // 编辑托管表格数据源
+  rpc UpdateDataSourceTable(UpdateDataSourceTableReq) returns (UpdateDataSourceTableResp) {
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
+      body: "*"
+    };
+  }
+  // 删除托管表格数据源
+  rpc DeleteDataSourceTable(DeleteDataSourceTableReq) returns (DeleteDataSourceTableResp) {
+    option (google.api.http) = {
+      delete: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
     };
   }
 }
@@ -4073,3 +4107,56 @@ message GetTemplateAndNonTemplateCICountResp {
   uint64 template_config_item_count = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件数量" }];
 }
+
+message ListDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string search_value = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  uint32 start = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  string data_source_type = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "数据源类型：托管表格=0，外部数据源=1"
+  }];
+}
+
+message ListDataSourceTableResp {
+  int64 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbdsm.DataSourceMapping details = 2;
+}
+
+message CreateDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  pbdsm.DataSourceMappingSpec spec = 2;
+}
+
+message CreateDataSourceTableResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源管理ID" }];
+}
+
+message GetDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+}
+
+message GetDataSourceTableResp {
+  pbdsm.DataSourceMapping details = 1;
+}
+
+message UpdateDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+  pbdsm.DataSourceMappingSpec spec = 3;
+}
+
+message UpdateDataSourceTableResp {}
+
+message DeleteDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+}
+
+message DeleteDataSourceTableResp {}

@@ -17,7 +17,7 @@ require (
 	github.com/go-chi/render v1.0.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.12.0
-	github.com/go-sql-driver/mysql v1.7.1
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/protobuf v1.5.4
@@ -59,16 +59,18 @@ require (
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/datatypes v1.1.1-0.20230130040222-c43177d3cf8c
-	gorm.io/driver/mysql v1.5.1
+	gorm.io/datatypes v1.2.5
+	gorm.io/driver/mysql v1.5.6
 	gorm.io/gen v0.3.23
-	gorm.io/gorm v1.25.4
+	gorm.io/gorm v1.25.11
 	gorm.io/plugin/dbresolver v1.4.7
 	gorm.io/plugin/opentelemetry v0.1.3
 	gorm.io/plugin/prometheus v0.0.0-20230504115745-1aec2356381b
 	gorm.io/sharding v0.6.0
 	k8s.io/klog/v2 v2.110.1
 )
+
+require filippo.io/edwards25519 v1.1.0 // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
