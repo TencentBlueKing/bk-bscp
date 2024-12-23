@@ -208,15 +208,16 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 				param.AppIDs = append(param.AppIDs, appID)
 			}
 		}
-	}
 
-	// 	if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
-	// 		param.BizID, param.AppIDs); err != nil {
-	// 		logs.Errorf("batch update app last consumed failed, err: %v", err)
-	// 		return handler(ctx, req)
-	// 	}
-	// 	logs.Infof("batch update app last consumed time success")
-	// }
+		// 	if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
+		// 		param.BizID, param.AppIDs); err != nil {
+		// 		logs.Errorf("batch update app last consumed failed, err: %v", err)
+		// 		return handler(ctx, req)
+		// 	}
+		// 	logs.Infof("batch update app last consumed time success")
+		// }
+
+	}
 
 	return handler(ctx, req)
 }
