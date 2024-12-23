@@ -134,7 +134,7 @@ func FeedUnaryAuthInterceptor(
 func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interface{},
 	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
-	svc, ok := info.Server.(*Service)
+	_, ok := info.Server.(*Service)
 	// 跳过非业务 Service，如 GRPC Reflection
 	if !ok {
 		return handler(ctx, req)
@@ -209,13 +209,13 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 			}
 		}
 
-		if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
-			param.BizID, param.AppIDs); err != nil {
-			logs.Errorf("batch update app last consumed failed, err: %v", err)
-			return handler(ctx, req)
-		}
-		logs.Infof("batch update app last consumed time success")
-	}
+	// 	if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
+	// 		param.BizID, param.AppIDs); err != nil {
+	// 		logs.Errorf("batch update app last consumed failed, err: %v", err)
+	// 		return handler(ctx, req)
+	// 	}
+	// 	logs.Infof("batch update app last consumed time success")
+	// }
 
 	return handler(ctx, req)
 }
