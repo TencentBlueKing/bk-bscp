@@ -81,7 +81,7 @@ type audit struct {
 	idGen      IDGenInterface
 }
 
-// DecoratorV3 return audit decorator for to record audit.
+// Decorator return audit decorator for to record audit.
 func (au *audit) Decorator(kit *kit.Kit, bizID uint32, a *table.AuditField) AuditPrepare {
 	return initAuditBuilder(kit, bizID, a, au)
 }
@@ -212,19 +212,6 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		result = result.Where(audit.CreatedAt.Lt(endTime))
 	}
 
-	// 仅看上线操作
-	if req.Operate == string(enumor.Publish) {
-		result = result.Where(audit.Action.Eq(req.Operate))
-	}
-
-	// 仅看失败操作
-	if req.Operate == string(enumor.Failure) {
-		result = result.Where(
-			audit.WithContext(kit.Ctx).Where(audit.Status.Eq(req.Operate)).
-				Or(client.ReleaseChangeStatus.Eq(string(table.Failed))),
-		)
-	}
-
 	if req.Name != "" {
 		result = result.Where(app.Name.Like("%" + req.Name + "%"))
 	}
@@ -242,7 +229,16 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 	}
 
 	if len(req.Status) != 0 {
-		result = result.Where(audit.Status.In(req.Status...))
+		auditStatus := audit.WithContext(kit.Ctx).Where(audit.Status.In(req.Status...))
+		// 失败状态的数据需要特殊处理，在clients表
+		for _, v := range req.Status {
+			if v == string(enumor.Failure) {
+				auditStatus.Or(client.ReleaseChangeStatus.Eq(string(table.Failed)))
+				// 前端可能传两个failure过来
+				break
+			}
+		}
+		result = result.Where(auditStatus)
 	}
 
 	if req.Operator != "" {
