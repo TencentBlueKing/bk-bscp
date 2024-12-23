@@ -5,7 +5,7 @@ export interface IFiledItem {
   primary: boolean;
   column_type: string;
   not_null: boolean;
-  default_value: string;
+  default_value: string | string[];
   unique: boolean;
   read_only: boolean;
   auto_increment: boolean;

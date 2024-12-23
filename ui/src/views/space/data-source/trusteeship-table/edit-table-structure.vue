@@ -2,12 +2,14 @@
   <DetailLayout :name="$t('编辑表结构')" @close="handleClose">
     <template #content>
       <div class="content-wrap">
-        <TableStructureForm
-          :bk-biz-id="bkBizId"
-          :form="oldFormData"
-          :is-manual-create="true"
-          :is-edit="true"
-          @change="formData = $event" />
+        <bk-loading :loading="formLoading">
+          <TableStructureForm
+            :bk-biz-id="bkBizId"
+            :form="formData"
+            :is-manual-create="true"
+            :is-edit="true"
+            @change="formData = $event" />
+        </bk-loading>
       </div>
     </template>
     <template #footer>
@@ -36,13 +38,6 @@
 
   const emits = defineEmits(['refresh', 'close']);
 
-  const oldFormData = ref<ILocalTableForm>({
-    table_name: '',
-    table_memo: '',
-    visible_range: [],
-    columns: [],
-  });
-
   const formData = ref<ILocalTableForm>({
     table_name: '',
     table_memo: '',
@@ -50,6 +45,7 @@
     columns: [],
   });
   const loading = ref(false);
+  const formLoading = ref(false);
 
   onMounted(() => {
     getStructureData();
@@ -57,18 +53,23 @@
 
   const getStructureData = async () => {
     try {
+      formLoading.value = true;
       const res = await getTableStructure(props.bkBizId, props.id);
-      oldFormData.value = res.details.spec;
       formData.value = res.details.spec;
     } catch (error) {
       console.error(error);
+    } finally {
+      formLoading.value = false;
     }
   };
 
   const handleConfirm = async () => {
     try {
       loading.value = true;
-      await editTableStructure(props.bkBizId, props.id, JSON.stringify(formData.value));
+      const data = {
+        spec: formData.value,
+      };
+      await editTableStructure(props.bkBizId, props.id, JSON.stringify(data));
       emits('close');
       emits('refresh');
     } catch (error) {

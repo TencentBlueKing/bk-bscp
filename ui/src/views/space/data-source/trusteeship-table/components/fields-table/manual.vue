@@ -48,22 +48,23 @@
                 @change="emits('change', fieldsList)" />
               <div v-else class="enum-type">
                 <bk-select
-                  :model-value="element.default_value"
+                  v-model="element.default_value"
                   :multiple="element.selected"
                   multiple-mode="tag"
                   class="type-select"
                   :no-data-text="$t('请先设置枚举值')"
                   :popover-options="{ width: 240 }"
-                  @change="handleSelectEnum(element, $event)">
+                  @toggle="hanldeEnumToggle">
                   <bk-option
-                    v-for="enumItem in element.enumList"
+                    v-for="(enumItem, i) in element.enum_value"
                     :id="enumItem.value"
-                    :key="enumItem.value"
+                    :key="i"
                     :name="enumItem.text" />
                 </bk-select>
                 <EnumSetPop
+                  :is-edit="props.isEdit"
                   :is-multiple="element.selected"
-                  :enum-list="element.enumList"
+                  :enum-list="element.enum_value"
                   @change="handleSetEnum(element, $event)" />
               </div>
             </td>
@@ -115,10 +116,12 @@
   const props = withDefaults(
     defineProps<{
       list: IFiledsItemEditing[];
-      isView?: boolean;
+      isView?: boolean; // 是否为查看态
+      isEdit?: boolean; // 是否为编辑态
     }>(),
     {
       isView: false,
+      isEdit: false,
     },
   );
 
@@ -161,8 +164,7 @@
   watch(
     () => props.list,
     () => {
-      const addFieldsList = props.list.filter((fields) => !fieldsList.value.find((item) => item.id === fields.id));
-      fieldsList.value = [...fieldsList.value, ...addFieldsList];
+      fieldsList.value = [...props.list];
     },
     { deep: true },
   );
@@ -219,10 +221,10 @@
     emits('change', fieldsList.value);
   };
 
-  // 选择枚举值
-  const handleSelectEnum = (filed: IFiledsItemEditing, value: string[] | string) => {
-    filed.default_value = value;
-    emits('change', fieldsList.value);
+  const hanldeEnumToggle = (value: boolean) => {
+    if (!value) {
+      emits('change', fieldsList.value);
+    }
   };
 
   defineExpose({});
@@ -287,8 +289,9 @@
   .fields-name-td {
     height: 42px;
     .drag-icon {
+      display: flex;
+      align-items: center;
       margin-left: 16px;
-      line-height: 42px;
       font-size: 14px;
       color: #c4c6cc;
       cursor: pointer;

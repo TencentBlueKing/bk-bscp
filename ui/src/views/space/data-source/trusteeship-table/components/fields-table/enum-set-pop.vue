@@ -52,23 +52,26 @@
 
   const props = defineProps<{
     isMultiple: boolean; // 是否多选
+    isEdit: boolean; // 是否编辑状态
     enumList?: IEnumItem[];
   }>();
 
   const emits = defineEmits(['change']);
 
-  watch(
-    () => props.enumList,
-    () => {
-      if (props.enumList) {
-        settingEnumList.value = cloneDeep(props.enumList);
-      }
-    },
-  );
-
   const isMultiple = ref(false);
   const settingEnumList = ref<IEnumItem[]>([{ text: '', value: '', hasTextError: false, hasValueError: false }]);
   const isShow = ref(false);
+
+  watch(
+    () => isShow.value,
+    () => {
+      isMultiple.value = props.isMultiple;
+      if (props.enumList?.length) {
+        settingEnumList.value = cloneDeep(props.enumList);
+      }
+    },
+    { immediate: true },
+  );
 
   const handleAddEnumItem = (index: number) => {
     settingEnumList.value.splice(index + 1, 0, { text: '', value: '', hasTextError: false, hasValueError: false });
@@ -95,7 +98,7 @@
       return { text: item.text, value: item.value };
     });
     emits('change', [enumList, isMultiple.value]);
-    closeSettingEnumPopover();
+    isShow.value = false;
   };
 
   const closeSettingEnumPopover = () => {

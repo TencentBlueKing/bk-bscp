@@ -23,7 +23,7 @@
           :is-manual-create="true"
           :bk-biz-id="spaceId"
           :is-edit="false"
-          @change="handleFormChange" />
+          @change="formData = $event" />
         <ImportFormLocal v-else-if="selectedType === 'import'" ref="formRef" :bk-biz-id="spaceId" />
       </div>
     </template>
@@ -59,6 +59,7 @@
 
   const selectedType = ref('create');
   const loading = ref(false);
+
   const formData = ref<ILocalTableForm>({
     table_name: '',
     table_memo: '',
@@ -83,7 +84,6 @@
 
   const handleCreate = async () => {
     try {
-      console.log(formData.value, '2');
       loading.value = true;
       const data = {
         spec: formData.value,
@@ -100,11 +100,6 @@
 
   const handleCloseCreate = () => {
     emits('close');
-  };
-
-  const handleFormChange = (data: ILocalTableForm) => {
-    formData.value = data;
-    console.log(formData.value, 1);
   };
 </script>
 

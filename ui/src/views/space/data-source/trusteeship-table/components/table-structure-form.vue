@@ -7,7 +7,7 @@
           <span class="text">{{ $t('添加字段') }}</span>
         </div>
       </template>
-      <FieldsTable :list="formData.columns" @change="handleFieldsChange" />
+      <FieldsTable :is-edit="props.isEdit" :list="formData.columns" @change="handleFieldsChange" />
       <!-- <UploadFieldsTable v-else-if="filedsList.length" :list="filedsList"></UploadFieldsTable>
       <bk-exception
         v-else
@@ -79,6 +79,13 @@
     getServiceList();
   });
 
+  watch(
+    () => props.form,
+    () => {
+      translateFormData();
+    },
+  );
+
   const handleAddFields = () => {
     formData.value.columns.push({
       name: '',
@@ -131,17 +138,40 @@
 
   // 接口数据转表单数据
   const translateFormData = () => {
+    let default_value: any;
     const columns = props.form.columns.map((item) => {
+      let enum_value;
+      if (item.column_type === 'enum' && item.enum_value !== '') {
+        enum_value = JSON.parse(item.enum_value);
+        if (enum_value.every((item: any) => typeof item === 'string')) {
+          // 字符串数组，显示名和实际值按一致处理
+          enum_value = enum_value.map((value: string) => {
+            return {
+              text: value,
+              value,
+            };
+          });
+        }
+        if (item.default_value !== '' && typeof item.default_value === 'string' && item.selected) {
+          // 枚举型默认值以json字符串存储 转格式
+          default_value = JSON.parse(item.default_value);
+        } else {
+          default_value = item.default_value;
+        }
+      } else {
+        enum_value = item.enum_value;
+      }
       return {
         ...item,
-        enum_value: JSON.parse(item.enum_value),
+        enum_value,
+        default_value,
         id: Date.now() + item.name,
       };
     });
     formData.value = {
       table_name: props.form.table_name,
       table_memo: props.form.table_memo,
-      columns,
+      columns: columns as IFiledsItemEditing[],
       visible_range: props.form.visible_range.length === 0 ? ['*'] : props.form.visible_range, // 如果没有权限范围，默认为全部
     };
   };
@@ -150,16 +180,17 @@
   const handleFormChange = () => {
     const columns = formData.value.columns.map((item) => {
       return {
+        default_value: item.selected ? JSON.stringify(item.default_value) : item.default_value,
+        enum_value: JSON.stringify(item.enum_value), // 枚举值设置内容
         name: item.name,
         alias: item.alias,
-        column_type: item.column_type,
-        default_value: JSON.stringify(item.default_value),
         primary: item.primary,
+        column_type: item.column_type,
         not_null: item.not_null,
         unique: item.unique,
-        auto_increment: item.auto_increment,
         read_only: item.read_only,
-        enum_value: JSON.stringify(item.enum_value), // 枚举值设置内容
+        auto_increment: item.auto_increment,
+        selected: item.selected,
       };
     });
     const form = {
