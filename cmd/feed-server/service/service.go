@@ -422,25 +422,25 @@ func (s *Service) Healthz(w http.ResponseWriter, req *http.Request) {
 // UpdateLastConsumedTime 更新服务拉取时间中间件
 func (s *Service) UpdateLastConsumedTime(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		kt := kit.FromGrpcContext(r.Context())
-		// 获取路径参数
-		bizIdStr := chi.URLParam(r, "biz_id")
-		app := chi.URLParam(r, "app")
-		bizID, _ := strconv.Atoi(bizIdStr)
-		appID, err := s.bll.AppCache().GetAppID(kt, uint32(bizID), app)
-		if err != nil {
-			logs.Errorf("get app id failed, err: %v", err)
-			next.ServeHTTP(w, r)
-			return
-		}
-		if bizID != 0 && appID != 0 {
-			if err := s.bll.AppCache().BatchUpdateLastConsumedTime(kt, uint32(bizID), []uint32{appID}); err != nil {
-				logs.Errorf("batch update app last consumed failed, err: %v", err)
-				next.ServeHTTP(w, r)
-				return
-			}
-			logs.Infof("batch update app last consumed time success")
-		}
+		// kt := kit.FromGrpcContext(r.Context())
+		// // 获取路径参数
+		// bizIdStr := chi.URLParam(r, "biz_id")
+		// app := chi.URLParam(r, "app")
+		// bizID, _ := strconv.Atoi(bizIdStr)
+		// appID, err := s.bll.AppCache().GetAppID(kt, uint32(bizID), app)
+		// if err != nil {
+		// 	logs.Errorf("get app id failed, err: %v", err)
+		// 	next.ServeHTTP(w, r)
+		// 	return
+		// }
+		// if bizID != 0 && appID != 0 {
+		// 	if err := s.bll.AppCache().BatchUpdateLastConsumedTime(kt, uint32(bizID), []uint32{appID}); err != nil {
+		// 		logs.Errorf("batch update app last consumed failed, err: %v", err)
+		// 		next.ServeHTTP(w, r)
+		// 		return
+		// 	}
+		// 	logs.Infof("batch update app last consumed time success")
+		// }
 
 		next.ServeHTTP(w, r)
 	})
