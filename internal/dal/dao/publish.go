@@ -30,10 +30,6 @@ import (
 
 // Publish defines all the publish operation related operations.
 type Publish interface {
-	// Publish publish an app's release with its strategy.
-	// once an app's strategy along with its release id is published,
-	// all its released config items are effected immediately.
-
 	SubmitWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption) (id uint32, err error)
 
 	UpsertPublishWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption, stg *table.Strategy) error
