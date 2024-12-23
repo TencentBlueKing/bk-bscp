@@ -10,7 +10,7 @@
             </template>
           </bk-input>
         </div>
-        <Table />
+        <Table :fields="fields" :data="tableData"/>
       </div>
     </template>
     <template #footer>
@@ -24,19 +24,42 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { Search } from 'bkui-vue/lib/icon';
+  import { ITableFiledItem } from '../../../../../../types/kv-table';
+  import { getTableStructureData, getTableStructure } from '../../../../../api/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
   import Table from './table.vue';
   import ImportTable from './import-table.vue';
 
-  defineProps<{
+  const props = defineProps<{
     bkBizId: string;
+    id: number;
   }>();
 
   const emits = defineEmits(['close']);
 
   const isShowImportTable = ref(false);
+  const fields = ref<ITableFiledItem[]>([]);
+  const tableData = ref<any[]>([]);
+
+  onMounted(() => {
+    getFieldsList();
+  });
+
+  const getFieldsList = async () => {
+    try {
+      const [fieldsData, Contentdata] = await Promise.all([
+        getTableStructure(props.bkBizId, props.id),
+        getTableStructureData(props.bkBizId, props.id),
+      ]);
+      console.log(fieldsData, Contentdata);
+      fields.value = fieldsData.details.spec.columns;
+      tableData.value = Contentdata.details;
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const handleClose = () => {
     emits('close');

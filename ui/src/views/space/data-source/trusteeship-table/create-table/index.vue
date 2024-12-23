@@ -2,7 +2,7 @@
   <DetailLayout :name="$t('新建表格')" :show-footer="!!selectedType" @close="handleCloseCreate">
     <template #content>
       <div class="create-table-content">
-        <Card :title="$t('表结构')" class="table-source-card">
+        <Card :title="$t('表结构来源')" class="table-source-card">
           <div class="table-source-type">
             <div
               v-for="item in tableStructureSource"
@@ -19,17 +19,20 @@
         </Card>
         <ManualCreate
           v-if="selectedType === 'create'"
-          ref="formRef"
+          :form="formData"
           :is-manual-create="true"
           :bk-biz-id="spaceId"
-          :is-edit="false" />
+          :is-edit="false"
+          @change="handleFormChange" />
         <ImportFormLocal v-else-if="selectedType === 'import'" ref="formRef" :bk-biz-id="spaceId" />
       </div>
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button theme="primary" style="width: 88px" @click="handleCreate">{{ $t('创建') }}</bk-button>
-        <bk-button style="width: 130px">{{ $t('创建并编辑数据') }}</bk-button>
+        <bk-button theme="primary" style="width: 88px" :loading="loading" @click="handleCreate">
+          {{ $t('创建') }}
+        </bk-button>
+        <bk-button style="width: 130px" :loading="loading">{{ $t('创建并编辑数据') }}</bk-button>
         <bk-button style="width: 88px" @click="handleCloseCreate">{{ $t('取消') }}</bk-button>
       </div>
     </template>
@@ -39,6 +42,8 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { storeToRefs } from 'pinia';
+  import { ILocalTableForm } from '../../../../../../types/kv-table';
+  import { createLocalTable } from '../../../../../api/kv-table';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
@@ -48,12 +53,18 @@
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['close']);
+  const emits = defineEmits(['close', 'refresh']);
 
   const { spaceId } = storeToRefs(useGlobalStore());
 
   const selectedType = ref('create');
-  const formRef = ref();
+  const loading = ref(false);
+  const formData = ref<ILocalTableForm>({
+    table_name: '',
+    table_memo: '',
+    visible_range: [],
+    columns: [],
+  });
 
   const tableStructureSource = [
     {
@@ -71,12 +82,29 @@
   ];
 
   const handleCreate = async () => {
-    formRef.value.create();
-    emits('close');
+    try {
+      console.log(formData.value, '2');
+      loading.value = true;
+      const data = {
+        spec: formData.value,
+      };
+      await createLocalTable(spaceId.value, JSON.stringify(data));
+      emits('close');
+      emits('refresh');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
   };
 
   const handleCloseCreate = () => {
     emits('close');
+  };
+
+  const handleFormChange = (data: ILocalTableForm) => {
+    formData.value = data;
+    console.log(formData.value, 1);
   };
 </script>
 

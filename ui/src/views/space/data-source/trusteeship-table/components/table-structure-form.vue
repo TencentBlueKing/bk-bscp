@@ -7,36 +7,37 @@
           <span class="text">{{ $t('添加字段') }}</span>
         </div>
       </template>
-      <FieldsTable ref="filedsTableRef" v-if="isManualCreate" :list="filedsList" @change="filedsList = $event" />
-      <UploadFieldsTable v-else-if="filedsList.length" :list="filedsList"></UploadFieldsTable>
+      <FieldsTable :list="formData.columns" @change="handleFieldsChange" />
+      <!-- <UploadFieldsTable v-else-if="filedsList.length" :list="filedsList"></UploadFieldsTable>
       <bk-exception
         v-else
         class="exception-wrap-item"
         :description="$t('请先上传文件')"
         :title="$t('暂无数据')"
-        type="empty" />
+        type="empty" /> -->
     </Card>
     <bk-form form-type="vertical" :model="formData">
       <Card :title="$t('基本信息')">
         <div class="basic-info-form">
-          <bk-form-item :label="$t('表格名称')" required>
-            <bk-input v-model="formData.table_name" :disabled="isEdit"></bk-input>
+          <bk-form-item :label="$t('表格名称')" property="table_name" required>
+            <bk-input v-model="formData.table_name" :disabled="isEdit" @change="handleFormChange" />
           </bk-form-item>
-          <bk-form-item :label="$t('表格描述')">
-            <bk-input v-model="formData.table_memo"></bk-input>
+          <bk-form-item :label="$t('表格描述')" property="table_memo">
+            <bk-input v-model="formData.table_memo" @change="handleFormChange" />
           </bk-form-item>
         </div>
       </Card>
       <Card :title="$t('可见范围')">
-        <bk-form-item :label="$t('选择服务')" required>
+        <bk-form-item :label="$t('选择服务')" property="visible_range" required>
           <bk-select
             v-model="formData.visible_range"
             :loading="serviceLoading"
             style="width: 464px"
             multiple
             filterable
-            :placeholder="$t('请选择服务')">
-            <bk-option :label="$t('全部服务')" :value="0"></bk-option>
+            :placeholder="$t('请选择服务')"
+            @change="handleServiceChange">
+            <bk-option value="*" :label="$t('全部服务')"></bk-option>
             <bk-option v-for="service in serviceList" :key="service.id" :label="service.spec.name" :value="service.id">
             </bk-option>
           </bk-select>
@@ -47,39 +48,57 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, watch } from 'vue';
   import { getAppList } from '../../../../../api/index';
   import { IAppItem } from '../../../../../../types/app';
-  import { IFiledsItem } from '../../../../../../types/kv-table';
+  import { IFiledsItemEditing, ILocalTableFormEditing, ILocalTableForm } from '../../../../../../types/kv-table';
   import { Plus } from 'bkui-vue/lib/icon';
-  import { createLocalTableItem } from '../../../../../api/kv-table';
   import Card from '../../component/card.vue';
-  import FieldsTable from './fields-table/index.vue';
-  import UploadFieldsTable from './upload-fields-table.vue';
+  import FieldsTable from './fields-table/manual.vue';
+  // import UploadFieldsTable from './fields-table/upload.vue';
 
   const props = defineProps<{
     bkBizId: string;
     isManualCreate: boolean;
     isEdit: boolean;
+    form: ILocalTableForm;
   }>();
 
-  const formData = ref({
+  const emits = defineEmits(['change']);
+
+  const formData = ref<ILocalTableFormEditing>({
     table_name: '',
     table_memo: '',
     visible_range: [],
+    columns: [],
   });
   const serviceLoading = ref(false);
   const serviceList = ref<IAppItem[]>([]);
-
-  const filedsList = ref<IFiledsItem[]>([]);
-  const filedsTableRef = ref();
 
   onMounted(() => {
     getServiceList();
   });
 
   const handleAddFields = () => {
-    filedsTableRef.value.addFields();
+    formData.value.columns.push({
+      name: '',
+      alias: '',
+      column_type: '',
+      default_value: '',
+      primary: formData.value.columns.length === 0,
+      not_null: false,
+      unique: false,
+      auto_increment: false,
+      read_only: false,
+      id: Date.now(),
+      enum_value: [], // 枚举值设置内容
+      selected: false, // 枚举值是否多选
+    });
+  };
+
+  const handleFieldsChange = (val: IFiledsItemEditing[]) => {
+    formData.value.columns = val;
+    handleFormChange();
   };
 
   const getServiceList = async () => {
@@ -87,7 +106,7 @@
     try {
       const query = {
         start: 0,
-        limit: 1000, // @todo 确认拉全量列表参数
+        all: true, // @todo 确认拉全量列表参数
       };
       const resp = await getAppList(props.bkBizId, query);
       serviceList.value = resp.details;
@@ -98,38 +117,60 @@
     }
   };
 
-  // 创建表格
-  const handleCreate = async () => {
-    try {
-      const columns = filedsList.value.map((item) => {
-        return {
-          name: item.name,
-          alias: item.alias,
-          length: 0,
-          primary: item.primary,
-          column_type: item.column_type,
-          nullable: item.nullable,
-          default_value: item.default_value,
-          unique: item.unique,
-          read_only: item.read_only,
-          auto_increment: item.auto_increment,
-        };
-      });
-      const data = {
-        spec: {
-          ...formData.value,
-          columns,
-        },
-      };
-      await createLocalTableItem(props.bkBizId, JSON.stringify(data));
-    } catch (error) {
-      console.error(error);
+  const handleServiceChange = (val: string[]) => {
+    if (val.length === 0) {
+      formData.value.visible_range = [];
     }
+    if (formData.value.visible_range[formData.value.visible_range.length - 1] === '*') {
+      formData.value.visible_range = ['*'];
+    } else if (formData.value.visible_range.length > 1 && formData.value.visible_range[0] === '*') {
+      formData.value.visible_range = formData.value.visible_range.slice(1);
+    }
+    handleFormChange();
   };
 
-  defineExpose({
-    create: handleCreate,
-  });
+  // 接口数据转表单数据
+  const translateFormData = () => {
+    const columns = props.form.columns.map((item) => {
+      return {
+        ...item,
+        enum_value: JSON.parse(item.enum_value),
+        id: Date.now() + item.name,
+      };
+    });
+    formData.value = {
+      table_name: props.form.table_name,
+      table_memo: props.form.table_memo,
+      columns,
+      visible_range: props.form.visible_range.length === 0 ? ['*'] : props.form.visible_range, // 如果没有权限范围，默认为全部
+    };
+  };
+
+  // 表单数据转接口数据
+  const handleFormChange = () => {
+    const columns = formData.value.columns.map((item) => {
+      return {
+        name: item.name,
+        alias: item.alias,
+        column_type: item.column_type,
+        default_value: JSON.stringify(item.default_value),
+        primary: item.primary,
+        not_null: item.not_null,
+        unique: item.unique,
+        auto_increment: item.auto_increment,
+        read_only: item.read_only,
+        enum_value: JSON.stringify(item.enum_value), // 枚举值设置内容
+      };
+    });
+    const form = {
+      ...formData.value,
+      columns,
+      visible_range: formData.value.visible_range[0] === '*' ? [] : props.form.visible_range, // 如果没有权限范围，默认为全部
+    };
+    emits('change', form);
+  };
+
+  defineExpose({ translateFormData });
 </script>
 
 <style scoped lang="scss">

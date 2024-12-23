@@ -9,8 +9,8 @@
       :width="400"
       :placeholder="$t('表格名称/表格描述/最近更新人')" />
   </div>
-  <Table :bk-biz-id="bkBizId" />
-  <CreateTable v-if="isShowCreateTable" @close="isShowCreateTable = false" />
+  <Table ref="tableRef" :bk-biz-id="bkBizId" />
+  <CreateTable v-if="isShowCreateTable" @close="isShowCreateTable = false" @refresh="handleRefresh" />
 </template>
 
 <script lang="ts" setup>
@@ -25,10 +25,14 @@
 
   const searchStr = ref('');
   const isShowCreateTable = ref(false);
-
+  const tableRef = ref();
 
   const handleOpenCreate = () => {
     isShowCreateTable.value = true;
+  };
+
+  const handleRefresh = () => {
+    tableRef.value.refresh();
   };
 </script>
 

@@ -2,14 +2,14 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th v-for="(item, index) in tableData" :key="index">
+        <th v-for="(item, index) in fieldsList" :key="index">
           <div class="fields-cell">
             <div class="fields-content">
-              <div class="show-name">{{ item.showName }}</div>
-              <div class="fields-name">{{ item.name }}</div>
+              <div class="show-name">{{ item.name }}</div>
+              <div class="fields-name">{{ item.alias }}</div>
             </div>
             <bk-popover
-              v-if="!item.isPrimaryKey"
+              v-if="!item.primary"
               ext-cls="popover-wrap"
               theme="light"
               trigger="manual"
@@ -47,7 +47,11 @@
     </thead>
     <tbody class="table-body">
       <tr v-for="tableItem in tableData" :key="tableItem.name">
-        <td v-for="(item, index) in tableItem.list" :key="index">{{ item }}</td>
+        <td v-for="(field, index) in fieldsList" :key="index">
+          <template v-if="tableItem.content[field.name]">
+            {{ tableItem.content[field.name] }}
+          </template>
+        </td>
         <td class="operation">
           <div class="action-btns">
             <i class="bk-bscp-icon icon-add"></i>
@@ -60,46 +64,77 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { watch, ref } from 'vue';
   import { EditLine } from 'bkui-vue/lib/icon';
+  import { ITableFiledItem, IFiledsItem } from '../../../../../../types/kv-table';
 
-  const tableData = ref([
-    {
-      showName: '唯一id',
-      name: 'Id',
-      isShowBatchSet: false,
-      list: [1, 2, 3, 4, 5],
-      isPrimaryKey: true,
+  const props = defineProps<{
+    fields: ITableFiledItem[];
+    data: any[];
+  }>();
+
+  const fieldsList = ref<IFiledsItem[]>([]);
+  const tableData = ref();
+
+  watch(
+    () => props.fields,
+    () => {
+      fieldsList.value = props.fields.map((item) => {
+        return {
+          ...item,
+          isShowBatchSet: false,
+        };
+      });
     },
-    {
-      showName: '姓名',
-      name: 'name',
-      isShowBatchSet: false,
-      list: [1, 2, 3, 4, 5],
-      isPrimaryKey: false,
+  );
+
+  watch(
+    () => props.data,
+    () => {
+      // fieldsList.value.forEach((item) => {});
+      tableData.value = props.data.map((item) => {
+        return item.spec;
+      });
     },
-    {
-      showName: '年龄',
-      name: 'age',
-      isShowBatchSet: false,
-      list: [1, 2, 3, 4, 5],
-      isPrimaryKey: false,
-    },
-    {
-      showName: '性别',
-      name: 'gender',
-      isShowBatchSet: false,
-      list: [1, 2, 3, 4, 5],
-      isPrimaryKey: false,
-    },
-    {
-      showName: '唯一id',
-      name: 'Id',
-      isShowBatchSet: false,
-      list: [1, 2, 3, 4, 5],
-      isPrimaryKey: false,
-    },
-  ]);
+  );
+
+  // const tableData = ref([
+  //   {
+  //     showName: '唯一id',
+  //     name: 'Id',
+  //     isShowBatchSet: false,
+  //     list: [1, 2, 3, 4, 5],
+  //     isPrimaryKey: true,
+  //   },
+  //   {
+  //     showName: '姓名',
+  //     name: 'name',
+  //     isShowBatchSet: false,
+  //     list: [1, 2, 3, 4, 5],
+  //     isPrimaryKey: false,
+  //   },
+  //   {
+  //     showName: '年龄',
+  //     name: 'age',
+  //     isShowBatchSet: false,
+  //     list: [1, 2, 3, 4, 5],
+  //     isPrimaryKey: false,
+  //   },
+  //   {
+  //     showName: '性别',
+  //     name: 'gender',
+  //     isShowBatchSet: false,
+  //     list: [1, 2, 3, 4, 5],
+  //     isPrimaryKey: false,
+  //   },
+  //   {
+  //     showName: '唯一id',
+  //     name: 'Id',
+  //     isShowBatchSet: false,
+  //     list: [1, 2, 3, 4, 5],
+  //     isPrimaryKey: false,
+  //   },
+  // ]);
 
   const batchSetStr = ref('');
 

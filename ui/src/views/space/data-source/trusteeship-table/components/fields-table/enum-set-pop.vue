@@ -12,9 +12,9 @@
     <template #content>
       <div v-click-outside="closeSettingEnumPopover" class="setting-enum-wrap">
         <div class="title">{{ $t('设置枚举值') }}</div>
-        <bk-radio-group v-model="settingEnumType" class="enum-radio-group">
-          <bk-radio label="single">{{ $t('单选') }}</bk-radio>
-          <bk-radio label="multiple">{{ $t('多选') }}</bk-radio>
+        <bk-radio-group v-model="isMultiple" class="enum-radio-group">
+          <bk-radio :label="false">{{ $t('单选') }}</bk-radio>
+          <bk-radio :label="true">{{ $t('多选') }}</bk-radio>
         </bk-radio-group>
         <div class="enum-list">
           <div v-for="(enumItem, enumIndex) in settingEnumList" :key="enumIndex" class="enum-item">
@@ -45,15 +45,28 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import { CogShape } from 'bkui-vue/lib/icon';
   import { IEnumItem } from '../../../../../../../types/kv-table';
+  import { cloneDeep } from 'lodash';
 
-  // defineProps<{
-  //   isShow: boolean;
-  // }>();
+  const props = defineProps<{
+    isMultiple: boolean; // 是否多选
+    enumList?: IEnumItem[];
+  }>();
 
-  const settingEnumType = ref('single');
+  const emits = defineEmits(['change']);
+
+  watch(
+    () => props.enumList,
+    () => {
+      if (props.enumList) {
+        settingEnumList.value = cloneDeep(props.enumList);
+      }
+    },
+  );
+
+  const isMultiple = ref(false);
   const settingEnumList = ref<IEnumItem[]>([{ text: '', value: '', hasTextError: false, hasValueError: false }]);
   const isShow = ref(false);
 
@@ -78,16 +91,17 @@
   const handleConfirmSettingEnum = () => {
     const isValid = validateEnumSetting();
     if (!isValid) return;
-    // filedsItem.enumList = settingEnumList.value;
-    // filedsItem.enumType = settingEnumType.value;
+    const enumList = settingEnumList.value.map((item) => {
+      return { text: item.text, value: item.value };
+    });
+    emits('change', [enumList, isMultiple.value]);
     closeSettingEnumPopover();
   };
 
   const closeSettingEnumPopover = () => {
-    // fieldsItem.isShowSettingEnumPopover = false;
     isShow.value = false;
     settingEnumList.value = [{ text: '', value: '', hasTextError: false, hasValueError: false }];
-    settingEnumType.value = 'single';
+    isMultiple.value = false;
   };
 </script>
 

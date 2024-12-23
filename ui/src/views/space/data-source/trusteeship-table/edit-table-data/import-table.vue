@@ -98,7 +98,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { Upload, ExcelFill, Done, Error, Success, Warn, Spinner, InfoLine } from 'bkui-vue/lib/icon';
-  import UploadFieldsTable from '../components/upload-fields-table.vue';
+  import UploadFieldsTable from '../components/fields-table/upload.vue';
   import { IFiledsItem } from '../../../../../../types/kv-table';
 
   const props = defineProps<{

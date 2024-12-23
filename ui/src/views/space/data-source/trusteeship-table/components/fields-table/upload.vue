@@ -41,18 +41,23 @@
             <bk-input v-if="item.column_type !== 'enum'" v-model="item.default_value"></bk-input>
             <div v-else class="enum-type">
               <bk-select
-                :multiple="item.enumType === 'multiple'"
+                :model-value="item.default_value"
+                :multiple="item.selected"
                 multiple-mode="tag"
                 class="type-select"
                 :no-data-text="$t('请先设置枚举值')"
-                :popover-options="{ width: 240 }">
+                :popover-options="{ width: 240 }"
+                @change="handleSelectEnum(item, $event)">
                 <bk-option
                   v-for="enumItem in item.enumList"
                   :id="enumItem.value"
                   :key="enumItem.value"
                   :name="enumItem.text" />
               </bk-select>
-              <EnumSetPop />
+              <EnumSetPop
+                :is-multiple="item.selected"
+                :enum-list="item.enumList"
+                @change="handleSetEnum(item, $event)" />
             </div>
           </td>
           <td class="check">
@@ -63,7 +68,7 @@
               @change="handleChangePrimaryKey(item, index)" />
           </td>
           <td class="check">
-            <bk-checkbox v-model="item.nullable"></bk-checkbox>
+            <bk-checkbox v-model="item.not_null"></bk-checkbox>
           </td>
           <td class="check">
             <bk-checkbox v-model="item.unique"></bk-checkbox>
@@ -93,7 +98,7 @@
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
   import { GragFill } from 'bkui-vue/lib/icon';
-  import { IFiledsItem } from '../../../../../../../types/kv-table';
+  import { IFiledsItem, IEnumItem } from '../../../../../../../types/kv-table';
   import { useI18n } from 'vue-i18n';
   import EnumSetPop from './enum-set-pop.vue';
 
@@ -185,13 +190,28 @@
       column_type: '',
       default_value: '',
       primary: filedsList.value.length === 0,
-      nullable: false,
+      not_null: false,
       unique: false,
       auto_increment: false,
       read_only: false,
-      isShowSettingEnumPopover: false,
       id: Date.now(),
+      enum_value: [], // 枚举值设置内容
+      selected: false, // 枚举值是否多选
     });
+  };
+
+  // 设置枚举值
+  const handleSetEnum = (filed: IFiledsItem, [enumList, isMultiple]: [enumList: IEnumItem[], isMultiple: boolean]) => {
+    Object.assign(filed, {
+      enumList,
+      selected: isMultiple,
+      enum_value: JSON.stringify(enumList),
+    });
+  };
+
+  // 选择枚举值
+  const handleSelectEnum = (filed: IFiledsItem, value: string[] | string) => {
+    filed.default_value = JSON.stringify(value);
   };
 
   defineExpose({

@@ -1,15 +1,37 @@
-export interface ITableFiledItem {
+// 接口字段设置
+export interface IFiledItem {
   name: string;
   alias: string;
-  length: number;
   primary: boolean;
   column_type: string;
-  nullable: boolean;
+  not_null: boolean;
   default_value: string;
   unique: boolean;
   read_only: boolean;
+  auto_increment: boolean;
+  enum_value: string; // 枚举值设置内容
+  selected: boolean; // 枚举值是否多选
 }
 
+// 字段设置编辑列表
+export interface IFiledsItemEditing {
+  id?: number | string;
+  name: string;
+  alias: string;
+  column_type: string;
+  default_value: string | string[];
+  primary: boolean;
+  not_null: boolean;
+  unique: boolean;
+  auto_increment: boolean;
+  read_only: boolean;
+  enum_value: IEnumItem[]; // 枚举值设置内容
+  selected: boolean; // 枚举值是否多选
+  status?: string;
+  isShowBatchSet?: boolean;
+}
+
+// 托管表格数据
 export interface ILocalTableItem {
   id: number;
   spec: {
@@ -17,7 +39,7 @@ export interface ILocalTableItem {
     table_name: string;
     table_memo: string;
     visible_range: number[];
-    columns: ITableFiledItem[];
+    columns: IFiledItem[];
   };
   attachment: {
     biz_id: number;
@@ -29,28 +51,26 @@ export interface ILocalTableItem {
   };
 }
 
-// 字段设置列表项
-export interface IFiledsItem {
-  id: number;
-  name: string;
-  alias: string;
-  column_type: string;
-  default_value: string;
-  primary: boolean;
-  nullable: boolean;
-  unique: boolean;
-  auto_increment: boolean;
-  read_only: boolean;
-  enumList?: IEnumItem[];
-  enumType?: string;
-  isShowSettingEnumPopover?: boolean;
-  status?: string;
-}
-
 // 字段设置枚举类型
 export interface IEnumItem {
   text: string;
   value: string;
   hasTextError?: boolean;
   hasValueError?: boolean;
+}
+
+// 托管表格新建表单编辑
+export interface ILocalTableFormEditing {
+  table_name: string;
+  table_memo: string;
+  visible_range: string[];
+  columns: IFiledsItemEditing[];
+}
+
+// 托管表格新建表单
+export interface ILocalTableForm {
+  table_name: string;
+  table_memo: string;
+  visible_range: string[];
+  columns: IFiledItem[];
 }

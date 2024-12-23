@@ -41,7 +41,9 @@
                 <div class="config-actions">
                   <div class="action-item" @click="handleImportTable(row)">{{ $t('导入表格') }}</div>
                   <div class="action-item" @click="handleExportTable(row)">{{ $t('导出表格') }}</div>
-                  <div :class="['action-item', { disabled: row.config !== 0 }]" @click="handleDeleteTable(row)">
+                  <div
+                    :class="['action-item', { disabled: row.spec.visible_range.length !== 0 }]"
+                    @click="handleDeleteTable(row)">
                     {{ $t('删除') }}
                   </div>
                 </div>
@@ -53,14 +55,24 @@
     </bk-table>
   </bk-loading>
   <TableDetail v-if="isShowTableDetail" @close="isShowTableDetail = false" />
-  <EditTableStructure v-if="isShowEditTableStructure" :bk-biz-id="bkBizId" @close="isShowEditTableStructure = false" />
-  <EditTableData v-if="isShowEditTableData" :bk-biz-id="bkBizId" @close="isShowEditTableData = false" />
+  <EditTableStructure
+    v-if="isShowEditTableStructure"
+    :bk-biz-id="bkBizId"
+    :id="activeId"
+    @close="isShowEditTableStructure = false"
+    @refresh="refresh" />
+  <EditTableData
+    v-if="isShowEditTableData"
+    :bk-biz-id="bkBizId"
+    :id="activeId"
+    @close="isShowEditTableData = false"
+    @refresh="refresh" />
 </template>
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
-  import { getLocalTableData } from '../../../../api/kv-table';
+  import { getLocalTableList, deleteLocalTable } from '../../../../api/kv-table';
   import { storeToRefs } from 'pinia';
   import { ILocalTableItem } from '../../../../../types/kv-table';
   import useGlobalStore from '../../../../store/global';
@@ -81,6 +93,7 @@
   const isShowTableDetail = ref(false);
   const isShowEditTableStructure = ref(false);
   const isShowEditTableData = ref(false);
+  const activeId = ref(0);
 
   onMounted(() => {
     loadTableList();
@@ -90,9 +103,13 @@
   const loadTableList = async () => {
     tableLoading.value = true;
     try {
-      const res = await getLocalTableData(spaceId.value, { start: 0, limit: 10 });
-      console.log(res.data);
-      tableData.value = res.data.details;
+      const params = {
+        start: (pagination.value.current - 1) * pagination.value.limit,
+        limit: pagination.value.limit,
+      };
+      const res = await getLocalTableList(spaceId.value, params);
+      pagination.value.count = Number(res.count);
+      tableData.value = res.details;
     } catch (e) {
       console.log(e);
     } finally {
@@ -100,12 +117,17 @@
     }
   };
 
-  const handleEditTableData = (tableItem: any) => {
-    console.log(tableItem);
+  const refresh = () => {
+    pagination.value.current = 1;
+    loadTableList();
+  };
+
+  const handleEditTableData = (tableItem: ILocalTableItem) => {
+    activeId.value = tableItem.id;
     isShowEditTableData.value = true;
   };
-  const handleEditTableStructure = (tableItem: any) => {
-    console.log(tableItem);
+  const handleEditTableStructure = (tableItem: ILocalTableItem) => {
+    activeId.value = tableItem.id;
     isShowEditTableStructure.value = true;
   };
 
@@ -117,22 +139,32 @@
     pagination.value.current = val;
   };
 
-  const handleImportTable = (tableItem: any) => {
+  const handleImportTable = (tableItem: ILocalTableItem) => {
     console.log(tableItem);
   };
 
-  const handleExportTable = (tableItem: any) => {
+  const handleExportTable = (tableItem: ILocalTableItem) => {
     console.log(tableItem);
   };
 
-  const handleDeleteTable = (tableItem: any) => {
-    console.log(tableItem);
+  const handleDeleteTable = async (tableItem: ILocalTableItem) => {
+    if (tableItem.spec.visible_range.length) return;
+    try {
+      await deleteLocalTable(spaceId.value, tableItem.id);
+      refresh();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleViewTableDetail = (tableItem: any) => {
+  const handleViewTableDetail = (tableItem: ILocalTableItem) => {
     console.log(tableItem);
     isShowTableDetail.value = true;
   };
+
+  defineExpose({
+    refresh,
+  });
 </script>
 
 <style scoped lang="scss">
