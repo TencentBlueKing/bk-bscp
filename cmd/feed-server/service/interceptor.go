@@ -134,7 +134,7 @@ func FeedUnaryAuthInterceptor(
 func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interface{},
 	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
-	_, ok := info.Server.(*Service)
+	svc, ok := info.Server.(*Service)
 	// 跳过非业务 Service，如 GRPC Reflection
 	if !ok {
 		return handler(ctx, req)
@@ -208,6 +208,7 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 				param.AppIDs = append(param.AppIDs, appID)
 			}
 		}
+	}
 
 	// 	if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
 	// 		param.BizID, param.AppIDs); err != nil {
