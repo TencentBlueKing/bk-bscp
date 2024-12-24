@@ -18,15 +18,7 @@
   import { useRouter, useRoute } from 'vue-router';
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
-  import {
-    RECORD_RES_TYPE,
-    ACTION,
-    STATUS,
-    FILTER_KEY,
-    SEARCH_ID,
-    OPERATE_WAY,
-    OPERATE,
-  } from '../../../../constants/record';
+  import { RECORD_RES_TYPE, ACTION, STATUS, FILTER_KEY, SEARCH_ID, OPERATE_WAY } from '../../../../constants/record';
 
   interface ISearchValueItem {
     id: string;
@@ -104,16 +96,6 @@
       })),
       async: false,
     },
-    {
-      name: t('查看操作'),
-      id: SEARCH_ID.operate,
-      multiple: true,
-      children: Object.entries(OPERATE).map(([key, value]) => ({
-        name: value,
-        id: key,
-      })),
-      async: false,
-    },
   ]);
 
   const routeSearchValue = computed(() => {
@@ -166,13 +148,11 @@
 
   // 仅看上线操作
   const changePublishStatus = (status: boolean) => {
-    failure.value = false;
-    changeStatus(SEARCH_ID.operate, t('查看操作'), [{ id: 'publish', name: t('上线') }], status);
+    changeStatus(SEARCH_ID.action, t('操作行为'), [{ id: 'publish', name: t('上线') }], status);
   };
   // 仅看失败操作
   const changeFailedStatus = (status: boolean) => {
-    publish.value = false;
-    changeStatus(SEARCH_ID.operate, t('查看操作'), [{ id: 'failure', name: t('失败') }], status);
+    changeStatus(SEARCH_ID.status, t('状态'), [{ id: 'failure', name: t('失败') }], status);
   };
 
   // 设置地址栏参数 http://dev.bscp.sit.bktencent.com:5174/space/2/records/all?action=PublishVersionConfig&status=Failure&service=abc

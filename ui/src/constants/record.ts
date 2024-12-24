@@ -60,12 +60,6 @@ export const OPERATE_WAY = {
   API: 'API',
 };
 
-// 查看操作
-export const OPERATE = {
-  publish: localT('上线'),
-  failure: localT('失败'),
-};
-
 // 状态
 export const STATUS = {
   pending_approval: localT('待审批'),
@@ -111,5 +105,4 @@ export enum SEARCH_ID {
   res_instance = 'res_instance', // 资源实例
   operator = 'operator', // 操作人
   operate_way = 'operate_way', // 操作途径
-  operate = 'operate', // 查看操作
 }
