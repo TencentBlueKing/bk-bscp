@@ -10,7 +10,7 @@
             </template>
           </bk-input>
         </div>
-        <Table :fields="fields" :data="tableData"/>
+        <Table :fields="fields" :data="tableData" />
       </div>
     </template>
     <template #footer>
@@ -26,7 +26,7 @@
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Search } from 'bkui-vue/lib/icon';
-  import { ITableFiledItem } from '../../../../../../types/kv-table';
+  import { IFiledItem } from '../../../../../../types/kv-table';
   import { getTableStructureData, getTableStructure } from '../../../../../api/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
   import Table from './table.vue';
@@ -40,7 +40,7 @@
   const emits = defineEmits(['close']);
 
   const isShowImportTable = ref(false);
-  const fields = ref<ITableFiledItem[]>([]);
+  const fields = ref<IFiledItem[]>([]);
   const tableData = ref<any[]>([]);
 
   onMounted(() => {
@@ -53,7 +53,6 @@
         getTableStructure(props.bkBizId, props.id),
         getTableStructureData(props.bkBizId, props.id),
       ]);
-      console.log(fieldsData, Contentdata);
       fields.value = fieldsData.details.spec.columns;
       tableData.value = Contentdata.details;
     } catch (error) {

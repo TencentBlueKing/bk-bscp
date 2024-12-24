@@ -13,7 +13,7 @@ export interface IFiledItem {
   selected: boolean; // 枚举值是否多选
 }
 
-// 字段设置编辑列表
+// 字段设置编辑
 export interface IFiledsItemEditing {
   id?: number | string;
   name: string;
@@ -73,4 +73,12 @@ export interface ILocalTableForm {
   table_memo: string;
   visible_range: string[];
   columns: IFiledItem[];
+}
+
+// 托管表格编辑数据
+export interface ILocalTableEditData {
+  id: number;
+  content: { [key: string]: string | string[] };
+  status: string;
+  isShowBatchSet?: boolean;
 }

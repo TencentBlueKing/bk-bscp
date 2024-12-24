@@ -8,53 +8,27 @@
               <div class="show-name">{{ item.name }}</div>
               <div class="fields-name">{{ item.alias }}</div>
             </div>
-            <bk-popover
+            <BatchSetPop
               v-if="!item.primary"
-              ext-cls="popover-wrap"
-              theme="light"
-              trigger="manual"
-              placement="bottom"
-              :is-show="item.isShowBatchSet">
-              <EditLine
-                class="edit-line"
-                v-bk-tooltips="{ content: $t('批量设置字段值') }"
-                @click="item.isShowBatchSet = true" />
-              <template #content>
-                <div class="pop-wrap" v-click-outside="() => (item.isShowBatchSet = false)">
-                  <div class="pop-content">
-                    <div class="pop-title">{{ $t('批量设置字段值') }}</div>
-                    <bk-input v-model="batchSetStr"></bk-input>
-                  </div>
-                  <div class="pop-footer">
-                    <div class="button">
-                      <bk-button
-                        theme="primary"
-                        style="margin-right: 8px"
-                        size="small"
-                        @click="handleConfirmBatchSet()">
-                        {{ $t('确定') }}
-                      </bk-button>
-                      <bk-button size="small" @click="item.isShowBatchSet = false">{{ $t('取消') }}</bk-button>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
+              :type="item.column_type"
+              :is-multiple="item.selected"
+              :enum-value="item.enum_value"
+              @confirm="handleConfirmBatchSet" />
           </div>
         </th>
         <th class="operation">{{ $t('操作') }}</th>
       </tr>
     </thead>
     <tbody class="table-body">
-      <tr v-for="tableItem in tableData" :key="tableItem.name">
-        <td v-for="(field, index) in fieldsList" :key="index">
+      <tr v-for="(tableItem, index) in tableData" :key="index">
+        <td v-for="field in fieldsList" :key="field.name">
           <template v-if="tableItem.content[field.name]">
             {{ tableItem.content[field.name] }}
           </template>
         </td>
         <td class="operation">
           <div class="action-btns">
-            <i class="bk-bscp-icon icon-add"></i>
+            <i class="bk-bscp-icon icon-add" @click="handleAddData(index)"></i>
             <i class="bk-bscp-icon icon-reduce"></i>
           </div>
         </td>
@@ -65,23 +39,48 @@
 
 <script lang="ts" setup>
   import { watch, ref } from 'vue';
-  import { EditLine } from 'bkui-vue/lib/icon';
-  import { ITableFiledItem, IFiledsItem } from '../../../../../../types/kv-table';
+  import { IFiledsItemEditing, IFiledItem, ILocalTableEditData } from '../../../../../../types/kv-table';
+  import BatchSetPop from './batch-set-pop.vue';
 
   const props = defineProps<{
-    fields: ITableFiledItem[];
+    fields: IFiledItem[];
     data: any[];
   }>();
 
-  const fieldsList = ref<IFiledsItem[]>([]);
-  const tableData = ref();
+  const fieldsList = ref<IFiledsItemEditing[]>([]);
+  const tableData = ref<ILocalTableEditData[]>([]);
 
   watch(
     () => props.fields,
     () => {
       fieldsList.value = props.fields.map((item) => {
+        let default_value: any;
+        let enum_value;
+        if (item.column_type === 'enum' && item.enum_value !== '') {
+          enum_value = JSON.parse(item.enum_value);
+          if (enum_value.every((item: any) => typeof item === 'string')) {
+            // 字符串数组，显示名和实际值按一致处理
+            enum_value = enum_value.map((value: string) => {
+              return {
+                text: value,
+                value,
+              };
+            });
+          }
+          if (item.default_value !== '' && typeof item.default_value === 'string' && item.selected) {
+            // 枚举型默认值以json字符串存储 转格式
+            default_value = JSON.parse(item.default_value);
+          } else {
+            default_value = item.default_value;
+          }
+        } else {
+          enum_value = item.enum_value;
+        }
         return {
           ...item,
+          enum_value,
+          default_value,
+          id: Date.now() + item.name,
           isShowBatchSet: false,
         };
       });
@@ -92,49 +91,26 @@
     () => props.data,
     () => {
       // fieldsList.value.forEach((item) => {});
-      tableData.value = props.data.map((item) => {
-        return item.spec;
-      });
+      if (props.data.length) {
+        tableData.value = props.data.map((item) => {
+          return {
+            id: item.id,
+            ...item.spec,
+          };
+        });
+      } else {
+        handleAddData(0);
+      }
     },
   );
 
-  // const tableData = ref([
-  //   {
-  //     showName: '唯一id',
-  //     name: 'Id',
-  //     isShowBatchSet: false,
-  //     list: [1, 2, 3, 4, 5],
-  //     isPrimaryKey: true,
-  //   },
-  //   {
-  //     showName: '姓名',
-  //     name: 'name',
-  //     isShowBatchSet: false,
-  //     list: [1, 2, 3, 4, 5],
-  //     isPrimaryKey: false,
-  //   },
-  //   {
-  //     showName: '年龄',
-  //     name: 'age',
-  //     isShowBatchSet: false,
-  //     list: [1, 2, 3, 4, 5],
-  //     isPrimaryKey: false,
-  //   },
-  //   {
-  //     showName: '性别',
-  //     name: 'gender',
-  //     isShowBatchSet: false,
-  //     list: [1, 2, 3, 4, 5],
-  //     isPrimaryKey: false,
-  //   },
-  //   {
-  //     showName: '唯一id',
-  //     name: 'Id',
-  //     isShowBatchSet: false,
-  //     list: [1, 2, 3, 4, 5],
-  //     isPrimaryKey: false,
-  //   },
-  // ]);
+  const handleAddData = (index: number) => {
+    const content: { [key: string]: string | string[] } = {};
+    fieldsList.value.forEach((item) => {
+      content[item.name] = item.default_value;
+    });
+    tableData.value.splice(index + 1, 0, { id: Date.now(), content, status: 'ADD' });
+  };
 
   const batchSetStr = ref('');
 
