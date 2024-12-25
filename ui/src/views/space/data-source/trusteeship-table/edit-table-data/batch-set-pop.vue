@@ -1,16 +1,17 @@
 <template>
   <bk-popover ext-cls="popover-wrap" theme="light" trigger="manual" placement="bottom" :is-show="isShow">
-    <edit-line class="edit-line" @click="isShow = true" />
+    <edit-line class="edit-line" @click="isShow = true" v-bk-tooltips="{ content: $t('批量设置字段值') }" />
     <template #content>
-      <div class="pop-wrap" v-click-outside="() => (isShow = false)">
+      <div class="pop-wrap">
         <div class="pop-content">
           <div class="pop-title">{{ $t('批量设置字段值') }}</div>
           <bk-select
             v-if="type === 'enum'"
-            class="charset-select"
+            class="enum-select"
             v-model="localVal"
             auto-focus
             :multiple="isMultiple"
+            :clearable="isMultiple"
             :filterable="false">
             <bk-option v-for="(enumItem, i) in enumValue" :id="enumItem.value" :key="i" :name="enumItem.text" />
           </bk-select>
@@ -30,19 +31,32 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import { EditLine } from 'bkui-vue/lib/icon';
 
-  defineProps<{
+  const props = defineProps<{
     isMultiple: boolean;
     type: string;
-    enumValue: { text: string; value: string }[];
+    enumValue?: any;
   }>();
 
   const emits = defineEmits(['update:isShow', 'confirm']);
 
   const isShow = ref(false);
-  const localVal = ref('');
+  const localVal = ref<any>();
+
+  watch(
+    () => isShow.value,
+    (val) => {
+      if (val) {
+        if (props.type === 'enum') {
+          localVal.value = props.isMultiple ? [] : undefined;
+        } else {
+          localVal.value = '';
+        }
+      }
+    },
+  );
 
   const handleConfirm = () => {
     emits('confirm', localVal.value);
@@ -62,7 +76,6 @@
     text-align: right;
   }
   .pop-wrap {
-    width: 240px;
     .pop-content {
       padding: 16px;
       .pop-title {
@@ -71,8 +84,8 @@
         padding-bottom: 10px;
       }
       .bk-input,
-      .charset-select {
-        width: 150px;
+      .enum-select {
+        width: 240px;
       }
     }
     .pop-footer {

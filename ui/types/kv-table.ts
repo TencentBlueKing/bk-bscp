@@ -80,5 +80,4 @@ export interface ILocalTableEditData {
   id: number;
   content: { [key: string]: string | string[] };
   status: string;
-  isShowBatchSet?: boolean;
 }

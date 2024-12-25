@@ -72,7 +72,7 @@
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
-  import { getLocalTableList, deleteLocalTable } from '../../../../api/kv-table';
+  import { getLocalTableList, deleteTableStructure } from '../../../../api/kv-table';
   import { storeToRefs } from 'pinia';
   import { ILocalTableItem } from '../../../../../types/kv-table';
   import useGlobalStore from '../../../../store/global';
@@ -150,7 +150,7 @@
   const handleDeleteTable = async (tableItem: ILocalTableItem) => {
     if (tableItem.spec.visible_range.length) return;
     try {
-      await deleteLocalTable(spaceId.value, tableItem.id);
+      await deleteTableStructure(spaceId.value, tableItem.id);
       refresh();
     } catch (error) {
       console.error(error);

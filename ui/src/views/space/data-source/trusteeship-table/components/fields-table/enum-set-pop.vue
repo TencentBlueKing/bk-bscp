@@ -52,7 +52,7 @@
 
   const props = defineProps<{
     isMultiple: boolean; // 是否多选
-    isEdit: boolean; // 是否编辑状态
+    hasTableData?: boolean; // 表结构是否已有数据
     enumList?: IEnumItem[];
   }>();
 
@@ -60,6 +60,7 @@
 
   const isMultiple = ref(false);
   const settingEnumList = ref<IEnumItem[]>([{ text: '', value: '', hasTextError: false, hasValueError: false }]);
+  const existEnumLis = ref<IEnumItem[]>([]);
   const isShow = ref(false);
 
   watch(
@@ -68,6 +69,7 @@
       isMultiple.value = props.isMultiple;
       if (props.enumList?.length) {
         settingEnumList.value = cloneDeep(props.enumList);
+        existEnumLis.value = cloneDeep(props.enumList);
       }
     },
     { immediate: true },

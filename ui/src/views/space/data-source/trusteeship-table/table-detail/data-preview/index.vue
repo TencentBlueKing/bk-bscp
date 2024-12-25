@@ -54,6 +54,7 @@
   const searchType = ref('basics');
 
   const viewSheet = ref('Sheet1');
+
 </script>
 
 <style scoped lang="scss">

@@ -4,10 +4,12 @@
       <div class="content-wrap">
         <bk-loading :loading="formLoading">
           <TableStructureForm
+            ref="formRef"
             :bk-biz-id="bkBizId"
             :form="formData"
             :is-manual-create="true"
             :is-edit="true"
+            :has-table-data="hasTableData"
             @change="formData = $event" />
         </bk-loading>
       </div>
@@ -26,7 +28,7 @@
 
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue';
-  import { getTableStructure, editTableStructure } from '../../../../api/kv-table';
+  import { getTableStructureFields, editTableStructure, getTableStructureHasData } from '../../../../api/kv-table';
   import { ILocalTableForm } from '../../../../../types/kv-table';
   import DetailLayout from '../component/detail-layout.vue';
   import TableStructureForm from './components/table-structure-form.vue';
@@ -46,16 +48,24 @@
   });
   const loading = ref(false);
   const formLoading = ref(false);
+  const formRef = ref();
+  const hasTableData = ref(false);
 
-  onMounted(() => {
-    getStructureData();
+  onMounted(async () => {
+    await getStructureData();
+    formRef.value.translateFormData();
   });
 
   const getStructureData = async () => {
     try {
       formLoading.value = true;
-      const res = await getTableStructure(props.bkBizId, props.id);
-      formData.value = res.details.spec;
+      const [data, hasData] = await Promise.all([
+        getTableStructureFields(props.bkBizId, props.id),
+        getTableStructureHasData(props.bkBizId, props.id),
+      ]);
+      formData.value = data.details.spec;
+      hasTableData.value = hasData.exist;
+      formRef.value.translateFormData();
     } catch (error) {
       console.error(error);
     } finally {

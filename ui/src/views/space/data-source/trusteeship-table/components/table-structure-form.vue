@@ -7,7 +7,11 @@
           <span class="text">{{ $t('添加字段') }}</span>
         </div>
       </template>
-      <FieldsTable :is-edit="props.isEdit" :list="formData.columns" @change="handleFieldsChange" />
+      <FieldsTable
+        :is-edit="props.isEdit"
+        :has-table-data="hasTableData"
+        :list="formData.columns"
+        @change="handleFieldsChange" />
       <!-- <UploadFieldsTable v-else-if="filedsList.length" :list="filedsList"></UploadFieldsTable>
       <bk-exception
         v-else
@@ -48,7 +52,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, watch } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { getAppList } from '../../../../../api/index';
   import { IAppItem } from '../../../../../../types/app';
   import { IFiledsItemEditing, ILocalTableFormEditing, ILocalTableForm } from '../../../../../../types/kv-table';
@@ -62,6 +66,7 @@
     isManualCreate: boolean;
     isEdit: boolean;
     form: ILocalTableForm;
+    hasTableData?: boolean;
   }>();
 
   const emits = defineEmits(['change']);
@@ -69,7 +74,7 @@
   const formData = ref<ILocalTableFormEditing>({
     table_name: '',
     table_memo: '',
-    visible_range: [],
+    visible_range: ['*'],
     columns: [],
   });
   const serviceLoading = ref(false);
@@ -78,13 +83,6 @@
   onMounted(() => {
     getServiceList();
   });
-
-  watch(
-    () => props.form,
-    () => {
-      translateFormData();
-    },
-  );
 
   const handleAddFields = () => {
     formData.value.columns.push({
@@ -156,7 +154,7 @@
           // 枚举型默认值以json字符串存储 转格式
           default_value = JSON.parse(item.default_value);
         } else {
-          default_value = item.default_value;
+          default_value = undefined;
         }
       } else {
         enum_value = item.enum_value;
@@ -179,9 +177,21 @@
   // 表单数据转接口数据
   const handleFormChange = () => {
     const columns = formData.value.columns.map((item) => {
+      let default_value;
+      if (item.default_value && item.selected) {
+        default_value = JSON.stringify(item.default_value);
+      } else {
+        default_value = item.default_value;
+      }
+      let enum_value;
+      if (item.column_type === 'enum' && item.enum_value.length > 0) {
+        enum_value = JSON.stringify(item.enum_value);
+      } else {
+        enum_value = '';
+      }
       return {
-        default_value: item.selected ? JSON.stringify(item.default_value) : item.default_value,
-        enum_value: JSON.stringify(item.enum_value), // 枚举值设置内容
+        default_value,
+        enum_value, // 枚举值设置内容
         name: item.name,
         alias: item.alias,
         primary: item.primary,

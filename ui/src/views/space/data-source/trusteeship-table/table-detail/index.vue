@@ -18,7 +18,9 @@
       </div>
     </template>
     <template #footer>
-      <bk-button theme="primary">{{ $t('编辑表结构') }}</bk-button>
+      <div class="operation-btns">
+        <bk-button theme="primary">{{ $t('编辑表结构') }}</bk-button>
+      </div>
     </template>
   </DetailLayout>
 </template>
@@ -81,5 +83,8 @@
         }
       }
     }
+  }
+  .operation-btns {
+    width: calc(100% - 48px);
   }
 </style>

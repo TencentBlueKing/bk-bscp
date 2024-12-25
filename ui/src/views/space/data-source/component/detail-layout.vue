@@ -79,7 +79,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 48px;
+      padding: 8px 0;
       background: #fafbfd;
       box-shadow: 0 -1px 0 0 #dcdee5;
     }

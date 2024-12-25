@@ -36,8 +36,7 @@
                 v-model="element.column_type"
                 class="type-select"
                 auto-focus
-                :filterable="false"
-                @select="handleChangeType(element, $event)">
+                :filterable="false">
                 <bk-option v-for="type in dataType" :id="type.value" :key="type.value" :name="type.label" />
               </bk-select>
             </td>
@@ -54,7 +53,8 @@
                   class="type-select"
                   :no-data-text="$t('请先设置枚举值')"
                   :popover-options="{ width: 240 }"
-                  @toggle="hanldeEnumToggle">
+                  :clearable="element.selected"
+                  @change="hanldeEnumToggle">
                   <bk-option
                     v-for="(enumItem, i) in element.enum_value"
                     :id="enumItem.value"
@@ -62,7 +62,7 @@
                     :name="enumItem.text" />
                 </bk-select>
                 <EnumSetPop
-                  :is-edit="props.isEdit"
+                  :has-table-data="hasTableData"
                   :is-multiple="element.selected"
                   :enum-list="element.enum_value"
                   @change="handleSetEnum(element, $event)" />
@@ -118,6 +118,7 @@
       list: IFiledsItemEditing[];
       isView?: boolean; // 是否为查看态
       isEdit?: boolean; // 是否为编辑态
+      hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
       isView: false,
@@ -187,11 +188,11 @@
     emits('change', fieldsList.value);
   };
 
-  const handleChangeType = (item: IFiledsItemEditing, value: string) => {
-    if (value === 'enum') {
-      item.default_value = [];
-    }
-  };
+  // const handleChangeType = (item: IFiledsItemEditing, value: string) => {
+  //   if (value === 'enum') {
+  //     item.default_value = item.selected ? [] : null;
+  //   }
+  // };
 
   // 表格拖拽
   const handleDrag = (event: any) => {
