@@ -158,6 +158,7 @@ func (fs *feedServer) listenAndServe() error {
 		grpc.ChainStreamInterceptor(
 			realip.StreamServerInterceptorOpts(),
 			grpcMetrics.StreamServerInterceptor(),
+			ratelimit.StreamServerInterceptor(ipLimiter),
 			service.FeedStreamAuthInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpt),
 		),
