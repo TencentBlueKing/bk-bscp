@@ -140,7 +140,7 @@ func (fs *feedServer) listenAndServe() error {
 	}
 	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
 	if ipBurst == 0 {
-		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
+		ipBurst = ratelimiter.DefaultIPLimit * 2 // 设置默认值，防止配置错误
 	}
 	ipLimiter := ratelimiter.NewGlobalRL(ipLimit, ipBurst)
 

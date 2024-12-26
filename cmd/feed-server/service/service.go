@@ -238,7 +238,7 @@ func (s *Service) ListenAndGwServerRest() error {
 func (s *Service) handler() http.Handler {
 	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
 	if ipBurst == 0 {
-		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
+		ipBurst = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
 	}
 
 	r := chi.NewRouter()
@@ -261,7 +261,7 @@ func (s *Service) handlerGw() http.Handler {
 	r := chi.NewRouter()
 	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
 	if ipBurst == 0 {
-		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
+		ipBurst = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
 	}
 
 	r.Use(handler.RequestID)
