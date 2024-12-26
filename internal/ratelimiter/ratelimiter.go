@@ -188,7 +188,7 @@ func (r *baseRL) getLimiter(key string) *rate.Limiter {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if limiter, exists := r.dynamicLimiter[key]; exists {
+	if limiter, ok := r.dynamicLimiter[key]; ok {
 		return limiter
 	}
 
