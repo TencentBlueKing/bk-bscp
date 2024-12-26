@@ -28,6 +28,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"k8s.io/klog/v2"
@@ -235,10 +236,16 @@ func (s *Service) ListenAndGwServerRest() error {
 }
 
 func (s *Service) handler() http.Handler {
+	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
+	if ipBurst == 0 {
+		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
+	}
+
 	r := chi.NewRouter()
 	r.Use(handler.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+	r.Use(httprate.LimitByRealIP(int(ipBurst), time.Second))
 	r.Use(middleware.Recoverer)
 
 	// 公共方法
@@ -252,9 +259,15 @@ func (s *Service) handler() http.Handler {
 
 func (s *Service) handlerGw() http.Handler {
 	r := chi.NewRouter()
+	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
+	if ipBurst == 0 {
+		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
+	}
+
 	r.Use(handler.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+	r.Use(httprate.LimitByRealIP(int(ipBurst), time.Second))
 	r.Use(middleware.Recoverer)
 	r.Route("/api/v1/feed", func(r chi.Router) {
 		r.With(s.UpdateLastConsumedTime).Get("/biz/{biz_id}/app/{app}/files/*", s.DownloadFile)

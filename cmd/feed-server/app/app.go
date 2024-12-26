@@ -136,11 +136,11 @@ func (fs *feedServer) listenAndServe() error {
 	// 基于client realIP的全局限流器
 	ipLimit := cc.FeedServer().RateLimiter.IP.Limit
 	if ipLimit == 0 {
-		ipLimit = 50 // 设置默认值，防止配置错误
+		ipLimit = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
 	}
 	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
 	if ipBurst == 0 {
-		ipBurst = 100 // 设置默认值，防止配置错误
+		ipBurst = ratelimiter.DefaultIPBurst // 设置默认值，防止配置错误
 	}
 	ipLimiter := ratelimiter.NewGlobalRL(ipLimit, ipBurst)
 

@@ -26,6 +26,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
+const (
+	DefaultIPLimit = 50  // DefaultIPLimit 默认限流速率50 QPS
+	DefaultIPBurst = 100 // DefaultIPBurst 默认突发流量上限100 QPS
+)
+
 // RateLimiter is interface for rate limiter
 type RateLimiter interface {
 	// WaitTimeMil returns the wait time(milliseconds) according to the rate limiter
