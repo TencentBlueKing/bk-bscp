@@ -1144,6 +1144,7 @@ type RateLimiter struct {
 	ClientBandwidth uint    `yaml:"clientBandwidth"`
 	Global          BasicRL `yaml:"global"`
 	Biz             BizRLs  `yaml:"biz"`
+	IP              BasicRL `yaml:"ip"`
 }
 
 // BizRLs defines the rate limiters for biz

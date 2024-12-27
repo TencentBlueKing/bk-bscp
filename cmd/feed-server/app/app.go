@@ -21,6 +21,8 @@ import (
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
@@ -130,17 +133,32 @@ func (fs *feedServer) listenAndServe() error {
 	grpcMetrics.EnableHandlingTimeHistogram(metrics.GrpcBuckets)
 	recoveryOpt := grpc_recovery.WithRecoveryHandlerContext(brpc.RecoveryHandlerFuncContext)
 
+	// 基于client realIP的全局限流器
+	ipLimit := cc.FeedServer().RateLimiter.IP.Limit
+	if ipLimit == 0 {
+		ipLimit = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
+	}
+	ipBurst := cc.FeedServer().RateLimiter.IP.Burst
+	if ipBurst == 0 {
+		ipBurst = ratelimiter.DefaultIPLimit * 2 // 设置默认值，防止配置错误
+	}
+	ipLimiter := ratelimiter.NewGlobalRL(ipLimit, ipBurst)
+
 	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(1 * 1024 * 1024),
 		// add bscp unary interceptor and standard grpc server metrics interceptor.
 		grpc.ChainUnaryInterceptor(
+			realip.UnaryServerInterceptorOpts(),
 			brpc.LogUnaryServerInterceptor(),
 			grpcMetrics.UnaryServerInterceptor(),
+			ratelimit.UnaryServerInterceptor(ipLimiter),
 			service.FeedUnaryAuthInterceptor,
 			service.FeedUnaryUpdateLastConsumedTimeInterceptor,
 			grpc_recovery.UnaryServerInterceptor(recoveryOpt),
 		),
 		grpc.ChainStreamInterceptor(
+			realip.StreamServerInterceptorOpts(),
 			grpcMetrics.StreamServerInterceptor(),
+			ratelimit.StreamServerInterceptor(ipLimiter),
 			service.FeedStreamAuthInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpt),
 		),
