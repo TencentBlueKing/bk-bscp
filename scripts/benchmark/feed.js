@@ -8,8 +8,11 @@ client.load(
 );
 
 export default () => {
-  // {feed_addr}
-  client.connect("127.0.0.1:9510", { plaintext: true });
+  // only on the first iteration
+  if (__ITER == 0) {
+    // {feed_addr}
+    client.connect("127.0.0.1:9510", { plaintext: true });
+  }
 
   const data = {
     bizId: 0, // {biz_id}
@@ -29,8 +32,8 @@ export default () => {
     "status is OK": (r) => r && r.status === StatusOK,
   });
 
-  console.log(res.status, JSON.stringify(res.message));
+  // console.log(res.status, JSON.stringify(res.message));
 
-  client.close();
+  // client.close();
   sleep(Math.random() * 0.1);
 };
