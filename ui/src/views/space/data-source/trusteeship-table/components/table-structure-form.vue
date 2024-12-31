@@ -136,8 +136,8 @@
 
   // 接口数据转表单数据
   const translateFormData = () => {
-    let default_value: any;
-    const columns = props.form.columns.map((item) => {
+    const columns = props.form.columns.map((item, index) => {
+      let default_value: string | string[] | undefined;
       let enum_value;
       if (item.column_type === 'enum' && item.enum_value !== '') {
         enum_value = JSON.parse(item.enum_value);
@@ -150,20 +150,30 @@
             };
           });
         }
-        if (item.default_value !== '' && typeof item.default_value === 'string' && item.selected) {
-          // 枚举型默认值以json字符串存储 转格式
-          default_value = JSON.parse(item.default_value);
-        } else {
-          default_value = undefined;
-        }
       } else {
         enum_value = item.enum_value;
+      }
+
+      if (item.column_type === 'enum') {
+        const isMultiSelect = item.selected; // 是否多选
+        const hasDefaultValue = !!item.default_value;
+
+        if (isMultiSelect) {
+          // 多选情况下，解析为数组或赋值为空数组
+          default_value = hasDefaultValue ? JSON.parse(item.default_value as string) : [];
+        } else {
+          // 单选情况下，直接赋值或设置为 undefined select组件tag模式设置空字符串会有空tag
+          default_value = hasDefaultValue ? item.default_value : undefined;
+        }
+      } else {
+        // 非枚举类型直接赋值
+        default_value = item.default_value;
       }
       return {
         ...item,
         enum_value,
         default_value,
-        id: Date.now() + item.name,
+        id: Date.now() + index,
       };
     });
     formData.value = {
@@ -178,13 +188,13 @@
   const handleFormChange = () => {
     const columns = formData.value.columns.map((item) => {
       let default_value;
-      if (item.default_value && item.selected) {
+      if (item.column_type === 'enum' && item.selected && item.default_value) {
         default_value = JSON.stringify(item.default_value);
       } else {
         default_value = item.default_value;
       }
       let enum_value;
-      if (item.column_type === 'enum' && item.enum_value.length > 0) {
+      if (item.column_type === 'enum' && Array.isArray(item.enum_value)) {
         enum_value = JSON.stringify(item.enum_value);
       } else {
         enum_value = '';

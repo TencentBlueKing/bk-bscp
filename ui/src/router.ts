@@ -196,12 +196,66 @@ const routes = [
         component: () => import('./views/space/data-source/index.vue'),
         children: [
           {
-            path: 'table',
+            path: 'trusteeship-table',
             name: 'trusteeship-table',
             meta: {
               navModule: 'data-source',
             },
             component: () => import('./views/space/data-source/trusteeship-table/index.vue'),
+            children: [
+              {
+                path: 'list',
+                name: 'trusteeship-table-list',
+                meta: {
+                  navModule: 'data-source',
+                },
+                component: () => import('./views/space/data-source/trusteeship-table/table/index.vue'),
+              },
+              {
+                path: 'details',
+                name: 'trusteeship-table-details',
+                meta: {
+                  navModule: 'data-source',
+                },
+                component: () => import('./views/space/data-source/trusteeship-table/table-detail/index.vue'),
+                children: [
+                  {
+                    path: 'data-preview/:id',
+                    name: 'trusteeship-table-data-preview',
+                    meta: {
+                      navModule: 'data-source',
+                    },
+                    component: () =>
+                      import('./views/space/data-source/trusteeship-table/table-detail/data-preview/index.vue'),
+                  },
+                  {
+                    path: 'structure-preview/:id',
+                    name: 'trusteeship-table-structure-preview',
+                    meta: {
+                      navModule: 'data-source',
+                    },
+                    component: () =>
+                      import('./views/space/data-source/trusteeship-table/table-detail/structure-preview/index.vue'),
+                  },
+                ],
+              },
+              {
+                path: 'edit-structure/:id',
+                name: 'edit-table-structure',
+                meta: {
+                  navModule: 'data-source',
+                },
+                component: () => import('./views/space/data-source/trusteeship-table/edit-table/index.vue'),
+              },
+              {
+                path: 'edit-data/:id',
+                name: 'edit-table-data',
+                meta: {
+                  navModule: 'data-source',
+                },
+                component: () => import('./views/space/data-source/trusteeship-table/edit-table-data/index.vue'),
+              },
+            ],
           },
           {
             path: 'manage',

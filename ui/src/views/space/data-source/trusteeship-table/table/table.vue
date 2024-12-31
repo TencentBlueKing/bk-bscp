@@ -6,10 +6,20 @@
       :remote-pagination="true"
       :pagination="pagination"
       @page-limit-change="handlePageLimitChange"
-      @page-value-change="handlePageCurrentChange">
+      @page-value-change="loadTableList">
       <bk-table-column :label="$t('表格名称')">
         <template #default="{ row }">
-          <bk-button v-if="row.spec" text theme="primary" @click="handleViewTableDetail(row)">
+          <bk-button
+            v-if="row.spec"
+            text
+            theme="primary"
+            @click="
+              router.push({
+                name: 'trusteeship-table-data-preview',
+                params: { spaceId, id: row.id },
+                query: { name: row.spec.table_name },
+              })
+            ">
             {{ row.spec.table_name }}
           </bk-button>
         </template>
@@ -27,8 +37,30 @@
       <bk-table-column :label="$t('操作')">
         <template #default="{ row }">
           <div class="action-btns">
-            <bk-button text theme="primary" @click="handleEditTableData(row)">{{ $t('编辑数据') }}</bk-button>
-            <bk-button text theme="primary" @click="handleEditTableStructure(row)">{{ $t('编辑表结构') }}</bk-button>
+            <bk-button
+              text
+              theme="primary"
+              @click="
+                router.push({
+                  name: 'edit-table-data',
+                  params: { spaceId, id: row.id },
+                  query: { name: row.spec.table_name },
+                })
+              ">
+              {{ $t('编辑数据') }}
+            </bk-button>
+            <bk-button
+              text
+              theme="primary"
+              @click="
+                router.push({
+                  name: 'edit-table-structure',
+                  params: { spaceId, id: row.id },
+                  query: { name: row.spec.table_name },
+                })
+              ">
+              {{ $t('编辑表结构') }}
+            </bk-button>
             <bk-popover
               theme="light trusteeship-table-actions-popover"
               placement="bottom-end"
@@ -54,46 +86,29 @@
       </bk-table-column>
     </bk-table>
   </bk-loading>
-  <TableDetail v-if="isShowTableDetail" @close="isShowTableDetail = false" />
-  <EditTableStructure
-    v-if="isShowEditTableStructure"
-    :bk-biz-id="bkBizId"
-    :id="activeId"
-    @close="isShowEditTableStructure = false"
-    @refresh="refresh" />
-  <EditTableData
-    v-if="isShowEditTableData"
-    :bk-biz-id="bkBizId"
-    :id="activeId"
-    @close="isShowEditTableData = false"
-    @refresh="refresh" />
 </template>
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
-  import { getLocalTableList, deleteTableStructure } from '../../../../api/kv-table';
+  import { getLocalTableList, deleteTableStructure } from '../../../../../api/kv-table';
   import { storeToRefs } from 'pinia';
-  import { ILocalTableItem } from '../../../../../types/kv-table';
-  import useGlobalStore from '../../../../store/global';
-  import useTablePagination from '../../../../utils/hooks/use-table-pagination';
-  import TableDetail from './table-detail/index.vue';
-  import EditTableStructure from './edit-table-structure.vue';
-  import EditTableData from './edit-table-data/index.vue';
+  import { ILocalTableItem } from '../../../../../../types/kv-table';
+  import { useRouter } from 'vue-router';
+  import useGlobalStore from '../../../../../store/global';
+  import useTablePagination from '../../../../../utils/hooks/use-table-pagination';
 
-  const { pagination, updatePagination } = useTablePagination('dataSource');
+  const { pagination, updatePagination } = useTablePagination('trusteeship-table');
   const { spaceId } = storeToRefs(useGlobalStore());
 
   defineProps<{
     bkBizId: string;
   }>();
 
+  const router = useRouter();
+
   const tableLoading = ref(false);
   const tableData = ref<ILocalTableItem[]>();
-  const isShowTableDetail = ref(false);
-  const isShowEditTableStructure = ref(false);
-  const isShowEditTableData = ref(false);
-  const activeId = ref(0);
 
   onMounted(() => {
     loadTableList();
@@ -122,21 +137,8 @@
     loadTableList();
   };
 
-  const handleEditTableData = (tableItem: ILocalTableItem) => {
-    activeId.value = tableItem.id;
-    isShowEditTableData.value = true;
-  };
-  const handleEditTableStructure = (tableItem: ILocalTableItem) => {
-    activeId.value = tableItem.id;
-    isShowEditTableStructure.value = true;
-  };
-
   const handlePageLimitChange = (val: number) => {
     updatePagination('limit', val);
-  };
-
-  const handlePageCurrentChange = (val: number) => {
-    pagination.value.current = val;
   };
 
   const handleImportTable = (tableItem: ILocalTableItem) => {
@@ -155,11 +157,6 @@
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const handleViewTableDetail = (tableItem: ILocalTableItem) => {
-    console.log(tableItem);
-    isShowTableDetail.value = true;
   };
 
   defineExpose({

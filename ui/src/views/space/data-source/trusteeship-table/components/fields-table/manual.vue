@@ -36,7 +36,8 @@
                 v-model="element.column_type"
                 class="type-select"
                 auto-focus
-                :filterable="false">
+                :filterable="false"
+                @change="emits('change', fieldsList)">
                 <bk-option v-for="type in dataType" :id="type.value" :key="type.value" :name="type.label" />
               </bk-select>
             </td>
@@ -54,7 +55,7 @@
                   :no-data-text="$t('请先设置枚举值')"
                   :popover-options="{ width: 240 }"
                   :clearable="element.selected"
-                  @change="hanldeEnumToggle">
+                  @change="emits('change', fieldsList)">
                   <bk-option
                     v-for="(enumItem, i) in element.enum_value"
                     :id="enumItem.value"
@@ -88,9 +89,7 @@
               <bk-checkbox v-model="element.read_only" @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
-              <i
-                :class="['bk-bscp-icon', 'icon-reduce', 'delete-icon', { disabled: element.primary }]"
-                @click="handleDelete(element, index)" />
+              <i :class="['bk-bscp-icon', 'icon-reduce', 'delete-icon']" @click="handleDelete(element, index)" />
             </td>
           </tr>
         </template>
@@ -102,6 +101,10 @@
       </td>
     </tr>
   </table>
+  <DeleteFieldDialog
+    v-model:show="isShowDeleteDialog"
+    :field-name="deleteField?.alias"
+    @confirm="handleDeleteConfirm" />
 </template>
 
 <script lang="ts" setup>
@@ -111,6 +114,7 @@
   import { IFiledsItemEditing, IEnumItem } from '../../../../../../../types/kv-table';
   import { useI18n } from 'vue-i18n';
   import EnumSetPop from './enum-set-pop.vue';
+  import DeleteFieldDialog from './delete-field-dialog.vue';
 
   const { t } = useI18n();
   const props = withDefaults(
@@ -144,9 +148,7 @@
     { label: t('自增'), class: 'check-th', width: '56', tips: '' },
     { label: t('只读'), class: 'check-th', width: '56', tips: '' },
   ];
-
   const fieldsList = ref<IFiledsItemEditing[]>([]);
-
   const dataType = [
     {
       value: 'string',
@@ -161,6 +163,9 @@
       label: 'ENUM',
     },
   ];
+  const deleteField = ref<IFiledsItemEditing>();
+  const deleteFieldIndex = ref(0);
+  const isShowDeleteDialog = ref(false);
 
   watch(
     () => props.list,
@@ -183,16 +188,24 @@
   };
 
   const handleDelete = (item: IFiledsItemEditing, index: number) => {
-    if (item.primary) return;
-    fieldsList.value.splice(index, 1);
-    emits('change', fieldsList.value);
+    deleteField.value = item;
+    deleteFieldIndex.value = index;
+    if (props.hasTableData) {
+      isShowDeleteDialog.value = true;
+    } else {
+      handleDeleteConfirm();
+    }
   };
 
-  // const handleChangeType = (item: IFiledsItemEditing, value: string) => {
-  //   if (value === 'enum') {
-  //     item.default_value = item.selected ? [] : null;
-  //   }
-  // };
+  const handleDeleteConfirm = () => {
+    isShowDeleteDialog.value = false;
+    fieldsList.value.splice(deleteFieldIndex.value, 1);
+    // 删除主键后 选择第一个字段为主键
+    if (deleteField.value!.primary) {
+      fieldsList.value[0].primary = true;
+    }
+    emits('change', fieldsList.value);
+  };
 
   // 表格拖拽
   const handleDrag = (event: any) => {
@@ -222,13 +235,6 @@
     emits('change', fieldsList.value);
   };
 
-  const hanldeEnumToggle = (value: boolean) => {
-    if (!value) {
-      emits('change', fieldsList.value);
-    }
-  };
-
-  defineExpose({});
 </script>
 
 <style scoped lang="scss">

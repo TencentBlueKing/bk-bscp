@@ -4,7 +4,10 @@
       <div class="nav-title">
         <ArrowsLeft class="arrow-icon" @click="emits('close')" />
         <span class="title">{{ props.name }}</span>
-        <span v-if="detail" class="detail">{{ detail }}</span>
+        <template v-if="props.suffix">
+          <span class="line"></span>
+          <span class="suffix"> {{ props.suffix }}</span>
+        </template>
       </div>
     </header>
     <div :class="['layout-content', { 'without-footer': !props.showFooter }]">
@@ -25,7 +28,7 @@
   const props = withDefaults(
     defineProps<{
       name: string;
-      detail?: string;
+      suffix?: string;
       showFooter?: boolean;
     }>(),
     {
@@ -67,6 +70,16 @@
       font-size: 16px;
       line-height: 24px;
       color: #313238;
+    }
+    .line {
+      width: 1px;
+      height: 16px;
+      background-color: #dcdee5;
+      margin: 0 16px;
+    }
+    .suffix {
+      font-size: 16px;
+      color: #63656e;
     }
     .layout-content {
       height: calc(100% - 100px);

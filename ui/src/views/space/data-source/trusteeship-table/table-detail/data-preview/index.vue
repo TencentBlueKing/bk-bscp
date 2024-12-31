@@ -5,7 +5,9 @@
       <div class="content-header">
         <div class="head-left">
           <div class="sheet-name">{{ viewSheet }}</div>
-          <bk-button theme="primary">{{ $t('编辑数据') }}</bk-button>
+          <bk-button theme="primary" @click="router.push({ name: 'edit-table-data', params: { spaceId, id } })">
+            {{ $t('编辑数据') }}
+          </bk-button>
           <bk-button>{{ $t('导入') }}</bk-button>
           <bk-button>{{ $t('导出') }}</bk-button>
         </div>
@@ -16,7 +18,7 @@
             </template>
           </bk-input>
           <bk-select class="select-input" v-model="selectedValue" auto-focus filterable :placeholder="$t('常用查询')">
-            <bk-option v-for="(item, index) in selectDataSource" :id="item.value" :key="index" :name="item.label" />
+            <bk-option v-for="(item, index) in commonList" :id="item" :key="index" :name="item" />
           </bk-select>
           <div class="search-type-wrap">
             <div :class="['search-type-item', { active: searchType === 'basics' }]">{{ $t('基础查询') }}</div>
@@ -24,37 +26,88 @@
           </div>
         </div>
       </div>
-      <Table />
+      <bk-loading :loading="tableLoading" :min-height="300">
+        <bk-table
+          :data="tableData"
+          :remote-pagination="true"
+          :pagination="pagination"
+          :border="['outer']"
+          class="preview-data-table"
+          @page-limit-change="handlePageLimitChange"
+          @page-value-change="loadData">
+          <bk-table-column v-for="item in fieldList" :key="item.name" :label="item.alias" :min-width="150">
+            <template #default="{ row }">
+              <div v-if="row.spec" style="height: 100%">
+                <div v-if="Array.isArray(row.spec.content[item.name])" class="tag-list">
+                  <bk-tag v-for="tag in row.spec.content[item.name]" :key="tag" radius="4px">
+                    {{ tag }}
+                  </bk-tag>
+                </div>
+                <div v-else>{{ row.spec.content[item.name] }}</div>
+              </div>
+            </template>
+          </bk-table-column>
+        </bk-table>
+      </bk-loading>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import { getTableData } from '../../../../../../api/kv-table';
+  import { ILocalTableEditData } from '../../../../../../../types/kv-table';
   import { Search } from 'bkui-vue/lib/icon';
   import SheetList from './sheet-list.vue';
-  import Table from './table.vue';
+  import useTablePagination from '../../../../../../utils/hooks/use-table-pagination';
 
-  const dataList = ref([{ name: 'Sheet1' }, { name: 'Sheet2' }, { name: 'Sheet3' }]);
-  const selectDataSource = ref([
-    {
-      value: 'climbing',
-      label: '爬山',
-    },
-    {
-      value: { a: 123 },
-      label: '跑步',
-    },
-    {
-      value: { b: 456 },
-      label: '未知',
-    },
-  ]);
+  const { pagination, updatePagination } = useTablePagination('trusteeship-table-preview');
+
+  const route = useRoute();
+  const router = useRouter();
+
+  const spaceId = ref(String(route.params.spaceId));
+  const id = ref(Number(route.params.id));
+
+  // @todo 手动创建表结构 无工作表 用表格名称作为工作表
+  const dataList = ref([{ name: String(route.query.name) }]);
+
   const selectedValue = ref('');
   const searchType = ref('basics');
+  const fieldList = ref<{ name: string; alias: string }[]>([]);
+  const tableData = ref<ILocalTableEditData[]>([]);
+  const tableLoading = ref(false);
+  const commonList = ref([]);
 
-  const viewSheet = ref('Sheet1');
+  const viewSheet = ref(String(route.query.name));
 
+  onMounted(() => {
+    loadData();
+  });
+
+  const loadData = async () => {
+    try {
+      tableLoading.value = true;
+      const query = {
+        start: (pagination.value.current - 1) * pagination.value.limit,
+        limit: pagination.value.limit,
+      };
+      const res = await getTableData(spaceId.value, id.value, query);
+      fieldList.value = res.fields;
+      tableData.value = res.details;
+      pagination.value.count = Number(res.count);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      tableLoading.value = false;
+    }
+  };
+
+  const handlePageLimitChange = (val: number) => {
+    updatePagination('limit', val);
+    loadData();
+  };
 </script>
 
 <style scoped lang="scss">
@@ -64,7 +117,7 @@
     background-color: #fff;
     height: calc(100% - 42px);
     .sheet-content {
-      flex: 1;
+      width: calc(100% - 220px);
       padding: 24px 24px 0 24px;
       .content-header {
         display: flex;
@@ -76,7 +129,7 @@
         display: flex;
         align-items: center;
         .sheet-name {
-          width: 79px;
+          padding: 0 16px;
           height: 32px;
           line-height: 32px;
           text-align: center;
@@ -127,5 +180,13 @@
         }
       }
     }
+  }
+
+  .tag-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    height: 100%;
   }
 </style>

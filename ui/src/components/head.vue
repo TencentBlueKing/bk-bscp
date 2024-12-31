@@ -163,7 +163,7 @@
       children: [
         { id: 'templates-list', module: 'templates', name: t('模板管理') },
         { id: 'variables-management', module: 'variables', name: t('变量管理') },
-        { id: 'trusteeship-table', module: 'data-source', name: t('数据源管理') },
+        { id: 'trusteeship-table-list', module: 'data-source', name: t('数据源管理') },
       ],
     },
 

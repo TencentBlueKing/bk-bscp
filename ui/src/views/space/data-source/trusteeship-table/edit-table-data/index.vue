@@ -1,5 +1,5 @@
 <template>
-  <DetailLayout :name="$t('编辑数据')" @close="handleClose">
+  <DetailLayout :name="$t('编辑数据')" :suffix="name" @close="handleClose">
     <template #content>
       <div class="content-wrap">
         <div class="content-header">
@@ -17,7 +17,9 @@
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button theme="primary" style="width: 88px">{{ $t('保存') }}</bk-button>
+        <bk-button :loading="confirmLoading" theme="primary" style="width: 88px" @click="handleConfirm">
+          {{ $t('保存') }}
+        </bk-button>
         <bk-button style="width: 88px" @click="handleClose">{{ $t('取消') }}</bk-button>
       </div>
     </template>
@@ -27,24 +29,34 @@
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { Search } from 'bkui-vue/lib/icon';
-  import { IFiledItem } from '../../../../../../types/kv-table';
-  import { getTableStructureData, getTableStructureFields } from '../../../../../api/kv-table';
+  import {
+    IFiledItem,
+    ILocalTableEditData,
+    ILocalTableDataItem,
+    ILocalTableEditContent,
+  } from '../../../../../../types/kv-table';
+  import { getTableData, getTableStructure, editTableData } from '../../../../../api/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
   import Table from './table.vue';
   import ImportTable from './import-table.vue';
 
-  const props = defineProps<{
-    bkBizId: string;
-    id: number;
-  }>();
+  const router = useRouter();
+  const route = useRoute();
 
-  const emits = defineEmits(['close', 'refresh']);
+  const tableId = ref(Number(route.params.id));
+  const spaceId = ref(String(route.params.spaceId));
+
+  const name = ref(String(route.query.name));
 
   const isShowImportTable = ref(false);
   const fields = ref<IFiledItem[]>([]);
-  const tableData = ref<any[]>([]);
+  const tableData = ref<ILocalTableDataItem[]>([]);
+  const editDataContent = ref<ILocalTableEditContent[]>([]);
   const loading = ref(false);
+  const confirmLoading = ref(false);
+  const delIds = ref<number[]>([]);
 
   onMounted(() => {
     getFieldsList();
@@ -53,9 +65,13 @@
   const getFieldsList = async () => {
     try {
       loading.value = true;
+      const query = {
+        start: 0,
+        limit: 5000,
+      };
       const [fieldsData, Contentdata] = await Promise.all([
-        getTableStructureFields(props.bkBizId, props.id),
-        getTableStructureData(props.bkBizId, props.id),
+        getTableStructure(spaceId.value, tableId.value),
+        getTableData(spaceId.value, tableId.value, query),
       ]);
       fields.value = fieldsData.details.spec.columns;
       tableData.value = Contentdata.details;
@@ -66,12 +82,34 @@
     }
   };
 
-  const handleChange = (data: any) => {
-    console.log(data);
+  const handleConfirm = async () => {
+    try {
+      confirmLoading.value = true;
+      const query = {
+        contents: editDataContent.value,
+        del_ids: delIds.value,
+      };
+      await editTableData(spaceId.value, tableId.value, query);
+      handleClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      confirmLoading.value = false;
+    }
+  };
+
+  const handleChange = (data: ILocalTableEditData[]) => {
+    editDataContent.value = data.map((item) => {
+      return {
+        table_content_id: item.id,
+        content: item.content,
+      };
+    });
+    delIds.value = data.filter((item) => item.status === 'DELETE').map((item) => item.id);
   };
 
   const handleClose = () => {
-    emits('close');
+    router.push({ name: 'trusteeship-table-list', params: { spaceId: spaceId.value } });
   };
 </script>
 
@@ -99,5 +137,12 @@
 
   .loading-wrapper {
     height: calc(100% - 49px);
+  }
+
+  .search-input-icon {
+    padding-right: 10px;
+    font-size: 16px;
+    color: #979ba5;
+    background: #ffffff;
   }
 </style>

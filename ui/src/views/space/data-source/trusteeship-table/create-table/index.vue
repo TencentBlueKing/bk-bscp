@@ -43,7 +43,7 @@
   import { ref } from 'vue';
   import { storeToRefs } from 'pinia';
   import { ILocalTableForm } from '../../../../../../types/kv-table';
-  import { createTableStructure } from '../../../../../api/kv-table';
+  import { createTable } from '../../../../../api/kv-table';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
@@ -88,7 +88,7 @@
       const data = {
         spec: formData.value,
       };
-      await createTableStructure(spaceId.value, JSON.stringify(data));
+      await createTable(spaceId.value, data);
       emits('close');
       emits('refresh');
     } catch (error) {

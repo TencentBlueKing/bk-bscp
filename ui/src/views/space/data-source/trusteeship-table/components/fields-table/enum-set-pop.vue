@@ -60,7 +60,7 @@
 
   const isMultiple = ref(false);
   const settingEnumList = ref<IEnumItem[]>([{ text: '', value: '', hasTextError: false, hasValueError: false }]);
-  const existEnumLis = ref<IEnumItem[]>([]);
+  const existEnumList = ref<IEnumItem[]>([]);
   const isShow = ref(false);
 
   watch(
@@ -69,7 +69,7 @@
       isMultiple.value = props.isMultiple;
       if (props.enumList?.length) {
         settingEnumList.value = cloneDeep(props.enumList);
-        existEnumLis.value = cloneDeep(props.enumList);
+        existEnumList.value = cloneDeep(props.enumList);
       }
     },
     { immediate: true },

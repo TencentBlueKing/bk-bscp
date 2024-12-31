@@ -1,5 +1,9 @@
 <template>
-  <DetailLayout :name="t('表格详情')" :show-footer="showContent === 'table-structure'" @close="handleCloseCreate">
+  <DetailLayout
+    :name="t('表格详情')"
+    :show-footer="showContent === 'trusteeship-table-structure-preview'"
+    :suffix="name"
+    @close="geToTable">
     <template #content>
       <div class="table-detail-wrap">
         <div class="table-detail-content">
@@ -8,12 +12,11 @@
               v-for="tab in tabList"
               :key="tab.value"
               :class="['tab-item', { active: showContent === tab.value }]"
-              @click="showContent = tab.value">
+              @click="handleChangeView(tab.value)">
               {{ tab.label }}
             </div>
           </div>
-          <DataPreview v-if="showContent === 'data-preview'" />
-          <TableStructure v-else />
+          <router-view></router-view>
         </div>
       </div>
     </template>
@@ -27,33 +30,39 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  // import { useRoute } from 'vue-router';
+  import { useRouter, useRoute } from 'vue-router';
   import DetailLayout from '../../component/detail-layout.vue';
-  import DataPreview from './data-preview/index.vue';
-  import TableStructure from './table-structure/index.vue';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['close']);
+  const router = useRouter();
+  const route = useRoute();
+
+  const tableId = ref(route.params.id);
+  const spaceId = ref(String(route.params.spaceId));
+
+  const name = ref(String(route.query.name));
 
   const tabList = [
     {
       label: t('数据预览'),
-      value: 'data-preview',
+      value: 'trusteeship-table-data-preview',
     },
     {
       label: t('表结构'),
-      value: 'table-structure',
+      value: 'trusteeship-table-structure-preview',
     },
   ];
-  const showContent = ref('data-preview');
+  const showContent = ref('trusteeship-table-data-preview');
 
-  // const route = useRoute();
-  // const bkBizId = String(route.params.spaceId);
+  const handleChangeView = (value: string) => {
+    showContent.value = value;
+    router.push({ name: value, params: { spaceId: spaceId.value, id: tableId.value }, query: { name: name.value } });
+  };
 
-  const handleCloseCreate = () => {
-    emits('close');
+  const geToTable = () => {
+    router.push({ name: 'trusteeship-table-list', params: { spaceId: spaceId.value } });
   };
 </script>
 

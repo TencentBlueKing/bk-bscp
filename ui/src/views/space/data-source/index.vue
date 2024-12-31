@@ -2,7 +2,7 @@
   <div class="data-source-page">
     <div class="data-source-header">
       <span class="title">{{ t('表格数据源管理') }}</span>
-      <!-- <div class="tabs">
+      <div class="tabs">
         <div :class="['line', { manage: activeTab === 'manage' }]"></div>
         <div
           v-for="tab in tabs"
@@ -11,7 +11,7 @@
           @click="handleRouterLink(tab.routeName)">
           {{ tab.label }}
         </div>
-      </div> -->
+      </div>
     </div>
     <div class="data-source-content">
       <router-view></router-view>
@@ -22,14 +22,14 @@
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
 
-  // const router = useRouter();
+  const router = useRouter();
   const route = useRoute();
   const { t } = useI18n();
 
   const tabs = [
-    { name: 'table', label: t('托管表格'), routeName: 'trusteeship-table' },
+    { name: 'table', label: t('托管表格'), routeName: 'trusteeship-table-list' },
     { name: 'manage', label: t('外部数据源'), routeName: 'data-source-manage' },
   ];
 
@@ -46,9 +46,9 @@
   };
   const activeTab = ref(getDefaultTab());
 
-  // const handleRouterLink = (routeName: string) => {
-  //   router.push({ name: routeName });
-  // };
+  const handleRouterLink = (routeName: string) => {
+    router.push({ name: routeName });
+  };
 </script>
 
 <style scoped lang="scss">

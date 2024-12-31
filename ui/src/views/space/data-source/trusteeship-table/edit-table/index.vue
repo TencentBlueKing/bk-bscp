@@ -5,12 +5,12 @@
         <bk-loading :loading="formLoading">
           <TableStructureForm
             ref="formRef"
-            :bk-biz-id="bkBizId"
+            :bk-biz-id="spaceId"
             :form="formData"
             :is-manual-create="true"
             :is-edit="true"
             :has-table-data="hasTableData"
-            @change="formData = $event" />
+            @change="handleFormChange" />
         </bk-loading>
       </div>
     </template>
@@ -28,17 +28,17 @@
 
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue';
-  import { getTableStructureFields, editTableStructure, getTableStructureHasData } from '../../../../api/kv-table';
-  import { ILocalTableForm } from '../../../../../types/kv-table';
-  import DetailLayout from '../component/detail-layout.vue';
-  import TableStructureForm from './components/table-structure-form.vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import { getTableStructure, editTable, getTableStructureHasData } from '../../../../../api/kv-table';
+  import { ILocalTableForm } from '../../../../../../types/kv-table';
+  import DetailLayout from '../../component/detail-layout.vue';
+  import TableStructureForm from '../components/table-structure-form.vue';
 
-  const props = defineProps<{
-    bkBizId: string;
-    id: number;
-  }>();
+  const router = useRouter();
+  const route = useRoute();
 
-  const emits = defineEmits(['refresh', 'close']);
+  const tableId = ref(Number(route.params.id));
+  const spaceId = ref(String(route.params.spaceId));
 
   const formData = ref<ILocalTableForm>({
     table_name: '',
@@ -60,8 +60,8 @@
     try {
       formLoading.value = true;
       const [data, hasData] = await Promise.all([
-        getTableStructureFields(props.bkBizId, props.id),
-        getTableStructureHasData(props.bkBizId, props.id),
+        getTableStructure(spaceId.value, tableId.value),
+        getTableStructureHasData(spaceId.value, tableId.value),
       ]);
       formData.value = data.details.spec;
       hasTableData.value = hasData.exist;
@@ -79,9 +79,8 @@
       const data = {
         spec: formData.value,
       };
-      await editTableStructure(props.bkBizId, props.id, JSON.stringify(data));
-      emits('close');
-      emits('refresh');
+      await editTable(spaceId.value, tableId.value, data);
+      handleClose();
     } catch (error) {
       console.error(error);
     } finally {
@@ -89,8 +88,12 @@
     }
   };
 
+  const handleFormChange = (form: ILocalTableForm) => {
+    formData.value = form;
+  };
+
   const handleClose = () => {
-    emits('close');
+    router.push({ name: 'trusteeship-table-list', params: { spaceId: spaceId.value } });
   };
 </script>
 

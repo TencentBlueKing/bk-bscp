@@ -19,7 +19,7 @@ export interface IFiledsItemEditing {
   name: string;
   alias: string;
   column_type: string;
-  default_value: string | string[];
+  default_value: string | string[] | undefined;
   primary: boolean;
   not_null: boolean;
   unique: boolean;
@@ -31,7 +31,7 @@ export interface IFiledsItemEditing {
   isShowBatchSet?: boolean;
 }
 
-// 托管表格数据
+// 托管表格列表
 export interface ILocalTableItem {
   id: number;
   spec: {
@@ -75,9 +75,33 @@ export interface ILocalTableForm {
   columns: IFiledItem[];
 }
 
+// 托管表格单行数据
+export interface ILocalTableDataItem {
+  id: number;
+  spec: {
+    content: { [key: string]: string | string[] };
+    status: string;
+  };
+  attachment: {
+    data_source_mapping_id: number;
+  };
+  revision: {
+    creator: string;
+    reviser: string;
+    create_at: string;
+    update_at: string;
+  };
+}
+
 // 托管表格编辑数据
 export interface ILocalTableEditData {
   id: number;
+  custom_id: number;
   content: { [key: string]: string | string[] };
   status: string;
+}
+
+export interface ILocalTableEditContent {
+  table_content_id: number;
+  content: { [key: string]: string | string[] };
 }

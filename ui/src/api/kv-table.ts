@@ -2,21 +2,21 @@ import { ICommonQuery } from '../../types/index';
 import http from '../request';
 
 /**
- * 新建表结构
+ * 新建表格
  * @param biz_id 空间ID
  * @param query 数据内容
  * @returns
  */
-export const createTableStructure = (biz_id: string, query: string) => http.post(`/config/biz/${biz_id}/table`, query);
+export const createTable = (biz_id: string, query: any) => http.post(`/config/biz/${biz_id}/table`, query);
 
 /**
- * 编辑表结构
+ * 编辑表格
  * @param biz_id 空间ID
  * @param id 表结构ID
  * @param query 数据内容
  * @returns
  */
-export const editTableStructure = (biz_id: string, id: number, query: string) =>
+export const editTable = (biz_id: string, id: number, query: any) =>
   http.put(`/config/biz/${biz_id}/table/${id}`, query);
 
 /**
@@ -29,7 +29,7 @@ export const deleteTableStructure = (biz_id: string, id: number) =>
   http.delete(`/config/biz/${biz_id}/table/${id}`).then((res) => res.data);
 
 /**
- * 获取托管表格表结构列表
+ * 获取托管表格列表
  * @param biz_id 空间ID
  * @param params 查询参数
  * @returns
@@ -38,31 +38,31 @@ export const getLocalTableList = (biz_id: string, params: ICommonQuery) =>
   http.get(`/config/biz/${biz_id}/table`, { params }).then((res) => res.data);
 
 /**
- * 获取表结构字段
+ * 获取表格结构
  * @param biz_id 空间ID
  * @param id 表结构ID
  * @returns
  */
-export const getTableStructureFields = (biz_id: string, id: number) =>
+export const getTableStructure = (biz_id: string, id: number) =>
   http.get(`/config/biz/${biz_id}/table/${id}`).then((res) => res.data);
 
 /**
- * 获取表结构数据
+ * 获取表格数据
  * @param biz_id 空间ID
  * @param id 表结构ID
  * @returns
  */
-export const getTableStructureData = (biz_id: string, id: number) =>
-  http.get(`/config/biz/${biz_id}/table/${id}/content`).then((res) => res.data);
+export const getTableData = (biz_id: string, id: number, query: ICommonQuery) =>
+  http.post(`/config/biz/${biz_id}/table/${id}/content/list`, query).then((res) => res.data);
 
 /**
- * 编辑表结构数据
+ * 编辑表格数据
  * @param biz_id 空间ID
  * @param id 表结构ID
  * @param query 数据内容
  * @returns
  */
-export const editTableStructureData = (biz_id: string, id: number, query: any) =>
+export const editTableData = (biz_id: string, id: number, query: any) =>
   http.put(`/config/biz/${biz_id}/table/${id}/content`, query);
 
 /**
