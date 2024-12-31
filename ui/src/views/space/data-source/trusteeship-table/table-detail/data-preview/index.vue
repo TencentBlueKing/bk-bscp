@@ -183,6 +183,7 @@
   }
 
   .tag-list {
+    padding: 8px 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;

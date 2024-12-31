@@ -32,7 +32,9 @@
         <bk-button theme="primary" style="width: 88px" :loading="loading" @click="handleCreate">
           {{ $t('创建') }}
         </bk-button>
-        <bk-button style="width: 130px" :loading="loading">{{ $t('创建并编辑数据') }}</bk-button>
+        <bk-button style="width: 130px" :loading="loading" @click="handleCreateAndEdit">{{
+          $t('创建并编辑数据')
+        }}</bk-button>
         <bk-button style="width: 88px" @click="handleCloseCreate">{{ $t('取消') }}</bk-button>
       </div>
     </template>
@@ -44,6 +46,7 @@
   import { storeToRefs } from 'pinia';
   import { ILocalTableForm } from '../../../../../../types/kv-table';
   import { createTable } from '../../../../../api/kv-table';
+  import { useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
@@ -54,6 +57,7 @@
   const { t } = useI18n();
 
   const emits = defineEmits(['close', 'refresh']);
+  const router = useRouter();
 
   const { spaceId } = storeToRefs(useGlobalStore());
 
@@ -91,6 +95,25 @@
       await createTable(spaceId.value, data);
       emits('close');
       emits('refresh');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const handleCreateAndEdit = async () => {
+    try {
+      loading.value = true;
+      const data = {
+        spec: formData.value,
+      };
+      const res = await createTable(spaceId.value, data);
+      router.push({
+        name: 'edit-table-data',
+        params: { spaceId: spaceId.value, id: res.data.id },
+        query: { name: formData.value.table_name },
+      });
     } catch (error) {
       console.error(error);
     } finally {

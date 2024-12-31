@@ -11,10 +11,6 @@
     <bk-table-column :label="$t('数据类型')" prop="column_type" :width="136" />
     <bk-table-column :label="$t('默认值/枚举值')" :width="198">
       <template #default="{ row }">
-        <!-- <span v-if="row.type !== 'enum'">{{ row.default_value }}</span>
-        <div v-else class="enum-type">
-          <bk-tag v-for="item in row.de" :key="item.value">{{ item.text }}</bk-tag>
-        </div> -->
         <div v-if="Array.isArray(row.default_value)" class="tag-list">
           <bk-tag v-for="tag in row.default_value" :key="tag" radius="4px">
             {{ tag }}
@@ -23,31 +19,27 @@
         <div v-else>{{ row.default_value }}</div>
       </template>
     </bk-table-column>
-    <bk-table-column :label="$t('主键')" property="primaryKey" :width="57">
+    <bk-table-column :label="$t('主键')" :width="57">
       <template #default="{ row }">
-        <input
-          :class="['radio-input', 'disabled', { checked: row.primaryKey }]"
-          type="radio"
-          :checked="row.primary"
-          disabled />
+        <input :class="['radio-input', 'disabled', { checked: row.primary }]" type="radio" disabled />
       </template>
     </bk-table-column>
-    <bk-table-column :label="$t('非空')" property="nonempty" :width="57">
+    <bk-table-column :label="$t('非空')" :width="57">
       <template #default="{ row }">
         <bk-checkbox v-model="row.not_null" disabled></bk-checkbox>
       </template>
     </bk-table-column>
-    <bk-table-column :label="$t('唯一')" property="only" :width="57">
+    <bk-table-column :label="$t('唯一')" :width="57">
       <template #default="{ row }">
         <bk-checkbox v-model="row.unique" disabled></bk-checkbox>
       </template>
     </bk-table-column>
-    <bk-table-column :label="$t('自增')" property="autoIncrement" :width="57">
+    <bk-table-column :label="$t('自增')" :width="57">
       <template #default="{ row }">
         <bk-checkbox v-model="row.auto_increment" disabled></bk-checkbox>
       </template>
     </bk-table-column>
-    <bk-table-column :label="$t('只读')" property="readonly" :width="57">
+    <bk-table-column :label="$t('只读')" :width="57">
       <template #default="{ row }">
         <bk-checkbox v-model="row.read_only" disabled></bk-checkbox>
       </template>
@@ -128,13 +120,20 @@
       color: #3a84ff;
       background-color: #3a84ff;
       border-color: #3a84ff;
+      &.disabled {
+        cursor: not-allowed;
+        color: #a3c5fd;
+        background-color: #a3c5fd;
+        border-color: #a3c5fd;
+      }
     }
-    &.disabled {
-      cursor: not-allowed;
-      padding: 3px;
-      color: #a3c5fd;
-      background-color: #a3c5fd;
-      border-color: #a3c5fd;
-    }
+  }
+  .tag-list {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    height: 100%;
   }
 </style>

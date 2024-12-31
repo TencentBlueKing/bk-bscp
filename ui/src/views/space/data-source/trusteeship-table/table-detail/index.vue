@@ -22,7 +22,7 @@
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button theme="primary">{{ $t('编辑表结构') }}</bk-button>
+        <bk-button theme="primary" @click="goToEdit">{{ $t('编辑表结构') }}</bk-button>
       </div>
     </template>
   </DetailLayout>
@@ -54,7 +54,7 @@
       value: 'trusteeship-table-structure-preview',
     },
   ];
-  const showContent = ref('trusteeship-table-data-preview');
+  const showContent = ref(route.name);
 
   const handleChangeView = (value: string) => {
     showContent.value = value;
@@ -63,6 +63,14 @@
 
   const geToTable = () => {
     router.push({ name: 'trusteeship-table-list', params: { spaceId: spaceId.value } });
+  };
+
+  const goToEdit = () => {
+    router.push({
+      name: 'edit-table-structure',
+      params: { spaceId: spaceId.value, id: tableId.value },
+      query: { name: name.value },
+    });
   };
 </script>
 
