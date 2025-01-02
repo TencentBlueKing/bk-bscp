@@ -12,13 +12,13 @@ export default {
   服务属性: 'Service Attribute',
   服务别名: 'Service Alias',
   form_服务别名: 'Service alias',
-  数据格式: 'Data format',
+  配置类型: 'Config Type',
   保存: 'Submit',
   编辑服务: 'Edit Service',
   数据类型: 'Data type',
   文件型: 'File Type',
   键值型: 'Key-Value Type',
-  任意类型: 'Arbitrary type',
+  任意格式: 'Arbitrary Format',
   配置管理: 'Config Manage',
   所属业务: 'Subordinate Business',
   服务描述: 'Service description',
@@ -54,9 +54,9 @@ export default {
   tips: {
     config: `File type: Usually stored in the form of a file, usually has good readability and maintainability
     Key-value type: stored in the form of key-value pairs, where key is used to identify a configuration item, value is the specific content of the configuration item, kv type configuration is usually stored in the database, using the SDK or API to read`,
-    type: `arbitrary type: The type of the configuration item is not restricted. If you select one of the following types, only configuration items of the specified type can be created
+    type: `arbitrary format: The format of the configuration item is not restricted. If you select one of the following format, only configuration items of the specified type can be created
          string: One-line string
-         number: Numeric values, including integers, floating-point numbers, and checksum data types
+         number: Numeric values, including integers, floating-point numbers, and checksum data format
          text: Multi-line string text, unverified data structure, size 2Mb
          json、xml、yaml: For structured data in different formats, the data structure is checked
          Sensitive information: Store confidential data, such as passwords, certificates, etc., on the product interface, this information is displayed with an asterisk (*) to ensure security`,
@@ -90,6 +90,7 @@ export default {
   生产环境不建议关闭审批: 'It is not recommended to disable the approval process in the production environment',
   审批流程可以提高配置更改的准确性和安全性: 'The approval process can enhance the accuracy and security of configuration changes',
   仍要关闭: 'Cancel',
+  配置格式限制: 'Config format restrictions',
 
   // 导航栏
   服务配置中心: 'BSCP',
