@@ -45,13 +45,13 @@
           </ul>
           <span v-else>{{ t('未开启') }}</span>
         </bk-form-item>
-        <bk-form-item :label="t('创建者')">
+        <bk-form-item :label="t('创建人')">
           {{ serviceData?.revision.creator }}
         </bk-form-item>
         <bk-form-item :label="t('创建时间')">
           {{ datetimeFormat(serviceData!.revision.create_at) }}
         </bk-form-item>
-        <bk-form-item :label="t('更新者')">
+        <bk-form-item :label="t('更新人')">
           {{ serviceData!.revision.reviser }}
         </bk-form-item>
         <bk-form-item :label="t('更新时间')">
@@ -195,8 +195,8 @@
         InfoBox({
           infoType: 'danger',
           'ext-cls': 'info-box-style',
-          title: t('调整服务数据类型{n}失败', { n: dataType }),
-          subTitle: t('该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据类型为{n}', {
+          title: t('调整服务数据格式{n}失败', { n: dataType }),
+          subTitle: t('该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据格式为{n}', {
             n: dataType,
           }),
           dialogType: 'confirm',
