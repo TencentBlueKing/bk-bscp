@@ -14,11 +14,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -68,23 +72,37 @@ func (s *Service) CreateKv(ctx context.Context, req *pbds.CreateKvReq) (*pbds.Cr
 			i18n.T(kt, "kv type does not match the data type defined in the application"))
 	}
 
-	opt := &types.UpsertKvOption{
-		BizID:  req.Attachment.BizId,
-		AppID:  req.Attachment.AppId,
-		Key:    req.Spec.Key,
-		Value:  req.Spec.Value,
-		KvType: table.DataType(req.Spec.KvType),
+	if req.Spec.KvType == string(table.KvTab) &&
+		req.Spec.ManagedTableId == 0 && req.Spec.ExternalSourceId == 0 {
+		return nil, errors.New(i18n.T(kt, "table data types require config tables"))
 	}
 
-	// UpsertKv 创建｜更新kv
-	version, err := s.vault.UpsertKv(kt, opt)
+	var version int
+
+	if req.Spec.ManagedTableId == 0 && req.Spec.ExternalSourceId == 0 {
+		opt := &types.UpsertKvOption{
+			BizID:  req.Attachment.BizId,
+			AppID:  req.Attachment.AppId,
+			Key:    req.Spec.Key,
+			Value:  req.Spec.Value,
+			KvType: table.DataType(req.Spec.KvType),
+		}
+
+		// UpsertKv 创建｜更新kv
+		version, err = s.vault.UpsertKv(kt, opt)
+		if err != nil {
+			logs.Errorf("create kv failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "create kv failed, err: %v", err))
+		}
+	}
+
+	spec, err := req.Spec.KvSpec()
 	if err != nil {
-		logs.Errorf("create kv failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "create kv failed, err: %v", err))
+		return nil, err
 	}
 
 	kv := &table.Kv{
-		Spec:       req.Spec.KvSpec(),
+		Spec:       spec,
 		Attachment: req.Attachment.KvAttachment(),
 		Revision: &table.Revision{
 			Creator: kt.User,
@@ -105,8 +123,7 @@ func (s *Service) CreateKv(ctx context.Context, req *pbds.CreateKvReq) (*pbds.Cr
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "create kv failed, err: %v", err))
 	}
 
-	resp := &pbds.CreateResp{Id: id}
-	return resp, nil
+	return &pbds.CreateResp{Id: id}, nil
 }
 
 // check KV Type Match
@@ -161,7 +178,12 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 		ByteSize:  uint64(len(req.Spec.Value)),
 	}
 	kv.Spec.SecretHidden = req.Spec.SecretHidden
-	kv.Spec.CertificateExpirationDate = req.Spec.KvSpec().CertificateExpirationDate
+
+	spec, err := req.Spec.KvSpec()
+	if err != nil {
+		return nil, err
+	}
+	kv.Spec.CertificateExpirationDate = spec.CertificateExpirationDate
 	if e := s.dao.Kv().Update(kt, kv); e != nil {
 		logs.Errorf("update kv failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "update kv failed, err: %v", err))
@@ -252,14 +274,34 @@ func (s *Service) setKvTypeAndValue(kt *kit.Kit, details []*table.Kv) ([]*pbkv.K
 		one := one
 		i := i
 		eg.Go(func() error {
-			_, kvValue, err := s.getKv(kt, one.Attachment.BizID, one.Attachment.AppID, one.Spec.Version, one.Spec.Key)
-			if err != nil {
-				return err
+			var kvValue, name string
+
+			var err error
+			// 处理kv表格型数据
+			if one.Spec.KvType == table.KvTab {
+				name, err = s.getKvTableConfigPreviewName(kt, one.Attachment.BizID, one.Spec.ManagedTableID, one.Spec.ExternalSourceID)
+				if err != nil {
+					return err
+				}
+				kvValue, err = s.getKvTableConfigValue(kt, one)
+				if err != nil {
+					return err
+				}
+			}
+
+			if one.Spec.KvType != table.KvTab {
+				_, kvValue, err = s.getKv(kt, one.Attachment.BizID, one.Attachment.AppID, one.Spec.Version, one.Spec.Key)
+				if err != nil {
+					return err
+				}
 			}
 			// 锁住关键部分，避免并发修改切片
 			mux.Lock()
 			// 保证按顺序写入
-			kvs[i] = pbkv.PbKv(one, kvValue)
+			kvs[i], err = pbkv.PbKv(one, kvValue, name)
+			if err != nil {
+				return err
+			}
 			mux.Unlock()
 
 			return nil
@@ -489,10 +531,15 @@ func (s *Service) doBatchUpsertVault(kt *kit.Kit, req *pbds.BatchUpsertKvsReq) (
 				Value:  kv.KvSpec.Value,
 				KvType: table.DataType(kv.KvSpec.KvType),
 			}
-			version, err := s.vault.UpsertKv(kt, opt)
-			if err != nil {
-				return err
+			var version int
+			var err error
+			if kv.KvSpec.KvType != string(table.KvTab) {
+				version, err = s.vault.UpsertKv(kt, opt)
+				if err != nil {
+					return err
+				}
 			}
+
 			mux.Lock()
 			versionMap[kv.KvSpec.Key] = version
 			mux.Unlock()
@@ -510,7 +557,6 @@ func (s *Service) doBatchUpsertVault(kt *kit.Kit, req *pbds.BatchUpsertKvsReq) (
 
 func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKvsReq, versionMap map[string]int,
 	kvStates []string) (toUpdate, toCreate []*table.Kv, err error) {
-
 	// 通过事务获取指定状态的kv
 	editingKvs, err := s.dao.Kv().ListAllByAppIDWithTx(kt, tx, req.GetAppId(), req.GetBizId(), kvStates)
 	if err != nil {
@@ -531,17 +577,13 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 		if version, exists = versionMap[kv.KvSpec.Key]; !exists {
 			return nil, nil, errors.New(i18n.T(kt, "save kv failed"))
 		}
-
-		now := time.Now().UTC()
-		kvSpec := &table.KvSpec{
-			Key:                       kv.KvSpec.Key,
-			KvType:                    table.DataType(kv.KvSpec.KvType),
-			Version:                   uint32(version),
-			Memo:                      kv.KvSpec.Memo,
-			SecretType:                table.SecretType(kv.KvSpec.SecretType),
-			SecretHidden:              kv.KvSpec.SecretHidden,
-			CertificateExpirationDate: kv.GetKvSpec().KvSpec().CertificateExpirationDate,
+		sepc, err := kv.GetKvSpec().KvSpec()
+		if err != nil {
+			return nil, nil, err
 		}
+		sepc.Version = uint32(version)
+		now := time.Now().UTC()
+
 		kvAttachment := &table.KvAttachment{
 			BizID: req.BizId,
 			AppID: req.AppId,
@@ -559,7 +601,7 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 			toUpdate = append(toUpdate, &table.Kv{
 				ID:          editing.ID,
 				KvState:     editing.KvState,
-				Spec:        kvSpec,
+				Spec:        sepc,
 				Attachment:  kvAttachment,
 				Revision:    editing.Revision,
 				ContentSpec: contentSpec,
@@ -567,7 +609,7 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 		} else {
 			toCreate = append(toCreate, &table.Kv{
 				KvState:    table.KvStateAdd,
-				Spec:       kvSpec,
+				Spec:       sepc,
 				Attachment: kvAttachment,
 				Revision: &table.Revision{
 					Creator:   kt.User,
@@ -789,4 +831,86 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbds.FindNearE
 	}
 
 	return &pbds.FindNearExpiryCertKvsResp{Details: kvs, Count: count}, nil
+}
+
+// 获取表格型预览数据
+func (s *Service) getKvTableConfigPreviewName(kit *kit.Kit, bizID, managedTableId, externalSourceId uint32) (string, error) {
+	// 表示托管表格
+	if managedTableId != 0 {
+		mappings, err := s.dao.DataSourceMapping().GetDataSourceMappingByID(kit, managedTableId)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
+
+		if mappings == nil {
+			return "", nil
+		}
+
+		return mappings.Spec.TableName_, nil
+	}
+
+	if externalSourceId != 0 {
+		var names []string
+		info, err := s.dao.DataSourceInfo().Get(kit, bizID, externalSourceId)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
+		mappings, err := s.dao.DataSourceMapping().ListByDataSourceInfoId(kit, bizID, externalSourceId)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", err
+		}
+
+		if info != nil {
+			names = append(names, info.Spec.Name)
+		}
+
+		if len(mappings) != 0 {
+			for _, mapping := range mappings {
+				names = append(names, mapping.Spec.TableName_)
+			}
+		}
+
+		return strings.Join(names, ","), nil
+	}
+
+	return "", nil
+}
+
+func (s *Service) getKvTableConfigValue(kit *kit.Kit, kv *table.Kv) (string, error) {
+
+	if kv == nil {
+		return "", nil
+	}
+	var contents []*table.DataSourceContent
+	var err error
+	if kv.Spec.ManagedTableID != 0 {
+		contents, _, err = s.dao.DataSourceContent().List(kit, kv.Spec.ManagedTableID, kv.Spec.FilterCondition, kv.Spec.FilterFields, &types.BasePage{All: true})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if kv.Spec.ExternalSourceID != 0 {
+		contents, _, err = s.dao.DataSourceContent().List(kit, kv.Spec.ExternalSourceID, kv.Spec.FilterCondition, kv.Spec.FilterFields, &types.BasePage{All: true})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if len(contents) != 0 {
+		result := make([]datatypes.JSONMap, 0)
+		for _, v := range contents {
+			result = append(result, v.Spec.Content)
+		}
+
+		// 将 result 切片转换为 JSON 格式的字符串
+		contentBytes, err := json.Marshal(result)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal JSONMap slice: %w", err)
+		}
+		// 返回转换后的字符串
+		return string(contentBytes), nil
+	}
+
+	return "", nil
 }

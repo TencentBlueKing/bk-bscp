@@ -16,9 +16,13 @@ package pbkv
 import (
 	"time"
 
+	pbstruct "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
+	pbgroup "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
 
 // Kv convert pb Kv to table Kv
@@ -27,19 +31,31 @@ func (k *Kv) Kv() (*table.Kv, error) {
 		return nil, nil
 	}
 
+	sepc, err := k.Spec.KvSpec()
+	if err != nil {
+		return nil, err
+	}
+
 	return &table.Kv{
 		ID:         k.Id,
-		Spec:       k.Spec.KvSpec(),
+		Spec:       sepc,
 		Attachment: k.Attachment.KvAttachment(),
 	}, nil
 }
 
 // KvSpec convert pb kv to table KvSpec
-func (k *KvSpec) KvSpec() *table.KvSpec {
+func (k *KvSpec) KvSpec() (*table.KvSpec, error) {
 	if k == nil {
-		return nil
+		return nil, nil
 	}
-
+	filterCondition := new(selector.Selector)
+	if k.FilterCondition != nil && len(k.FilterCondition.AsMap()) != 0 {
+		s, err := pbgroup.UnmarshalSelector(k.FilterCondition)
+		if err != nil {
+			return nil, err
+		}
+		filterCondition = s
+	}
 	return &table.KvSpec{
 		Key:          k.Key,
 		KvType:       table.DataType(k.KvType),
@@ -53,7 +69,11 @@ func (k *KvSpec) KvSpec() *table.KvSpec {
 			}
 			return nil
 		}(),
-	}
+		ManagedTableID:   k.ManagedTableId,
+		ExternalSourceID: k.ExternalSourceId,
+		FilterCondition:  filterCondition,
+		FilterFields:     k.FilterFields,
+	}, nil
 }
 
 // KvAttachment convert pb KvAttachment to table KvAttachment
@@ -69,26 +89,41 @@ func (k *KvAttachment) KvAttachment() *table.KvAttachment {
 }
 
 // PbKv convert table kv to pb kv
-func PbKv(k *table.Kv, value string) *Kv {
+func PbKv(k *table.Kv, value string, name string) (*Kv, error) {
 	if k == nil {
-		return nil
+		return nil, nil
+	}
+
+	spec, err := PbKvSpec(k.Spec, value)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Kv{
-		Id:          k.ID,
-		KvState:     string(k.KvState),
-		Spec:        PbKvSpec(k.Spec, value),
-		Attachment:  PbKvAttachment(k.Attachment),
-		Revision:    pbbase.PbRevision(k.Revision),
-		ContentSpec: pbcontent.PbContentSpec(k.ContentSpec),
-	}
+		Id:                     k.ID,
+		KvState:                string(k.KvState),
+		Spec:                   spec,
+		Attachment:             PbKvAttachment(k.Attachment),
+		Revision:               pbbase.PbRevision(k.Revision),
+		ContentSpec:            pbcontent.PbContentSpec(k.ContentSpec),
+		TableConfigPreviewName: name,
+	}, nil
 }
 
 // PbKvSpec convert table KvSpec to pb KvSpec
 // nolint:revive
-func PbKvSpec(spec *table.KvSpec, value string) *KvSpec {
+func PbKvSpec(spec *table.KvSpec, value string) (*KvSpec, error) {
 	if spec == nil {
-		return nil
+		return nil, nil
+	}
+
+	sel := new(pbstruct.Struct)
+	if spec.FilterCondition != nil {
+		s, err := spec.FilterCondition.MarshalPB()
+		if err != nil {
+			return nil, err
+		}
+		sel = s
 	}
 
 	return &KvSpec{
@@ -104,12 +139,15 @@ func PbKvSpec(spec *table.KvSpec, value string) *KvSpec {
 			}
 			return ""
 		}(),
-	}
+		ManagedTableId:   spec.ManagedTableID,
+		ExternalSourceId: spec.ExternalSourceID,
+		FilterCondition:  sel,
+		FilterFields:     spec.FilterFields,
+	}, nil
 }
 
 // PbKvAttachment convert table KvAttachment to pb KvAttachment
-//
-//nolint:revive
+// nolint:revive
 func PbKvAttachment(ka *table.KvAttachment) *KvAttachment {
 	if ka == nil {
 		return nil

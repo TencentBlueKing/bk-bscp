@@ -885,6 +885,16 @@ func (s *Service) doKvOperations(kt *kit.Kit, tx *gen.QueryTx, appID, bizID, rel
 		return err
 	}
 
+	rc, err := s.getReleasedTableContent(kt, rkvs)
+	if err != nil {
+		return err
+	}
+
+	if err = s.dao.ReleasedTableContent().BatchCreateWithTx(kt, tx, rc); err != nil {
+		logs.Errorf("bulk create released table content failed, err: %v, rid: %s", err, kt.Rid)
+		return err
+	}
+
 	if err = s.cleanUpKV(kt, tx, bizID, appID); err != nil {
 		logs.Errorf("clean failed, err: %v, rid: %s", err, kt.Rid)
 		return err
@@ -910,13 +920,19 @@ func (s *Service) genCreateKv(kt *kit.Kit, bizID, appID uint32) ([]*pbkv.Kv, err
 	var kvs []*pbkv.Kv
 	for _, detail := range details {
 		var value string
-		_, value, err = s.getKv(kt, bizID, appID, detail.Spec.Version, detail.Spec.Key)
+		if detail.Spec.KvType != table.KvTab {
+			_, value, err = s.getKv(kt, bizID, appID, detail.Spec.Version, detail.Spec.Key)
+			if err != nil {
+				logs.Errorf("get vault kv failed, err: %v, rid: %s", err, kt.Rid)
+				return nil, err
+			}
+		}
+		spec, err := pbkv.PbKvSpec(detail.Spec, value)
 		if err != nil {
-			logs.Errorf("get vault kv failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
 		kvs = append(kvs, &pbkv.Kv{
-			Spec:        pbkv.PbKvSpec(detail.Spec, value),
+			Spec:        spec,
 			Attachment:  pbkv.PbKvAttachment(detail.Attachment),
 			Revision:    pbbase.PbRevision(detail.Revision),
 			ContentSpec: pbcontent.PbContentSpec(detail.ContentSpec),
@@ -930,6 +946,9 @@ func (s *Service) doBatchReleasedVault(kt *kit.Kit, kvs []*pbkv.Kv, releaseId ui
 
 	versionMap := make(map[string]int, len(kvs))
 	for _, rkv := range kvs {
+		if rkv.Spec.KvType == string(table.KvTab) {
+			continue
+		}
 		opt := &types.CreateReleasedKvOption{
 			BizID:     rkv.Attachment.BizId,
 			AppID:     rkv.Attachment.AppId,
@@ -1107,4 +1126,45 @@ func (s Service) checkForExpiredCertificates(kit *kit.Kit, bizID, appID uint32) 
 	}
 
 	return expirationNumber, nil
+}
+
+// 获取表格型键值数据
+func (s *Service) getReleasedTableContent(kit *kit.Kit, rkvs []*table.ReleasedKv) (
+	[]*table.ReleasedTableContent, error) {
+
+	rc := make([]*table.ReleasedTableContent, 0)
+
+	for _, v := range rkvs {
+		if v.Spec.KvType == table.KvTab {
+			var contents []*table.DataSourceContent
+			var err error
+			if v.Spec.ManagedTableID != 0 {
+				contents, _, err = s.dao.DataSourceContent().List(kit, v.Spec.ManagedTableID, v.Spec.FilterCondition,
+					v.Spec.FilterFields, &types.BasePage{All: true})
+			}
+			if v.Spec.ExternalSourceID != 0 {
+				contents, _, err = s.dao.DataSourceContent().List(kit, v.Spec.ExternalSourceID, v.Spec.FilterCondition,
+					v.Spec.FilterFields, &types.BasePage{All: true})
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			for _, content := range contents {
+				rc = append(rc, &table.ReleasedTableContent{
+					Attachment: &table.ReleasedTableContentAttachment{
+						BizID:       v.Attachment.BizID,
+						AppID:       v.Attachment.AppID,
+						ReleaseKvID: v.ID,
+					},
+					Spec: &table.ReleasedTableContentSpec{
+						Content: content.Spec.Content,
+					},
+					Revision: content.Revision,
+				})
+			}
+		}
+	}
+
+	return rc, nil
 }

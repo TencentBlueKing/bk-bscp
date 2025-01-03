@@ -36,6 +36,10 @@ func newKv(db *gorm.DB, opts ...gen.DOOption) kv {
 	_kv.SecretType = field.NewString(tableName, "secret_type")
 	_kv.SecretHidden = field.NewBool(tableName, "secret_hidden")
 	_kv.CertificateExpirationDate = field.NewTime(tableName, "certificate_expiration_date")
+	_kv.ManagedTableID = field.NewUint32(tableName, "managed_table_id")
+	_kv.ExternalSourceID = field.NewUint32(tableName, "external_source_id")
+	_kv.FilterCondition = field.NewField(tableName, "filter_condition")
+	_kv.FilterFields = field.NewField(tableName, "filter_fields")
 	_kv.BizID = field.NewUint32(tableName, "biz_id")
 	_kv.AppID = field.NewUint32(tableName, "app_id")
 	_kv.Creator = field.NewString(tableName, "creator")
@@ -64,6 +68,10 @@ type kv struct {
 	SecretType                field.String
 	SecretHidden              field.Bool
 	CertificateExpirationDate field.Time
+	ManagedTableID            field.Uint32
+	ExternalSourceID          field.Uint32
+	FilterCondition           field.Field
+	FilterFields              field.Field
 	BizID                     field.Uint32
 	AppID                     field.Uint32
 	Creator                   field.String
@@ -98,6 +106,10 @@ func (k *kv) updateTableName(table string) *kv {
 	k.SecretType = field.NewString(table, "secret_type")
 	k.SecretHidden = field.NewBool(table, "secret_hidden")
 	k.CertificateExpirationDate = field.NewTime(table, "certificate_expiration_date")
+	k.ManagedTableID = field.NewUint32(table, "managed_table_id")
+	k.ExternalSourceID = field.NewUint32(table, "external_source_id")
+	k.FilterCondition = field.NewField(table, "filter_condition")
+	k.FilterFields = field.NewField(table, "filter_fields")
 	k.BizID = field.NewUint32(table, "biz_id")
 	k.AppID = field.NewUint32(table, "app_id")
 	k.Creator = field.NewString(table, "creator")
@@ -131,7 +143,7 @@ func (k *kv) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (k *kv) fillFieldMap() {
-	k.fieldMap = make(map[string]field.Expr, 18)
+	k.fieldMap = make(map[string]field.Expr, 22)
 	k.fieldMap["id"] = k.ID
 	k.fieldMap["kv_state"] = k.KvState
 	k.fieldMap["key"] = k.Key
@@ -141,6 +153,10 @@ func (k *kv) fillFieldMap() {
 	k.fieldMap["secret_type"] = k.SecretType
 	k.fieldMap["secret_hidden"] = k.SecretHidden
 	k.fieldMap["certificate_expiration_date"] = k.CertificateExpirationDate
+	k.fieldMap["managed_table_id"] = k.ManagedTableID
+	k.fieldMap["external_source_id"] = k.ExternalSourceID
+	k.fieldMap["filter_condition"] = k.FilterCondition
+	k.fieldMap["filter_fields"] = k.FilterFields
 	k.fieldMap["biz_id"] = k.BizID
 	k.fieldMap["app_id"] = k.AppID
 	k.fieldMap["creator"] = k.Creator
