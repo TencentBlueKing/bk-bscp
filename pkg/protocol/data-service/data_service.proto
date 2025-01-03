@@ -2186,7 +2186,6 @@ message GetTemplateAndNonTemplateCICountResp {
 }
 
 message BatchUpdateLastConsumedTimeReq {
-  uint32 biz_id = 1;
   repeated uint32 app_ids = 2;
 }
 
