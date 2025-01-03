@@ -50,6 +50,7 @@ const (
 	releasedKv          namespace = "released-kv"
 	clientMetric        namespace = "client-metric"
 	publish             namespace = "publish"
+	lastConsumedTime    namespace = "last-consumed-time"
 )
 
 type keyGenerator struct {
@@ -70,6 +71,15 @@ func (k keyGenerator) ClientMetricKey(bizID uint32, appID uint32) string {
 		biz: bizID,
 		ns:  clientMetric,
 		key: strconv.FormatUint(uint64(appID), 10),
+	}.String()
+}
+
+// LastConsumedTimeKey generate the last consumed time cache key.
+func (k keyGenerator) LastConsumedTimeKey(bizID uint32) string {
+	return element{
+		biz: bizID,
+		ns:  lastConsumedTime,
+		key: "last-consumed-time",
 	}.String()
 }
 

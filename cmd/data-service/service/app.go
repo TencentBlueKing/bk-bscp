@@ -433,7 +433,7 @@ func (s *Service) BatchUpdateLastConsumedTime(ctx context.Context, req *pbds.Bat
 	*pbds.BatchUpdateLastConsumedTimeResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	err := s.dao.App().BatchUpdateLastConsumedTime(kit, req.GetBizId(), req.GetAppIds())
+	err := s.dao.App().BatchUpdateLastConsumedTime(kit, req.GetAppIds())
 	if err != nil {
 		return nil, err
 	}

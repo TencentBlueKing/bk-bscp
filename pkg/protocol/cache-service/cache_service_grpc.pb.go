@@ -20,22 +20,22 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Cache_GetAppID_FullMethodName                    = "/pbcs.Cache/GetAppID"
-	Cache_GetAppMeta_FullMethodName                  = "/pbcs.Cache/GetAppMeta"
-	Cache_ListApps_FullMethodName                    = "/pbcs.Cache/ListApps"
-	Cache_GetReleasedCI_FullMethodName               = "/pbcs.Cache/GetReleasedCI"
-	Cache_GetReleasedHook_FullMethodName             = "/pbcs.Cache/GetReleasedHook"
-	Cache_ListAppReleasedGroups_FullMethodName       = "/pbcs.Cache/ListAppReleasedGroups"
-	Cache_GetCurrentCursorReminder_FullMethodName    = "/pbcs.Cache/GetCurrentCursorReminder"
-	Cache_ListEventsMeta_FullMethodName              = "/pbcs.Cache/ListEventsMeta"
-	Cache_GetCredential_FullMethodName               = "/pbcs.Cache/GetCredential"
-	Cache_BenchAppMeta_FullMethodName                = "/pbcs.Cache/BenchAppMeta"
-	Cache_BenchReleasedCI_FullMethodName             = "/pbcs.Cache/BenchReleasedCI"
-	Cache_GetReleasedKv_FullMethodName               = "/pbcs.Cache/GetReleasedKv"
-	Cache_GetReleasedKvValue_FullMethodName          = "/pbcs.Cache/GetReleasedKvValue"
-	Cache_SetClientMetric_FullMethodName             = "/pbcs.Cache/SetClientMetric"
-	Cache_BatchUpdateLastConsumedTime_FullMethodName = "/pbcs.Cache/BatchUpdateLastConsumedTime"
-	Cache_SetPublishTime_FullMethodName              = "/pbcs.Cache/SetPublishTime"
+	Cache_GetAppID_FullMethodName                 = "/pbcs.Cache/GetAppID"
+	Cache_GetAppMeta_FullMethodName               = "/pbcs.Cache/GetAppMeta"
+	Cache_ListApps_FullMethodName                 = "/pbcs.Cache/ListApps"
+	Cache_GetReleasedCI_FullMethodName            = "/pbcs.Cache/GetReleasedCI"
+	Cache_GetReleasedHook_FullMethodName          = "/pbcs.Cache/GetReleasedHook"
+	Cache_ListAppReleasedGroups_FullMethodName    = "/pbcs.Cache/ListAppReleasedGroups"
+	Cache_GetCurrentCursorReminder_FullMethodName = "/pbcs.Cache/GetCurrentCursorReminder"
+	Cache_ListEventsMeta_FullMethodName           = "/pbcs.Cache/ListEventsMeta"
+	Cache_GetCredential_FullMethodName            = "/pbcs.Cache/GetCredential"
+	Cache_BenchAppMeta_FullMethodName             = "/pbcs.Cache/BenchAppMeta"
+	Cache_BenchReleasedCI_FullMethodName          = "/pbcs.Cache/BenchReleasedCI"
+	Cache_GetReleasedKv_FullMethodName            = "/pbcs.Cache/GetReleasedKv"
+	Cache_GetReleasedKvValue_FullMethodName       = "/pbcs.Cache/GetReleasedKvValue"
+	Cache_SetClientMetric_FullMethodName          = "/pbcs.Cache/SetClientMetric"
+	Cache_SetAppLastConsumedTime_FullMethodName   = "/pbcs.Cache/SetAppLastConsumedTime"
+	Cache_SetPublishTime_FullMethodName           = "/pbcs.Cache/SetPublishTime"
 )
 
 // CacheClient is the client API for Cache service.
@@ -57,7 +57,7 @@ type CacheClient interface {
 	GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, opts ...grpc.CallOption) (*JsonRawResp, error)
 	GetReleasedKvValue(ctx context.Context, in *GetReleasedKvValueReq, opts ...grpc.CallOption) (*JsonRawResp, error)
 	SetClientMetric(ctx context.Context, in *SetClientMetricReq, opts ...grpc.CallOption) (*SetClientMetricResp, error)
-	BatchUpdateLastConsumedTime(ctx context.Context, in *BatchUpdateLastConsumedTimeReq, opts ...grpc.CallOption) (*BatchUpdateLastConsumedTimeResp, error)
+	SetAppLastConsumedTime(ctx context.Context, in *SetAppLastConsumedTimeReq, opts ...grpc.CallOption) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(ctx context.Context, in *SetPublishTimeReq, opts ...grpc.CallOption) (*SetPublishTimeResp, error)
 }
 
@@ -195,9 +195,9 @@ func (c *cacheClient) SetClientMetric(ctx context.Context, in *SetClientMetricRe
 	return out, nil
 }
 
-func (c *cacheClient) BatchUpdateLastConsumedTime(ctx context.Context, in *BatchUpdateLastConsumedTimeReq, opts ...grpc.CallOption) (*BatchUpdateLastConsumedTimeResp, error) {
-	out := new(BatchUpdateLastConsumedTimeResp)
-	err := c.cc.Invoke(ctx, Cache_BatchUpdateLastConsumedTime_FullMethodName, in, out, opts...)
+func (c *cacheClient) SetAppLastConsumedTime(ctx context.Context, in *SetAppLastConsumedTimeReq, opts ...grpc.CallOption) (*SetAppLastConsumedTimeResp, error) {
+	out := new(SetAppLastConsumedTimeResp)
+	err := c.cc.Invoke(ctx, Cache_SetAppLastConsumedTime_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ type CacheServer interface {
 	GetReleasedKv(context.Context, *GetReleasedKvReq) (*JsonRawResp, error)
 	GetReleasedKvValue(context.Context, *GetReleasedKvValueReq) (*JsonRawResp, error)
 	SetClientMetric(context.Context, *SetClientMetricReq) (*SetClientMetricResp, error)
-	BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error)
+	SetAppLastConsumedTime(context.Context, *SetAppLastConsumedTimeReq) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error)
 }
 
@@ -282,8 +282,8 @@ func (UnimplementedCacheServer) GetReleasedKvValue(context.Context, *GetReleased
 func (UnimplementedCacheServer) SetClientMetric(context.Context, *SetClientMetricReq) (*SetClientMetricResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetClientMetric not implemented")
 }
-func (UnimplementedCacheServer) BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateLastConsumedTime not implemented")
+func (UnimplementedCacheServer) SetAppLastConsumedTime(context.Context, *SetAppLastConsumedTimeReq) (*SetAppLastConsumedTimeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetAppLastConsumedTime not implemented")
 }
 func (UnimplementedCacheServer) SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPublishTime not implemented")
@@ -552,20 +552,20 @@ func _Cache_SetClientMetric_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cache_BatchUpdateLastConsumedTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchUpdateLastConsumedTimeReq)
+func _Cache_SetAppLastConsumedTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAppLastConsumedTimeReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CacheServer).BatchUpdateLastConsumedTime(ctx, in)
+		return srv.(CacheServer).SetAppLastConsumedTime(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Cache_BatchUpdateLastConsumedTime_FullMethodName,
+		FullMethod: Cache_SetAppLastConsumedTime_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CacheServer).BatchUpdateLastConsumedTime(ctx, req.(*BatchUpdateLastConsumedTimeReq))
+		return srv.(CacheServer).SetAppLastConsumedTime(ctx, req.(*SetAppLastConsumedTimeReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -652,8 +652,8 @@ var Cache_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Cache_SetClientMetric_Handler,
 		},
 		{
-			MethodName: "BatchUpdateLastConsumedTime",
-			Handler:    _Cache_BatchUpdateLastConsumedTime_Handler,
+			MethodName: "SetAppLastConsumedTime",
+			Handler:    _Cache_SetAppLastConsumedTime_Handler,
 		},
 		{
 			MethodName: "SetPublishTime",
