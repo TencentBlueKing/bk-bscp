@@ -213,5 +213,13 @@ func (p *proxy) routers() http.Handler {
 		r.Get("/", p.varService.ExportReleasedAppVariables)
 	})
 
+	// 导入表格数据源
+	r.Route("/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/{format}/import", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.HttpServerHandledTotal("", "table"))
+		r.Post("/", p.tableService.Import)
+	})
+
 	return r
 }
