@@ -209,3 +209,63 @@ const (
 	// TicketRevokedStatu 被撤销
 	TicketRevokedStatu = "REVOKED"
 )
+
+// 操作记录资源实例相关
+const (
+	// ResSeparator 不同资源名称叠加时分隔符
+	ResSeparator = "\n"
+	// NameSeparator 相同资源名称叠加时分隔符
+	NameSeparator = ", "
+	// AppName 服务名称
+	AppName = "app_name: %s"
+	// ConfigFileAbsolutePath 配置文件绝对路径
+	ConfigFileAbsolutePath = "config_file_absolute_path: %s"
+	// ConfigItemName 配置项名称
+	ConfigItemName = "config_item_name: %s"
+	// HookName 脚本名称
+	HookName = "hook_name: %s"
+	// VariableName 变量名称
+	VariableName = "variable_name: %s"
+	// ConfigReleaseName 配置版本名称
+	ConfigReleaseName = "config_release_name: %s"
+	// ConfigReleaseScope 配置上线范围
+	ConfigReleaseScope = "config_release_scope: %s"
+	// GroupName 分组名称
+	GroupName = "group_name: %s"
+	// HookRevisionName 脚本版本名称
+	HookRevisionName = "hook_revision_name: %s"
+	// TemplateSpaceName 模版空间名称
+	TemplateSpaceName = "template_space_name: %s"
+	// TemplateSetName 模版套餐名称
+	TemplateSetName = "template_set_name: %s"
+	// TemplateAbsolutePath 模版文件绝对路径
+	TemplateAbsolutePath = "template_absolute_path: %s"
+	// TemplateRevision 模版版本号
+	TemplateRevision = "template_revision: %s"
+	// CredentialName 密钥名称
+	CredentialName = "credential_name: %s" // nolint
+	// ReferenceHookName 引用脚本名称
+	ReferenceHookName = "reference_%s_name: %s"
+	// ReplaceHookName 更换脚本名称
+	ReplaceHookName = "replace_%s_name: %s"
+	// CancelPreHookName 取消脚本名称
+	CancelHookName = "cancel_%s_name: %s"
+	// ObsoleteConfigReleaseName 废弃配置版本名称
+	ObsoleteConfigReleaseName = "obsolete_config_release_name: %s"
+	// RestoreConfigReleaseName 恢复配置版本名称
+	RestoreConfigReleaseName = "restore_config_release_name: %s"
+	// DeleteConfigReleaseName 删除配置版本名称
+	DeleteConfigReleaseName = "delete_config_release_name: %s"
+	// CredentialEnableName 启用密钥名称
+	CredentialEnableName = "credential_enable_name: %s" // nolint
+	// CredentialUnableName 禁用密钥名称
+	CredentialUnableName = "credential_unable_name: %s" // nolint
+	// AssociatedAppConfigCredentialName 关联服务配置密钥名称
+	AssociatedAppConfigCredentialName = "associated_app_config_credential_name: %s" // nolint
+	// ConfigRetryClientUID 配置重新拉取客户端UID
+	ConfigRetryClientUID = "config_retry_client_uid: %s"
+	// ConfigRetryClientIp 配置重新拉取客户端IP
+	ConfigRetryClientIp = "config_retry_client_ip: %s"
+	// OperateObject 等 xx 个对象进行操作
+	OperateObject = "operate_objects: %d" // nolint
+)

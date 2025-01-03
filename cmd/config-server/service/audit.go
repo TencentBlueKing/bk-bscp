@@ -43,7 +43,6 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 		AppId:       req.AppId,
 		StartTime:   req.StartTime,
 		EndTime:     req.EndTime,
-		Operate:     req.Operate,
 		Start:       req.Start,
 		Limit:       req.Limit,
 		All:         req.All,

@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -62,7 +63,7 @@ func (r *HookRevision) ResID() uint32 {
 
 // ResType AuditRes interface
 func (r *HookRevision) ResType() string {
-	return "hook_revisions"
+	return string(enumor.Hook)
 }
 
 // ValidateCreate validate hook is valid or not when create it.

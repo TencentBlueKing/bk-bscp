@@ -15,6 +15,7 @@ package table
 import (
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -45,7 +46,7 @@ func (t *TemplateSet) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *TemplateSet) ResType() string {
-	return "template_set"
+	return string(enumor.Template)
 }
 
 // ValidateCreate validate template set is valid or not when create it.

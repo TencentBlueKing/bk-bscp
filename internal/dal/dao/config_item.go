@@ -15,13 +15,17 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/samber/lo"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -144,29 +148,19 @@ func (dao *configItemDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, ci *table.
 		return err
 	}
 
-	oldOne, err := q.Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Take()
-	if err != nil {
-		return err
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(ci.Spec.Path, ci.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareUpdate(ci)
+	if err := ad.Do(tx.Query); err != nil {
+		return fmt.Errorf("audit update config item failed, err: %v", err)
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareUpdate(ci, oldOne)
-
-	updateTx := func(tx *gen.Query) error {
-		q = tx.ConfigItem.WithContext(kit.Ctx)
-		if _, err = q.Select(m.Name, m.Path, m.FileType, m.FileMode, m.Memo, m.User, m.UserGroup,
-			m.Privilege, m.Reviser, m.UpdatedAt).
-			Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Updates(ci); err != nil {
-			return err
-		}
-
-		if err = ad.Do(tx); err != nil {
-			return fmt.Errorf("audit update config item failed, err: %v", err)
-		}
-		return nil
-	}
-
-	if err = dao.genQ.Transaction(updateTx); err != nil {
-		logs.Errorf("update config item: %d failed, err: %v, rid: %v", ci.ID, err, kit.Rid)
+	q = tx.ConfigItem.WithContext(kit.Ctx)
+	if _, err := q.Select(m.Name, m.Path, m.FileType, m.FileMode, m.Memo, m.User, m.UserGroup,
+		m.Privilege, m.Reviser, m.UpdatedAt).
+		Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Updates(ci); err != nil {
 		return err
 	}
 
@@ -187,7 +181,11 @@ func (dao *configItemDao) RecoverConfigItem(kit *kit.Kit, tx *gen.QueryTx, ci *t
 		return err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareCreate(ci)
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(ci.Spec.Path, ci.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareCreate(ci)
 
 	if err := tx.ConfigItem.WithContext(kit.Ctx).Create(ci); err != nil {
 		return err
@@ -232,7 +230,11 @@ func (dao *configItemDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, ci *table.
 	}
 
 	ci.ID = id
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareCreate(ci)
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(ci.Spec.Path, ci.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareCreate(ci)
 
 	if err := tx.ConfigItem.WithContext(kit.Ctx).Create(ci); err != nil {
 		return 0, err
@@ -267,6 +269,23 @@ func (dao *configItemDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 	if err := tx.ConfigItem.WithContext(kit.Ctx).CreateInBatches(configItems, 500); err != nil {
 		return err
 	}
+
+	// 截取前三个对象
+	var paths []string
+	for i := 0; i < len(configItems) && i < 3; i++ {
+		paths = append(paths, path.Join(configItems[i].Spec.Path, configItems[i].Spec.Name))
+	}
+	ad := dao.auditDao.Decorator(kit, configItems[0].Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.ConfigItemName,
+			len(configItems), strings.Join(paths, constant.NameSeparator)),
+		Status: enumor.Success,
+		AppId:  configItems[0].Attachment.AppID,
+	}).PrepareCreate(configItems[0])
+	err = ad.Do(tx.Query)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -298,27 +317,26 @@ func (dao *configItemDao) Update(kit *kit.Kit, ci *table.ConfigItem) error {
 		return err
 	}
 
-	oldOne, err := q.Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareUpdate(ci, oldOne)
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(ci.Spec.Path, ci.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareUpdate(ci)
 
 	updateTx := func(tx *gen.Query) error {
 		q = tx.ConfigItem.WithContext(kit.Ctx)
-		if _, err = q.Omit(m.ID, m.BizID, m.AppID).
+		if _, err := q.Omit(m.ID, m.BizID, m.AppID).
 			Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Updates(ci); err != nil {
 			return err
 		}
 
-		if err = ad.Do(tx); err != nil {
+		if err := ad.Do(tx); err != nil {
 			return fmt.Errorf("audit update config item failed, err: %v", err)
 		}
 		return nil
 	}
 
-	if err = dao.genQ.Transaction(updateTx); err != nil {
+	if err := dao.genQ.Transaction(updateTx); err != nil {
 		logs.Errorf("update config item: %d failed, err: %v, rid: %v", ci.ID, err, kit.Rid)
 		return err
 	}
@@ -335,6 +353,22 @@ func (dao *configItemDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, confi
 		return nil
 	}
 	if err := tx.ConfigItem.WithContext(kit.Ctx).Save(configItems...); err != nil {
+		return err
+	}
+
+	// 截取前三个对象
+	var paths []string
+	for i := 0; i < len(configItems) && i < 3; i++ {
+		paths = append(paths, path.Join(configItems[i].Spec.Path, configItems[i].Spec.Name))
+	}
+	ad := dao.auditDao.Decorator(kit, configItems[0].Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.ConfigItemName,
+			len(configItems), strings.Join(paths, constant.NameSeparator)),
+		Status: enumor.Success,
+		AppId:  configItems[0].Attachment.AppID,
+	}).PrepareUpdate(configItems[0])
+	err := ad.Do(tx.Query)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -410,22 +444,25 @@ func (dao *configItemDao) Delete(kit *kit.Kit, ci *table.ConfigItem) error {
 	if err != nil {
 		return err
 	}
-
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(oldOne.Spec.Path, oldOne.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareDelete(ci)
 
 	// delete config item with transaction.
 	deleteTx := func(tx *gen.Query) error {
 		q = tx.ConfigItem.WithContext(kit.Ctx)
-		if _, err = q.Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Delete(); err != nil {
+		if _, err := q.Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Delete(); err != nil {
 			return err
 		}
 
-		if err = ad.Do(tx); err != nil {
+		if err := ad.Do(tx); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err = dao.genQ.Transaction(deleteTx); err != nil {
+	if err := dao.genQ.Transaction(deleteTx); err != nil {
 		logs.Errorf("delete config item: %d failed, err: %v, rid: %v", ci.ID, err, kit.Rid)
 		return err
 	}
@@ -455,7 +492,11 @@ func (dao *configItemDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, ci *table.
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, ci.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, ci.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigFileAbsolutePath, path.Join(oldOne.Spec.Path, oldOne.Spec.Name)),
+		Status:           enumor.Success,
+		AppId:            ci.Attachment.AppID,
+	}).PrepareDelete(ci)
 
 	_, err = q.Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Delete()
 	if err != nil {

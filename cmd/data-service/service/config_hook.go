@@ -52,6 +52,9 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbds.UpdateConfigHo
 		hook, err := s.getReleasedHook(kt, preHook)
 		if err != nil {
 			logs.Errorf("no released releases of the pre-hook, err: %v, rid: %s", err, kt.Rid)
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
 			return nil, errors.New("no released releases of the pre-hook")
 		}
 
