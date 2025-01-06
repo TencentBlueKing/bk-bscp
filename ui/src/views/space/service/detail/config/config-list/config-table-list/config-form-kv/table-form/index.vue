@@ -109,11 +109,8 @@
     let routeData;
     if (type === 'create') {
       routeData = router.resolve({
-        name: 'edit-table-structure',
-        params: { bizId: props.bkBizId, id: table!.id },
-        query: {
-          name: table!.name,
-        },
+        name: 'create-table-structure',
+        params: { bizId: props.bkBizId },
       });
     } else {
       routeData = router.resolve({

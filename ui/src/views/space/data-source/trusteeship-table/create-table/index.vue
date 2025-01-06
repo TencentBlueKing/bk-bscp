@@ -7,8 +7,7 @@
             <div
               v-for="item in tableStructureSource"
               :key="item.value"
-              :class="['table-source-type-item', { active: selectedType === item.value }]"
-              @click="selectedType = item.value">
+              :class="['table-source-type-item', { active: selectedType === item.value }]">
               <div class="header">
                 <i class="bk-bscp-icon icon-revoke" />
                 <span class="label">{{ item.label }}</span>
@@ -32,9 +31,9 @@
         <bk-button theme="primary" style="width: 88px" :loading="loading" @click="handleCreate">
           {{ $t('创建') }}
         </bk-button>
-        <bk-button style="width: 130px" :loading="loading" @click="handleCreateAndEdit">{{
-          $t('创建并编辑数据')
-        }}</bk-button>
+        <bk-button style="width: 130px" :loading="loading" @click="handleCreate(true)">
+          {{ $t('创建并编辑数据') }}
+        </bk-button>
         <bk-button style="width: 88px" @click="handleCloseCreate">{{ $t('取消') }}</bk-button>
       </div>
     </template>
@@ -53,10 +52,10 @@
   import ManualCreate from '../components/table-structure-form.vue';
   import ImportFormLocal from './import-form-local/index.vue';
   import { useI18n } from 'vue-i18n';
+  import BkMessage from 'bkui-vue/lib/message';
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['close', 'refresh']);
   const router = useRouter();
 
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -86,34 +85,28 @@
     },
   ];
 
-  const handleCreate = async () => {
+  const handleCreate = async (redirectToEdit = false) => {
     try {
       loading.value = true;
       const data = {
         spec: formData.value,
       };
-      await createTable(spaceId.value, data);
-      emits('close');
-      emits('refresh');
-    } catch (error) {
-      console.error(error);
-    } finally {
-      loading.value = false;
-    }
-  };
 
-  const handleCreateAndEdit = async () => {
-    try {
-      loading.value = true;
-      const data = {
-        spec: formData.value,
-      };
       const res = await createTable(spaceId.value, data);
-      router.push({
-        name: 'edit-table-data',
-        params: { spaceId: spaceId.value, id: res.data.id },
-        query: { name: formData.value.table_name },
-      });
+
+      if (redirectToEdit) {
+        // 跳转到编辑页面
+        router.push({
+          name: 'edit-table-data',
+          params: { spaceId: spaceId.value, id: res.data.id },
+          query: { name: formData.value.table_name },
+        });
+      } else {
+        // 关闭创建弹窗
+        handleCloseCreate();
+      }
+
+      BkMessage({ theme: 'success', message: t('新建表格成功') });
     } catch (error) {
       console.error(error);
     } finally {
@@ -122,7 +115,10 @@
   };
 
   const handleCloseCreate = () => {
-    emits('close');
+    router.push({
+      name: 'trusteeship-table-list',
+      params: { spaceId: spaceId.value },
+    });
   };
 </script>
 

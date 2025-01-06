@@ -41,6 +41,9 @@
   import DetailLayout from '../../component/detail-layout.vue';
   import Table from './table.vue';
   import ImportTable from './import-table.vue';
+  import BkMessage from 'bkui-vue/lib/message';
+  import { useI18n } from 'vue-i18n';
+  const { t } = useI18n();
 
   const router = useRouter();
   const route = useRoute();
@@ -91,6 +94,7 @@
       };
       await editTableData(spaceId.value, tableId.value, query);
       handleClose();
+      BkMessage({ theme: 'success', message: t('编辑数据成功') });
     } catch (error) {
       console.error(error);
     } finally {

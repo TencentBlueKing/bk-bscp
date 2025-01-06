@@ -47,6 +47,7 @@
   const activeTab = ref(getDefaultTab());
 
   const handleRouterLink = (routeName: string) => {
+    if (routeName === 'data-source-manage') return;
     router.push({ name: routeName });
   };
 </script>

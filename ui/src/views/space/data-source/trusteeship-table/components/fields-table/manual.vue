@@ -120,12 +120,10 @@
   const props = withDefaults(
     defineProps<{
       list: IFiledsItemEditing[];
-      isView?: boolean; // 是否为查看态
       isEdit?: boolean; // 是否为编辑态
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
-      isView: false,
       isEdit: false,
     },
   );
@@ -234,7 +232,6 @@
     });
     emits('change', fieldsList.value);
   };
-
 </script>
 
 <style scoped lang="scss">

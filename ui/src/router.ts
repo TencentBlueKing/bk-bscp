@@ -240,6 +240,14 @@ const routes = [
                 ],
               },
               {
+                path: 'create-structure',
+                name: 'create-table-structure',
+                meta: {
+                  navModule: 'data-source',
+                },
+                component: () => import('./views/space/data-source/trusteeship-table/create-table/index.vue'),
+              },
+              {
                 path: 'edit-structure/:id',
                 name: 'edit-table-structure',
                 meta: {

@@ -9,30 +9,26 @@
       :width="400"
       :placeholder="$t('表格名称/表格描述/最近更新人')" />
   </div>
-  <Table ref="tableRef" :bk-biz-id="bkBizId" />
-  <CreateTable v-if="isShowCreateTable" @close="isShowCreateTable = false" @refresh="handleRefresh" />
+  <Table :bk-biz-id="bkBizId" />
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import SearchInput from '../../../../../components/search-input.vue';
   import Table from './table.vue';
-  import CreateTable from '../create-table/index.vue';
 
   const route = useRoute();
+  const router = useRouter();
   const bkBizId = String(route.params.spaceId);
 
   const searchStr = ref('');
-  const isShowCreateTable = ref(false);
-  const tableRef = ref();
 
   const handleOpenCreate = () => {
-    isShowCreateTable.value = true;
-  };
-
-  const handleRefresh = () => {
-    tableRef.value.refresh();
+    router.push({
+      name: 'create-table-structure',
+      params: { spaceId: bkBizId },
+    });
   };
 </script>
 

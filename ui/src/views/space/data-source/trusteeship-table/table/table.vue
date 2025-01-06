@@ -27,8 +27,8 @@
       <bk-table-column :label="$t('表格描述')" prop="spec.table_memo" />
       <bk-table-column :label="$t('关联配置项')">
         <template #default="{ row }">
-          <bk-button v-if="row.spec" text theme="primary" :disabled="row.spec.visible_range.length === 0">
-            {{ row.spec.visible_range.length }}
+          <bk-button v-if="row.spec" text theme="primary" :disabled="row.citations === 0">
+            {{ row.citations }}
           </bk-button>
         </template>
       </bk-table-column>
@@ -74,7 +74,7 @@
                   <div class="action-item" @click="handleImportTable(row)">{{ $t('导入表格') }}</div>
                   <div class="action-item" @click="handleExportTable(row)">{{ $t('导出表格') }}</div>
                   <div
-                    :class="['action-item', { disabled: row.spec.visible_range.length !== 0 }]"
+                    :class="['action-item', { disabled: row.citations.length !== 0 }]"
                     @click="handleDeleteTable(row)">
                     {{ $t('删除') }}
                   </div>
@@ -97,7 +97,10 @@
   import { useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import useTablePagination from '../../../../../utils/hooks/use-table-pagination';
+  import BkMessage from 'bkui-vue/lib/message';
+  import { useI18n } from 'vue-i18n';
 
+  const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('trusteeship-table');
   const { spaceId } = storeToRefs(useGlobalStore());
 
@@ -150,10 +153,11 @@
   };
 
   const handleDeleteTable = async (tableItem: ILocalTableItem) => {
-    if (tableItem.spec.visible_range.length) return;
+    if (tableItem.citations !== 0) return;
     try {
       await deleteTableStructure(spaceId.value, tableItem.id);
       refresh();
+      BkMessage({ theme: 'success', message: t('删除表格成功') });
     } catch (error) {
       console.error(error);
     }

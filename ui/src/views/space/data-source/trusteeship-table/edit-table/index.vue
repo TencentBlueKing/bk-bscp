@@ -19,7 +19,9 @@
         <bk-button theme="primary" :loading="loading" style="width: 88px" @click="handleConfirm">
           {{ $t('创建') }}
         </bk-button>
-        <bk-button :loading="loading" style="width: 130px">{{ $t('创建并编辑数据') }}</bk-button>
+        <bk-button :loading="loading" style="width: 130px" @click="handleConfirm(true)">
+          {{ $t('创建并编辑数据') }}
+        </bk-button>
         <bk-button style="width: 88px" @click="handleClose">{{ $t('取消') }}</bk-button>
       </div>
     </template>
@@ -33,6 +35,10 @@
   import { ILocalTableForm } from '../../../../../../types/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
   import TableStructureForm from '../components/table-structure-form.vue';
+  import BkMessage from 'bkui-vue/lib/message';
+  import { useI18n } from 'vue-i18n';
+
+  const { t } = useI18n();
 
   const router = useRouter();
   const route = useRoute();
@@ -73,14 +79,27 @@
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (redirectToEdit = false) => {
     try {
       loading.value = true;
       const data = {
         spec: formData.value,
       };
-      await editTable(spaceId.value, tableId.value, data);
-      handleClose();
+
+      const res = await editTable(spaceId.value, tableId.value, data);
+
+      if (redirectToEdit) {
+        // 跳转到编辑页面
+        router.push({
+          name: 'edit-table-data',
+          params: { spaceId: spaceId.value, id: res.data.id },
+          query: { name: formData.value.table_name },
+        });
+      } else {
+        // 关闭弹窗
+        handleClose();
+      }
+      BkMessage({ theme: 'success', message: t('编辑表格成功') });
     } catch (error) {
       console.error(error);
     } finally {

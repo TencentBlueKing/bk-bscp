@@ -49,6 +49,7 @@ export interface ILocalTableItem {
     creator: string;
     create_at: string;
   };
+  citations: number;
 }
 
 // 字段设置枚举类型
