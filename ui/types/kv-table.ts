@@ -105,3 +105,29 @@ export interface ILocalTableEditContent {
   table_content_id: number;
   content: { [key: string]: string | string[] };
 }
+
+export const enum EDataCleanType {
+  '=' = 'eq',
+  '!=' = 'ne',
+  '>' = 'gt',
+  '>=' = 'ge',
+  '<' = 'lt',
+  '<=' = 'le',
+  'IN' = 'in',
+  'NOT IN' = 'nin',
+}
+
+export interface IDataCleanItem {
+  key: string;
+  op: EDataCleanType | string;
+  value: string | number | string[];
+}
+
+export interface IConfigTableForm {
+  managed_table_id?: number; // 托管表格id
+  external_source_id?: number; // 外部数据源id
+  filter_condition?: {
+    labels_and?: IDataCleanItem[];
+  }; // 数据清洗条件
+  filter_fields?: string[]; // 过滤表格字段
+}

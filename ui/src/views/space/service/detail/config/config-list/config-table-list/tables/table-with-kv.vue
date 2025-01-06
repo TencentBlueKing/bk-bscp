@@ -50,7 +50,7 @@
             v-if="row.spec"
             :is-visible="!row.spec.secret_hidden"
             :key="row.id"
-            :value="row.spec.value"
+            :value="row.spec.kv_type === 'table' ? row.table_config_preview_name : row.spec.value"
             :type="row.spec.kv_type"
             :is-kv-value="true"
             @view-all="handleView(row)" />

@@ -30,11 +30,12 @@
     </div>
     <div class="head-right">
       <bk-select
+        :model-value="spaceId"
+        label="citations"
         class="space-selector"
         id-key="space_id"
-        display-key="space_name"
+        display-key="citations"
         enable-virtual-render
-        :model-value="spaceId"
         :popover-options="{ theme: 'light bk-select-popover space-selector-popover' }"
         :list="optionList"
         :filterable="true"
