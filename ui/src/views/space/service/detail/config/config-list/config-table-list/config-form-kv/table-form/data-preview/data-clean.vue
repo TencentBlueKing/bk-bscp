@@ -3,7 +3,12 @@
     <div class="title">{{ $t('数据清洗') }}</div>
     <div class="rule-wrap">
       <div v-for="(rule, index) in ruleList" :key="index" class="rule-item">
-        <bk-select v-model="rule.key" :placeholder="$t('请选择字段')" class="field-select">
+        <bk-select
+          v-model="rule.key"
+          :placeholder="$t('请选择字段')"
+          :class="['field-select', { 'is-error': showErrorKeyValidation[index] }]"
+          @change="handleSelectField(rule)"
+          @blur="validateKey(index)">
           <bk-option
             v-for="field in props.fields"
             :key="field.name"
@@ -14,27 +19,39 @@
           <bk-option v-for="op in KV_TABLE_CLEAN_RULE" :key="op.id" :value="op.id" :label="op.name"></bk-option>
         </bk-select>
         <div class="value-input">
-          <bk-tag-input
-            v-if="['in', 'nin'].includes(rule.op)"
+          <bk-select
+            v-if="rule.field?.column_type === 'enum'"
             v-model="rule.value"
             :class="{ 'is-error': showErrorValueValidation[index] }"
-            :allow-create="true"
-            :collapse-tags="true"
-            :has-delete-icon="true"
-            :show-clear-only-hover="true"
-            :allow-auto-match="true"
-            :list="[]"
-            :placeholder="$t('请输入条件值')">
-          </bk-tag-input>
-          <bk-input
-            v-else
-            v-model="rule.value"
-            :class="{ 'is-error': showErrorValueValidation[index] }"
-            :placeholder="$t('请输入条件值')">
-          </bk-input>
-          <div v-show="showErrorValueValidation[index]" class="error-msg is--value">
-            {{ $t("需以字母、数字开头和结尾，可包含 '-'，'_'，'.' 和字母数字及负数") }}
-          </div>
+            :multiple="rule.field.selected"
+            @change="validateValue(index)"
+            @blur="validateValue(index)">
+            <bk-option v-for="item in rule.enum_list" :key="item.value" :value="item.value" :label="item.text" />
+          </bk-select>
+          <template v-else>
+            <bk-tag-input
+              v-if="['in', 'nin'].includes(rule.op)"
+              v-model="rule.value"
+              :class="{ 'is-error': showErrorValueValidation[index] }"
+              :allow-create="true"
+              :collapse-tags="true"
+              :has-delete-icon="true"
+              :show-clear-only-hover="true"
+              :allow-auto-match="true"
+              :list="[]"
+              :placeholder="$t('请输入条件值')"
+              @change="validateValue(index)"
+              @blur="validateValue(index)">
+            </bk-tag-input>
+            <bk-input
+              v-else
+              v-model="rule.value"
+              :class="{ 'is-error': showErrorValueValidation[index] }"
+              :placeholder="$t('请输入条件值')"
+              @change="validateValue(index)"
+              @blur="validateValue(index)">
+            </bk-input>
+          </template>
         </div>
         <div class="action-btns">
           <i v-if="index === ruleList.length - 1" class="bk-bscp-icon icon-add" @click="handleAddRule(index)"></i>
@@ -54,15 +71,15 @@
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
-  import { IDataCleanItem } from '../../../../../../../../../../../types/kv-table';
+  import { IDataCleanItem, IFieldItem } from '../../../../../../../../../../../types/kv-table';
   import { KV_TABLE_CLEAN_RULE } from '../../../../../../../../../../constants/config';
   import { cloneDeep } from 'lodash';
-  interface IFieldItem {
-    name: string;
-    alias: string;
-    column_type: string;
-    primary: boolean;
+
+  interface IRuleItem extends IDataCleanItem {
+    field?: IFieldItem;
+    enum_list?: { text: string; value: string }[];
   }
+
   const props = defineProps<{
     fields: IFieldItem[];
     ruleList: IDataCleanItem[];
@@ -70,15 +87,33 @@
   const emits = defineEmits(['change', 'close']);
 
   const getDefaultRuleConfig = (): IDataCleanItem => ({ key: '', op: 'eq', value: '' });
-  const ruleList = ref<IDataCleanItem[]>(cloneDeep(props.ruleList));
+  const ruleList = ref<IRuleItem[]>(cloneDeep(props.ruleList));
   const showErrorKeyValidation = ref<boolean[]>([]);
   const showErrorValueValidation = ref<boolean[]>([]);
 
   onMounted(() => {
-    if (ruleList.value.length === 0) {
+    if (ruleList.value.length > 0) {
+      ruleList.value.forEach((rule) => {
+        rule.field = props.fields.find((item) => item.name === rule.key);
+        if (rule.field?.column_type === 'enum') {
+          rule.enum_list = JSON.parse(rule.field!.enum_value);
+          if (rule.field.selected) {
+            rule.value = JSON.parse(rule.value as string);
+          }
+        }
+      });
+    } else {
       handleAddRule(0);
     }
   });
+
+  const handleSelectField = (rule: IRuleItem) => {
+    rule.field = props.fields.find((item) => item.name === rule.key);
+    rule.value = rule.field?.column_type === 'enum' ? [] : '';
+    if (rule.field?.column_type === 'enum') {
+      rule.enum_list = JSON.parse(rule.field!.enum_value);
+    }
+  };
 
   const handleAddRule = (index: number) => {
     const rule = getDefaultRuleConfig();
@@ -94,8 +129,54 @@
     showErrorValueValidation.value.splice(index, 1);
   };
 
+  // 校验规则是否有表单项为空
+  const validateRules = () => {
+    let allValid = true;
+    ruleList.value.forEach((item, index) => {
+      const { op } = item;
+      if (op === '') return (allValid = false);
+      item.key ? validateValue(index) : validateKey(index);
+    });
+    allValid = !showErrorKeyValidation.value.includes(true) && !showErrorValueValidation.value.includes(true);
+    if (ruleList.value.length === 1 && ruleList.value[0].key === '') {
+      allValid = true;
+    }
+    return allValid;
+  };
+
+  // 验证key
+  const validateKey = (index: number) => {
+    showErrorKeyValidation.value[index] = ruleList.value[index].key === '';
+    if (showErrorValueValidation.value[index]) {
+      showErrorValueValidation.value[index] = false;
+    }
+  };
+
+  // 验证value
+  const validateValue = (index: number) => {
+    if (Array.isArray(ruleList.value[index].value)) {
+      showErrorValueValidation.value[index] = ruleList.value[index].value.length === 0;
+    } else {
+      showErrorValueValidation.value[index] = ruleList.value[index].value === '';
+    }
+    if (showErrorKeyValidation.value[index]) {
+      showErrorKeyValidation.value[index] = false;
+    }
+  };
+
   const handleConfirm = () => {
-    emits('change', ruleList.value);
+    if (!validateRules()) return;
+    let list = ruleList.value.map((rule) => {
+      return {
+        key: rule.key,
+        op: rule.op,
+        value: Array.isArray(rule.value) ? JSON.stringify(rule.value) : rule.value,
+      };
+    });
+    if (list.length === 1 && list[0].key === '') {
+      list = [];
+    }
+    emits('change', list);
     emits('close');
   };
 </script>
@@ -158,6 +239,21 @@
       i:hover {
         color: #3a84ff;
       }
+    }
+  }
+  .is-error {
+    border-color: #ea3636;
+    &:focus-within {
+      border-color: #3a84ff;
+    }
+    &:hover:not(.is-disabled) {
+      border-color: #ea3636;
+    }
+    :deep(.bk-tag-input-trigger) {
+      border-color: #ea3636;
+    }
+    :deep(.bk-input--default) {
+      @extend .is-error;
     }
   }
 </style>

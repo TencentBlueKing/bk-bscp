@@ -99,7 +99,7 @@
   import { ref } from 'vue';
   import { Upload, ExcelFill, Done, Error, Success, Warn, Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import UploadFieldsTable from '../components/fields-table/upload.vue';
-  import { IFiledItem } from '../../../../../../types/kv-table';
+  import { IFieldItem } from '../../../../../../types/kv-table';
 
   const props = defineProps<{
     show: boolean;
@@ -114,7 +114,7 @@
     status: 'success',
     progress: 100,
   });
-  const filedsList = ref<IFiledItem[]>([
+  const filedsList = ref<IFieldItem[]>([
     {
       fieldsName: 'ID',
       showName: '唯一ID',

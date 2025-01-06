@@ -1,5 +1,5 @@
 // 接口字段设置
-export interface IFiledItem {
+export interface IFieldItem {
   name: string;
   alias: string;
   primary: boolean;
@@ -39,7 +39,7 @@ export interface ILocalTableItem {
     table_name: string;
     table_memo: string;
     visible_range: number[];
-    columns: IFiledItem[];
+    columns: IFieldItem[];
   };
   attachment: {
     biz_id: number;
@@ -72,7 +72,7 @@ export interface ILocalTableForm {
   table_name: string;
   table_memo: string;
   visible_range: string[];
-  columns: IFiledItem[];
+  columns: IFieldItem[];
 }
 
 // 托管表格单行数据

@@ -32,7 +32,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { Search } from 'bkui-vue/lib/icon';
   import {
-    IFiledItem,
+    IFieldItem,
     ILocalTableEditData,
     ILocalTableDataItem,
     ILocalTableEditContent,
@@ -51,7 +51,7 @@
   const name = ref(String(route.query.name));
 
   const isShowImportTable = ref(false);
-  const fields = ref<IFiledItem[]>([]);
+  const fields = ref<IFieldItem[]>([]);
   const tableData = ref<ILocalTableDataItem[]>([]);
   const editDataContent = ref<ILocalTableEditContent[]>([]);
   const loading = ref(false);

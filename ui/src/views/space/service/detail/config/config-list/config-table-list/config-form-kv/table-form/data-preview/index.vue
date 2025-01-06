@@ -35,14 +35,13 @@
     <vxe-table
       :data="tableData"
       border
-      show-overflow
       ref="tableRef"
-      max-height="600"
+      max-height="500"
       :loading="tableLoading"
       :column-config="{ resizable: true }"
       :scroll-y="{ enabled: true, gt: 0 }"
       :scroll-x="{ enabled: true, gt: 0 }">
-      <vxe-column v-for="field in selectFieldList" :key="field.name" show-overflow min-width="200" min-height="48">
+      <vxe-column v-for="field in selectFieldList" :key="field.name" min-width="200" min-height="48">
         <template #header>
           <div class="head">
             <div class="alias">{{ field.alias }}</div>
@@ -63,23 +62,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch } from 'vue';
+  import { ref, watch, onMounted } from 'vue';
   import {
     ILocalTableEditData,
     IDataCleanItem,
     IConfigTableForm,
+    IFieldItem,
   } from '../../../../../../../../../../../types/kv-table';
   import { getTableData } from '../../../../../../../../../../api/kv-table';
   import { RightTurnLine, CogShape, Funnel } from 'bkui-vue/lib/icon';
   import fieldSetting from './field-setting.vue';
   import dataClean from './data-clean.vue';
-
-  interface IFieldItem {
-    name: string;
-    alias: string;
-    column_type: string;
-    primary: boolean;
-  }
 
   const props = defineProps<{
     bkBizId: string;
@@ -94,6 +87,14 @@
   const isShowFieldSetting = ref(false);
   const isShowDataClean = ref(false);
   const ruleList = ref<IDataCleanItem[]>([]);
+
+  onMounted(async () => {
+    ruleList.value = props.tableForm.filter_condition?.labels_and || [];
+    await loadData();
+    if (props.tableForm.filter_fields!.length > 0) {
+      selectFieldList.value = allfieldList.value.filter((item) => props.tableForm.filter_fields?.includes(item.name));
+    }
+  });
 
   const loadData = async () => {
     try {
@@ -115,14 +116,11 @@
 
   watch(
     () => props.tableForm.managed_table_id,
-    async () => {
+    () => {
       isShowFieldSetting.value = false;
       isShowDataClean.value = false;
-      ruleList.value = props.tableForm.filter_condition?.labels_and || [];
-      await loadData();
-      selectFieldList.value = allfieldList.value.filter((item) => props.tableForm.filter_fields?.includes(item.name));
+      loadData();
     },
-    { immediate: true },
   );
 
   const handleOperation = (type: string) => {
@@ -215,5 +213,8 @@
     border: 1px solid #dcdee5;
     border-top: none;
     height: 200px;
+  }
+  .vxe-table--render-default {
+    overflow: hidden;
   }
 </style>

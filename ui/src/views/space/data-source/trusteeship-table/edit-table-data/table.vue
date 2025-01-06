@@ -77,7 +77,7 @@
   import { watch, ref } from 'vue';
   import {
     IFiledsItemEditing,
-    IFiledItem,
+    IFieldItem,
     ILocalTableEditData,
     ILocalTableDataItem,
   } from '../../../../../../types/kv-table';
@@ -85,7 +85,7 @@
   import { cloneDeep, isEqual } from 'lodash';
 
   const props = defineProps<{
-    fields: IFiledItem[];
+    fields: IFieldItem[];
     data: ILocalTableDataItem[];
   }>();
 

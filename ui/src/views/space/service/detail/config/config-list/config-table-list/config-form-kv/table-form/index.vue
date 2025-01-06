@@ -18,7 +18,7 @@
       :list="tableList"
       :placeholder="tableSelectPlaceholder"
       :loading="loading"
-      @change="emits('change', tableForm.managed_table_id)">
+      @change="emits('change', tableForm)">
       <template #extension>
         <div class="create-operation" @click="handleToCreateOrEdit('create')">
           <plus />
@@ -66,7 +66,7 @@
   const loading = ref(false);
   const tableList = ref<{ id: number; name: string }[]>([]);
   const tableForm = ref<IConfigTableForm>({
-    managed_table_id: 0,
+    managed_table_id: undefined,
     filter_condition: {},
     filter_fields: [],
   });
@@ -78,7 +78,7 @@
   onMounted(async () => {
     await getTableList();
     tableForm.value = {
-      managed_table_id: props.config.managed_table_id || 0,
+      managed_table_id: props.config.managed_table_id || undefined,
       filter_condition: props.config.filter_condition || {},
       filter_fields: props.config.filter_fields || [],
     };
@@ -108,7 +108,6 @@
   const handleToCreateOrEdit = (type: string, table?: { id: number; name: string }) => {
     let routeData;
     if (type === 'create') {
-      console.log(type);
       routeData = router.resolve({
         name: 'edit-table-structure',
         params: { bizId: props.bkBizId, id: table!.id },
