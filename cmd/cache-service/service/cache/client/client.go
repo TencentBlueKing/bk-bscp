@@ -15,6 +15,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
@@ -42,7 +43,8 @@ type Interface interface {
 	GetReleasedKvValue(kt *kit.Kit, bizID, appID, releaseID uint32, key string) (string, error)
 	SetClientMetric(kt *kit.Kit, bizID, appID uint32, payload []byte) error
 	BatchUpsertClientMetrics(kt *kit.Kit, clientData []*pbclient.Client, clientEventData []*pbce.ClientEvent) error
-	BatchUpdateLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32) error
+	SetAppLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32) error
+	BatchUpdateLastConsumedTime(kt *kit.Kit, appIDs []uint32) error
 	GetPublishTime(kt *kit.Kit, publishTime int64) (map[uint32]PublishInfo, error)
 	SetPublishTime(kt *kit.Kit, bizID, appID, strategyID uint32, publishTime int64) (int64, error)
 }
@@ -134,11 +136,22 @@ func (c *client) BatchUpsertClientMetrics(kt *kit.Kit, clientData []*pbclient.Cl
 	return nil
 }
 
-// BatchUpdateLastConsumedTime 批量更新服务拉取时间
-func (c *client) BatchUpdateLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error {
+// SetAppLastConsumedTime implements Interface.
+func (c *client) SetAppLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error {
+	value, err := json.Marshal(appIDs)
+	if err != nil {
+		return err
+	}
+	if err := c.bds.RPush(kit.Ctx, keys.Key.LastConsumedTimeKey(bizID), value); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+// BatchUpdateLastConsumedTime 批量更新服务拉取时间
+func (c *client) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error {
 	if _, err := c.db.BatchUpdateLastConsumedTime(kit.Ctx, &pbds.BatchUpdateLastConsumedTimeReq{
-		BizId:  bizID,
 		AppIds: appIDs,
 	}); err != nil {
 		return err

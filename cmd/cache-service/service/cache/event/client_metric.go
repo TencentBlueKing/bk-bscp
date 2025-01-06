@@ -83,6 +83,7 @@ func (cm *ClientMetric) Run() {
 					continue
 				}
 				cm.consumeClientMetricData(kt)
+				cm.consumeAppLastConsumedTime(kt)
 			}
 		}
 	}()

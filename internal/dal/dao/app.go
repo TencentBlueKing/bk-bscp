@@ -54,7 +54,7 @@ type App interface {
 	// GetByAlias 通过Alisa 查询
 	GetByAlias(kit *kit.Kit, bizID uint32, alias string) (*table.App, error)
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
-	BatchUpdateLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error
+	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 }
 
 var _ App = new(appDao)
@@ -67,12 +67,10 @@ type appDao struct {
 }
 
 // BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
-func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error {
-
+func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error {
 	m := dao.genQ.App
-
 	_, err := dao.genQ.App.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.ID.In(appIDs...)).
+		Where(m.ID.In(appIDs...)).
 		Update(m.LastConsumedTime, time.Now().UTC())
 	if err != nil {
 		return err
