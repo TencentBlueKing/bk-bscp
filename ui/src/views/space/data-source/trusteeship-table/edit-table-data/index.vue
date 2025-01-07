@@ -70,7 +70,7 @@
       loading.value = true;
       const query = {
         start: 0,
-        limit: 5000,
+        all: true,
       };
       const [fieldsData, Contentdata] = await Promise.all([
         getTableStructure(spaceId.value, tableId.value),

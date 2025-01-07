@@ -8,6 +8,7 @@
         </div>
       </template>
       <FieldsTable
+        ref="tableRef"
         :is-edit="props.isEdit"
         :has-table-data="hasTableData"
         :list="formData.columns"
@@ -79,6 +80,7 @@
   });
   const serviceLoading = ref(false);
   const serviceList = ref<IAppItem[]>([]);
+  const tableRef = ref();
 
   onMounted(() => {
     getServiceList();
@@ -92,7 +94,7 @@
       default_value: '',
       primary: formData.value.columns.length === 0,
       not_null: false,
-      unique: false,
+      unique: formData.value.columns.length === 0,
       auto_increment: false,
       read_only: false,
       id: Date.now(),
@@ -221,7 +223,14 @@
     emits('change', form);
   };
 
-  defineExpose({ translateFormData });
+  defineExpose({
+    translateFormData,
+    validate: () => {
+      if (tableRef.value) {
+        return tableRef.value.validate();
+      }
+    },
+  });
 </script>
 
 <style scoped lang="scss">

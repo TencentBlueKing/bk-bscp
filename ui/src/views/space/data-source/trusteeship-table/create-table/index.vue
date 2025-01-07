@@ -18,6 +18,7 @@
         </Card>
         <ManualCreate
           v-if="selectedType === 'create'"
+          ref="formRef"
           :form="formData"
           :is-manual-create="true"
           :bk-biz-id="spaceId"
@@ -62,7 +63,7 @@
 
   const selectedType = ref('create');
   const loading = ref(false);
-
+  const formRef = ref();
   const formData = ref<ILocalTableForm>({
     table_name: '',
     table_memo: '',
@@ -87,6 +88,8 @@
 
   const handleCreate = async (redirectToEdit = false) => {
     try {
+      const validate = await formRef.value.validate();
+      if (!validate) return;
       loading.value = true;
       const data = {
         spec: formData.value,

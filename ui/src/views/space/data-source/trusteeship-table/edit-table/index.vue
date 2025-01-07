@@ -16,7 +16,7 @@
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button theme="primary" :loading="loading" style="width: 88px" @click="handleConfirm">
+        <bk-button theme="primary" :loading="loading" style="width: 88px" @click="handleConfirm(false)">
           {{ $t('创建') }}
         </bk-button>
         <bk-button :loading="loading" style="width: 130px" @click="handleConfirm(true)">
@@ -81,6 +81,7 @@
 
   const handleConfirm = async (redirectToEdit = false) => {
     try {
+      console.log(redirectToEdit);
       loading.value = true;
       const data = {
         spec: formData.value,

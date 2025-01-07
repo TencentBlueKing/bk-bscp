@@ -20,8 +20,11 @@
         @end="emits('change', fieldsList)">
         <template #item="{ element, index }">
           <tr>
-            <td class="fields-name-td edit-cell">
-              <bk-input v-model="element.name" @change="emits('change', fieldsList)">
+            <td :class="getCellCLs(index, 'name')">
+              <bk-input
+                v-model="element.name"
+                @change="emits('change', fieldsList)"
+                @blur="validateField(index, 'name')">
                 <template #prefix>
                   <span :class="['drag-icon', { disabled: element.primary }]">
                     <grag-fill v-show="!element.primary" />
@@ -29,15 +32,21 @@
                 </template>
               </bk-input>
             </td>
-            <td class="edit-cell"><bk-input v-model="element.alias" @change="emits('change', fieldsList)" /></td>
-            <td>
+            <td :class="getCellCLs(index, 'alias')">
+              <bk-input
+                v-model="element.alias"
+                @change="emits('change', fieldsList)"
+                @blur="validateField(index, 'alias')" />
+            </td>
+            <td :class="getCellCLs(index, 'column_type')">
               <bk-select
                 v-if="element"
                 v-model="element.column_type"
                 class="type-select"
                 auto-focus
                 :filterable="false"
-                @change="emits('change', fieldsList)">
+                @change="handleSelectType(element, $event)"
+                @blur="validateField(index, 'column_type')">
                 <bk-option v-for="type in dataType" :id="type.value" :key="type.value" :name="type.label" />
               </bk-select>
             </td>
@@ -80,7 +89,10 @@
               <bk-checkbox v-model="element.not_null" @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
-              <bk-checkbox v-model="element.unique" @change="emits('change', fieldsList)"></bk-checkbox>
+              <bk-checkbox
+                v-model="element.unique"
+                :disabled="element.primary"
+                @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
               <bk-checkbox v-model="element.auto_increment" @change="emits('change', fieldsList)"></bk-checkbox>
@@ -109,7 +121,7 @@
 
 <script lang="ts" setup>
   import draggable from 'vuedraggable';
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { GragFill } from 'bkui-vue/lib/icon';
   import { IFiledsItemEditing, IEnumItem } from '../../../../../../../types/kv-table';
   import { useI18n } from 'vue-i18n';
@@ -164,6 +176,7 @@
   const deleteField = ref<IFiledsItemEditing>();
   const deleteFieldIndex = ref(0);
   const isShowDeleteDialog = ref(false);
+  const errors = ref<any[]>([]);
 
   watch(
     () => props.list,
@@ -173,15 +186,24 @@
     { deep: true },
   );
 
+  const hasErrors = computed(() => {
+    return errors.value.some((error) => Object.values(error).some((isError) => isError));
+  });
+
   // 选择主键
   const handleChangePrimaryKey = (item: IFiledsItemEditing, index: number) => {
+    // 重置主键状态
     fieldsList.value.forEach((filed) => {
       filed.primary = false;
     });
-    fieldsList.value.splice(index, 1);
-    fieldsList.value.unshift(item);
 
-    fieldsList.value[0].primary = true;
+    // 标记新的主键
+    item.primary = true;
+    item.unique = true;
+
+    // 将选中的项移到第一个位置
+    fieldsList.value = [item, ...fieldsList.value.filter((_, idx) => idx !== index)];
+    errors.value = [];
     emits('change', fieldsList.value);
   };
 
@@ -201,6 +223,7 @@
     // 删除主键后 选择第一个字段为主键
     if (deleteField.value!.primary) {
       fieldsList.value[0].primary = true;
+      fieldsList.value[0].unique = true;
     }
     emits('change', fieldsList.value);
   };
@@ -232,6 +255,56 @@
     });
     emits('change', fieldsList.value);
   };
+
+  const handleSelectType = (filed: IFiledsItemEditing, type: string) => {
+    if (type === 'enum') {
+      filed.default_value = [];
+    }
+    emits('change', fieldsList.value);
+  };
+
+  // 校验单个字段
+  const validateField = (rowIndex: number, field: string) => {
+    const value = fieldsList.value[rowIndex][field as keyof IFiledsItemEditing];
+    const error = !value;
+    if (!errors.value[rowIndex]) errors.value[rowIndex] = {};
+    if (error) {
+      errors.value[rowIndex][field] = error;
+    } else {
+      delete errors.value[rowIndex][field];
+    }
+  };
+
+  const validateAllFields = () => {
+    errors.value = fieldsList.value.map((row) => {
+      const rowErrors: Record<string, boolean> = {};
+      // 只校验 name 和 alias 字段
+      ['name', 'alias', 'column_type'].forEach((field) => {
+        const value = row[field as keyof IFiledsItemEditing];
+        rowErrors[field] = !value; // 如果字段为空，标记为错误
+      });
+
+      return rowErrors;
+    });
+    return !hasErrors.value;
+  };
+
+  const getCellCLs = (index: number, field: string) => {
+    const error = errors.value[index]?.[field] ?? false;
+    const cls = ['edit-cell', { error: errors.value[index]?.[field] ?? false }];
+    if (field === 'name') {
+      cls.push('fields-name-td');
+      return ['fields-name-td', 'edit-cell', { error }];
+    }
+    if (field === 'column_type') {
+      return { error };
+    }
+    return ['edit-cell', { error }];
+  };
+
+  defineExpose({
+    validate: validateAllFields,
+  });
 </script>
 
 <style scoped lang="scss">
@@ -240,8 +313,14 @@
     border-collapse: collapse;
     th,
     td {
+      position: relative;
       border: 1px solid #dcdee5;
       height: 42px;
+      &.error {
+        :deep(.bk-input) {
+          border: 1px solid red !important;
+        }
+      }
     }
     th {
       font-size: 12px;

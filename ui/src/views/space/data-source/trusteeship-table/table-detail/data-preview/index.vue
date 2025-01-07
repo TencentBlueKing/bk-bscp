@@ -5,7 +5,11 @@
       <div class="content-header">
         <div class="head-left">
           <div class="sheet-name">{{ viewSheet }}</div>
-          <bk-button theme="primary" @click="router.push({ name: 'edit-table-data', params: { spaceId, id } })">
+          <bk-button
+            theme="primary"
+            @click="
+              router.push({ name: 'edit-table-data', params: { spaceId, id }, query: { name: route.query.name } })
+            ">
             {{ $t('编辑数据') }}
           </bk-button>
           <bk-button>{{ $t('导入') }}</bk-button>
