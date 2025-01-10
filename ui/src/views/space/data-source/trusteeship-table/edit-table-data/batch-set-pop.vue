@@ -1,6 +1,6 @@
 <template>
   <bk-popover ext-cls="popover-wrap" theme="light" trigger="manual" placement="bottom" :is-show="isShow">
-    <edit-line class="edit-line" @click="isShow = true" v-bk-tooltips="{ content: $t('批量设置字段值') }" />
+    <i class="bk-bscp-icon icon-batch-edit" @click="isShow = true" v-bk-tooltips="{ content: $t('批量设置字段值') }" />
     <template #content>
       <div class="pop-wrap">
         <div class="pop-content">
@@ -13,7 +13,7 @@
             :multiple="isMultiple"
             :clearable="isMultiple"
             :filterable="false">
-            <bk-option v-for="(enumItem, i) in enumValue" :id="enumItem.value" :key="i" :name="enumItem.text" />
+            <bk-option v-for="(enumItem, i) in enumValue" :id="enumItem.value" :key="i" :name="enumItem.label" />
           </bk-select>
           <bk-input v-else v-model="localVal"></bk-input>
         </div>
@@ -32,7 +32,6 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
-  import { EditLine } from 'bkui-vue/lib/icon';
 
   const props = defineProps<{
     isMultiple: boolean;
@@ -70,10 +69,11 @@
 </script>
 
 <style scoped lang="scss">
-  .edit-line {
+  .icon-batch-edit {
     color: #3a84ff;
     cursor: pointer;
     text-align: right;
+    font-size: 16px;
   }
   .pop-wrap {
     .pop-content {

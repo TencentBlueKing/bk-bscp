@@ -9,7 +9,9 @@
               :key="item.value"
               :class="['table-source-type-item', { active: selectedType === item.value }]">
               <div class="header">
-                <i class="bk-bscp-icon icon-revoke" />
+                <div class="svg-wrap">
+                  <div :class="['svg', item.svg]"></div>
+                </div>
                 <span class="label">{{ item.label }}</span>
               </div>
               <div class="info">{{ item.info }}</div>
@@ -29,7 +31,7 @@
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button theme="primary" style="width: 88px" :loading="loading" @click="handleCreate">
+        <bk-button theme="primary" style="width: 88px" :loading="loading" @click="handleCreate(false)">
           {{ $t('创建') }}
         </bk-button>
         <bk-button style="width: 130px" :loading="loading" @click="handleCreate(true)">
@@ -76,6 +78,7 @@
       label: t('手动创建表结构'),
       value: 'create',
       info: t('目前没有表格结构及数据信息，需要先手动创建表结构，然后手动录入数据'),
+      svg: 'icon-manual-create',
     },
     {
       label: t('从本地文件导入'),
@@ -83,6 +86,7 @@
       info: t(
         '可以从本地导入 Excel/CSV 格式的数据文件（.xlsx/.xls/.csv)，还可以从带有 .sql 后缀的 MySQL dump 文件中导入表结构与数据',
       ),
+      svg: 'icon-import-local',
     },
   ];
 
@@ -148,9 +152,25 @@
       .header {
         display: flex;
         align-items: center;
-        .bk-bscp-icon {
-          font-size: 24px;
-          margin-right: 7px;
+        .svg-wrap {
+          display: flex;
+          align-items: center;
+          margin-right: 4px;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          background: #eaebf0;
+          border-radius: 50%;
+        }
+        .svg {
+          width: 20px;
+          height: 20px;
+          &.icon-manual-create {
+            background: url('../../../../../assets/add-doc.svg') no-repeat;
+          }
+          &.icon-import-local {
+            background: url('../../../../../assets/backup.svg') no-repeat;
+          }
         }
         .label {
           font-size: 14px;

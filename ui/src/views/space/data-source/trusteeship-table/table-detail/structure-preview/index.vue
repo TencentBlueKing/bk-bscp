@@ -62,7 +62,7 @@
             // 字符串数组，显示名和实际值按一致处理
             enum_value = enum_value.map((value: string) => {
               return {
-                text: value,
+                label: value,
                 value,
               };
             });

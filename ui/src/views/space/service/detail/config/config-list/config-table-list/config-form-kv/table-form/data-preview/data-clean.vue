@@ -47,6 +47,7 @@
               v-else
               v-model="rule.value"
               :class="{ 'is-error': showErrorValueValidation[index] }"
+              :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) ? 'number' : 'text'"
               :placeholder="$t('请输入条件值')"
               @change="validateValue(index)"
               @blur="validateValue(index)">

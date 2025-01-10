@@ -54,7 +54,7 @@ export interface ILocalTableItem {
 
 // 字段设置枚举类型
 export interface IEnumItem {
-  text: string;
+  label: string;
   value: string;
   hasTextError?: boolean;
   hasValueError?: boolean;

@@ -69,7 +69,7 @@
                     v-for="(enumItem, i) in element.enum_value"
                     :id="enumItem.value"
                     :key="i"
-                    :name="enumItem.text" />
+                    :name="enumItem.label" />
                 </bk-select>
                 <EnumSetPop
                   :has-table-data="hasTableData"
@@ -101,7 +101,9 @@
               <bk-checkbox v-model="element.read_only" @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
-              <i :class="['bk-bscp-icon', 'icon-reduce', 'delete-icon']" @click="handleDelete(element, index)" />
+              <i
+                :class="['bk-bscp-icon', 'icon-minus-circle-shape', 'delete-icon', { disabled: element.primary }]"
+                @click="handleDelete(element, index)" />
             </td>
           </tr>
         </template>
@@ -208,6 +210,7 @@
   };
 
   const handleDelete = (item: IFiledsItemEditing, index: number) => {
+    if (item.primary) return;
     deleteField.value = item;
     deleteFieldIndex.value = index;
     if (props.hasTableData) {
@@ -389,6 +392,7 @@
     .delete-icon {
       font-size: 16px;
       cursor: pointer;
+      color: #c4c6cc;
       &:hover {
         color: #3a84ff;
       }

@@ -73,9 +73,7 @@
                 <div class="config-actions">
                   <div class="action-item" @click="handleImportTable(row)">{{ $t('导入表格') }}</div>
                   <div class="action-item" @click="handleExportTable(row)">{{ $t('导出表格') }}</div>
-                  <div
-                    :class="['action-item', { disabled: row.citations.length !== 0 }]"
-                    @click="handleDeleteTable(row)">
+                  <div :class="['action-item', { disabled: row.citations !== 0 }]" @click="handleDeleteTable(row)">
                     {{ $t('删除') }}
                   </div>
                 </div>

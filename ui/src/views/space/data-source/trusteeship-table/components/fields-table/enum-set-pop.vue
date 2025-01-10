@@ -20,7 +20,7 @@
           <div v-for="(enumItem, enumIndex) in settingEnumList" :key="enumIndex" class="enum-item">
             <div class="num">{{ enumIndex + 1 }}</div>
             <bk-input
-              v-model="enumItem.text"
+              v-model="enumItem.label"
               :class="{ hasError: enumItem.hasTextError }"
               :placeholder="$t('显示文本')"
               @input="enumItem.hasTextError = false" />
@@ -59,7 +59,7 @@
   const emits = defineEmits(['change']);
 
   const isMultiple = ref(false);
-  const settingEnumList = ref<IEnumItem[]>([{ text: '', value: '', hasTextError: false, hasValueError: false }]);
+  const settingEnumList = ref<IEnumItem[]>([{ label: '', value: '', hasTextError: false, hasValueError: false }]);
   const existEnumList = ref<IEnumItem[]>([]);
   const isShow = ref(false);
 
@@ -76,7 +76,7 @@
   );
 
   const handleAddEnumItem = (index: number) => {
-    settingEnumList.value.splice(index + 1, 0, { text: '', value: '', hasTextError: false, hasValueError: false });
+    settingEnumList.value.splice(index + 1, 0, { label: '', value: '', hasTextError: false, hasValueError: false });
   };
 
   const handleDelEnumItem = (index: number) => {
@@ -87,7 +87,7 @@
 
   const validateEnumSetting = () => {
     settingEnumList.value.forEach((enumItem) => {
-      enumItem.hasTextError = !enumItem.text;
+      enumItem.hasTextError = !enumItem.label;
       enumItem.hasValueError = !enumItem.value;
     });
     return !settingEnumList.value.some((item) => item.hasTextError || item.hasValueError);
@@ -97,7 +97,7 @@
     const isValid = validateEnumSetting();
     if (!isValid) return;
     const enumList = settingEnumList.value.map((item) => {
-      return { text: item.text, value: item.value };
+      return { label: item.label, value: item.value };
     });
     emits('change', [enumList, isMultiple.value]);
     isShow.value = false;
@@ -105,7 +105,7 @@
 
   const closeSettingEnumPopover = () => {
     isShow.value = false;
-    settingEnumList.value = [{ text: '', value: '', hasTextError: false, hasValueError: false }];
+    settingEnumList.value = [{ label: '', value: '', hasTextError: false, hasValueError: false }];
     isMultiple.value = false;
   };
 </script>

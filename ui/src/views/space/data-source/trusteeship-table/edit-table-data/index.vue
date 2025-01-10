@@ -3,7 +3,7 @@
     <template #content>
       <div class="content-wrap">
         <div class="content-header">
-          <bk-button @click="isShowImportTable = true">{{ $t('导入') }}</bk-button>
+          <bk-button>{{ $t('导入') }}</bk-button>
           <bk-input class="search-input">
             <template #suffix>
               <Search class="search-input-icon" />
@@ -11,7 +11,7 @@
           </bk-input>
         </div>
         <bk-loading class="loading-wrapper" :loading="loading">
-          <Table :fields="fields" :data="tableData" @change="handleChange" />
+          <Table ref="tableRef" :fields="fields" :data="tableData" @change="handleChange" />
         </bk-loading>
       </div>
     </template>
@@ -60,6 +60,7 @@
   const loading = ref(false);
   const confirmLoading = ref(false);
   const delIds = ref<number[]>([]);
+  const tableRef = ref();
 
   onMounted(() => {
     getFieldsList();
@@ -87,6 +88,9 @@
 
   const handleConfirm = async () => {
     try {
+      const validate = await tableRef.value.fullValidEvent();
+      console.log(validate);
+      if (!validate) return;
       confirmLoading.value = true;
       const query = {
         contents: editDataContent.value,

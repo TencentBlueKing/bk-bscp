@@ -21,7 +21,7 @@
         :title="$t('暂无数据')"
         type="empty" /> -->
     </Card>
-    <bk-form form-type="vertical" :model="formData">
+    <bk-form form-type="vertical" :model="formData" ref="formRef">
       <Card :title="$t('基本信息')">
         <div class="basic-info-form">
           <bk-form-item :label="$t('表格名称')" property="table_name" required>
@@ -81,6 +81,7 @@
   const serviceLoading = ref(false);
   const serviceList = ref<IAppItem[]>([]);
   const tableRef = ref();
+  const formRef = ref();
 
   onMounted(() => {
     getServiceList();
@@ -147,7 +148,7 @@
           // 字符串数组，显示名和实际值按一致处理
           enum_value = enum_value.map((value: string) => {
             return {
-              text: value,
+              label: value,
               value,
             };
           });
@@ -225,10 +226,8 @@
 
   defineExpose({
     translateFormData,
-    validate: () => {
-      if (tableRef.value) {
-        return tableRef.value.validate();
-      }
+    validate: async () => {
+      return tableRef.value.validate() && (await formRef.value.validate());
     },
   });
 </script>

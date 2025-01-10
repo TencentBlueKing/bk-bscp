@@ -81,7 +81,8 @@
 
   const handleConfirm = async (redirectToEdit = false) => {
     try {
-      console.log(redirectToEdit);
+      const validate = await formRef.value.validate();
+      if (!validate) return;
       loading.value = true;
       const data = {
         spec: formData.value,
