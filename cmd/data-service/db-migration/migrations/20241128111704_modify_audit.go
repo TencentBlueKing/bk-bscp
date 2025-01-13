@@ -35,7 +35,7 @@ func init() {
 func mig20241128111704Up(tx *gorm.DB) error {
 	// Audits  : audits
 	type Audits struct {
-		Detail string `gorm:"type:text"`
+		Detail string `gorm:"type:longtext"`
 	}
 	// Audits add new column
 	if tx.Migrator().HasColumn(&Audits{}, "detail") {
@@ -60,7 +60,7 @@ func mig20241128111704Up(tx *gorm.DB) error {
 func mig20241128111704Down(tx *gorm.DB) error {
 	// Audits  : audits
 	type Audits struct {
-		Detail string `gorm:"type:text"`
+		Detail string `gorm:"type:longtext"`
 	}
 	// Strategies add new column
 	if tx.Migrator().HasColumn(&Audits{}, "detail") {
