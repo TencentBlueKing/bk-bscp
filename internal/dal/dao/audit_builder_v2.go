@@ -13,9 +13,7 @@
 package dao
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -40,40 +38,13 @@ type AuditRes interface {
 // AuditPrepare auditBuilder interface
 type AuditPrepare interface {
 	PrepareCreate(obj AuditRes) AuditDo
-	PrepareUpdate(obj, oldObj AuditRes) AuditDo
+	PrepareUpdate(obj AuditRes) AuditDo
 	PrepareDelete(obj AuditRes) AuditDo
 	PreparePublish(obj AuditRes) AuditDo
-	PrepareCreateByInstance(resId uint32, obj interface{}) AuditDo
 }
 
-// initAuditBuilderV2 create a new audit builder instance.
-func initAuditBuilderV2(kit *kit.Kit, bizID uint32, ad *audit) AuditPrepare {
-	ab := &AuditBuilderV2{
-		toAudit: &table.Audit{
-			BizID:     bizID,
-			CreatedAt: time.Now().UTC(),
-			Operator:  kit.User,
-			Rid:       kit.Rid,
-			AppCode:   kit.AppCode,
-		},
-		ad:    ad,
-		bizID: bizID,
-		kit:   kit,
-	}
-
-	if bizID <= 0 {
-		ab.hitErr = errors.New("invalid audit biz id")
-	}
-
-	if len(kit.User) == 0 {
-		ab.hitErr = errors.New("invalid audit operator")
-	}
-
-	return ab
-}
-
-// initAuditBuilderV3 create a new audit builder instance.
-func initAuditBuilderV3(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *audit) AuditPrepare {
+// initAuditBuilder create a new audit builder instance.
+func initAuditBuilder(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *audit) AuditPrepare {
 	ab := &AuditBuilderV2{
 		toAudit: &table.Audit{
 			BizID:       bizID,
@@ -81,19 +52,17 @@ func initAuditBuilderV3(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *au
 			Operator:    kit.User,
 			Rid:         kit.Rid,
 			AppCode:     kit.AppCode,
-			Action:      au.Action,
 			Status:      au.Status,
 			ResInstance: au.ResourceInstance,
-			OperateWay:  au.OperateWay,
+			OperateWay:  kit.OperateWay,
 			StrategyId:  au.StrategyId,
 			IsCompare:   au.IsCompare,
+			Detail:      au.Detail,
 		},
 		ad:    ad,
 		bizID: bizID,
 		kit:   kit,
 	}
-
-	ab.toAudit.ResourceType = enumor.ActionMap[ab.toAudit.Action]
 
 	// default value
 	if ab.toAudit.OperateWay != string(enumor.WebUI) {
@@ -124,8 +93,6 @@ type AuditBuilderV2 struct {
 	toAudit *table.Audit
 	bizID   uint32
 	kit     *kit.Kit
-	prev    interface{}
-	changed map[string]interface{}
 	ad      *audit
 }
 
@@ -148,68 +115,15 @@ func (ab *AuditBuilderV2) PrepareCreate(obj AuditRes) AuditDo {
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
 	ab.toAudit.Action = enumor.Create
-	ab.prev = obj
-
-	detail := &table.AuditBasicDetail{
-		Prev:    ab.prev,
-		Changed: nil,
-	}
-
-	js, err := json.Marshal(detail)
-	if err != nil {
-		ab.hitErr = err
-		return ab
-	}
-	ab.toAudit.Detail = string(js)
-
-	return ab
-}
-
-// PrepareCreateByInstance 创建资源
-func (ab *AuditBuilderV2) PrepareCreateByInstance(resId uint32, obj interface{}) AuditDo {
-	ab.toAudit.ResourceID = resId
-	ab.prev = obj
-
-	detail := &table.AuditBasicDetail{
-		Prev:    ab.prev,
-		Changed: nil,
-	}
-
-	js, err := json.Marshal(detail)
-	if err != nil {
-		ab.hitErr = err
-		return ab
-	}
-	ab.toAudit.Detail = string(js)
 
 	return ab
 }
 
 // PrepareUpdate 更新资源, 会记录 spec 对比值
-func (ab *AuditBuilderV2) PrepareUpdate(obj, oldObj AuditRes) AuditDo {
+func (ab *AuditBuilderV2) PrepareUpdate(obj AuditRes) AuditDo {
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
 	ab.toAudit.Action = enumor.Update
-	ab.prev = oldObj
-
-	changed, err := parseChangedSpecFields(oldObj, obj)
-	if err != nil {
-		ab.hitErr = err
-		return ab
-	}
-	ab.changed = changed
-
-	detail := &table.AuditBasicDetail{
-		Prev:    ab.prev,
-		Changed: ab.changed,
-	}
-
-	js, err := json.Marshal(detail)
-	if err != nil {
-		ab.hitErr = fmt.Errorf("marshal audit detail failed, err: %v", err)
-		return ab
-	}
-	ab.toAudit.Detail = string(js)
 
 	return ab
 }
@@ -219,19 +133,7 @@ func (ab *AuditBuilderV2) PrepareDelete(obj AuditRes) AuditDo {
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
 	ab.toAudit.Action = enumor.Delete
-	ab.prev = obj
 
-	detail := &table.AuditBasicDetail{
-		Prev:    ab.prev,
-		Changed: nil,
-	}
-
-	js, err := json.Marshal(detail)
-	if err != nil {
-		ab.hitErr = fmt.Errorf("marshal audit detail failed, err: %v", err)
-		return ab
-	}
-	ab.toAudit.Detail = string(js)
 	return ab
 }
 
@@ -240,19 +142,6 @@ func (ab *AuditBuilderV2) PreparePublish(obj AuditRes) AuditDo {
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
 	ab.toAudit.Action = enumor.Publish
-	ab.prev = obj
-
-	detail := &table.AuditBasicDetail{
-		Prev:    ab.prev,
-		Changed: nil,
-	}
-
-	js, err := json.Marshal(detail)
-	if err != nil {
-		ab.hitErr = err
-		return ab
-	}
-	ab.toAudit.Detail = string(js)
 
 	return ab
 }

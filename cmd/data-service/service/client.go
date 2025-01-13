@@ -26,11 +26,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbclient "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // BatchUpsertClientMetrics 批量操作client metrics
@@ -913,7 +913,15 @@ func formatCpu(number float64) string {
 func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (*pbbase.EmptyResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
+	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	defer func() {
+		if isRollback {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+		}
+	}()
 
 	if req.All {
 		event := types.Event{
@@ -970,6 +978,7 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 		logs.Errorf("commit retry clients transaction failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
+	isRollback = false
 
 	return &pbbase.EmptyResp{}, nil
 }

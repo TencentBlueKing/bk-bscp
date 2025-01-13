@@ -83,15 +83,9 @@ func (dao *contentDao) Create(kit *kit.Kit, content *table.Content) (uint32, err
 
 	content.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, content.Attachment.BizID).PrepareCreate(content)
-
 	createTx := func(tx *gen.Query) error {
 		q := tx.Content.WithContext(kit.Ctx)
 		if err = q.Create(content); err != nil {
-			return err
-		}
-
-		if err = ad.Do(tx); err != nil {
 			return err
 		}
 
@@ -127,10 +121,6 @@ func (dao *contentDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, content *tabl
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, content.Attachment.BizID).PrepareCreate(content)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, fmt.Errorf("audit create content failed, err: %v", err)
-	}
 	return id, nil
 }
 

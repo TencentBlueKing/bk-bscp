@@ -57,7 +57,7 @@ func (c *ConfigItem) ResID() uint32 {
 
 // ResType AuditRes interface
 func (c *ConfigItem) ResType() string {
-	return "config_item"
+	return string(enumor.Config)
 }
 
 // TableName is the config item's database table name.

@@ -15,14 +15,18 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"gorm.io/datatypes"
 	rawgen "gorm.io/gen"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	dtypes "github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
@@ -108,6 +112,40 @@ func (dao *templateSetDao) BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.Q
 		return nil
 	}
 
+	// 单个添加模板套餐
+	for i := range templateSet {
+		templates, err := tx.Template.WithContext(kit.Ctx).Where(tx.Template.ID.In(templateSet[i].Spec.TemplateIDs...)).
+			Find()
+		if err != nil {
+			return err
+		}
+
+		templateSpace, err := tx.TemplateSpace.WithContext(kit.Ctx).
+			Where(tx.TemplateSpace.ID.Eq(templateSet[i].Attachment.TemplateSpaceID)).Take()
+		if err != nil {
+			return err
+		}
+
+		var templateNames []string
+		for _, v := range templates {
+			templateNames = append(templateNames, path.Join(v.Spec.Path, v.Spec.Name))
+		}
+
+		resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName+
+			constant.ResSeparator+constant.TemplateAbsolutePath, templateSpace.Spec.Name, templateSet[i].Spec.Name,
+			strings.Join(templateNames, constant.NameSeparator))
+
+		ad := dao.auditDao.Decorator(kit, templateSet[i].Attachment.BizID, &table.AuditField{
+			ResourceInstance: resInstance,
+			Status:           enumor.Success,
+		}).PrepareCreate(templateSet[i])
+		err = ad.Do(tx.Query)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	return tx.TemplateSet.WithContext(kit.Ctx).Save(templateSet...)
 }
 
@@ -141,7 +179,19 @@ func (dao *templateSetDao) Create(kit *kit.Kit, g *table.TemplateSet) (uint32, e
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, g.Spec.Name),
+		Status: enumor.Success,
+		Detail: g.Spec.Memo,
+	}).PrepareCreate(g)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {
@@ -177,11 +227,20 @@ func (dao *templateSetDao) Update(kit *kit.Kit, g *table.TemplateSet) error {
 
 	// 更新操作, 获取当前记录做审计
 	q := dao.genQ.TemplateSet.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, g.Spec.Name),
+		Status: enumor.Success,
+		Detail: g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
@@ -217,13 +276,58 @@ func (dao *templateSetDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.
 	// 更新操作, 获取当前记录做审计
 	m := tx.TemplateSet
 	q := tx.TemplateSet.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+
+	oldOne, err := q.Where(m.ID.Eq(g.ID)).Take()
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
-	if err := ad.Do(tx.Query); err != nil {
+
+	deleteTemplate := tools.Difference(oldOne.Spec.TemplateIDs, g.Spec.TemplateIDs)
+
+	ts := tx.TemplateSpace
+	tsCtx := tx.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
 		return err
+	}
+
+	// 移除套餐的模板文件
+	if len(deleteTemplate) > 0 {
+		templates, err := tx.Template.WithContext(kit.Ctx).Where(tx.Template.ID.In(deleteTemplate...)).
+			Find()
+		if err != nil {
+			return err
+		}
+		var templateNames []string
+		for _, v := range templates {
+			templateNames = append(templateNames, path.Join(v.Spec.Path, v.Spec.Name))
+		}
+
+		resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName+
+			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, oldOne.Spec.Name,
+			strings.Join(templateNames, constant.NameSeparator))
+
+		ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+			ResourceInstance: resInstance,
+			Status:           enumor.Success,
+			Detail:           g.Spec.Memo,
+		}).PrepareDelete(g)
+		if err := ad.Do(tx.Query); err != nil {
+			return err
+		}
+	} else {
+		// 仅仅是更新模板套餐
+		resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, g.Spec.Name)
+
+		ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+			ResourceInstance: resInstance,
+			Status:           enumor.Success,
+			Detail:           g.Spec.Memo,
+		}).PrepareUpdate(g)
+		if err := ad.Do(tx.Query); err != nil {
+			return err
+		}
 	}
 
 	if len(g.Spec.TemplateIDs) == 0 {
@@ -287,7 +391,20 @@ func (dao *templateSetDao) Delete(kit *kit.Kit, g *table.TemplateSet) error {
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, oldOne.Spec.Name),
+		Status: enumor.Success,
+		Detail: oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
@@ -321,7 +438,19 @@ func (dao *templateSetDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ts := tx.TemplateSpace
+	tsCtx := tx.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, oldOne.Spec.Name),
+		Status: enumor.Success,
+		Detail: oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 	if err := ad.Do(tx.Query); err != nil {
 		return err
 	}

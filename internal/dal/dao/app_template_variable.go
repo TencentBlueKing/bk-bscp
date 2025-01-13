@@ -14,10 +14,13 @@ package dao
 
 import (
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -94,7 +97,11 @@ func (dao *appTemplateVariableDao) Upsert(kit *kit.Kit, g *table.AppTemplateVari
 				Updates(g); err != nil {
 				return err
 			}
-			ad = dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, old)
+			ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+				ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+				Status:           enumor.Success,
+				AppId:            g.Attachment.AppID,
+			}).PrepareUpdate(old)
 		} else if errors.Is(findErr, gorm.ErrRecordNotFound) {
 			// if old not exists, create it.
 			id, err := dao.idGen.One(kit, table.Name(g.TableName()))
@@ -105,7 +112,11 @@ func (dao *appTemplateVariableDao) Upsert(kit *kit.Kit, g *table.AppTemplateVari
 			if err := tx.AppTemplateVariable.WithContext(kit.Ctx).Create(g); err != nil {
 				return err
 			}
-			ad = dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+			ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+				ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+				Status:           enumor.Success,
+				AppId:            g.Attachment.AppID,
+			}).PrepareCreate(g)
 		}
 
 		return ad.Do(tx)
@@ -137,7 +148,11 @@ func (dao *appTemplateVariableDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, g
 			Updates(g); err != nil {
 			return err
 		}
-		ad = dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, old)
+		ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+			Status:           enumor.Success,
+			AppId:            g.Attachment.AppID,
+		}).PrepareUpdate(old)
 	} else if errors.Is(findErr, gorm.ErrRecordNotFound) {
 		// if old not exists, create it.
 		id, err := dao.idGen.One(kit, table.Name(g.TableName()))
@@ -148,7 +163,11 @@ func (dao *appTemplateVariableDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, g
 		if err := tx.AppTemplateVariable.WithContext(kit.Ctx).Create(g); err != nil {
 			return err
 		}
-		ad = dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+		ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+			Status:           enumor.Success,
+			AppId:            g.Attachment.AppID,
+		}).PrepareCreate(g)
 	}
 
 	return ad.Do(tx.Query)

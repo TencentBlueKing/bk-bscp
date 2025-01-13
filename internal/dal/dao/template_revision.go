@@ -15,12 +15,15 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"path"
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -132,7 +135,20 @@ func (dao *templateRevisionDao) Create(kit *kit.Kit, g *table.TemplateRevision) 
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateRevision+
+			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, g.Spec.RevisionName,
+			path.Join(g.Spec.Path, g.Spec.Name)),
+		Status: enumor.Success,
+		Detail: g.Spec.RevisionMemo,
+	}).PrepareCreate(g)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {
@@ -168,11 +184,24 @@ func (dao *templateRevisionDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *t
 	g.ID = id
 
 	q := tx.TemplateRevision.WithContext(kit.Ctx)
-	if err := q.Create(g); err != nil {
+	if err = q.Create(g); err != nil {
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ts := tx.TemplateSpace
+	tsCtx := tx.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateRevision+
+			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, g.Spec.RevisionName,
+			path.Join(g.Spec.Path, g.Spec.Name)),
+		Status: enumor.Success,
+		Detail: g.Spec.RevisionMemo,
+	}).PrepareCreate(g)
 	if err := ad.Do(tx.Query); err != nil {
 		return 0, err
 	}
@@ -228,7 +257,20 @@ func (dao *templateRevisionDao) Delete(kit *kit.Kit, g *table.TemplateRevision) 
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateRevision+
+			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, oldOne.Spec.RevisionName,
+			path.Join(oldOne.Spec.Path, oldOne.Spec.Name)),
+		Status: enumor.Success,
+		Detail: oldOne.Spec.RevisionMemo,
+	}).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {

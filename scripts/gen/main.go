@@ -21,7 +21,7 @@ import (
 
 func main() {
 	g := gen.NewGenerator(gen.Config{
-		OutPath:       "./pkg/dal/gen",
+		OutPath:       "../../internal/dal/gen",
 		Mode:          gen.WithDefaultQuery | gen.WithQueryInterface,
 		FieldNullable: true,
 	})

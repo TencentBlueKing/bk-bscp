@@ -23,124 +23,37 @@ type AuditResourceType string
 const (
 	// App 应用模块资源
 	App AuditResourceType = "app"
-	// ConfigItem 配置项资源
-	ConfigItem AuditResourceType = "config_item"
-	// Commit 提交资源
-	Commit AuditResourceType = "commit"
-	// Content 配置内容
-	Content AuditResourceType = "content"
-	// Release 版本资源
-	Release AuditResourceType = "release"
-	// StrategySet 策略集资源
-	StrategySet AuditResourceType = "strategy_set"
-	// CRInstance 当前已发布的实例版本
-	CRInstance AuditResourceType = "current_released_instance"
-	// Strategy 策略资源
-	Strategy AuditResourceType = "strategy"
+	// Config 配置资源
+	Config AuditResourceType = "config"
 	// Hook hook脚本资源
 	Hook AuditResourceType = "hook"
-	// TemplateSpace 模版空间
-	TemplateSpace AuditResourceType = "template_space"
+	// Variable 变量
+	Variable AuditResourceType = "variable"
+	// Release 版本资源
+	Release AuditResourceType = "release"
 	// Group 分组资源
 	Group AuditResourceType = "group"
-	// Credential 凭据资源
+	// Template 模版
+	Template AuditResourceType = "template"
+	// Credential 客户端秘钥
 	Credential AuditResourceType = "credential"
-	// CredentialScope 凭据规则资源
-	CredentialScope AuditResourceType = "credential_scope" //nolint:gosec
-
-	// 新版操作记录资源类型
-
-	// ResAppConfig 服务配置
-	ResAppConfig AuditResourceType = "app_config"
-	// ResGroup 分组
-	ResGroup AuditResourceType = "group"
-	// ResHook hook脚本资源
-	ResHook AuditResourceType = "hook"
-	// ResTemplate 配置模版
-	ResTemplate AuditResourceType = "template"
-	// ResVariable 变量
-	ResVariable AuditResourceType = "variable"
-	// ResCredential 客户端秘钥
-	ResCredential AuditResourceType = "credential"
-	// ResInstance 客户端实例
-	ResInstance AuditResourceType = "instance"
+	// Instance 客户端实例
+	Instance AuditResourceType = "instance"
 )
-
-// AuditResourceTypeEnums resource type map.
-var AuditResourceTypeEnums = map[AuditResourceType]bool{
-	App:             true,
-	ConfigItem:      true,
-	Commit:          true,
-	Content:         true,
-	Release:         true,
-	StrategySet:     true,
-	Strategy:        true,
-	Hook:            true,
-	TemplateSpace:   true,
-	Group:           true,
-	Credential:      true,
-	CredentialScope: true,
-}
-
-// ActionMap enum all action
-var ActionMap = map[AuditAction]AuditResourceType{
-	CreateApp:            ResAppConfig,
-	UpdateApp:            ResAppConfig,
-	DeleteApp:            ResAppConfig,
-	PublishReleaseConfig: ResAppConfig, // 上线配置版本
-}
-
-// Exist judge enum value exist.
-func (a AuditResourceType) Exist() bool {
-	_, exist := AuditResourceTypeEnums[a]
-	return exist
-}
 
 // AuditAction audit action type.
 type AuditAction string
 
 const (
 	// Create 创建
-	Create AuditAction = "Create"
+	Create AuditAction = "create"
 	// Update 更新
-	Update AuditAction = "Update"
+	Update AuditAction = "update"
 	// Delete 删除
-	Delete AuditAction = "Delete"
+	Delete AuditAction = "delete"
 	// Publish 发布
-	Publish AuditAction = "Publish"
-	// FinishPublish 结束发布
-	FinishPublish AuditAction = "FinishPublish"
-	// Rollback 回滚版本
-	Rollback AuditAction = "Rollback"
-	// Reload Reload配置版本
-	Reload AuditAction = "Reload"
-
-	// CreateApp 创建服务
-	CreateApp AuditAction = "create_app"
-	// UpdateApp 更新服务
-	UpdateApp AuditAction = "update_app"
-	// DeleteApp 删除服务
-	DeleteApp AuditAction = "delete_app"
-	// PublishReleaseConfig 上线版本配置
-	PublishReleaseConfig AuditAction = "publish_release_config"
+	Publish AuditAction = "publish"
 )
-
-// AuditActionEnums op type map.
-var AuditActionEnums = map[AuditAction]bool{
-	Create:        true,
-	Update:        true,
-	Delete:        true,
-	Publish:       true,
-	FinishPublish: true,
-	Rollback:      true,
-	Reload:        true,
-}
-
-// Exist judge enum value exist.
-func (a AuditAction) Exist() bool {
-	_, exist := AuditActionEnums[a]
-	return exist
-}
 
 // AuditStatus audit status.
 type AuditStatus string

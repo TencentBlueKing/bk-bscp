@@ -15,6 +15,7 @@ package table
 import (
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -47,7 +48,7 @@ func (t *TemplateVariable) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *TemplateVariable) ResType() string {
-	return "template_variable"
+	return string(enumor.Variable)
 }
 
 // ValidateCreate validate template variable is valid or not when create it.

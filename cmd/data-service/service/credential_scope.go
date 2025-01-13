@@ -14,14 +14,17 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/credential"
 	pbcrs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/credential-scope"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/credential"
 )
 
 // ListCredentialScopes  get credential scopes
@@ -53,6 +56,11 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 	req *pbds.UpdateCredentialScopesReq) (*pbds.UpdateCredentialScopesResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
+
+	credentialRecord, err := s.dao.Credential().Get(kt, req.BizId, req.CredentialId)
+	if err != nil {
+		return nil, err
+	}
 
 	tx := s.dao.GenQuery().Begin()
 
@@ -130,6 +138,18 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		}
 		return nil, err
 	}
+
+	ad := s.dao.AuditDao().Decorator(kt, req.BizId, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AssociatedAppConfigCredentialName, credentialRecord.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareUpdate(&table.Credential{ID: req.CredentialId})
+	if err := ad.Do(tx.Query); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
+		return nil, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
