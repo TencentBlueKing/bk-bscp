@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbaudit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/audit"
@@ -46,19 +48,27 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 
 	var details []*pbaudit.ListAuditsAppStrategy
 	for _, value := range aas {
+		// client的状态比较特殊，不能实时同步
+		status := value.Audit.Status
+		detail := value.Audit.Detail
+		if value.Audit.ResourceType == string(enumor.Instance) &&
+			value.Client.ReleaseChangeStatus == string(table.Failed) {
+			status = string(enumor.Failure)
+			detail = value.Client.FailedDetailReason
+		}
 		details = append(details, &pbaudit.ListAuditsAppStrategy{
 			Audit: &pbaudit.Audit{
 				Id: value.Audit.ID,
 				Spec: &pbaudit.AuditSpec{
 					ResType:     value.Audit.ResourceType,
 					Action:      value.Audit.Action,
-					Rid:         "", // 暂时用不到
-					AppCode:     "", // 暂时用不到
-					Detail:      "", // 暂时用不到
+					Rid:         "",     // 暂时用不到
+					AppCode:     "",     // 暂时用不到
+					Detail:      detail, // 暂时用不到
 					Operator:    value.Audit.Operator,
 					ResInstance: value.Audit.ResInstance,
 					OperateWay:  value.Audit.OperateWay,
-					Status:      value.Audit.Status,
+					Status:      status,
 					IsCompare:   value.Audit.IsCompare,
 				},
 				Attachment: &pbaudit.AuditAttachment{

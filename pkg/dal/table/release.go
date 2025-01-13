@@ -59,7 +59,7 @@ func (r *Release) ResID() uint32 {
 
 // ResType AuditRes interface
 func (r *Release) ResType() string {
-	return "release"
+	return string(enumor.Release)
 }
 
 // ValidateCreate a release's information

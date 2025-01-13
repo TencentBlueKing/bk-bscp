@@ -30,13 +30,6 @@ import (
 
 // Publish defines all the publish operation related operations.
 type Publish interface {
-	// Publish publish an app's release with its strategy.
-	// once an app's strategy along with its release id is published,
-	// all its released config items are effected immediately.
-	Publish(kit *kit.Kit, opt *types.PublishOption) (id uint32, err error)
-
-	PublishWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption) (id uint32, err error)
-
 	SubmitWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption) (id uint32, err error)
 
 	UpsertPublishWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption, stg *table.Strategy) error
@@ -49,56 +42,6 @@ type pubDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
-}
-
-// Publish publish an app's release with its strategy.
-// once an app's strategy along with its release id is published,
-// all its released config items are effected immediately.
-// return the published strategy history record id.
-func (dao *pubDao) Publish(kit *kit.Kit, opt *types.PublishOption) (uint32, error) {
-	if opt == nil {
-		return 0, errors.New("publish strategy option is nil")
-	}
-
-	if err := opt.Validate(); err != nil {
-		return 0, err
-	}
-
-	// 手动事务处理
-	tx := dao.genQ.Begin()
-	if err := dao.validatePublishGroups(kit, tx, opt); err != nil {
-		if e := tx.Rollback(); e != nil {
-			logs.Errorf("rollback publish transaction failed, err: %v, rid: %s", e, kit.Rid)
-		}
-		return 0, err
-	}
-	stgID, err := func() (uint32, error) {
-		groups := make([]*table.Group, 0, len(opt.Groups))
-		var err error
-		if len(opt.Groups) > 0 {
-			m := tx.Group
-			q := tx.Group.WithContext(kit.Ctx)
-			groups, err = q.Where(m.ID.In(opt.Groups...), m.BizID.Eq(opt.BizID)).Find()
-			if err != nil {
-				logs.Errorf("get to be published groups(%s) failed, err: %v, rid: %s",
-					tools.JoinUint32(opt.Groups, ","), err, kit.Rid)
-				return 0, err
-			}
-		}
-		return dao.publish(kit, tx, opt, groups)
-	}()
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			logs.Errorf("rollback publish transaction failed, err: %v, rid: %s", e, kit.Rid)
-		}
-		return 0, err
-	}
-	if err = tx.Commit(); err != nil {
-		logs.Errorf("commit publish transaction failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, err
-	}
-
-	return stgID, nil
 }
 
 func (dao *pubDao) validatePublishGroups(kt *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption) error {
@@ -188,95 +131,6 @@ func genStrategy(kit *kit.Kit, opt *types.PublishOption, stgID uint32, groups []
 			Reviser: kit.User,
 		},
 	}
-}
-
-// PublishWithTx publish with transaction
-func (dao *pubDao) PublishWithTx(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption) (uint32, error) {
-	if opt == nil {
-		return 0, errors.New("publish strategy option is nil")
-	}
-
-	if err := opt.Validate(); err != nil {
-		return 0, err
-	}
-
-	if err := dao.validatePublishGroups(kit, tx, opt); err != nil {
-		if e := tx.Rollback(); e != nil {
-			logs.Errorf("rollback publish transaction failed, err: %v, rid: %s", e, kit.Rid)
-		}
-		return 0, err
-	}
-
-	groups := make([]*table.Group, 0, len(opt.Groups))
-	var err error
-	if len(opt.Groups) > 0 {
-		m := tx.Group
-		q := tx.Group.WithContext(kit.Ctx)
-		groups, err = q.Where(m.ID.In(opt.Groups...), m.BizID.Eq(opt.BizID)).Find()
-		if err != nil {
-			logs.Errorf("get to be published groups(%s) failed, err: %v, rid: %s",
-				tools.JoinUint32(opt.Groups, ","), err, kit.Rid)
-			return 0, err
-		}
-	}
-	return dao.publish(kit, tx, opt, groups)
-}
-
-func (dao *pubDao) publish(kit *kit.Kit, tx *gen.QueryTx, opt *types.PublishOption, groups []*table.Group) (
-	uint32, error) {
-	eDecorator := dao.event.Eventf(kit)
-	// create strategy to publish it later
-	stgID, err := dao.idGen.One(kit, table.StrategyTable)
-	if err != nil {
-		logs.Errorf("generate strategy id failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, err
-	}
-	stg := genStrategy(kit, opt, stgID, groups)
-
-	sq := tx.Strategy.WithContext(kit.Ctx)
-	if err := sq.Create(stg); err != nil {
-		return 0, err
-	}
-
-	// audit this to create strategy details
-	ad := dao.auditDao.DecoratorV2(kit, opt.BizID).PrepareCreate(stg)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, err
-	}
-	// audit this to publish details
-	ad = dao.auditDao.DecoratorV2(kit, opt.BizID).PreparePublish(stg)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, err
-	}
-
-	// add release publish num
-	if err := dao.updateReleasePublishInfo(kit, tx.Query, opt); err != nil {
-		logs.Errorf("increate release publish num failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, err
-	}
-
-	if err := dao.upsertReleasedGroups(kit, tx.Query, opt, stg); err != nil {
-		logs.Errorf("upsert group current releases failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, err
-	}
-
-	// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-	one := types.Event{
-		Spec: &table.EventSpec{
-			Resource: table.Publish,
-			// use the published strategy history id, which represent a real publish operation.
-			ResourceID: opt.ReleaseID,
-			OpType:     table.InsertOp,
-		},
-		Attachment: &table.EventAttachment{BizID: opt.BizID, AppID: opt.AppID},
-		Revision:   &table.CreatedRevision{Creator: kit.User},
-	}
-	if err := eDecorator.FireWithTx(tx, one); err != nil {
-		logs.Errorf("fire publish strategy event failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, errors.New("fire event failed, " + err.Error())
-	}
-
-	return stgID, nil
 }
 
 // updateReleasePublishInfo update release publish info, include publish num and fully released status.

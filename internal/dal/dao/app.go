@@ -19,8 +19,10 @@ import (
 
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -213,7 +215,12 @@ func (dao *appDao) Create(kit *kit.Kit, g *table.App) (uint32, error) {
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareCreate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -275,7 +282,13 @@ func (dao *appDao) Update(kit *kit.Kit, g *table.App) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareUpdate(g, oldOne)
+	kit.AppID = g.ID
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareUpdate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -335,7 +348,11 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		AppId:            g.ID,
+	}).PrepareDelete(g)
 	if err = ad.Do(tx.Query); err != nil {
 		return err
 	}

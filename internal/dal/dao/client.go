@@ -24,8 +24,10 @@ import (
 	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbclient "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client"
@@ -180,6 +182,11 @@ func (dao *clientDao) UpdateRetriedClientsStatusWithTx(kit *kit.Kit, tx *gen.Que
 	m := dao.genQ.Client
 	q := tx.Client.WithContext(kit.Ctx)
 
+	clients, err := q.Where(m.ID.In(ids...)).Find()
+	if err != nil {
+		return err
+	}
+
 	if len(ids) == 0 && all {
 		q = q.Where(m.ReleaseChangeStatus.Eq(string(table.Failed)))
 	}
@@ -187,11 +194,44 @@ func (dao *clientDao) UpdateRetriedClientsStatusWithTx(kit *kit.Kit, tx *gen.Que
 	if len(ids) > 0 {
 		q = q.Where(m.ID.In(ids...))
 	}
-	_, err := q.Select(m.ReleaseChangeStatus).Updates(map[string]interface{}{
+	_, err = q.Select(m.ReleaseChangeStatus).Updates(map[string]interface{}{
 		m.ReleaseChangeStatus.ColumnName().String(): table.Processing,
 	})
 	if err != nil {
 		return err
+	}
+
+	// 单个重试
+	if len(ids) == 1 {
+		ad := dao.auditDao.Decorator(kit, clients[0].Attachment.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.ConfigRetryClientUID+constant.ResSeparator+
+				constant.ConfigRetryClientIp, clients[0].Attachment.UID, clients[0].Spec.Ip),
+			Status: enumor.Success,
+			AppId:  clients[0].Attachment.AppID,
+		}).PrepareUpdate(clients[0])
+		err = ad.Do(tx.Query)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 批量重试
+	if len(ids) > 1 {
+		// 截取前三个对象
+		var ips []string
+		for i := 0; i < len(clients) && i < 3; i++ {
+			ips = append(ips, clients[i].Spec.Ip)
+		}
+		ad := dao.auditDao.Decorator(kit, clients[0].Attachment.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.ConfigRetryClientIp,
+				len(clients), strings.Join(ips, constant.NameSeparator)),
+			Status: enumor.Success,
+			AppId:  clients[0].Attachment.AppID,
+		}).PrepareUpdate(&table.Client{})
+		err = ad.Do(tx.Query)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

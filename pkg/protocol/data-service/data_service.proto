@@ -1871,7 +1871,7 @@ message ListAuditsReq {
   uint32 app_id = 2;
   string start_time = 3;
   string end_time = 4;
-  string operate = 5;
+  uint32 id = 5;
   repeated string operate_way = 6;
   uint32 start = 7;
   uint32 limit = 8;
@@ -1882,7 +1882,6 @@ message ListAuditsReq {
   string res_instance = 13;
   repeated string status = 14;
   string operator = 15;
-  uint32 id = 16;
 }
 
 message ListAuditsResp {

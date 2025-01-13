@@ -15,10 +15,13 @@ package dao
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -146,6 +149,13 @@ func (dao *releasedHookDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, rh *tabl
 		if _, e := m.WithContext(kit.Ctx).Updates(rh); e != nil {
 			return e
 		}
+
+		ad := dao.auditDao.Decorator(kit, rh.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.ReplaceHookName, rh.HookType, rh.HookName),
+			Status:           enumor.Success,
+			AppId:            rh.AppID,
+		}).PrepareUpdate(&table.ConfigItem{ID: rh.ID})
+		return ad.Do(tx.Query)
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		// if old not exists, create it.
 		id, e := dao.idGen.One(kit, table.Name(rh.TableName()))
@@ -153,8 +163,18 @@ func (dao *releasedHookDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, rh *tabl
 			return e
 		}
 		rh.ID = id
-		return m.WithContext(kit.Ctx).Create(rh)
+		if err = m.WithContext(kit.Ctx).Create(rh); err != nil {
+			return err
+		}
+
+		ad := dao.auditDao.Decorator(kit, rh.BizID, &table.AuditField{
+			ResourceInstance: fmt.Sprintf(constant.ReferenceHookName, rh.HookType, rh.HookName),
+			Status:           enumor.Success,
+			AppId:            rh.AppID,
+		}).PrepareCreate(&table.ConfigItem{ID: rh.ID})
+		return ad.Do(tx.Query)
 	}
+
 	return err
 }
 
@@ -203,8 +223,19 @@ func (dao *releasedHookDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, rh *tabl
 
 	rh.ID = id
 
-	if err := tx.ReleasedHook.WithContext(kit.Ctx).Create(rh); err != nil {
+	if err = tx.ReleasedHook.WithContext(kit.Ctx).Create(rh); err != nil {
 		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, rh.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ReferenceHookName, rh.HookType, rh.HookName),
+		Status:           enumor.Success,
+		AppId:            rh.AppID,
+	}).PrepareCreate(&table.ConfigItem{ID: rh.ID})
+
+	if err = ad.Do(tx.Query); err != nil {
+		return 0, err
+
 	}
 
 	return id, nil
@@ -259,9 +290,24 @@ func (dao *releasedHookDao) DeleteByUniqueKeyWithTx(kit *kit.Kit, tx *gen.QueryT
 		return err
 	}
 	m := tx.ReleasedHook
-	_, err := m.WithContext(kit.Ctx).Where(m.BizID.Eq(rh.BizID), m.AppID.Eq(rh.AppID),
+	oldOne, err := m.WithContext(kit.Ctx).Where(m.BizID.Eq(rh.BizID), m.AppID.Eq(rh.AppID),
+		m.ReleaseID.Eq(rh.ReleaseID), m.HookType.Eq(rh.HookType.String())).Take()
+	if err != nil {
+		return err
+	}
+
+	_, err = m.WithContext(kit.Ctx).Where(m.BizID.Eq(rh.BizID), m.AppID.Eq(rh.AppID),
 		m.ReleaseID.Eq(rh.ReleaseID), m.HookType.Eq(rh.HookType.String())).Delete()
-	return err
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, rh.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.CancelHookName, oldOne.HookType, oldOne.HookName),
+		Status:           enumor.Success,
+		AppId:            rh.AppID,
+	}).PrepareDelete(&table.ConfigItem{ID: rh.ID})
+	return ad.Do(tx.Query)
 }
 
 // DeleteByHookIDAndReleaseIDWithTx deletes the released hook by hook id and release id with transaction.

@@ -16,7 +16,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
@@ -45,7 +47,7 @@ func (t *AppTemplateVariable) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *AppTemplateVariable) ResType() string {
-	return "app_template_variable"
+	return string(enumor.Variable)
 }
 
 // ValidateUpsert validate AppTemplateVariable is valid or not when create or update it.
@@ -132,6 +134,15 @@ func (t *AppTemplateVariableSpec) ValidateUpsert(kit *kit.Kit) error {
 		}
 	}
 	return nil
+}
+
+// GetVariableNames get variable names
+func (t *AppTemplateVariableSpec) GetVariableNames() string {
+	var name []string
+	for _, v := range t.Variables {
+		name = append(name, v.Name)
+	}
+	return strings.Join(name, ",")
 }
 
 // AppTemplateVariableAttachment defines the AppTemplateVariable attachments.

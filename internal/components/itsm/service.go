@@ -136,12 +136,10 @@ func GetWorkflowByService(ctx context.Context, serviceID int) (int, error) {
 func GetStateApproveByWorkfolw(ctx context.Context, workflowID int) (map[string]int, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
-	// 暂时使用外部地址测试，后面废除
-	host := itsmConf.Host
-	// host := itsmConf.GatewayHost
-	// if itsmConf.External {
-	// 	host = itsmConf.Host
-	// }
+	host := itsmConf.GatewayHost
+	if itsmConf.External {
+		host = itsmConf.Host
+	}
 
 	reqURL := fmt.Sprintf("%s%s?workflow_id=%d", host, getWorkflowDetailPath, workflowID)
 

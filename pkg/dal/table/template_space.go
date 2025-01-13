@@ -15,6 +15,7 @@ package table
 import (
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -44,7 +45,7 @@ func (t *TemplateSpace) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *TemplateSpace) ResType() string {
-	return "template_space"
+	return string(enumor.Template)
 }
 
 // ValidateCreate validate template space is valid or not when create it.
