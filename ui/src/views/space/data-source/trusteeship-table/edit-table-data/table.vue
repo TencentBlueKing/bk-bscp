@@ -6,12 +6,13 @@
     :data="tableData"
     show-overflow
     :header-row-height="50"
-    :edit-config="{ mode: 'cell', trigger: 'click' }"
+    :edit-config="{ mode: 'cell', trigger: 'click', showStatus: true }"
     :row-config="{ height: 42 }"
     :scroll-y="{ enabled: true, gt: 0 }"
     :row-class-name="rowClassName"
     :cell-class-name="cellClassName"
-    :edit-rules="validRules">
+    :edit-rules="validRules"
+    keep-source>
     <vxe-column
       v-for="(field, index) in fieldsList"
       :key="index"
@@ -79,6 +80,9 @@
         </div>
       </template>
     </vxe-column>
+    <template #empty>
+      <tableEmpty :is-search-empty="false" />
+    </template>
   </vxe-table>
 </template>
 
@@ -92,6 +96,7 @@
   } from '../../../../../../types/kv-table';
   import BatchSetPop from './batch-set-pop.vue';
   import { cloneDeep } from 'lodash';
+  import tableEmpty from '../../../../../components/table/table-empty.vue';
 
   const props = defineProps<{
     fields: IFieldItem[];
@@ -164,9 +169,9 @@
             ...item.spec,
           };
         });
-        publishData.value = cloneDeep(tableData.value.filter((item) => item.status === 'REVISE'));
-      } else {
-        handleAddData(0);
+        publishData.value = cloneDeep(
+          tableData.value.filter((item) => item.status === 'REVISE' || item.status === 'UNCHANGE'),
+        );
       }
     },
   );
@@ -181,21 +186,28 @@
     tableHeight.value = (screenHeight - reservedHeight) * 0.8;
   };
 
-  const handleAddData = (index: number) => {
-    const content: { [key: string]: string | string[] } = {};
+  const handleAddData = (index?: number) => {
+    const content: { [key: string]: any } = {};
     fieldsList.value.forEach((item) => {
-      content[item.name] = item.default_value || '';
+      if (item.column_type === 'number') {
+        content[item.name] = Number(item.default_value) || null;
+      } else {
+        content[item.name] = item.default_value || '';
+      }
     });
-    tableData.value.splice(index + 1, 0, { custom_id: Date.now(), content, status: 'ADD', id: 0 });
+    if (index) {
+      tableData.value.splice(index + 1, 0, { custom_id: Date.now(), content, status: 'ADD', id: 0 });
+    } else {
+      tableData.value.push({ custom_id: Date.now(), content, status: 'ADD', id: 0 });
+    }
     emits('change', tableData.value);
   };
 
   const handleDeleteData = (data: ILocalTableEditData, index: number) => {
-    if (data.status === 'REVISE') {
+    if (data.status === 'REVISE' || data.status === 'UNCHANGE') {
       data.status = 'DELETE';
-    } else if (tableData.value.length > 1) {
-      tableData.value.splice(index, 1);
     }
+    tableData.value.splice(index, 1);
     emits('change', tableData.value);
   };
 
@@ -220,19 +232,38 @@
   const getValidRules = () => {
     fieldsList.value.forEach((item) => {
       const rules = [];
-      if (item.status !== 'DELETE') {
-        if (item.not_null) {
-          rules.push({ required: true, message: false });
-        }
-        validRules.value[item.name] = rules;
+      if (item.not_null) {
+        rules.push({
+          validator({ row }: any) {
+            if (row.status === 'DELETE') return;
+            if (row.content[item.name] === '' || null) {
+              return new Error('不能为空');
+            }
+          },
+        });
       }
+      if (item.unique) {
+        rules.push({
+          validator({ row, column }: any) {
+            if (row.status === 'DELETE') return;
+            const values = tableData.value
+              .filter((item) => item.status !== 'DELETE')
+              .map((item) => item.content[column.field]);
+            const occurrences = values.filter((value) => value === row.content[item.name]);
+            if (occurrences.length > 1) {
+              return new Error('不能重复');
+            }
+          },
+        });
+      }
+      validRules.value[item.name] = rules;
     });
   };
 
   const fullValidEvent = async () => {
     const $table = tableRef.value;
     if ($table) {
-      const errMap = await $table.validate(true);
+      const errMap = await $table.fullValidate(true);
       if (errMap) {
         return false;
       }
@@ -242,6 +273,7 @@
 
   defineExpose({
     fullValidEvent,
+    handleAddData,
   });
 </script>
 
@@ -286,8 +318,11 @@
     }
   }
 
-  .vxe-body--column.col--valid-error .vxe-input {
-    border: 1px solid #ff4d4f;
+  .vxe-body--column.col--valid-error {
+    .vxe-input,
+    .vxe-number-input {
+      border: 1px solid #ff4d4f;
+    }
   }
 
   .vxe-input:not(.is--active) {
@@ -313,9 +348,6 @@
   }
   .vxe-table {
     :deep(.vxe-table--body) {
-      .vxe-cell--valid-error-tip {
-        display: none;
-      }
       .vxe-input-inner {
         padding: 0;
       }
@@ -340,6 +372,13 @@
             text-decoration: line-through;
             .vxe-input--inner,
             .vxe-input--suffix {
+              background: #ffeeee;
+            }
+          }
+          .vxe-number-input {
+            text-decoration: line-through;
+            .vxe-number-input--inner,
+            .vxe-number-input--suffix {
               background: #ffeeee;
             }
           }

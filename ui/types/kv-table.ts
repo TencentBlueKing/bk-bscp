@@ -98,14 +98,11 @@ export interface ILocalTableDataItem {
 export interface ILocalTableEditData {
   id: number;
   custom_id: number;
-  content: { [key: string]: string | string[] };
+  content: { [key: string]: string | number | string[] };
   status: string;
 }
 
-export interface ILocalTableEditContent {
-  table_content_id: number;
-  content: { [key: string]: string | string[] };
-}
+export type ILocalTableEditQuery = { [key: string]: string | number | string[] }[];
 
 export const enum EDataCleanType {
   '=' = 'eq',

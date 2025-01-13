@@ -4,6 +4,7 @@
       :data="tableData"
       :border="['outer']"
       :remote-pagination="true"
+      empty-cell-text="--"
       :pagination="pagination"
       @page-limit-change="handlePageLimitChange"
       @page-value-change="loadTableList">
@@ -32,8 +33,12 @@
           </bk-button>
         </template>
       </bk-table-column>
-      <bk-table-column :label="$t('最近更新人')" prop="updator" />
-      <bk-table-column :label="$t('最近更新时间')" prop="updatedAt" />
+      <bk-table-column :label="$t('最近更新人')" prop="revision.reviser" />
+      <bk-table-column :label="$t('最近更新时间')" prop="updatedAt">
+        <template #default="{ row }">
+          <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>
+        </template>
+      </bk-table-column>
       <bk-table-column :label="$t('操作')">
         <template #default="{ row }">
           <div class="action-btns">
@@ -93,6 +98,7 @@
   import { storeToRefs } from 'pinia';
   import { ILocalTableItem } from '../../../../../../types/kv-table';
   import { useRouter } from 'vue-router';
+  import { datetimeFormat } from '../../../../../utils';
   import useGlobalStore from '../../../../../store/global';
   import useTablePagination from '../../../../../utils/hooks/use-table-pagination';
   import BkMessage from 'bkui-vue/lib/message';

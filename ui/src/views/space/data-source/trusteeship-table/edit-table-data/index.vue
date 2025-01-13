@@ -3,7 +3,10 @@
     <template #content>
       <div class="content-wrap">
         <div class="content-header">
-          <bk-button>{{ $t('导入') }}</bk-button>
+          <div class="operation-btns">
+            <bk-button @click="handleAddData">{{ $t('新增') }}</bk-button>
+            <bk-button>{{ $t('导入') }}</bk-button>
+          </div>
           <bk-input class="search-input">
             <template #suffix>
               <Search class="search-input-icon" />
@@ -17,7 +20,11 @@
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button :loading="confirmLoading" theme="primary" style="width: 88px" @click="handleConfirm">
+        <bk-button
+          :loading="confirmLoading"
+          theme="primary"
+          style="width: 88px"
+          @click="handleConfirm">
           {{ $t('保存') }}
         </bk-button>
         <bk-button style="width: 88px" @click="handleClose">{{ $t('取消') }}</bk-button>
@@ -35,7 +42,7 @@
     IFieldItem,
     ILocalTableEditData,
     ILocalTableDataItem,
-    ILocalTableEditContent,
+    ILocalTableEditQuery,
   } from '../../../../../../types/kv-table';
   import { getTableData, getTableStructure, editTableData } from '../../../../../api/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
@@ -56,10 +63,9 @@
   const isShowImportTable = ref(false);
   const fields = ref<IFieldItem[]>([]);
   const tableData = ref<ILocalTableDataItem[]>([]);
-  const editDataContent = ref<ILocalTableEditContent[]>([]);
+  const editDataContent = ref<ILocalTableEditQuery>([]);
   const loading = ref(false);
   const confirmLoading = ref(false);
-  const delIds = ref<number[]>([]);
   const tableRef = ref();
 
   onMounted(() => {
@@ -89,14 +95,11 @@
   const handleConfirm = async () => {
     try {
       const validate = await tableRef.value.fullValidEvent();
-      console.log(validate);
       if (!validate) return;
       confirmLoading.value = true;
-      const query = {
+      await editTableData(spaceId.value, tableId.value, {
         contents: editDataContent.value,
-        del_ids: delIds.value,
-      };
-      await editTableData(spaceId.value, tableId.value, query);
+      });
       handleClose();
       BkMessage({ theme: 'success', message: t('编辑数据成功') });
     } catch (error) {
@@ -106,14 +109,12 @@
     }
   };
 
+  const handleAddData = () => {
+    tableRef.value.handleAddData();
+  };
+
   const handleChange = (data: ILocalTableEditData[]) => {
-    editDataContent.value = data.map((item) => {
-      return {
-        table_content_id: item.id,
-        content: item.content,
-      };
-    });
-    delIds.value = data.filter((item) => item.status === 'DELETE').map((item) => item.id);
+    editDataContent.value = data.map((item) => item.content);
   };
 
   const handleClose = () => {
@@ -127,6 +128,10 @@
     padding: 24px;
     min-height: 100%;
     .content-header {
+      .operation-btns {
+        display: flex;
+        gap: 8px;
+      }
       display: flex;
       align-items: center;
       justify-content: space-between;
