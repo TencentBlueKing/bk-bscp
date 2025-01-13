@@ -1,6 +1,6 @@
 <template>
   <section class="search-option">
-    <bk-checkbox v-model="publishReleaseConfig" @change="changePublishStatus"> {{ $t('仅看上线操作') }} </bk-checkbox>
+    <bk-checkbox v-model="publish" @change="changePublishStatus"> {{ $t('仅看上线操作') }} </bk-checkbox>
     <bk-checkbox v-model="failure" @change="changeFailedStatus"> {{ $t('仅看失败操作') }} </bk-checkbox>
     <div class="search-input__wrap">
       <bk-search-select
@@ -32,7 +32,7 @@
   const router = useRouter();
   const route = useRoute();
 
-  const publishReleaseConfig = ref(false);
+  const publish = ref(false);
   const failure = ref(false);
   const searchValue = ref<ISearchValueItem[]>([]);
 
@@ -116,7 +116,7 @@
   const change = (data: ISearchValueItem[]) => {
     const optionIdArr = data.map((item) => item.values.map((i) => i.id));
     const statusMap: { [key: string]: Ref<boolean> } = {
-      [FILTER_KEY.publish_release_config]: publishReleaseConfig,
+      [FILTER_KEY.publish]: publish,
       [FILTER_KEY.failure]: failure,
     };
     Object.keys(statusMap).forEach((id) => {
@@ -148,7 +148,7 @@
 
   // 仅看上线操作
   const changePublishStatus = (status: boolean) => {
-    changeStatus(SEARCH_ID.action, t('操作行为'), [{ id: 'publish_release_config', name: t('上线版本配置') }], status);
+    changeStatus(SEARCH_ID.action, t('操作行为'), [{ id: 'publish', name: t('上线') }], status);
   };
   // 仅看失败操作
   const changeFailedStatus = (status: boolean) => {

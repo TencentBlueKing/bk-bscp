@@ -10,17 +10,17 @@
           :data="tableData"
           @column-sort="handleSort"
           @column-filter="handleFilter">
-          <bk-table-column :label="t('操作时间')" min-width="155" :sort="true">
+          <bk-table-column :label="t('操作时间')" width="155" :sort="true">
             <template #default="{ row }">
               {{ convertTime(row.audit?.revision.created_at, 'local') }}
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('所属服务')" min-width="190">
+          <bk-table-column :label="t('所属服务')" width="180">
             <template #default="{ row }"> {{ row.app?.name || '--' }} </template>
           </bk-table-column>
           <bk-table-column
             :label="t('资源类型')"
-            :min-width="locale === 'zh-cn' ? '96' : '160'"
+            :width="locale === 'zh-cn' ? '96' : '160'"
             :filter="{
               filterFn: () => true,
               list: resTypeFilterList,
@@ -32,7 +32,7 @@
           </bk-table-column>
           <bk-table-column
             :label="t('操作行为')"
-            :min-width="locale === 'zh-cn' ? '114' : '240'"
+            :width="locale === 'zh-cn' ? '114' : '240'"
             :filter="{
               filterFn: () => true,
               list: actionFilterList,
@@ -52,7 +52,7 @@
               <!-- <div>{{ row.audit?.spec.res_instance || '--' }}</div> -->
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('操作人')" min-width="140">
+          <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
               {{ row.audit?.spec.operator || '--' }}
             </template>
@@ -155,7 +155,7 @@
             :width="locale === 'zh-cn' ? '160' : '260'">
             <template #default="{ row }">
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
-              <div v-if="row.audit && row.audit.spec.action === 'publish_release_config'" class="action-btns">
+              <div v-if="row.audit && row.audit.spec.action === 'publish'" class="action-btns">
                 <!-- 创建者且版本待上线 才展示上线按钮;审批通过的时间在定时上线的时间以前，上线按钮置灰 -->
                 <bk-button
                   v-if="
@@ -454,13 +454,40 @@
 
   // 资源示例映射
   const convertInstance = (data: string) => {
-    if (data.length) {
-      let result = data.replace(/\n/g, '<br />');
-      Object.keys(INSTANCE).forEach((key) => {
-        result = result.replace(`${key}:`, `${INSTANCE[key as keyof typeof INSTANCE]}：`);
-      });
-      return result;
+    if (!data.length) return '';
+
+    let resultList = data.split('\n');
+    let operateCount: string | null = null;
+    let operateIndex: number | null = null;
+
+    // 提取操作对象的个数及其索引
+    resultList.forEach((result, index) => {
+      const match = result.match(/operate_objects: (\d+)/);
+      if (match) {
+        operateCount = match[1];
+        operateIndex = index;
+      }
+    });
+
+    if (operateIndex !== null && operateCount) {
+      resultList.splice(operateIndex, 1);
     }
+
+    resultList = resultList.map((result) => {
+      const [key, ...rest] = result.split(':');
+      const mappedKey = INSTANCE[key as keyof typeof INSTANCE] || key;
+      return [mappedKey, ...rest].join(':');
+    });
+
+    if (operateCount && operateIndex !== null) {
+      const operationDescription = t('对{n}等 {m} 个对象进行操作', {
+        n: resultList[operateIndex],
+        m: operateCount,
+      });
+      resultList.splice(operateIndex, 1, operationDescription);
+    }
+
+    return resultList.join('<br />');
   };
 
   // 状态提示信息
@@ -468,7 +495,7 @@
     if (!row) {
       return '--';
     }
-    const { status } = row.audit.spec;
+    const { status, detail } = row.audit.spec;
     // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
     const {
       final_approval_time: time,
@@ -491,7 +518,7 @@
       case APPROVE_STATUS.revoked_publish:
         return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
       case APPROVE_STATUS.failure:
-        return t('提示-失败');
+        return detail;
       default:
         return '--';
     }
