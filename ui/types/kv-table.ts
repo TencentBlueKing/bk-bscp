@@ -58,6 +58,7 @@ export interface IEnumItem {
   value: string;
   hasTextError?: boolean;
   hasValueError?: boolean;
+  id?: number;
 }
 
 // 托管表格新建表单编辑

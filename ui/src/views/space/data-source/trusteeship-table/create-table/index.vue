@@ -190,6 +190,14 @@
         border: 1px solid #3a84ff;
         background: #f0f5ff;
         cursor: pointer;
+        .svg {
+          &.icon-manual-create {
+            background: url('../../../../../assets/add-doc-active.svg') no-repeat;
+          }
+          &.icon-import-local {
+            background: url('../../../../../assets/backup-active.svg') no-repeat;
+          }
+        }
       }
     }
   }

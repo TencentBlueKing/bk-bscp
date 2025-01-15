@@ -334,9 +334,9 @@
     }
   }
   .vxe-number-input {
-    :deep(.vxe-input--control-icon) {
-      display: none;
-    }
+    // :deep(.vxe-input--control-icon) {
+    //   display: none;
+    // }
     &:not(.is--active) {
       border: none;
     }

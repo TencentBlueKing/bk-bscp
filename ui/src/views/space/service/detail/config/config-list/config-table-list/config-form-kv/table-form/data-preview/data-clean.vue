@@ -26,7 +26,7 @@
             :multiple="rule.field.selected"
             @change="validateValue(index)"
             @blur="validateValue(index)">
-            <bk-option v-for="item in rule.enum_list" :key="item.value" :value="item.value" :label="item.text" />
+            <bk-option v-for="item in rule.enum_list" :key="item.value" :value="item.value" :label="item.label" />
           </bk-select>
           <template v-else>
             <bk-tag-input
@@ -78,7 +78,7 @@
 
   interface IRuleItem extends IDataCleanItem {
     field?: IFieldItem;
-    enum_list?: { text: string; value: string }[];
+    enum_list?: { label: string; value: string }[];
   }
 
   const props = defineProps<{

@@ -99,7 +99,6 @@
         columns: columns as IFiledsItemEditing[],
         visible_range: res.details.spec.visible_range.length === 0 ? ['*'] : res.details.spec.visible_range, // 如果没有权限范围，默认为全部
       };
-      console.log(res);
     } catch (error) {
       console.error(error);
     }

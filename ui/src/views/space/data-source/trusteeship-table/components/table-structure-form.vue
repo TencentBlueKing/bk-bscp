@@ -91,7 +91,7 @@
     formData.value.columns.push({
       name: '',
       alias: '',
-      column_type: '',
+      column_type: formData.value.columns.length === 0 ? 'number' : 'string',
       default_value: '',
       primary: formData.value.columns.length === 0,
       not_null: false,

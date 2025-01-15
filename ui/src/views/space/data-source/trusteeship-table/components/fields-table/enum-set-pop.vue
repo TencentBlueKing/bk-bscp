@@ -30,8 +30,14 @@
               :placeholder="$t('实际值')"
               @input="enumItem.hasValueError = false" />
             <div class="action-btns">
-              <i class="bk-bscp-icon icon-reduce" @click="handleDelEnumItem(enumIndex)"></i>
-              <i class="bk-bscp-icon icon-add" @click="handleAddEnumItem(enumIndex)"></i>
+              <i
+                :class="[
+                  'bk-bscp-icon',
+                  'icon-minus-circle-shape',
+                  { disabled: hasTableData && existEnumList.find((item) => item.id === enumItem.id) },
+                ]"
+                @click.stop="handleDelEnumItem(enumItem, enumIndex)"></i>
+              <i class="bk-bscp-icon icon-plus-circle-shape" @click="handleAddEnumItem(enumIndex)"></i>
             </div>
           </div>
         </div>
@@ -48,7 +54,6 @@
   import { ref, watch } from 'vue';
   import { CogShape } from 'bkui-vue/lib/icon';
   import { IEnumItem } from '../../../../../../../types/kv-table';
-  import { cloneDeep } from 'lodash';
 
   const props = defineProps<{
     isMultiple: boolean; // 是否多选
@@ -68,8 +73,18 @@
     () => {
       isMultiple.value = props.isMultiple;
       if (props.enumList?.length) {
-        settingEnumList.value = cloneDeep(props.enumList);
-        existEnumList.value = cloneDeep(props.enumList);
+        settingEnumList.value = props.enumList.map((item, index) => {
+          return {
+            ...item,
+            id: index,
+          };
+        });
+        existEnumList.value = props.enumList.map((item, index) => {
+          return {
+            ...item,
+            id: index,
+          };
+        });
       }
     },
     { immediate: true },
@@ -79,7 +94,8 @@
     settingEnumList.value.splice(index + 1, 0, { label: '', value: '', hasTextError: false, hasValueError: false });
   };
 
-  const handleDelEnumItem = (index: number) => {
+  const handleDelEnumItem = (enumItem: IEnumItem, index: number) => {
+    if (existEnumList.value.find((item) => item.id === enumItem.id)) return;
     if (settingEnumList.value.length > 1) {
       settingEnumList.value.splice(index, 1);
     }
@@ -165,10 +181,15 @@
           align-items: center;
           gap: 8px;
           font-size: 14px;
-          color: #979ba5;
+          color: #c4c6cc;
           cursor: pointer;
-          i:hover {
-            color: #3a84ff;
+          i {
+            &:hover {
+              color: #3a84ff;
+            }
+            &.disabled {
+              color: #eaebf0;
+            }
           }
         }
       }

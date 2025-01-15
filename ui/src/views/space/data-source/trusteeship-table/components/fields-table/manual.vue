@@ -45,6 +45,8 @@
                 class="type-select"
                 auto-focus
                 :filterable="false"
+                :clearable="false"
+                :disabled="element.primary"
                 @change="handleSelectType(element, $event)"
                 @blur="validateField(index, 'column_type')">
                 <bk-option v-for="type in dataType" :id="type.value" :key="type.value" :name="type.label" />
@@ -54,6 +56,7 @@
               <bk-input
                 v-if="element.column_type !== 'enum'"
                 v-model="element.default_value"
+                :type="element.column_type === 'number' ? 'number' : 'text'"
                 @change="emits('change', fieldsList)" />
               <div v-else class="enum-type">
                 <bk-select
@@ -202,6 +205,7 @@
     // 标记新的主键
     item.primary = true;
     item.unique = true;
+    item.column_type = 'number';
 
     // 将选中的项移到第一个位置
     fieldsList.value = [item, ...fieldsList.value.filter((_, idx) => idx !== index)];

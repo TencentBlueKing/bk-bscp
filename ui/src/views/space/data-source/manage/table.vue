@@ -43,32 +43,7 @@
   const { pagination, updatePagination } = useTablePagination('dataSource');
 
   const tableLoading = ref(false);
-  const tableData = ref([
-    {
-      name: '张三',
-      memo: '123',
-      type: 'MySqL',
-      config: 1,
-      updator: '张三',
-      updatedAt: '2022-01-01',
-    },
-    {
-      name: '李四',
-      memo: '123',
-      type: 'MySqL',
-      config: 1,
-      updator: '张三',
-      updatedAt: '2022-01-01',
-    },
-    {
-      name: '王五',
-      memo: '123',
-      type: 'MySqL',
-      config: 1,
-      updator: '张三',
-      updatedAt: '2022-01-01',
-    },
-  ]);
+  const tableData = ref([]);
 
   const handleEditClick = (dataSource: any) => {
     console.log(dataSource);

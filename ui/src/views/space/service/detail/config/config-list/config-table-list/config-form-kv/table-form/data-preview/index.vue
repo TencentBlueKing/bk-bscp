@@ -49,12 +49,15 @@
           </div>
         </template>
         <template #default="{ row }">
-          <div v-if="Array.isArray(row.spec.content[field.name])" class="tag-list">
-            <bk-tag v-for="tag in row.spec.content[field.name]" :key="tag" radius="4px">
-              {{ tag }}
-            </bk-tag>
-          </div>
-          <div v-else>{{ row.spec.content[field.name] }}</div>
+          <template v-if="row.spec.content[field.name]">
+            <div v-if="Array.isArray(row.spec.content[field.name])" class="tag-list">
+              <bk-tag v-for="tag in row.spec.content[field.name]" :key="tag" radius="4px">
+                {{ tag }}
+              </bk-tag>
+            </div>
+            <div v-else>{{ row.spec.content[field.name] }}</div>
+          </template>
+          <span v-else>--</span>
         </template>
       </vxe-column>
     </vxe-table>
@@ -119,6 +122,7 @@
     () => {
       isShowFieldSetting.value = false;
       isShowDataClean.value = false;
+      ruleList.value = [];
       loadData();
     },
   );
@@ -216,5 +220,15 @@
   }
   .vxe-table--render-default {
     overflow: hidden;
+  }
+  :deep(.vxe-cell) {
+    padding: 0 16px;
+  }
+  .vxe-table {
+    :deep(.vxe-table--render-wrapper) {
+      .vxe-cell {
+        padding: 0 16px;
+      }
+    }
   }
 </style>
