@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 )
 
 // RecoveryHandlerFuncContext 异常日志输出
@@ -49,16 +50,17 @@ func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		kt := kit.FromGrpcContext(ctx)
 		service := path.Dir(info.FullMethod)[1:]
 		method := path.Base(info.FullMethod)
+		realIP := mustGetRealIP(ctx)
 
 		defer func() {
 			if err != nil {
-				klog.InfoS("grpc", "rid", kt.Rid, "system", "grpc", "span.kind", "grpc.service", "service", service,
-					"method", method, "grpc.duration", time.Since(st), "err", err)
+				klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
+					"service", service, "method", method, "grpc.duration", time.Since(st), "err", err)
 				return
 			}
 
-			klog.InfoS("grpc", "rid", kt.Rid, "system", "grpc", "span.kind", "grpc.service", "service", service,
-				"method", method, "grpc.duration", time.Since(st))
+			klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
+				"service", service, "method", method, "grpc.duration", time.Since(st))
 		}()
 
 		resp, err = handler(ctx, req)
@@ -79,6 +81,14 @@ func GrpcServerHandledTotalInterceptor() grpc.UnaryServerInterceptor {
 			Inc()
 		return resp, err
 	}
+}
+
+func mustGetRealIP(ctx context.Context) string {
+	addr, ok := realip.FromContext(ctx)
+	if !ok {
+		return "unknown"
+	}
+	return addr.String()
 }
 
 func splitMethodName(fullMethodName string) (string, string) {
