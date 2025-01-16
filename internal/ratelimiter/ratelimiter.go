@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	DefaultIPLimit = 100 // DefaultIPLimit 默认限流速率50 QPS, Burst可以默认*2
+	DefaultIPLimit = 1024 * 10 // DefaultIPLimit ip默认来源是Peer Addr，当做全局限速, Burst可以默认*2
 )
 
 // RateLimiter is interface for rate limiter
