@@ -31,6 +31,9 @@ var (
 	Content                     *content
 	Credential                  *credential
 	CredentialScope             *credentialScope
+	DataSourceContent           *dataSourceContent
+	DataSourceInfo              *dataSourceInfo
+	DataSourceMapping           *dataSourceMapping
 	Event                       *event
 	Group                       *group
 	GroupAppBind                *groupAppBind
@@ -45,6 +48,7 @@ var (
 	ReleasedGroup               *releasedGroup
 	ReleasedHook                *releasedHook
 	ReleasedKv                  *releasedKv
+	ReleasedTableContent        *releasedTableContent
 	ResourceLock                *resourceLock
 	Strategy                    *strategy
 	Template                    *template
@@ -70,6 +74,9 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Content = &Q.Content
 	Credential = &Q.Credential
 	CredentialScope = &Q.CredentialScope
+	DataSourceContent = &Q.DataSourceContent
+	DataSourceInfo = &Q.DataSourceInfo
+	DataSourceMapping = &Q.DataSourceMapping
 	Event = &Q.Event
 	Group = &Q.Group
 	GroupAppBind = &Q.GroupAppBind
@@ -84,6 +91,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	ReleasedGroup = &Q.ReleasedGroup
 	ReleasedHook = &Q.ReleasedHook
 	ReleasedKv = &Q.ReleasedKv
+	ReleasedTableContent = &Q.ReleasedTableContent
 	ResourceLock = &Q.ResourceLock
 	Strategy = &Q.Strategy
 	Template = &Q.Template
@@ -110,6 +118,9 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Content:                     newContent(db, opts...),
 		Credential:                  newCredential(db, opts...),
 		CredentialScope:             newCredentialScope(db, opts...),
+		DataSourceContent:           newDataSourceContent(db, opts...),
+		DataSourceInfo:              newDataSourceInfo(db, opts...),
+		DataSourceMapping:           newDataSourceMapping(db, opts...),
 		Event:                       newEvent(db, opts...),
 		Group:                       newGroup(db, opts...),
 		GroupAppBind:                newGroupAppBind(db, opts...),
@@ -124,6 +135,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		ReleasedGroup:               newReleasedGroup(db, opts...),
 		ReleasedHook:                newReleasedHook(db, opts...),
 		ReleasedKv:                  newReleasedKv(db, opts...),
+		ReleasedTableContent:        newReleasedTableContent(db, opts...),
 		ResourceLock:                newResourceLock(db, opts...),
 		Strategy:                    newStrategy(db, opts...),
 		Template:                    newTemplate(db, opts...),
@@ -151,6 +163,9 @@ type Query struct {
 	Content                     content
 	Credential                  credential
 	CredentialScope             credentialScope
+	DataSourceContent           dataSourceContent
+	DataSourceInfo              dataSourceInfo
+	DataSourceMapping           dataSourceMapping
 	Event                       event
 	Group                       group
 	GroupAppBind                groupAppBind
@@ -165,6 +180,7 @@ type Query struct {
 	ReleasedGroup               releasedGroup
 	ReleasedHook                releasedHook
 	ReleasedKv                  releasedKv
+	ReleasedTableContent        releasedTableContent
 	ResourceLock                resourceLock
 	Strategy                    strategy
 	Template                    template
@@ -193,6 +209,9 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Content:                     q.Content.clone(db),
 		Credential:                  q.Credential.clone(db),
 		CredentialScope:             q.CredentialScope.clone(db),
+		DataSourceContent:           q.DataSourceContent.clone(db),
+		DataSourceInfo:              q.DataSourceInfo.clone(db),
+		DataSourceMapping:           q.DataSourceMapping.clone(db),
 		Event:                       q.Event.clone(db),
 		Group:                       q.Group.clone(db),
 		GroupAppBind:                q.GroupAppBind.clone(db),
@@ -207,6 +226,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		ReleasedGroup:               q.ReleasedGroup.clone(db),
 		ReleasedHook:                q.ReleasedHook.clone(db),
 		ReleasedKv:                  q.ReleasedKv.clone(db),
+		ReleasedTableContent:        q.ReleasedTableContent.clone(db),
 		ResourceLock:                q.ResourceLock.clone(db),
 		Strategy:                    q.Strategy.clone(db),
 		Template:                    q.Template.clone(db),
@@ -242,6 +262,9 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Content:                     q.Content.replaceDB(db),
 		Credential:                  q.Credential.replaceDB(db),
 		CredentialScope:             q.CredentialScope.replaceDB(db),
+		DataSourceContent:           q.DataSourceContent.replaceDB(db),
+		DataSourceInfo:              q.DataSourceInfo.replaceDB(db),
+		DataSourceMapping:           q.DataSourceMapping.replaceDB(db),
 		Event:                       q.Event.replaceDB(db),
 		Group:                       q.Group.replaceDB(db),
 		GroupAppBind:                q.GroupAppBind.replaceDB(db),
@@ -256,6 +279,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		ReleasedGroup:               q.ReleasedGroup.replaceDB(db),
 		ReleasedHook:                q.ReleasedHook.replaceDB(db),
 		ReleasedKv:                  q.ReleasedKv.replaceDB(db),
+		ReleasedTableContent:        q.ReleasedTableContent.replaceDB(db),
 		ResourceLock:                q.ResourceLock.replaceDB(db),
 		Strategy:                    q.Strategy.replaceDB(db),
 		Template:                    q.Template.replaceDB(db),
@@ -281,6 +305,9 @@ type queryCtx struct {
 	Content                     IContentDo
 	Credential                  ICredentialDo
 	CredentialScope             ICredentialScopeDo
+	DataSourceContent           IDataSourceContentDo
+	DataSourceInfo              IDataSourceInfoDo
+	DataSourceMapping           IDataSourceMappingDo
 	Event                       IEventDo
 	Group                       IGroupDo
 	GroupAppBind                IGroupAppBindDo
@@ -295,6 +322,7 @@ type queryCtx struct {
 	ReleasedGroup               IReleasedGroupDo
 	ReleasedHook                IReleasedHookDo
 	ReleasedKv                  IReleasedKvDo
+	ReleasedTableContent        IReleasedTableContentDo
 	ResourceLock                IResourceLockDo
 	Strategy                    IStrategyDo
 	Template                    ITemplateDo
@@ -320,6 +348,9 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Content:                     q.Content.WithContext(ctx),
 		Credential:                  q.Credential.WithContext(ctx),
 		CredentialScope:             q.CredentialScope.WithContext(ctx),
+		DataSourceContent:           q.DataSourceContent.WithContext(ctx),
+		DataSourceInfo:              q.DataSourceInfo.WithContext(ctx),
+		DataSourceMapping:           q.DataSourceMapping.WithContext(ctx),
 		Event:                       q.Event.WithContext(ctx),
 		Group:                       q.Group.WithContext(ctx),
 		GroupAppBind:                q.GroupAppBind.WithContext(ctx),
@@ -334,6 +365,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		ReleasedGroup:               q.ReleasedGroup.WithContext(ctx),
 		ReleasedHook:                q.ReleasedHook.WithContext(ctx),
 		ReleasedKv:                  q.ReleasedKv.WithContext(ctx),
+		ReleasedTableContent:        q.ReleasedTableContent.WithContext(ctx),
 		ResourceLock:                q.ResourceLock.WithContext(ctx),
 		Strategy:                    q.Strategy.WithContext(ctx),
 		Template:                    q.Template.WithContext(ctx),

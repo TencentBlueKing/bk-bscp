@@ -70,6 +70,10 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 			SecretType:                req.SecretType,
 			SecretHidden:              req.SecretHidden,
 			CertificateExpirationDate: expirationTime,
+			ManagedTableId:            req.ManagedTableId,
+			ExternalSourceId:          req.ExternalSourceId,
+			FilterCondition:           req.FilterCondition,
+			FilterFields:              req.FilterFields,
 		},
 	}
 	rp, err := s.client.DS.CreateKv(grpcKit.RpcCtx(), r)
@@ -321,6 +325,10 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 				SecretType:                kv.SecretType,
 				SecretHidden:              kv.SecretHidden,
 				CertificateExpirationDate: expirationTime,
+				ManagedTableId:            kv.ManagedTableId,
+				ExternalSourceId:          kv.ExternalSourceId,
+				FilterCondition:           kv.FilterCondition,
+				FilterFields:              kv.FilterFields,
 			},
 		})
 	}
@@ -459,12 +467,16 @@ func (s *Service) CompareKvConflicts(ctx context.Context, req *pbcs.CompareKvCon
 
 	newKv := func(v *pbrkv.ReleasedKv) *pbcs.CompareKvConflictsResp_Kv {
 		return &pbcs.CompareKvConflictsResp_Kv{
-			Key:          v.Spec.Key,
-			KvType:       v.Spec.KvType,
-			SecretType:   v.Spec.SecretType,
-			SecretHidden: v.Spec.SecretHidden,
-			Value:        v.Spec.Value,
-			Memo:         v.Spec.Memo,
+			Key:              v.Spec.Key,
+			KvType:           v.Spec.KvType,
+			SecretType:       v.Spec.SecretType,
+			SecretHidden:     v.Spec.SecretHidden,
+			Value:            v.Spec.Value,
+			Memo:             v.Spec.Memo,
+			ManagedTableId:   v.Spec.ManagedTableId,
+			ExternalSourceId: v.Spec.ExternalSourceId,
+			FilterCondition:  v.Spec.FilterCondition,
+			FilterFields:     v.Spec.FilterFields,
 		}
 	}
 
@@ -688,6 +700,7 @@ func validateKvType(kvType string) error {
 	case string(table.KvYAML):
 	case string(table.KvXml):
 	case string(table.KvSecret):
+	case string(table.KvTab):
 	default:
 		return errors.New("invalid data-type")
 	}

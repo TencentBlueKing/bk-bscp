@@ -39,6 +39,8 @@ const (
 	Credential AuditResourceType = "credential"
 	// Instance 客户端实例
 	Instance AuditResourceType = "instance"
+	// Table 表格资源
+	Table AuditResourceType = "table"
 )
 
 // AuditAction audit action type.

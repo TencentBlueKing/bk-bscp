@@ -12,6 +12,8 @@ import "pkg/protocol/core/commit/commit.proto";
 import "pkg/protocol/core/content/content.proto";
 import "pkg/protocol/core/credential/credential.proto";
 import "pkg/protocol/core/credential-scope/credential-scope.proto";
+import "pkg/protocol/core/data-source-mapping/data_source_mapping.proto";
+import "pkg/protocol/core/data-source-content/data_source_content.proto";
 import "pkg/protocol/core/group/group.proto";
 import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
@@ -297,6 +299,27 @@ service Data {
       returns (GetTemplateAndNonTemplateCICountResp) {}
 
   rpc BatchUpdateLastConsumedTime(BatchUpdateLastConsumedTimeReq) returns (BatchUpdateLastConsumedTimeResp) {}
+
+  // 数据源表格管理
+  // 获取数据源表格列表
+  rpc ListDataSourceTable(ListDataSourceTableReq) returns (ListDataSourceTableResp) {}
+  // 创建数据源表格
+  rpc CreateDataSourceTable(CreateDataSourceTableReq) returns (CreateDataSourceTableResp) {}
+  // 获取数据源表格
+  rpc GetDataSourceTable(GetDataSourceTableReq) returns (GetDataSourceTableResp) {}
+  // 编辑数据源表格
+  rpc UpdateDataSourceTable(UpdateDataSourceTableReq) returns (pbbase.EmptyResp) {}
+  // 删除托管表格数据源
+  rpc DeleteDataSourceTable(DeleteDataSourceTableReq) returns (pbbase.EmptyResp) {}
+
+  // 表格数据管理
+  // 创建表格数据
+  rpc CreateTableContent(CreateTableContentReq) returns (CreateTableContentResp) {}
+  // 新增或编辑表数据
+  rpc UpsertTableContent(UpsertTableContentReq) returns (UpsertTableContentResp) {}
+  // 获取表数据列表
+  rpc ListTableContent(ListTableContentReq) returns (ListTableContentResp) {}
+  rpc CheckTableField(CheckTableFieldReq) returns (CheckTableFieldResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2189,3 +2212,91 @@ message BatchUpdateLastConsumedTimeReq {
 }
 
 message BatchUpdateLastConsumedTimeResp {}
+
+message ListDataSourceTableReq {
+  uint32 biz_id = 1;
+  string search_value = 2;
+  uint32 start = 3;
+  uint32 limit = 4;
+  bool all = 5;
+  string data_source_type = 6;
+}
+
+message ListDataSourceTableResp {
+  uint32 count = 1;
+  repeated pbdsm.DataSourceMapping details = 2;
+}
+
+message CreateDataSourceTableReq {
+  uint32 biz_id = 1;
+  pbdsm.DataSourceMappingSpec spec = 2;
+}
+
+message CreateDataSourceTableResp {
+  uint32 id = 1;
+}
+
+message GetDataSourceTableReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+}
+
+message GetDataSourceTableResp {
+  pbdsm.DataSourceMapping details = 1;
+}
+
+message UpdateDataSourceTableReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  pbdsm.DataSourceMappingSpec spec = 3;
+}
+
+message DeleteDataSourceTableReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+}
+
+message CreateTableContentReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  repeated google.protobuf.Struct content = 3;
+}
+
+message CreateTableContentResp {
+  repeated uint32 ids = 1;
+}
+
+message UpsertTableContentReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  repeated google.protobuf.Struct contents = 3;
+}
+
+message UpsertTableContentResp {
+  repeated uint32 ids = 1;
+}
+
+message ListTableContentReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  google.protobuf.Struct filter_condition = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  bool all = 6;
+  repeated string filter_fields = 7;
+}
+message ListTableContentResp {
+  uint32 count = 1;
+  repeated pbdsc.DataSourceContent details = 2;
+  repeated pbdsc.Field fields = 3;
+}
+
+message CheckTableFieldReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  string field_name = 3;
+}
+
+message CheckTableFieldResp {
+  bool exist = 1;
+}
