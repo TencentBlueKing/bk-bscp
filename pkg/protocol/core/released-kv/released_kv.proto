@@ -17,4 +17,5 @@ message ReleasedKv {
   pbkv.KvAttachment attachment = 4;
   pbbase.Revision revision = 5;
   pbcontent.ContentSpec content_spec = 6;
+  string table_config_preview_name = 7;
 }

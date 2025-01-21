@@ -214,6 +214,15 @@ const (
 	Data_CompareConfigItemConflicts_FullMethodName        = "/pbds.Data/CompareConfigItemConflicts"
 	Data_GetTemplateAndNonTemplateCICount_FullMethodName  = "/pbds.Data/GetTemplateAndNonTemplateCICount"
 	Data_BatchUpdateLastConsumedTime_FullMethodName       = "/pbds.Data/BatchUpdateLastConsumedTime"
+	Data_ListDataSourceTable_FullMethodName               = "/pbds.Data/ListDataSourceTable"
+	Data_CreateDataSourceTable_FullMethodName             = "/pbds.Data/CreateDataSourceTable"
+	Data_GetDataSourceTable_FullMethodName                = "/pbds.Data/GetDataSourceTable"
+	Data_UpdateDataSourceTable_FullMethodName             = "/pbds.Data/UpdateDataSourceTable"
+	Data_DeleteDataSourceTable_FullMethodName             = "/pbds.Data/DeleteDataSourceTable"
+	Data_CreateTableContent_FullMethodName                = "/pbds.Data/CreateTableContent"
+	Data_UpsertTableContent_FullMethodName                = "/pbds.Data/UpsertTableContent"
+	Data_ListTableContent_FullMethodName                  = "/pbds.Data/ListTableContent"
+	Data_CheckTableField_FullMethodName                   = "/pbds.Data/CheckTableField"
 )
 
 // DataClient is the client API for Data service.
@@ -436,6 +445,25 @@ type DataClient interface {
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(ctx context.Context, in *GetTemplateAndNonTemplateCICountReq, opts ...grpc.CallOption) (*GetTemplateAndNonTemplateCICountResp, error)
 	BatchUpdateLastConsumedTime(ctx context.Context, in *BatchUpdateLastConsumedTimeReq, opts ...grpc.CallOption) (*BatchUpdateLastConsumedTimeResp, error)
+	// 数据源表格管理
+	// 获取数据源表格列表
+	ListDataSourceTable(ctx context.Context, in *ListDataSourceTableReq, opts ...grpc.CallOption) (*ListDataSourceTableResp, error)
+	// 创建数据源表格
+	CreateDataSourceTable(ctx context.Context, in *CreateDataSourceTableReq, opts ...grpc.CallOption) (*CreateDataSourceTableResp, error)
+	// 获取数据源表格
+	GetDataSourceTable(ctx context.Context, in *GetDataSourceTableReq, opts ...grpc.CallOption) (*GetDataSourceTableResp, error)
+	// 编辑数据源表格
+	UpdateDataSourceTable(ctx context.Context, in *UpdateDataSourceTableReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
+	// 删除托管表格数据源
+	DeleteDataSourceTable(ctx context.Context, in *DeleteDataSourceTableReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
+	// 表格数据管理
+	// 创建表格数据
+	CreateTableContent(ctx context.Context, in *CreateTableContentReq, opts ...grpc.CallOption) (*CreateTableContentResp, error)
+	// 新增或编辑表数据
+	UpsertTableContent(ctx context.Context, in *UpsertTableContentReq, opts ...grpc.CallOption) (*UpsertTableContentResp, error)
+	// 获取表数据列表
+	ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error)
+	CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error)
 }
 
 type dataClient struct {
@@ -2084,6 +2112,87 @@ func (c *dataClient) BatchUpdateLastConsumedTime(ctx context.Context, in *BatchU
 	return out, nil
 }
 
+func (c *dataClient) ListDataSourceTable(ctx context.Context, in *ListDataSourceTableReq, opts ...grpc.CallOption) (*ListDataSourceTableResp, error) {
+	out := new(ListDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Data_ListDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) CreateDataSourceTable(ctx context.Context, in *CreateDataSourceTableReq, opts ...grpc.CallOption) (*CreateDataSourceTableResp, error) {
+	out := new(CreateDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Data_CreateDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GetDataSourceTable(ctx context.Context, in *GetDataSourceTableReq, opts ...grpc.CallOption) (*GetDataSourceTableResp, error) {
+	out := new(GetDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Data_GetDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) UpdateDataSourceTable(ctx context.Context, in *UpdateDataSourceTableReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
+	out := new(base.EmptyResp)
+	err := c.cc.Invoke(ctx, Data_UpdateDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) DeleteDataSourceTable(ctx context.Context, in *DeleteDataSourceTableReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
+	out := new(base.EmptyResp)
+	err := c.cc.Invoke(ctx, Data_DeleteDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) CreateTableContent(ctx context.Context, in *CreateTableContentReq, opts ...grpc.CallOption) (*CreateTableContentResp, error) {
+	out := new(CreateTableContentResp)
+	err := c.cc.Invoke(ctx, Data_CreateTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) UpsertTableContent(ctx context.Context, in *UpsertTableContentReq, opts ...grpc.CallOption) (*UpsertTableContentResp, error) {
+	out := new(UpsertTableContentResp)
+	err := c.cc.Invoke(ctx, Data_UpsertTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error) {
+	out := new(ListTableContentResp)
+	err := c.cc.Invoke(ctx, Data_ListTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error) {
+	out := new(CheckTableFieldResp)
+	err := c.cc.Invoke(ctx, Data_CheckTableField_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2304,6 +2413,25 @@ type DataServer interface {
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error)
 	BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error)
+	// 数据源表格管理
+	// 获取数据源表格列表
+	ListDataSourceTable(context.Context, *ListDataSourceTableReq) (*ListDataSourceTableResp, error)
+	// 创建数据源表格
+	CreateDataSourceTable(context.Context, *CreateDataSourceTableReq) (*CreateDataSourceTableResp, error)
+	// 获取数据源表格
+	GetDataSourceTable(context.Context, *GetDataSourceTableReq) (*GetDataSourceTableResp, error)
+	// 编辑数据源表格
+	UpdateDataSourceTable(context.Context, *UpdateDataSourceTableReq) (*base.EmptyResp, error)
+	// 删除托管表格数据源
+	DeleteDataSourceTable(context.Context, *DeleteDataSourceTableReq) (*base.EmptyResp, error)
+	// 表格数据管理
+	// 创建表格数据
+	CreateTableContent(context.Context, *CreateTableContentReq) (*CreateTableContentResp, error)
+	// 新增或编辑表数据
+	UpsertTableContent(context.Context, *UpsertTableContentReq) (*UpsertTableContentResp, error)
+	// 获取表数据列表
+	ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error)
+	CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -2855,6 +2983,33 @@ func (UnimplementedDataServer) GetTemplateAndNonTemplateCICount(context.Context,
 }
 func (UnimplementedDataServer) BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchUpdateLastConsumedTime not implemented")
+}
+func (UnimplementedDataServer) ListDataSourceTable(context.Context, *ListDataSourceTableReq) (*ListDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDataSourceTable not implemented")
+}
+func (UnimplementedDataServer) CreateDataSourceTable(context.Context, *CreateDataSourceTableReq) (*CreateDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDataSourceTable not implemented")
+}
+func (UnimplementedDataServer) GetDataSourceTable(context.Context, *GetDataSourceTableReq) (*GetDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDataSourceTable not implemented")
+}
+func (UnimplementedDataServer) UpdateDataSourceTable(context.Context, *UpdateDataSourceTableReq) (*base.EmptyResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSourceTable not implemented")
+}
+func (UnimplementedDataServer) DeleteDataSourceTable(context.Context, *DeleteDataSourceTableReq) (*base.EmptyResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDataSourceTable not implemented")
+}
+func (UnimplementedDataServer) CreateTableContent(context.Context, *CreateTableContentReq) (*CreateTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTableContent not implemented")
+}
+func (UnimplementedDataServer) UpsertTableContent(context.Context, *UpsertTableContentReq) (*UpsertTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertTableContent not implemented")
+}
+func (UnimplementedDataServer) ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTableContent not implemented")
+}
+func (UnimplementedDataServer) CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckTableField not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6144,6 +6299,168 @@ func _Data_BatchUpdateLastConsumedTime_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListDataSourceTable(ctx, req.(*ListDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_CreateDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CreateDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CreateDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CreateDataSourceTable(ctx, req.(*CreateDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GetDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetDataSourceTable(ctx, req.(*GetDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_UpdateDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).UpdateDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_UpdateDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).UpdateDataSourceTable(ctx, req.(*UpdateDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_DeleteDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).DeleteDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_DeleteDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).DeleteDataSourceTable(ctx, req.(*DeleteDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_CreateTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CreateTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CreateTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CreateTableContent(ctx, req.(*CreateTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_UpsertTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).UpsertTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_UpsertTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).UpsertTableContent(ctx, req.(*UpsertTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ListTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListTableContent(ctx, req.(*ListTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_CheckTableField_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckTableFieldReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CheckTableField(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CheckTableField_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CheckTableField(ctx, req.(*CheckTableFieldReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6878,6 +7195,42 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchUpdateLastConsumedTime",
 			Handler:    _Data_BatchUpdateLastConsumedTime_Handler,
+		},
+		{
+			MethodName: "ListDataSourceTable",
+			Handler:    _Data_ListDataSourceTable_Handler,
+		},
+		{
+			MethodName: "CreateDataSourceTable",
+			Handler:    _Data_CreateDataSourceTable_Handler,
+		},
+		{
+			MethodName: "GetDataSourceTable",
+			Handler:    _Data_GetDataSourceTable_Handler,
+		},
+		{
+			MethodName: "UpdateDataSourceTable",
+			Handler:    _Data_UpdateDataSourceTable_Handler,
+		},
+		{
+			MethodName: "DeleteDataSourceTable",
+			Handler:    _Data_DeleteDataSourceTable_Handler,
+		},
+		{
+			MethodName: "CreateTableContent",
+			Handler:    _Data_CreateTableContent_Handler,
+		},
+		{
+			MethodName: "UpsertTableContent",
+			Handler:    _Data_UpsertTableContent_Handler,
+		},
+		{
+			MethodName: "ListTableContent",
+			Handler:    _Data_ListTableContent_Handler,
+		},
+		{
+			MethodName: "CheckTableField",
+			Handler:    _Data_CheckTableField_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -268,4 +268,6 @@ const (
 	ConfigRetryClientIp = "config_retry_client_ip: %s"
 	// OperateObject 等 xx 个对象进行操作
 	OperateObject = "operate_objects: %d" // nolint
+	// DataSourceName 数据源名称
+	DataSourceName = "data_source_name: %s"
 )

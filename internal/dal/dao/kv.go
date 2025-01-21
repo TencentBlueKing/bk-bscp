@@ -75,6 +75,8 @@ type Kv interface {
 	// FindNearExpiryCertKvs 查找临近到期证书
 	FindNearExpiryCertKvs(kit *kit.Kit, bizID, appID uint32, days uint32, opt *types.BasePage) (
 		[]*table.Kv, int64, error)
+	//ListRelatedConfigItemsWithTableType 列出具有表类型的相关配置项
+	ListRelatedConfigItemsWithTableType(kit *kit.Kit, relatedID uint32, opt *types.BasePage) ([]*table.Kv, int64, error)
 }
 
 var _ Kv = new(kvDao)
@@ -83,6 +85,24 @@ type kvDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ListRelatedConfigItemsWithTableType implements Kv.
+func (dao *kvDao) ListRelatedConfigItemsWithTableType(kit *kit.Kit, relatedID uint32, opt *types.BasePage) (
+	[]*table.Kv, int64, error) {
+	m := dao.genQ.Kv
+	q := dao.genQ.Kv.WithContext(kit.Ctx).Where(m.ManagedTableID.Eq(relatedID)).
+		Or(m.ExternalSourceID.Eq(relatedID))
+
+	if opt.All {
+		result, err := q.Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+
+	return q.FindByPage(opt.Offset(), opt.LimitInt())
 }
 
 // FindNearExpiryCertKvs 查找临近到期证书

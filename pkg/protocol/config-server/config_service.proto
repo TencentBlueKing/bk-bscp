@@ -12,6 +12,8 @@ import "pkg/protocol/core/client/client.proto";
 import "pkg/protocol/core/client-event/client_event.proto";
 import "pkg/protocol/core/client-query/client_query.proto";
 import "pkg/protocol/core/credential-scope/credential-scope.proto";
+import "pkg/protocol/core/data-source-mapping/data_source_mapping.proto";
+import "pkg/protocol/core/data-source-content/data_source_content.proto";
 import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
@@ -1270,6 +1272,67 @@ option (google.api.http) = {
       returns (GetTemplateAndNonTemplateCICountResp) {
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/apps/{app_id}/config_items/count"
+    };
+  }
+
+  // 键值服务表格型数据
+  // 获取键值型服务表格数据
+  rpc ListDataSourceTable(ListDataSourceTableReq) returns (ListDataSourceTableResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/table"
+    };
+  }
+  // 新建托管表格数据源
+  rpc CreateDataSourceTable(CreateDataSourceTableReq) returns (CreateDataSourceTableResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/table"
+      body: "*"
+    };
+  }
+  // 获取数据源表结构
+  rpc GetDataSourceTable(GetDataSourceTableReq) returns (GetDataSourceTableResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
+    };
+  }
+  // 编辑托管表格数据源
+  rpc UpdateDataSourceTable(UpdateDataSourceTableReq) returns (UpdateDataSourceTableResp) {
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
+      body: "*"
+    };
+  }
+  // 删除托管表格数据源
+  rpc DeleteDataSourceTable(DeleteDataSourceTableReq) returns (DeleteDataSourceTableResp) {
+    option (google.api.http) = {
+      delete: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}"
+    };
+  }
+  // 创建表数据
+  rpc CreateTableContent(CreateTableContentReq) returns (CreateTableContentResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/content"
+      body: "*"
+    };
+  }
+  // 新增或编辑表数据
+  rpc UpsertTableContent(UpsertTableContentReq) returns (UpsertTableContentResp) {
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/content"
+      body: "*"
+    };
+  }
+  // 获取表数据列表
+  rpc ListTableContent(ListTableContentReq) returns (ListTableContentResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/content/list"
+      body: "*"
+    };
+  }
+  // 检测某个字段是否有值
+  rpc CheckTableField(CheckTableFieldReq) returns (CheckTableFieldResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/field/{field_name}"
     };
   }
 }
@@ -3627,6 +3690,14 @@ message CreateKvReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
   string certificate_expiration_date = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+  uint32 managed_table_id = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管表格ID" }];
+  uint32 external_source_id = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "外部源表格ID" }];
+  google.protobuf.Struct filter_condition = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的条件" }];
+  repeated string filter_fields = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的字段" }];
 }
 
 message CreateKvResp {
@@ -3745,6 +3816,14 @@ message BatchUpsertKvsReq {
     ];
     string certificate_expiration_date = 7
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+    uint32 managed_table_id = 8
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管表格ID" }];
+    uint32 external_source_id = 9
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "外部源表格ID" }];
+    google.protobuf.Struct filter_condition = 10
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的条件" }];
+    repeated string filter_fields = 11
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的字段" }];
   }
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
@@ -4055,6 +4134,14 @@ message CompareKvConflictsResp {
     bool secret_hidden = 6 [
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }
     ];
+    uint32 managed_table_id = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管表格ID" }];
+    uint32 external_source_id = 8
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "外部源表格ID" }];
+    google.protobuf.Struct filter_condition = 9
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的条件" }];
+    repeated string filter_fields = 10
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的字段" }];
   }
   repeated Kv exist = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "已存在的键值配置项" }];
@@ -4072,4 +4159,113 @@ message GetTemplateAndNonTemplateCICountResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项数量" }];
   uint64 template_config_item_count = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件数量" }];
+}
+
+message ListDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string search_value = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  uint32 start = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  string data_source_type = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "数据源类型：托管表格=0，外部数据源=1"
+  }];
+}
+
+message ListDataSourceTableResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbdsm.DataSourceMapping details = 2;
+}
+
+message CreateDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  pbdsm.DataSourceMappingSpec spec = 2;
+}
+
+message CreateDataSourceTableResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源管理ID" }];
+}
+
+message GetDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+}
+
+message GetDataSourceTableResp {
+  pbdsm.DataSourceMapping details = 1;
+}
+
+message UpdateDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+  pbdsm.DataSourceMappingSpec spec = 3;
+}
+
+message UpdateDataSourceTableResp {}
+
+message DeleteDataSourceTableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表格ID" }];
+}
+
+message DeleteDataSourceTableResp {}
+
+message CreateTableContentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+  repeated google.protobuf.Struct content = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
+}
+
+message CreateTableContentResp {
+  repeated uint32 ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表数据ID" }];
+}
+
+message UpsertTableContentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+  repeated google.protobuf.Struct contents = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
+}
+
+message UpsertTableContentResp {
+  repeated uint32 ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表数据ID" }];
+}
+
+message ListTableContentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+  google.protobuf.Struct filter_condition = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  repeated string filter_fields = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤字段" }];
+}
+
+message ListTableContentResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbdsc.DataSourceContent details = 2;
+  repeated pbdsc.Field fields = 3;
+}
+
+message CheckTableFieldReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+  string field_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段名" }];
+}
+
+message CheckTableFieldResp {
+  bool exist = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否存在：是=true，否=false" }];
 }

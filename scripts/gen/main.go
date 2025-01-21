@@ -64,6 +64,10 @@ func main() {
 		table.ClientEvent{},
 		table.ClientQuery{},
 		table.Config{},
+		table.DataSourceInfo{},
+		table.DataSourceMapping{},
+		table.DataSourceContent{},
+		table.ReleasedTableContent{},
 	)
 
 	g.Execute()

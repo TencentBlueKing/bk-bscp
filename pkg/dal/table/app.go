@@ -302,6 +302,8 @@ const (
 	KvXml DataType = "xml"
 	// KvSecret is the type for secret kv
 	KvSecret DataType = "secret"
+	// KvTab is the type for table kv
+	KvTab DataType = "table"
 )
 
 // ValidateApp the kvType and value match
@@ -315,6 +317,7 @@ func (k DataType) ValidateApp(kit *kit.Kit) error {
 	case KvYAML:
 	case KvXml:
 	case KvSecret:
+	case KvTab:
 	default:
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid data-type"))
 	}

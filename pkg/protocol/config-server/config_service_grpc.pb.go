@@ -202,13 +202,22 @@ const (
 	Config_CompareConfigItemConflicts_FullMethodName         = "/pbcs.Config/CompareConfigItemConflicts"
 	Config_CompareKvConflicts_FullMethodName                 = "/pbcs.Config/CompareKvConflicts"
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
+	Config_ListDataSourceTable_FullMethodName                = "/pbcs.Config/ListDataSourceTable"
+	Config_CreateDataSourceTable_FullMethodName              = "/pbcs.Config/CreateDataSourceTable"
+	Config_GetDataSourceTable_FullMethodName                 = "/pbcs.Config/GetDataSourceTable"
+	Config_UpdateDataSourceTable_FullMethodName              = "/pbcs.Config/UpdateDataSourceTable"
+	Config_DeleteDataSourceTable_FullMethodName              = "/pbcs.Config/DeleteDataSourceTable"
+	Config_CreateTableContent_FullMethodName                 = "/pbcs.Config/CreateTableContent"
+	Config_UpsertTableContent_FullMethodName                 = "/pbcs.Config/UpsertTableContent"
+	Config_ListTableContent_FullMethodName                   = "/pbcs.Config/ListTableContent"
+	Config_CheckTableField_FullMethodName                    = "/pbcs.Config/CheckTableField"
 )
 
 // ConfigClient is the client API for Config service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -551,6 +560,25 @@ type ConfigClient interface {
 	CompareKvConflicts(ctx context.Context, in *CompareKvConflictsReq, opts ...grpc.CallOption) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(ctx context.Context, in *GetTemplateAndNonTemplateCICountReq, opts ...grpc.CallOption) (*GetTemplateAndNonTemplateCICountResp, error)
+	// 键值服务表格型数据
+	// 获取键值型服务表格数据
+	ListDataSourceTable(ctx context.Context, in *ListDataSourceTableReq, opts ...grpc.CallOption) (*ListDataSourceTableResp, error)
+	// 新建托管表格数据源
+	CreateDataSourceTable(ctx context.Context, in *CreateDataSourceTableReq, opts ...grpc.CallOption) (*CreateDataSourceTableResp, error)
+	// 获取数据源表结构
+	GetDataSourceTable(ctx context.Context, in *GetDataSourceTableReq, opts ...grpc.CallOption) (*GetDataSourceTableResp, error)
+	// 编辑托管表格数据源
+	UpdateDataSourceTable(ctx context.Context, in *UpdateDataSourceTableReq, opts ...grpc.CallOption) (*UpdateDataSourceTableResp, error)
+	// 删除托管表格数据源
+	DeleteDataSourceTable(ctx context.Context, in *DeleteDataSourceTableReq, opts ...grpc.CallOption) (*DeleteDataSourceTableResp, error)
+	// 创建表数据
+	CreateTableContent(ctx context.Context, in *CreateTableContentReq, opts ...grpc.CallOption) (*CreateTableContentResp, error)
+	// 新增或编辑表数据
+	UpsertTableContent(ctx context.Context, in *UpsertTableContentReq, opts ...grpc.CallOption) (*UpsertTableContentResp, error)
+	// 获取表数据列表
+	ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error)
+	// 检测某个字段是否有值
+	CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error)
 }
 
 type configClient struct {
@@ -2136,11 +2164,92 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *configClient) ListDataSourceTable(ctx context.Context, in *ListDataSourceTableReq, opts ...grpc.CallOption) (*ListDataSourceTableResp, error) {
+	out := new(ListDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Config_ListDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CreateDataSourceTable(ctx context.Context, in *CreateDataSourceTableReq, opts ...grpc.CallOption) (*CreateDataSourceTableResp, error) {
+	out := new(CreateDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Config_CreateDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetDataSourceTable(ctx context.Context, in *GetDataSourceTableReq, opts ...grpc.CallOption) (*GetDataSourceTableResp, error) {
+	out := new(GetDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Config_GetDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpdateDataSourceTable(ctx context.Context, in *UpdateDataSourceTableReq, opts ...grpc.CallOption) (*UpdateDataSourceTableResp, error) {
+	out := new(UpdateDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Config_UpdateDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) DeleteDataSourceTable(ctx context.Context, in *DeleteDataSourceTableReq, opts ...grpc.CallOption) (*DeleteDataSourceTableResp, error) {
+	out := new(DeleteDataSourceTableResp)
+	err := c.cc.Invoke(ctx, Config_DeleteDataSourceTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CreateTableContent(ctx context.Context, in *CreateTableContentReq, opts ...grpc.CallOption) (*CreateTableContentResp, error) {
+	out := new(CreateTableContentResp)
+	err := c.cc.Invoke(ctx, Config_CreateTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpsertTableContent(ctx context.Context, in *UpsertTableContentReq, opts ...grpc.CallOption) (*UpsertTableContentResp, error) {
+	out := new(UpsertTableContentResp)
+	err := c.cc.Invoke(ctx, Config_UpsertTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error) {
+	out := new(ListTableContentResp)
+	err := c.cc.Invoke(ctx, Config_ListTableContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error) {
+	out := new(CheckTableFieldResp)
+	err := c.cc.Invoke(ctx, Config_CheckTableField_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2483,6 +2592,25 @@ type ConfigServer interface {
 	CompareKvConflicts(context.Context, *CompareKvConflictsReq) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error)
+	// 键值服务表格型数据
+	// 获取键值型服务表格数据
+	ListDataSourceTable(context.Context, *ListDataSourceTableReq) (*ListDataSourceTableResp, error)
+	// 新建托管表格数据源
+	CreateDataSourceTable(context.Context, *CreateDataSourceTableReq) (*CreateDataSourceTableResp, error)
+	// 获取数据源表结构
+	GetDataSourceTable(context.Context, *GetDataSourceTableReq) (*GetDataSourceTableResp, error)
+	// 编辑托管表格数据源
+	UpdateDataSourceTable(context.Context, *UpdateDataSourceTableReq) (*UpdateDataSourceTableResp, error)
+	// 删除托管表格数据源
+	DeleteDataSourceTable(context.Context, *DeleteDataSourceTableReq) (*DeleteDataSourceTableResp, error)
+	// 创建表数据
+	CreateTableContent(context.Context, *CreateTableContentReq) (*CreateTableContentResp, error)
+	// 新增或编辑表数据
+	UpsertTableContent(context.Context, *UpsertTableContentReq) (*UpsertTableContentResp, error)
+	// 获取表数据列表
+	ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error)
+	// 检测某个字段是否有值
+	CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3013,6 +3141,33 @@ func (UnimplementedConfigServer) CompareKvConflicts(context.Context, *CompareKvC
 }
 func (UnimplementedConfigServer) GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateAndNonTemplateCICount not implemented")
+}
+func (UnimplementedConfigServer) ListDataSourceTable(context.Context, *ListDataSourceTableReq) (*ListDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDataSourceTable not implemented")
+}
+func (UnimplementedConfigServer) CreateDataSourceTable(context.Context, *CreateDataSourceTableReq) (*CreateDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDataSourceTable not implemented")
+}
+func (UnimplementedConfigServer) GetDataSourceTable(context.Context, *GetDataSourceTableReq) (*GetDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDataSourceTable not implemented")
+}
+func (UnimplementedConfigServer) UpdateDataSourceTable(context.Context, *UpdateDataSourceTableReq) (*UpdateDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDataSourceTable not implemented")
+}
+func (UnimplementedConfigServer) DeleteDataSourceTable(context.Context, *DeleteDataSourceTableReq) (*DeleteDataSourceTableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDataSourceTable not implemented")
+}
+func (UnimplementedConfigServer) CreateTableContent(context.Context, *CreateTableContentReq) (*CreateTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTableContent not implemented")
+}
+func (UnimplementedConfigServer) UpsertTableContent(context.Context, *UpsertTableContentReq) (*UpsertTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertTableContent not implemented")
+}
+func (UnimplementedConfigServer) ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTableContent not implemented")
+}
+func (UnimplementedConfigServer) CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckTableField not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6176,6 +6331,168 @@ func _Config_GetTemplateAndNonTemplateCICount_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListDataSourceTable(ctx, req.(*ListDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CreateDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateDataSourceTable(ctx, req.(*CreateDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetDataSourceTable(ctx, req.(*GetDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpdateDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpdateDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateDataSourceTable(ctx, req.(*UpdateDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_DeleteDataSourceTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDataSourceTableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteDataSourceTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteDataSourceTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteDataSourceTable(ctx, req.(*DeleteDataSourceTableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CreateTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateTableContent(ctx, req.(*CreateTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpsertTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpsertTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpsertTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpsertTableContent(ctx, req.(*UpsertTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ListTableContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTableContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListTableContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListTableContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListTableContent(ctx, req.(*ListTableContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CheckTableField_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckTableFieldReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CheckTableField(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CheckTableField_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CheckTableField(ctx, req.(*CheckTableFieldReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6882,6 +7199,42 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTemplateAndNonTemplateCICount",
 			Handler:    _Config_GetTemplateAndNonTemplateCICount_Handler,
+		},
+		{
+			MethodName: "ListDataSourceTable",
+			Handler:    _Config_ListDataSourceTable_Handler,
+		},
+		{
+			MethodName: "CreateDataSourceTable",
+			Handler:    _Config_CreateDataSourceTable_Handler,
+		},
+		{
+			MethodName: "GetDataSourceTable",
+			Handler:    _Config_GetDataSourceTable_Handler,
+		},
+		{
+			MethodName: "UpdateDataSourceTable",
+			Handler:    _Config_UpdateDataSourceTable_Handler,
+		},
+		{
+			MethodName: "DeleteDataSourceTable",
+			Handler:    _Config_DeleteDataSourceTable_Handler,
+		},
+		{
+			MethodName: "CreateTableContent",
+			Handler:    _Config_CreateTableContent_Handler,
+		},
+		{
+			MethodName: "UpsertTableContent",
+			Handler:    _Config_UpsertTableContent_Handler,
+		},
+		{
+			MethodName: "ListTableContent",
+			Handler:    _Config_ListTableContent_Handler,
+		},
+		{
+			MethodName: "CheckTableField",
+			Handler:    _Config_CheckTableField_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
