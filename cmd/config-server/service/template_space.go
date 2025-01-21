@@ -20,11 +20,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbts "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-space"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // CreateTemplateSpace create a template space
@@ -228,4 +228,40 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbcs.ListTmplSpa
 		Details: rp.Details,
 	}
 	return resp, nil
+}
+
+// GetLatestTemplateVersionsInSpace implements pbcs.ConfigServer.
+func (s *Service) GetLatestTemplateVersionsInSpace(ctx context.Context, req *pbcs.GetLatestTemplateVersionsInSpaceReq) (
+	*pbcs.GetLatestTemplateVersionsInSpaceResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetLatestTemplateVersionsInSpace(kit.RpcCtx(), &pbds.GetLatestTemplateVersionsInSpaceReq{
+		BizId:           req.BizId,
+		TemplateSpaceId: req.TemplateSpaceId,
+		TemplateId:      req.TemplateId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*pbcs.GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec, 0)
+
+	for _, v := range resp.GetTemplateSet() {
+		items = append(items, &pbcs.GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec{
+			Name:             v.Name,
+			TemplateRevision: v.GetTemplateRevision(),
+		})
+	}
+
+	return &pbcs.GetLatestTemplateVersionsInSpaceResp{
+		TemplateSpace: resp.GetTemplateSpace(),
+		TemplateSet:   items,
+	}, nil
 }
