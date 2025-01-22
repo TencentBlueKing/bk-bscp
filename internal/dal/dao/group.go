@@ -97,7 +97,6 @@ func (dao *groupDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.GroupName, g.Spec.Name),
 		Status:           enumor.Success,
-		AppId:            g.ID,
 	}).PrepareCreate(g)
 	if err = ad.Do(tx.Query); err != nil {
 		return 0, fmt.Errorf("audit create group failed, err: %v", err)
@@ -122,7 +121,6 @@ func (dao *groupDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.GroupName, g.Spec.Name),
 		Status:           enumor.Success,
-		AppId:            g.ID,
 	}).PrepareUpdate(g)
 
 	_, err := m.WithContext(kit.Ctx).
