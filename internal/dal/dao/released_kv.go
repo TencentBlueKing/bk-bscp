@@ -81,11 +81,6 @@ func (dao *releasedKvDao) BulkCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, kvs []
 		return fmt.Errorf("create released kv in batch failed, err: %v", err)
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, kvs[0].Attachment.BizID).PrepareCreate(table.RkvList(kvs))
-	if err := ad.Do(tx.Query); err != nil {
-		return err
-	}
-
 	return nil
 
 }

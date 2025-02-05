@@ -12,13 +12,13 @@ export default {
   服务属性: 'Service Attribute',
   服务别名: 'Service Alias',
   form_服务别名: 'Service alias',
-  数据格式: 'Data format',
+  配置类型: 'Config Type',
   保存: 'Submit',
   编辑服务: 'Edit Service',
   数据类型: 'Data type',
   文件型: 'File Type',
   键值型: 'Key-Value Type',
-  任意类型: 'Arbitrary type',
+  任意格式: 'Arbitrary Format',
   配置管理: 'Config Manage',
   所属业务: 'Subordinate Business',
   服务描述: 'Service description',
@@ -54,9 +54,9 @@ export default {
   tips: {
     config: `File type: Usually stored in the form of a file, usually has good readability and maintainability
     Key-value type: stored in the form of key-value pairs, where key is used to identify a configuration item, value is the specific content of the configuration item, kv type configuration is usually stored in the database, using the SDK or API to read`,
-    type: `arbitrary type: The type of the configuration item is not restricted. If you select one of the following types, only configuration items of the specified type can be created
+    type: `arbitrary format: The format of the configuration item is not restricted. If you select one of the following format, only configuration items of the specified type can be created
          string: One-line string
-         number: Numeric values, including integers, floating-point numbers, and checksum data types
+         number: Numeric values, including integers, floating-point numbers, and checksum data format
          text: Multi-line string text, unverified data structure, size 2Mb
          json、xml、yaml: For structured data in different formats, the data structure is checked
          Sensitive information: Store confidential data, such as passwords, certificates, etc., on the product interface, this information is displayed with an asterisk (*) to ensure security`,
@@ -80,8 +80,8 @@ export default {
   敏感信息: 'Sensitive info',
   请选择数据类型: 'Please select data type',
   服务属性编辑成功: 'Service attributes edited successfully',
-  '调整服务数据类型{n}失败': 'Failed to adjust service data type {n}',
-  '该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据类型为{n}': 'There are configuration items of non-{n} type under this service. If you need to modify it, please adjust the data type of all configuration items under this service to {n} first',
+  '调整服务数据格式{n}失败': 'Failed to adjust service data format {n}',
+  '该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据格式为{n}': 'There are configuration items of non-{n} type under this service. If you need to modify it, please adjust the data format of all configuration items under this service to {n} first',
   或签: 'or sign',
   会签: 'count sign',
   '建议在生产环境中开启审批流程，以保证系统稳定性。测试环境中可以考虑关闭审批流程以提升操作效率': 'It is recommended to enable the approval process in the production environment to ensure system stability. In the testing environment, the approval process can be disabled to improve operational efficiency',
@@ -90,6 +90,7 @@ export default {
   生产环境不建议关闭审批: 'It is not recommended to disable the approval process in the production environment',
   审批流程可以提高配置更改的准确性和安全性: 'The approval process can enhance the accuracy and security of configuration changes',
   仍要关闭: 'Cancel',
+  配置格式限制: 'Config format restrictions',
 
   // 导航栏
   服务配置中心: 'BSCP',
@@ -578,6 +579,34 @@ export default {
   待上线分组: 'Pending go live groups',
   版本已审批通过: 'Version approved',
   撤销说明: '撤销说明',
+  模版空间名称: 'Template Space Name',
+  模版套餐名称: 'Template Package Name',
+  模版文件绝对路径: 'Template File Absolute Path',
+  模版版本号: 'Template Version',
+  脚本版本名称: 'Script Version Name',
+  引用前置脚本名称: 'Referenced Pre-Script Name',
+  更换前置脚本名称: 'Replaced Pre-Script Name',
+  取消前置脚本名称: 'Canceled Pre-Script Name',
+  引用后置脚本名称: 'Referenced Post-Script Name',
+  更换后置脚本名称: 'Replaced Post-Script Name',
+  取消后置脚本名称: 'Canceled Post-Script Name',
+  废弃配置版本名称: 'Deprecated Config Version Name',
+  恢复配置版本名称: 'Recovered Config Version Name',
+  删除配置版本名称: 'Deleted Config Version Name',
+  启用密钥名称: 'Enabled Key Name',
+  禁用密钥名称: 'Disabled Key Name',
+  关联服务配置密钥名称: 'Associated Service Config Key Name',
+  配置重新拉取客户端UID: 'Config Reload Client UID',
+  配置重新拉取客户端IP: 'Config Reload Client IP',
+  '对{n}等 {m} 个对象进行操作': 'Operate {n} and {m} other objects',
+  配置: 'Configuration',
+  模板: 'Template',
+  变量: 'Variable',
+  客户端实例: 'Client Instance',
+  分组: 'Group',
+  配置文件绝对路径: 'Config File Absolute Path',
+  更新: 'Update',
+  查看操作: 'View Operation',
 
   查看全部配置项: 'View all configuration items',
   只看冲突配置项: 'Only view conflict configuration items     ',
@@ -611,7 +640,7 @@ export default {
   '敏感数据不可见，无法查看实际内容': 'Sensitive data is not visible and cannot view the actual content',
   '普通文本格式：': 'Normal text format：',
   'key 数据类型 value 描述（可选）': 'key data_type value description (optional)',
-  '敏感文本格式：': 'Sensitive text format：',
+  '敏感文本格式 （暂只支持password、secret_key、token三种凭证类型）：': 'Sensitive text format (currently only supports three credential types: password, secret_key, token):',
   'key 数据类型 凭证类型 value 是否可见 描述（可选）': 'key data_type credential_type value visibility description (optional)',
   '密码示例：': 'Password example：',
   'API密钥示例：': 'API key example：',
@@ -664,6 +693,8 @@ export default {
   枚举: 'Enum',
   请选择字段: 'Please select field',
   请输入条件值: 'Please enter condition value',
+  '提示：': 'Tip:',
+  '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入': 'If the sensitive information to be batch imported contains multi-line text certificates (certificate) or custom (custom), please import using JSON or YAML format',
 
   // 分组管理
   新增分组: 'New group',

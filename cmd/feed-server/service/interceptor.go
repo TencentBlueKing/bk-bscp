@@ -25,10 +25,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
-	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
 )
 
 var (
@@ -209,12 +209,12 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 			}
 		}
 
-		if err := svc.bll.AppCache().BatchUpdateLastConsumedTime(kit.FromGrpcContext(ctx),
+		if err := svc.bll.AppCache().SetAppLastConsumedTime(kit.FromGrpcContext(ctx),
 			param.BizID, param.AppIDs); err != nil {
-			logs.Errorf("batch update app last consumed failed, err: %v", err)
+			logs.Errorf("set app last consumed time failed, err: %v", err)
 			return handler(ctx, req)
 		}
-		logs.Infof("batch update app last consumed time success")
+		logs.Infof("set app last consumed time success")
 	}
 
 	return handler(ctx, req)

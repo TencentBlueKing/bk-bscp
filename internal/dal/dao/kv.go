@@ -17,8 +17,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -73,6 +75,8 @@ type Kv interface {
 	// FindNearExpiryCertKvs 查找临近到期证书
 	FindNearExpiryCertKvs(kit *kit.Kit, bizID, appID uint32, days uint32, opt *types.BasePage) (
 		[]*table.Kv, int64, error)
+	//ListRelatedConfigItemsWithTableType 列出具有表类型的相关配置项
+	ListRelatedConfigItemsWithTableType(kit *kit.Kit, relatedID uint32, opt *types.BasePage) ([]*table.Kv, int64, error)
 }
 
 var _ Kv = new(kvDao)
@@ -81,6 +85,24 @@ type kvDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ListRelatedConfigItemsWithTableType implements Kv.
+func (dao *kvDao) ListRelatedConfigItemsWithTableType(kit *kit.Kit, relatedID uint32, opt *types.BasePage) (
+	[]*table.Kv, int64, error) {
+	m := dao.genQ.Kv
+	q := dao.genQ.Kv.WithContext(kit.Ctx).Where(m.ManagedTableID.Eq(relatedID)).
+		Or(m.ExternalSourceID.Eq(relatedID))
+
+	if opt.All {
+		result, err := q.Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+
+	return q.FindByPage(opt.Offset(), opt.LimitInt())
 }
 
 // FindNearExpiryCertKvs 查找临近到期证书
@@ -204,13 +226,15 @@ func (dao *kvDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, kv *table.Kv) erro
 	// 编辑操作, 获取当前记录做审计
 	m := tx.Kv
 	q := tx.Kv.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(kv.ID), m.BizID.Eq(kv.Attachment.BizID), m.AppID.Eq(kv.Attachment.AppID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareUpdate(kv, oldOne)
 
-	_, err = q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).Select(m.Version, m.UpdatedAt,
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, kv.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           kv.Spec.Memo,
+		AppId:            kv.Attachment.AppID,
+	}).PrepareUpdate(kv)
+
+	_, err := q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).Select(m.Version, m.UpdatedAt,
 		m.Reviser, m.KvState, m.Signature, m.Md5, m.ByteSize, m.CertificateExpirationDate).Updates(kv)
 	if err != nil {
 		return err
@@ -235,7 +259,12 @@ func (dao *kvDao) Create(kit *kit.Kit, kv *table.Kv) (uint32, error) {
 	}
 	kv.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareCreate(kv)
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, kv.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           kv.Spec.Memo,
+		AppId:            kv.Attachment.AppID,
+	}).PrepareCreate(kv)
 
 	createTx := func(tx *gen.Query) error {
 		q := tx.Kv.WithContext(kit.Ctx)
@@ -265,11 +294,13 @@ func (dao *kvDao) Update(kit *kit.Kit, kv *table.Kv) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.Kv
 	q := dao.genQ.Kv.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(kv.ID), m.BizID.Eq(kv.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareUpdate(kv, oldOne)
+
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, kv.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           kv.Spec.Memo,
+		AppId:            kv.Attachment.AppID,
+	}).PrepareUpdate(kv)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
@@ -368,7 +399,12 @@ func (dao *kvDao) Delete(kit *kit.Kit, kv *table.Kv) error {
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, oldOne.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+		AppId:            oldOne.Attachment.AppID,
+	}).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
@@ -404,7 +440,12 @@ func (dao *kvDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, kv *table.Kv) erro
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, oldOne.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+		AppId:            oldOne.Attachment.AppID,
+	}).PrepareDelete(oldOne)
 
 	_, err = q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).Delete(kv)
 	if err != nil {
@@ -443,7 +484,12 @@ func (dao *kvDao) DeleteByStateWithTx(kit *kit.Kit, tx *gen.QueryTx, kv *table.K
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, kv.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, kv.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, oldOne.Spec.Key),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+		AppId:            oldOne.Attachment.AppID,
+	}).PrepareDelete(oldOne)
 
 	_, err = q.Where(m.BizID.Eq(kv.Attachment.BizID), m.AppID.Eq(kv.Attachment.AppID),
 		m.KvState.Eq(string(kv.KvState))).Delete(kv)

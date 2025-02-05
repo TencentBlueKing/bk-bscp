@@ -15,9 +15,9 @@ def fetch_configuration_values(keys):
     )
     kvs = {}
     with BscpClient(SERVER_ADDRS, TOKEN, BIZ_ID) as client:
-        release = client.pull_kvs(APP_NAME, keys, options)
+        release = client.pull_kvs(APP, keys, options)
         for kv in release.kvs:
-            pair = client.get(APP_NAME, kv.key, LABELS)
+            pair = client.get(APP, kv.key, LABELS)
             kvs[pair.key] = pair.value
     return kvs
 

@@ -14,15 +14,17 @@ require (
 	github.com/bluele/gcache v0.0.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/httprate v0.14.1
 	github.com/go-chi/render v1.0.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.12.0
-	github.com/go-sql-driver/mysql v1.7.1
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.2.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1
 	github.com/hashicorp/go-hclog v1.5.0
@@ -32,6 +34,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/oklog/run v1.1.0
 	github.com/panjf2000/ants/v2 v2.8.2
+	github.com/pingcap/tidb/pkg/parser v0.0.0-20250117070637-889bf45281c4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
@@ -54,20 +57,28 @@ require (
 	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/sync v0.8.0
-	golang.org/x/text v0.18.0
+	golang.org/x/text v0.19.0
 	golang.org/x/time v0.5.0
-	google.golang.org/grpc v1.62.1
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/grpc v1.67.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/datatypes v1.1.1-0.20230130040222-c43177d3cf8c
-	gorm.io/driver/mysql v1.5.1
+	gorm.io/datatypes v1.2.5
+	gorm.io/driver/mysql v1.5.6
 	gorm.io/gen v0.3.23
-	gorm.io/gorm v1.25.4
+	gorm.io/gorm v1.25.11
 	gorm.io/plugin/dbresolver v1.4.7
 	gorm.io/plugin/opentelemetry v0.1.3
 	gorm.io/plugin/prometheus v0.0.0-20230504115745-1aec2356381b
 	gorm.io/sharding v0.6.0
 	k8s.io/klog/v2 v2.110.1
+)
+
+require (
+	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/pingcap/errors v0.11.5-0.20240311024730-e056997136bb // indirect
+	github.com/pingcap/failpoint v0.0.0-20240528011301-b51a646c7c86 // indirect
+	github.com/pingcap/log v1.1.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 
 require (
@@ -84,7 +95,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -199,15 +210,15 @@ require (
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.25.0
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/net v0.28.0
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect

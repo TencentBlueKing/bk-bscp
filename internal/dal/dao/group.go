@@ -15,8 +15,10 @@ package dao
 import (
 	"fmt"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -92,7 +94,10 @@ func (dao *groupDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 		return 0, err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.GroupName, g.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareCreate(g)
 	if err = ad.Do(tx.Query); err != nil {
 		return 0, fmt.Errorf("audit create group failed, err: %v", err)
 	}
@@ -113,13 +118,12 @@ func (dao *groupDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 
 	m := tx.Group
 
-	oldOne, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.GroupName, g.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareUpdate(g)
 
-	_, err = m.WithContext(kit.Ctx).
+	_, err := m.WithContext(kit.Ctx).
 		Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).
 		Select(m.Name, m.Public, m.Selector, m.UID, m.Reviser).
 		Updates(g)
@@ -194,7 +198,10 @@ func (dao *groupDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 		return err
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.GroupName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareDelete(oldOne)
 
 	if _, err = m.WithContext(kit.Ctx).Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Delete(); err != nil {
 		return err

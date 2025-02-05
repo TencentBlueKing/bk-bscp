@@ -141,3 +141,26 @@ func TestSplitPathAndName(t *testing.T) {
 		}
 	}
 }
+
+func TestMatch(t *testing.T) {
+	tests := []struct {
+		input    string
+		patterns []string
+		expected bool
+	}{
+		{"file.txt", []string{"*.txt"}, true},
+		{"file.txt", []string{"file.txt"}, true},
+		{"file.txt", []string{"file.*"}, true},
+		{"file.txt", []string{"file"}, false},
+		{"file.txt", []string{"file.txt*"}, true},
+		{"key1", []string{"{key1,key2}"}, true},
+		{"key2", []string{"{key1,key2}"}, true},
+		{"key3", []string{"key1", "key2", "key3"}, true},
+	}
+	for _, test := range tests {
+		result := MatchPattern(test.input, test.patterns)
+		if result != test.expected {
+			t.Errorf("MatchPattern(%s, %v) = %t, want %t", test.input, test.patterns, result, test.expected)
+		}
+	}
+}

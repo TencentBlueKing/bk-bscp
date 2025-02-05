@@ -132,7 +132,12 @@ func respToCurl(resp *http.Response, st time.Time) string {
 				// 重新填充 Body，以便后续可以继续读取
 				resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-				respMsg += fmt.Sprintf(string(bodyBytes))
+				// 最大打印 1024 个字符
+				body := string(bodyBytes)
+				if len(body) > 1024 {
+					body = fmt.Sprintf("%s...(Total %s)", body[:1024], humanize.Bytes(uint64(len(body))))
+				}
+				respMsg += body
 			}
 		} else {
 			respMsg += "(io.Reader)"

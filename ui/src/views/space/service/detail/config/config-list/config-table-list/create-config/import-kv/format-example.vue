@@ -83,7 +83,7 @@
       ],
     },
     {
-      formatTitle: t('敏感文本格式：'),
+      formatTitle: t('敏感文本格式 （暂只支持password、secret_key、token三种凭证类型）：'),
       formatContent: t('key 数据类型 凭证类型 value 是否可见 描述（可选）'),
       example: [
         {
@@ -123,6 +123,12 @@
           ],
         },
       ],
+    },
+    {
+      formatTitle: t('提示：'),
+      formatContent: t(
+        '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入',
+      ),
     },
   ];
 
@@ -189,12 +195,12 @@ access_token_name secret token access_token_value invisible`;
     "secret_type": "token",
     "value": "43aCW6xQaseokNwhJRRDqFXrtfvzQFdb"
   },
-  "user_name": {
+  "custom": {
     "kv_type": "secret",
     "memo": "",
     "secret_hidden": false,
-    "secret_type": "password",
-    "value": "password_value"
+    "secret_type": "custom",
+    "value": "custom_value"
   }
 }`;
     }
@@ -244,12 +250,12 @@ token:
     secret_hidden: false
     secret_type: token
     value: Z9AQpo3zoZ0DUG4pJX5C9A0QKQgLLlp5WpaeiE19hdtUCgqBtXIZlGXz5qMyDbFJ
-user_name:
+custom:
     kv_type: secret
     memo: ""
     secret_hidden: false
-    secret_type: password
-    value: password_value`;
+    secret_type: custom
+    value: custom_value`;
   });
   /* eslint-enable */
 
@@ -259,7 +265,7 @@ user_name:
       "配置项名称": {
           "kv_type": "数据类型，支持以下类型：string、number、text、json、xml、yaml、secret",
           "value": "配置项的具体值",
-          "secret_type": "密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token",
+          "secret_type": "密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token、custom",
           "secret_hidden": "指示配置项值是否可见，仅在kv_type为secret时有效",
           "memo": "对配置项的描述"
       }
@@ -268,7 +274,7 @@ user_name:
     return `    配置项名称:
         kv_type: 数据类型，支持以下类型：string、number、text、json、xml、yaml、secret
         value: 配置项的具体值
-        secret_type: 密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token
+        secret_type: 密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token、custom
         secret_hidden: 指示配置项值是否可见，仅在kv_type为secret时有效
         memo: 对配置项的描述`;
   });

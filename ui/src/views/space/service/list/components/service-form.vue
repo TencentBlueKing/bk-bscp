@@ -31,7 +31,7 @@
         :maxlength="200"
         @input="handleChange" />
     </bk-form-item>
-    <bk-form-item :label="t('数据格式')" :description="t('tips.config')">
+    <bk-form-item :label="t('配置类型')" :description="t('tips.config')">
       <bk-radio-group v-model="localData.config_type" :disabled="editable" @change="handleConfigTypeChange">
         <bk-radio label="file">{{ t('文件型') }}</bk-radio>
         <bk-radio label="kv">{{ t('键值型') }}</bk-radio>
@@ -39,13 +39,17 @@
     </bk-form-item>
     <bk-form-item
       v-if="localData.config_type === 'kv'"
-      :label="t('数据类型')"
+      :label="t('配置格式限制')"
       property="data_type"
       :description="t('tips.type')"
       required>
       <bk-select v-model="localData.data_type" class="type-select" :clearable="false" @select="handleChange">
-        <bk-option id="any" :name="t('任意类型')" />
-        <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
+        <bk-option id="any" :name="t('任意格式')" />
+        <bk-option
+          v-for="kvType in CONFIG_KV_TYPE"
+          :key="kvType.id"
+          :id="kvType.id"
+          :name="kvType.name === 'secret' ? t('敏感信息') : kvType.name" />
       </bk-select>
     </bk-form-item>
     <!-- 上线审批 -->

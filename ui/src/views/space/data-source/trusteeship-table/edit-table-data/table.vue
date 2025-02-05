@@ -236,7 +236,7 @@
         rules.push({
           validator({ row }: any) {
             if (row.status === 'DELETE') return;
-            if (row.content[item.name] === '' || null) {
+            if (row.content[item.name] === '' || row.content[item.name] === null) {
               return new Error('不能为空');
             }
           },

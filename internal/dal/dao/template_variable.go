@@ -13,11 +13,15 @@
 package dao
 
 import (
+	"fmt"
+
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -80,7 +84,11 @@ func (dao *templateVariableDao) Create(kit *kit.Kit, g *table.TemplateVariable) 
 	}
 	g.ID = tmplSpaceID
 
-	tmplSpaceAD := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
+	tmplSpaceAD := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {
@@ -109,11 +117,16 @@ func (dao *templateVariableDao) Update(kit *kit.Kit, g *table.TemplateVariable) 
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+
+	oldOne, err := q.Where(m.ID.Eq(g.ID)).Take()
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.VariableName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
@@ -190,7 +203,11 @@ func (dao *templateVariableDao) Delete(kit *kit.Kit, g *table.TemplateVariable) 
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.VariableName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {

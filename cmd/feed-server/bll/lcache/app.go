@@ -27,10 +27,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 
 // newApp create an app meta's cache instance.
@@ -230,10 +230,9 @@ func (ap *App) collectHitRate() {
 	}()
 }
 
-// BatchUpdateLastConsumedTime 批量更新服务拉取时间
-func (ap *App) BatchUpdateLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32) error {
-
-	if _, err := ap.cs.CS().BatchUpdateLastConsumedTime(kt.Ctx, &pbcs.BatchUpdateLastConsumedTimeReq{
+// SetAppLastConsumedTime 设置服务拉取时间
+func (ap *App) SetAppLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32) error {
+	if _, err := ap.cs.CS().SetAppLastConsumedTime(kt.Ctx, &pbcs.SetAppLastConsumedTimeReq{
 		BizId:  bizID,
 		AppIds: appIDs,
 	}); err != nil {

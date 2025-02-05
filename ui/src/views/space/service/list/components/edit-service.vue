@@ -15,11 +15,11 @@
         <bk-form-item :label="t('服务描述')">
           {{ serviceData!.spec.memo || '--' }}
         </bk-form-item>
-        <bk-form-item :label="t('数据格式')">
+        <bk-form-item :label="t('配置类型')">
           {{ serviceData!.spec.config_type === 'file' ? t('文件型') : t('键值型') }}
         </bk-form-item>
-        <bk-form-item v-if="serviceData!.spec.config_type !== 'file'" :label="t('数据类型')">
-          {{ serviceData!.spec.data_type === 'any' ? t('任意类型') : serviceData!.spec.data_type }}
+        <bk-form-item v-if="serviceData!.spec.config_type !== 'file'" :label="t('配置格式限制')">
+          {{ serviceFormat }}
         </bk-form-item>
         <bk-form-item>
           <template #label>
@@ -45,13 +45,13 @@
           </ul>
           <span v-else>{{ t('未开启') }}</span>
         </bk-form-item>
-        <bk-form-item :label="t('创建者')">
+        <bk-form-item :label="t('创建人')">
           {{ serviceData?.revision.creator }}
         </bk-form-item>
         <bk-form-item :label="t('创建时间')">
           {{ datetimeFormat(serviceData!.revision.create_at) }}
         </bk-form-item>
-        <bk-form-item :label="t('更新者')">
+        <bk-form-item :label="t('更新人')">
           {{ serviceData!.revision.reviser }}
         </bk-form-item>
         <bk-form-item :label="t('更新时间')">
@@ -80,7 +80,7 @@
   </bk-sideslider>
 </template>
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
@@ -122,6 +122,16 @@
   const pending = ref(false);
   const formCompRef = ref();
   const selectionsApprover = ref<string[]>([]);
+
+  const serviceFormat = computed(() => {
+    if (serviceEditForm.value.data_type === 'any') {
+      return t('任意格式');
+    }
+    if (serviceEditForm.value.data_type === 'secret') {
+      return t('敏感信息');
+    }
+    return serviceEditForm.value.data_type;
+  });
 
   watch(
     () => props.show,
@@ -185,8 +195,8 @@
         InfoBox({
           infoType: 'danger',
           'ext-cls': 'info-box-style',
-          title: t('调整服务数据类型{n}失败', { n: dataType }),
-          subTitle: t('该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据类型为{n}', {
+          title: t('调整服务数据格式{n}失败', { n: dataType }),
+          subTitle: t('该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据格式为{n}', {
             n: dataType,
           }),
           dialogType: 'confirm',

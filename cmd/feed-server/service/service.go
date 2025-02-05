@@ -28,6 +28,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"k8s.io/klog/v2"
@@ -179,7 +180,7 @@ func (s *Service) ListenAndGwServerRest() error {
 	if e := dualStackListener.AddListenerWithAddr(addr); e != nil {
 		return e
 	}
-	logs.Infof("http server listen address: %s", addr)
+	logs.Infof("gw http server listen address: %s", addr)
 
 	for _, ip := range network.BindIPs {
 		if ip == network.BindIP {
@@ -189,7 +190,7 @@ func (s *Service) ListenAndGwServerRest() error {
 		if e := dualStackListener.AddListenerWithAddr(ipAddr); e != nil {
 			return e
 		}
-		logs.Infof("http server listen address: %s", ipAddr)
+		logs.Infof("gw http server listen address: %s", ipAddr)
 	}
 
 	server := &http.Server{Handler: s.handlerGw()}
@@ -235,10 +236,16 @@ func (s *Service) ListenAndGwServerRest() error {
 }
 
 func (s *Service) handler() http.Handler {
+	ipLimit := cc.FeedServer().RateLimiter.IP.Limit
+	if ipLimit == 0 {
+		ipLimit = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
+	}
+
 	r := chi.NewRouter()
 	r.Use(handler.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+	r.Use(httprate.LimitByRealIP(int(ipLimit), time.Second))
 	r.Use(middleware.Recoverer)
 
 	// 公共方法
@@ -252,9 +259,15 @@ func (s *Service) handler() http.Handler {
 
 func (s *Service) handlerGw() http.Handler {
 	r := chi.NewRouter()
+	ipLimit := cc.FeedServer().RateLimiter.IP.Limit
+	if ipLimit == 0 {
+		ipLimit = ratelimiter.DefaultIPLimit // 设置默认值，防止配置错误
+	}
+
 	r.Use(handler.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+	r.Use(httprate.LimitByRealIP(int(ipLimit), time.Second))
 	r.Use(middleware.Recoverer)
 	r.Route("/api/v1/feed", func(r chi.Router) {
 		r.With(s.UpdateLastConsumedTime).Get("/biz/{biz_id}/app/{app}/files/*", s.DownloadFile)
@@ -422,25 +435,25 @@ func (s *Service) Healthz(w http.ResponseWriter, req *http.Request) {
 // UpdateLastConsumedTime 更新服务拉取时间中间件
 func (s *Service) UpdateLastConsumedTime(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		kt := kit.FromGrpcContext(r.Context())
-		// 获取路径参数
-		bizIdStr := chi.URLParam(r, "biz_id")
-		app := chi.URLParam(r, "app")
-		bizID, _ := strconv.Atoi(bizIdStr)
-		appID, err := s.bll.AppCache().GetAppID(kt, uint32(bizID), app)
-		if err != nil {
-			logs.Errorf("get app id failed, err: %v", err)
-			next.ServeHTTP(w, r)
-			return
-		}
-		if bizID != 0 && appID != 0 {
-			if err := s.bll.AppCache().BatchUpdateLastConsumedTime(kt, uint32(bizID), []uint32{appID}); err != nil {
-				logs.Errorf("batch update app last consumed failed, err: %v", err)
-				next.ServeHTTP(w, r)
-				return
-			}
-			logs.Infof("batch update app last consumed time success")
-		}
+		// kt := kit.FromGrpcContext(r.Context())
+		// // 获取路径参数
+		// bizIdStr := chi.URLParam(r, "biz_id")
+		// app := chi.URLParam(r, "app")
+		// bizID, _ := strconv.Atoi(bizIdStr)
+		// appID, err := s.bll.AppCache().GetAppID(kt, uint32(bizID), app)
+		// if err != nil {
+		// 	logs.Errorf("get app id failed, err: %v", err)
+		// 	next.ServeHTTP(w, r)
+		// 	return
+		// }
+		// if bizID != 0 && appID != 0 {
+		// 	if err := s.bll.AppCache().BatchUpdateLastConsumedTime(kt, uint32(bizID), []uint32{appID}); err != nil {
+		// 		logs.Errorf("batch update app last consumed failed, err: %v", err)
+		// 		next.ServeHTTP(w, r)
+		// 		return
+		// 	}
+		// 	logs.Infof("batch update app last consumed time success")
+		// }
 
 		next.ServeHTTP(w, r)
 	})

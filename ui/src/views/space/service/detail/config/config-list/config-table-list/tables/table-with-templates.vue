@@ -61,7 +61,7 @@
                         key-field="id"
                         :item-size="40"
                         class="scroller">
-                        <template #default="{ item }">
+                        <template #default="{ item, itemIndex }">
                           <div :class="getRowCls(item)">
                             <td v-if="isUnNamedVersion" class="selection">
                               <bk-checkbox
@@ -131,7 +131,7 @@
                                         theme="primary"
                                         :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
                                         :disabled="!hasEditServicePerm"
-                                        @click="handleEditOpen(item)">
+                                        @click="handleEditOpen(item, itemIndex)">
                                         {{ t('编辑') }}
                                       </bk-button>
                                       <bk-button
@@ -141,7 +141,7 @@
                                         theme="primary"
                                         :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
                                         :disabled="!hasEditServicePerm"
-                                        @click="handleUnModify(item.id)">
+                                        @click="handleUnModify(item, itemIndex)">
                                         {{ t('撤销') }}
                                       </bk-button>
                                       <DownloadConfigBtn
@@ -156,7 +156,7 @@
                                         theme="primary"
                                         :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
                                         :disabled="!hasEditServicePerm"
-                                        @click="handleDel(item)">
+                                        @click="handleDel(item, itemIndex)">
                                         {{ t('删除') }}
                                       </bk-button>
                                     </template>
@@ -167,7 +167,7 @@
                                       theme="primary"
                                       :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
                                       :disabled="!hasEditServicePerm"
-                                      @click="handleUnDelete(item)">
+                                      @click="handleUnDelete(item, itemIndex)">
                                       {{ t('恢复') }}
                                     </bk-button>
                                   </template>
@@ -265,7 +265,7 @@
     :title="t('确认删除该配置文件？')"
     @confirm="handleDeleteConfigConfirm">
     <div style="margin-bottom: 8px">
-      {{ t('配置文件') }}：<span style="color: #313238">{{ fileAP(deleteConfig!) }}</span>
+      {{ t('配置文件') }}：<span style="color: #313238">{{ fileAP(operationConfig!.config) }}</span>
     </div>
     <div>{{ deleteConfigTips }}</div>
   </DeleteConfirmDialog>
@@ -286,9 +286,9 @@
     :confirm-text="t('恢复')"
     @confirm="handleRecoverConfigConfirm">
     <div style="margin-bottom: 8px">
-      {{ t('配置文件') }}：<span style="color: #313238">{{ fileAP(recoverConfig!) }}</span>
+      {{ t('配置文件') }}：<span style="color: #313238">{{ fileAP(operationConfig!.config) }}</span>
     </div>
-    <div>{{ t(`配置文件恢复后，将覆盖新添加的配置文件`) + fileAP(recoverConfig!) }}</div>
+    <div>{{ t(`配置文件恢复后，将覆盖新添加的配置文件`) + fileAP(operationConfig!.config) }}</div>
   </DeleteConfirmDialog>
 </template>
 <script lang="ts" setup>
@@ -393,8 +393,10 @@
   const isDiffPanelShow = ref(false);
   const isSearchEmpty = ref(false);
   const isDeleteConfigDialogShow = ref(false);
-  const deleteConfig = ref<IConfigTableItem>();
-  const recoverConfig = ref<IConfigTableItem>();
+  const operationConfig = ref<{
+    config: IConfigTableItem;
+    index: number;
+  }>();
   const isRecoverConfigDialogShow = ref(false);
   const oldConfigIndex = ref(-1);
   const isDeletePkgDialogShow = ref(false);
@@ -463,8 +465,8 @@
   });
 
   const deleteConfigTips = computed(() => {
-    if (deleteConfig.value) {
-      return deleteConfig.value.file_state === 'ADD'
+    if (operationConfig.value) {
+      return operationConfig.value.config.file_state === 'ADD'
         ? t('一旦删除，该操作将无法撤销，请谨慎操作')
         : t('配置文件删除后，可以通过恢复按钮撤销删除');
     }
@@ -524,6 +526,7 @@
     () => {
       emits('updateSelectedItems', selectedConfigItems.value);
     },
+    { deep: true },
   );
 
   onMounted(async () => {
@@ -742,18 +745,21 @@
     }
   };
 
-  const handleEditOpen = (config: IConfigTableItem) => {
+  const handleEditOpen = (config: IConfigTableItem, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     activeConfig.value = config.id;
+    operationConfig.value = {
+      config,
+      index,
+    };
     editPanelShow.value = true;
   };
 
   // 编辑模板
   const handleEditConfigConfirm = async () => {
-    await getCommonConfigList();
-    tableGroupsData.value = transListToTableData();
+    handleUpdateConfig();
     emits('deleteConfig');
   };
 
@@ -817,7 +823,6 @@
   };
 
   const handleDeletePkgConfirm = async () => {
-    // await deleteBoundPkg(props.bkBizId, props.appId, bindingId.value, [deleteTemplatePkgId.value]);
     try {
       removePkgLoading.value = true;
       await deleteCurrBoundPkg(props.bkBizId, props.appId, templateSetId.value);
@@ -849,21 +854,24 @@
   };
 
   // 删除配置文件
-  const handleDel = (config: IConfigTableItem) => {
+  const handleDel = (config: IConfigTableItem, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
     isDeleteConfigDialogShow.value = true;
-    deleteConfig.value = config;
+    operationConfig.value = {
+      config,
+      index,
+    };
   };
 
   const handleDeleteConfigConfirm = async () => {
-    await deleteServiceConfigItem(deleteConfig.value!.id, props.bkBizId, props.appId);
+    await deleteServiceConfigItem(operationConfig.value!.config.id, props.bkBizId, props.appId);
     Message({
       theme: 'success',
       message: t('删除配置文件成功'),
     });
-    await getAllConfigList();
+    handleUpdateConfig();
     selectedConfigItems.value = [];
     emits('deleteConfig');
     isDeleteConfigDialogShow.value = false;
@@ -890,21 +898,28 @@
   };
 
   // 配置文件撤销修改
-  const handleUnModify = async (id: number) => {
+  const handleUnModify = async (config: IConfigTableItem, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
-    await unModifyConfigItem(props.bkBizId, props.appId, id);
+    await unModifyConfigItem(props.bkBizId, props.appId, config.id);
     Message({ theme: 'success', message: t('撤销修改配置文件成功') });
-    getAllConfigList();
+    operationConfig.value = {
+      config,
+      index,
+    };
+    handleUpdateConfig();
   };
 
   // 配置文件恢复删除
-  const handleUnDelete = async (config: IConfigTableItem) => {
+  const handleUnDelete = async (config: IConfigTableItem, index: number) => {
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
-    recoverConfig.value = config;
+    operationConfig.value = {
+      config,
+      index,
+    };
     const configs = tableGroupsData.value.find((group) => group.id === 0)?.configs;
     oldConfigIndex.value = configs!.findIndex(
       (item) => fileAP(item) === fileAP(config) && item.file_state !== 'DELETE',
@@ -918,20 +933,41 @@
   };
 
   const handleRecoverConfigConfirm = async () => {
-    await unDeleteConfigItem(props.bkBizId, props.appId, recoverConfig.value!.id);
+    await unDeleteConfigItem(props.bkBizId, props.appId, operationConfig.value!.config.id);
     isRecoverConfigDialogShow.value = false;
     Message({ theme: 'success', message: t('恢复配置文件成功') });
+    handleUpdateConfig();
+  };
 
+  // 操作配置文件后，更新配置文件内容，不刷新列表
+  const handleUpdateConfig = async () => {
     // 获取冲突的模板套裁数据 直接覆盖
     await getBoundTemplateList();
     const pkgsGroups = groupTplsByPkg(templateGroupList.value);
     tableGroupsData.value = [tableGroupsData.value[0], ...pkgsGroups];
-    tableGroupsData.value
-      .find((group) => group.id === 0)!
-      .configs.find((config) => config.id === recoverConfig.value!.id)!.file_state = 'UNCHANGE';
 
     // 获取冲突的非模板配置数据
     await getCommonConfigList();
+    const replaceConfig = configList.value.find((config) => config.id === operationConfig.value!.config.id);
+    const replaceConfigIndex = tableGroupsData.value[0].configs.findIndex(
+      (config) => config.id === operationConfig.value!.config.id,
+    );
+    if (replaceConfig) {
+      // 非删除操作
+      tableGroupsData.value[0].configs.map((config) => {
+        if (config.id === operationConfig.value!.config.id) {
+          config.file_state = replaceConfig?.file_state;
+        }
+        return config;
+      });
+      if (oldConfigIndex.value !== -1) {
+        tableGroupsData.value.find((group) => group.id === 0)!.configs.splice(oldConfigIndex.value, 1);
+      }
+    } else {
+      // 删除操作
+      tableGroupsData.value[0].configs.splice(replaceConfigIndex, 1);
+    }
+
     const conflictFileIds = configList.value.filter((config) => config.is_conflict).map((config) => config.id);
     tableGroupsData.value
       .find((group) => group.id === 0)
@@ -940,9 +976,6 @@
           config.is_conflict = true;
         }
       });
-    if (oldConfigIndex.value !== -1) {
-      tableGroupsData.value.find((group) => group.id === 0)!.configs.splice(oldConfigIndex.value, 1);
-    }
 
     // 更新配置项数量
     const existConfigCount = configList.value.filter((item) => item.file_state !== 'DELETE').length;

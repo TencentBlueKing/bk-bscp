@@ -21,9 +21,12 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"gorm.io/datatypes"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
@@ -40,13 +43,17 @@ type Kv struct {
 
 // KvSpec is kv specific which is defined by user.
 type KvSpec struct {
-	Key                       string     `json:"key" gorm:"column:key"`
-	Memo                      string     `json:"memo" gorm:"column:memo"`
-	KvType                    DataType   `json:"kv_type" gorm:"column:kv_type"`
-	Version                   uint32     `json:"version" gorm:"column:version"`
-	SecretType                SecretType `json:"secret_type" gorm:"column:secret_type"`
-	SecretHidden              bool       `json:"secret_hidden" gorm:"column:secret_hidden"`
-	CertificateExpirationDate *time.Time `json:"certificate_expiration_date" gorm:"column:certificate_expiration_date"`
+	Key                       string                      `json:"key" gorm:"column:key"`
+	Memo                      string                      `json:"memo" gorm:"column:memo"`
+	KvType                    DataType                    `json:"kv_type" gorm:"column:kv_type"`
+	Version                   uint32                      `json:"version" gorm:"column:version"`
+	SecretType                SecretType                  `json:"secret_type" gorm:"column:secret_type"`
+	SecretHidden              bool                        `json:"secret_hidden" gorm:"column:secret_hidden"`
+	CertificateExpirationDate *time.Time                  `json:"certificate_expiration_date" gorm:"column:certificate_expiration_date"`
+	ManagedTableID            uint32                      `json:"managed_table_id" gorm:"column:managed_table_id"`
+	ExternalSourceID          uint32                      `json:"external_source_id" gorm:"column:external_source_id"`
+	FilterCondition           *selector.Selector          `json:"filter_condition" gorm:"column:filter_condition"`
+	FilterFields              datatypes.JSONSlice[string] `json:"filter_fields" gorm:"column:filter_fields"`
 }
 
 // KvAttachment is a kv attachment
@@ -72,7 +79,7 @@ func (k *Kv) ResID() uint32 {
 
 // ResType KvRes interface
 func (k *Kv) ResType() string {
-	return "kv"
+	return string(enumor.Config)
 }
 
 // ValidateCreate validate kv is valid or not when create it.
@@ -138,6 +145,7 @@ func (k DataType) ValidateCreateKv() error {
 	case KvYAML:
 	case KvXml:
 	case KvSecret:
+	case KvTab:
 	default:
 		return errors.New("invalid data-type")
 	}
@@ -256,6 +264,8 @@ func (k DataType) ValidateValue(value string) error {
 		}
 		return nil
 	case KvSecret:
+		return nil
+	case KvTab:
 		return nil
 	default:
 		return errors.New("invalid key-value type")

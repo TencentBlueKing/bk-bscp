@@ -253,6 +253,14 @@ const (
 	ClientEventTable Name = "client_events"
 	// ConfigTable is configs table's name
 	ConfigTable Name = "configs"
+	// DataSourceInfoTable mapped from table <data_source_infos>
+	DataSourceInfoTable Name = "data_source_infos"
+	// DataSourceMapping mapped from table <data_source_mappings>
+	DataSourceMappingTable Name = "data_source_mappings"
+	// DataSourceContent mapped from table <data_source_contents>
+	DataSourceContentTable Name = "data_source_contents"
+	// ReleasedTableContent mapped from table <released_table_contents>
+	ReleasedTableContentTable Name = "released_table_contents"
 )
 
 // RevisionColumns defines all the Revision table's columns.

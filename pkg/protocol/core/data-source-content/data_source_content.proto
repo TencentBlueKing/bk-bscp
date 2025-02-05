@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "pkg/protocol/core/base/base.proto";
+import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+package pbdsc;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/data-source-content;pbdsc";
+
+// DataSourceContent mapped from table <data_source_contents>
+message DataSourceContent {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表格数据ID" }];
+  DataSourceContentSpec spec = 2;
+  DataSourceContentAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+}
+
+// DataSourceContentSpec mapped from table <data_source_contents>
+message DataSourceContentSpec {
+  google.protobuf.Struct content = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
+  string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "状态：(ADD、DELETE、REVISE、UNCHANGE)"
+  }];
+}
+
+// DataSourceContentAttachment mapped from table <data_source_contents>
+message DataSourceContentAttachment {
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+}
+
+// Field 表结构
+message Field {
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段名称" }];
+  string alias = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段别名" }];
+  string column_type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段类型" }];
+  bool primary = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否为主键" }];
+  string enum_value = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "枚举值" }];
+  bool selected = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "多选：是=true，否=false，默认false" }
+  ];
+}

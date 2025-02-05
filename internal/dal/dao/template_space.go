@@ -17,9 +17,10 @@ import (
 
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -43,6 +44,8 @@ type TemplateSpace interface {
 	CreateDefault(kit *kit.Kit, bizID uint32) (uint32, error)
 	// ListByIDs list template spaces by template space ids.
 	ListByIDs(kit *kit.Kit, ids []uint32) ([]*table.TemplateSpace, error)
+	// Get one template spaces by template space id.
+	Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error)
 }
 
 var _ TemplateSpace = new(templateSpaceDao)
@@ -51,6 +54,13 @@ type templateSpaceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// Get implements TemplateSpace.
+func (dao *templateSpaceDao) Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error) {
+	m := dao.genQ.TemplateSpace
+
+	return dao.genQ.TemplateSpace.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
 }
 
 // Create one template space instance.
@@ -87,8 +97,17 @@ func (dao *templateSpaceDao) Create(kit *kit.Kit, g *table.TemplateSpace) (uint3
 	}
 	sg.ID = tmplSetID
 
-	tmplSpaceAD := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
-	tmplSetAD := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(sg)
+	tmplSpaceAD := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
+	tmplSetAD := dao.auditDao.Decorator(kit, sg.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			g.Spec.Name, sg.Spec.Name),
+		Status: enumor.Success,
+		Detail: sg.Spec.Memo,
+	}).PrepareCreate(sg)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {
@@ -133,7 +152,11 @@ func (dao *templateSpaceDao) Update(kit *kit.Kit, g *table.TemplateSpace) error 
 	if oldOne.Spec.Name == constant.DefaultTmplSpaceCNName {
 		return fmt.Errorf("can't update default template space")
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName, oldOne.Spec.Name), // 命名空间不更改名称
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareUpdate(g)
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
@@ -206,7 +229,11 @@ func (dao *templateSpaceDao) Delete(kit *kit.Kit, g *table.TemplateSpace) error 
 	if oldOne.Spec.Name == constant.DefaultTmplSpaceCNName {
 		return fmt.Errorf("can't delete default template space")
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
@@ -290,8 +317,17 @@ func (dao *templateSpaceDao) CreateDefault(kit *kit.Kit, bizID uint32) (uint32, 
 	}
 	sg.ID = tmplSetID
 
-	tmplSpaceAD := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
-	tmplSetAD := dao.auditDao.DecoratorV2(kit, sg.Attachment.BizID).PrepareCreate(sg)
+	tmplSpaceAD := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
+	tmplSetAD := dao.auditDao.Decorator(kit, sg.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			g.Spec.Name, sg.Spec.Name),
+		Status: enumor.Success,
+		Detail: sg.Spec.Memo,
+	}).PrepareCreate(sg)
 
 	// 多个使用事务处理
 	createTx := func(tx *gen.Query) error {

@@ -24,9 +24,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -143,18 +143,18 @@ func (s *Service) SubmitPublishApprove(
 		groupName = []string{"ALL"}
 	}
 
-	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
+	resInstance := fmt.Sprintf(constant.ConfigReleaseName+constant.ResSeparator+constant.ConfigReleaseScope,
+		release.Spec.Name, strings.Join(groupName, constant.NameSeparator))
 
 	// audit this to create strategy details
-	ad := s.dao.AuditDao().DecoratorV3(grpcKit, opt.BizID, &table.AuditField{
-		OperateWay:       grpcKit.OperateWay,
-		Action:           enumor.PublishReleaseConfig,
+	ad := s.dao.AuditDao().Decorator(grpcKit, opt.BizID, &table.AuditField{
 		ResourceInstance: resInstance,
 		Status:           enumor.AuditStatus(opt.PublishStatus),
 		AppId:            app.AppID(),
 		StrategyId:       pshID,
 		IsCompare:        req.IsCompare,
-	}).PrepareCreateByInstance(pshID, req)
+		Detail:           req.Memo,
+	}).PreparePublish(strategy)
 	if err = ad.Do(tx.Query); err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (s *Service) SubmitPublishApprove(
 
 	// itsm流程创建ticket
 	if app.Spec.IsApprove {
-		scope := strings.Join(groupName, ",")
+		scope := strings.Join(groupName, constant.NameSeparator)
 		ticketData, errCreate := s.submitCreateApproveTicket(
 			grpcKit, app, release.Spec.Name, scope, req.Memo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
@@ -520,24 +520,22 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 		groupName = []string{"ALL"}
 	}
 
-	resInstance := fmt.Sprintf("releases_name: %s\ngroup: %s", release.Spec.Name, strings.Join(groupName, ","))
+	resInstance := fmt.Sprintf(constant.ConfigReleaseName+constant.ResSeparator+constant.ConfigReleaseScope,
+		release.Spec.Name, strings.Join(groupName, constant.NameSeparator))
 
 	// audit this to create strategy details
-	ad := s.dao.AuditDao().DecoratorV3(grpcKit, opt.BizID, &table.AuditField{
-		OperateWay:       grpcKit.OperateWay,
-		Action:           enumor.PublishReleaseConfig,
+	ad := s.dao.AuditDao().Decorator(grpcKit, opt.BizID, &table.AuditField{
 		ResourceInstance: resInstance,
 		Status:           enumor.AuditStatus(opt.PublishStatus),
-		AppId:            app.AppID(),
 		StrategyId:       pshID,
-	}).PrepareCreateByInstance(pshID, req)
+	}).PreparePublish(strategy)
 	if err = ad.Do(tx.Query); err != nil {
 		return nil, err
 	}
 
 	// itsm流程创建ticket
 	if app.Spec.IsApprove {
-		scope := strings.Join(groupName, ",")
+		scope := strings.Join(groupName, constant.NameSeparator)
 		ticketData, errCreate := s.submitCreateApproveTicket(
 			grpcKit, app, release.Spec.Name, scope, req.ReleaseMemo, ad.GetAuditID(), release.ID)
 		if errCreate != nil {
@@ -682,7 +680,7 @@ func (s *Service) passApprove(
 			result["itsm_ticket_status"] = constant.ItsmTicketStatusPassed
 		} else {
 			// 审批人列表更新
-			result["approver_progress"] = strings.Join(newProgressUsers, ",")
+			result["approver_progress"] = strings.Join(newProgressUsers, constant.NameSeparator)
 		}
 	}
 

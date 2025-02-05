@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gobwas/glob"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -287,8 +289,11 @@ func MatchPattern(name string, match []string) bool {
 	}
 
 	for _, m := range match {
-		ok, _ := path.Match(m, name)
-		if ok {
+		g, err := glob.Compile(m)
+		if err != nil {
+			continue
+		}
+		if g.Match(name) {
 			return true
 		}
 	}

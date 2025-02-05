@@ -14,17 +14,21 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+
+	"gorm.io/datatypes"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbrkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv"
 	released_kv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // GetReleasedKv get released kv
@@ -100,12 +104,30 @@ func (s *Service) ListReleasedKvs(ctx context.Context, req *pbds.ListReleasedKvR
 
 	var rkvs []*pbrkv.ReleasedKv
 	for _, detail := range details {
-		_, val, err := s.getReleasedKv(kt, req.BizId, req.AppId, detail.Spec.Version, detail.ReleaseID, detail.Spec.Key)
+		var val, name string
+		if detail.Spec.KvType == table.KvTab {
+			name, err = s.getKvTableConfigPreviewName(kt, req.BizId, detail.Spec.ManagedTableID, detail.Spec.ExternalSourceID)
+			if err != nil {
+				return nil, err
+			}
+			val, err = s.getReleasedKvTableConfigValue(kt, detail)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if detail.Spec.KvType != table.KvTab {
+			_, val, err = s.getReleasedKv(kt, req.BizId, req.AppId, detail.Spec.Version, detail.ReleaseID, detail.Spec.Key)
+			if err != nil {
+				logs.Errorf("get vault released kv failed, err: %v, rid: %s", err, kt.Rid)
+				return nil, err
+			}
+		}
+
+		rkv, err := pbrkv.PbRKv(detail, val, name)
 		if err != nil {
-			logs.Errorf("get vault released kv failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
-		rkvs = append(rkvs, pbrkv.PbRKv(detail, val))
+		rkvs = append(rkvs, rkv)
 	}
 
 	resp := &pbds.ListReleasedKvResp{
@@ -127,4 +149,31 @@ func (s *Service) getReleasedKv(kt *kit.Kit, bizID, appID, version, releasedID u
 		ReleasedID: releasedID,
 	}
 	return s.vault.GetRKv(kt, opt)
+}
+
+func (s *Service) getReleasedKvTableConfigValue(kit *kit.Kit, rkv *table.ReleasedKv) (string, error) {
+	if rkv == nil {
+		return "", nil
+	}
+	contents, _, err := s.dao.ReleasedTableContent().List(kit, rkv.ID, &types.BasePage{All: true})
+	if err != nil {
+		return "", err
+	}
+
+	if len(contents) != 0 {
+		result := make([]datatypes.JSONMap, 0)
+		for _, v := range contents {
+			result = append(result, v.Spec.Content)
+		}
+
+		// 将 result 切片转换为 JSON 格式的字符串
+		contentBytes, err := json.Marshal(result)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal JSONMap slice: %w", err)
+		}
+		// 返回转换后的字符串
+		return string(contentBytes), nil
+	}
+
+	return "", nil
 }

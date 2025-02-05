@@ -68,9 +68,8 @@ type AuditBasicDetail struct {
 
 // AuditField defines the audit's basic field
 type AuditField struct {
-	OperateWay       string
-	Action           enumor.AuditAction
 	ResourceInstance string
+	Detail           string
 	Status           enumor.AuditStatus
 	AppId            uint32
 	StrategyId       uint32

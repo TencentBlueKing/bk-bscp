@@ -31,6 +31,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
+var (
+	// ErrRecordNotFound alias gorm ErrRecordNotFound.
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
+
 // Set defines all the DAO to be operated.
 type Set interface {
 	GenQuery() *gen.Query
@@ -73,6 +78,10 @@ type Set interface {
 	ClientEvent() ClientEvent
 	ClientQuery() ClientQuery
 	Config() Config
+	DataSourceInfo() DataSourceInfo
+	DataSourceMapping() DataSourceMapping
+	DataSourceContent() DataSourceContent
+	ReleasedTableContent() ReleasedTableContent
 }
 
 // NewDaoSet create the DAO set instance.
@@ -510,6 +519,43 @@ func (s *set) ClientQuery() ClientQuery {
 // Config returns the Config scope's DAO
 func (s *set) Config() Config {
 	return &configDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// DataSourceMapping implements Set.
+func (s *set) DataSourceMapping() DataSourceMapping {
+	return &dataSourceMappingDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// DataSourceContent implements Set.
+func (s *set) DataSourceContent() DataSourceContent {
+	return &dataSourceContentDao{
+		idGen:                s.idGen,
+		auditDao:             s.auditDao,
+		dataSourceMappingDao: s.DataSourceMapping(),
+		genQ:                 s.genQ,
+	}
+}
+
+// ReleasedTableContent implements Set.
+func (s *set) ReleasedTableContent() ReleasedTableContent {
+	return &releasedTableContentDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// DataSourceInfo implements Set.
+func (s *set) DataSourceInfo() DataSourceInfo {
+	return &dataSourceInfoDao{
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,

@@ -19,7 +19,10 @@ import (
 
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -53,7 +56,7 @@ type App interface {
 	// GetByAlias 通过Alisa 查询
 	GetByAlias(kit *kit.Kit, bizID uint32, alias string) (*table.App, error)
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
-	BatchUpdateLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error
+	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 }
 
 var _ App = new(appDao)
@@ -66,12 +69,10 @@ type appDao struct {
 }
 
 // BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
-func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, bizID uint32, appIDs []uint32) error {
-
+func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error {
 	m := dao.genQ.App
-
 	_, err := dao.genQ.App.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.ID.In(appIDs...)).
+		Where(m.ID.In(appIDs...)).
 		Update(m.LastConsumedTime, time.Now().UTC())
 	if err != nil {
 		return err
@@ -102,6 +103,10 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, o
 		count  int64
 		err    error
 	)
+
+	if len(opt.TopIds) != 0 {
+		q = q.Order(utils.NewCustomExpr(`CASE WHEN id IN (?) THEN 0 ELSE 1 END,name ASC`, []interface{}{opt.TopIds}))
+	}
 
 	if opt.All {
 		result, err = q.Where(conds...).Find()
@@ -180,7 +185,12 @@ func (dao *appDao) Create(kit *kit.Kit, g *table.App) (uint32, error) {
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareCreate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -242,7 +252,13 @@ func (dao *appDao) Update(kit *kit.Kit, g *table.App) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareUpdate(g, oldOne)
+	kit.AppID = g.ID
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareUpdate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -302,7 +318,11 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		AppId:            g.ID,
+	}).PrepareDelete(g)
 	if err = ad.Do(tx.Query); err != nil {
 		return err
 	}

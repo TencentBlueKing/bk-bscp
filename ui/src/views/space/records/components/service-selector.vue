@@ -4,7 +4,7 @@
     ref="selectorRef"
     class="service-selector-record"
     multiple-mode="tag"
-    placeholder="全部"
+    :placeholder="$t('全部')"
     :popover-options="{ theme: 'light bk-select-popover' }"
     :popover-min-width="360"
     :filterable="true"
@@ -14,7 +14,7 @@
     :search-placeholder="$t('请输入关键字')"
     @change="handleAppChange">
     <template #prefix>
-      <span class="prefix-content">服务</span>
+      <span class="prefix-content">{{ $t('服务') }}</span>
     </template>
     <bk-option v-for="item in serviceList" :key="item.id ? item.id : 'all'" :value="item.id" :label="item.spec.name">
       <div
@@ -111,7 +111,7 @@
 
 <style scoped lang="scss">
   .service-selector-record {
-    width: 260px;
+    width: 280px;
     .prefix-content {
       margin-right: 10px;
       padding: 0 12px;
