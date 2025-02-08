@@ -116,6 +116,10 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 			Memo:                      req.Memo,
 			SecretHidden:              req.SecretHidden,
 			CertificateExpirationDate: expirationTime,
+			ManagedTableId:            req.ManagedTableId,
+			ExternalSourceId:          req.ExternalSourceId,
+			FilterFields:              req.FilterFields,
+			FilterCondition:           req.FilterCondition,
 		},
 	}
 	if _, err := s.client.DS.UpdateKv(grpcKit.RpcCtx(), r); err != nil {

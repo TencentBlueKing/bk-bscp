@@ -61,9 +61,19 @@ type dataSourceContentDao struct {
 
 // filterContentFields filters out specified fields from the Content.
 func filterContentFields(result []*table.DataSourceContent, filterFields []string) {
+	// 将 filterFields 转换为映射以便更快地进行查找
+	filterMap := make(map[string]struct{}, len(filterFields))
+	for _, field := range filterFields {
+		filterMap[field] = struct{}{}
+	}
+
 	for _, item := range result {
-		for _, field := range filterFields {
-			delete(item.Spec.Content, field)
+		// 迭代内容映射中的字段
+		for field := range item.Spec.Content {
+			// 如果该字段不在 filterFields 中，则删除它
+			if _, exists := filterMap[field]; !exists {
+				delete(item.Spec.Content, field)
+			}
 		}
 	}
 }
