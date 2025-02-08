@@ -24,6 +24,7 @@
           <div class="package-actions">
             <div class="action-item" @click="handlePopoverClick('edit')">{{ t('编辑') }}</div>
             <div class="action-item" @click="handlePopoverClick('clone')">{{ t('克隆') }}</div>
+            <div class="action-item" @click="handlePopoverClick('export')">{{ t('导出') }}</div>
             <div class="action-item" @click="handlePopoverClick('delete')">{{ t('删除') }}</div>
           </div>
         </template>
@@ -49,6 +50,7 @@
   const handlePopoverClick = (item: string) => {
     if (item === 'edit') emits('openSlider', props.pkg.id, 'edit');
     if (item === 'clone') emits('openSlider', props.pkg.id, 'clone');
+    if (item === 'export') emits('openSlider', props.pkg.id, 'export');
     if (item === 'delete') emits('openSlider', props.pkg.id, 'delete');
     popoverShow.value = false;
   };

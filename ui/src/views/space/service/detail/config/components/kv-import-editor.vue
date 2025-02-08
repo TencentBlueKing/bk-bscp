@@ -275,18 +275,31 @@
   const handleValidateYaml = () => {
     try {
       const yamlObject = yaml.load(yamlContent.value);
-      const keys = Object.keys(yamlObject).filter((key) => yamlObject[key].value === '不可见敏感信息无法导出');
+      const allKeys = Object.keys(yamlObject);
+      const secretKeys = allKeys.filter((key) => yamlObject[key].value === '不可见敏感信息无法导出');
+      // 匹配所有不符合规则的key
+      const errorKeys = allKeys.filter(
+        (key) => !/^[\p{Script=Han}\p{L}\p{N}]([\p{Script=Han}\p{L}\p{N}_-]*[\p{Script=Han}\p{L}\p{N}])?$/u.test(key),
+      );
       const lines = yamlContent.value.split('\n');
       errorLine.value = [];
       lines.forEach((line, index) => {
-        const match = line.match(/value:\s*不可见敏感信息无法导出/);
-        console.log(match);
-        if (match) {
+        const secretMatch = line.match(/value:\s*不可见敏感信息无法导出/);
+        if (secretMatch) {
           errorLine.value.push({
-            errorInfo: t('请先填写配置项 {n} 的值，然后再尝试导入', { n: keys[errorLine.value.length] }),
+            errorInfo: t('请先填写配置项 {n} 的值，然后再尝试导入', { n: secretKeys[errorLine.value.length] }),
             lineNumber: index + 1,
           });
         }
+        // 如果该行包含不符合规则的键，记录下错误信息和行号
+        errorKeys.forEach((key) => {
+          if (line.includes(key)) {
+            errorLine.value.push({
+              errorInfo: `键 "${key}" 不符合规则`,
+              lineNumber: index + 1,
+            });
+          }
+        });
       });
     } catch (e) {
       console.error(e);
