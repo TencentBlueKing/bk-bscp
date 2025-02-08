@@ -3728,6 +3728,14 @@ message UpdateKvReq {
   }];
   bool secret_hidden = 8
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
+  uint32 managed_table_id = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管表格ID" }];
+  uint32 external_source_id = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "外部源表格ID" }];
+  google.protobuf.Struct filter_condition = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的条件" }];
+  repeated string filter_fields = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "过滤表格的字段" }];
 }
 
 message UpdateKvResp {}
