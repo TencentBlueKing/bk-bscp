@@ -91,13 +91,16 @@ export const deleteTemplatePackage = (biz_id: string, template_space_id: number,
  */
 export const exportTemplatePackage = (biz_id: string, template_space_id: number, template_id: number) =>
   http
-    .get(`/config/biz/${biz_id}/template_spaces/${template_space_id}/template/${template_id}/export`, {
-      transitional: {
-        forcedJSONParsing: false,
+    .get<string, Blob | string>(
+      `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/export`,
+      {
+        transitional: {
+          forcedJSONParsing: false,
+        },
+        responseType: 'blob', // 文件为二进制流，需要设置响应类型为blob才能正确解析
       },
-      responseType: 'blob', // 文件为二进制流，需要设置响应类型为blob才能正确解析
-    })
-    .then((res) => res.data);
+    )
+    .then((res) => res);
 
 /**
  * 获取空间下的模板套餐列表

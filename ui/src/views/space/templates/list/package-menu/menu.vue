@@ -83,6 +83,7 @@
   import PackageClone from './package-clone.vue';
   import PackageDelete from './package-delete.vue';
   import TableEmpty from '../../../../../components/table/table-empty.vue';
+  import { downloadFile } from '../../../../../utils';
 
   const router = useRouter();
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -287,7 +288,8 @@
   const handleExportPakage = async (id: number) => {
     try {
       const res =  await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, id);
-      console.log(res);
+      const packageName = packages.value.find((item) => item.id === id)?.spec.name;
+      downloadFile(res, 'application/zip', `${packageName}.zip`);
     } catch (error) {
       console.error(error);
     }
