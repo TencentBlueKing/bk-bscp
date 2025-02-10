@@ -48,17 +48,17 @@
   <PackageEdit
     v-model:show="editingPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="editingPkgData.data as ITemplatePackageItem"
+    :pkg="(editingPkgData.data as ITemplatePackageItem)"
     @edited="getList" />
   <PackageClone
     v-model:show="cloningPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="cloningPkgData.data as ITemplatePackageItem"
+    :pkg="(cloningPkgData.data as ITemplatePackageItem)"
     @created="getList" />
   <PackageDelete
     v-model:show="deletingPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="deletingPkgData.data as ITemplatePackageItem"
+    :pkg="(deletingPkgData.data as ITemplatePackageItem)"
     @deleted="handlePkgDeleted" />
 </template>
 <script lang="ts" setup>
@@ -73,6 +73,7 @@
     getTemplatePackageList,
     getTemplatesWithNoSpecifiedPackage,
     getTemplatesBySpaceId,
+    exportTemplatePackage,
   } from '../../../../../api/template';
   import { ITemplatePackageItem, IPackageMenuItem } from '../../../../../../types/template';
   import SearchInput from '../../../../../components/search-input.vue';
@@ -82,6 +83,7 @@
   import PackageClone from './package-clone.vue';
   import PackageDelete from './package-delete.vue';
   import TableEmpty from '../../../../../components/table/table-empty.vue';
+  import { downloadFile } from '../../../../../utils';
 
   const router = useRouter();
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -244,6 +246,9 @@
           open: true,
           data: { ...pkg },
         };
+      } else if (type === 'export') {
+        // todo
+        handleExportPakage(id);
       }
     }
   };
@@ -278,6 +283,16 @@
 
   const updateRouter = (id: number | string) => {
     router.push({ name: 'templates-list', params: { templateSpaceId: currentTemplateSpace.value, packageId: id } });
+  };
+
+  const handleExportPakage = async (id: number) => {
+    try {
+      const res =  await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, id);
+      const packageName = packages.value.find((item) => item.id === id)?.spec.name;
+      downloadFile(res, 'application/zip', `${packageName}.zip`);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const clearSearch = () => {
