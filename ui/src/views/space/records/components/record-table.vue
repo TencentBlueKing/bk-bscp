@@ -470,12 +470,18 @@
     }
     const { status } = row.audit.spec;
     // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
-    const { final_approval_time: time, reviser, reject_reason: reason } = row.strategy;
+    const {
+      final_approval_time: time,
+      reviser,
+      reject_reason: reason,
+      memo,
+      final_approval_time: publish_time,
+    } = row.strategy;
     switch (status) {
       // case APPROVE_STATUS.pending_approval:
       //   return t('提示-待审批', { approver_progress, approveType });
       case APPROVE_STATUS.already_publish:
-        return t('提示-已上线文案', { time: convertTime(time, 'local') });
+        return t('提示-已上线文案', { time: convertTime(publish_time, 'local'), reviser, memo: memo || '--' });
       // case APPROVE_STATUS.rejected_approval:
       //   return t('提示-审批驳回', {
       //     reviser,

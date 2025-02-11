@@ -529,7 +529,9 @@ export default {
   删除服务: 'Delete service',
   上线版本配置: 'Publish',
   '提示-待审批': 'Approver({approveType})：{approver}',
-  '提示-已上线文案': 'Publish Time: {time}',
+  '提示-已上线文案': `Publish operator:{reviser}
+                      Publish time:{time}
+                      Publish reason:{memo}`,
   '提示-审批驳回': 'Approval has been rejected\nApprover: {reviser}\nPublish time: {time}\nRejection reason: {reason}',
   '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}\nCancellation reason: {reason}',
   '提示-失败': 'This script version is currently being used by the service, deletion failed',
