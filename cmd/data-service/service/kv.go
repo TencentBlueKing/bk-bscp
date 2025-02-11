@@ -186,6 +186,10 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbds.UpdateKvReq) (*pbbase.
 		return nil, err
 	}
 	kv.Spec.CertificateExpirationDate = spec.CertificateExpirationDate
+	kv.Spec.ManagedTableID = spec.ManagedTableID
+	kv.Spec.ExternalSourceID = spec.ExternalSourceID
+	kv.Spec.FilterFields = spec.FilterFields
+	kv.Spec.FilterCondition = spec.FilterCondition
 	if e := s.dao.Kv().Update(kt, kv); e != nil {
 		logs.Errorf("update kv failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "update kv failed, err: %v", err))
