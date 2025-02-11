@@ -73,7 +73,6 @@
     getTemplatePackageList,
     getTemplatesWithNoSpecifiedPackage,
     getTemplatesBySpaceId,
-    exportTemplatePackage,
   } from '../../../../../api/template';
   import { ITemplatePackageItem, IPackageMenuItem } from '../../../../../../types/template';
   import SearchInput from '../../../../../components/search-input.vue';
@@ -83,7 +82,6 @@
   import PackageClone from './package-clone.vue';
   import PackageDelete from './package-delete.vue';
   import TableEmpty from '../../../../../components/table/table-empty.vue';
-  import { downloadFile } from '../../../../../utils';
 
   const router = useRouter();
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -246,9 +244,6 @@
           open: true,
           data: { ...pkg },
         };
-      } else if (type === 'export') {
-        // todo
-        handleExportPakage(id);
       }
     }
   };
@@ -283,16 +278,6 @@
 
   const updateRouter = (id: number | string) => {
     router.push({ name: 'templates-list', params: { templateSpaceId: currentTemplateSpace.value, packageId: id } });
-  };
-
-  const handleExportPakage = async (id: number) => {
-    try {
-      const res =  await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, id);
-      const packageName = packages.value.find((item) => item.id === id)?.spec.name;
-      downloadFile(res, 'application/zip', `${packageName}.zip`);
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   const clearSearch = () => {

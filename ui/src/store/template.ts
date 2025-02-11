@@ -16,6 +16,8 @@ export default defineStore('template', () => {
   const countOfTemplatesForNoSpecifiedPackage = ref(0);
   // 当前套餐
   const currentPkg = ref<string | number>('');
+  // 当前套餐名称
+  const currentPkgName = ref('');
   // 标识是否需要刷新左侧套餐菜单栏是否需要刷新
   const needRefreshMenuFlag = ref(false);
   // 配置页面是否需要打开编辑版本面板
@@ -45,5 +47,6 @@ export default defineStore('template', () => {
     isAcrossChecked,
     dataCount,
     countOfTemplatesForCurrentPackage,
+    currentPkgName,
   };
 });
