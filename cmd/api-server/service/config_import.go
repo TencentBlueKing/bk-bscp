@@ -548,12 +548,14 @@ func (c *configImport) processAndUploadDirectoryFiles(kt *kit.Kit, fileDir strin
 					wg.Done()
 					mu.Unlock()
 				}()
-				result, err := c.fileScannerHasherUploader(kt, path, rootDir, file)
 				mu.Lock()
-				results = append(results, types.UploadTask{
-					File: result,
-					Err:  err,
-				})
+				if file.Name() != mapPackageToTemplate {
+					result, err := c.fileScannerHasherUploader(kt, path, rootDir, file)
+					results = append(results, types.UploadTask{
+						File: result,
+						Err:  err,
+					})
+				}
 			}
 			// 提交上传任务到并发池中执行
 			if submitErr := pool.Submit(upload); submitErr != nil {

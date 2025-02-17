@@ -14,6 +14,7 @@ package service
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -35,6 +36,8 @@ import (
 	pbtr "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-revision"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
+
+var mapPackageToTemplate = "mapPackageToTemplate.json"
 
 func newConfigExportService(settings cc.Repository, authorizer auth.Authorizer,
 	cfgClient pbcs.ConfigClient) (*configExport, error) {
@@ -328,22 +331,48 @@ func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// 创建 zip writer，将文件内容写入到 zip 文件中
 	zipWriter := zip.NewWriter(w)
+	// 用于存储每个 folderName 对应的文件路径
+	folderFilesMap := make(map[string][]string)
+	downloaded := map[string]bool{}
 	defer func() { _ = zipWriter.Close() }()
 	for _, file := range resp.GetTemplateSet() {
 		for _, v := range file.TemplateRevision {
-			err := c.downloadTmpFileToZip(kt, file.Name, v, zipWriter)
-			if err != nil {
-				_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to download files: %v", err)))
-				return
+			if !downloaded[v.GetContentSpec().GetSignature()] {
+				err := c.downloadTmpFileToZip(kt, file.Name, v, zipWriter, folderFilesMap)
+				if err != nil {
+					_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to download files: %v", err)))
+					return
+				}
+				downloaded[v.GetContentSpec().GetSignature()] = true
 			}
 		}
 
 	}
+
+	// 最后生成套餐和模板文件之间的映射关系文件并写入
+	jsonFileWriter, err := zipWriter.Create(mapPackageToTemplate)
+	if err != nil {
+		_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to create JSON file: %v", err)))
+		return
+	}
+
+	jsonData, err := json.MarshalIndent(folderFilesMap, "", "  ")
+	if err != nil {
+		_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to marshal JSON data: %v", err)))
+		return
+	}
+
+	_, err = jsonFileWriter.Write(jsonData)
+	if err != nil {
+		_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to write JSON file: %v", err)))
+		return
+	}
+
 }
 
 // 下载模板文件且压缩成zip
 func (c *configExport) downloadTmpFileToZip(kt *kit.Kit, folderName string,
-	revision *pbtr.TemplateRevisionSpec, zipWriter *zip.Writer) error {
+	revision *pbtr.TemplateRevisionSpec, zipWriter *zip.Writer, folderFilesMap map[string][]string) error {
 	body, contentLength, err := c.provider.Download(kt, revision.ContentSpec.Signature)
 	if err != nil {
 		return err
@@ -351,11 +380,11 @@ func (c *configExport) downloadTmpFileToZip(kt *kit.Kit, folderName string,
 
 	defer body.Close()
 
-	fileName := filepath.Join(folderName, revision.Path, revision.Name)
+	fileName := filepath.Join(revision.Path, revision.Name)
 	trimmedPath := strings.TrimPrefix(fileName, "/")
 	writer, err := zipWriter.Create(trimmedPath)
 	if err != nil {
-		return fmt.Errorf("Error creating ZIP file entry:%s", err.Error())
+		return fmt.Errorf("creating ZIP file entry, error: %v", err)
 	}
 
 	n, err := io.Copy(writer, body)
@@ -366,5 +395,11 @@ func (c *configExport) downloadTmpFileToZip(kt *kit.Kit, folderName string,
 	if n != contentLength {
 		return errors.New("download failed file missing")
 	}
+	// 更新 folderFilesMap，记录文件夹对应的文件路径
+	if _, exists := folderFilesMap[folderName]; !exists {
+		folderFilesMap[folderName] = []string{}
+	}
+	folderFilesMap[folderName] = append(folderFilesMap[folderName], fileName)
+
 	return nil
 }
