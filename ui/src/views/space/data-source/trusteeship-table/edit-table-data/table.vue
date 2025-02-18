@@ -89,7 +89,7 @@
 <script lang="ts" setup>
   import { watch, ref, onMounted } from 'vue';
   import {
-    IFiledsItemEditing,
+    IFieldsItemEditing,
     IFieldItem,
     ILocalTableEditData,
     ILocalTableDataItem,
@@ -105,7 +105,7 @@
 
   const emits = defineEmits(['change', 'delete']);
 
-  const fieldsList = ref<IFiledsItemEditing[]>([]);
+  const fieldsList = ref<IFieldsItemEditing[]>([]);
   const tableData = ref<ILocalTableEditData[]>([]);
   const publishData = ref<ILocalTableEditData[]>([]); // 已上线的数据
   // const errorCells = ref<{ row: number; col: number }[]>([]);

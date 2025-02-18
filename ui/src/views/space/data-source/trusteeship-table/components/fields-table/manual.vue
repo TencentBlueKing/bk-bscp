@@ -128,7 +128,7 @@
   import draggable from 'vuedraggable';
   import { ref, watch, computed } from 'vue';
   import { GragFill } from 'bkui-vue/lib/icon';
-  import { IFiledsItemEditing, IEnumItem } from '../../../../../../../types/kv-table';
+  import { IFieldsItemEditing, IEnumItem } from '../../../../../../../types/kv-table';
   import { useI18n } from 'vue-i18n';
   import EnumSetPop from './enum-set-pop.vue';
   import DeleteFieldDialog from './delete-field-dialog.vue';
@@ -136,7 +136,7 @@
   const { t } = useI18n();
   const props = withDefaults(
     defineProps<{
-      list: IFiledsItemEditing[];
+      list: IFieldsItemEditing[];
       isEdit?: boolean; // 是否为编辑态
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
@@ -163,7 +163,7 @@
     { label: t('自增'), class: 'check-th', width: '56', tips: '' },
     { label: t('只读'), class: 'check-th', width: '56', tips: '' },
   ];
-  const fieldsList = ref<IFiledsItemEditing[]>([]);
+  const fieldsList = ref<IFieldsItemEditing[]>([]);
   const dataType = [
     {
       value: 'string',
@@ -178,7 +178,7 @@
       label: 'ENUM',
     },
   ];
-  const deleteField = ref<IFiledsItemEditing>();
+  const deleteField = ref<IFieldsItemEditing>();
   const deleteFieldIndex = ref(0);
   const isShowDeleteDialog = ref(false);
   const errors = ref<any[]>([]);
@@ -196,7 +196,7 @@
   });
 
   // 选择主键
-  const handleChangePrimaryKey = (item: IFiledsItemEditing, index: number) => {
+  const handleChangePrimaryKey = (item: IFieldsItemEditing, index: number) => {
     // 重置主键状态
     fieldsList.value.forEach((filed) => {
       filed.primary = false;
@@ -213,7 +213,7 @@
     emits('change', fieldsList.value);
   };
 
-  const handleDelete = (item: IFiledsItemEditing, index: number) => {
+  const handleDelete = (item: IFieldsItemEditing, index: number) => {
     if (item.primary) return;
     deleteField.value = item;
     deleteFieldIndex.value = index;
@@ -252,7 +252,7 @@
 
   // 设置枚举值
   const handleSetEnum = (
-    filed: IFiledsItemEditing,
+    filed: IFieldsItemEditing,
     [enumList, isMultiple]: [enumList: IEnumItem[], isMultiple: boolean],
   ) => {
     Object.assign(filed, {
@@ -263,7 +263,7 @@
     emits('change', fieldsList.value);
   };
 
-  const handleSelectType = (filed: IFiledsItemEditing, type: string) => {
+  const handleSelectType = (filed: IFieldsItemEditing, type: string) => {
     if (type === 'enum') {
       filed.default_value = [];
     }
@@ -272,7 +272,7 @@
 
   // 校验单个字段
   const validateField = (rowIndex: number, field: string) => {
-    const value = fieldsList.value[rowIndex][field as keyof IFiledsItemEditing];
+    const value = fieldsList.value[rowIndex][field as keyof IFieldsItemEditing];
     const error = !value;
     if (!errors.value[rowIndex]) errors.value[rowIndex] = {};
     if (error) {
@@ -287,7 +287,7 @@
       const rowErrors: Record<string, boolean> = {};
       // 只校验 name 和 alias 字段
       ['name', 'alias', 'column_type'].forEach((field) => {
-        const value = row[field as keyof IFiledsItemEditing];
+        const value = row[field as keyof IFieldsItemEditing];
         rowErrors[field] = !value; // 如果字段为空，标记为错误
       });
 

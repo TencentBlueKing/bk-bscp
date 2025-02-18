@@ -74,3 +74,22 @@ export const editTableData = (biz_id: string, id: number, query: any) =>
  */
 export const getTableStructureHasData = (biz_id: string, id: number) =>
   http.get(`/config/biz/${biz_id}/table/${id}/field/email`).then((res) => res.data);
+
+/**
+ * 导入表结构和表数据
+ * @param biz_id 空间ID
+ * @param id 表结构ID
+ * @param query 数据内容
+ * @returns
+ */
+export const importTable = (biz_id: string, id: number, format: string, file: File, progress?: Function) =>
+  http
+    .post(`/config/biz/${biz_id}/table/${id}/${format}/import`, file, {
+      onUploadProgress: (progressEvent: any) => {
+        if (progress) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          progress(percentCompleted);
+        }
+      },
+    })
+    .then((res) => res.data);

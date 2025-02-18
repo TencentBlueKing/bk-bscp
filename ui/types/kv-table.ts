@@ -14,7 +14,7 @@ export interface IFieldItem {
 }
 
 // 字段设置编辑
-export interface IFiledsItemEditing {
+export interface IFieldsItemEditing {
   id?: number | string;
   name: string;
   alias: string;
@@ -29,6 +29,13 @@ export interface IFiledsItemEditing {
   selected: boolean; // 枚举值是否多选
   status?: string;
   isShowBatchSet?: boolean;
+}
+
+// 导入表格文件
+export interface ILocalTableImportItem {
+  table_name: string;
+  rows: any;
+  columns: IFieldItem[] | IFieldsItemEditing[];
 }
 
 // 托管表格列表
@@ -61,19 +68,20 @@ export interface IEnumItem {
   id?: number;
 }
 
-// 托管表格新建表单编辑
-export interface ILocalTableFormEditing {
+// 托管表格新建表单基本信息
+export interface ILocalTableBase {
   table_name: string;
   table_memo: string;
   visible_range: string[];
-  columns: IFiledsItemEditing[];
+}
+
+// 托管表格新建表单编辑
+export interface ILocalTableFormEditing extends ILocalTableBase {
+  columns: IFieldsItemEditing[];
 }
 
 // 托管表格新建表单
-export interface ILocalTableForm {
-  table_name: string;
-  table_memo: string;
-  visible_range: string[];
+export interface ILocalTableForm extends ILocalTableBase {
   columns: IFieldItem[];
 }
 
