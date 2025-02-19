@@ -3,7 +3,9 @@
     <form-option
       ref="fileOptionRef"
       :directory-show="false"
-      :config-show="(['python', 'go'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'"
+      :config-show="
+        (['python', 'go', 'trpc'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'
+      "
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       :template-name="props.templateName"
@@ -38,6 +40,7 @@
         class="preview-component"
         :style="{ height: `${templateConfig.codePreviewHeight}px` }"
         :code-val="replaceVal"
+        :config-val="newConfigData"
         :variables="variables"
         :language="codeLanguage"
         @change="(val: string) => (copyReplaceVal = val)" />
@@ -74,6 +77,7 @@
   const codeVal = ref(''); // 存储yaml字符原始值
   const replaceVal = ref(''); // 替换后的值
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据
+  const newConfigData = ref('');
   const variables = ref<IVariableEditParams[]>();
   const activeTab = ref(0); // 激活tab索引
   const topTipShow = ref(true);
@@ -106,6 +110,19 @@
           codePreviewHeight: 640,
         };
       case 'go':
+        if (!activeTab.value) {
+          return {
+            topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
+            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1614 : 968,
+          };
+        }
+        return {
+          topTip: t(
+            'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。',
+          ),
+          codePreviewHeight: 1250,
+        };
+      case 'trpc':
         if (!activeTab.value) {
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
@@ -169,6 +186,9 @@
     if (props.templateName === 'http') {
       return tabArr.value[activeTab.value].toLocaleLowerCase();
     }
+    if (props.templateName === 'trpc') {
+      return 'go';
+    }
     return props.templateName;
   });
 
@@ -201,19 +221,19 @@
           ? `{${data.labelArr.map((item: string) => `{${item.split(':').join(', ')}}`).join(', ')}}`
           : '{}';
         break;
-      case 'http':
-        labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
-        if (!activeTab.value) {
-          // 文件型的shell需要添加转义符
-          labelArrType =
-            basicInfo?.serviceType.value === 'file'
-              ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
-                ' ',
-                '',
-              )
-              : `'${labelArrType}'`;
-        }
-        break;
+      // case 'http':
+      //   labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
+      //   if (!activeTab.value) {
+      //     // 文件型的shell需要添加转义符
+      //     labelArrType =
+      //       basicInfo?.serviceType.value === 'file'
+      //         ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
+      //             ' ',
+      //             '',
+      //           )
+      //         : `'${labelArrType}'`;
+      //   }
+      //   break;
       default:
         labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
         break;
@@ -328,6 +348,9 @@
     if (index === activeTab.value && codeVal.value) return;
     activeTab.value = index;
     const newTemplateData = await changeTemData(props.templateName, index);
+    if (props.templateName === 'trpc') {
+      newConfigData.value = import('/src/assets/example-data/file-go-get.yaml?raw');
+    }
     codeVal.value = newTemplateData.default;
     replaceVal.value = newTemplateData.default;
     getOptionData(optionData.value);
@@ -351,6 +374,10 @@
         }
         return !methods
           ? import('/src/assets/example-data/kv-go-get.yaml?raw')
+          : import('/src/assets/example-data/kv-go-watch.yaml?raw');
+      case 'trpc':
+        return !methods
+          ? import('/src/assets/example-data/kv-trpc-get.yaml?raw')
           : import('/src/assets/example-data/kv-go-watch.yaml?raw');
       case 'java':
         return !methods

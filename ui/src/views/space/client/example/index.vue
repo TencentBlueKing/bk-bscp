@@ -53,6 +53,7 @@
   const kvTypeArr = [
     { name: 'Python SDK', val: 'python' },
     { name: 'Go SDK', val: 'go' },
+    { name: 'tRPC SDK', val: 'trpc' },
     { name: 'Java SDK', val: 'java' },
     { name: 'C++ SDK', val: 'cpp' },
     { name: t('HTTP(S)接口调用'), val: 'http' },
