@@ -7,8 +7,11 @@
     show-overflow
     :header-row-height="50"
     :edit-config="{ mode: 'cell', trigger: 'click', showStatus: true }"
-    :row-config="{ height: 42 }"
+    :cell-config="{ height: 42 }"
     :scroll-y="{ enabled: true, gt: 0 }"
+    :scroll-x="{ enabled: true, gt: 0 }"
+    show-header-overflow
+    show-footer-overflow
     :row-class-name="rowClassName"
     :cell-class-name="cellClassName"
     :edit-rules="validRules"
@@ -360,10 +363,12 @@
           }
         }
         .vxe-number-input {
-          text-decoration: line-through;
-          .vxe-number-input--inner,
           .vxe-number-input--suffix {
             background: #fff;
+          }
+          .vxe-number-input--inner {
+            background: #fff;
+            text-decoration: line-through;
           }
         }
         .vxe-body--column:not(.primary) {
@@ -376,9 +381,11 @@
             }
           }
           .vxe-number-input {
-            text-decoration: line-through;
-            .vxe-number-input--inner,
             .vxe-number-input--suffix {
+              background: #ffeeee;
+            }
+            .vxe-number-input--inner {
+              text-decoration: line-through;
               background: #ffeeee;
             }
           }

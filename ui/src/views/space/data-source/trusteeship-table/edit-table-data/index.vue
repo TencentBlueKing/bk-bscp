@@ -5,7 +5,7 @@
         <div class="content-header">
           <div class="operation-btns">
             <bk-button @click="handleAddData">{{ $t('新增') }}</bk-button>
-            <bk-button>{{ $t('导入') }}</bk-button>
+            <bk-button @click="isShowImportTable = true">{{ $t('导入') }}</bk-button>
           </div>
           <bk-input class="search-input">
             <template #suffix>
@@ -31,7 +31,7 @@
       </div>
     </template>
   </DetailLayout>
-  <ImportTable v-model:show="isShowImportTable" />
+  <ImportTable v-model:show="isShowImportTable" :bk-biz-id="spaceId" :id="tableId"/>
 </template>
 
 <script lang="ts" setup>

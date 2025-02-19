@@ -205,6 +205,7 @@
     // 标记新的主键
     item.primary = true;
     item.unique = true;
+    item.not_null = true;
     item.column_type = 'number';
 
     // 将选中的项移到第一个位置

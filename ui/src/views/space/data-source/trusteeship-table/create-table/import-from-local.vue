@@ -52,6 +52,7 @@
         v-if="selectSheet.table_name"
         ref="tableRef"
         :list="selectSheet!.columns as IFieldsItemEditing[]"
+        :is-import="false"
         @change="handleFieldsChange" />
       <bk-exception
         v-else
@@ -66,10 +67,10 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { Upload, ExcelFill, Done, Error } from 'bkui-vue/lib/icon';
-  import { importTable } from '../../../../../../api/kv-table';
-  import { ILocalTableImportItem, IFieldsItemEditing } from '../../../../../../../types/kv-table';
-  import FieldsTable from './../../components/fields-table/upload.vue';
-  import Card from '../../../component/card.vue';
+  import { importTable } from '../../../../../api/kv-table';
+  import { ILocalTableImportItem, IFieldsItemEditing } from '../../../../../../types/kv-table';
+  import FieldsTable from './../components/fields-table/upload.vue';
+  import Card from '../../component/card.vue';
 
   interface IUploadFile {
     name: string;
@@ -134,6 +135,7 @@
         if (index === 0) {
           item.primary = true;
           item.unique = true;
+          item.not_null = true;
         }
         let default_value: string | string[] | undefined;
         let enum_value;

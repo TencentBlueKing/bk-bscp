@@ -12,8 +12,9 @@
       <div class="label">{{ $t('选择文件') }}</div>
       <div class="upload-wrap">
         <bk-upload
-          class="config-uploader"
+          class="file-uploader"
           theme="button"
+          accept=".xlsx, .xls, .csv, .sql"
           :size="100000"
           :multiple="false"
           :custom-request="handleFileUpload">
@@ -46,10 +47,17 @@
         </div>
       </div>
     </div>
-    <div class="sheet">
+    <div v-if="uploadFile && uploadFile.status === 'success'" class="sheet">
       <div class="label">{{ $t('工作表') }}</div>
       <div class="sheet-content">
-        <bk-select class="sheet-select"></bk-select>
+        <bk-select
+          :model-value="selectSheet?.table_name"
+          class="sheet-select"
+          :clearable="false"
+          :filterable="false"
+          @change="handleSelectSheet">
+          <bk-option v-for="item in sheetList" :id="item.table_name" :key="item.table_name" :name="item.table_name" />
+        </bk-select>
         <div class="sheet-status">
           <div v-if="sheetStatus === 'loading'" class="status-content">
             <Spinner class="spinner-icon icon" />
@@ -65,9 +73,9 @@
           </div>
         </div>
       </div>
+      <bk-checkbox v-model="isClearData" class="clear-data"> {{ $t('导入前清空原有数据') }} </bk-checkbox>
     </div>
-    <bk-checkbox v-model="isClearData"> {{ $t('导入前清空原有数据') }} </bk-checkbox>
-    <div class="fields-setting">
+    <div v-if="selectSheet.table_name" class="fields-setting">
       <div class="header">
         <span class="title">{{ $t('字段设置') }}</span>
         <span class="info">
@@ -82,8 +90,8 @@
           <span>。</span>
         </span>
       </div>
-      <div class="content">
-        <UploadFieldsTable :list="filedsList" />
+      <div class="fields">
+        <UploadFieldsTable :list="selectSheet.columns" :is-import="true" @change="handleChangeFields" />
       </div>
     </div>
     <template #footer>
@@ -99,66 +107,149 @@
   import { ref } from 'vue';
   import { Upload, ExcelFill, Done, Error, Success, Warn, Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import UploadFieldsTable from '../components/fields-table/upload.vue';
-  import { IFieldItem } from '../../../../../../types/kv-table';
+  import { ILocalTableImportItem, IFieldsItemEditing } from '../../../../../../types/kv-table';
+  import { importTable } from '../../../../../api/kv-table';
 
   const props = defineProps<{
     show: boolean;
+    bkBizId: string;
+    id: number;
   }>();
 
   const emits = defineEmits(['update:show']);
   const sheetStatus = ref('warn');
   const isClearData = ref(false);
-
-  const uploadFile = ref({
-    name: 'aaa',
-    status: 'success',
-    progress: 100,
+  const sheetList = ref<ILocalTableImportItem[]>([]);
+  const selectSheet = ref<ILocalTableImportItem>({
+    table_name: '',
+    rows: [],
+    columns: [],
   });
-  const filedsList = ref<IFieldItem[]>([
-    {
-      fieldsName: 'ID',
-      showName: '唯一ID',
-      type: '',
-      required: false,
-      default: '',
-      primaryKey: true,
-      nonEmpty: false,
-      only: false,
-      autoIncrement: false,
-      readonly: false,
-      isShowSettingEnumPopover: false,
-    },
-    {
-      fieldsName: 'name',
-      showName: '姓名',
-      type: '',
-      required: false,
-      default: '',
-      primaryKey: true,
-      nonEmpty: false,
-      only: false,
-      autoIncrement: false,
-      readonly: false,
-      isShowSettingEnumPopover: false,
-      status: 'new',
-    },
-    {
-      fieldsName: 'age',
-      showName: '年龄',
-      type: '',
-      required: false,
-      default: '',
-      primaryKey: true,
-      nonEmpty: false,
-      only: false,
-      autoIncrement: false,
-      readonly: false,
-      isShowSettingEnumPopover: false,
-      status: 'delete',
-    },
-  ]);
 
-  const handleFileUpload = () => {};
+  const uploadFile = ref();
+
+  const handleFileUpload = async (option: { file: File }) => {
+    try {
+      sheetList.value = [];
+      selectSheet.value = {
+        table_name: '',
+        rows: [],
+        columns: [],
+      };
+      uploadFile.value = {
+        name: option.file.name,
+        status: 'uploading',
+        progress: 0,
+      };
+      sheetList.value = await importTable(
+        props.bkBizId,
+        props.id,
+        option.file.name.split('.').pop() as string,
+        option.file,
+        (progress: number) => {
+          uploadFile.value!.progress = progress;
+        },
+      );
+      translateFileds();
+      uploadFile.value!.status = 'success';
+      selectSheet.value = sheetList.value[0];
+      // handleChange();
+    } catch (error) {
+      console.error(error);
+      uploadFile.value!.status = 'fail';
+    }
+  };
+
+  // 接口数据转表单数据
+  const translateFileds = () => {
+    sheetList.value.forEach((sheet: ILocalTableImportItem) => {
+      sheet.columns = sheet.columns.map((item: any, index: number) => {
+        if (index === 0) {
+          item.primary = true;
+          item.unique = true;
+        }
+        let default_value: string | string[] | undefined;
+        let enum_value;
+        if (item.column_type === 'enum' && item.enum_value !== '') {
+          enum_value = JSON.parse(item.enum_value);
+          if (enum_value.every((item: any) => typeof item === 'string')) {
+            // 字符串数组，显示名和实际值按一致处理
+            enum_value = enum_value.map((value: string) => {
+              return {
+                label: value,
+                value,
+              };
+            });
+          }
+        } else {
+          enum_value = item.enum_value;
+        }
+        if (item.column_type === 'enum') {
+          const isMultiSelect = item.selected; // 是否多选
+          const hasDefaultValue = !!item.default_value;
+
+          if (isMultiSelect) {
+            // 多选情况下，解析为数组或赋值为空数组
+            default_value = hasDefaultValue ? JSON.parse(item.default_value as string) : [];
+          } else {
+            // 单选情况下，直接赋值或设置为 undefined select组件tag模式设置空字符串会有空tag
+            default_value = hasDefaultValue ? item.default_value : undefined;
+          }
+        } else {
+          // 非枚举类型直接赋值
+          default_value = item.default_value;
+        }
+        return {
+          ...item,
+          enum_value,
+          default_value,
+          id: Date.now() + index,
+        };
+      });
+    });
+  };
+
+  const handleSelectSheet = (sheet: string) => {
+    selectSheet.value = sheetList.value.find((item) => item.table_name === sheet) as ILocalTableImportItem;
+  };
+
+  const handleChangeFields = (val: IFieldsItemEditing[]) => {
+    selectSheet.value.columns = val;
+  };
+
+  // 表单数据转接口数据
+  // const handleChange = () => {
+  //   const columns = selectSheet.value.columns.map((item: any) => {
+  //     let default_value;
+  //     if (item.column_type === 'enum' && item.selected && item.default_value) {
+  //       default_value = JSON.stringify(item.default_value);
+  //     } else {
+  //       default_value = String(item.default_value);
+  //       if (item.default_value === null) {
+  //         default_value = '';
+  //       }
+  //     }
+  //     let enum_value;
+  //     if (item.column_type === 'enum' && Array.isArray(item.enum_value)) {
+  //       enum_value = JSON.stringify(item.enum_value);
+  //     } else {
+  //       enum_value = '';
+  //     }
+  //     return {
+  //       default_value,
+  //       enum_value, // 枚举值设置内容
+  //       name: item.name,
+  //       alias: item.alias,
+  //       primary: item.primary,
+  //       column_type: item.column_type,
+  //       not_null: item.not_null,
+  //       unique: item.unique,
+  //       read_only: item.read_only,
+  //       auto_increment: item.auto_increment,
+  //       selected: item.selected,
+  //     };
+  //   });
+  // };
 
   const handleBeforeClose = () => {};
 
@@ -191,6 +282,12 @@
           margin-left: 4px;
           cursor: pointer;
         }
+      }
+    }
+    .file-uploader {
+      margin-top: 6px;
+      :deep(.bk-upload-list) {
+        display: none;
       }
     }
     .file-wrapper {
@@ -282,7 +379,11 @@
         }
       }
     }
+    .bk-checkbox {
+      margin-top: 21px;
+    }
   }
+
   .fields-setting {
     margin-top: 24px;
     border-top: 1px solid #dcdee5;
@@ -317,6 +418,10 @@
         }
       }
     }
+  }
+  .fields {
+    max-height: 280px;
+    overflow: auto;
   }
 </style>
 

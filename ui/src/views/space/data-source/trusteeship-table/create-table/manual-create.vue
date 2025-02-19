@@ -19,10 +19,10 @@
 
 <script lang="ts" setup>
   import { ref, watch, nextTick } from 'vue';
-  import { IFieldsItemEditing, IFieldItem } from '../../../../../../../types/kv-table';
+  import { IFieldsItemEditing, IFieldItem } from '../../../../../../types/kv-table';
   import { Plus } from 'bkui-vue/lib/icon';
-  import Card from '../../../component/card.vue';
-  import FieldsTable from './../../components/fields-table/manual.vue';
+  import Card from '../../component/card.vue';
+  import FieldsTable from './../components/fields-table/manual.vue';
 
   const props = defineProps<{
     bkBizId: string;
@@ -53,7 +53,7 @@
       column_type: fieldsColumns.value.length === 0 ? 'number' : 'string',
       default_value: '',
       primary: fieldsColumns.value.length === 0,
-      not_null: false,
+      not_null: fieldsColumns.value.length === 0,
       unique: fieldsColumns.value.length === 0,
       auto_increment: false,
       read_only: false,

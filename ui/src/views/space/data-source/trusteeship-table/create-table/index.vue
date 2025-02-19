@@ -63,8 +63,8 @@
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
-  import ManualCreate from './manual-create/index.vue';
-  import ImportFormLocal from './import-from-local/index.vue';
+  import ManualCreate from './manual-create.vue';
+  import ImportFormLocal from './import-from-local.vue';
   import { useI18n } from 'vue-i18n';
   import BkMessage from 'bkui-vue/lib/message';
   import baseInfoForm from '../components/base-info-form.vue';

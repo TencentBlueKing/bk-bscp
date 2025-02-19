@@ -18,22 +18,33 @@
         :move="handleDrag"
         @end="emits('change', fieldsList)">
         <template #item="{ element, index }">
-          <tr>
+          <tr :class="[isImport ? element.status : '']">
             <td :class="getCellCLs(index, 'alias')">
               <bk-input
                 v-model="element.alias"
                 disabled
-                v-bk-tooltips="{ content: $t('显示名重名，请修改源文件后重新上传'), disabled: (!errors[index]?.alias) }">
+                v-bk-tooltips="{
+                  content: $t('显示名重名，请修改源文件后重新上传'),
+                  disabled: displayNameIsRepeat(index),
+                }">
                 <template #prefix>
                   <span :class="['drag-icon', { disabled: element.primary }]">
                     <grag-fill v-show="!element.primary" />
                   </span>
+                </template>
+                <template v-if="isImport && element.status !== 'REVISE' && element.status !== 'UNCHANGE'" #suffix>
+                  <div class="tag-wrap">
+                    <bk-tag size="small" :theme="element.status === 'ADD' ? 'success' : 'danger'">
+                      {{ element.status === 'ADD' ? $t('新增') : $t('删除') }}
+                    </bk-tag>
+                  </div>
                 </template>
               </bk-input>
             </td>
             <td :class="getCellCLs(index, 'name')">
               <bk-input
                 v-model="element.name"
+                :disabled="element.status === 'DELETE'"
                 @change="emits('change', fieldsList)"
                 @blur="validateField(index, 'name')" />
             </td>
@@ -45,7 +56,7 @@
                 auto-focus
                 :filterable="false"
                 :clearable="false"
-                :disabled="element.primary"
+                :disabled="element.primary || element.status === 'DELETE'"
                 @change="handleSelectType(element, $event)"
                 @blur="validateField(index, 'column_type')">
                 <bk-option v-for="type in dataType" :id="type.value" :key="type.value" :name="type.label" />
@@ -55,6 +66,7 @@
               <bk-input
                 v-if="element.column_type !== 'enum'"
                 v-model="element.default_value"
+                :disabled="element.status === 'DELETE'"
                 :type="element.column_type === 'number' ? 'number' : 'text'"
                 @change="emits('change', fieldsList)" />
               <div v-else class="enum-type">
@@ -66,6 +78,7 @@
                   :no-data-text="$t('请先设置枚举值')"
                   :popover-options="{ width: 240 }"
                   :clearable="element.selected"
+                  :disabled="element.status === 'DELETE'"
                   @change="emits('change', fieldsList)">
                   <bk-option
                     v-for="(enumItem, i) in element.enum_value"
@@ -85,22 +98,32 @@
                 :class="['radio-input', { checked: element.primary }]"
                 type="radio"
                 :checked="element.primary"
+                :disabled="element.status === 'DELETE'"
                 @change="handleChangePrimaryKey(element, index)" />
             </td>
             <td class="check">
-              <bk-checkbox v-model="element.not_null" @change="emits('change', fieldsList)"></bk-checkbox>
+              <bk-checkbox
+                v-model="element.not_null"
+                :disabled="element.status === 'DELETE'"
+                @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
               <bk-checkbox
                 v-model="element.unique"
-                :disabled="element.primary"
+                :disabled="element.primary || element.status === 'DELETE'"
                 @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
-              <bk-checkbox v-model="element.auto_increment" @change="emits('change', fieldsList)"></bk-checkbox>
+              <bk-checkbox
+                v-model="element.auto_increment"
+                :disabled="element.status === 'DELETE'"
+                @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
             <td class="check">
-              <bk-checkbox v-model="element.read_only" @change="emits('change', fieldsList)"></bk-checkbox>
+              <bk-checkbox
+                v-model="element.read_only"
+                :disabled="element.status === 'DELETE'"
+                @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
           </tr>
         </template>
@@ -126,11 +149,11 @@
   const props = withDefaults(
     defineProps<{
       list: IFieldsItemEditing[];
-      isEdit?: boolean; // 是否为编辑态
+      imImport?: boolean; // 是否是导入
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
-      isEdit: false,
+      imImport: false,
     },
   );
 
@@ -196,6 +219,7 @@
     // 标记新的主键
     item.primary = true;
     item.unique = true;
+    item.not_null = true;
     item.column_type = 'number';
 
     // 将选中的项移到第一个位置
@@ -292,15 +316,17 @@
 
   const getCellCLs = (index: number, field: string) => {
     const error = errors.value[index]?.[field] ?? false;
-    const cls = ['edit-cell', { error: errors.value[index]?.[field] ?? false }];
     if (field === 'alias') {
-      cls.push('fields-alias-td');
       return ['fields-alias-td', 'edit-cell', { error }];
     }
     if (field === 'column_type') {
       return { error };
     }
     return ['edit-cell', { error }];
+  };
+
+  const displayNameIsRepeat = (index: number) => {
+    return !errors.value[index]?.alias;
   };
 
   defineExpose({
@@ -311,8 +337,27 @@
 <style scoped lang="scss">
   .fileds-table {
     width: 100%;
+    max-height: 600px;
+    overflow: auto;
     border: 1px solid #dcdee5;
     border-collapse: collapse;
+    .DELETE,
+    .ADD {
+      td:not(.fields-alias-td) {
+        :deep(.bk-input) {
+          .bk-input--text,
+          & {
+            background: inherit;
+          }
+        }
+      }
+    }
+    .DELETE {
+      background: #ffeeee;
+    }
+    .ADD {
+      background: #f2fff4;
+    }
     th,
     td {
       position: relative;
@@ -372,7 +417,6 @@
     }
   }
   .fields-alias-td {
-    align-items: center;
     height: 42px;
     .drag-icon {
       display: flex;
@@ -384,6 +428,11 @@
       &.disabled {
         margin-left: 29px;
       }
+    }
+    .tag-wrap {
+      display: flex;
+      align-items: center;
+      margin-right: 4px;
     }
   }
 
