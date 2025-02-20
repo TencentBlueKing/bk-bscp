@@ -248,9 +248,9 @@
           labelArrType =
             basicInfo?.serviceType.value === 'file'
               ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
-                  ' ',
-                  '',
-                )
+                ' ',
+                '',
+              )
               : `'${labelArrType}'`;
         }
         break;
