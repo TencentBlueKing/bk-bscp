@@ -73,6 +73,14 @@ type FeatureFlags struct {
 	BizView bool `json:"BIZ_VIEW"`
 	// ResourceLimit 业务资源限制
 	ResourceLimit cc.ResourceLimit `json:"RESOURCE_LIMIT"`
+	// TrpcGoPlugin trpc go plugin
+	TrpcGoPlugin TrpcGoPlugin `json:"TRPC_GO_PLUGIN"`
+}
+
+// TrpcGoPlugin trpc go plugin
+type TrpcGoPlugin struct {
+	Enable       bool   `json:"enable"`
+	ModuleDomain string `json:"module_domain"`
 }
 
 // FeatureFlagsHandler 特性开关接口
@@ -106,6 +114,8 @@ func FeatureFlagsHandler(w http.ResponseWriter, r *http.Request) {
 		// NOCC:golint/todo(忽略)
 		// nolint TODO：其他资源限制
 	}
+
+	featureFlags.TrpcGoPlugin = TrpcGoPlugin(cc.ApiServer().FeatureFlags.TrpcGoPlugin)
 
 	render.Render(w, r, rest.OKRender(featureFlags))
 }
