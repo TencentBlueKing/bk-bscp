@@ -8,14 +8,13 @@ plugins:                                     # plugin configuration.
   config:
     bscp:
       providers:
-        - name: bscp-example-kv # provider 名称
-          biz: 1000 # 业务ID
-          app: example-app # 服务名称
+        - name: "{{ .Bk_Bscp_Variable_KeyName }}" # provider 名称
+          biz: {{ .Bk_Bscp_Variable_BkBizId }} # 业务ID
+          app: "{{ .Bk_Bscp_Variable_ServiceName }}" # 服务名称
           labels: # 客户端标签，用于灰度发布
-            "env": "prod"
-            "key": "value"
-          token: abcdefghijklmnopqrstuvwxyz123456 # 服务密钥
+            {{ .Bk_Bscp_Variable_Leabels }}
+          token: "{{ .Bk_Bscp_Variable_ClientKey }}" # 服务密钥
           # BSCP 订阅地址，- 自研上云：bscp-feed.open.woa.com:9510 - 新加坡：bscp-feed.sg.crosgame.com:9510
-          feed_addr: bscp-feed.open.woa.com:9510
+          feed_addr: "{{ .Bk_Bscp_Variable_FEED_ADDR }}"
           # 服务类型，支持 kv
           type: kv

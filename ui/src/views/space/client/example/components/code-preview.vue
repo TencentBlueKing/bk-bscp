@@ -16,23 +16,6 @@
       :always-consume-mouse-wheel="false"
       :contextmenu="false"
       @update:model-value="emits('change', $event)" />
-    <CodeEditor
-      v-show="props.configVal"
-      ref="codeEditorRef"
-      :model-value="props.configVal"
-      :language="language"
-      :editable="false"
-      line-numbers="off"
-      :minimap="false"
-      :vertical-scrollbar-size="0"
-      :horizon-scrollbar-size="0"
-      render-line-highlight="none"
-      :render-indent-guides="false"
-      :variables="props.variables"
-      :folding="false"
-      :always-consume-mouse-wheel="false"
-      :contextmenu="false"
-      @update:model-value="emits('change', $event)" />
   </div>
 </template>
 <script lang="ts" setup>
@@ -43,7 +26,6 @@
   const props = defineProps<{
     language: string;
     codeVal: string;
-    configVal?: string;
     variables?: IVariableEditParams[];
   }>();
 

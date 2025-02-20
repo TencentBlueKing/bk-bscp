@@ -5,11 +5,11 @@ import (
 	"context"
 	"sync/atomic"
 
-	"git.code.oa.com/trpc-go/trpc-go"
-	"git.code.oa.com/trpc-go/trpc-go/config"
-	"git.code.oa.com/trpc-go/trpc-go/log"
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go"
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go/config"
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go/log"
 
-	bscpconfig "git.woa.com/trpc-go/trpc-plugin/trpc-config-bscp"
+	bscpconfig "{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-plugin/trpc-config-bscp"
 )
 
 /*

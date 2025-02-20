@@ -1082,6 +1082,7 @@ export default {
   '客户端下载文件时可以选择将文件保存为Linux格式（使用LF换行符）或Windows格式（使用CRLF换行符）\n服务端默认使用Linux换行符进行保存，如果选择将文件保存为Windows格式，可能导致客户端文件的MD5值与服务端的MD5值不一致': '客户端下载文件时可以选择将文件保存为Linux格式（使用LF换行符）或Windows格式（使用CRLF换行符）\n服务端默认使用Linux换行符进行保存，如果选择将文件保存为Windows格式，可能导致客户端文件的MD5值与服务端的MD5值不一致',
   此SDK暂不支持method方法拉取配置文件: '此SDK暂不支持{method}方法拉取配置文件',
   全部配置项: '全部配置项',
+  'tRPC配置示例中的./trpc_go.yaml文件': 'tRPC配置示例中的./trpc_go.yaml文件',
 
   // 公共组件
   页面不存在: '页面不存在',
