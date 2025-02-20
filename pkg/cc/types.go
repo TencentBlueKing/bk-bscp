@@ -45,6 +45,8 @@ type FeatureFlags struct {
 	BizView FeatureBizView `json:"biz_view" yaml:"BIZ_VIEW"`
 	// ResourceLimit 业务资源限制
 	ResourceLimit FeatureResourceLimit `json:"resource_limit" yaml:"RESOURCE_LIMIT"`
+	// TrpcGoPlugin trpc go plugin
+	TrpcGoPlugin TrpcGoPlugin `json:"trpc_go_plugin" yaml:"TRPC_GO_PLUGIN"`
 }
 
 // FeatureBizView 业务白名单
@@ -59,6 +61,12 @@ type FeatureResourceLimit struct {
 	Default ResourceLimit `json:"default" yaml:"default"`
 	// map[bizID]ResourceLimit
 	Spec map[string]ResourceLimit `json:"spec" yaml:"spec"`
+}
+
+// TrpcGoPlugin trpc go plugin
+type TrpcGoPlugin struct {
+	Enable       bool   `yaml:"enable"`
+	ModuleDomain string `yaml:"moduleDomain"`
 }
 
 // ResourceLimit 资源限制配置项
