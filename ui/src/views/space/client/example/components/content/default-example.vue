@@ -241,19 +241,19 @@
           ? `{${data.labelArr.map((item: string) => `{${item.split(':').join(', ')}}`).join(', ')}}`
           : '{}';
         break;
-      // case 'http':
-      //   labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
-      //   if (!activeTab.value) {
-      //     // 文件型的shell需要添加转义符
-      //     labelArrType =
-      //       basicInfo?.serviceType.value === 'file'
-      //         ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
-      //             ' ',
-      //             '',
-      //           )
-      //         : `'${labelArrType}'`;
-      //   }
-      //   break;
+      case 'http':
+        labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
+        if (!activeTab.value) {
+          // 文件型的shell需要添加转义符
+          labelArrType =
+            basicInfo?.serviceType.value === 'file'
+              ? `'\\${labelArrType.slice(0, labelArrType.length - 1)}\\${labelArrType.slice(labelArrType.length - 1, labelArrType.length)}'`.replaceAll(
+                  ' ',
+                  '',
+                )
+              : `'${labelArrType}'`;
+        }
+        break;
       case 'trpc':
         data.labelArr = data.labelArr.map((str: string, index: number) => (index === 0 ? str : ' '.repeat(12) + str));
         labelArrType = data.labelArr.length ? data.labelArr.join('\n') : '';
