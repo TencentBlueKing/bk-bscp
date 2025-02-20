@@ -3,7 +3,9 @@
     <form-option
       ref="fileOptionRef"
       :directory-show="false"
-      :config-show="(['python', 'go'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'"
+      :config-show="
+        (['python', 'go', 'trpc'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'
+      "
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       :template-name="props.templateName"
@@ -41,6 +43,20 @@
         :variables="variables"
         :language="codeLanguage"
         @change="(val: string) => (copyReplaceVal = val)" />
+      <div v-if="templateName === 'trpc'">
+        <bk-alert class="alert-tips-wrap" theme="info">
+          <div class="alert-tips">
+            <span>{{ $t('tRPC配置示例中的./trpc_go.yaml文件') }}</span>
+            <close-line class="close-line" @click="topTipShow = false" />
+          </div>
+        </bk-alert>
+        <code-preview
+          class="preview-component"
+          :style="{ height: '440px' }"
+          :code-val="replaceConfigVal"
+          :variables="variables"
+          :language="codeLanguage" />
+      </div>
     </div>
   </section>
 </template>
@@ -54,6 +70,8 @@
   import BkMessage from 'bkui-vue/lib/message';
   import FormOption from '../form-option.vue';
   import codePreview from '../code-preview.vue';
+  import useGlobalStore from '../../../../../../store/global';
+  import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
 
@@ -63,6 +81,9 @@
   }>();
 
   const emits = defineEmits(['selected-key-data']);
+
+  const globalStore = useGlobalStore();
+  const { spaceFeatureFlags } = storeToRefs(globalStore);
 
   const basicInfo = inject<{ serviceName: Ref<string>; serviceType: Ref<string> }>('basicInfo');
   const { t } = useI18n();
@@ -74,6 +95,8 @@
   const codeVal = ref(''); // 存储yaml字符原始值
   const replaceVal = ref(''); // 替换后的值
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据
+  const configVal = ref('');
+  const replaceConfigVal = ref('');
   const variables = ref<IVariableEditParams[]>();
   const activeTab = ref(0); // 激活tab索引
   const topTipShow = ref(true);
@@ -110,6 +133,19 @@
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
             codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1614 : 968,
+          };
+        }
+        return {
+          topTip: t(
+            'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。',
+          ),
+          codePreviewHeight: 1250,
+        };
+      case 'trpc':
+        if (!activeTab.value) {
+          return {
+            topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
+            codePreviewHeight: 1700,
           };
         }
         return {
@@ -169,6 +205,9 @@
     if (props.templateName === 'http') {
       return tabArr.value[activeTab.value].toLocaleLowerCase();
     }
+    if (props.templateName === 'trpc') {
+      return 'go';
+    }
     return props.templateName;
   });
 
@@ -176,6 +215,7 @@
     () => props.templateName,
     (newV) => {
       tabArr.value = newV === 'http' ? ['Shell', 'Python'] : [t('Get方法'), t('Watch方法')];
+      tabArr.value = newV === 'trpc' ? ['Get方法'] : tabArr.value;
       codeVal.value = '';
       nextTick(() => handleTab());
     },
@@ -214,6 +254,10 @@
               : `'${labelArrType}'`;
         }
         break;
+      case 'trpc':
+        data.labelArr = data.labelArr.map((str: string, index: number) => (index === 0 ? str : ' '.repeat(12) + str));
+        labelArrType = data.labelArr.length ? data.labelArr.join('\n') : '';
+        break;
       default:
         labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
         break;
@@ -223,6 +267,7 @@
       labelArrType,
     };
     replaceVal.value = codeVal.value; // 数据重置
+    replaceConfigVal.value = configVal.value;
     updateVariables(); // 表单数据更新，配置需要同时更新
     nextTick(() => {
       // 等待monaco渲染完成(高亮)再改固定值
@@ -230,15 +275,31 @@
     });
   };
   const updateReplaceVal = () => {
+    // 获取初始值
     let updateString = replaceVal.value;
-    let feedAddrVal = (window as any).GRPC_ADDR;
-    if (props.templateName === 'http') {
-      // http的host特殊处理
-      feedAddrVal = (window as any).HTTP_ADDR;
+    const feedAddrVal = props.templateName === 'http' ? (window as any).HTTP_ADDR : (window as any).GRPC_ADDR;
+    // 定义替换函数
+    const replacePlaceholders = (str: string, feedAddr: string) => {
+      return str
+        .replace('{{ .Bk_Bscp_Variable_BkBizId }}', bkBizId.value)
+        .replace('{{ .Bk_Bscp_Variable_ServiceName }}', basicInfo!.serviceName.value)
+        .replaceAll('{{ .Bk_Bscp_Variable_FEED_ADDR }}', feedAddr);
+    };
+    // 更新 replaceVal
+    updateString = replacePlaceholders(updateString, feedAddrVal);
+    if (props.templateName === 'trpc') {
+      updateString = updateString.replaceAll(
+        '{{ .Bk_Bscp_Variable_dependency }}',
+        spaceFeatureFlags.value.TRPC_GO_PLUGIN.module_domain,
+      );
     }
-    updateString = updateString.replace('{{ .Bk_Bscp_Variable_BkBizId }}', bkBizId.value);
-    updateString = updateString.replace('{{ .Bk_Bscp_Variable_ServiceName }}', basicInfo!.serviceName.value);
-    replaceVal.value = updateString.replaceAll('{{ .Bk_Bscp_Variable_FEED_ADDR }}', feedAddrVal);
+    replaceVal.value = updateString;
+    // 更新 configVal（仅针对 trpc 模板）
+    if (props.templateName === 'trpc') {
+      let updateConfigString = configVal.value;
+      updateConfigString = replacePlaceholders(updateConfigString, feedAddrVal);
+      replaceConfigVal.value = updateConfigString;
+    }
   };
   const updateVariables = () => {
     variables.value = [
@@ -330,6 +391,12 @@
     const newTemplateData = await changeTemData(props.templateName, index);
     codeVal.value = newTemplateData.default;
     replaceVal.value = newTemplateData.default;
+    if (props.templateName === 'trpc') {
+      const newConfigData = await import('/src/assets/example-data/kv-trpc-get-config.yaml?raw');
+      configVal.value = newConfigData.default;
+      replaceConfigVal.value = newConfigData.default;
+    }
+
     getOptionData(optionData.value);
   };
   // 键值型数据模板切换
@@ -352,6 +419,10 @@
         return !methods
           ? import('/src/assets/example-data/kv-go-get.yaml?raw')
           : import('/src/assets/example-data/kv-go-watch.yaml?raw');
+      case 'trpc':
+        return !methods
+          ? import('/src/assets/example-data/kv-trpc-get.yaml?raw')
+          : import('/src/assets/example-data/kv-trpc-get-config.yaml?raw');
       case 'java':
         return !methods
           ? import('/src/assets/example-data/kv-java-get.yaml?raw')

@@ -1,0 +1,84 @@
+// Program kv is a example for BSCP KV config.
+package main
+
+import (
+	"context"
+	"sync/atomic"
+
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go"
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go/config"
+	"{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-go/log"
+
+	bscpconfig "{{ .Bk_Bscp_Variable_dependency }}/trpc-go/trpc-plugin/trpc-config-bscp"
+)
+
+/*
+BSCP KV 类型服务配置示例
+监听远程配置变化，目前仅支持服务级别监听
+
+修改 trpc_go.yaml中biz, app, token, feed_addr为实际值;修改configKey为实际key后，运行go run main.go可运行示例代码
+*/
+
+const (
+	configKVName =  "{{ .Bk_Bscp_Variable_ServiceName }}" // 和配置中的 config.bscp.providers.name 保持一致
+	configKey    = {{ .Bk_Bscp_Variable_KeyName }}
+)
+
+var value atomic.Value
+
+// setupConfig 自动初始化配置, trpc.NewServer启动时无需此代码
+func setupConfig() {
+	// copy from https://git.woa.com/trpc-go/trpc-go/blob/v0.19.1/trpc.go#L27
+	// Load and parse the config file.
+	cfg, err := trpc.LoadConfig("./trpc_go.yaml")
+	if err != nil {
+		panic("load config fail: " + err.Error())
+	}
+
+	// Set the global config for other plugins to access.
+	trpc.SetGlobalConfig(cfg)
+
+	// Use the config to set global variables.
+	trpc.SetGlobalVariables(cfg)
+
+	// Setup plugins.
+	_, err = trpc.SetupPlugins(cfg.Plugins)
+	if err != nil {
+		panic("setup plugin fail: " + err.Error())
+	}
+}
+
+func main() {
+	setupConfig()
+
+	// example1, getKV
+	getKV()
+
+	// example2, watch app release changes
+	// ctx [WithIgnoreValue] watch 多个 key 时, 忽略 value 值，可单独通过[Get]方法获取
+	// if key = "*", watch all keys
+	// if key = "key", watch key changes
+	// if key = "key*", watch key prefix changes
+	// resp metadata contains key,md5,releaseID,releaseName
+	c, err := config.Get(configKVName).Watch(bscpconfig.WithIgnoreValue(context.TODO()), "*")
+	if err != nil {
+		log.Errorf("watch failed. error: %s", err.Error())
+		panic(err)
+	}
+
+	for resp := range c {
+		log.Infof("received app release change key: %s, event: %s", resp.MetaData()["key"], resp.Value())
+	}
+	log.Infof("watch config done")
+}
+
+// getKV 使用 BSCP 获取KV配置值
+func getKV() {
+	c, err := config.Get(configKVName).Get(context.TODO(), configKey)
+	if err != nil {
+		log.Errorf("get kv config %s failed: %s", configKey, err.Error())
+		panic(err)
+	}
+	value.Store(c.Value())
+	log.Infof("key: %s\nvalue: %s", configKey, c.Value())
+}

@@ -6,7 +6,9 @@
       <!-- 示例列表 -->
       <div class="type-wrap" v-show="serviceName && serviceType">
         <bk-menu :active-key="renderComponent" @update:active-key="changeTypeItem">
-          <bk-menu-item :need-icon="false" v-for="item in navList" :key="item.val"> {{ item.name }} </bk-menu-item>
+          <bk-menu-item v-for="item in navList" :key="item.val" :need-icon="false">
+            {{ item.name }}
+          </bk-menu-item>
         </bk-menu>
       </div>
     </div>
@@ -36,6 +38,8 @@
   import { computed, ref, nextTick, provide } from 'vue';
   import ServiceSelector from './components/service-selector.vue';
   import { useI18n } from 'vue-i18n';
+  import useGlobalStore from '../../../../store/global';
+  import { storeToRefs } from 'pinia';
   import ContainerExample from './components/content/container-example.vue';
   import NodeManaExample from './components/content/node-mana-example.vue';
   import CmdExample from './components/content/cmd-example.vue';
@@ -43,16 +47,27 @@
   import Exception from '../components/exception.vue';
 
   const { t } = useI18n();
-  const fileTypeArr = [
+
+  const globalStore = useGlobalStore();
+  const { spaceFeatureFlags } = storeToRefs(globalStore);
+
+  interface INavItem {
+    name: string;
+    val: string;
+    hidden?: boolean;
+  }
+
+  const fileTypeArr: INavItem[] = [
     { name: t('Sidecar容器'), val: 'sidecar' },
     { name: t('节点管理插件'), val: 'node' },
     { name: t('HTTP(S)接口调用'), val: 'http' }, // 文件型也有http(s)接口，页面结构和键值型一样，但脚本内容、部分文案不一样
     { name: t('命令行工具'), val: 'shell' },
     { name: 'Go SDK', val: 'go' },
   ];
-  const kvTypeArr = [
+  const kvTypeArr: INavItem[] = [
     { name: 'Python SDK', val: 'python' },
     { name: 'Go SDK', val: 'go' },
+    { name: 'tRPC SDK', val: 'trpc' },
     { name: 'Java SDK', val: 'java' },
     { name: 'C++ SDK', val: 'cpp' },
     { name: t('HTTP(S)接口调用'), val: 'http' },
@@ -68,7 +83,16 @@
   const loading = ref(true);
   provide('basicInfo', { serviceName, serviceType });
 
-  const navList = computed(() => (serviceType.value === 'file' ? fileTypeArr : kvTypeArr));
+  const navList = computed(() => {
+    if (serviceType.value === 'kv') {
+      // 如果 TRPC_GO_PLUGIN 未启用，移除 trpc 示例
+      if (!spaceFeatureFlags.value.TRPC_GO_PLUGIN.enable) {
+        return kvTypeArr.filter((_, index) => index !== 2);
+      }
+      return kvTypeArr;
+    }
+    return fileTypeArr;
+  });
   // 展示的示例组件与顶部提示语
   const currentTemplate = computed(() => {
     if (serviceType.value && !loading.value) {
