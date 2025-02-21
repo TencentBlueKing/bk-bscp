@@ -259,8 +259,8 @@
         }
         break;
       case 'trpc':
-        data.labelArr = data.labelArr.map((str: string, index: number) => (index === 0 ? str : ' '.repeat(15) + str));
-        labelArrType = data.labelArr.length ? data.labelArr.join('\n') : '';
+        data.labelArr = data.labelArr.map((str: string) => (' '.repeat(18) + str.split(':').join(': ')));
+        labelArrType = data.labelArr.length ? `\n${data.labelArr.join('\n')}` : '{}';
         break;
       default:
         labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';

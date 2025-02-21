@@ -22,8 +22,7 @@ plugins:
           # 服务名称
           app: "{{ .Bk_Bscp_Variable_ServiceName }}"
           # 客户端标签，用于灰度发布
-          # labels:
-               {{ .Bk_Bscp_Variable_Leabels }}
+          labels: {{ .Bk_Bscp_Variable_Leabels }}              
           # 服务密钥
           token: {{ .Bk_Bscp_Variable_ClientKey }}
           feed_addr: {{ .Bk_Bscp_Variable_FEED_ADDR }}
