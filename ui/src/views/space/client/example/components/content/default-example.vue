@@ -50,12 +50,16 @@
             <close-line class="close-line" @click="topTipShow = false" />
           </div>
         </bk-alert>
+        <bk-button theme="primary" class="copy-btn" style="margin-top: 8px" @click="copyExample(false)">
+          {{ $t('复制示例') }}
+        </bk-button>
         <code-preview
           class="preview-component"
-          :style="{ height: '440px' }"
+          :style="{ height: '640px' }"
           :code-val="replaceConfigVal"
           :variables="variables"
-          :language="codeLanguage" />
+          language="yaml"
+          @change="(val: string) => (copyReplaceConfigVal = val)" />
       </div>
     </div>
   </section>
@@ -97,6 +101,7 @@
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据
   const configVal = ref('');
   const replaceConfigVal = ref('');
+  const copyReplaceConfigVal = ref('');
   const variables = ref<IVariableEditParams[]>();
   const activeTab = ref(0); // 激活tab索引
   const topTipShow = ref(true);
@@ -145,14 +150,14 @@
         if (!activeTab.value) {
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
-            codePreviewHeight: 1700,
+            codePreviewHeight: 1050,
           };
         }
         return {
           topTip: t(
             'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。',
           ),
-          codePreviewHeight: 1250,
+          codePreviewHeight: 1220,
         };
       case 'java':
         if (!activeTab.value) {
@@ -215,7 +220,6 @@
     () => props.templateName,
     (newV) => {
       tabArr.value = newV === 'http' ? ['Shell', 'Python'] : [t('Get方法'), t('Watch方法')];
-      tabArr.value = newV === 'trpc' ? ['Get方法'] : tabArr.value;
       codeVal.value = '';
       nextTick(() => handleTab());
     },
@@ -255,8 +259,8 @@
         }
         break;
       case 'trpc':
-        data.labelArr = data.labelArr.map((str: string, index: number) => (index === 0 ? str : ' '.repeat(12) + str));
-        labelArrType = data.labelArr.length ? data.labelArr.join('\n') : '';
+        data.labelArr = data.labelArr.map((str: string) => (' '.repeat(18) + str.split(':').join(': ')));
+        labelArrType = data.labelArr.length ? `\n${data.labelArr.join('\n')}` : '{}';
         break;
       default:
         labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
@@ -289,8 +293,12 @@
     updateString = replacePlaceholders(updateString, feedAddrVal);
     if (props.templateName === 'trpc') {
       updateString = updateString.replaceAll(
-        '{{ .Bk_Bscp_Variable_dependency }}',
+        '{{ .Bk_Bscp_Variable_module_domain }}',
         spaceFeatureFlags.value.TRPC_GO_PLUGIN.module_domain,
+      );
+      updateString = updateString.replaceAll(
+        '{{ .Bk_Bscp_Variable_bscp_module_domain }}',
+        spaceFeatureFlags.value.TRPC_GO_PLUGIN.bscp_module_domain,
       );
     }
     replaceVal.value = updateString;
@@ -338,12 +346,13 @@
   };
 
   // 复制示例
-  const copyExample = async () => {
+  const copyExample = async (copyExample = true) => {
     try {
       await fileOptionRef.value.handleValidate();
       // 复制示例使用未脱敏的密钥
       const reg = /"(.{1}|.{3})\*{3}(.{1}|.{3})"/g;
       let copyVal = copyReplaceVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
+      const copyConfigVal = copyReplaceConfigVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
       let tempStr = '';
       // 键值型示例复制时，内容开头插入注释信息(http、命令行除外)；插入文案除python以外，其他都一样
       if (props.templateName === 'python') {
@@ -353,7 +362,7 @@
           // get
           tempStr = `'''\n${t('用于主动获取配置项值的场景，此方法不会监听服务器端的配置更改\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
         }
-      } else if (props.templateName === 'go') {
+      } else if (props.templateName === 'go' || props.templateName === 'trpc') {
         tempStr = '';
       } else if (props.templateName !== 'http') {
         // watch
@@ -364,7 +373,8 @@
         }
       }
       copyVal = `${tempStr}${tempStr ? '\n' : ''}${copyVal}`;
-      copyToClipBoard(copyVal);
+      const copyContent = copyExample ? copyVal : copyConfigVal;
+      copyToClipBoard(copyContent);
       BkMessage({
         theme: 'success',
         message: t('示例已复制'),
@@ -422,7 +432,7 @@
       case 'trpc':
         return !methods
           ? import('/src/assets/example-data/kv-trpc-get.yaml?raw')
-          : import('/src/assets/example-data/kv-trpc-get-config.yaml?raw');
+          : import('/src/assets/example-data/kv-trpc-watch-.yaml?raw');
       case 'java':
         return !methods
           ? import('/src/assets/example-data/kv-java-get.yaml?raw')

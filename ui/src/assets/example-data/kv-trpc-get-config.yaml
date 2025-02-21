@@ -1,20 +1,30 @@
-global:                            # global config.
-  namespace: Development           # environment type, two types: production and development.
-plugins:                                     # plugin configuration.
-  log:                                       # Multiple logs can be logged using log.get ("xxx").Debug
-    default:                                 # default log configuration. Each log can support multiple outputs.
-      - writer: console                      # console standard output
-        level: debug                         # log level.
+# global config.
+global:
+  # environment type, two types: production and development.
+  namespace: Development
+# plugin configuration.
+plugins:
+  # Multiple logs can be logged using log.get ("xxx").Debug
+  log:
+    # default log configuration. Each log can support multiple outputs.
+    default:
+        # console standard output
+      - writer: console
+        # log level.
+        level: debug
   config:
     bscp:
       providers:
-        - name: "{{ .Bk_Bscp_Variable_KeyName }}" # provider 名称
-          biz: {{ .Bk_Bscp_Variable_BkBizId }} # 业务ID
-          app: "{{ .Bk_Bscp_Variable_ServiceName }}" # 服务名称
-          labels: # 客户端标签，用于灰度发布
-            {{ .Bk_Bscp_Variable_Leabels }}
-          token: "{{ .Bk_Bscp_Variable_ClientKey }}" # 服务密钥
-          # BSCP 订阅地址，- 自研上云：bscp-feed.open.woa.com:9510 - 新加坡：bscp-feed.sg.crosgame.com:9510
-          feed_addr: "{{ .Bk_Bscp_Variable_FEED_ADDR }}"
+          # provider 名称
+        - name: {{ .Bk_Bscp_Variable_KeyName }}
+          # 业务ID
+          biz: {{ .Bk_Bscp_Variable_BkBizId }}
+          # 服务名称
+          app: "{{ .Bk_Bscp_Variable_ServiceName }}"
+          # 客户端标签，用于灰度发布
+          labels: {{ .Bk_Bscp_Variable_Leabels }}              
+          # 服务密钥
+          token: {{ .Bk_Bscp_Variable_ClientKey }}
+          feed_addr: {{ .Bk_Bscp_Variable_FEED_ADDR }}
           # 服务类型，支持 kv
           type: kv
