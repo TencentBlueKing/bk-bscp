@@ -79,8 +79,9 @@ type FeatureFlags struct {
 
 // TrpcGoPlugin trpc go plugin
 type TrpcGoPlugin struct {
-	Enable       bool   `json:"enable"`
-	ModuleDomain string `json:"module_domain"`
+	Enable           bool   `json:"enable"`
+	ModuleDomain     string `json:"module_domain"`
+	BscpModuleDomain string `json:"bscp_module_domain"`
 }
 
 // FeatureFlagsHandler 特性开关接口

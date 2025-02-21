@@ -65,8 +65,9 @@ type FeatureResourceLimit struct {
 
 // TrpcGoPlugin trpc go plugin
 type TrpcGoPlugin struct {
-	Enable       bool   `yaml:"enable"`
-	ModuleDomain string `yaml:"moduleDomain"`
+	Enable           bool   `yaml:"enable"`
+	ModuleDomain     string `yaml:"moduleDomain"`
+	BscpModuleDomain string `yaml:"bscpModuleDomain"`
 }
 
 // ResourceLimit 资源限制配置项
