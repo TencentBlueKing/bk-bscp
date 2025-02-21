@@ -58,7 +58,7 @@
           :style="{ height: '640px' }"
           :code-val="replaceConfigVal"
           :variables="variables"
-          :language="codeLanguage"
+          language="yaml"
           @change="(val: string) => (copyReplaceConfigVal = val)" />
       </div>
     </div>

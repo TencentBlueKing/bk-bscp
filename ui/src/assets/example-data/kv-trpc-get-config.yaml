@@ -16,7 +16,7 @@ plugins:
     bscp:
       providers:
           # provider 名称
-        - name: "{{ .Bk_Bscp_Variable_KeyName }}"
+        - name: {{ .Bk_Bscp_Variable_KeyName }}
           # 业务ID
           biz: {{ .Bk_Bscp_Variable_BkBizId }}
           # 服务名称
