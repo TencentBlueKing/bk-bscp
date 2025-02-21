@@ -39,7 +39,7 @@
   import { getTableStructure, editTable, getTableStructureHasData } from '../../../../../api/kv-table';
   import { IFieldItem, ILocalTableBase } from '../../../../../../types/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
-  import ManualCreate from '../create-table/manual-create/index.vue';
+  import ManualCreate from '../create-table/manual-create.vue';
   import BkMessage from 'bkui-vue/lib/message';
   import baseInfoForm from '../components/base-info-form.vue';
   import { useI18n } from 'vue-i18n';

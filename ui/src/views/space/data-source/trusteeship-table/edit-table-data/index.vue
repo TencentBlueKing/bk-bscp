@@ -7,35 +7,29 @@
             <bk-button @click="handleAddData">{{ $t('新增') }}</bk-button>
             <bk-button @click="isShowImportTable = true">{{ $t('导入') }}</bk-button>
           </div>
-          <bk-input class="search-input">
+          <bk-input class="search-input" :placeholder="searchPlaceholder">
             <template #suffix>
               <Search class="search-input-icon" />
             </template>
           </bk-input>
         </div>
-        <bk-loading class="loading-wrapper" :loading="loading">
-          <Table ref="tableRef" :fields="fields" :data="tableData" @change="handleChange" />
-        </bk-loading>
+        <Table ref="tableRef" :loading="loading" :fields="fields" :data="tableData" @change="handleChange" />
       </div>
     </template>
     <template #footer>
       <div class="operation-btns">
-        <bk-button
-          :loading="confirmLoading"
-          theme="primary"
-          style="width: 88px"
-          @click="handleConfirm">
+        <bk-button :loading="confirmLoading" theme="primary" style="width: 88px" @click="handleConfirm">
           {{ $t('保存') }}
         </bk-button>
         <bk-button style="width: 88px" @click="handleClose">{{ $t('取消') }}</bk-button>
       </div>
     </template>
   </DetailLayout>
-  <ImportTable v-model:show="isShowImportTable" :bk-biz-id="spaceId" :id="tableId"/>
+  <ImportTable v-model:show="isShowImportTable" :bk-biz-id="spaceId" :id="tableId" />
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Search } from 'bkui-vue/lib/icon';
   import {
@@ -67,6 +61,10 @@
   const loading = ref(false);
   const confirmLoading = ref(false);
   const tableRef = ref();
+
+  const searchPlaceholder = computed(() => {
+    return fields.value.map((fields: IFieldItem) => fields.name).join('/');
+  });
 
   onMounted(() => {
     getFieldsList();

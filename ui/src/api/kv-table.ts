@@ -2,12 +2,21 @@ import { ICommonQuery } from '../../types/index';
 import http from '../request';
 
 /**
- * 新建表格
+ * 手动新建表格
  * @param biz_id 空间ID
  * @param query 数据内容
  * @returns
  */
-export const createTable = (biz_id: string, query: any) => http.post(`/config/biz/${biz_id}/table`, query);
+export const manualCreateTable = (biz_id: string, query: any) => http.post(`/config/biz/${biz_id}/table`, query);
+
+/**
+ * 导入创建表结构和数据
+ * @param biz_id 空间ID
+ * @param query 数据内容
+ * @returns
+ */
+export const importCreateTable = (biz_id: string, query: any) =>
+  http.post(`config/biz/${biz_id}/table/struct_and_content`, query);
 
 /**
  * 编辑表格

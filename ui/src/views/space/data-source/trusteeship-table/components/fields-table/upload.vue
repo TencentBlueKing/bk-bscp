@@ -149,11 +149,11 @@
   const props = withDefaults(
     defineProps<{
       list: IFieldsItemEditing[];
-      imImport?: boolean; // 是否是导入
+      isImport: boolean; // 是否是导入
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
-      imImport: false,
+      isImport: false,
     },
   );
 

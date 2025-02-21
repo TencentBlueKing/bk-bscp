@@ -7,7 +7,7 @@
     show-overflow
     :header-row-height="50"
     :edit-config="{ mode: 'cell', trigger: 'click', showStatus: true }"
-    :cell-config="{ height: 42 }"
+    :row-config="{ height: 42 }"
     :scroll-y="{ enabled: true, gt: 0 }"
     :scroll-x="{ enabled: true, gt: 0 }"
     show-header-overflow

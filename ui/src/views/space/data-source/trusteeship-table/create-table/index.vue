@@ -58,7 +58,7 @@
   import { ref } from 'vue';
   import { storeToRefs } from 'pinia';
   import { IFieldItem, ILocalTableBase, ILocalTableEditQuery } from '../../../../../../types/kv-table';
-  import { createTable, editTableData } from '../../../../../api/kv-table';
+  import { manualCreateTable, importCreateTable } from '../../../../../api/kv-table';
   import { useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
@@ -117,14 +117,28 @@
       const validate = (await formRef.value.validate()) && (await fieldRef.value.validate());
       if (!validate) return;
       loading.value = true;
-      const data = {
-        spec: {
-          ...formData.value,
-          columns: fieldsColumns.value,
-        },
-      };
+      let res;
+      if (selectedType.value === 'create') {
+        // 手动创建表结构
+        const data = {
+          spec: {
+            ...formData.value,
+            columns: fieldsColumns.value,
+          },
+        };
 
-      const res = await createTable(spaceId.value, data);
+        res = await manualCreateTable(spaceId.value, data);
+      } else {
+        const data = {
+          spec: {
+            ...formData.value,
+            columns: fieldsColumns.value,
+          },
+          contents: uploadTableData.value,
+        };
+
+        res = await importCreateTable(spaceId.value, data);
+      }
 
       if (redirectToEdit) {
         // 跳转到编辑页面
@@ -138,11 +152,6 @@
         handleCloseCreate();
       }
       BkMessage({ theme: 'success', message: t('新建表格成功') });
-      if (selectedType.value === 'import') {
-        await await editTableData(spaceId.value, res.data.id, {
-          contents: uploadTableData.value,
-        });
-      }
     } catch (error) {
       console.error(error);
     } finally {

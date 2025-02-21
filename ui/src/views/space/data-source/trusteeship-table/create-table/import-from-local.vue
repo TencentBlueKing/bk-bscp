@@ -48,12 +48,20 @@
       </div>
     </Card>
     <Card :title="$t('字段设置')">
-      <FieldsTable
-        v-if="selectSheet.table_name"
-        ref="tableRef"
-        :list="selectSheet!.columns as IFieldsItemEditing[]"
-        :is-import="false"
-        @change="handleFieldsChange" />
+      <template v-if="selectSheet.table_name">
+        <sqlFieldsTable
+          v-if="uploadFile?.format === 'sql'"
+          ref="tableRef"
+          :is-sql="true"
+          :list="selectSheet!.columns as IFieldsItemEditing[]"
+          @change="handleFieldsChange" />
+        <FieldsTable
+          v-else
+          ref="tableRef"
+          :list="selectSheet!.columns as IFieldsItemEditing[]"
+          :is-import="false"
+          @change="handleFieldsChange" />
+      </template>
       <bk-exception
         v-else
         class="exception-wrap-item"
@@ -69,13 +77,15 @@
   import { Upload, ExcelFill, Done, Error } from 'bkui-vue/lib/icon';
   import { importTable } from '../../../../../api/kv-table';
   import { ILocalTableImportItem, IFieldsItemEditing } from '../../../../../../types/kv-table';
-  import FieldsTable from './../components/fields-table/upload.vue';
+  import FieldsTable from '../components/fields-table/upload.vue';
+  import sqlFieldsTable from '../components/fields-table/manual.vue';
   import Card from '../../component/card.vue';
 
   interface IUploadFile {
     name: string;
     status: string;
     progress: number;
+    format: string;
   }
   const props = defineProps<{
     bkBizId: string;
@@ -103,11 +113,12 @@
         name: option.file.name,
         status: 'uploading',
         progress: 0,
+        format: option.file.name.split('.').pop() as string,
       };
       sheetList.value = await importTable(
         props.bkBizId,
         0,
-        option.file.name.split('.').pop() as string,
+        uploadFile.value.format,
         option.file,
         (progress: number) => {
           uploadFile.value!.progress = progress;

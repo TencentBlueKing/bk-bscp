@@ -5,7 +5,7 @@
         <th v-for="(item, index) in theadList" :key="index" :style="{ width: item.width + 'px' }" :class="item.class">
           <span v-bk-tooltips="{ content: item.tips, disabled: !item.tips }">{{ item.label }}</span>
         </th>
-        <th :style="{ width: '50px' }"></th>
+        <th v-if="!isSql" :style="{ width: '50px' }"></th>
       </tr>
     </thead>
     <template v-if="fieldsList.length">
@@ -103,7 +103,7 @@
             <td class="check">
               <bk-checkbox v-model="element.read_only" @change="emits('change', fieldsList)"></bk-checkbox>
             </td>
-            <td class="check">
+            <td v-if="!isSql" class="check">
               <i
                 :class="['bk-bscp-icon', 'icon-minus-circle-shape', 'delete-icon', { disabled: element.primary }]"
                 @click="handleDelete(element, index)" />
@@ -137,11 +137,11 @@
   const props = withDefaults(
     defineProps<{
       list: IFieldsItemEditing[];
-      isEdit?: boolean; // 是否为编辑态
+      isSql: boolean; // 是否是 SQL 模式
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
-      isEdit: false,
+      isSql: false,
     },
   );
 
@@ -188,7 +188,7 @@
     () => {
       fieldsList.value = [...props.list];
     },
-    { deep: true },
+    { deep: true, immediate: true },
   );
 
   const hasErrors = computed(() => {
