@@ -67,9 +67,9 @@
   const kvTypeArr: INavItem[] = [
     { name: 'Python SDK', val: 'python' },
     { name: 'Go SDK', val: 'go' },
-    { name: 'tRPC SDK', val: 'trpc' },
     { name: 'Java SDK', val: 'java' },
     { name: 'C++ SDK', val: 'cpp' },
+    { name: 'tRPC-Go Plugin', val: 'trpc' },
     { name: t('HTTP(S)接口调用'), val: 'http' },
     { name: t('命令行工具'), val: 'shell' },
   ];
@@ -87,7 +87,7 @@
     if (serviceType.value === 'kv') {
       // 如果 TRPC_GO_PLUGIN 未启用，移除 trpc 示例
       if (!spaceFeatureFlags.value.TRPC_GO_PLUGIN.enable) {
-        return kvTypeArr.filter((_, index) => index !== 2);
+        return kvTypeArr.filter((type: INavItem) => type.val !== 'trpc');
       }
       return kvTypeArr;
     }
