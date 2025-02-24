@@ -19,62 +19,65 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xuri/excelize/v2"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/xuri/excelize/v2"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
-type excelImport struct {
-}
-
+// NewExcelImport 解析excel
 func NewExcelImport() *excelImport {
 	return &excelImport{}
 }
 
-// 解析excel
-func (e *excelImport) Import(kit *kit.Kit, r io.Reader) (string, []table.Columns_, []map[string]interface{}, error) {
+type excelImport struct {
+}
+
+// Import 解析excel
+func (e *excelImport) Import(kit *kit.Kit, r io.Reader) ([]*types.TableImportResp, error) {
+
+	resp := make([]*types.TableImportResp, 0)
+
 	f, err := excelize.OpenReader(r)
 	if err != nil {
-		return "", nil, nil, errors.New(i18n.T(kit, "open Excel file failed %v", err))
+		return resp, errors.New(i18n.T(kit, "open Excel file failed %v", err))
 	}
 	defer f.Close()
-
-	tableName := ""
-	// 字段和行
-	columns := make([]table.Columns_, 0)
-	rowsData := make([]map[string]interface{}, 0)
 
 	sheetList := f.GetSheetList()
 
 	for _, sheetName := range sheetList {
-		tableName = sheetName
+		rowsData := make([]map[string]interface{}, 0)
 		rows, err := f.Rows(sheetName)
 		if err != nil {
-			return "", nil, nil, err
+			return resp, err
 		}
 		// 解析表头
 		var headers []string
 		if rows.Next() {
 			headers, err = rows.Columns()
 			if err != nil {
-				return "", nil, nil, err
+				return resp, err
 			}
 		}
-		// 初始化列信息
-		columns = initializeColumns(headers)
-		// 逐行解析数据
+
+		// 初始化列
+		columns := initializeColumns(headers)
+
 		rowIndex := 0
 		uniqueCheck := make([]map[string]bool, len(headers))
 		for i := range uniqueCheck {
 			uniqueCheck[i] = make(map[string]bool)
 		}
 
+		// 逐行解析数据
 		for rows.Next() {
 			rowIndex++
 			cells, err := rows.Columns()
 			if err != nil {
-				return "", nil, nil, err
+				return resp, err
 			}
 
 			// 解析行数据
@@ -83,27 +86,33 @@ func (e *excelImport) Import(kit *kit.Kit, r io.Reader) (string, []table.Columns
 				if i < len(headers) {
 					rowData[headers[i]] = cell
 					// 更新列信息
-					updateColumnInfo(&columns[i], cell, uniqueCheck[i])
+					updateColumnInfo(columns[i].Columns_, cell, uniqueCheck[i])
 				}
 			}
 			rowsData = append(rowsData, rowData)
 		}
+
+		resp = append(resp, &types.TableImportResp{TableName: sheetName, Columns: columns, Rows: rowsData})
+
 	}
 
-	return tableName, columns, rowsData, nil
+	return resp, nil
 }
 
-func initializeColumns(headers []string) []table.Columns_ {
-	columns := make([]table.Columns_, len(headers))
+func initializeColumns(headers []string) []*types.Columns_ {
+	columns := make([]*types.Columns_, len(headers))
 	for i, header := range headers {
-		columns[i] = table.Columns_{
-			Name:       header,
-			Alias:      header,
-			Length:     0,
-			ColumnType: table.StringColumn,
-			Primary:    false,
-			NotNull:    false,
-			Unique:     false,
+		columns[i] = &types.Columns_{
+			Columns_: &table.Columns_{
+				Name:       header,
+				Alias:      header,
+				Length:     0,
+				ColumnType: table.StringColumn,
+				Primary:    false,
+				NotNull:    false,
+				Unique:     false,
+			},
+			Status: table.KvStateAdd.String(),
 		}
 	}
 	return columns
@@ -129,7 +138,6 @@ func updateColumnInfo(column *table.Columns_, value interface{}, uniqueMap map[s
 }
 
 func detectColumnType(value interface{}) table.ColumnType {
-
 	// 检查是否为 nil 或空值
 	if value == nil {
 		return "string" // 默认为字符串

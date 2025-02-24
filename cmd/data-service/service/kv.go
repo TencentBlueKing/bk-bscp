@@ -34,6 +34,7 @@ import (
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
@@ -341,6 +342,7 @@ func (s *Service) DeleteKv(ctx context.Context, req *pbds.DeleteKvReq) (*pbbase.
 	} else {
 		kv.KvState = table.KvStateDelete
 		kv.Revision.Reviser = kt.User
+		kv.Spec.FilterCondition = &selector.Selector{}
 		if e := s.dao.Kv().Update(kt, kv); e != nil {
 			logs.Errorf("delete kv failed, err: %v, rid: %s", e, kt.Rid)
 			return nil, e

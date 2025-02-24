@@ -212,6 +212,8 @@ const (
 	Config_UpsertTableContent_FullMethodName                 = "/pbcs.Config/UpsertTableContent"
 	Config_ListTableContent_FullMethodName                   = "/pbcs.Config/ListTableContent"
 	Config_CheckTableField_FullMethodName                    = "/pbcs.Config/CheckTableField"
+	Config_CreateTableStructAndContent_FullMethodName        = "/pbcs.Config/CreateTableStructAndContent"
+	Config_UpdateTableStructAndContent_FullMethodName        = "/pbcs.Config/UpdateTableStructAndContent"
 )
 
 // ConfigClient is the client API for Config service.
@@ -582,6 +584,10 @@ type ConfigClient interface {
 	ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error)
 	// 检测某个字段是否有值
 	CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error)
+	// 创建表结构和数据
+	CreateTableStructAndContent(ctx context.Context, in *CreateTableStructAndContentReq, opts ...grpc.CallOption) (*CreateTableStructAndContentResp, error)
+	// 编辑表结构和数据
+	UpdateTableStructAndContent(ctx context.Context, in *UpdateTableStructAndContentReq, opts ...grpc.CallOption) (*UpdateTableStructAndContentResp, error)
 }
 
 type configClient struct {
@@ -2257,6 +2263,24 @@ func (c *configClient) CheckTableField(ctx context.Context, in *CheckTableFieldR
 	return out, nil
 }
 
+func (c *configClient) CreateTableStructAndContent(ctx context.Context, in *CreateTableStructAndContentReq, opts ...grpc.CallOption) (*CreateTableStructAndContentResp, error) {
+	out := new(CreateTableStructAndContentResp)
+	err := c.cc.Invoke(ctx, Config_CreateTableStructAndContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpdateTableStructAndContent(ctx context.Context, in *UpdateTableStructAndContentReq, opts ...grpc.CallOption) (*UpdateTableStructAndContentResp, error) {
+	out := new(UpdateTableStructAndContentResp)
+	err := c.cc.Invoke(ctx, Config_UpdateTableStructAndContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2625,6 +2649,10 @@ type ConfigServer interface {
 	ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error)
 	// 检测某个字段是否有值
 	CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error)
+	// 创建表结构和数据
+	CreateTableStructAndContent(context.Context, *CreateTableStructAndContentReq) (*CreateTableStructAndContentResp, error)
+	// 编辑表结构和数据
+	UpdateTableStructAndContent(context.Context, *UpdateTableStructAndContentReq) (*UpdateTableStructAndContentResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3185,6 +3213,12 @@ func (UnimplementedConfigServer) ListTableContent(context.Context, *ListTableCon
 }
 func (UnimplementedConfigServer) CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckTableField not implemented")
+}
+func (UnimplementedConfigServer) CreateTableStructAndContent(context.Context, *CreateTableStructAndContentReq) (*CreateTableStructAndContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTableStructAndContent not implemented")
+}
+func (UnimplementedConfigServer) UpdateTableStructAndContent(context.Context, *UpdateTableStructAndContentReq) (*UpdateTableStructAndContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateTableStructAndContent not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6528,6 +6562,42 @@ func _Config_CheckTableField_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_CreateTableStructAndContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTableStructAndContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateTableStructAndContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateTableStructAndContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateTableStructAndContent(ctx, req.(*CreateTableStructAndContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpdateTableStructAndContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTableStructAndContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateTableStructAndContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpdateTableStructAndContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateTableStructAndContent(ctx, req.(*UpdateTableStructAndContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7274,6 +7344,14 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckTableField",
 			Handler:    _Config_CheckTableField_Handler,
+		},
+		{
+			MethodName: "CreateTableStructAndContent",
+			Handler:    _Config_CreateTableStructAndContent_Handler,
+		},
+		{
+			MethodName: "UpdateTableStructAndContent",
+			Handler:    _Config_UpdateTableStructAndContent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -16,6 +16,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -45,6 +46,7 @@ func newTableService(authorizer auth.Authorizer,
 	return s
 }
 
+// Import 表格文件导入
 func (m *tableService) Import(w http.ResponseWriter, r *http.Request) {
 	kit := kit.MustGetKit(r.Context())
 	// Ensure r.Body is closed after reading
@@ -60,42 +62,94 @@ func (m *tableService) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var columns []table.Columns_
-	var rows []map[string]interface{}
-	var tableName string
+	var tables []*types.TableImportResp
 
 	switch format {
 	case "sql", "SQL":
-		tableName, columns, rows, err = tableparser.NewSqlImport().Import(kit, r.Body)
+		tables, err = tableparser.NewSqlImport().Import(kit, r.Body)
 		if err != nil {
 			_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kit, "failed to parse SQL: %v", err))))
 			return
 		}
 	case "xls", "xlsx":
-		tableName, columns, rows, err = tableparser.NewExcelImport().Import(kit, r.Body)
+		tables, err = tableparser.NewExcelImport().Import(kit, r.Body)
 		if err != nil {
 			_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kit, "failed to parse SQL: %v", err))))
 			return
 		}
 	case "csv":
+		tables, err = tableparser.NewCsvImport().Import(kit, r.Body)
+		if err != nil {
+			_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kit, "failed to parse SQL: %v", err))))
+			return
+		}
 	default:
+		_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kit, "the imported file type is not currently supported"))))
 		return
 	}
 
-	cols := make([]types.Columns_, 0)
-	// 不是0表示已存在表结构和表数据，需要对比结构和数据
-	if dataSourceMappingId == 0 {
-		for _, v := range columns {
-			cols = append(cols, types.Columns_{
-				Columns_: v,
-				Status:   table.KvStateAdd.String(),
-			})
+	if dataSourceMappingId != 0 {
+		resp, err := m.cfgClient.GetDataSourceTable(kit.RpcCtx(), &pbcs.GetDataSourceTableReq{
+			BizId:               kit.BizID,
+			DataSourceMappingId: uint32(dataSourceMappingId),
+		})
+		if err != nil {
+			_ = render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 由于proto生成pb文件时默认在json字段加上 omitempty，导致字段不一致，不能做对比
+		// 所以统一转成某个结构体
+		existsMap := map[string]*table.Columns_{}
+		for _, column := range resp.GetDetails().GetSpec().GetColumns() {
+			existsMap[column.Name] = column.DataSourceMappingColumn()
+		}
+
+		for _, tab := range tables {
+			if tab.TableName != resp.GetDetails().Spec.TableName {
+				continue
+			}
+			tab.IsChange = len(tab.Columns) != len(existsMap)
+			for _, column := range tab.Columns {
+				data, exists := existsMap[column.Name]
+				if !exists {
+					tab.IsChange = true
+					column.Status = table.KvStateAdd.String()
+					continue
+				}
+				col := &table.Columns_{
+					Name:          column.Name,
+					Alias:         column.Alias,
+					Length:        column.Length,
+					Primary:       column.Primary,
+					ColumnType:    column.ColumnType,
+					NotNull:       column.NotNull,
+					DefaultValue:  column.DefaultValue,
+					Unique:        column.Unique,
+					ReadOnly:      column.ReadOnly,
+					AutoIncrement: column.AutoIncrement,
+					EnumValue:     column.EnumValue,
+					Selected:      column.Selected,
+				}
+				if reflect.DeepEqual(data, col) {
+					column.Status = table.KvStateUnchange.String()
+				} else {
+					tab.IsChange = true
+					column.Status = table.KvStateRevise.String()
+				}
+				// 移除existsMap中已匹配的字段，剩下的就是删除字段
+				delete(existsMap, column.Name)
+			}
+			// 3. 处理删除字段
+			for _, deletedCol := range existsMap {
+				tab.IsChange = true
+				tab.Columns = append(tab.Columns, &types.Columns_{
+					Columns_: deletedCol,
+					Status:   table.KvStateDelete.String(),
+				})
+			}
 		}
 	}
 
-	_ = render.Render(w, r, rest.OKRender(&types.TableImportResp{
-		TableName: tableName,
-		Columns:   cols,
-		Rows:      rows,
-	}))
+	_ = render.Render(w, r, rest.OKRender(tables))
 }

@@ -18,82 +18,125 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/test_driver"
-	"github.com/pingcap/tidb/pkg/parser/types"
+	parserTypes "github.com/pingcap/tidb/pkg/parser/types"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
-type sqlImport struct {
-}
-
+// NewSqlImport 解析sql
 func NewSqlImport() *sqlImport {
 	return &sqlImport{}
 }
 
-// 解析mysql
-func (s *sqlImport) Import(kit *kit.Kit, r io.Reader) (string, []table.Columns_, []map[string]interface{}, error) {
+type sqlImport struct {
+}
+
+// Import 解析mysql
+func (s *sqlImport) Import(kit *kit.Kit, r io.Reader) ([]*types.TableImportResp, error) {
+	resp := make([]*types.TableImportResp, 0)
+
 	sql, err := io.ReadAll(r)
 	if err != nil {
-		return "", nil, nil, errors.New(i18n.T(kit, "read file failed, err: %v", err))
+		return resp, errors.New(i18n.T(kit, "read file failed, err: %v", err))
 	}
 
 	p := parser.New()
 	stmtNode, _, err := p.ParseSQL(string(sql))
 	if err != nil {
-		return "", nil, nil, errors.New(i18n.T(kit, "parses a query string to raw ast.StmtNode failed, err: %v", err))
+		return resp, errors.New(i18n.T(kit, "parses a query string to raw ast.StmtNode failed, err: %v", err))
 	}
 
-	tableName := ""
-	// 字段和行
-	columns := make([]table.Columns_, 0)
-	rows := make([]map[string]interface{}, 0)
+	columns := make(map[string][]*types.Columns_)
+	rows := make(map[string][]map[string]interface{})
 	colNames := []string{}
+
+	// 解析 SQL 语句
 	for _, stmt := range stmtNode {
 		switch stmt := stmt.(type) {
-		// 解析列名、数据类型等
 		case *ast.CreateTableStmt:
-			tableName = stmt.Table.Name.String()
-			for _, col := range stmt.Cols {
-				var unique, primaryKey bool
-				primaryKey = isPrimaryKey(col, stmt)
-				unique = isUnique(col.Name.String(), stmt)
-				if primaryKey {
-					unique = primaryKey
-				}
-				columns = append(columns, table.Columns_{
-					Name:          col.Name.String(),
-					Length:        col.Tp.GetFlen(),
-					Primary:       primaryKey,
-					ColumnType:    parseColumnType(col.Tp),
-					NotNull:       isNotNull(col),
-					DefaultValue:  getDefaultValue(col),
-					Unique:        unique,
-					AutoIncrement: isAutoIncrement(col),
-					EnumValue:     getEnumValues(col),
-				})
-				colNames = append(colNames, col.Name.String())
-			}
-		// 解析 Insert 语法
+			// 处理创建表语句
+			tableName := stmt.Table.Name.String()
+			colNames = processCreateTableStmt(columns, colNames, stmt, tableName)
+
 		case *ast.InsertStmt:
-			for _, value := range stmt.Lists {
-				row := make(map[string]interface{})
-				for i, val := range value {
-					switch v := val.(type) {
-					case *test_driver.ValueExpr:
-						row[colNames[i]] = v.GetValue()
-					}
-				}
-				rows = append(rows, row)
-			}
+			// 处理插入语句
+			insertTableName := processInsertStmt(stmt)
+			processInsertValues(stmt, insertTableName, rows, colNames)
 		}
 	}
 
-	return tableName, columns, rows, nil
+	// 生成返回结果
+	for tableName, columnList := range columns {
+		resp = append(resp, &types.TableImportResp{
+			TableName: tableName,
+			Columns:   columnList,
+			Rows:      rows[tableName],
+		})
+	}
+
+	return resp, nil
+}
+
+// 处理 CreateTableStmt
+func processCreateTableStmt(columns map[string][]*types.Columns_, colNames []string, stmt *ast.CreateTableStmt, tableName string) []string {
+	for _, col := range stmt.Cols {
+		var unique, primaryKey bool
+		primaryKey = isPrimaryKey(col, stmt)
+		unique = isUnique(col.Name.String(), stmt)
+		if primaryKey {
+			unique = primaryKey
+		}
+		columns[tableName] = append(columns[tableName], &types.Columns_{
+			Columns_: &table.Columns_{
+				Name:          col.Name.String(),
+				Length:        col.Tp.GetFlen(),
+				Primary:       primaryKey,
+				ColumnType:    parseColumnType(col.Tp),
+				NotNull:       isNotNull(col),
+				DefaultValue:  getDefaultValue(col),
+				Unique:        unique,
+				AutoIncrement: isAutoIncrement(col),
+				EnumValue:     getEnumValues(col),
+			},
+			Status: table.KvStateAdd.String(),
+		})
+		colNames = append(colNames, col.Name.String())
+	}
+	return colNames
+}
+
+// 处理 InsertStmt
+func processInsertStmt(stmt *ast.InsertStmt) string {
+	var insertTableName string
+	if stmt.Table != nil && stmt.Table.TableRefs != nil {
+		if tableRef, ok := stmt.Table.TableRefs.Left.(*ast.TableSource); ok {
+			if tableInf, ok := tableRef.Source.(*ast.TableName); ok {
+				insertTableName = tableInf.Name.String()
+			}
+		}
+	}
+	return insertTableName
+}
+
+// 处理插入数据
+func processInsertValues(stmt *ast.InsertStmt, insertTableName string, rows map[string][]map[string]interface{},
+	colNames []string) {
+	for _, value := range stmt.Lists {
+		row := make(map[string]interface{})
+		for i, val := range value {
+			if v, ok := val.(*test_driver.ValueExpr); ok {
+				row[colNames[i]] = v.GetValue()
+			}
+		}
+		rows[insertTableName] = append(rows[insertTableName], row)
+	}
 }
 
 // isPrimaryKey checks if the column is a primary key.
@@ -171,7 +214,7 @@ func getEnumValues(col *ast.ColumnDef) string {
 }
 
 // parseColumnType maps the column type based on the expression.
-func parseColumnType(colType *types.FieldType) table.ColumnType {
+func parseColumnType(colType *parserTypes.FieldType) table.ColumnType {
 	switch colType.GetType() {
 	case mysql.TypeBit, mysql.TypeTiny, mysql.TypeShort, mysql.TypeLong, mysql.TypeFloat,
 		mysql.TypeDouble, mysql.TypeLonglong, mysql.TypeInt24:

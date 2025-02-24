@@ -14,6 +14,7 @@
 package dao
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
@@ -21,6 +22,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
@@ -43,6 +45,12 @@ type DataSourceMapping interface {
 	GetTableStructByMultipleFieldNames(kit *kit.Kit, id uint32, fieldNames []string) (map[string]*table.Columns_, error)
 	// ListByDataSourceInfoId 按数据源信息 ID 列出
 	ListByDataSourceInfoId(kit *kit.Kit, bizID, dataSourceInfoID uint32) ([]*table.DataSourceMapping, error)
+	// CreateWithTx create one data source mapping instance with tx.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data *table.DataSourceMapping) (uint32, error)
+	// GetTableStructWithTx 通过主键获取数据源表格带有事务
+	GetTableStructWithTx(kit *kit.Kit, tx *gen.QueryTx, id uint32) (*table.DataSourceMapping, error)
+	// UpdateWithTx update one data source mapping instance with transaction.
+	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data *table.DataSourceMapping) error
 }
 
 var _ DataSourceMapping = new(dataSourceMappingDao)
@@ -51,6 +59,84 @@ type dataSourceMappingDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateWithTx implements DataSourceMapping.
+func (dao *dataSourceMappingDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data *table.DataSourceMapping) error {
+	if data == nil {
+		return errors.New(i18n.T(kit, "data is nil"))
+	}
+
+	if err := data.ValidateUpdate(kit); err != nil {
+		return err
+	}
+
+	// 更新操作, 获取当前记录做审计
+	m := tx.DataSourceMapping
+	q := tx.DataSourceMapping.WithContext(kit.Ctx)
+
+	oldOne, err := q.Where(m.ID.Eq(data.ID), m.BizID.Eq(data.Attachment.BizID)).Take()
+	if err != nil {
+		return err
+	}
+	ad := dao.auditDao.Decorator(kit, data.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.DataSourceName, oldOne.Spec.TableName_),
+		Status:           enumor.Success,
+	}).PrepareUpdate(data)
+
+	if _, err := q.Where(m.BizID.Eq(data.Attachment.BizID), m.ID.Eq(data.ID)).
+		Updates(data); err != nil {
+		return err
+	}
+
+	if err := ad.Do(tx.Query); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetTableStructWithTx implements DataSourceMapping.
+func (dao *dataSourceMappingDao) GetTableStructWithTx(kit *kit.Kit, tx *gen.QueryTx, id uint32) (
+	*table.DataSourceMapping, error) {
+
+	m := dao.genQ.DataSourceMapping
+
+	return tx.DataSourceMapping.
+		WithContext(kit.Ctx).
+		Where(m.ID.Eq(id)).
+		Take()
+}
+
+// CreateWithTx implements DataSourceMapping.
+func (dao *dataSourceMappingDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx,
+	data *table.DataSourceMapping) (uint32, error) {
+	if data == nil {
+		return 0, errors.New(i18n.T(kit, "data is nil"))
+	}
+	if err := data.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+
+	id, err := dao.idGen.One(kit, table.Name(data.TableName()))
+	if err != nil {
+		return 0, errf.ErrDBOpsFailedF(kit).WithCause(err)
+	}
+	data.ID = id
+
+	if err := tx.DataSourceMapping.WithContext(kit.Ctx).Create(data); err != nil {
+		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, data.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.DataSourceName, data.Spec.TableName_),
+		Status:           enumor.Success,
+	}).PrepareCreate(data)
+	if err := ad.Do(tx.Query); err != nil {
+		return 0, err
+	}
+
+	return data.ID, nil
 }
 
 // ListByDataSourceInfoId 按数据源信息 ID 列出
@@ -185,6 +271,9 @@ func (dao *dataSourceMappingDao) GetDataSourceMappingByTableName(kit *kit.Kit, b
 
 // Create one data source mapping
 func (dao *dataSourceMappingDao) Create(kit *kit.Kit, data *table.DataSourceMapping) (uint32, error) {
+	if data == nil {
+		return 0, errors.New(i18n.T(kit, "data is nil"))
+	}
 	if err := data.ValidateCreate(kit); err != nil {
 		return 0, err
 	}

@@ -19,6 +19,10 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -30,8 +34,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
-	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 // CreateTableContent 创建表数据(暂时没有用到)
@@ -202,7 +204,7 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 	}
 
 	// 2. 获取表中已存在数据
-	contents, count, err := s.dao.DataSourceContent().ListByDataSourceMappingID(kit, req.DataSourceMappingId,
+	contents, _, err := s.dao.DataSourceContent().ListByDataSourceMappingID(kit, req.DataSourceMappingId,
 		&types.BasePage{
 			All: true,
 		})
@@ -210,6 +212,66 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kit, "get the data list according to the data dource mapping id failed, err: %v", err))
 	}
+
+	// 3. 处理表格数据（验证表结构和数据）
+	toCreate, toUpdate, delIDs, err := s.handleTableContent(kit, tableStruct, contents, req.GetContents())
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 创建、更新、删除数据
+	tx := s.dao.GenQuery().Begin()
+
+	if len(toCreate) != 0 {
+		if err := s.dao.DataSourceContent().BatchCreateWithTx(kit, tx, toCreate); err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+			return nil, err
+		}
+	}
+
+	if len(toUpdate) != 0 {
+		if err := s.dao.DataSourceContent().BatchUpdateWithTx(kit, tx, toUpdate); err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+			return nil, err
+		}
+	}
+
+	if len(delIDs) != 0 {
+		if err := s.dao.DataSourceContent().BatchFakeDeleteWithTx(kit, tx, req.DataSourceMappingId,
+			delIDs); err != nil {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+			return nil, err
+		}
+	}
+
+	if e := tx.Commit(); e != nil {
+		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kit.Rid)
+		return nil, e
+	}
+
+	updateIds, createIds := []uint32{}, []uint32{}
+	for _, v := range toUpdate {
+		updateIds = append(updateIds, v.ID)
+	}
+	for _, v := range toCreate {
+		createIds = append(createIds, v.ID)
+	}
+
+	return &pbds.UpsertTableContentResp{Ids: tools.MergeAndDeduplicate(createIds, updateIds)}, nil
+}
+
+func (s *Service) handleTableContent(kit *kit.Kit, tableStruct *table.DataSourceMapping,
+	oldContents []*table.DataSourceContent, newContents []*structpb.Struct) (
+	[]*table.DataSourceContent, []*table.DataSourceContent, []uint32, error) {
+	toCreate := make([]*table.DataSourceContent, 0)
+	toUpdate := make([]*table.DataSourceContent, 0)
+	delIDs := []uint32{}
 
 	var primary string
 	// 1. 查询出主键，按主键来对比
@@ -223,12 +285,13 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 	existingDatas := make(map[string]string, 0)
 	existingIDs := map[string]uint32{}
 	existingStates := make(map[string]string, 0)
-	if count > 0 {
-		for _, v := range contents {
+
+	if len(oldContents) > 0 {
+		for _, v := range oldContents {
 			// 统一转成字符串处理
 			data, err := json.Marshal(v.Spec.Content)
 			if err != nil {
-				return nil, err
+				return toCreate, toUpdate, delIDs, err
 			}
 			strValue := fmt.Sprintf("%v", v.Spec.Content[primary])
 			existingDatas[strValue] = string(data)
@@ -239,29 +302,27 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 
 	// 处理提交的数据
 	submitDatas := make(map[string]string, 0)
-	for _, v := range req.GetContents() {
+	for _, v := range newContents {
 		// 统一转成字符串
 		jsonData, err := json.Marshal(v.AsMap())
 		if err != nil {
-			return nil, err
+			return toCreate, toUpdate, delIDs, err
 		}
 		if v.AsMap()[primary] == nil {
-			return nil, errors.New(i18n.T(kit, "the primary key cannot be empty"))
+			return toCreate, toUpdate, delIDs, errors.New(i18n.T(kit, "the primary key cannot be empty"))
 		}
 		strValue := fmt.Sprintf("%v", v.AsMap()[primary])
 		submitDatas[strValue] = string(jsonData)
 	}
 
-	toCreate := make([]*table.DataSourceContent, 0)
-	toUpdate := make([]*table.DataSourceContent, 0)
 	for k, v := range submitDatas {
 		var jsonMap datatypes.JSONMap
 		if err := json.Unmarshal([]byte(v), &jsonMap); err != nil {
-			return nil, err
+			return toCreate, toUpdate, delIDs, err
 		}
 		base := &table.DataSourceContent{
 			Attachment: &table.DataSourceContentAttachment{
-				DataSourceMappingID: req.DataSourceMappingId,
+				DataSourceMappingID: tableStruct.ID,
 			},
 			Spec: &table.DataSourceContentSpec{
 				Content: jsonMap,
@@ -292,7 +353,7 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 		} else {
 			base.Spec.Status = table.KvStateAdd.String()
 			base.Revision.Creator = kit.User
-			base.Revision.CreatedAt = time.Now().Local()
+			base.Revision.CreatedAt = time.Now().UTC()
 			toCreate = append(toCreate, base)
 		}
 	}
@@ -300,66 +361,21 @@ func (s *Service) UpsertTableContent(ctx context.Context, req *pbds.UpsertTableC
 	// 合并切片
 	combined := append(toCreate, toUpdate...)
 
-	if err = handleAutoIncrement(kit, tableStruct.Spec.Columns_, combined); err != nil {
-		return nil, err
+	if err := handleAutoIncrement(kit, tableStruct.Spec.Columns_, combined); err != nil {
+		return toCreate, toUpdate, delIDs, err
 	}
 
-	if err = s.verifyTableData(kit, tableStruct.Spec.Columns_, combined); err != nil {
-		return nil, err
+	if err := s.verifyTableData(kit, tableStruct.Spec.Columns_, combined); err != nil {
+		return toCreate, toUpdate, delIDs, err
 	}
 
 	differenceData := getDifference(existingDatas, submitDatas)
 
-	delIDs := []uint32{}
 	for _, v := range differenceData {
 		delIDs = append(delIDs, existingIDs[v])
 	}
 
-	// 2. 创建、更新、删除数据
-	tx := s.dao.GenQuery().Begin()
-
-	if len(toCreate) != 0 {
-		if err := s.dao.DataSourceContent().BatchCreateWithTx(kit, tx, toCreate); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
-			}
-			return nil, err
-		}
-	}
-
-	if len(toUpdate) != 0 {
-		if err := s.dao.DataSourceContent().BatchUpdateWithTx(kit, tx, toUpdate); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
-			}
-			return nil, err
-		}
-	}
-
-	if len(delIDs) != 0 {
-		if err := s.dao.DataSourceContent().BatchDeleteWithTx(kit, tx, req.DataSourceMappingId,
-			delIDs); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
-			}
-			return nil, err
-		}
-	}
-
-	if e := tx.Commit(); e != nil {
-		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kit.Rid)
-		return nil, e
-	}
-
-	updateIds, createIds := []uint32{}, []uint32{}
-	for _, v := range toUpdate {
-		updateIds = append(updateIds, v.ID)
-	}
-	for _, v := range toCreate {
-		createIds = append(createIds, v.ID)
-	}
-
-	return &pbds.UpsertTableContentResp{Ids: tools.MergeAndDeduplicate(createIds, updateIds)}, nil
+	return toCreate, toUpdate, delIDs, nil
 }
 
 func getDifference(array1, array2 map[string]string) []string {
