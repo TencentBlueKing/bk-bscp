@@ -48,10 +48,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { IFiledsItemEditing } from '../../../../../.././../types/kv-table';
+  import { IFieldsItemEditing } from '../../../../../.././../types/kv-table';
 
   defineProps<{
-    filedsList: IFiledsItemEditing[];
+    filedsList: IFieldsItemEditing[];
   }>();
   // 添加自定义单元格class
   const getCellCls = ({ property }: { property: string }) => {

@@ -31,7 +31,7 @@
   import { ref, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { getTableStructure } from '../../../../../../api/kv-table';
-  import { ILocalTableFormEditing, IFiledsItemEditing } from '../../../../../../../types/kv-table';
+  import { ILocalTableFormEditing, IFieldsItemEditing } from '../../../../../../../types/kv-table';
   import ViewTable from './view-table.vue';
 
   const route = useRoute();
@@ -96,7 +96,7 @@
       formData.value = {
         table_name: res.details.spec.table_name,
         table_memo: res.details.spec.table_memo,
-        columns: columns as IFiledsItemEditing[],
+        columns: columns as IFieldsItemEditing[],
         visible_range: res.details.spec.visible_range.length === 0 ? ['*'] : res.details.spec.visible_range, // 如果没有权限范围，默认为全部
       };
     } catch (error) {

@@ -7,7 +7,8 @@
             <div
               v-for="item in tableStructureSource"
               :key="item.value"
-              :class="['table-source-type-item', { active: selectedType === item.value }]">
+              :class="['table-source-type-item', { active: selectedType === item.value }]"
+              @click="selectedType = item.value">
               <div class="header">
                 <div class="svg-wrap">
                   <div :class="['svg', item.svg]"></div>
@@ -20,13 +21,21 @@
         </Card>
         <ManualCreate
           v-if="selectedType === 'create'"
+          ref="fieldRef"
+          :columns="fieldsColumns"
+          :bk-biz-id="spaceId"
+          @change="fieldsColumns = $event" />
+        <ImportFormLocal
+          v-else-if="selectedType === 'import'"
+          ref="fieldRef"
+          :bk-biz-id="spaceId"
+          @change="handleUploadChange" />
+        <baseInfoForm
           ref="formRef"
-          :form="formData"
-          :is-manual-create="true"
           :bk-biz-id="spaceId"
           :is-edit="false"
+          :form="formData"
           @change="formData = $event" />
-        <ImportFormLocal v-else-if="selectedType === 'import'" ref="formRef" :bk-biz-id="spaceId" />
       </div>
     </template>
     <template #footer>
@@ -46,16 +55,17 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { storeToRefs } from 'pinia';
-  import { ILocalTableForm } from '../../../../../../types/kv-table';
-  import { createTable } from '../../../../../api/kv-table';
+  import { IFieldItem, ILocalTableBase, ILocalTableEditQuery } from '../../../../../../types/kv-table';
+  import { manualCreateTable, createStructAndContent } from '../../../../../api/kv-table';
   import { useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
-  import ManualCreate from '../components/table-structure-form.vue';
-  import ImportFormLocal from './import-form-local/index.vue';
+  import ManualCreate from './manual-create.vue';
+  import ImportFormLocal from './import-from-local.vue';
   import { useI18n } from 'vue-i18n';
   import BkMessage from 'bkui-vue/lib/message';
+  import baseInfoForm from '../components/base-info-form.vue';
 
   const { t } = useI18n();
 
@@ -65,13 +75,17 @@
 
   const selectedType = ref('create');
   const loading = ref(false);
+  const fieldRef = ref();
   const formRef = ref();
-  const formData = ref<ILocalTableForm>({
+
+  const formData = ref<ILocalTableBase>({
     table_name: '',
     table_memo: '',
-    visible_range: [],
-    columns: [],
+    visible_range: ['*'],
   });
+
+  const fieldsColumns = ref<IFieldItem[]>([]);
+  const uploadTableData = ref<ILocalTableEditQuery[]>([]);
 
   const tableStructureSource = [
     {
@@ -90,16 +104,38 @@
     },
   ];
 
+  const handleUploadChange = (columns: IFieldItem[], data: ILocalTableEditQuery[]) => {
+    fieldsColumns.value = columns;
+    uploadTableData.value = data;
+  };
+
   const handleCreate = async (redirectToEdit = false) => {
     try {
-      const validate = await formRef.value.validate();
+      const validate = (await formRef.value.validate()) && (await fieldRef.value.validate());
       if (!validate) return;
       loading.value = true;
-      const data = {
-        spec: formData.value,
-      };
+      let res;
+      if (selectedType.value === 'create') {
+        // 手动创建表结构
+        const data = {
+          spec: {
+            ...formData.value,
+            columns: fieldsColumns.value,
+          },
+        };
 
-      const res = await createTable(spaceId.value, data);
+        res = await manualCreateTable(spaceId.value, data);
+      } else {
+        const data = {
+          spec: {
+            ...formData.value,
+            columns: fieldsColumns.value,
+          },
+          contents: uploadTableData.value,
+        };
+
+        res = await createStructAndContent(spaceId.value, data);
+      }
 
       if (redirectToEdit) {
         // 跳转到编辑页面
@@ -112,7 +148,6 @@
         // 关闭创建弹窗
         handleCloseCreate();
       }
-
       BkMessage({ theme: 'success', message: t('新建表格成功') });
     } catch (error) {
       console.error(error);

@@ -1346,4 +1346,8 @@ export default {
   编辑表格成功: 'Edit table successfully',
   编辑数据成功: 'Edit data successfully',
   删除表格成功: 'Delete table successfully',
+  重新上传文件: 'Re-upload file',
+  '显示名重名，请修改源文件后重新上传': 'The display name is duplicated. Please modify the source file and re-upload it',
+  表结构: 'Table structure',
+  表格详情: 'Table details',
 };

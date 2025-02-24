@@ -1,18 +1,21 @@
 <template>
   <DetailLayout :name="$t('编辑表结构')" @close="handleClose">
     <template #content>
-      <div class="content-wrap">
-        <bk-loading :loading="formLoading">
-          <TableStructureForm
-            ref="formRef"
-            :bk-biz-id="spaceId"
-            :form="formData"
-            :is-manual-create="true"
-            :is-edit="true"
-            :has-table-data="hasTableData"
-            @change="handleFormChange" />
-        </bk-loading>
-      </div>
+      <bk-loading :loading="formLoading" class="content-wrap">
+        <ManualCreate
+          ref="fieldRef"
+          :columns="fieldsColumns"
+          :is-manual-create="true"
+          :bk-biz-id="spaceId"
+          :is-edit="false"
+          @change="fieldsColumns = $event" />
+        <baseInfoForm
+          ref="formRef"
+          :bk-biz-id="spaceId"
+          :is-edit="false"
+          :form="formData"
+          @change="formData = $event" />
+      </bk-loading>
     </template>
     <template #footer>
       <div class="operation-btns">
@@ -32,10 +35,11 @@
   import { onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { getTableStructure, editTable, getTableStructureHasData } from '../../../../../api/kv-table';
-  import { ILocalTableForm } from '../../../../../../types/kv-table';
+  import { IFieldItem, ILocalTableBase } from '../../../../../../types/kv-table';
   import DetailLayout from '../../component/detail-layout.vue';
-  import TableStructureForm from '../components/table-structure-form.vue';
+  import ManualCreate from '../create-table/manual-create.vue';
   import BkMessage from 'bkui-vue/lib/message';
+  import baseInfoForm from '../components/base-info-form.vue';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
@@ -46,20 +50,21 @@
   const tableId = ref(Number(route.params.id));
   const spaceId = ref(String(route.params.spaceId));
 
-  const formData = ref<ILocalTableForm>({
+  const formData = ref<ILocalTableBase>({
     table_name: '',
     table_memo: '',
-    visible_range: [],
-    columns: [],
+    visible_range: ['*'],
   });
+
+  const fieldsColumns = ref<IFieldItem[]>([]);
   const loading = ref(false);
   const formLoading = ref(false);
   const formRef = ref();
+  const fieldRef = ref();
   const hasTableData = ref(false);
 
   onMounted(async () => {
     await getStructureData();
-    formRef.value.translateFormData();
   });
 
   const getStructureData = async () => {
@@ -69,9 +74,10 @@
         getTableStructure(spaceId.value, tableId.value),
         getTableStructureHasData(spaceId.value, tableId.value),
       ]);
-      formData.value = data.details.spec;
+      const { columns, ...rest } = data.details.spec;
+      formData.value = rest;
+      fieldsColumns.value = columns;
       hasTableData.value = hasData.exist;
-      formRef.value.translateFormData();
     } catch (error) {
       console.error(error);
     } finally {
@@ -81,11 +87,14 @@
 
   const handleConfirm = async (redirectToEdit = false) => {
     try {
-      const validate = await formRef.value.validate();
+      const validate = (await formRef.value.validate()) && (await fieldRef.value.validate());
       if (!validate) return;
       loading.value = true;
       const data = {
-        spec: formData.value,
+        spec: {
+          ...formData.value,
+          columns: fieldsColumns.value,
+        },
       };
 
       const res = await editTable(spaceId.value, tableId.value, data);
@@ -107,10 +116,6 @@
     } finally {
       loading.value = false;
     }
-  };
-
-  const handleFormChange = (form: ILocalTableForm) => {
-    formData.value = form;
   };
 
   const handleClose = () => {

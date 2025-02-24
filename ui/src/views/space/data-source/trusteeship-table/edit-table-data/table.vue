@@ -6,9 +6,13 @@
     :data="tableData"
     show-overflow
     :header-row-height="50"
+    :min-height="0"
     :edit-config="{ mode: 'cell', trigger: 'click', showStatus: true }"
     :row-config="{ height: 42 }"
     :scroll-y="{ enabled: true, gt: 0 }"
+    :scroll-x="{ enabled: true, gt: 0 }"
+    show-header-overflow
+    show-footer-overflow
     :row-class-name="rowClassName"
     :cell-class-name="cellClassName"
     :edit-rules="validRules"
@@ -89,7 +93,7 @@
 <script lang="ts" setup>
   import { watch, ref, onMounted } from 'vue';
   import {
-    IFiledsItemEditing,
+    IFieldsItemEditing,
     IFieldItem,
     ILocalTableEditData,
     ILocalTableDataItem,
@@ -105,7 +109,7 @@
 
   const emits = defineEmits(['change', 'delete']);
 
-  const fieldsList = ref<IFiledsItemEditing[]>([]);
+  const fieldsList = ref<IFieldsItemEditing[]>([]);
   const tableData = ref<ILocalTableEditData[]>([]);
   const publishData = ref<ILocalTableEditData[]>([]); // 已上线的数据
   // const errorCells = ref<{ row: number; col: number }[]>([]);
@@ -360,10 +364,12 @@
           }
         }
         .vxe-number-input {
-          text-decoration: line-through;
-          .vxe-number-input--inner,
           .vxe-number-input--suffix {
             background: #fff;
+          }
+          .vxe-number-input--inner {
+            background: #fff;
+            text-decoration: line-through;
           }
         }
         .vxe-body--column:not(.primary) {
@@ -376,9 +382,11 @@
             }
           }
           .vxe-number-input {
-            text-decoration: line-through;
-            .vxe-number-input--inner,
             .vxe-number-input--suffix {
+              background: #ffeeee;
+            }
+            .vxe-number-input--inner {
+              text-decoration: line-through;
               background: #ffeeee;
             }
           }

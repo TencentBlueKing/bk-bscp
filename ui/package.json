@@ -39,7 +39,7 @@
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vuedraggable": "^4.1.0",
     "vxe-pc-ui": "4.3.58",
-    "vxe-table": "4.10.0"
+    "vxe-table": "^4.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
