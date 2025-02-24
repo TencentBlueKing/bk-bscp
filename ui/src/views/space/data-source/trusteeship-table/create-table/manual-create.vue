@@ -1,7 +1,7 @@
 <template>
   <div class="table-structure-form">
     <Card :title="$t('字段设置')">
-      <template v-if="isManualCreate" #suffix>
+      <template #suffix>
         <div class="add-fields" @click="handleAddFields">
           <Plus class="add-icon" />
           <span class="text">{{ $t('添加字段') }}</span>
@@ -9,9 +9,10 @@
       </template>
       <FieldsTable
         ref="tableRef"
-        :is-edit="props.isEdit"
         :has-table-data="hasTableData"
         :list="fieldsColumns"
+        :is-sql="false"
+        :is-import="false"
         @change="handleFieldsChange" />
     </Card>
   </div>
@@ -26,8 +27,6 @@
 
   const props = defineProps<{
     bkBizId: string;
-    isManualCreate: boolean;
-    isEdit: boolean;
     columns: IFieldItem[];
     hasTableData?: boolean;
   }>();
@@ -174,12 +173,6 @@
     .text {
       color: #3a84ff;
       font-size: 12px;
-    }
-  }
-
-  .table-structure-form {
-    .card:not(:last-child) {
-      margin-bottom: 16px;
     }
   }
 

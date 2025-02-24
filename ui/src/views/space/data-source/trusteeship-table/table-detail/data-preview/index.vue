@@ -12,8 +12,8 @@
             ">
             {{ $t('编辑数据') }}
           </bk-button>
-          <bk-button>{{ $t('导入') }}</bk-button>
-          <bk-button>{{ $t('导出') }}</bk-button>
+          <bk-button @click="isShowImportTable = true">{{ $t('导入') }}</bk-button>
+          <!-- <bk-button>{{ $t('导出') }}</bk-button> -->
         </div>
         <div class="head-right">
           <bk-input class="search-input">
@@ -37,6 +37,7 @@
           :pagination="pagination"
           :border="['outer']"
           class="preview-data-table"
+          show-overflow-tooltip
           @page-limit-change="handlePageLimitChange"
           @page-value-change="loadData">
           <bk-table-column v-for="item in fieldList" :key="item.name" :label="item.alias" :min-width="150">
@@ -47,7 +48,8 @@
                     {{ tag }}
                   </bk-tag>
                 </div>
-                <div v-else>{{ row.spec.content[item.name] }}</div>
+                <span v-else-if="row.spec.content[item.name]">{{ row.spec.content[item.name] }}</span>
+                <span v-else>--</span>
               </div>
             </template>
           </bk-table-column>
@@ -55,6 +57,7 @@
       </bk-loading>
     </div>
   </div>
+  <ImportTable v-model:show="isShowImportTable" :bk-biz-id="spaceId" :id="id" :name="name" @refresh="refresh" />
 </template>
 
 <script lang="ts" setup>
@@ -65,6 +68,7 @@
   import { Search } from 'bkui-vue/lib/icon';
   import SheetList from './sheet-list.vue';
   import useTablePagination from '../../../../../../utils/hooks/use-table-pagination';
+  import ImportTable from '../../edit-table-data/import-table.vue';
 
   const { pagination, updatePagination } = useTablePagination('trusteeship-table-preview');
 
@@ -73,6 +77,7 @@
 
   const spaceId = ref(String(route.params.spaceId));
   const id = ref(Number(route.params.id));
+  const name = ref(String(route.query.name));
 
   // @todo 手动创建表结构 无工作表 用表格名称作为工作表
   const dataList = ref([{ name: String(route.query.name) }]);
@@ -83,6 +88,7 @@
   const tableData = ref<ILocalTableEditData[]>([]);
   const tableLoading = ref(false);
   const commonList = ref([]);
+  const isShowImportTable = ref(false);
 
   const viewSheet = ref(String(route.query.name));
 
@@ -100,7 +106,7 @@
       const res = await getTableData(spaceId.value, id.value, query);
       fieldList.value = res.fields;
       tableData.value = res.details;
-      pagination.value.count = Number(res.count);
+      updatePagination('count', Number(res.count));
     } catch (error) {
       console.error(error);
     } finally {
@@ -110,6 +116,11 @@
 
   const handlePageLimitChange = (val: number) => {
     updatePagination('limit', val);
+    loadData();
+  };
+
+  const refresh = () => {
+    updatePagination('current', 1);
     loadData();
   };
 </script>

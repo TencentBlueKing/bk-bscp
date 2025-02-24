@@ -5,9 +5,7 @@
     width="960"
     height="720"
     ext-cls="import-table-dialog"
-    :esc-close="false"
-    :before-close="handleBeforeClose"
-    @closed="emits('update:show', false)">
+    :esc-close="false">
     <div class="select-file">
       <div class="label">{{ $t('选择文件') }}</div>
       <div class="upload-wrap">
@@ -59,17 +57,13 @@
           <bk-option v-for="item in sheetList" :id="item.table_name" :key="item.table_name" :name="item.table_name" />
         </bk-select>
         <div class="sheet-status">
-          <div v-if="sheetStatus === 'loading'" class="status-content">
-            <Spinner class="spinner-icon icon" />
-            <span>{{ $t('正在匹配表格字段') }}</span>
-          </div>
-          <div v-else-if="sheetStatus === 'success'" class="status-content">
-            <Success class="success-icon icon" />
-            <span>{{ $t('表格字段匹配，可继续导入') }}</span>
-          </div>
-          <div v-else class="status-content">
+          <div v-if="selectSheet.is_change" class="status-content">
             <Warn class="warn-icon icon" />
             <span>{{ $t('表格字段有差异，请先确认调整') }}</span>
+          </div>
+          <div v-else class="status-content">
+            <Success class="success-icon icon" />
+            <span>{{ $t('表格字段匹配，可继续导入') }}</span>
           </div>
         </div>
       </div>
@@ -91,42 +85,62 @@
         </span>
       </div>
       <div class="fields">
-        <UploadFieldsTable :list="selectSheet.columns" :is-import="true" @change="handleChangeFields" />
+        <sqlFieldsTable
+          v-if="uploadFile?.format === 'sql'"
+          :list="selectSheet.columns as IFieldsItemEditing[]"
+          :is-import="true"
+          :is-sql="true"
+          @change="handleChangeFields" />
+        <xslFieldsTable
+          v-else
+          :list="selectSheet.columns as IFieldsItemEditing[]"
+          :is-import="true"
+          @change="handleChangeFields" />
       </div>
     </div>
     <template #footer>
       <bk-button theme="primary" style="margin-right: 8px" @click="handleImport">
         {{ $t('导入') }}
       </bk-button>
-      <bk-button @click="emits('update:show', false)">{{ $t('取消') }}</bk-button>
+      <bk-button @click="handleClose">{{ $t('取消') }}</bk-button>
     </template>
   </bk-dialog>
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import { Upload, ExcelFill, Done, Error, Success, Warn, Spinner, InfoLine } from 'bkui-vue/lib/icon';
-  import UploadFieldsTable from '../components/fields-table/upload.vue';
-  import { ILocalTableImportItem, IFieldsItemEditing } from '../../../../../../types/kv-table';
-  import { importTable } from '../../../../../api/kv-table';
+  import { Upload, ExcelFill, Done, Error, Success, Warn, InfoLine } from 'bkui-vue/lib/icon';
+  import sqlFieldsTable from '../components/fields-table/manual.vue';
+  import xslFieldsTable from '../components/fields-table/upload.vue';
+  import { ILocalTableImportItem, IFieldsItemEditing, IFieldItem } from '../../../../../../types/kv-table';
+  import { importTable, updateStructAndContent } from '../../../../../api/kv-table';
+
+  interface IUploadFile {
+    name: string;
+    status: string;
+    progress: number;
+    format: string;
+  }
 
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
     id: number;
+    name: string;
   }>();
 
-  const emits = defineEmits(['update:show']);
-  const sheetStatus = ref('warn');
+  const emits = defineEmits(['update:show', 'refresh']);
   const isClearData = ref(false);
   const sheetList = ref<ILocalTableImportItem[]>([]);
   const selectSheet = ref<ILocalTableImportItem>({
     table_name: '',
     rows: [],
     columns: [],
+    is_change: false,
   });
-
-  const uploadFile = ref();
+  const confirmLoading = ref(false);
+  const uploadFile = ref<IUploadFile>();
+  const fieldsColumns = ref<IFieldItem[]>([]);
 
   const handleFileUpload = async (option: { file: File }) => {
     try {
@@ -135,13 +149,15 @@
         table_name: '',
         rows: [],
         columns: [],
+        is_change: false,
       };
       uploadFile.value = {
         name: option.file.name,
         status: 'uploading',
         progress: 0,
+        format: option.file.name.split('.').pop() as string,
       };
-      sheetList.value = await importTable(
+      const res = await importTable(
         props.bkBizId,
         props.id,
         option.file.name.split('.').pop() as string,
@@ -150,10 +166,11 @@
           uploadFile.value!.progress = progress;
         },
       );
+      console.log(res);
+      sheetList.value = res;
       translateFileds();
       uploadFile.value!.status = 'success';
       selectSheet.value = sheetList.value[0];
-      // handleChange();
     } catch (error) {
       console.error(error);
       uploadFile.value!.status = 'fail';
@@ -167,6 +184,7 @@
         if (index === 0) {
           item.primary = true;
           item.unique = true;
+          item.not_null = true;
         }
         let default_value: string | string[] | undefined;
         let enum_value;
@@ -218,42 +236,70 @@
   };
 
   // 表单数据转接口数据
-  // const handleChange = () => {
-  //   const columns = selectSheet.value.columns.map((item: any) => {
-  //     let default_value;
-  //     if (item.column_type === 'enum' && item.selected && item.default_value) {
-  //       default_value = JSON.stringify(item.default_value);
-  //     } else {
-  //       default_value = String(item.default_value);
-  //       if (item.default_value === null) {
-  //         default_value = '';
-  //       }
-  //     }
-  //     let enum_value;
-  //     if (item.column_type === 'enum' && Array.isArray(item.enum_value)) {
-  //       enum_value = JSON.stringify(item.enum_value);
-  //     } else {
-  //       enum_value = '';
-  //     }
-  //     return {
-  //       default_value,
-  //       enum_value, // 枚举值设置内容
-  //       name: item.name,
-  //       alias: item.alias,
-  //       primary: item.primary,
-  //       column_type: item.column_type,
-  //       not_null: item.not_null,
-  //       unique: item.unique,
-  //       read_only: item.read_only,
-  //       auto_increment: item.auto_increment,
-  //       selected: item.selected,
-  //     };
-  //   });
-  // };
+  const handleChange = () => {
+    fieldsColumns.value = selectSheet.value.columns.map((item: any) => {
+      let default_value;
+      if (item.column_type === 'enum' && item.selected && item.default_value) {
+        default_value = JSON.stringify(item.default_value);
+      } else {
+        default_value = String(item.default_value);
+        if (item.default_value === null) {
+          default_value = '';
+        }
+      }
+      let enum_value;
+      if (item.column_type === 'enum' && Array.isArray(item.enum_value)) {
+        enum_value = JSON.stringify(item.enum_value);
+        console.log(enum_value);
+      } else {
+        enum_value = '';
+      }
+      return {
+        default_value,
+        enum_value, // 枚举值设置内容
+        name: item.name,
+        alias: item.alias,
+        primary: item.primary,
+        column_type: item.column_type,
+        not_null: item.not_null,
+        unique: item.unique,
+        read_only: item.read_only,
+        auto_increment: item.auto_increment,
+        selected: item.selected,
+        status: item.status,
+      };
+    });
+  };
 
-  const handleBeforeClose = () => {};
+  const handleClose = () => {
+    sheetList.value = [];
+    selectSheet.value = { table_name: '', rows: [], columns: [], is_change: false };
+    uploadFile.value = undefined;
+    emits('update:show', false);
+  };
 
-  const handleImport = () => {};
+  const handleImport = async () => {
+    try {
+      handleChange();
+      confirmLoading.value = true;
+      const data = {
+        spec: {
+          table_name: props.name,
+          columns: fieldsColumns.value,
+        },
+        contents: selectSheet.value.rows,
+        replaceAll: isClearData.value,
+      };
+
+      await updateStructAndContent(props.bkBizId, props.id, data);
+      handleClose();
+      emits('refresh');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      confirmLoading.value = false;
+    }
+  };
 </script>
 
 <style scoped lang="scss">

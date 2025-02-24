@@ -1,23 +1,21 @@
 <template>
   <DetailLayout :name="$t('编辑表结构')" @close="handleClose">
     <template #content>
-      <div class="content-wrap">
-        <bk-loading :loading="formLoading">
-          <ManualCreate
-            ref="fieldRef"
-            :columns="fieldsColumns"
-            :is-manual-create="true"
-            :bk-biz-id="spaceId"
-            :is-edit="false"
-            @change="fieldsColumns = $event" />
-          <baseInfoForm
-            ref="formRef"
-            :bk-biz-id="spaceId"
-            :is-edit="false"
-            :form="formData"
-            @change="formData = $event" />
-        </bk-loading>
-      </div>
+      <bk-loading :loading="formLoading" class="content-wrap">
+        <ManualCreate
+          ref="fieldRef"
+          :columns="fieldsColumns"
+          :is-manual-create="true"
+          :bk-biz-id="spaceId"
+          :is-edit="false"
+          @change="fieldsColumns = $event" />
+        <baseInfoForm
+          ref="formRef"
+          :bk-biz-id="spaceId"
+          :is-edit="false"
+          :form="formData"
+          @change="formData = $event" />
+      </bk-loading>
     </template>
     <template #footer>
       <div class="operation-btns">

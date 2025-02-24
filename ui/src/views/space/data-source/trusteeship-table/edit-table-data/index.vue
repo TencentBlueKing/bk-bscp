@@ -25,7 +25,12 @@
       </div>
     </template>
   </DetailLayout>
-  <ImportTable v-model:show="isShowImportTable" :bk-biz-id="spaceId" :id="tableId" />
+  <ImportTable
+    v-model:show="isShowImportTable"
+    :bk-biz-id="spaceId"
+    :id="tableId"
+    :name="name"
+    @refresh="getFieldsList" />
 </template>
 
 <script lang="ts" setup>

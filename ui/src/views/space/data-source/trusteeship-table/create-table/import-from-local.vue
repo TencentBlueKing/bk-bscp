@@ -52,6 +52,7 @@
         <sqlFieldsTable
           v-if="uploadFile?.format === 'sql'"
           ref="tableRef"
+          :is-import="false"
           :is-sql="true"
           :list="selectSheet!.columns as IFieldsItemEditing[]"
           @change="handleFieldsChange" />
@@ -99,6 +100,7 @@
     table_name: '',
     rows: [],
     columns: [],
+    is_change: false,
   });
 
   const handleFileUpload = async (option: { file: File }) => {
@@ -108,6 +110,7 @@
         table_name: '',
         rows: [],
         columns: [],
+        is_change: false,
       };
       uploadFile.value = {
         name: option.file.name,

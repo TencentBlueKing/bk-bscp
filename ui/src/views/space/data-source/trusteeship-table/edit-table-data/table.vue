@@ -6,6 +6,7 @@
     :data="tableData"
     show-overflow
     :header-row-height="50"
+    :min-height="0"
     :edit-config="{ mode: 'cell', trigger: 'click', showStatus: true }"
     :row-config="{ height: 42 }"
     :scroll-y="{ enabled: true, gt: 0 }"

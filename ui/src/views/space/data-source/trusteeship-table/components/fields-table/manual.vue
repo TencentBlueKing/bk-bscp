@@ -19,7 +19,7 @@
         :move="handleDrag"
         @end="emits('change', fieldsList)">
         <template #item="{ element, index }">
-          <tr>
+          <tr :class="[isImport ? element.status : '']">
             <td :class="getCellCLs(index, 'name')">
               <bk-input
                 v-model="element.name"
@@ -137,10 +137,12 @@
   const props = withDefaults(
     defineProps<{
       list: IFieldsItemEditing[];
+      isImport: boolean; // 是否是导入编辑
       isSql: boolean; // 是否是 SQL 模式
       hasTableData?: boolean; // 是否已有表格数据
     }>(),
     {
+      isImport: false,
       isSql: false,
     },
   );
@@ -319,6 +321,25 @@
   .fileds-table {
     border: 1px solid #dcdee5;
     border-collapse: collapse;
+    max-height: 600px;
+    overflow: auto;
+    .DELETE,
+    .ADD {
+      td:not(.fields-alias-td) {
+        :deep(.bk-input) {
+          .bk-input--text,
+          & {
+            background: inherit;
+          }
+        }
+      }
+    }
+    .DELETE {
+      background: #ffeeee;
+    }
+    .ADD {
+      background: #f2fff4;
+    }
     th,
     td {
       position: relative;

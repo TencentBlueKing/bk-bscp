@@ -36,6 +36,7 @@ export interface ILocalTableImportItem {
   table_name: string;
   rows: any;
   columns: IFieldItem[] | IFieldsItemEditing[];
+  is_change: boolean;
 }
 
 // 托管表格列表

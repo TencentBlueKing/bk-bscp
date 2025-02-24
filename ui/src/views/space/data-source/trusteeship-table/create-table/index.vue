@@ -23,9 +23,7 @@
           v-if="selectedType === 'create'"
           ref="fieldRef"
           :columns="fieldsColumns"
-          :is-manual-create="true"
           :bk-biz-id="spaceId"
-          :is-edit="false"
           @change="fieldsColumns = $event" />
         <ImportFormLocal
           v-else-if="selectedType === 'import'"
@@ -58,7 +56,7 @@
   import { ref } from 'vue';
   import { storeToRefs } from 'pinia';
   import { IFieldItem, ILocalTableBase, ILocalTableEditQuery } from '../../../../../../types/kv-table';
-  import { manualCreateTable, importCreateTable } from '../../../../../api/kv-table';
+  import { manualCreateTable, createStructAndContent } from '../../../../../api/kv-table';
   import { useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import DetailLayout from '../../component/detail-layout.vue';
@@ -107,7 +105,6 @@
   ];
 
   const handleUploadChange = (columns: IFieldItem[], data: ILocalTableEditQuery[]) => {
-    console.log(columns, data);
     fieldsColumns.value = columns;
     uploadTableData.value = data;
   };
@@ -137,7 +134,7 @@
           contents: uploadTableData.value,
         };
 
-        res = await importCreateTable(spaceId.value, data);
+        res = await createStructAndContent(spaceId.value, data);
       }
 
       if (redirectToEdit) {
