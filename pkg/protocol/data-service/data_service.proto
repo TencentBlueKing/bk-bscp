@@ -321,7 +321,12 @@ service Data {
   rpc UpsertTableContent(UpsertTableContentReq) returns (UpsertTableContentResp) {}
   // 获取表数据列表
   rpc ListTableContent(ListTableContentReq) returns (ListTableContentResp) {}
+  // 检测某个字段是否有值
   rpc CheckTableField(CheckTableFieldReq) returns (CheckTableFieldResp) {}
+  // 创建表结构和数据
+  rpc CreateTableStructAndContent(CreateTableStructAndContentReq) returns (CreateTableStructAndContentResp) {}
+  // 编辑表结构和数据
+  rpc UpdateTableStructAndContent(UpdateTableStructAndContentReq) returns (pbbase.EmptyResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2316,4 +2321,22 @@ message GetLatestTemplateVersionsInSpaceResp {
     repeated pbtr.TemplateRevisionSpec template_revision = 2;
   }
   repeated TemplateSetSpec template_set = 2;
+}
+
+message CreateTableStructAndContentReq {
+  uint32 biz_id = 1;
+  pbdsm.DataSourceMappingSpec spec = 2;
+  repeated google.protobuf.Struct contents = 3;
+}
+
+message CreateTableStructAndContentResp {
+  uint32 data_source_mapping_id = 1;
+}
+
+message UpdateTableStructAndContentReq {
+  uint32 biz_id = 1;
+  uint32 data_source_mapping_id = 2;
+  pbdsm.DataSourceMappingSpec spec = 3;
+  repeated google.protobuf.Struct contents = 4;
+  bool replace_all = 5;
 }

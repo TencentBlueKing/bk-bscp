@@ -148,3 +148,57 @@ func (s *Service) DeleteDataSourceTable(ctx context.Context, req *pbcs.DeleteDat
 
 	return &pbcs.DeleteDataSourceTableResp{}, nil
 }
+
+// CreateTableStructAndContent implements pbcs.ConfigServer.
+func (s *Service) CreateTableStructAndContent(ctx context.Context, req *pbcs.CreateTableStructAndContentReq) (
+	*pbcs.CreateTableStructAndContentResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.Credential, Action: meta.Manage}, BizID: req.BizId},
+	}
+	err := s.authorizer.Authorize(kit, res...)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.CreateTableStructAndContent(kit.RpcCtx(), &pbds.CreateTableStructAndContentReq{
+		BizId:    req.GetBizId(),
+		Spec:     req.GetSpec(),
+		Contents: req.GetContents(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.CreateTableStructAndContentResp{
+		DataSourceMappingId: resp.GetDataSourceMappingId(),
+	}, nil
+}
+
+// UpdateTableStructAndContent implements pbcs.ConfigServer.
+func (s *Service) UpdateTableStructAndContent(ctx context.Context, req *pbcs.UpdateTableStructAndContentReq) (
+	*pbcs.UpdateTableStructAndContentResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.Credential, Action: meta.Manage}, BizID: req.BizId},
+	}
+	err := s.authorizer.Authorize(kit, res...)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.client.DS.UpdateTableStructAndContent(kit.RpcCtx(), &pbds.UpdateTableStructAndContentReq{
+		BizId:               req.GetBizId(),
+		DataSourceMappingId: req.GetDataSourceMappingId(),
+		Spec:                req.GetSpec(),
+		Contents:            req.GetContents(),
+		ReplaceAll:          req.GetReplaceAll(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.UpdateTableStructAndContentResp{}, nil
+}

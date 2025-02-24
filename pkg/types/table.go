@@ -16,11 +16,12 @@ import "github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 
 type TableImportResp struct {
 	TableName string                   `json:"table_name"`
-	Columns   []Columns_               `json:"columns"`
+	Columns   []*Columns_              `json:"columns"`
 	Rows      []map[string]interface{} `json:"rows"`
+	IsChange  bool                     `json:"is_change"`
 }
 
 type Columns_ struct {
-	table.Columns_
+	*table.Columns_
 	Status string `json:"status"`
 }

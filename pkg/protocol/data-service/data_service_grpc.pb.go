@@ -224,6 +224,8 @@ const (
 	Data_UpsertTableContent_FullMethodName                = "/pbds.Data/UpsertTableContent"
 	Data_ListTableContent_FullMethodName                  = "/pbds.Data/ListTableContent"
 	Data_CheckTableField_FullMethodName                   = "/pbds.Data/CheckTableField"
+	Data_CreateTableStructAndContent_FullMethodName       = "/pbds.Data/CreateTableStructAndContent"
+	Data_UpdateTableStructAndContent_FullMethodName       = "/pbds.Data/UpdateTableStructAndContent"
 )
 
 // DataClient is the client API for Data service.
@@ -465,7 +467,12 @@ type DataClient interface {
 	UpsertTableContent(ctx context.Context, in *UpsertTableContentReq, opts ...grpc.CallOption) (*UpsertTableContentResp, error)
 	// 获取表数据列表
 	ListTableContent(ctx context.Context, in *ListTableContentReq, opts ...grpc.CallOption) (*ListTableContentResp, error)
+	// 检测某个字段是否有值
 	CheckTableField(ctx context.Context, in *CheckTableFieldReq, opts ...grpc.CallOption) (*CheckTableFieldResp, error)
+	// 创建表结构和数据
+	CreateTableStructAndContent(ctx context.Context, in *CreateTableStructAndContentReq, opts ...grpc.CallOption) (*CreateTableStructAndContentResp, error)
+	// 编辑表结构和数据
+	UpdateTableStructAndContent(ctx context.Context, in *UpdateTableStructAndContentReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 }
 
 type dataClient struct {
@@ -2204,6 +2211,24 @@ func (c *dataClient) CheckTableField(ctx context.Context, in *CheckTableFieldReq
 	return out, nil
 }
 
+func (c *dataClient) CreateTableStructAndContent(ctx context.Context, in *CreateTableStructAndContentReq, opts ...grpc.CallOption) (*CreateTableStructAndContentResp, error) {
+	out := new(CreateTableStructAndContentResp)
+	err := c.cc.Invoke(ctx, Data_CreateTableStructAndContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) UpdateTableStructAndContent(ctx context.Context, in *UpdateTableStructAndContentReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
+	out := new(base.EmptyResp)
+	err := c.cc.Invoke(ctx, Data_UpdateTableStructAndContent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2443,7 +2468,12 @@ type DataServer interface {
 	UpsertTableContent(context.Context, *UpsertTableContentReq) (*UpsertTableContentResp, error)
 	// 获取表数据列表
 	ListTableContent(context.Context, *ListTableContentReq) (*ListTableContentResp, error)
+	// 检测某个字段是否有值
 	CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error)
+	// 创建表结构和数据
+	CreateTableStructAndContent(context.Context, *CreateTableStructAndContentReq) (*CreateTableStructAndContentResp, error)
+	// 编辑表结构和数据
+	UpdateTableStructAndContent(context.Context, *UpdateTableStructAndContentReq) (*base.EmptyResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3025,6 +3055,12 @@ func (UnimplementedDataServer) ListTableContent(context.Context, *ListTableConte
 }
 func (UnimplementedDataServer) CheckTableField(context.Context, *CheckTableFieldReq) (*CheckTableFieldResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckTableField not implemented")
+}
+func (UnimplementedDataServer) CreateTableStructAndContent(context.Context, *CreateTableStructAndContentReq) (*CreateTableStructAndContentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTableStructAndContent not implemented")
+}
+func (UnimplementedDataServer) UpdateTableStructAndContent(context.Context, *UpdateTableStructAndContentReq) (*base.EmptyResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateTableStructAndContent not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6494,6 +6530,42 @@ func _Data_CheckTableField_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_CreateTableStructAndContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTableStructAndContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CreateTableStructAndContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CreateTableStructAndContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CreateTableStructAndContent(ctx, req.(*CreateTableStructAndContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_UpdateTableStructAndContent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTableStructAndContentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).UpdateTableStructAndContent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_UpdateTableStructAndContent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).UpdateTableStructAndContent(ctx, req.(*UpdateTableStructAndContentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7268,6 +7340,14 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckTableField",
 			Handler:    _Data_CheckTableField_Handler,
+		},
+		{
+			MethodName: "CreateTableStructAndContent",
+			Handler:    _Data_CreateTableStructAndContent_Handler,
+		},
+		{
+			MethodName: "UpdateTableStructAndContent",
+			Handler:    _Data_UpdateTableStructAndContent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

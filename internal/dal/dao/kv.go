@@ -302,7 +302,6 @@ func (dao *kvDao) Update(kit *kit.Kit, kv *table.Kv) error {
 		AppId:            kv.Attachment.AppID,
 	}).PrepareUpdate(kv)
 
-	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
 		q = tx.Kv.WithContext(kit.Ctx)
 		if _, e := q.Where(m.BizID.Eq(kv.Attachment.BizID), m.ID.Eq(kv.ID)).

@@ -40,14 +40,16 @@ type DataSourceContent interface {
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.DataSourceContent) error
 	// BatchCreateWithTx multiple data source content with transaction.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.DataSourceContent) error
-	// BatchDeleteWithTx batch configItem instances with transaction.
-	BatchDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, dataSourceMappingID uint32, ids []uint32) error
+	// BatchFakeDeleteWithTx batch fake delete table content instances with transaction.
+	BatchFakeDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, dataSourceMappingID uint32, ids []uint32) error
 	// ListByDataSourceMappingID 根据表结构ID获取数据列表
 	ListByDataSourceMappingID(kit *kit.Kit, dataSourceMappingID uint32, opt *types.BasePage) (
 		[]*table.DataSourceContent, int64, error)
 	// ListByJsonField 根据某个json字段获取数据列表
 	ListByJsonField(kit *kit.Kit, dataSourceMappingID uint32, fieldName string,
 		fieldType table.ColumnType, opt *types.BasePage) ([]*table.DataSourceContent, int64, error)
+	// BatchReallyDeleteWithTx batch really delete table content instances with transaction.
+	BatchReallyDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, dataSourceMappingID uint32, ids []uint32) error
 }
 
 var _ DataSourceContent = new(dataSourceContentDao)
@@ -57,6 +59,19 @@ type dataSourceContentDao struct {
 	dataSourceMappingDao DataSourceMapping
 	idGen                IDGenInterface
 	auditDao             AuditDao
+}
+
+// BatchReallyDeleteWithTx implements DataSourceContent.
+func (dao *dataSourceContentDao) BatchReallyDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx,
+	dataSourceMappingID uint32, ids []uint32) error {
+	m := dao.genQ.DataSourceContent
+	q := tx.DataSourceContent.WithContext(kit.Ctx)
+	_, err := q.Where(m.DataSourceMappingID.Eq(dataSourceMappingID), m.ID.In(ids...)).Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // filterContentFields filters out specified fields from the Content.
@@ -205,8 +220,9 @@ func addCondition(conds *[]rawgen.Condition, field field.Expr, key string, value
 	*conds = append(*conds, utils.RawCond(cond, args...))
 }
 
-// BatchDeleteWithTx implements DataSourceContent.
-func (dao *dataSourceContentDao) BatchDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, dataSourceMappingID uint32, ids []uint32) error {
+// BatchFakeDeleteWithTx implements DataSourceContent.
+func (dao *dataSourceContentDao) BatchFakeDeleteWithTx(kit *kit.Kit, tx *gen.QueryTx,
+	dataSourceMappingID uint32, ids []uint32) error {
 	m := dao.genQ.DataSourceContent
 	q := tx.DataSourceContent.WithContext(kit.Ctx)
 	_, err := q.Where(m.DataSourceMappingID.Eq(dataSourceMappingID), m.ID.In(ids...)).

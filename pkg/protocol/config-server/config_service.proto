@@ -1342,6 +1342,20 @@ option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/field/{field_name}"
     };
   }
+  // 创建表结构和数据
+  rpc CreateTableStructAndContent(CreateTableStructAndContentReq) returns (CreateTableStructAndContentResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/table/struct_and_content"
+      body: "*"
+    };
+  }
+  // 编辑表结构和数据
+  rpc UpdateTableStructAndContent(UpdateTableStructAndContentReq) returns (UpdateTableStructAndContentResp) {
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/table/{data_source_mapping_id}/struct_and_content"
+      body: "*"
+    };
+  }
 }
 
 message UpdateCredentialScopeReq {
@@ -4299,3 +4313,30 @@ message GetLatestTemplateVersionsInSpaceResp {
   }
   repeated TemplateSetSpec template_set = 2;
 }
+
+message CreateTableStructAndContentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  pbdsm.DataSourceMappingSpec spec = 2;
+  repeated google.protobuf.Struct contents = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
+}
+
+message CreateTableStructAndContentResp {
+  uint32 data_source_mapping_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+}
+
+message UpdateTableStructAndContentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_mapping_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表结构ID" }];
+  pbdsm.DataSourceMappingSpec spec = 3;
+  repeated google.protobuf.Struct contents = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
+  bool replace_all = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否替换全部：如果为true会覆盖已有的文件，不存在的则删除",
+    default: "false"
+  }];
+}
+
+message UpdateTableStructAndContentResp {}
