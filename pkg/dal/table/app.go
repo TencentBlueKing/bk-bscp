@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -53,7 +54,7 @@ func (a *App) ResID() uint32 {
 
 // ResType AuditRes interface
 func (a *App) ResType() string {
-	return "app"
+	return string(enumor.App)
 }
 
 // ValidateCreate validate app's info when created.
@@ -301,6 +302,8 @@ const (
 	KvXml DataType = "xml"
 	// KvSecret is the type for secret kv
 	KvSecret DataType = "secret"
+	// KvTab is the type for table kv
+	KvTab DataType = "table"
 )
 
 // ValidateApp the kvType and value match
@@ -314,6 +317,7 @@ func (k DataType) ValidateApp(kit *kit.Kit) error {
 	case KvYAML:
 	case KvXml:
 	case KvSecret:
+	case KvTab:
 	default:
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid data-type"))
 	}

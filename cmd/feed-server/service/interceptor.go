@@ -152,11 +152,11 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 	case pbfs.Upstream_GetKvValue_FullMethodName:
 		request := req.(*pbfs.GetKvValueReq)
 		param.BizID = request.BizId
-		param.AppNames = append(param.AppNames, request.GetAppMeta().App)
+		param.AppNames = append(param.AppNames, request.GetAppMeta().GetApp())
 	case pbfs.Upstream_PullKvMeta_FullMethodName:
 		request := req.(*pbfs.PullKvMetaReq)
 		param.BizID = request.BizId
-		param.AppNames = append(param.AppNames, request.GetAppMeta().App)
+		param.AppNames = append(param.AppNames, request.GetAppMeta().GetApp())
 	case pbfs.Upstream_Messaging_FullMethodName:
 		request := req.(*pbfs.MessagingMeta)
 		if sfs.MessagingType(request.Type) == sfs.VersionChangeMessage {
@@ -182,15 +182,15 @@ func FeedUnaryUpdateLastConsumedTimeInterceptor(ctx context.Context, req interfa
 	case pbfs.Upstream_PullAppFileMeta_FullMethodName:
 		request := req.(*pbfs.PullAppFileMetaReq)
 		param.BizID = request.BizId
-		param.AppNames = append(param.AppNames, request.GetAppMeta().App)
+		param.AppNames = append(param.AppNames, request.GetAppMeta().GetApp())
 	case pbfs.Upstream_GetDownloadURL_FullMethodName:
 		request := req.(*pbfs.GetDownloadURLReq)
 		param.BizID = request.BizId
-		param.AppIDs = append(param.AppIDs, request.GetFileMeta().GetConfigItemAttachment().AppId)
+		param.AppIDs = append(param.AppIDs, request.GetFileMeta().GetConfigItemAttachment().GetAppId())
 	case pbfs.Upstream_GetSingleKvValue_FullMethodName, pbfs.Upstream_GetSingleKvMeta_FullMethodName:
 		request := req.(*pbfs.GetSingleKvValueReq)
 		param.BizID = request.BizId
-		param.AppNames = append(param.AppNames, request.GetAppMeta().App)
+		param.AppNames = append(param.AppNames, request.GetAppMeta().GetApp())
 	default:
 		return handler(ctx, req)
 	}

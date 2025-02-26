@@ -3,7 +3,9 @@
     <form-option
       ref="fileOptionRef"
       :directory-show="false"
-      :config-show="(['python', 'go'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'"
+      :config-show="
+        (['python', 'go', 'trpc'].includes(props.templateName) && activeTab === 0) || props.templateName === 'http'
+      "
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       :template-name="props.templateName"
@@ -41,6 +43,24 @@
         :variables="variables"
         :language="codeLanguage"
         @change="(val: string) => (copyReplaceVal = val)" />
+      <div v-if="templateName === 'trpc'">
+        <bk-alert class="alert-tips-wrap" theme="info">
+          <div class="alert-tips">
+            <span>{{ $t('tRPC配置示例中的./trpc_go.yaml文件') }}</span>
+            <close-line class="close-line" @click="topTipShow = false" />
+          </div>
+        </bk-alert>
+        <bk-button theme="primary" class="copy-btn" style="margin-top: 8px" @click="copyExample(false)">
+          {{ $t('复制示例') }}
+        </bk-button>
+        <code-preview
+          class="preview-component"
+          :style="{ height: '640px' }"
+          :code-val="replaceConfigVal"
+          :variables="variables"
+          language="yaml"
+          @change="(val: string) => (copyReplaceConfigVal = val)" />
+      </div>
     </div>
   </section>
 </template>
@@ -54,6 +74,8 @@
   import BkMessage from 'bkui-vue/lib/message';
   import FormOption from '../form-option.vue';
   import codePreview from '../code-preview.vue';
+  import useGlobalStore from '../../../../../../store/global';
+  import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
 
@@ -63,6 +85,9 @@
   }>();
 
   const emits = defineEmits(['selected-key-data']);
+
+  const globalStore = useGlobalStore();
+  const { spaceFeatureFlags } = storeToRefs(globalStore);
 
   const basicInfo = inject<{ serviceName: Ref<string>; serviceType: Ref<string> }>('basicInfo');
   const { t } = useI18n();
@@ -74,6 +99,9 @@
   const codeVal = ref(''); // 存储yaml字符原始值
   const replaceVal = ref(''); // 替换后的值
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据
+  const configVal = ref('');
+  const replaceConfigVal = ref('');
+  const copyReplaceConfigVal = ref('');
   const variables = ref<IVariableEditParams[]>();
   const activeTab = ref(0); // 激活tab索引
   const topTipShow = ref(true);
@@ -117,6 +145,19 @@
             'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。',
           ),
           codePreviewHeight: 1250,
+        };
+      case 'trpc':
+        if (!activeTab.value) {
+          return {
+            topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
+            codePreviewHeight: 1050,
+          };
+        }
+        return {
+          topTip: t(
+            'Watch方法：通过建立长连接，实时监听配置版本的变更，当新版本的配置发布时，将自动调用回调方法处理新的配置信息，适用于需要实时响应配置变更的场景。',
+          ),
+          codePreviewHeight: 1220,
         };
       case 'java':
         if (!activeTab.value) {
@@ -169,6 +210,9 @@
     if (props.templateName === 'http') {
       return tabArr.value[activeTab.value].toLocaleLowerCase();
     }
+    if (props.templateName === 'trpc') {
+      return 'go';
+    }
     return props.templateName;
   });
 
@@ -214,6 +258,10 @@
               : `'${labelArrType}'`;
         }
         break;
+      case 'trpc':
+        data.labelArr = data.labelArr.map((str: string) => (' '.repeat(18) + str.split(':').join(': ')));
+        labelArrType = data.labelArr.length ? `\n${data.labelArr.join('\n')}` : '{}';
+        break;
       default:
         labelArrType = data.labelArr.length ? `{${data.labelArr.join(', ')}}` : '{}';
         break;
@@ -223,6 +271,7 @@
       labelArrType,
     };
     replaceVal.value = codeVal.value; // 数据重置
+    replaceConfigVal.value = configVal.value;
     updateVariables(); // 表单数据更新，配置需要同时更新
     nextTick(() => {
       // 等待monaco渲染完成(高亮)再改固定值
@@ -230,15 +279,35 @@
     });
   };
   const updateReplaceVal = () => {
+    // 获取初始值
     let updateString = replaceVal.value;
-    let feedAddrVal = (window as any).GRPC_ADDR;
-    if (props.templateName === 'http') {
-      // http的host特殊处理
-      feedAddrVal = (window as any).HTTP_ADDR;
+    const feedAddrVal = props.templateName === 'http' ? (window as any).HTTP_ADDR : (window as any).GRPC_ADDR;
+    // 定义替换函数
+    const replacePlaceholders = (str: string, feedAddr: string) => {
+      return str
+        .replace('{{ .Bk_Bscp_Variable_BkBizId }}', bkBizId.value)
+        .replace('{{ .Bk_Bscp_Variable_ServiceName }}', basicInfo!.serviceName.value)
+        .replaceAll('{{ .Bk_Bscp_Variable_FEED_ADDR }}', feedAddr);
+    };
+    // 更新 replaceVal
+    updateString = replacePlaceholders(updateString, feedAddrVal);
+    if (props.templateName === 'trpc') {
+      updateString = updateString.replaceAll(
+        '{{ .Bk_Bscp_Variable_module_domain }}',
+        spaceFeatureFlags.value.TRPC_GO_PLUGIN.module_domain,
+      );
+      updateString = updateString.replaceAll(
+        '{{ .Bk_Bscp_Variable_bscp_module_domain }}',
+        spaceFeatureFlags.value.TRPC_GO_PLUGIN.bscp_module_domain,
+      );
     }
-    updateString = updateString.replace('{{ .Bk_Bscp_Variable_BkBizId }}', bkBizId.value);
-    updateString = updateString.replace('{{ .Bk_Bscp_Variable_ServiceName }}', basicInfo!.serviceName.value);
-    replaceVal.value = updateString.replaceAll('{{ .Bk_Bscp_Variable_FEED_ADDR }}', feedAddrVal);
+    replaceVal.value = updateString;
+    // 更新 configVal（仅针对 trpc 模板）
+    if (props.templateName === 'trpc') {
+      let updateConfigString = configVal.value;
+      updateConfigString = replacePlaceholders(updateConfigString, feedAddrVal);
+      replaceConfigVal.value = updateConfigString;
+    }
   };
   const updateVariables = () => {
     variables.value = [
@@ -277,12 +346,13 @@
   };
 
   // 复制示例
-  const copyExample = async () => {
+  const copyExample = async (copyExample = true) => {
     try {
       await fileOptionRef.value.handleValidate();
       // 复制示例使用未脱敏的密钥
       const reg = /"(.{1}|.{3})\*{3}(.{1}|.{3})"/g;
       let copyVal = copyReplaceVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
+      const copyConfigVal = copyReplaceConfigVal.value.replaceAll(reg, `"${optionData.value.clientKey}"`);
       let tempStr = '';
       // 键值型示例复制时，内容开头插入注释信息(http、命令行除外)；插入文案除python以外，其他都一样
       if (props.templateName === 'python') {
@@ -292,7 +362,7 @@
           // get
           tempStr = `'''\n${t('用于主动获取配置项值的场景，此方法不会监听服务器端的配置更改\n有关Python SDK的部署环境和依赖组件，请参阅白皮书中的 [BSCP Python SDK依赖说明]')}\n(https://bk.tencent.com/docs/markdown/ZH/BSCP/1.29/UserGuide/Function/python_sdk_dependency.md)\n'''\n`;
         }
-      } else if (props.templateName === 'go') {
+      } else if (props.templateName === 'go' || props.templateName === 'trpc') {
         tempStr = '';
       } else if (props.templateName !== 'http') {
         // watch
@@ -303,7 +373,8 @@
         }
       }
       copyVal = `${tempStr}${tempStr ? '\n' : ''}${copyVal}`;
-      copyToClipBoard(copyVal);
+      const copyContent = copyExample ? copyVal : copyConfigVal;
+      copyToClipBoard(copyContent);
       BkMessage({
         theme: 'success',
         message: t('示例已复制'),
@@ -330,6 +401,12 @@
     const newTemplateData = await changeTemData(props.templateName, index);
     codeVal.value = newTemplateData.default;
     replaceVal.value = newTemplateData.default;
+    if (props.templateName === 'trpc') {
+      const newConfigData = await import('/src/assets/example-data/kv-trpc-get-config.yaml?raw');
+      configVal.value = newConfigData.default;
+      replaceConfigVal.value = newConfigData.default;
+    }
+
     getOptionData(optionData.value);
   };
   // 键值型数据模板切换
@@ -352,6 +429,10 @@
         return !methods
           ? import('/src/assets/example-data/kv-go-get.yaml?raw')
           : import('/src/assets/example-data/kv-go-watch.yaml?raw');
+      case 'trpc':
+        return !methods
+          ? import('/src/assets/example-data/kv-trpc-get.yaml?raw')
+          : import('/src/assets/example-data/kv-trpc-watch-.yaml?raw');
       case 'java':
         return !methods
           ? import('/src/assets/example-data/kv-java-get.yaml?raw')

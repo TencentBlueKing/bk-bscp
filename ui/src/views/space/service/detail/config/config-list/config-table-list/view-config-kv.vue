@@ -48,7 +48,7 @@
               </span>
               <div v-else class="editor-wrap">
                 <kvConfigContentEditor
-                  :content="props.config.spec.value"
+                  :content="showContent"
                   :editable="false"
                   :height="editorHeight"
                   :languages="props.config.spec.kv_type" />
@@ -152,6 +152,13 @@
       }
     },
   );
+
+  const showContent = computed(() => {
+    if (props.config.spec.kv_type === 'table') {
+      return JSON.stringify(JSON.parse(props.config.spec.value), null, 2);
+    }
+    return props.config.spec.value;
+  });
 
   const setEditorHeight = () => {
     nextTick(() => {

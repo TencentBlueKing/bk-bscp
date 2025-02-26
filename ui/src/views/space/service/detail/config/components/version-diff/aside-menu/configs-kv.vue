@@ -334,11 +334,17 @@
       is_secret: !!config.secretType,
       secret_hidden: config.secret_hidden,
       base: {
-        content: config.baseContent,
+        content:
+          config.kvType === 'table' && config.baseContent
+            ? JSON.stringify(JSON.parse(config.baseContent), null, 2)
+            : config.baseContent,
         variables: [],
       },
       current: {
-        content: config.currentContent,
+        content:
+          config.kvType === 'table' && config.currentContent
+            ? JSON.stringify(JSON.parse(config.currentContent), null, 2)
+            : config.currentContent,
         variables: [],
       },
     };

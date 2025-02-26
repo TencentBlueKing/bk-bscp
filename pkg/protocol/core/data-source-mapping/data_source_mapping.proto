@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+package pbdsm;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/data-source-mapping;pbdsm";
+
+// DataSourceMapping mapped from table <data_source_mappings>
+message DataSourceMapping {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源管理ID" }];
+  DataSourceMappingSpec spec = 2;
+  DataSourceMappingAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+  uint32 citations = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联配置项数量" }];
+}
+
+// DataSourceMappingSpec mapped from table <data_source_mappings>
+message DataSourceMappingSpec {
+  string databases_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "数据源库名：如果是托管表格该字段为空"
+  }];
+  string table_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表名" }];
+  string table_memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据源表描述" }];
+  repeated uint32 visible_range = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "服务可见范围：空数组表示全部，指定服务[1,2,3...]"
+  }];
+  repeated Columns columns = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "字段设置",
+    example: "[{\"name\":\"id\",\"alias\":\"别名\",\"length\":20,\"primary\":true,\"column_type\":\"number\",\"nullable\":false,\"default_value\":\"默认值\",\"only\":false,\"read_only\":false}]"
+  }];
+}
+
+// Columns mapped from table <data_source_mappings>
+message Columns {
+  string name = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段名称：长度不能超过64" }];
+  string alias = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段别名" }];
+  int32 length = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "字段值的长度" }];
+  bool primary = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否为主键：是=true，否=false，默认false"
+  }];
+  string column_type = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "字段类型：(number、string、enum、json)"
+  }];
+  bool not_null = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "非空：是=true，否=false，默认false" }
+  ];
+  string default_value = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "默认值：可为空" }];
+  bool unique = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否唯一：是=true，否=false，默认false"
+  }];
+  bool read_only = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "只读：是=true，否=false，默认false" }
+  ];
+  bool auto_increment = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "自增：是=true，否=false，默认false" }
+  ];
+  string enum_value = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "枚举值" }];
+  bool selected = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "多选：是=true，否=false，默认false" }
+  ];
+}
+
+// DataSourceMappingAttachment mapped from table <data_source_mappings>
+message DataSourceMappingAttachment {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 data_source_info_id = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "外部数据源ID，如果是托管表格就是0" }
+  ];
+}

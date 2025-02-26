@@ -517,7 +517,7 @@ export const updateKv = (
   bizId: string,
   appId: number,
   key: string,
-  editContent: { value: string; memo: string; secret_hidden?: boolean },
+  editContent: any,
 ) => http.put(`/config/biz/${bizId}/apps/${appId}/kvs/${key}`, editContent);
 
 /**

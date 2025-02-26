@@ -19,8 +19,10 @@ import (
 
 	rawgen "gorm.io/gen"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -42,7 +44,7 @@ type App interface {
 	// get app by name.
 	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.App, error)
 	// List apps with options.
-	List(kit *kit.Kit, bizList []uint32, name, operator string, opt *types.BasePage) ([]*table.App, int64, error)
+	List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) ([]*table.App, int64, error)
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
 	// ListAppsByIDs list apps by app ids.
@@ -55,6 +57,8 @@ type App interface {
 	GetByAlias(kit *kit.Kit, bizID uint32, alias string) (*table.App, error)
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
+	// CountApps 统计服务数量
+	CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error)
 }
 
 var _ App = new(appDao)
@@ -64,6 +68,29 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// CountApps implements App.
+func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error) {
+	m := dao.genQ.App
+	var conds []rawgen.Condition
+	if operator != "" {
+		conds = append(conds, m.Creator.Eq(operator))
+	}
+
+	kvAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.KV))).Where(conds...).Count()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	fileAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.File))).Where(conds...).Count()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return kvAppsCount, fileAppsCount, nil
 }
 
 // BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
@@ -80,7 +107,7 @@ func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) er
 }
 
 // List app's detail info with the filter's expression.
-func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, opt *types.BasePage) (
+func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) (
 	[]*table.App, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
@@ -94,6 +121,10 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, o
 	if name != "" {
 		// 按名称模糊搜索
 		conds = append(conds, m.Name.Regexp("(?i)"+name)) // nolint: goconst
+	}
+
+	if configType != "" {
+		conds = append(conds, m.ConfigType.Eq(configType))
 	}
 
 	var (
@@ -183,7 +214,12 @@ func (dao *appDao) Create(kit *kit.Kit, g *table.App) (uint32, error) {
 	}
 	g.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareCreate(g)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareCreate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -245,7 +281,13 @@ func (dao *appDao) Update(kit *kit.Kit, g *table.App) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareUpdate(g, oldOne)
+	kit.AppID = g.ID
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+		AppId:            g.ID,
+	}).PrepareUpdate(g)
 	eDecorator := dao.event.Eventf(kit)
 
 	// 多个使用事务处理
@@ -305,7 +347,11 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 	if err != nil {
 		return err
 	}
-	ad := dao.auditDao.DecoratorV2(kit, g.BizID).PrepareDelete(oldOne)
+	ad := dao.auditDao.Decorator(kit, g.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.AppName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		AppId:            g.ID,
+	}).PrepareDelete(g)
 	if err = ad.Do(tx.Query); err != nil {
 		return err
 	}

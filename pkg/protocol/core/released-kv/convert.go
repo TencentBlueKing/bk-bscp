@@ -24,19 +24,23 @@ import (
 )
 
 // PbRKv convert table ReleasedKv to pb ReleasedKv
-func PbRKv(k *table.ReleasedKv, value string) *ReleasedKv {
+func PbRKv(k *table.ReleasedKv, value string, name string) (*ReleasedKv, error) {
 	if k == nil {
-		return nil
+		return nil, nil
 	}
-
+	spec, err := pbkv.PbKvSpec(k.Spec, value)
+	if err != nil {
+		return nil, err
+	}
 	return &ReleasedKv{
-		Id:          k.ID,
-		ReleaseId:   k.ReleaseID,
-		Spec:        pbkv.PbKvSpec(k.Spec, value),
-		Attachment:  pbkv.PbKvAttachment(k.Attachment),
-		Revision:    pbbase.PbRevision(k.Revision),
-		ContentSpec: pbcontent.PbContentSpec(k.ContentSpec),
-	}
+		Id:                     k.ID,
+		ReleaseId:              k.ReleaseID,
+		Spec:                   spec,
+		Attachment:             pbkv.PbKvAttachment(k.Attachment),
+		Revision:               pbbase.PbRevision(k.Revision),
+		ContentSpec:            pbcontent.PbContentSpec(k.ContentSpec),
+		TableConfigPreviewName: name,
+	}, nil
 }
 
 // RKvs convert pb kvs to table Rkvs
@@ -56,9 +60,14 @@ func RKvs(kvs []*pbkv.Kv, versionMap map[string]int, releaseID uint32) ([]*table
 			return nil, fmt.Errorf("parse time from updateAt string failed, err: %v", err)
 		}
 
+		spec, err := kv.Spec.KvSpec()
+		if err != nil {
+			return nil, err
+		}
+
 		rkv := &table.ReleasedKv{
 			ReleaseID:  releaseID,
-			Spec:       kv.Spec.KvSpec(),
+			Spec:       spec,
 			Attachment: kv.Attachment.KvAttachment(),
 			Revision: &table.Revision{
 				Creator:   kv.Revision.Creator,

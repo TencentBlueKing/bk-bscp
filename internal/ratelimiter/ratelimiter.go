@@ -14,13 +14,20 @@
 package ratelimiter
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 	"golang.org/x/time/rate"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+)
+
+const (
+	DefaultIPLimit = 1024 * 10 // DefaultIPLimit ip默认来源是Peer Addr，当做全局限速, Burst可以默认*2
 )
 
 // RateLimiter is interface for rate limiter
@@ -30,6 +37,7 @@ type RateLimiter interface {
 	WaitTimeMil(size int) int64
 	// Stats returns the statistics of rate limiter
 	Stats() *StatsData
+	Limit(ctx context.Context) error
 }
 
 // New news a rate limiter
@@ -118,10 +126,13 @@ func (b *bizRLs) getLimiter(bizID uint) *baseRL {
 
 // baseRL is base rate limiter
 type baseRL struct {
+	conf              *cc.BasicRL
 	limiter           *rate.Limiter
 	totalByteSize     int64
 	delayCnt          int64
 	delayMilliseconds int64
+	mutex             sync.Mutex
+	dynamicLimiter    map[string]*rate.Limiter
 }
 
 // StatsData is stats data
@@ -139,8 +150,15 @@ var MB = 1024 * 1024
 // 内部实现使用令牌桶算法，令牌恢复速率为limit，在令牌被消耗完且不再有任何令牌消耗时，令牌数恢复至burst需要burst/limit秒
 // 举例说明：limit为100，burst为200，则将创建一个每秒生成100MB令牌、容量为200MB的限流器
 func newBaseRL(limit, burst uint) *baseRL {
+	conf := &cc.BasicRL{
+		Limit: limit,
+		Burst: burst,
+	}
+
 	return &baseRL{
-		limiter: rate.NewLimiter(rate.Limit(int(limit)*MB), int(burst)*MB),
+		limiter:        rate.NewLimiter(rate.Limit(int(limit)*MB), int(burst)*MB),
+		conf:           conf,
+		dynamicLimiter: make(map[string]*rate.Limiter),
 	}
 }
 
@@ -163,4 +181,33 @@ func (r *baseRL) Stats() *StatsData {
 		DelayCnt:          atomic.LoadInt64(&r.delayCnt),
 		DelayMilliseconds: atomic.LoadInt64(&r.delayMilliseconds),
 	}
+}
+
+// getLimiter get rate limiter for specific key
+func (r *baseRL) getLimiter(key string) *rate.Limiter {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if limiter, ok := r.dynamicLimiter[key]; ok {
+		return limiter
+	}
+
+	limiter := rate.NewLimiter(rate.Limit(r.conf.Limit), int(r.conf.Burst))
+	r.dynamicLimiter[key] = limiter
+	return limiter
+}
+
+// Limit grpc ratelimit interceptor
+func (r *baseRL) Limit(ctx context.Context) error {
+	addr, ok := realip.FromContext(ctx)
+	if !ok {
+		return fmt.Errorf("get real ip failed")
+	}
+
+	limiter := r.getLimiter(addr.String())
+	if !limiter.Allow() {
+		return fmt.Errorf("rate limit, ip: %s", addr)
+	}
+
+	return nil
 }

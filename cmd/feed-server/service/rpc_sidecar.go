@@ -207,7 +207,6 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 				return nil, errApp
 			}
 			vc.Application.AppID = appID
-
 			// pull 首次是需要获取app meta, 会出现权限等问题导致失败，
 			// 因此TargetReleaseID会出现0的情况，
 			// 获取TargetReleaseID时出现错误直接忽略
@@ -222,7 +221,10 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 				cancel := im.Kit.CtxWithTimeoutMS(1500)
 				defer cancel()
 				metas, _ := s.bll.Release().ListAppLatestReleaseMeta(im.Kit, meta)
-				vc.Application.TargetReleaseID = metas.ReleaseId
+				// 忽略错误。比如某个服务没有上线过任何版本，就查询不到数据，但依然可以上报到服务端
+				if metas != nil {
+					vc.Application.TargetReleaseID = metas.ReleaseId
+				}
 			}
 
 			// 处理 心跳时间和在线状态
@@ -278,7 +280,6 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 			}
 		}
 	}
-
 	for appID, v := range clientMetricData {
 		payload, err := jsoni.Marshal(v)
 		if err != nil {

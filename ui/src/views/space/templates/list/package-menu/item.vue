@@ -49,6 +49,7 @@
   const handlePopoverClick = (item: string) => {
     if (item === 'edit') emits('openSlider', props.pkg.id, 'edit');
     if (item === 'clone') emits('openSlider', props.pkg.id, 'clone');
+    if (item === 'export') emits('openSlider', props.pkg.id, 'export');
     if (item === 'delete') emits('openSlider', props.pkg.id, 'delete');
     popoverShow.value = false;
   };

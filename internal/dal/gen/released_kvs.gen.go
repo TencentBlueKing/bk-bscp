@@ -36,6 +36,10 @@ func newReleasedKv(db *gorm.DB, opts ...gen.DOOption) releasedKv {
 	_releasedKv.SecretType = field.NewString(tableName, "secret_type")
 	_releasedKv.SecretHidden = field.NewBool(tableName, "secret_hidden")
 	_releasedKv.CertificateExpirationDate = field.NewTime(tableName, "certificate_expiration_date")
+	_releasedKv.ManagedTableID = field.NewUint32(tableName, "managed_table_id")
+	_releasedKv.ExternalSourceID = field.NewUint32(tableName, "external_source_id")
+	_releasedKv.FilterCondition = field.NewField(tableName, "filter_condition")
+	_releasedKv.FilterFields = field.NewField(tableName, "filter_fields")
 	_releasedKv.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedKv.AppID = field.NewUint32(tableName, "app_id")
 	_releasedKv.Creator = field.NewString(tableName, "creator")
@@ -64,6 +68,10 @@ type releasedKv struct {
 	SecretType                field.String
 	SecretHidden              field.Bool
 	CertificateExpirationDate field.Time
+	ManagedTableID            field.Uint32
+	ExternalSourceID          field.Uint32
+	FilterCondition           field.Field
+	FilterFields              field.Field
 	BizID                     field.Uint32
 	AppID                     field.Uint32
 	Creator                   field.String
@@ -98,6 +106,10 @@ func (r *releasedKv) updateTableName(table string) *releasedKv {
 	r.SecretType = field.NewString(table, "secret_type")
 	r.SecretHidden = field.NewBool(table, "secret_hidden")
 	r.CertificateExpirationDate = field.NewTime(table, "certificate_expiration_date")
+	r.ManagedTableID = field.NewUint32(table, "managed_table_id")
+	r.ExternalSourceID = field.NewUint32(table, "external_source_id")
+	r.FilterCondition = field.NewField(table, "filter_condition")
+	r.FilterFields = field.NewField(table, "filter_fields")
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.AppID = field.NewUint32(table, "app_id")
 	r.Creator = field.NewString(table, "creator")
@@ -133,7 +145,7 @@ func (r *releasedKv) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *releasedKv) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 18)
+	r.fieldMap = make(map[string]field.Expr, 22)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["release_id"] = r.ReleaseID
 	r.fieldMap["key"] = r.Key
@@ -143,6 +155,10 @@ func (r *releasedKv) fillFieldMap() {
 	r.fieldMap["secret_type"] = r.SecretType
 	r.fieldMap["secret_hidden"] = r.SecretHidden
 	r.fieldMap["certificate_expiration_date"] = r.CertificateExpirationDate
+	r.fieldMap["managed_table_id"] = r.ManagedTableID
+	r.fieldMap["external_source_id"] = r.ExternalSourceID
+	r.fieldMap["filter_condition"] = r.FilterCondition
+	r.fieldMap["filter_fields"] = r.FilterFields
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["app_id"] = r.AppID
 	r.fieldMap["creator"] = r.Creator

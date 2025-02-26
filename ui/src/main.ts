@@ -15,6 +15,10 @@ import en from 'bkui-vue/dist/locale/en.esm';
 import { getCookie } from './utils';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import VirtualScroller from 'vue-virtual-scroller';
+import VxeUI from 'vxe-pc-ui';
+import 'vxe-pc-ui/lib/style.css';
+import VxeUITable from 'vxe-table';
+import 'vxe-table/lib/style.css';
 
 auth().then(() => {
   const app = createApp(App);
@@ -48,6 +52,8 @@ auth().then(() => {
     .use(bkui, {
       locale: getCookie('blueking_language') === 'en' ? en : zhCn,
     })
+    .use(VxeUI)
+    .use(VxeUITable)
     .mount('#app');
 });
 

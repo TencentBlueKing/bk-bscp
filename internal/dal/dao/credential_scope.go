@@ -75,12 +75,6 @@ func (dao *credentialScopeDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *ta
 	if err := q.Create(g); err != nil {
 		return 0, err
 	}
-
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareCreate(g)
-	if err := ad.Do(tx.Query); err != nil {
-		return 0, err
-	}
-
 	return g.ID, nil
 }
 
@@ -119,17 +113,7 @@ func (dao *credentialScopeDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID
 	// 删除操作, 获取当前记录做审计
 	m := tx.CredentialScope
 	q := tx.CredentialScope.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
-	if err != nil {
-		return err
-	}
-
 	if _, err := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Delete(); err != nil {
-		return err
-	}
-
-	ad := dao.auditDao.DecoratorV2(kit, bizID).PrepareDelete(oldOne)
-	if err := ad.Do(tx.Query); err != nil {
 		return err
 	}
 
@@ -144,19 +128,8 @@ func (dao *credentialScopeDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *ta
 
 	m := tx.CredentialScope
 
-	// 更新操作, 获取当前记录做审计
-	oldOne, err := tx.CredentialScope.WithContext(kit.Ctx).Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, g.Attachment.BizID).PrepareUpdate(g, oldOne)
-
 	if _, err := tx.CredentialScope.WithContext(kit.Ctx).Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
 		Omit(m.BizID, m.ID).Updates(g); err != nil {
-		return err
-	}
-
-	if err := ad.Do(tx.Query); err != nil {
 		return err
 	}
 

@@ -1,4 +1,5 @@
 import { IGroupRuleItem } from './group';
+import { IDataCleanItem } from './kv-table';
 
 // 单个版本详情
 export interface IConfigVersion {
@@ -97,6 +98,12 @@ export interface IConfigKvEditParams {
   memo: string;
   secret_hidden: boolean;
   secret_type: string; // 密钥类型
+  managed_table_id?: number; // 托管表格id
+  external_source_id?: number; // 外部数据源id
+  filter_condition?: {
+    labels_and?: IDataCleanItem[];
+  }; // 数据清洗条件
+  filter_fields?: string[]; // 过滤表格字段
 }
 
 // 文件配置概览内容
@@ -263,6 +270,7 @@ export interface IConfigKvType {
     reviser: string;
     update_at: string;
   };
+  table_config_preview_name?: string;
 }
 
 // 从配置模板导入

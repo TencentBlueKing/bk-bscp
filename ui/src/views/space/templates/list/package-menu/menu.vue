@@ -48,17 +48,17 @@
   <PackageEdit
     v-model:show="editingPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="editingPkgData.data as ITemplatePackageItem"
+    :pkg="(editingPkgData.data as ITemplatePackageItem)"
     @edited="getList" />
   <PackageClone
     v-model:show="cloningPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="cloningPkgData.data as ITemplatePackageItem"
+    :pkg="(cloningPkgData.data as ITemplatePackageItem)"
     @created="getList" />
   <PackageDelete
     v-model:show="deletingPkgData.open"
     :template-space-id="currentTemplateSpace"
-    :pkg="deletingPkgData.data as ITemplatePackageItem"
+    :pkg="(deletingPkgData.data as ITemplatePackageItem)"
     @deleted="handlePkgDeleted" />
 </template>
 <script lang="ts" setup>

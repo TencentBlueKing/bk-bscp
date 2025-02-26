@@ -34,6 +34,7 @@
   import ConfigInAllTable from './tables/config-in-all.vue';
   import ConfigWithoutPackageTable from './tables/config-without-package.vue';
 
+  const templateStore = useTemplateStore();
   const { packageList, currentPkg } = storeToRefs(useTemplateStore());
   const { t, locale } = useI18n();
 
@@ -70,9 +71,15 @@
         primary_name = pkgDetail.spec.name;
         templateCounts.value = pkgDetail.spec.template_ids.length;
       }
+      templateStore.$patch((state) => {
+        state.currentPkgName = name;
+      });
     } else {
       name = PACKAGE_MENU_OTHER_TYPE_MAP[currentPkg.value as keyof typeof PACKAGE_MENU_OTHER_TYPE_MAP];
       templateCounts.value = 0;
+      templateStore.$patch((state) => {
+        state.currentPkgName = '';
+      });
     }
     return { name, memo, isPublic, primary_name };
   });

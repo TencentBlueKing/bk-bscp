@@ -86,7 +86,7 @@
     }
     try {
       pending.value = true;
-      await updateKv(props.bkBizId, props.appId, configForm.value!.key, editForm);
+      await updateKv(props.bkBizId, props.appId, configForm.value!.key, configForm.value);
       emits('confirm');
       close();
       Message({

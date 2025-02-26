@@ -9,6 +9,7 @@ export const CONFIG_KV_TYPE = [
   { id: 'xml', name: 'XML' },
   { id: 'yaml', name: 'YAML' },
   { id: 'secret', name: localT('敏感信息') },
+  { id: 'table', name: 'Table' },
 ];
 
 // 文件类型的配置项包含的子类型
@@ -66,6 +67,7 @@ export const GET_UNNAMED_VERSION_DATA = (): IConfigVersion => ({
     publish_status: 'editing',
     released_groups: [],
     fully_released: false,
+    strategy_status: 'not_published',
   },
 });
 
@@ -76,3 +78,14 @@ export enum APPROVE_TYPE {
   rejected_approval, // 2 驳回
   revoked_publish, // 3 撤销
 }
+
+export const KV_TABLE_CLEAN_RULE =  [
+  { id: 'eq', name: '=' },
+  { id: 'ne', name: '!=' },
+  { id: 'gt', name: '>' },
+  { id: 'ge', name: '>=' },
+  { id: 'lt', name: '<' },
+  { id: 'le', name: '<=' },
+  { id: 'in', name: 'IN' },
+  { id: 'nin', name: 'NOT IN' },
+];

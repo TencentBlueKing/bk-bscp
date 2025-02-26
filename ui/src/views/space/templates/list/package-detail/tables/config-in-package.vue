@@ -32,6 +32,9 @@
         :data-count="acrossCheckedType.dataCount"
         @refresh="refreshConfigList"
         @moved-out="handleMovedOut" />
+      <bk-button :disabled="countOfTemplatesForCurrentPackage === 0" @click="handleExportPakage">
+        {{ $t('导出') }}
+      </bk-button>
     </template>
   </CommonConfigTable>
 </template>
@@ -42,7 +45,8 @@
   import useTemplateStore from '../../../../../../store/template';
   import { ICommonQuery } from '../../../../../../../types/index';
   import { ITemplateConfigItem } from '../../../../../../../types/template';
-  import { getTemplatesByPackageId } from '../../../../../../api/template';
+  import { getTemplatesByPackageId, exportTemplatePackage } from '../../../../../../api/template';
+  import { downloadFile } from '../../../../../../utils';
   import CommonConfigTable from './common-config-table.vue';
   import AddConfigs from '../operations/add-configs/add-button.vue';
   import BatchOperationButton from '../operations/batch-operations/batch-operation-btn.vue';
@@ -50,7 +54,8 @@
 
   const { spaceId, spaceFeatureFlags } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
-  const { currentTemplateSpace, currentPkg, countOfTemplatesForCurrentPackage } = storeToRefs(templateStore);
+  const { currentTemplateSpace, currentPkg, currentPkgName, countOfTemplatesForCurrentPackage } =
+    storeToRefs(templateStore);
 
   const configTable = ref();
   const selectedConfigs = ref<ITemplateConfigItem[]>([]);
@@ -84,6 +89,16 @@
       state.needRefreshMenuFlag = true;
     });
   };
+
+  const handleExportPakage = async () => {
+    try {
+      const res = await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, currentPkg.value);
+      downloadFile(res, 'application/zip', `${currentPkgName.value}.zip`);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   watch(acrossCheckedType.value, () => {
     console.log(acrossCheckedType.value, '+++++++++++++++++++++++');
   });

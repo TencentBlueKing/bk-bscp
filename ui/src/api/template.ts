@@ -83,6 +83,26 @@ export const deleteTemplatePackage = (biz_id: string, template_space_id: number,
     .then((res) => res.data);
 
 /**
+ * 导出模板套餐
+ * @param biz_id 业务ID
+ * @param template_space_id 模板空间ID
+ * @param template_id 模板套餐ID
+ * @returns
+ */
+export const exportTemplatePackage = (biz_id: string, template_space_id: number, template_id: number) =>
+  http
+    .get<string, Blob | string>(
+      `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/export`,
+      {
+        transitional: {
+          forcedJSONParsing: false,
+        },
+        responseType: 'blob', // 文件为二进制流，需要设置响应类型为blob才能正确解析
+      },
+    )
+    .then((res) => res);
+
+/**
  * 获取空间下的模板套餐列表
  * @param biz_id 业务ID
  * @param template_space_id 模板空间ID
@@ -110,7 +130,9 @@ export const getAllPackagesGroupBySpace = (biz_id: string, params: { app_id?: nu
  * @returns
  */
 export const getTemplatesBySpaceId = (biz_id: string, template_space_id: number, params: ICommonQuery) =>
-  http.post(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/list`, params).then((res) => res.data);
+  http
+    .post(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/list`, params)
+    .then((res) => res.data);
 
 /**
  * 获取模板空间下未指定套餐的模板列表
@@ -386,14 +408,11 @@ export const moveOutTemplateFromPackage = (
   template_set_ids: number[],
   exclusion_operation: boolean,
 ) =>
-  http.post(
-    `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/delete_from_template_sets`,
-    {
-      template_ids,
-      template_set_ids,
-      exclusion_operation,
-    },
-  );
+  http.post(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/delete_from_template_sets`, {
+    template_ids,
+    template_set_ids,
+    exclusion_operation,
+  });
 
 /**
  * 查询单个模板被套餐引用详情

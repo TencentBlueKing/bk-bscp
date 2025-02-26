@@ -85,11 +85,6 @@ func (dao *releasedAppTemplateDao) BulkCreateWithTx(
 		return fmt.Errorf("create released template config items in batch failed, err: %v", err)
 	}
 
-	ad := dao.auditDao.DecoratorV2(kit, items[0].Attachment.BizID).PrepareCreate(table.RatiList(items))
-	if err := ad.Do(tx.Query); err != nil {
-		return err
-	}
-
 	return nil
 }
 

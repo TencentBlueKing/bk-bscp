@@ -30,122 +30,134 @@
 }
 
 .icon-help-fill:before {
-  content: '\e107';
+	content: "\e107";
 }
 .icon-help:before {
-  content: '\e106';
+	content: "\e106";
 }
 .icon-help-document-fill:before {
-  content: '\e105';
+	content: "\e105";
 }
 .icon-edit-small:before {
-  content: '\e104';
+	content: "\e104";
+}
+.icon-minus-circle-shape:before {
+	content: "\e130";
+}
+.icon-plus-circle-shape:before {
+	content: "\e131";
 }
 .icon-configuration-line:before {
-  content: '\e101';
+	content: "\e101";
 }
 .icon-time-2:before {
-  content: '\e102';
+	content: "\e102";
 }
 .icon-reduce:before {
-  content: '\e108';
+	content: "\e108";
 }
 .icon-add:before {
-  content: '\e109';
+	content: "\e109";
 }
 .icon-app-store:before {
-  content: '\e10a';
+	content: "\e10a";
 }
 .icon-revoke:before {
-  content: '\e10b';
+	content: "\e10b";
 }
 .icon-tags:before {
-  content: '\e10c';
+	content: "\e10c";
 }
 .icon-block-shape:before {
-  content: '\e10d';
+	content: "\e10d";
 }
 .icon-empty:before {
-  content: '\e10e';
+	content: "\e10e";
 }
 .icon-folder:before {
-  content: '\e10f';
+	content: "\e10f";
 }
 .icon-setting:before {
-  content: '\e110';
+	content: "\e110";
 }
 .icon-separator:before {
-  content: '\e111';
+	content: "\e111";
 }
 .icon-resources-fill:before {
-  content: '\e112';
+	content: "\e112";
 }
 .icon-file-line:before {
-  content: '\e113';
+	content: "\e113";
 }
 .icon-kv:before {
-  content: '\e114';
+	content: "\e114";
 }
 .icon-resources:before {
-  content: '\e115';
+	content: "\e115";
 }
 .icon-lang-en:before {
-  content: '\e116';
+	content: "\e116";
 }
 .icon-lang-cn:before {
-  content: '\e117';
+	content: "\e117";
 }
 .icon-json:before {
-  content: '\e118';
+	content: "\e118";
 }
 .icon-xml:before {
-  content: '\e119';
+	content: "\e119";
 }
 .icon-yaml:before {
-  content: '\e11a';
+	content: "\e11a";
 }
 .icon-variable:before {
-  content: '\e11b';
+	content: "\e11b";
 }
 .icon-star:before {
-  content: '\e11c';
+	content: "\e11c";
 }
 .icon-star-fill:before {
-  content: '\e11d';
+	content: "\e11d";
 }
 .icon-download:before {
-  content: '\e120';
+	content: "\e120";
 }
 .icon-ellipsis:before {
-  content: '\e121';
+	content: "\e121";
 }
 .icon-table-chart:before {
-  content: '\e122';
+	content: "\e122";
 }
 .icon-pie-chart:before {
-  content: '\e11e';
+	content: "\e11e";
 }
 .icon-bar-chart:before {
-  content: '\e11f';
+	content: "\e11f";
 }
 .icon-bar-chart-thin:before {
-  content: '\e123';
+	content: "\e123";
 }
 .icon-bar-chart-stack:before {
-  content: '\e124';
+	content: "\e124";
 }
 .icon-close-line:before {
-  content: '\e126';
+	content: "\e126";
 }
 .icon-edit-line:before {
-  content: '\e125';
+	content: "\e125";
 }
 .icon-terminal:before {
-  content: '\e127';
+	content: "\e127";
+}
+.icon-dongzuo-shuaxin:before {
+	content: "\e129";
+}
+.icon-batch-edit:before {
+	content: "\e132";
 }
 .icon-warning-circle:before {
-  content: '\e128';
+	content: "\e128";
 }
 .icon-view-detail:before {
-  content: "\e12b";
+	content: "\e12b";
 }

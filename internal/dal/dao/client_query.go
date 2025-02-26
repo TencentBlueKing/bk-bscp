@@ -86,11 +86,6 @@ func (dao *clientQueryDao) Delete(kit *kit.Kit, data *table.ClientQuery) error {
 	// 删除操作, 获取当前记录做审计
 	m := dao.genQ.ClientQuery
 	q := dao.genQ.ClientQuery.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(data.ID), m.BizID.Eq(data.Attachment.BizID), m.AppID.Eq(data.Attachment.AppID)).Take()
-	if err != nil {
-		return err
-	}
-	ad := dao.auditDao.DecoratorV2(kit, data.Attachment.BizID).PrepareDelete(oldOne)
 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
@@ -99,9 +94,6 @@ func (dao *clientQueryDao) Delete(kit *kit.Kit, data *table.ClientQuery) error {
 			return e
 		}
 
-		if e := ad.Do(tx); e != nil {
-			return e
-		}
 		return nil
 	}
 	if e := dao.genQ.Transaction(deleteTx); e != nil {
@@ -127,14 +119,9 @@ func (dao *clientQueryDao) Create(kit *kit.Kit, data *table.ClientQuery) (uint32
 	}
 	data.ID = id
 
-	ad := dao.auditDao.DecoratorV2(kit, data.Attachment.BizID).PrepareCreate(data)
-
 	createTx := func(tx *gen.Query) error {
 		q := tx.ClientQuery.WithContext(kit.Ctx)
 		if err = q.Create(data); err != nil {
-			return err
-		}
-		if err = ad.Do(tx); err != nil {
 			return err
 		}
 

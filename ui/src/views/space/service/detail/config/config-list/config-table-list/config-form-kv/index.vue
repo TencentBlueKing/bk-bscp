@@ -28,6 +28,11 @@
       :config="props.config"
       :is-edit="editMode"
       @change="handleSecretChange" />
+    <TableForm
+      v-else-if="localVal.kv_type === 'table'"
+      :config="props.config"
+      :bk-biz-id="bkBizId"
+      @change="handleTableChange" />
     <bk-form-item v-else :label="t('配置项值')" property="value" :required="true">
       <bk-input
         v-if="localVal.kv_type === 'string' || localVal.kv_type === 'number'"
@@ -51,9 +56,11 @@
   import { CONFIG_KV_TYPE } from '../../../../../../../../constants/config';
   import KvConfigContentEditor from '../../../components/kv-config-content-editor.vue';
   import { IConfigKvEditParams } from '../../../../../../../../../types/config';
+  import { IConfigTableForm } from '../../../../../../../../../types/kv-table';
   import useServiceStore from '../../../../../../../../store/service';
   import { storeToRefs } from 'pinia';
   import SecretForm from './secret-form/index.vue';
+  import TableForm from './table-form/index.vue';
 
   const serviceStore = useServiceStore();
   const { appData } = storeToRefs(serviceStore);
@@ -128,6 +135,13 @@
         message: t('访问令牌格式不正确（只支持 OAuth2.0 与 JWT 类型的访问令牌）'),
       },
     ],
+    managed_table_id: [
+      {
+        required: true,
+        message: t('请选择表格'),
+        trigger: 'change',
+      },
+    ],
   };
 
   watch(
@@ -181,6 +195,14 @@
     localVal.value.value = value;
     localVal.value.secret_type = secret_type;
     localVal.value.secret_hidden = visible;
+    change();
+  };
+
+  const handleTableChange = (tableForm: IConfigTableForm) => {
+    localVal.value = {
+      ...localVal.value,
+      ...tableForm,
+    };
     change();
   };
 
