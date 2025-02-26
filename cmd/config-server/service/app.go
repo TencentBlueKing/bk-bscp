@@ -280,13 +280,14 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 	}
 
 	r := &pbds.ListAppsRestReq{
-		BizId:    strconv.Itoa(int(req.BizId)),
-		Start:    req.Start,
-		Limit:    req.Limit,
-		Operator: req.Operator,
-		Name:     req.Name,
-		All:      req.All,
-		TopIds:   req.TopIds,
+		BizId:      strconv.Itoa(int(req.BizId)),
+		Start:      req.Start,
+		Limit:      req.Limit,
+		Operator:   req.Operator,
+		Name:       req.Name,
+		All:        req.All,
+		TopIds:     req.TopIds,
+		ConfigType: req.ConfigType,
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -333,8 +334,10 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 	}
 
 	resp := &pbcs.ListAppsResp{
-		Count:   rp.Count,
-		Details: rp.Details,
+		Count:         rp.Count,
+		Details:       rp.Details,
+		KvAppsCount:   rp.KvAppsCount,
+		FileAppsCount: rp.FileAppsCount,
 	}
 
 	return resp, nil
