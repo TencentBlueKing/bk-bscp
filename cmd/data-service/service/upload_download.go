@@ -22,10 +22,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // getAllAppCIs get all template and non-template config items for the app which can be rendered

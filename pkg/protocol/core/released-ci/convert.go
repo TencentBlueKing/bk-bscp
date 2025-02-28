@@ -21,11 +21,11 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // PbReleasedConfigItems convert table ReleasedConfigItems to pb ReleasedConfigItems

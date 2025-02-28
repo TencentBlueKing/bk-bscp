@@ -132,6 +132,7 @@ func (s *Service) DeleteTemplateVariable(ctx context.Context, req *pbds.DeleteTe
 }
 
 // ImportTemplateVariables import template variables.
+// nolint:funlen
 func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportTemplateVariablesReq) (
 	*pbds.ImportTemplateVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)

@@ -24,7 +24,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
@@ -32,6 +31,7 @@ import (
 	pbhook "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/hook"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
 
 const (

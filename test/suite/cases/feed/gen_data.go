@@ -21,10 +21,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/test/client/api"
 	"github.com/TencentBlueKing/bk-bscp/test/suite/cases"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 
 const (

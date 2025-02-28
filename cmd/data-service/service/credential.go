@@ -27,14 +27,14 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbatb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-template-binding"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbcredential "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/credential"
 	pbtset "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-set"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateCredential Create Credential
@@ -157,7 +157,7 @@ func (s *Service) UpdateCredential(ctx context.Context, req *pbds.UpdateCredenti
 		logs.Errorf("get credential failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
-	if !errors.Is(gorm.ErrRecordNotFound, err) && old.ID != req.Id {
+	if !errors.Is(err, gorm.ErrRecordNotFound) && old.ID != req.Id {
 		return nil, fmt.Errorf("credential name %s already exists", req.Spec.Name)
 	}
 
