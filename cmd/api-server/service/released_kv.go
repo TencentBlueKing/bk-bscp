@@ -31,10 +31,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbrkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // Exporter The Exporter interface defines methods for exporting files.

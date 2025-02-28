@@ -20,7 +20,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbatv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app-template-variable"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
@@ -28,6 +27,7 @@ import (
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
 	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // ExtractAppTmplVariables extract app template variables.

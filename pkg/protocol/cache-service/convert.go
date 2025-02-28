@@ -15,8 +15,8 @@ package pbcs
 
 import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbevent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/event"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // PbAppMetaMap convert app meta map.

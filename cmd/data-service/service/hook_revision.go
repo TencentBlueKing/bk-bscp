@@ -21,11 +21,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	hr "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/hook-revision"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // CreateHookRevision create hook revision with option

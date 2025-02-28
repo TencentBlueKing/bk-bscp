@@ -17,8 +17,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // ListInstances list instances used to iam pull resource callback.

@@ -19,10 +19,10 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/filter"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/filter"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
 )
 

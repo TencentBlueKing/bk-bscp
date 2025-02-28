@@ -58,9 +58,9 @@ func (dao *configDao) UpsertConfig(kit *kit.Kit, itsmConfigs []*table.Config) er
 		// 没有记录的时候直接创建
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// generate an content id and update to content.
-			id, err := dao.idGen.One(kit, table.ConfigTable)
-			if err != nil {
-				return err
+			id, errO := dao.idGen.One(kit, table.ConfigTable)
+			if errO != nil {
+				return errO
 			}
 			v.ID = id
 

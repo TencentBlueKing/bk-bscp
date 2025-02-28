@@ -21,8 +21,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // CheckDefaultTmplSpace create default template space if not existent

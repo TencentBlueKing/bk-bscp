@@ -20,9 +20,9 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // ListTmplBoundCounts list template bound counts

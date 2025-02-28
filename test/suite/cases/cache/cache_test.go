@@ -21,15 +21,15 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
-	"github.com/TencentBlueKing/bk-bscp/test/client"
-	"github.com/TencentBlueKing/bk-bscp/test/suite"
-	"github.com/TencentBlueKing/bk-bscp/test/suite/cases"
 	pbcache "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	pbconfig "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
 	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	"github.com/TencentBlueKing/bk-bscp/test/client"
+	"github.com/TencentBlueKing/bk-bscp/test/suite"
+	"github.com/TencentBlueKing/bk-bscp/test/suite/cases"
 )
 
 func TestCache(t *testing.T) {
