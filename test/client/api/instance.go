@@ -13,12 +13,7 @@
 package api
 
 import (
-	"context"
-	"net/http"
-	"reflect"
-
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 
 // Instance client of instance
@@ -34,87 +29,87 @@ func NewInstanceClient(client rest.ClientInterface) *Instance {
 }
 
 // Publish to publish instance.
-func (ins *Instance) Publish(ctx context.Context, header http.Header, req *pbcs.PublishInstanceReq) (
-	*pbcs.PublishInstanceResp, error) {
-	resp := ins.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/create/instance/publish/app_id/%d/biz_id/%d", req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// func (ins *Instance) Publish(ctx context.Context, header http.Header, req *pbcs.PublishInstanceReq) (
+// 	*pbcs.PublishInstanceResp, error) {
+// 	resp := ins.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/create/instance/publish/app_id/%d/biz_id/%d", req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.PublishInstanceResp `json:"data"`
-		Error *rest.ErrorPayload        `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.PublishInstanceResp `json:"data"`
+// 		Error *rest.ErrorPayload        `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // Delete to delete publish instance.
-func (ins *Instance) Delete(ctx context.Context, header http.Header, req *pbcs.DeletePublishedInstanceReq) (
-	*pbcs.DeletePublishedInstanceResp, error) {
+// func (ins *Instance) Delete(ctx context.Context, header http.Header, req *pbcs.DeletePublishedInstanceReq) (
+// 	*pbcs.DeletePublishedInstanceResp, error) {
 
-	resp := ins.client.Delete().
-		WithContext(ctx).
-		SubResourcef("/config/delete/instance/publish/id/%d/app_id/%d/biz_id/%d", req.Id, req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ins.client.Delete().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/delete/instance/publish/id/%d/app_id/%d/biz_id/%d", req.Id, req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.DeletePublishedInstanceResp `json:"data"`
-		Error *rest.ErrorPayload                `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.DeletePublishedInstanceResp `json:"data"`
+// 		Error *rest.ErrorPayload                `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // List to list publish instance.
-func (ins *Instance) List(ctx context.Context, header http.Header, req *pbcs.ListPublishedInstanceReq) (
-	*pbcs.ListPublishedInstanceResp, error) {
+// func (ins *Instance) List(ctx context.Context, header http.Header, req *pbcs.ListPublishedInstanceReq) (
+// 	*pbcs.ListPublishedInstanceResp, error) {
 
-	resp := ins.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/list/instance/publish/biz_id/%d", req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ins.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/list/instance/publish/biz_id/%d", req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.ListPublishedInstanceResp `json:"data"`
-		Error *rest.ErrorPayload              `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.ListPublishedInstanceResp `json:"data"`
+// 		Error *rest.ErrorPayload              `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }

@@ -24,6 +24,7 @@ import (
 	"github.com/go-chi/render"
 	"gopkg.in/yaml.v3"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -69,11 +70,11 @@ func (s *variableService) ExportGlobalVariables(w http.ResponseWriter, r *http.R
 
 	outData := variablesToOutData(vs)
 	switch format {
-	case "yaml":
+	case constant.YamlFormat:
 		exporter = &YAMLVariableExporter{OutData: outData}
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_global_variable.yaml", kt.BizID))
 		w.Header().Set("Content-Type", "application/x-yaml")
-	case "json":
+	case constant.JsonFormat:
 		exporter = &JSONVariableExporter{OutData: outData}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_global_variable.json", kt.BizID))
@@ -124,12 +125,12 @@ func (s *variableService) ExportAppVariables(w http.ResponseWriter, r *http.Requ
 
 	outData := variablesToOutData(vars.Details)
 	switch format {
-	case "yaml":
+	case constant.YamlFormat:
 		exporter = &YAMLVariableExporter{OutData: outData}
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_variable.yaml",
 			kt.BizID, app.Spec.Name))
 		w.Header().Set("Content-Type", "application/x-yaml")
-	case "json":
+	case constant.JsonFormat:
 		exporter = &JSONVariableExporter{OutData: outData}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_variable.json",
@@ -193,12 +194,12 @@ func (s *variableService) ExportReleasedAppVariables(w http.ResponseWriter, r *h
 
 	outData := variablesToOutData(vars.Details)
 	switch format {
-	case "yaml":
+	case constant.YamlFormat:
 		exporter = &YAMLVariableExporter{OutData: outData}
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_%s_variable.yaml",
 			kt.BizID, app.Spec.Name, rel.Spec.Name))
 		w.Header().Set("Content-Type", "application/x-yaml")
-	case "json":
+	case constant.JsonFormat:
 		exporter = &JSONVariableExporter{OutData: outData}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%d_%s_%s_variable.json",

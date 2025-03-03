@@ -29,8 +29,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	pbfs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/feed-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // newFeedServerMux new config server mux.

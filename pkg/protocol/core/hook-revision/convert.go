@@ -17,8 +17,8 @@ import (
 	pbstruct "github.com/golang/protobuf/ptypes/struct"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
 
 // HookRevisionSpace convert pb HookRevisionSpace to table HookRevisionSpace

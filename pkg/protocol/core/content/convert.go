@@ -17,8 +17,8 @@ import (
 	"github.com/golang/protobuf/jsonpb" //nolint:staticcheck
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
 
 // ContentSpec convert pb ContentSpec to table ContentSpec

@@ -26,15 +26,15 @@ import (
 	"github.com/xuri/excelize/v2"
 	"gopkg.in/yaml.v3"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbrkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-kv"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // Exporter The Exporter interface defines methods for exporting files.
@@ -164,11 +164,11 @@ func (m *kvService) Export(w http.ResponseWriter, r *http.Request) {
 	var exporter Exporter
 
 	switch format {
-	case "yaml":
+	case constant.YamlFormat:
 		exporter = &YAMLExporter{OutData: outData}
 		w.Header().Set("Content-Disposition", "attachment; filename=output.yaml")
 		w.Header().Set("Content-Type", "application/x-yaml")
-	case "json":
+	case constant.JsonFormat:
 		exporter = &JSONExporter{OutData: outData}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Content-Disposition", "attachment; filename=output.json")

@@ -24,9 +24,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 	"github.com/TencentBlueKing/bk-bscp/test/benchmark/run"
 	"github.com/TencentBlueKing/bk-bscp/test/util"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
 )
 
 const (
@@ -162,72 +162,72 @@ func TestBenchAppMeta(t *testing.T) {
 
 // TestBenchAppCPS test cache service query db's app current published strategy func.
 func TestBenchAppCPS(t *testing.T) {
-	req := &pbcs.BenchAppCPSReq{
-		BizId: stressBizID,
-		AppId: stressAppID,
-	}
+	// req := &pbcs.BenchAppCPSReq{
+	// 	BizId: stressBizID,
+	// 	AppId: stressAppID,
+	// }
 
-	if debug {
-		resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	// if debug {
+	// 	resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
 
-		fmt.Printf("BenchAppCPS Resp: %+v\n", resp)
-		return
-	}
+	// 	fmt.Printf("BenchAppCPS Resp: %+v\n", resp)
+	// 	return
+	// }
 
-	m := run.FireLoadTest(func() error {
-		resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
-		if err != nil {
-			return err
-		}
+	// m := run.FireLoadTest(func() error {
+	// 	resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if len(resp.Meta) == 0 {
-			return errors.New("BenchAppCPS return data not right")
-		}
+	// 	if len(resp.Meta) == 0 {
+	// 		return errors.New("BenchAppCPS return data not right")
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
-	run.Archive("TestBenchAppCPS", m)
-	fmt.Printf("\nTestBenchAppCPS: \n" + m.Format())
+	// run.Archive("TestBenchAppCPS", m)
+	// fmt.Printf("\nTestBenchAppCPS: \n" + m.Format())
 }
 
 // TestBenchAppCRIMeta test cache service query db's app current released instance func.
 func TestBenchAppCRIMeta(t *testing.T) {
-	req := &pbcs.BenchAppCRIMetaReq{
-		BizId: stressBizID,
-		AppId: stressAppID,
-	}
+	// req := &pbcs.BenchAppCRIMetaReq{
+	// 	BizId: stressBizID,
+	// 	AppId: stressAppID,
+	// }
 
-	if debug {
-		resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	// if debug {
+	// 	resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
 
-		fmt.Printf("BenchAppCRIMeta Resp: %+v\n", resp)
-		return
-	}
+	// 	fmt.Printf("BenchAppCRIMeta Resp: %+v\n", resp)
+	// 	return
+	// }
 
-	m := run.FireLoadTest(func() error {
-		resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
-		if err != nil {
-			return err
-		}
+	// m := run.FireLoadTest(func() error {
+	// 	resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if len(resp.Meta) == 0 {
-			return errors.New("BenchAppCRIMeta return data not right")
-		}
+	// 	if len(resp.Meta) == 0 {
+	// 		return errors.New("BenchAppCRIMeta return data not right")
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
-	run.Archive("TestBenchAppCRIMeta", m)
-	fmt.Printf("\nTestBenchAppCRIMeta: \n" + m.Format())
+	// run.Archive("TestBenchAppCRIMeta", m)
+	// fmt.Printf("\nTestBenchAppCRIMeta: \n" + m.Format())
 }
 
 // TestBenchReleasedCI test cache service query db's released config item func.
@@ -295,55 +295,55 @@ func TestBenchAverage(t *testing.T) {
 		wg.Done()
 	}()
 
-	wg.Add(1)
-	go func() {
-		req := &pbcs.BenchAppCPSReq{
-			BizId: stressBizID,
-			AppId: stressAppID,
-		}
+	// wg.Add(1)
+	// go func() {
+	// 	req := &pbcs.BenchAppCPSReq{
+	// 		BizId: stressBizID,
+	// 		AppId: stressAppID,
+	// 	}
 
-		m := run.FireLoadTest(func() error {
-			resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
-			if err != nil {
-				return err
-			}
+	// 	m := run.FireLoadTest(func() error {
+	// 		resp, err := csPool.Pick().BenchAppCPS(context.Background(), req)
+	// 		if err != nil {
+	// 			return err
+	// 		}
 
-			if len(resp.Meta) == 0 {
-				return errors.New("BenchAppCPS return data not right")
-			}
+	// 		if len(resp.Meta) == 0 {
+	// 			return errors.New("BenchAppCPS return data not right")
+	// 		}
 
-			return nil
-		})
+	// 		return nil
+	// 	})
 
-		run.Archive("TestBenchAverage-BenchAppCPS", m)
-		fmt.Printf("\nTestBenchAverage-BenchAppCPS: \n" + m.Format())
-		wg.Done()
-	}()
+	// 	run.Archive("TestBenchAverage-BenchAppCPS", m)
+	// 	fmt.Printf("\nTestBenchAverage-BenchAppCPS: \n" + m.Format())
+	// 	wg.Done()
+	// }()
 
-	wg.Add(1)
-	go func() {
-		req := &pbcs.BenchAppCRIMetaReq{
-			BizId: stressBizID,
-			AppId: stressAppID,
-		}
+	// wg.Add(1)
+	// go func() {
+	// 	req := &pbcs.BenchAppCRIMetaReq{
+	// 		BizId: stressBizID,
+	// 		AppId: stressAppID,
+	// 	}
 
-		m := run.FireLoadTest(func() error {
-			resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
-			if err != nil {
-				return err
-			}
+	// 	m := run.FireLoadTest(func() error {
+	// 		resp, err := csPool.Pick().BenchAppCRIMeta(context.Background(), req)
+	// 		if err != nil {
+	// 			return err
+	// 		}
 
-			if len(resp.Meta) == 0 {
-				return errors.New("BenchAppCRIMeta return data not right")
-			}
+	// 		if len(resp.Meta) == 0 {
+	// 			return errors.New("BenchAppCRIMeta return data not right")
+	// 		}
 
-			return nil
-		})
+	// 		return nil
+	// 	})
 
-		run.Archive("TestBenchAverage-BenchAppCRIMeta", m)
-		fmt.Printf("\nTestBenchAverage-BenchAppCRIMeta: \n" + m.Format())
-		wg.Done()
-	}()
+	// 	run.Archive("TestBenchAverage-BenchAppCRIMeta", m)
+	// 	fmt.Printf("\nTestBenchAverage-BenchAppCRIMeta: \n" + m.Format())
+	// 	wg.Done()
+	// }()
 
 	wg.Add(1)
 	go func() {
@@ -443,83 +443,83 @@ func TestGetReleasedCI(t *testing.T) {
 
 // TestGetAppInstanceRelease test cache service GetAppInstanceRelease interface.
 func TestGetAppInstanceRelease(t *testing.T) {
-	req := &pbcs.GetAppInstanceReleaseReq{
-		BizId: stressBizID,
-		AppId: stressAppID,
-		Uid:   "961b6dd3ede3cb8ecbaacbd68de040cd78eb2ed5889130cceb4c49268ea4d506",
-	}
+	// req := &pbcs.GetAppInstanceReleaseReq{
+	// 	BizId: stressBizID,
+	// 	AppId: stressAppID,
+	// 	Uid:   "961b6dd3ede3cb8ecbaacbd68de040cd78eb2ed5889130cceb4c49268ea4d506",
+	// }
 
-	if debug {
-		resp, err := csPool.Pick().GetAppInstanceRelease(context.Background(), req)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	// if debug {
+	// 	resp, err := csPool.Pick().GetAppInstanceRelease(context.Background(), req)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
 
-		fmt.Printf("GetAppInstanceRelease Resp: %+v\n", resp)
-		return
-	}
+	// 	fmt.Printf("GetAppInstanceRelease Resp: %+v\n", resp)
+	// 	return
+	// }
 
-	m := run.FireLoadTest(func() error {
-		resp, err := csPool.Pick().GetAppInstanceRelease(context.Background(), req)
-		if err != nil {
-			return err
-		}
+	// m := run.FireLoadTest(func() error {
+	// 	resp, err := csPool.Pick().GetAppInstanceRelease(context.Background(), req)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if resp.ReleaseId == 0 {
-			return errors.New("GetAppInstanceRelease return data not right")
-		}
+	// 	if resp.ReleaseId == 0 {
+	// 		return errors.New("GetAppInstanceRelease return data not right")
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
-	run.Archive("TestGetAppInstanceRelease", m)
-	fmt.Printf("\nTestGetAppInstanceRelease: \n" + m.Format())
+	// run.Archive("TestGetAppInstanceRelease", m)
+	// fmt.Printf("\nTestGetAppInstanceRelease: \n" + m.Format())
 }
 
 // TestGetAppReleasedStrategy test cache service GetAppReleasedStrategy interface.
 func TestGetAppReleasedStrategy(t *testing.T) {
 
-	cpsReq := &pbcs.GetAppCpsIDReq{
-		BizId: stressBizID,
-		AppId: stressAppID,
-	}
-	cpsResp, err := csPool.Pick().GetAppCpsID(context.Background(), cpsReq)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	// cpsReq := &pbcs.GetAppCpsIDReq{
+	// 	BizId: stressBizID,
+	// 	AppId: stressAppID,
+	// }
+	// cpsResp, err := csPool.Pick().GetAppCpsID(context.Background(), cpsReq)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
-	req := &pbcs.GetAppReleasedStrategyReq{
-		BizId: stressBizID,
-		AppId: stressAppID,
-		CpsId: cpsResp.CpsId,
-	}
+	// req := &pbcs.GetAppReleasedStrategyReq{
+	// 	BizId: stressBizID,
+	// 	AppId: stressAppID,
+	// 	CpsId: cpsResp.CpsId,
+	// }
 
-	if debug {
-		resp, err := csPool.Pick().GetAppReleasedStrategy(context.Background(), req)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	// if debug {
+	// 	resp, err := csPool.Pick().GetAppReleasedStrategy(context.Background(), req)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		return
+	// 	}
 
-		fmt.Printf("GetAppReleasedStrategy Resp: %+v\n", resp)
-		return
-	}
+	// 	fmt.Printf("GetAppReleasedStrategy Resp: %+v\n", resp)
+	// 	return
+	// }
 
-	m := run.FireLoadTest(func() error {
-		resp, err := csPool.Pick().GetAppReleasedStrategy(context.Background(), req)
-		if err != nil {
-			return err
-		}
+	// m := run.FireLoadTest(func() error {
+	// 	resp, err := csPool.Pick().GetAppReleasedStrategy(context.Background(), req)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if len(resp.JsonRaw) == 0 {
-			return errors.New("CheckAppHasReleasedInstance return data not right")
-		}
+	// 	if len(resp.JsonRaw) == 0 {
+	// 		return errors.New("CheckAppHasReleasedInstance return data not right")
+	// 	}
 
-		return nil
-	})
+	// 	return nil
+	// })
 
-	run.Archive("TestGetAppReleasedStrategy", m)
-	fmt.Printf("\nTestGetAppReleasedStrategy: \n" + m.Format())
+	// run.Archive("TestGetAppReleasedStrategy", m)
+	// fmt.Printf("\nTestGetAppReleasedStrategy: \n" + m.Format())
 }

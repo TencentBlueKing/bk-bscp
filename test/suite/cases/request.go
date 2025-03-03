@@ -17,45 +17,46 @@ import (
 	"encoding/json"
 	"net/http"
 
+	pbstruct "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/filter"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
-	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
-	pbstruct "github.com/golang/protobuf/ptypes/struct"
 )
 
 // GenListAppByIdsReq generate a list_app request by biz_id and app_ids.
-func GenListAppByIdsReq(bizId uint32, appIds []uint32) (*pbcs.ListAppsReq, error) {
-	pbStruct, err := GenQueryFilterByIds(appIds)
-	if err != nil {
-		return nil, err
-	}
+func GenListAppByIdsReq(bizId uint32, appIds []uint32) (*pbapp.App, error) {
+	// pbStruct, err := GenQueryFilterByIds(appIds)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return &pbcs.ListAppsReq{
-		BizId:  bizId,
-		Filter: pbStruct,
-		Page:   ListPage(),
+	return &pbapp.App{
+		BizId: bizId,
+		// Filter: pbStruct,
+		// Page:   ListPage(),
 	}, nil
 }
 
 // GenListHookByIdsReq generate a list_hook request by app_ids.
-func GenListHookByIdsReq(appId uint32, hookIds []uint32) (*pbcs.ListHooksReq, error) {
-	pbStruct, err := GenQueryFilterByIds(hookIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListHookByIdsReq(appId uint32, hookIds []uint32) (*pbcs.ListHooksReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(hookIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListHooksReq{
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListHooksReq{
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListConfigItemByIdsReq generate a list_config_item request by biz_id and app_ids.
-//func GenListConfigItemByIdsReq(bizId, appId uint32, configItemIds []uint32) (*pbcs.ListConfigItemsReq, error) {
+// func GenListConfigItemByIdsReq(bizId, appId uint32, configItemIds []uint32) (*pbcs.ListConfigItemsReq, error) {
 //	pbStruct, err := GenQueryFilterByIds(configItemIds)
 //	if err != nil {
 //		return nil, err
@@ -70,110 +71,110 @@ func GenListHookByIdsReq(appId uint32, hookIds []uint32) (*pbcs.ListHooksReq, er
 //}
 
 // GenListContentByIdsReq generate a list_content request by biz_id, app_id and content_ids.
-func GenListContentByIdsReq(bizId, appId uint32, contentIds []uint32) (*pbcs.ListContentsReq, error) {
-	pbStruct, err := GenQueryFilterByIds(contentIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListContentByIdsReq(bizId, appId uint32, contentIds []uint32) (*pbcs.ListContentsReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(contentIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListContentsReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListContentsReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListCommitByIdsReq generate a list_commit request by biz_id, app_id and commit_ids.
-func GenListCommitByIdsReq(bizId, appId uint32, commitIds []uint32) (*pbcs.ListCommitsReq, error) {
-	pbStruct, err := GenQueryFilterByIds(commitIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListCommitByIdsReq(bizId, appId uint32, commitIds []uint32) (*pbcs.ListCommitsReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(commitIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListCommitsReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListCommitsReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListReleaseByIdsReq generate a list_release request by biz_id, app_id and release_ids.
-func GenListReleaseByIdsReq(bizId, appId uint32, releaseIds []uint32) (*pbcs.ListReleasesReq, error) {
-	pbStruct, err := GenQueryFilterByIds(releaseIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListReleaseByIdsReq(bizId, appId uint32, releaseIds []uint32) (*pbcs.ListReleasesReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(releaseIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListReleasesReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListReleasesReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListStrategySetByIdsReq generate a list_strategy_set request by biz_id, app_id and strategy_set ids.
-func GenListStrategySetByIdsReq(bizId, appId uint32, stgSetIds []uint32) (*pbcs.ListStrategySetsReq, error) {
-	pbStruct, err := GenQueryFilterByIds(stgSetIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListStrategySetByIdsReq(bizId, appId uint32, stgSetIds []uint32) (*pbcs.ListStrategySetsReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(stgSetIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListStrategySetsReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListStrategySetsReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListStrategyByIdsReq generate a list_strategy request by biz_id, app_id and strategy ids.
-func GenListStrategyByIdsReq(bizId, appId uint32, strategyIds []uint32) (*pbcs.ListStrategiesReq, error) {
-	pbStruct, err := GenQueryFilterByIds(strategyIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListStrategyByIdsReq(bizId, appId uint32, strategyIds []uint32) (*pbcs.ListStrategiesReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(strategyIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListStrategiesReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListStrategiesReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListStrategyPublishByIdsReq generate a list_strategy_publish request by biz_id, app_id and publish ids.
-func GenListStrategyPublishByIdsReq(bizId, appId uint32, publishIds []uint32) (
-	*pbcs.ListPubStrategyHistoriesReq, error) {
-	pbStruct, err := GenQueryFilterByIds(publishIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListStrategyPublishByIdsReq(bizId, appId uint32, publishIds []uint32) (
+// 	*pbcs.ListPubStrategyHistoriesReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(publishIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListPubStrategyHistoriesReq{
-		BizId:  bizId,
-		AppId:  appId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListPubStrategyHistoriesReq{
+// 		BizId:  bizId,
+// 		AppId:  appId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenListInstancePublishByIdsReq generate a list_app_instance_publish request by biz_id and publish ids.
-func GenListInstancePublishByIdsReq(bizId uint32, publishIds []uint32) (
-	*pbcs.ListPublishedInstanceReq, error) {
-	pbStruct, err := GenQueryFilterByIds(publishIds)
-	if err != nil {
-		return nil, err
-	}
+// func GenListInstancePublishByIdsReq(bizId uint32, publishIds []uint32) (
+// 	*pbcs.ListPublishedInstanceReq, error) {
+// 	pbStruct, err := GenQueryFilterByIds(publishIds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &pbcs.ListPublishedInstanceReq{
-		BizId:  bizId,
-		Filter: pbStruct,
-		Page:   ListPage(),
-	}, nil
-}
+// 	return &pbcs.ListPublishedInstanceReq{
+// 		BizId:  bizId,
+// 		Filter: pbStruct,
+// 		Page:   ListPage(),
+// 	}, nil
+// }
 
 // GenQueryFilterByIds query app filter by id
 func GenQueryFilterByIds(ids []uint32) (*pbstruct.Struct, error) {
@@ -264,6 +265,7 @@ func GenApiCtxHeader() (context.Context, http.Header) {
 }
 
 // GenCacheContext generate request context for cache client
+// nolint:staticcheck
 func GenCacheContext() context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, constant.UserKey, constant.BKUserForTestPrefix+"suite")

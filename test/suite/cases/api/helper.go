@@ -12,75 +12,73 @@
 
 package api
 
-import "github.com/TencentBlueKing/bk-bscp/test/suite/cases"
+// func genNormalNameForCreateTest() []string {
+// 	return []string{
+// 		// to test: Only Chinese, English, numbers, underscores, and underscores are allowed
+// 		cases.TZhEnNumUnderHyphen,
+// 		// to test: maximum length is 128
+// 		cases.RandString(128),
+// 		// to test: start and end with number
+// 		cases.TNumber,
+// 		// to test: start and end with English
+// 		cases.TEnglish,
+// 		// to test: start and end with Chinese
+// 		cases.TChinese,
+// 	}
+// }
 
-func genNormalNameForCreateTest() []string {
-	return []string{
-		// to test: Only Chinese, English, numbers, underscores, and underscores are allowed
-		cases.TZhEnNumUnderHyphen,
-		// to test: maximum length is 128
-		cases.RandString(128),
-		// to test: start and end with number
-		cases.TNumber,
-		// to test: start and end with English
-		cases.TEnglish,
-		// to test: start and end with Chinese
-		cases.TChinese,
-	}
-}
+// func genNormalNameForUpdateTest() []string {
+// 	return []string{
+// 		// to test: Only Chinese, English, numbers, underline, hyphen and dot are allowed
+// 		cases.TZhEnNumUnderHyphen,
+// 		// to test: maximum length is 128
+// 		cases.RandString(128),
+// 		// to test: start and end with number
+// 		cases.TNumber + "6789",
+// 		// to test: start and end with English
+// 		cases.TEnglish + "_name",
+// 		// to test: start and end with Chinese
+// 		cases.TChinese + "名字",
+// 	}
+// }
 
-func genNormalNameForUpdateTest() []string {
-	return []string{
-		// to test: Only Chinese, English, numbers, underline, hyphen and dot are allowed
-		cases.TZhEnNumUnderHyphen,
-		// to test: maximum length is 128
-		cases.RandString(128),
-		// to test: start and end with number
-		cases.TNumber + "6789",
-		// to test: start and end with English
-		cases.TEnglish + "_name",
-		// to test: start and end with Chinese
-		cases.TChinese + "名字",
-	}
-}
+// func genAbnormalNameForTest() []string {
+// 	return []string{
+// 		// to test: Only Chinese, English, numbers, underline, and hyphen are allowed
+// 		cases.WCharacter,
+// 		// to test: maximum length is 128
+// 		cases.RandString(129),
+// 		// to test: Must start with Chinese, English, numbers
+// 		cases.WPrefix,
+// 		// to test: Must end with Chinese, English, numbers
+// 		cases.WTail,
+// 	}
+// }
 
-func genAbnormalNameForTest() []string {
-	return []string{
-		// to test: Only Chinese, English, numbers, underline, and hyphen are allowed
-		cases.WCharacter,
-		// to test: maximum length is 128
-		cases.RandString(129),
-		// to test: Must start with Chinese, English, numbers
-		cases.WPrefix,
-		// to test: Must end with Chinese, English, numbers
-		cases.WTail,
-	}
-}
+// func genNormalMemoForTest() []string {
+// 	return []string{
+// 		// to test: Only Chinese, English, numbers, underline, hyphen, spaces are allowed
+// 		cases.TZhEnNumUnderHyphenSpace,
+// 		// to test: maximum length is 256
+// 		cases.RandString(256),
+// 		// to test: start and end with number
+// 		cases.TNumber,
+// 		// to test: start and end with English
+// 		cases.TEnglish,
+// 		// to test: start and end with Chinese
+// 		cases.TChinese,
+// 	}
+// }
 
-func genNormalMemoForTest() []string {
-	return []string{
-		// to test: Only Chinese, English, numbers, underline, hyphen, spaces are allowed
-		cases.TZhEnNumUnderHyphenSpace,
-		// to test: maximum length is 256
-		cases.RandString(256),
-		// to test: start and end with number
-		cases.TNumber,
-		// to test: start and end with English
-		cases.TEnglish,
-		// to test: start and end with Chinese
-		cases.TChinese,
-	}
-}
-
-func genAbnormalMemoForTest() []string {
-	return []string{
-		// to test: Only Chinese, English, numbers, underline, and hyphen are allowed
-		cases.WCharacter,
-		// to test: maximum length is 256
-		cases.RandString(257),
-		// to test: Must start with Chinese, English, numbers
-		cases.WPrefix,
-		// to test: Must end with Chinese, English, numbers
-		cases.WTail,
-	}
-}
+// func genAbnormalMemoForTest() []string {
+// 	return []string{
+// 		// to test: Only Chinese, English, numbers, underline, and hyphen are allowed
+// 		cases.WCharacter,
+// 		// to test: maximum length is 256
+// 		cases.RandString(257),
+// 		// to test: Must start with Chinese, English, numbers
+// 		cases.WPrefix,
+// 		// to test: Must end with Chinese, English, numbers
+// 		cases.WTail,
+// 	}
+// }

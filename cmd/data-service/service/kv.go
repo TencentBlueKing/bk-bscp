@@ -48,12 +48,12 @@ func (s *Service) CreateKv(ctx context.Context, req *pbds.CreateKvReq) (*pbds.Cr
 	// GetByKvState get kv by KvState.
 	_, err = s.dao.Kv().GetByKvState(kt, req.Attachment.BizId, req.Attachment.AppId, req.Spec.Key,
 		[]string{string(table.KvStateAdd), string(table.KvStateUnchange), string(table.KvStateRevise)})
-	if err != nil && !errors.Is(gorm.ErrRecordNotFound, err) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get kv (%d) failed, err: %v, rid: %s", req.Spec.Key, err, kt.Rid)
 		return nil, errf.Errorf(errf.NotFound,
 			i18n.T(kt, "get kv (%d) failed, err: %v", req.Spec.Key, err))
 	}
-	if !errors.Is(gorm.ErrRecordNotFound, err) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get kv (%d) failed, err: %v, rid: %s", req.Spec.Key, err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "the config item %s under this service already exists and cannot be created again", req.Spec.Key))

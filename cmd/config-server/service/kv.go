@@ -28,6 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
+	cs "github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -496,14 +497,14 @@ func (s *Service) ImportKvs(ctx context.Context, req *pbcs.ImportKvsReq) (*pbcs.
 	// format：text、json、yaml
 	var kvMap map[string]interface{}
 	switch req.Format {
-	case "json":
+	case cs.JsonFormat:
 		if !json.Valid([]byte(req.GetData())) {
 			return nil, errors.New(i18n.T(grpcKit, "not legal JSON data"))
 		}
 		if err := json.Unmarshal([]byte(req.GetData()), &kvMap); err != nil {
 			return nil, errors.New(i18n.T(grpcKit, "json format error, err: %v", err))
 		}
-	case "yaml":
+	case cs.YamlFormat:
 		if err := yaml.Unmarshal([]byte(req.GetData()), &kvMap); err != nil {
 			return nil, errors.New(i18n.T(grpcKit, "yaml format error, err: %v", err))
 		}

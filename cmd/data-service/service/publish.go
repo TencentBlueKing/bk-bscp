@@ -1150,9 +1150,9 @@ func checkTicketStatus(grpcKit *kit.Kit,
 		}
 		// 失败需要有reason
 		if _, ok := approveData[constant.ItsmRejectedApproveResult]; ok {
-			getApproveNodeResultData, err := itsm.GetApproveNodeResult(grpcKit.Ctx, sn, stateID)
-			if err != nil {
-				return req, message, err
+			getApproveNodeResultData, errG := itsm.GetApproveNodeResult(grpcKit.Ctx, sn, stateID)
+			if errG != nil {
+				return req, message, errG
 			}
 			req.Reason = getApproveNodeResultData.Data.ApproveRemark
 			req.PublishStatus = string(table.RejectedApproval)

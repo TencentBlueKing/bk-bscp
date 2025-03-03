@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
@@ -61,7 +62,7 @@ func (a *App) Create(ctx context.Context, header http.Header, req *pbcs.CreateAp
 }
 
 // Update function to update application.
-func (a *App) Update(ctx context.Context, header http.Header, req *pbcs.UpdateAppReq) (*pbcs.UpdateAppResp, error) {
+func (a *App) Update(ctx context.Context, header http.Header, req *pbcs.UpdateAppReq) (*pbapp.App, error) {
 	resp := a.client.Put().
 		WithContext(ctx).
 		SubResourcef("/config/update/app/app/app_id/%d/biz_id/%d", req.Id, req.BizId).
@@ -74,8 +75,8 @@ func (a *App) Update(ctx context.Context, header http.Header, req *pbcs.UpdateAp
 	}
 
 	pbResp := &struct {
-		Data  *pbcs.UpdateAppResp `json:"data"`
-		Error *rest.ErrorPayload  `json:"error"`
+		Data  *pbapp.App         `json:"data"`
+		Error *rest.ErrorPayload `json:"error"`
 	}{}
 	if err := resp.Into(pbResp); err != nil {
 		return nil, err
@@ -115,7 +116,7 @@ func (a *App) Delete(ctx context.Context, header http.Header, req *pbcs.DeleteAp
 }
 
 // List to list application.
-func (a *App) List(ctx context.Context, header http.Header, req *pbcs.ListAppsReq) (*pbcs.ListAppsResp, error) {
+func (a *App) List(ctx context.Context, header http.Header, req *pbcs.ListAppsRestReq) (*pbcs.ListAppsResp, error) {
 	resp := a.client.Post().
 		WithContext(ctx).
 		SubResourcef("/config/list/app/app/biz_id/%d", req.BizId).

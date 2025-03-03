@@ -13,12 +13,7 @@
 package api
 
 import (
-	"context"
-	"net/http"
-	"reflect"
-
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 
 // StrategySet client of strategy set
@@ -34,119 +29,119 @@ func NewStrategySetClient(client rest.ClientInterface) *StrategySet {
 }
 
 // Create function to create strategy set.
-func (ss *StrategySet) Create(ctx context.Context, header http.Header, req *pbcs.CreateStrategySetReq) (
-	*pbcs.CreateStrategySetResp, error) {
+// func (ss *StrategySet) Create(ctx context.Context, header http.Header, req *pbcs.CreateStrategySetReq) (
+// 	*pbcs.CreateStrategySetResp, error) {
 
-	resp := ss.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/create/strategy_set/strategy_set/app_id/%d/biz_id/%d", req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ss.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/create/strategy_set/strategy_set/app_id/%d/biz_id/%d", req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.CreateStrategySetResp `json:"data"`
-		Error *rest.ErrorPayload          `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.CreateStrategySetResp `json:"data"`
+// 		Error *rest.ErrorPayload          `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // Update function to update strategy set.
-func (ss *StrategySet) Update(ctx context.Context, header http.Header, req *pbcs.UpdateStrategySetReq) (
-	*pbcs.UpdateStrategySetResp, error) {
+// func (ss *StrategySet) Update(ctx context.Context, header http.Header, req *pbcs.UpdateStrategySetReq) (
+// 	*pbcs.UpdateStrategySetResp, error) {
 
-	resp := ss.client.Put().
-		WithContext(ctx).
-		SubResourcef("/config/update/strategy_set/strategy_set/strategy_set_id/%d/app_id/%d/biz_id/%d",
-			req.Id, req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ss.client.Put().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/update/strategy_set/strategy_set/strategy_set_id/%d/app_id/%d/biz_id/%d",
+// 			req.Id, req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.UpdateStrategySetResp `json:"data"`
-		Error *rest.ErrorPayload          `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.UpdateStrategySetResp `json:"data"`
+// 		Error *rest.ErrorPayload          `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // Delete function to delete strategy set.
-func (ss *StrategySet) Delete(ctx context.Context, header http.Header, req *pbcs.DeleteStrategySetReq) (
-	*pbcs.DeleteStrategySetResp, error) {
+// func (ss *StrategySet) Delete(ctx context.Context, header http.Header, req *pbcs.DeleteStrategySetReq) (
+// 	*pbcs.DeleteStrategySetResp, error) {
 
-	resp := ss.client.Delete().
-		WithContext(ctx).
-		SubResourcef("/config/delete/strategy_set/strategy_set/strategy_set_id/%d/app_id/%d/biz_id/%d",
-			req.Id, req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ss.client.Delete().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/delete/strategy_set/strategy_set/strategy_set_id/%d/app_id/%d/biz_id/%d",
+// 			req.Id, req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.DeleteStrategySetResp `json:"data"`
-		Error *rest.ErrorPayload          `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.DeleteStrategySetResp `json:"data"`
+// 		Error *rest.ErrorPayload          `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // List to list strategy set.
-func (ss *StrategySet) List(ctx context.Context, header http.Header, req *pbcs.ListStrategySetsReq) (
-	*pbcs.ListStrategySetsResp, error) {
+// func (ss *StrategySet) List(ctx context.Context, header http.Header, req *pbcs.ListStrategySetsReq) (
+// 	*pbcs.ListStrategySetsResp, error) {
 
-	resp := ss.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/list/strategy_set/strategy_set/app_id/%d/biz_id/%d", req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := ss.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/list/strategy_set/strategy_set/app_id/%d/biz_id/%d", req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.ListStrategySetsResp `json:"data"`
-		Error *rest.ErrorPayload         `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.ListStrategySetsResp `json:"data"`
+// 		Error *rest.ErrorPayload         `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }

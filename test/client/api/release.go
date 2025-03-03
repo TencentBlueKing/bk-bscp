@@ -17,8 +17,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // Release client of release

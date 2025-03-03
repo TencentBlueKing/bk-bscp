@@ -63,8 +63,8 @@ func (cm *ClientMetric) getLastConsumedTimeList(kt *kit.Kit, key string, listLen
 			continue
 		}
 		appIDs := parseAndFilterJSON(list)
-		if err := cm.op.BatchUpdateLastConsumedTime(kt, appIDs); err != nil {
-			logs.Errorf("batch upsert client metrics failed, rid: %s, err: %s", kt.Rid, err.Error())
+		if errB := cm.op.BatchUpdateLastConsumedTime(kt, appIDs); errB != nil {
+			logs.Errorf("batch upsert client metrics failed, rid: %s, err: %s", kt.Rid, errB.Error())
 			continue
 		}
 

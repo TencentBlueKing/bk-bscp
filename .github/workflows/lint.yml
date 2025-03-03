@@ -1,0 +1,35 @@
+name: lint
+on: [push, pull_request]
+jobs:
+  bcs-bscp:
+    name: bcs-bscp
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取代码
+      - name: checkout
+        uses: actions/checkout@v3
+
+      # 设置 Go 环境
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+      
+      # 检查 Go 模块依赖是否整理
+      - name: go mod tidy check
+        uses: katexochen/go-tidy-check@v2
+        with:
+          modules: .
+      
+      # 运行代码风格检查 (golangci-lint)
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.62.0
+          args: --timeout=30m
+          working-directory: .
+
+      # 编译项目
+      - name: build go project
+        run: |
+          make build_bscp && make build_frontend

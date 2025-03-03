@@ -19,6 +19,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
+// nolint:funlen
 func initMetric(name string) *metric {
 	m := new(metric)
 	labels := prm.Labels{"name": name}
