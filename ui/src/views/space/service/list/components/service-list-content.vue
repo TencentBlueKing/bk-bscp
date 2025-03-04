@@ -11,57 +11,90 @@
         {{ t('新建服务') }}
       </bk-button>
       <div class="head-right">
+        <bk-checkbox v-model="onlyShowMyService" style="font-size: 12px" @change="handleChangeShowService">
+          {{ $t('只显示我创建的服务') }}
+        </bk-checkbox>
+        <div class="panel-wrap">
+          <div
+            v-for="panel in typePanels"
+            :key="panel.label"
+            :class="['panel', { active: activeType === panel.name }]"
+            @click="handlePanelChange(panel.name)">
+            <span class="text">{{ `${panel.label}(${panel.count})` }}</span>
+          </div>
+        </div>
         <bk-input
           class="search-app-name"
           type="search"
           v-model="searchStr"
-          :placeholder="t('服务名称')"
+          :placeholder="t('搜索 服务别名、服务名称、服务描述、更新人、创建人')"
           :clearable="true"
           @input="handleSearch"
           @clear="handleClearSearchStr">
         </bk-input>
+        <div class="panel-wrap">
+          <div
+            v-for="panel in showPanels"
+            :key="panel.name"
+            :class="['panel-icon', { active: activeShow === panel.name }]"
+            @click="handleShowChange(panel.name)">
+            <span :class="['bk-bscp-icon', panel.icon]"></span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="content-body">
-      <bk-loading style="height: 100%" :loading="isLoading">
-        <template v-if="!isLoading && isEmpty && !isSearchEmpty">
-          <bk-exception class="exception-wrap-item" type="empty" :description="t('你尚未创建或加入任何服务')">
-            <div class="exception-actions">
-              <bk-button
-                text
-                theme="primary"
-                :class="{ 'bk-button-with-no-perm': props.permCheckLoading || !props.hasCreateServicePerm }"
-                @click="handleCreateServiceClick">
-                {{ t('立即创建') }}
-              </bk-button>
-              <span class="divider-middle"></span>
-              <!-- <bk-button text theme="primary">{{ t("申请权限") }}</bk-button> -->
-            </div>
-          </bk-exception>
-        </template>
-        <template v-else-if="!isLoading && isEmpty && isSearchEmpty">
-          <tableEmpty :is-search-empty="true" @clear="handleClearSearchStr" />
-        </template>
-        <template v-else>
-          <div class="serving-list">
-            <Card
-              v-for="service in serviceList"
-              :key="service.id"
-              :service="service"
-              @edit="handleEditService"
-              @delete="handleDeleteService"
-              @update="handleDeletedUpdate" />
+      <bk-loading :style="{ height: '100%', width: '100%' }" :loading="isLoading">
+        <!-- 空状态 -->
+        <bk-exception
+          v-if="!isLoading && isEmpty && !isSearchEmpty"
+          class="exception-wrap-item"
+          type="empty"
+          :description="t('你尚未创建或加入任何服务')">
+          <div class="exception-actions">
+            <bk-button
+              text
+              theme="primary"
+              :class="{ 'bk-button-with-no-perm': props.permCheckLoading || !props.hasCreateServicePerm }"
+              @click="handleCreateServiceClick">
+              {{ t('立即创建') }}
+            </bk-button>
+            <span class="divider-middle"></span>
+            <!-- <bk-button text theme="primary">{{ t("申请权限") }}</bk-button> -->
           </div>
-          <bk-pagination
-            v-model="pagination.current"
-            class="service-list-pagination"
-            location="left"
-            :layout="['total', 'limit', 'list']"
-            :count="pagination.count"
-            :limit="pagination.limit"
-            @change="loadAppList"
-            @limit-change="handleLimitChange" />
+        </bk-exception>
+
+        <!-- 卡片视图 -->
+        <template v-else-if="activeShow === 'card'">
+          <tableEmpty v-if="isSearchEmpty" :is-search-empty="true" @clear="handleClearSearchStr" />
+          <template v-else>
+            <div class="serving-list">
+              <Card
+                v-for="service in serviceList"
+                :key="service.id"
+                :service="service"
+                @edit="handleEditService"
+                @delete="handleDeleteService"
+                @update="handleDeletedUpdate" />
+            </div>
+            <bk-pagination
+              v-model="pagination.current"
+              class="service-list-pagination"
+              location="left"
+              :layout="['total', 'limit', 'list']"
+              :count="pagination.count"
+              :limit="pagination.limit"
+              @change="loadAppList"
+              @limit-change="handleLimitChange" />
+          </template>
         </template>
+        <!-- 表格视图 -->
+        <ServiceTable
+          v-else
+          :data="serviceList"
+          :pagination="pagination"
+          @page-change="handleTablePageChange"
+          @limit-change="handleLimitChange" />
       </bk-loading>
     </div>
     <CreateService v-model:show="isCreateServiceOpen" @reload="loadAppList" />
@@ -112,6 +145,7 @@
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { Plus } from 'bkui-vue/lib/icon';
+  import { useRoute, useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import useUserStore from '../../../../../store/user';
   import { getAppList, getAppsConfigData, deleteApp } from '../../../../../api/index';
@@ -122,13 +156,15 @@
   import tableEmpty from '../../../../../components/table/table-empty.vue';
   import Message from 'bkui-vue/lib/message';
   import { debounce } from 'lodash';
+  import ServiceTable from './service-table.vue';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
+  const route = useRoute();
+  const router = useRouter();
 
   const props = defineProps<{
-    type: string;
     spaceId: string;
     permCheckLoading: boolean;
     hasCreateServicePerm: boolean;
@@ -141,6 +177,7 @@
   const isEditServiceOpen = ref(false);
   const dialogInputStr = ref('');
   const isShowDeleteDialog = ref(false);
+  const onlyShowMyService = ref(false);
   const deleteService = ref<IAppItem>();
   const editingService = ref<IAppItem>({
     id: 0,
@@ -170,6 +207,17 @@
     count: 0,
   });
   const isSearchEmpty = ref(false);
+  const typePanels = ref([
+    { name: 'all', label: t('全部服务'), count: 10 },
+    { name: 'file', label: t('文件型'), count: 20 },
+    { name: 'kv', label: t('键值型'), count: 30 },
+  ]);
+  const showPanels = [
+    { icon: 'icon-edit-small', name: 'card' },
+    { icon: 'icon-time-2', name: 'table' },
+  ];
+  const activeType = ref('all');
+  const activeShow = ref('table');
 
   // 查询条件
   const filters = computed(() => {
@@ -182,7 +230,7 @@
     if (searchStr.value) {
       rules.name = searchStr.value;
     }
-    if (props.type === 'service-mine') {
+    if (onlyShowMyService.value) {
       rules.operator = userInfo.value.username;
     }
     return rules;
@@ -190,13 +238,21 @@
   const isEmpty = computed(() => serviceList.value.length === 0);
 
   watch(
-    () => [props.type, props.spaceId],
+    () => [onlyShowMyService.value, props.spaceId],
     () => {
       searchStr.value = '';
       isSearchEmpty.value = false;
       pagination.value.limit = 50;
       refreshSeviceList();
     },
+  );
+
+  watch(
+    () => route.name,
+    (val) => {
+      onlyShowMyService.value = val === 'service-mine';
+    },
+    { immediate: true },
   );
 
   onMounted(() => {
@@ -283,8 +339,29 @@
     loadAppList();
   };
 
+  // 切换展示服务表格
+  const handlePanelChange = (panel: string) => {
+    activeType.value = panel;
+  };
+
+  // 切换展示服务类型
+  const handleShowChange = (show: string) => {
+    activeShow.value = show;
+  };
+
+  // 切换展示我创建的服务
+  const handleChangeShowService = (val: boolean) => {
+    router.push({ name: val ? 'service-mine' : 'service-all' });
+  };
+
   const handleLimitChange = (limit: number) => {
     pagination.value.limit = limit;
+    loadAppList();
+  };
+
+  // 表格当前页改变
+  const handleTablePageChange = (page: number) => {
+    pagination.value.current = page;
     loadAppList();
   };
 
@@ -301,21 +378,56 @@
 <style lang="scss" scoped>
   .service-list-content {
     height: calc(100% - 90px);
+    padding: 0 24px;
   }
   .head-section {
     display: flex;
     justify-content: space-between;
-    margin: 0 auto;
-    padding: 16px 25px 16px 8px;
-    width: 1233px;
+    padding: 24px 24px 24px 16px;
+    width: 100%;
     .create-icon {
       font-size: 22px;
     }
     .head-right {
       display: flex;
+      gap: 12px;
       .search-app-name {
-        margin-left: 16px;
-        width: 240px;
+        width: 480px;
+      }
+    }
+    .panel-wrap {
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      height: 32px;
+      line-height: 32px;
+      background: #eaebf0;
+      border-radius: 2px;
+      color: #4d4f56;
+      .panel {
+        display: flex;
+        align-items: center;
+        height: 24px;
+        padding: 0 12px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #4d4f56;
+        &.active {
+          background-color: #fff;
+          color: #3a84ff;
+        }
+      }
+      .panel-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        height: 24px;
+        width: 32px;
+        &.active {
+          background-color: #fff;
+          color: #3a84ff;
+        }
       }
     }
   }
@@ -325,7 +437,8 @@
     padding-bottom: 24px;
     margin-left: 13px;
     height: calc(100% - 64px);
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     .serving-list {
       display: flex;
       width: 1233px;

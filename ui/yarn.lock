@@ -1157,6 +1157,14 @@
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.5.12.tgz#f9e45b7f63f2c3f40d84237b1194b7f67de192e3"
   integrity sha512-L2RPSAwUFbgZH20etwrXyVyCBu9OxRSi8T/38QsvnkJyvq2LufW2lDCOzm7t/U9C1mkhJGWYfCuFBCmIuNivrg==
 
+"@vxe-ui/core@^4.0.33":
+  version "4.0.33"
+  resolved "https://registry.npmmirror.com/@vxe-ui/core/-/core-4.0.33.tgz#981408b771fd0b09b3678a5740b66f62eeaea6dd"
+  integrity sha512-TZS4CuIQ60Q5hmaglKP2+BC5/4Gc9exnRt5rMhDx9hY2f7DUMOpnfeVV70cevN0Ik+2T8hw38SP7sfNGUCmwgA==
+  dependencies:
+    dom-zindex "^1.0.6"
+    xe-utils "^3.7.2"
+
 acorn-jsx@^5.2.0, acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
@@ -2029,6 +2037,11 @@ doctrine@^3.0.0:
   integrity sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==
   dependencies:
     esutils "^2.0.2"
+
+dom-zindex@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.npmmirror.com/dom-zindex/-/dom-zindex-1.0.6.tgz#0f911b39d3e542232ad91307638dbb869643f89e"
+  integrity sha512-FKWIhiU96bi3xpP9ewRMgANsoVmMUBnMnmpCT6dPMZOunVYJQmJhSRruoI0XSPoHeIif3kyEuiHbFrOJwEJaEA==
 
 domain-browser@^1.1.1:
   version "1.2.0"
@@ -5292,6 +5305,20 @@ vue@^3.4.21:
     "@vue/server-renderer" "3.5.12"
     "@vue/shared" "3.5.12"
 
+vxe-pc-ui@4.4.0, vxe-pc-ui@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.npmmirror.com/vxe-pc-ui/-/vxe-pc-ui-4.4.0.tgz#edc6b76c6b57790a328d9ff7d73616493818a53c"
+  integrity sha512-4AykSupOWCJvzkfOQBZJMBQhdgNlAwAlvsTgo3KDo8W2B5cTIqKuAhTkMo27VjRkSg/EJgwMxgb3qkkeMpAjYA==
+  dependencies:
+    "@vxe-ui/core" "^4.0.33"
+
+vxe-table@4.11.16:
+  version "4.11.16"
+  resolved "https://registry.npmmirror.com/vxe-table/-/vxe-table-4.11.16.tgz#3d67e61fd3f36859d3bac54f1ceecb2de0872eeb"
+  integrity sha512-txGCq83Q4oYKUWRT23pQHQ9jfIhkL97PkL0QlWzn7PNCGo9hQsULOYFtE6x/rTAfFPNwfZBuNSkmupSImAUTzA==
+  dependencies:
+    vxe-pc-ui "^4.4.0"
+
 which-boxed-primitive@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/which-boxed-primitive/-/which-boxed-primitive-1.0.2.tgz#13757bc89b209b049fe5d86430e21cf40a89a8e6"
@@ -5363,6 +5390,11 @@ write@1.0.3:
   integrity sha512-/lg70HAjtkUgWPVZhZcm+T4hkL8Zbtp1nFNOn3lRrxnlv50SRBv7cR7RqR+GMsd3hUXy9hWBo4CHTbFTcOYwig==
   dependencies:
     mkdirp "^0.5.1"
+
+xe-utils@^3.7.2:
+  version "3.7.2"
+  resolved "https://registry.npmmirror.com/xe-utils/-/xe-utils-3.7.2.tgz#272b799c985c9b86b1b7352ef690ada247270c56"
+  integrity sha512-kZ/CpQFiyYCHlMxYuHxzH2wzyRqlEaKx8vFpCA0J4YIkfEVphc6uaOTuAYT5jsCnjnPjwPf/Gtsl0A6tbnCsAA==
 
 xml-name-validator@^4.0.0:
   version "4.0.0"
