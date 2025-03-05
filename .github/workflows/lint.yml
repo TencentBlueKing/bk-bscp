@@ -21,12 +21,18 @@ jobs:
         with:
           modules: .
       
+      - name: Create required embed directory and files
+        run: |
+          mkdir -p ui/dist
+          touch ui/dist/index.html
+          echo "<html><body>Placeholder</body></html>" > ui/dist/index.html
+      
       # 运行代码风格检查 (golangci-lint)
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.62.0
-          args: --timeout=30m
+          args: --timeout=30m --out-format=colored-line-number
           working-directory: .
 
       # 编译项目
