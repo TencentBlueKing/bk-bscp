@@ -127,6 +127,7 @@ func (fs *feedServer) prepare(opt *options.Option) error {
 }
 
 // listenAndServe listen the grpc serve and set up the shutdown gracefully job.
+// nolint:funlen
 func (fs *feedServer) listenAndServe() error {
 	// generate standard grpc server grpcMetrics.
 	grpcMetrics := grpc_prometheus.NewServerMetrics()

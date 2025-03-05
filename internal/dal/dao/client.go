@@ -81,6 +81,8 @@ type Client interface {
 	// CountNumberOlineClients 统计客户端在线数量
 	CountNumberOlineClients(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) (int64, error)
+	// GetClientsField 获取客户端某个字段
+	GetClientsLables(kit *kit.Kit, bizID uint32, lableName string) ([]*table.Client, error)
 }
 
 var _ Client = new(clientDao)
@@ -89,6 +91,16 @@ type clientDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetClientsField implements Client.
+func (dao *clientDao) GetClientsLables(kit *kit.Kit, bizID uint32, lableName string) ([]*table.Client, error) {
+	m := dao.genQ.Client
+
+	return dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.OnlineStatus.Eq("online")).
+		Select(m.Labels).
+		Find()
 }
 
 // CountNumberOlineClients 统计客户端在线数量

@@ -952,6 +952,12 @@ option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/query/name/{group_name}"
     };
   }
+  // 分组选择器
+  rpc ListGroupSelector(ListGroupSelectorReq) returns (ListGroupSelectorResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/groups/selector/{label_name}"
+    };
+  }
   // 发布服务版本
   rpc Publish(PublishReq) returns (PublishResp) {
     option (google.api.method_visibility).restriction = "BKAPIGW";
@@ -3468,6 +3474,15 @@ message PublishReq {
   string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
   }];
+}
+
+message ListGroupSelectorReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string label_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "标签名" }];
+}
+
+message ListGroupSelectorResp {
+  repeated string values = 1;
 }
 
 message GenerateReleaseAndPublishReq {

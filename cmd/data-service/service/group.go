@@ -14,6 +14,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -461,4 +462,38 @@ func (s *Service) queryReducedApps(kt *kit.Kit, old *table.Group, new *pbds.Upda
 		}
 	}
 	return reduced, nil
+}
+
+// ListGroupSelector implements pbds.DataServer.
+func (s *Service) ListGroupSelector(ctx context.Context, req *pbds.ListGroupSelectorReq) (
+	*pbds.ListGroupSelectorResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	clients, err := s.dao.Client().GetClientsLables(kit, req.GetBizId(), req.GetLabelName())
+	if err != nil {
+		return nil, err
+	}
+
+	labelName := req.GetLabelName()
+	uniqueValues := make(map[string]struct{})
+
+	for _, v := range clients {
+		var labels map[string]string
+		if err := json.Unmarshal([]byte(v.Spec.Labels), &labels); err != nil {
+			continue // 如果解析失败，跳过该项
+		}
+		if value, exists := labels[labelName]; exists {
+			uniqueValues[value] = struct{}{}
+		}
+	}
+
+	// 转换为 slice
+	values := make([]string, 0, len(uniqueValues))
+	for value := range uniqueValues {
+		values = append(values, value)
+	}
+
+	return &pbds.ListGroupSelectorResp{
+		Values: values,
+	}, nil
 }
