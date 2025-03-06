@@ -1,8 +1,8 @@
 name: lint
 on: [push, pull_request]
 jobs:
-  bcs-bscp:
-    name: bcs-bscp
+  golang-lint:
+    name: golang-lint
     runs-on: ubuntu-latest
     steps:
       # 拉取代码
@@ -28,8 +28,3 @@ jobs:
           version: v1.62.0
           args: --timeout=5m
           working-directory: .
-
-      # 编译项目
-      - name: build go project
-        run: |
-          make build_bscp && make build_frontend

@@ -1,4 +1,4 @@
-name: pr-lint
+name: pr-style-check
 on: [pull_request]
 jobs:
   PR-format-check:
