@@ -8,8 +8,6 @@ jobs:
       # 拉取代码
       - name: checkout
         uses: actions/checkout@v4
-        with:
-          fetch-tags: true
 
       # 设置 Go 环境
       - name: setup go
