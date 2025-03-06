@@ -2,7 +2,7 @@
 ifdef HASTAG
 	GITTAG=${HASTAG}
 else
-	GITTAG=$(shell git describe --always)
+	GITTAG=$(shell git describe --tags --always)
 endif
 
 # version
