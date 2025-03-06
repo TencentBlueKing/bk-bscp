@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,7 +30,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 )
 
 // RecoveryHandlerFuncContext 异常日志输出

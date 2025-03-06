@@ -70,6 +70,8 @@ linters-settings:
       - shadow
     disable:
       - printf
+  goconst:
+    min-occurrences: 5
   goimports:
     local-prefixes: github.com/TencentBlueKing/bk-bscp
   gci:
