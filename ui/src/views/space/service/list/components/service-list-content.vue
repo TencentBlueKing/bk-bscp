@@ -44,29 +44,17 @@
       </div>
     </div>
     <div class="content-body">
-      <bk-loading :style="{ height: '100%', width: '100%' }" :loading="isLoading">
-        <!-- 空状态 -->
-        <bk-exception
-          v-if="!isLoading && isEmpty && !isSearchEmpty"
-          class="exception-wrap-item"
-          type="empty"
-          :description="t('你尚未创建或加入任何服务')">
-          <div class="exception-actions">
-            <bk-button
-              text
-              theme="primary"
-              :class="{ 'bk-button-with-no-perm': props.permCheckLoading || !props.hasCreateServicePerm }"
-              @click="handleCreateServiceClick">
-              {{ t('立即创建') }}
-            </bk-button>
-            <span class="divider-middle"></span>
-            <!-- <bk-button text theme="primary">{{ t("申请权限") }}</bk-button> -->
-          </div>
-        </bk-exception>
-
-        <!-- 卡片视图 -->
-        <template v-else-if="activeShow === 'card'">
-          <tableEmpty v-if="isSearchEmpty" :is-search-empty="true" @clear="handleClearSearchStr" />
+      <!-- 卡片视图 -->
+      <template v-if="activeShow === 'card'">
+        <bk-loading :style="{ height: '100%', width: '100%' }" :loading="isLoading">
+          <!-- 空状态 -->
+          <EmptyList
+            v-if="isEmpty"
+            :is-search-empty="isSearchEmpty"
+            :has-create-service-perm="props.hasCreateServicePerm"
+            :perm-check-loading="props.permCheckLoading"
+            @create="handleCreateServiceClick"
+            @clear="handleClearSearchStr" />
           <template v-else>
             <div class="serving-list">
               <Card
@@ -87,15 +75,28 @@
               @change="loadAppList"
               @limit-change="handleLimitChange" />
           </template>
+        </bk-loading>
+      </template>
+      <!-- 表格视图 -->
+      <ServiceTable
+        v-else
+        :space-id="props.spaceId"
+        :data="serviceList"
+        :pagination="pagination"
+        :loading="isLoading"
+        @page-change="handleTablePageChange"
+        @limit-change="handleLimitChange"
+        @edit="handleEditService"
+        @delete="handleDeleteService">
+        <template #empty>
+          <EmptyList
+            :is-search-empty="isSearchEmpty"
+            :has-create-service-perm="props.hasCreateServicePerm"
+            :perm-check-loading="props.permCheckLoading"
+            @create="handleCreateServiceClick"
+            @clear="handleClearSearchStr" />
         </template>
-        <!-- 表格视图 -->
-        <ServiceTable
-          v-else
-          :data="serviceList"
-          :pagination="pagination"
-          @page-change="handleTablePageChange"
-          @limit-change="handleLimitChange" />
-      </bk-loading>
+      </ServiceTable>
     </div>
     <CreateService v-model:show="isCreateServiceOpen" @reload="loadAppList" />
     <EditService v-model:show="isEditServiceOpen" :service="editingService" @reload="loadAppList" />
@@ -145,7 +146,6 @@
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { Plus } from 'bkui-vue/lib/icon';
-  import { useRoute, useRouter } from 'vue-router';
   import useGlobalStore from '../../../../../store/global';
   import useUserStore from '../../../../../store/user';
   import { getAppList, getAppsConfigData, deleteApp } from '../../../../../api/index';
@@ -153,16 +153,14 @@
   import Card from './card.vue';
   import CreateService from './create-service.vue';
   import EditService from './edit-service.vue';
-  import tableEmpty from '../../../../../components/table/table-empty.vue';
   import Message from 'bkui-vue/lib/message';
   import { debounce } from 'lodash';
   import ServiceTable from './service-table.vue';
+  import EmptyList from './empty-list.vue';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
-  const route = useRoute();
-  const router = useRouter();
 
   const props = defineProps<{
     spaceId: string;
@@ -177,7 +175,7 @@
   const isEditServiceOpen = ref(false);
   const dialogInputStr = ref('');
   const isShowDeleteDialog = ref(false);
-  const onlyShowMyService = ref(false);
+  const onlyShowMyService = ref(localStorage.getItem('onlyShowMyService') === 'true');
   const deleteService = ref<IAppItem>();
   const editingService = ref<IAppItem>({
     id: 0,
@@ -208,16 +206,16 @@
   });
   const isSearchEmpty = ref(false);
   const typePanels = ref([
-    { name: 'all', label: t('全部服务'), count: 10 },
-    { name: 'file', label: t('文件型'), count: 20 },
-    { name: 'kv', label: t('键值型'), count: 30 },
+    { name: 'all', label: t('全部服务'), count: 0 },
+    { name: 'file', label: t('文件型'), count: 0 },
+    { name: 'kv', label: t('键值型'), count: 0 },
   ]);
   const showPanels = [
     { icon: 'icon-edit-small', name: 'card' },
     { icon: 'icon-time-2', name: 'table' },
   ];
   const activeType = ref('all');
-  const activeShow = ref('table');
+  const activeShow = ref('card');
 
   // 查询条件
   const filters = computed(() => {
@@ -233,26 +231,21 @@
     if (onlyShowMyService.value) {
       rules.operator = userInfo.value.username;
     }
+    if (activeType.value) {
+      rules.config_type = activeType.value === 'all' ? '' : activeType.value;
+    }
     return rules;
   });
   const isEmpty = computed(() => serviceList.value.length === 0);
 
   watch(
-    () => [onlyShowMyService.value, props.spaceId],
+    () => [onlyShowMyService.value, props.spaceId, activeType.value],
     () => {
       searchStr.value = '';
       isSearchEmpty.value = false;
       pagination.value.limit = 50;
       refreshSeviceList();
     },
-  );
-
-  watch(
-    () => route.name,
-    (val) => {
-      onlyShowMyService.value = val === 'service-mine';
-    },
-    { immediate: true },
   );
 
   onMounted(() => {
@@ -265,18 +258,26 @@
     try {
       const bizId = props.spaceId;
       const resp = await getAppList(bizId, filters.value);
-      if (resp.details.length > 0) {
-        const appIds = resp.details.map((item: IAppItem) => item.id);
+      const { file_apps_count, kv_apps_count, details, count } = resp;
+      if (details.length > 0) {
+        const appIds = details.map((item: IAppItem) => item.id);
         const appsConfigData = await getAppsConfigData(bizId, appIds);
-        resp.details.forEach((item: IAppItem, index: number) => {
+        details.forEach((item: IAppItem, index: number) => {
           const { count, update_at } = appsConfigData.details[index];
           item.config = { count, update_at };
         });
       }
-      // @ts-ignore
-      serviceList.value = resp.details;
-      // @ts-ignore
-      pagination.value.count = resp.count;
+      serviceList.value = details;
+      pagination.value.count = count;
+      typePanels.value.forEach((panel) => {
+        if (panel.name === 'all') {
+          panel.count = file_apps_count + kv_apps_count;
+        } else if (panel.name === 'file') {
+          panel.count = file_apps_count;
+        } else if (panel.name === 'kv') {
+          panel.count = kv_apps_count;
+        }
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -351,7 +352,7 @@
 
   // 切换展示我创建的服务
   const handleChangeShowService = (val: boolean) => {
-    router.push({ name: val ? 'service-mine' : 'service-all' });
+    localStorage.setItem('onlyShowMyService', val.toString());
   };
 
   const handleLimitChange = (limit: number) => {
@@ -441,7 +442,6 @@
     overflow-x: hidden;
     .serving-list {
       display: flex;
-      width: 1233px;
       flex-wrap: wrap;
       align-content: flex-start;
       :deep(.bk-exception-description) {

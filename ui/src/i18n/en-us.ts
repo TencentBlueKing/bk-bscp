@@ -91,6 +91,11 @@ export default {
   审批流程可以提高配置更改的准确性和安全性: 'The approval process can enhance the accuracy and security of configuration changes',
   仍要关闭: 'Cancel',
   配置格式限制: 'Config format restrictions',
+  任意类型: 'Any type',
+  编辑基本属性: 'Edit basic properties',
+  只显示我创建的服务: 'Show only services I created',
+  '搜索 服务别名、服务名称、服务描述、更新人、创建人': 'Search service alias, service name, service description, regenerator, creator',
+  启用: 'Enable',
 
   // 导航栏
   服务配置中心: 'BSCP',

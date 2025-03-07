@@ -1,9 +1,9 @@
 <template>
   <div ref="tableRef" class="table-wrap">
-    <vxe-table :data="data" :max-height="tableMaxHeight" show-footer-overflow>
+    <vxe-table :data="data" :max-height="tableMaxHeight" show-footer-overflow :loading="props.loading">
       <vxe-column :title="$t('服务别名')" width="170">
         <template #default="{ row }">
-          <bk-button size="small" text theme="primary" @click="handleToManage(row)">
+          <bk-button size="small" text theme="primary" @click="emits('edit', row)">
             {{ row.spec.alias }}
           </bk-button>
         </template>
@@ -28,7 +28,9 @@
       </vxe-column>
       <vxe-column :title="$t('上线审批')" width="100">
         <template #default="{ row }">
-          <bk-tag :theme="row.spec.is_approve ? 'success' : ''">
+          <bk-tag
+            :theme="row.spec.is_approve ? 'success' : ''"
+            v-bk-tooltips="{ content: getApproveContent(row), disabled: !row.spec.is_approve, placement: 'right' }">
             {{ row.spec.is_approve ? $t('启用') : $t('关闭') }}
           </bk-tag>
         </template>
@@ -43,23 +45,19 @@
       <vxe-column :title="$t('操作')" width="200">
         <template #default="{ row }">
           <div class="operation-wrap">
-            <bk-button size="small" text theme="primary" @click="handleToManage(row)">
+            <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
               {{ $t('配置管理') }}
             </bk-button>
-            <bk-button size="small" text theme="primary" @click="handleToClient(row)">
+            <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
               {{ $t('客户端查询') }}
             </bk-button>
-            <bk-popover
-              ref="popoverRef"
-              theme="light"
-              trigger="hover"
-              placement="bottom"
-              :arrow="false"
-              :offset="{ mainAxis: 10, crossAxis: 30 }">
-              <Ellipsis class="ellipsis" />
+            <bk-popover ref="popoverRef" theme="light" trigger="hover" placement="bottom-end" :arrow="false">
+              <div class="more-actions">
+                <Ellipsis class="ellipsis-icon" />
+              </div>
               <template #content>
                 <ul class="dropdown-ul">
-                  <li class="dropdown-li" v-for="item in operationList" :key="item.name">
+                  <li class="dropdown-li" v-for="item in operationList" :key="item.name" @click="item.click(row)">
                     {{ item.name }}
                   </li>
                 </ul>
@@ -68,6 +66,9 @@
           </div>
         </template>
       </vxe-column>
+      <template #empty>
+        <slot name="empty"></slot>
+      </template>
     </vxe-table>
     <bk-pagination
       class="table-pagination"
@@ -83,6 +84,7 @@
 
 <script lang="ts" setup>
   import { ref, computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { IAppItem } from '../../../../../../types/app';
   import { useI18n } from 'vue-i18n';
   import { datetimeFormat } from '../../../../../utils';
@@ -90,29 +92,38 @@
   import { IPagination } from '../../../../../../types/index';
 
   const { t } = useI18n();
+  const router = useRouter();
+
   const props = defineProps<{
+    spaceId: string;
     data: IAppItem[];
     pagination: IPagination;
+    loading: boolean;
   }>();
 
-  const emits = defineEmits(['pageChange', 'limitChange']);
+  const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete']);
 
   const tableRef = ref();
   const operationList = [
     {
       name: t('客户端统计'),
+      click: (app: IAppItem) => handleJump(app.id as number, 'client-statistics'),
     },
     {
       name: t('编辑基本属性'),
+      click: (app: IAppItem) => emits('edit', app),
     },
     {
       name: t('配置示例'),
+      click: (app: IAppItem) => handleJump(app.id as number, 'configuration_example'),
     },
     {
       name: t('操作记录'),
+      click: (app: IAppItem) => handleJump(app.id as number, 'records-app'),
     },
     {
       name: t('删除'),
+      click: (app: IAppItem) => emits('delete', app),
     },
   ];
 
@@ -132,18 +143,20 @@
     return row.spec.data_type || '--';
   };
 
-  const handleToManage = (row: IAppItem) => {
-    console.log(row);
+  const getApproveContent = (row: IAppItem) => {
+    const type = row.spec.approve_type === 'or_sign' ? t('或签') : t('会签');
+    return `${t('审批人')}: ${row.spec.approver}\n${t('审批方式')}: ${type}`;
   };
 
-  const handleToClient = (row: IAppItem) => {
-    console.log(row);
+  const handleJump = (id: number, name: string) => {
+    router.push({ name, params: { spaceId: props.spaceId, appId: id } });
   };
 </script>
 
 <style scoped lang="scss">
   .table-wrap {
     height: 100%;
+    width: 100%;
     .table-content {
       max-height: calc(100% - 60px);
       overflow: auto;
@@ -153,11 +166,25 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .ellipsis {
-    font-size: 16px;
-    transform: rotate(90deg);
-    cursor: pointer;
+    .more-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      &:hover {
+        background: #dcdee5;
+        color: #3a84ff;
+      }
+      .ellipsis-icon {
+        font-size: 16px;
+        transform: rotate(90deg);
+        cursor: pointer;
+      }
+    }
   }
 
   .dropdown-ul {

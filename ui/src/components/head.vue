@@ -273,7 +273,7 @@
       if (nav) {
         router.push({ name: nav.id, params: { spaceId: id } });
       } else {
-        router.push({ name: 'service-mine', params: { spaceId: id } });
+        router.push({ name: 'service-all', params: { spaceId: id } });
       }
     }
   };

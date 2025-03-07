@@ -4,6 +4,7 @@ export interface IAppListQuery {
   start?: number;
   limit?: number;
   all?: boolean;
+  config_type?: string;
 }
 
 export interface IAppItem {

@@ -29,14 +29,6 @@ const routes = [
         path: 'service',
         children: [
           {
-            path: 'mine',
-            name: 'service-mine',
-            meta: {
-              navModule: 'service',
-            },
-            component: () => import('./views/space/service/list/index.vue'),
-          },
-          {
             path: 'all',
             name: 'service-all',
             meta: {
