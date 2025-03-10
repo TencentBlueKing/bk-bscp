@@ -29,6 +29,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-app-store:before {
+  content: '\e133';
+}
 .icon-help-fill:before {
   content: '\e107';
 }
@@ -41,20 +44,26 @@
 .icon-edit-small:before {
   content: '\e104';
 }
+.icon-minus-circle-shape:before {
+  content: '\e130';
+}
+.icon-plus-circle-shape:before {
+  content: '\e131';
+}
 .icon-configuration-line:before {
   content: '\e101';
 }
 .icon-time-2:before {
   content: '\e102';
 }
+.icon-list:before {
+  content: '\e134';
+}
 .icon-reduce:before {
   content: '\e108';
 }
 .icon-add:before {
   content: '\e109';
-}
-.icon-app-store:before {
-  content: '\e10a';
 }
 .icon-revoke:before {
   content: '\e10b';
@@ -143,9 +152,15 @@
 .icon-terminal:before {
   content: '\e127';
 }
+.icon-dongzuo-shuaxin:before {
+  content: '\e129';
+}
+.icon-batch-edit:before {
+  content: '\e132';
+}
 .icon-warning-circle:before {
   content: '\e128';
 }
 .icon-view-detail:before {
-  content: "\e12b";
+  content: '\e12b';
 }
