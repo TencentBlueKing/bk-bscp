@@ -15,7 +15,10 @@
       <section class="group-form-wrapper">
         <div class="dialog-title">{{ t('编辑分组') }}</div>
         <div class="group-edit-form">
-          <group-edit-form ref="groupFormRef" :group="groupData" @change="updateData"></group-edit-form>
+          <group-edit-form
+            ref="groupFormRef"
+            :group="groupData"
+            @change="updateData"/>
         </div>
       </section>
     </div>

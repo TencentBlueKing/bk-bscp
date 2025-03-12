@@ -65,7 +65,7 @@ func ClearDB(db *sqlx.DB) error {
 	tables := []string{
 		table.AppTable.Name(),
 		table.ArchivedAppTable.Name(),
-		string(table.HookTable),
+		// string(table.HookTable),
 		string(table.ContentTable),
 		table.ConfigItemTable.Name(),
 		table.CommitsTable.Name(),

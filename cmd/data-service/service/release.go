@@ -113,10 +113,10 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 
 	switch app.Spec.ConfigType {
 	case table.File:
-		conflictNums, _, err := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
+		conflictNums, _, errC := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
 			req.Attachment.AppId, []string{})
-		if err != nil {
-			return nil, err
+		if errC != nil {
+			return nil, errC
 		}
 		if conflictNums > 0 {
 			logs.Errorf("create release failed there is a file conflict, err: %v, rid: %s", err, grpcKit.Rid)
@@ -151,9 +151,9 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 			return nil, err
 		}
 	case table.KV:
-		expirationNumber, err := s.checkForExpiredCertificates(grpcKit, req.Attachment.BizId, req.Attachment.AppId)
-		if err != nil {
-			return nil, err
+		expirationNumber, errC := s.checkForExpiredCertificates(grpcKit, req.Attachment.BizId, req.Attachment.AppId)
+		if errC != nil {
+			return nil, errC
 		}
 		if expirationNumber > 0 {
 			return nil, errors.New(i18n.T(grpcKit, "create release failed there is a certificate expiration exists"))
@@ -671,49 +671,19 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		return nil, err
 	}
 
+	// 构建map以便按 ID 快速查找群组
+	groupByID := make(map[uint32]*table.Group)
+	for _, group := range groups {
+		groupByID[group.ID] = group
+	}
+
 	var releaseIDs []uint32
 	for _, release := range releases {
 		releaseIDs = append(releaseIDs, release.Id)
 		status, selected := s.queryPublishStatus(gcrs, release.Id)
-		releasedGroups := make([]*pbrelease.ReleaseStatus_ReleasedGroup, 0)
-		for _, gcr := range selected {
-			if gcr.GroupID == 0 {
-				releasedGroups = append(releasedGroups, &pbrelease.ReleaseStatus_ReleasedGroup{
-					Id:   0,
-					Name: "默认分组",
-					Mode: table.GroupModeDefault.String(),
-				})
-			}
-			for _, group := range groups {
-				if group.ID == gcr.GroupID {
-					oldSelector := new(pbstruct.Struct)
-					newSelector := new(pbstruct.Struct)
-					if gcr.Selector != nil {
-						s, err := gcr.Selector.MarshalPB()
-						if err != nil {
-							return nil, err
-						}
-						oldSelector = s
-					}
-					if group.Spec.Selector != nil {
-						s, err := group.Spec.Selector.MarshalPB()
-						if err != nil {
-							return nil, err
-						}
-						newSelector = s
-					}
-					releasedGroups = append(releasedGroups, &pbrelease.ReleaseStatus_ReleasedGroup{
-						Id:          group.ID,
-						Name:        group.Spec.Name,
-						Mode:        gcr.Mode.String(),
-						OldSelector: oldSelector,
-						NewSelector: newSelector,
-						Edited:      gcr.Edited,
-					})
-					break
-				}
-			}
-		}
+
+		releasedGroups := s.buildReleasedGroups(selected, groupByID)
+
 		release.Status.PublishStatus = status
 		release.Status.ReleasedGroups = releasedGroups
 	}
@@ -737,6 +707,52 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		Details: releases,
 	}
 	return resp, nil
+}
+
+// buildReleasedGroups builds the released groups for a given set of selected groups.
+func (s *Service) buildReleasedGroups(selected []*table.ReleasedGroup,
+	groupByID map[uint32]*table.Group) []*pbrelease.ReleaseStatus_ReleasedGroup {
+	var releasedGroups []*pbrelease.ReleaseStatus_ReleasedGroup
+
+	for _, gcr := range selected {
+		// Default group handling
+		if gcr.GroupID == 0 {
+			releasedGroups = append(releasedGroups, &pbrelease.ReleaseStatus_ReleasedGroup{
+				Id:   0,
+				Name: "默认分组",
+				Mode: table.GroupModeDefault.String(),
+			})
+		} else {
+			// Process group by ID
+			group, exists := groupByID[gcr.GroupID]
+			if exists {
+				oldSelector := new(pbstruct.Struct)
+				newSelector := new(pbstruct.Struct)
+				if gcr.Selector != nil {
+					s, err := gcr.Selector.MarshalPB()
+					if err == nil {
+						oldSelector = s
+					}
+				}
+				if group.Spec.Selector != nil {
+					s, err := group.Spec.Selector.MarshalPB()
+					if err == nil {
+						newSelector = s
+					}
+				}
+
+				releasedGroups = append(releasedGroups, &pbrelease.ReleaseStatus_ReleasedGroup{
+					Id:          group.ID,
+					Name:        group.Spec.Name,
+					Mode:        gcr.Mode.String(),
+					OldSelector: oldSelector,
+					NewSelector: newSelector,
+					Edited:      gcr.Edited,
+				})
+			}
+		}
+	}
+	return releasedGroups
 }
 
 // GetReleaseByName get release by release name.

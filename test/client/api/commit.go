@@ -13,12 +13,7 @@
 package api
 
 import (
-	"context"
-	"net/http"
-	"reflect"
-
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
-	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 )
 
 // Commit commit client
@@ -34,58 +29,58 @@ func NewCommitClient(client rest.ClientInterface) *Commit {
 }
 
 // Create function to create commit.
-func (c *Commit) Create(ctx context.Context, header http.Header, req *pbcs.CreateCommitReq) (
-	*pbcs.CreateCommitResp, error) {
-	resp := c.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/create/commit/commit/config_item_id/%d/app_id/%d/biz_id/%d",
-			req.ConfigItemId, req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// func (c *Commit) Create(ctx context.Context, header http.Header, req *pbcs.CreateCommitReq) (
+// 	*pbcs.CreateCommitResp, error) {
+// 	resp := c.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/create/commit/commit/config_item_id/%d/app_id/%d/biz_id/%d",
+// 			req.ConfigItemId, req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.CreateCommitResp `json:"data"`
-		Error *rest.ErrorPayload     `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.CreateCommitResp `json:"data"`
+// 		Error *rest.ErrorPayload     `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // List to list commit.
-func (c *Commit) List(ctx context.Context, header http.Header, req *pbcs.ListCommitsReq) (
-	*pbcs.ListCommitsResp, error) {
-	resp := c.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/list/commit/commit/app_id/%d/biz_id/%d", req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// func (c *Commit) List(ctx context.Context, header http.Header, req *pbcs.ListCommitsReq) (
+// 	*pbcs.ListCommitsResp, error) {
+// 	resp := c.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/list/commit/commit/app_id/%d/biz_id/%d", req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.ListCommitsResp `json:"data"`
-		Error *rest.ErrorPayload    `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.ListCommitsResp `json:"data"`
+// 		Error *rest.ErrorPayload    `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }

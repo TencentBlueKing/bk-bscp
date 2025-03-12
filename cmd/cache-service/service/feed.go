@@ -68,7 +68,7 @@ func (s *Service) ListApps(ctx context.Context, req *pbcs.ListAppsReq) (*pbcs.Li
 		Limit: math.MaxUint32, // 不需要分页, 直接使用 max 获取
 	}
 
-	apps, count, err := s.dao.App().List(kt, []uint32{req.GetBizId()}, "", "", opt)
+	apps, count, err := s.dao.App().List(kt, []uint32{req.GetBizId()}, "", "", "", opt)
 	if err != nil {
 		return nil, err
 	}

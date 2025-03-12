@@ -1,0 +1,40 @@
+name: build
+on: [push, pull_request]
+jobs:
+  build-bscp:
+    name: build-bscp
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取代码
+      - name: checkout
+        uses: actions/checkout@v4
+
+      # 设置 Go 环境
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      # 编译项目
+      - name: build go project
+        run: |
+          make build_bscp
+
+  build-ui:
+    name: build-ui
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取代码
+      - name: checkout
+        uses: actions/checkout@v4
+
+      # 设置 Go 环境
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      # 编译项目
+      - name: build ui project
+        run: |
+          make build_frontend

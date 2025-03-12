@@ -19,13 +19,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/TencentBlueKing/bk-bscp/test/util"
-
 	_ "github.com/go-sql-driver/mysql" // import mysql drive, used to create conn.
 	"github.com/jmoiron/sqlx"
 	_ "github.com/smartystreets/goconvey/convey" // import convey.
 
 	"github.com/TencentBlueKing/bk-bscp/test/client"
+	"github.com/TencentBlueKing/bk-bscp/test/util"
 )
 
 var (

@@ -12,15 +12,11 @@
 
 package cases
 
-import (
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-)
-
 // ResourceManager struct of resource manager, which is to save created data ids.
 // Its purpose is to conveniently obtain the ID of the resource created earlier.
 type ResourceManager struct {
 	// App key is app mode, value is []uint32 of app id
-	App map[table.AppMode][]uint32
+	// App map[table.AppMode][]uint32
 	// Hook key is app id, value is []uint32 of hook id
 	Hook map[uint32][]uint32
 	// ConfigItem key is app id, value is []uint32 of config item id
@@ -46,9 +42,9 @@ type ResourceManager struct {
 // NewResourceManager initial resource manager
 func NewResourceManager() *ResourceManager {
 	rm := &ResourceManager{}
-	rm.App = make(map[table.AppMode][]uint32)
-	rm.App[table.Normal] = make([]uint32, 0)
-	rm.App[table.Namespace] = make([]uint32, 0)
+	// rm.App = make(map[table.AppMode][]uint32)
+	// rm.App[table.Normal] = make([]uint32, 0)
+	// rm.App[table.Namespace] = make([]uint32, 0)
 	rm.Hook = make(map[uint32][]uint32)
 	rm.ConfigItem = make(map[uint32][]uint32)
 	rm.Content = make(map[uint32]uint32)
@@ -63,19 +59,19 @@ func NewResourceManager() *ResourceManager {
 }
 
 // AddApp add a created app id
-func (rm *ResourceManager) AddApp(mode table.AppMode, appId uint32) {
-	rm.App[mode] = append(rm.App[mode], appId)
-}
+// func (rm *ResourceManager) AddApp(mode table.AppMode, appId uint32) {
+// 	rm.App[mode] = append(rm.App[mode], appId)
+// }
 
 // GetApp get an app resource id
-func (rm *ResourceManager) GetApp(mode table.AppMode) uint32 {
-	return rm.App[mode][0]
-}
+// func (rm *ResourceManager) GetApp(mode table.AppMode) uint32 {
+// 	return rm.App[mode][0]
+// }
 
 // DeleteApp delete an app resource id
-func (rm *ResourceManager) DeleteApp(mode table.AppMode, id uint32) {
-	rm.App[mode] = deleteId(rm.App[mode], id)
-}
+// func (rm *ResourceManager) DeleteApp(mode table.AppMode, id uint32) {
+// 	rm.App[mode] = deleteId(rm.App[mode], id)
+// }
 
 // AddHook add a created hook id
 func (rm *ResourceManager) AddHook(appId, hookId uint32) {

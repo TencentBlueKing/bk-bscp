@@ -99,3 +99,12 @@ export const batchDeleteGroup = (biz_id: string, ids: number[]) =>
  */
 export const getGroupReleasedApps = (biz_id: string, group_id: number, params: ICommonQuery) =>
   http.get(`/config/biz/${biz_id}/groups/${group_id}/released_apps`, { params }).then((res) => res.data);
+
+/**
+ * 获取分组选择器
+ * @param biz_id 空间ID
+ * @param label_name 标签名称
+ * @returns
+ */
+export const getGroupSelector = (biz_id: string, label_name: string) =>
+  http.get(`/config/biz/${biz_id}/groups/selector/${label_name}`).then((res) => res.data);

@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
-	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/cache-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // Client cache service client

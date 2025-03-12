@@ -17,8 +17,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/Tencent/bk-bcs/bcs-common/common/util"
 )
 
 const (
@@ -40,13 +38,18 @@ func GetIPsFromEnv() (string, []string) {
 	return podIP, podIPs
 }
 
+// IsIPv6 判断是否为IPv6地址
+func IsIPv6(ip string) bool {
+	return strings.Contains(ip, ":")
+}
+
 // GetListenAddr for dualstack
 func GetListenAddr(addr string, port int) string {
 	if ip := net.ParseIP(addr); ip == nil {
 		return ""
 	}
 
-	if util.IsIPv6(addr) {
+	if IsIPv6(addr) {
 		// local link ipv6 需要带上 interface， 格式如::%eth0
 		ipv6Interface := os.Getenv(ipv6Interface)
 		if ipv6Interface != "" {

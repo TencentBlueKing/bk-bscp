@@ -17,8 +17,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // Hook related interface.
@@ -39,7 +39,7 @@ func (c *Hook) Create(ctx context.Context, header http.Header, req *pbcs.CreateH
 
 	resp := c.client.Post().
 		WithContext(ctx).
-		SubResourcef("/config/apps/%d/hooks", req.AppId).
+		SubResourcef("/config/biz/%d/hooks", req.BizId).
 		WithHeaders(header).
 		Body(req).
 		Do()
@@ -68,8 +68,8 @@ func (c *Hook) Update(ctx context.Context, header http.Header, req *pbcs.UpdateH
 
 	resp := c.client.Put().
 		WithContext(ctx).
-		SubResourcef("/config/apps/%d/hooks/%d",
-			req.AppId, req.HookId).
+		SubResourcef("/config/biz/%d/hooks/%d",
+			req.BizId, req.HookId).
 		WithHeaders(header).
 		Body(req).
 		Do()
@@ -98,8 +98,8 @@ func (c *Hook) Delete(ctx context.Context, header http.Header, req *pbcs.DeleteH
 
 	resp := c.client.Delete().
 		WithContext(ctx).
-		SubResourcef("/config/apps/%d/hooks/%d",
-			req.AppId, req.HookId).
+		SubResourcef("/config/biz/%d/hooks/%d",
+			req.BizId, req.HookId).
 		WithHeaders(header).
 		Body(req).
 		Do()
@@ -128,7 +128,7 @@ func (c *Hook) List(ctx context.Context, header http.Header,
 
 	resp := c.client.Post().
 		WithContext(ctx).
-		SubResourcef("/config/apps/%d/hooks/list", req.AppId).
+		SubResourcef("/config/biz/%d/hooks/list", req.BizId).
 		WithHeaders(header).
 		Body(req).
 		Do()

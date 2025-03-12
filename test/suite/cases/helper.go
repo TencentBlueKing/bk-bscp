@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
-	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
 
 // RandName generate rand resource name.
@@ -37,6 +37,7 @@ func RandNameN(prefix string, n int) string {
 }
 
 // RandString generate a random string of n length.
+// nolint:gosec
 func RandString(n int) string {
 	if n <= 0 {
 		return ""
@@ -87,15 +88,19 @@ func SoRevision(actual interface{}, expected ...interface{}) string {
 	revision := actual.(*pbbase.Revision)
 	if revision == nil {
 		return "revision is null"
-	} else if len(revision.Reviser) == 0 {
+	}
+
+	switch {
+	case len(revision.Reviser) == 0:
 		return "revision's Reviser is null"
-	} else if len(revision.CreateAt) == 0 {
+	case len(revision.CreateAt) == 0:
 		return "revision's CreateAt is null"
-	} else if len(revision.UpdateAt) == 0 {
+	case len(revision.UpdateAt) == 0:
 		return "revision's UpdateAt is null"
-	} else if len(revision.Creator) == 0 {
+	case len(revision.Creator) == 0:
 		return "revision's Creator is null"
 	}
+
 	return ""
 }
 

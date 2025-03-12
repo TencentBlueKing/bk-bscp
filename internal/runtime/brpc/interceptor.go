@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,16 +50,17 @@ func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		kt := kit.FromGrpcContext(ctx)
 		service := path.Dir(info.FullMethod)[1:]
 		method := path.Base(info.FullMethod)
+		realIP := mustGetRealIP(ctx)
 
 		defer func() {
 			if err != nil {
-				klog.InfoS("grpc", "rid", kt.Rid, "system", "grpc", "span.kind", "grpc.service", "service", service,
-					"method", method, "grpc.duration", time.Since(st), "err", err)
+				klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
+					"service", service, "method", method, "grpc.duration", time.Since(st), "err", err)
 				return
 			}
 
-			klog.InfoS("grpc", "rid", kt.Rid, "system", "grpc", "span.kind", "grpc.service", "service", service,
-				"method", method, "grpc.duration", time.Since(st))
+			klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
+				"service", service, "method", method, "grpc.duration", time.Since(st))
 		}()
 
 		resp, err = handler(ctx, req)
@@ -79,6 +81,15 @@ func GrpcServerHandledTotalInterceptor() grpc.UnaryServerInterceptor {
 			Inc()
 		return resp, err
 	}
+}
+
+// nolint:goconst
+func mustGetRealIP(ctx context.Context) string {
+	addr, ok := realip.FromContext(ctx)
+	if !ok {
+		return "unknown"
+	}
+	return addr.String()
 }
 
 func splitMethodName(fullMethodName string) (string, string) {

@@ -29,8 +29,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 )
 
-// nolint:typecheck
-//
 //go:embed ui/dist
 var frontendAssets embed.FS
 

@@ -311,6 +311,7 @@ func (s *Service) GetTemplateRevision(ctx context.Context, req *pbds.GetTemplate
 }
 
 // UpdateTemplateRevision 更新模板版本
+// nolint:funlen
 func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTemplateRevisionReq) (
 	*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -363,11 +364,11 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 		template.Revision.UpdatedAt = time.Now().UTC()
 
 		// update app template bindings if necessary
-		atbs, err := s.dao.TemplateBindingRelation().
+		atbs, errT := s.dao.TemplateBindingRelation().
 			ListLatestTmplBoundUnnamedApps(kt, req.Attachment.BizId, req.Attachment.TemplateId)
-		if err != nil {
-			logs.Errorf("list latest template bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, err
+		if errT != nil {
+			logs.Errorf("list latest template bound app template bindings failed, err: %v, rid: %s", errT, kt.Rid)
+			return nil, errT
 		}
 		if len(atbs) > 0 {
 			for _, atb := range atbs {

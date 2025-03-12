@@ -28,7 +28,7 @@ import (
 		1. 生成数据需要调整db隔离级别为读已提交，脚本为并发执行，如果不调整，会死锁
 		2. 如果需要导出数据，将 audit 清空
 */
-
+// nolint:unused
 var (
 	cli *api.Client
 	// dbCfg is db config file.
@@ -71,41 +71,41 @@ func main() {
 	}
 
 	// batch gen batch data for test.
-	if err := genBaseData(); err != nil {
-		log.Println(err)
-		return
-	}
+	// if err := genBaseData(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
-	if err := genSceneData1(); err != nil {
-		log.Println(err)
-		return
-	}
+	// if err := genSceneData1(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
 	// NOTE: strategy related test depends on group, add group test first
-	//if err := genSceneData2(); err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//
-	//if err := genSceneData3(); err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//
-	//if err := genSceneData4(); err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//
-	//if err := genSceneData5(); err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//
-	//if err := genSceneData6(); err != nil {
-	//	log.Println(err)
-	//	return
-	//}
+	// if err := genSceneData2(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// if err := genSceneData3(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// if err := genSceneData4(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// if err := genSceneData5(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// if err := genSceneData6(); err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
 	end := time.Now()
 	log.Printf("end at: %s\n", end)

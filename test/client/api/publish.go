@@ -17,8 +17,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
 // Publish client of publish
@@ -63,60 +63,60 @@ func (p *Publish) PublishWithStrategy(ctx context.Context, header http.Header, r
 }
 
 // FinishPublishWithStrategy function to finish publish with strategy.
-func (p *Publish) FinishPublishWithStrategy(ctx context.Context, header http.Header,
-	req *pbcs.FinishPublishReq) (*pbcs.FinishPublishResp, error) {
+// func (p *Publish) FinishPublishWithStrategy(ctx context.Context, header http.Header,
+// 	req *pbcs.FinishPublishReq) (*pbcs.FinishPublishResp, error) {
 
-	resp := p.client.Put().
-		WithContext(ctx).
-		SubResourcef("/config/update/strategy/publish/finish/strategy_id/%d/app_id/%d/biz_id/%d",
-			req.Id, req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := p.client.Put().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/update/strategy/publish/finish/strategy_id/%d/app_id/%d/biz_id/%d",
+// 			req.Id, req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.FinishPublishResp `json:"data"`
-		Error *rest.ErrorPayload      `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.FinishPublishResp `json:"data"`
+// 		Error *rest.ErrorPayload      `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }
 
 // ListStrategyPublishHistory function to list strategy publish history.
-func (p *Publish) ListStrategyPublishHistory(ctx context.Context, header http.Header,
-	req *pbcs.ListPubStrategyHistoriesReq) (*pbcs.ListPubStrategyHistoriesResp, error) {
+// func (p *Publish) ListStrategyPublishHistory(ctx context.Context, header http.Header,
+// 	req *pbcs.ListPubStrategyHistoriesReq) (*pbcs.ListPubStrategyHistoriesResp, error) {
 
-	resp := p.client.Post().
-		WithContext(ctx).
-		SubResourcef("/config/list/strategy/publish/history/app_id/%d/biz_id/%d", req.AppId, req.BizId).
-		WithHeaders(header).
-		Body(req).
-		Do()
+// 	resp := p.client.Post().
+// 		WithContext(ctx).
+// 		SubResourcef("/config/list/strategy/publish/history/app_id/%d/biz_id/%d", req.AppId, req.BizId).
+// 		WithHeaders(header).
+// 		Body(req).
+// 		Do()
 
-	if resp.Err != nil {
-		return nil, resp.Err
-	}
+// 	if resp.Err != nil {
+// 		return nil, resp.Err
+// 	}
 
-	pbResp := &struct {
-		Data  *pbcs.ListPubStrategyHistoriesResp `json:"data"`
-		Error *rest.ErrorPayload                 `json:"error"`
-	}{}
-	if err := resp.Into(pbResp); err != nil {
-		return nil, err
-	}
-	if !reflect.ValueOf(pbResp.Error).IsNil() {
-		return nil, pbResp.Error
-	}
+// 	pbResp := &struct {
+// 		Data  *pbcs.ListPubStrategyHistoriesResp `json:"data"`
+// 		Error *rest.ErrorPayload                 `json:"error"`
+// 	}{}
+// 	if err := resp.Into(pbResp); err != nil {
+// 		return nil, err
+// 	}
+// 	if !reflect.ValueOf(pbResp.Error).IsNil() {
+// 		return nil, pbResp.Error
+// 	}
 
-	return pbResp.Data, nil
-}
+// 	return pbResp.Data, nil
+// }

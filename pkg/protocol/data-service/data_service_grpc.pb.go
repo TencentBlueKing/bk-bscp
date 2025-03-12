@@ -163,6 +163,7 @@ const (
 	Data_GetGroupByName_FullMethodName                    = "/pbds.Data/GetGroupByName"
 	Data_UpdateGroup_FullMethodName                       = "/pbds.Data/UpdateGroup"
 	Data_DeleteGroup_FullMethodName                       = "/pbds.Data/DeleteGroup"
+	Data_ListGroupSelector_FullMethodName                 = "/pbds.Data/ListGroupSelector"
 	Data_CountGroupsReleasedApps_FullMethodName           = "/pbds.Data/CountGroupsReleasedApps"
 	Data_ListGroupReleasedApps_FullMethodName             = "/pbds.Data/ListGroupReleasedApps"
 	Data_Publish_FullMethodName                           = "/pbds.Data/Publish"
@@ -370,6 +371,7 @@ type DataClient interface {
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
 	UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	DeleteGroup(ctx context.Context, in *DeleteGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
+	ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error)
 	// group current release related interface.
 	CountGroupsReleasedApps(ctx context.Context, in *CountGroupsReleasedAppsReq, opts ...grpc.CallOption) (*CountGroupsReleasedAppsResp, error)
 	ListGroupReleasedApps(ctx context.Context, in *ListGroupReleasedAppsReq, opts ...grpc.CallOption) (*ListGroupReleasedAppsResp, error)
@@ -1625,6 +1627,15 @@ func (c *dataClient) DeleteGroup(ctx context.Context, in *DeleteGroupReq, opts .
 	return out, nil
 }
 
+func (c *dataClient) ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error) {
+	out := new(ListGroupSelectorResp)
+	err := c.cc.Invoke(ctx, Data_ListGroupSelector_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) CountGroupsReleasedApps(ctx context.Context, in *CountGroupsReleasedAppsReq, opts ...grpc.CallOption) (*CountGroupsReleasedAppsResp, error) {
 	out := new(CountGroupsReleasedAppsResp)
 	err := c.cc.Invoke(ctx, Data_CountGroupsReleasedApps_FullMethodName, in, out, opts...)
@@ -2238,6 +2249,7 @@ type DataServer interface {
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
 	UpdateGroup(context.Context, *UpdateGroupReq) (*base.EmptyResp, error)
 	DeleteGroup(context.Context, *DeleteGroupReq) (*base.EmptyResp, error)
+	ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error)
 	// group current release related interface.
 	CountGroupsReleasedApps(context.Context, *CountGroupsReleasedAppsReq) (*CountGroupsReleasedAppsResp, error)
 	ListGroupReleasedApps(context.Context, *ListGroupReleasedAppsReq) (*ListGroupReleasedAppsResp, error)
@@ -2702,6 +2714,9 @@ func (UnimplementedDataServer) UpdateGroup(context.Context, *UpdateGroupReq) (*b
 }
 func (UnimplementedDataServer) DeleteGroup(context.Context, *DeleteGroupReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteGroup not implemented")
+}
+func (UnimplementedDataServer) ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGroupSelector not implemented")
 }
 func (UnimplementedDataServer) CountGroupsReleasedApps(context.Context, *CountGroupsReleasedAppsReq) (*CountGroupsReleasedAppsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CountGroupsReleasedApps not implemented")
@@ -5226,6 +5241,24 @@ func _Data_DeleteGroup_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListGroupSelector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupSelectorReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListGroupSelector(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListGroupSelector_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListGroupSelector(ctx, req.(*ListGroupSelectorReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_CountGroupsReleasedApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CountGroupsReleasedAppsReq)
 	if err := dec(in); err != nil {
@@ -6674,6 +6707,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteGroup",
 			Handler:    _Data_DeleteGroup_Handler,
+		},
+		{
+			MethodName: "ListGroupSelector",
+			Handler:    _Data_ListGroupSelector_Handler,
 		},
 		{
 			MethodName: "CountGroupsReleasedApps",

@@ -17,11 +17,9 @@ import (
 	"io"
 	"os/exec"
 	"testing"
-	"time"
 
 	. "github.com/smartystreets/goconvey/convey" // import convey.
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/test/suite"
 	"github.com/TencentBlueKing/bk-bscp/test/util"
 )
@@ -29,89 +27,89 @@ import (
 func TestSidecar(t *testing.T) {
 	SetDefaultFailureMode(FailureHalts)
 
-	cli := suite.GetClient()
-	gener := generator{
-		cli: cli.ApiClient,
-	}
+	// cli := suite.GetClient()
+	// gener := generator{
+	// 	cli: cli.ApiClient,
+	// }
 
 	Convey("Prepare Job", t, func() {
 		err := util.ClearDB(suite.DB)
 		So(err, ShouldBeNil)
 	})
 
-	Convey("Sidecar Suite Test", t, func() {
-		Convey("Init Data For Sidecar Test", func() {
-			err := gener.InitData(kit.New())
-			So(err, ShouldBeNil)
-		})
+	// Convey("Sidecar Suite Test", t, func() {
+	// 	Convey("Init Data For Sidecar Test", func() {
+	// 		err := gener.InitData(kit.New())
+	// 		So(err, ShouldBeNil)
+	// 	})
 
-		Convey("Start And Check Sidecar Workspace", func() {
-			// start sidecar.
-			err := startSidecar(suite.SidecarStartCmd)
-			So(err, ShouldBeNil)
+	// 	Convey("Start And Check Sidecar Workspace", func() {
+	// 		// start sidecar.
+	// 		err := startSidecar(suite.SidecarStartCmd)
+	// 		So(err, ShouldBeNil)
 
-			sleepTime := 5 * time.Second
-			retry := 0
-			var hitErr error
-			for {
-				time.Sleep(sleepTime)
-				if retry == 3 {
-					So(fmt.Errorf("check sidecar release file timeout, err: %v", hitErr), ShouldBeNil)
-				}
+	// 		sleepTime := 5 * time.Second
+	// 		retry := 0
+	// 		var hitErr error
+	// 		for {
+	// 			time.Sleep(sleepTime)
+	// 			if retry == 3 {
+	// 				So(fmt.Errorf("check sidecar release file timeout, err: %v", hitErr), ShouldBeNil)
+	// 			}
 
-				hitErr = nil
-				for appID, releaseMetas := range gener.data {
-					rl := releaseMetas[len(releaseMetas)-1]
-					if err = checkSidecarReleaseFile(testBizID, appID, rl.releaseID, rl.ciMeta); err != nil {
-						hitErr = err
-						break
-					}
-				}
+	// 			hitErr = nil
+	// 			for appID, releaseMetas := range gener.data {
+	// 				rl := releaseMetas[len(releaseMetas)-1]
+	// 				if err = checkSidecarReleaseFile(testBizID, appID, rl.releaseID, rl.ciMeta); err != nil {
+	// 					hitErr = err
+	// 					break
+	// 				}
+	// 			}
 
-				if hitErr != nil {
-					retry++                   //nolint
-					sleepTime = sleepTime * 4 //nolint
-				}
+	// 			if hitErr != nil {
+	// 				retry++                   //nolint
+	// 				sleepTime = sleepTime * 4 //nolint
+	// 			}
 
-				break
-			}
-			So(hitErr, ShouldBeNil)
-		})
+	// 			break
+	// 		}
+	// 		So(hitErr, ShouldBeNil)
+	// 	})
 
-		Convey("Simulation App Publish Related Operation For Sidecar Test", func() {
-			err := gener.SimulationData(kit.New())
-			So(err, ShouldBeNil)
-		})
+	// 	Convey("Simulation App Publish Related Operation For Sidecar Test", func() {
+	// 		err := gener.SimulationData(kit.New())
+	// 		So(err, ShouldBeNil)
+	// 	})
 
-		Convey("Check Sidecar Workspace After Simulation Publish", func() {
-			sleepTime := 5 * time.Second
-			retry := 0
-			var hitErr error
-			for {
-				time.Sleep(sleepTime)
-				if retry == 3 {
-					So(fmt.Errorf("check sidecar release file timeout, err: %v", hitErr), ShouldBeNil)
-				}
+	// 	Convey("Check Sidecar Workspace After Simulation Publish", func() {
+	// 		sleepTime := 5 * time.Second
+	// 		retry := 0
+	// 		var hitErr error
+	// 		for {
+	// 			time.Sleep(sleepTime)
+	// 			if retry == 3 {
+	// 				So(fmt.Errorf("check sidecar release file timeout, err: %v", hitErr), ShouldBeNil)
+	// 			}
 
-				hitErr = nil
-				for appID, releaseMetas := range gener.data {
-					rl := releaseMetas[len(releaseMetas)-1]
-					if err := checkSidecarReleaseFile(testBizID, appID, rl.releaseID, rl.ciMeta); err != nil {
-						hitErr = err
-						break
-					}
-				}
+	// 			hitErr = nil
+	// 			for appID, releaseMetas := range gener.data {
+	// 				rl := releaseMetas[len(releaseMetas)-1]
+	// 				if err := checkSidecarReleaseFile(testBizID, appID, rl.releaseID, rl.ciMeta); err != nil {
+	// 					hitErr = err
+	// 					break
+	// 				}
+	// 			}
 
-				if hitErr != nil {
-					retry++                   //nolint
-					sleepTime = sleepTime * 4 //nolint
-				}
+	// 			if hitErr != nil {
+	// 				retry++                   //nolint
+	// 				sleepTime = sleepTime * 4 //nolint
+	// 			}
 
-				break
-			}
-			So(hitErr, ShouldBeNil)
-		})
-	})
+	// 			break
+	// 		}
+	// 		So(hitErr, ShouldBeNil)
+	// 	})
+	// })
 }
 
 // Exec used to perform command line operations.

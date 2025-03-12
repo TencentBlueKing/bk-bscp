@@ -13,18 +13,14 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
-
-	pbstruct "github.com/golang/protobuf/ptypes/struct"
 )
 
+// nolint:unused
 const (
 	memo             = "stress-test"
 	stressBizId      = 11
@@ -49,11 +45,12 @@ func Header(rid string) http.Header {
 }
 
 // randName generate rand resource name.
-func randName(prefix string) string {
-	return fmt.Sprintf("%s-%s-%s", prefix, time.Now().Format("2006-01-02-15_04_05"), uuid.UUID())
-}
+// func randName(prefix string) string {
+// 	return fmt.Sprintf("%s-%s-%s", prefix, time.Now().Format("2006-01-02-15_04_05"), uuid.UUID())
+// }
 
 // strategy scope selector rules define, used to stress.
+// nolint:unused
 var (
 	elements = []selector.Element{element1, element2, element3, element4}
 	element1 = selector.Element{Key: "biz", Op: new(selector.EqualType), Value: "2001"}
@@ -63,15 +60,15 @@ var (
 	element5 = selector.Element{Key: "sub", Op: new(selector.EqualType), Value: "true"}
 )
 
-func genSelector(els []selector.Element) (*pbstruct.Struct, error) {
-	if len(els) == 0 {
-		return nil, errors.New("element rule is required")
-	}
+// func genSelector(els []selector.Element) (*pbstruct.Struct, error) {
+// 	if len(els) == 0 {
+// 		return nil, errors.New("element rule is required")
+// 	}
 
-	ft := selector.Selector{
-		MatchAll: false,
-		LabelsOr: els,
-	}
+// 	ft := selector.Selector{
+// 		MatchAll: false,
+// 		LabelsOr: els,
+// 	}
 
-	return ft.MarshalPB()
-}
+// 	return ft.MarshalPB()
+// }
