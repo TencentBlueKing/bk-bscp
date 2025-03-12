@@ -211,8 +211,8 @@
     { name: 'kv', label: t('键值型'), count: 0 },
   ]);
   const showPanels = [
-    { icon: 'icon-edit-small', name: 'card' },
-    { icon: 'icon-time-2', name: 'table' },
+    { icon: 'icon-app-store', name: 'card' },
+    { icon: 'icon-list', name: 'table' },
   ];
   const activeType = ref('all');
   const activeShow = ref('card');
