@@ -449,11 +449,14 @@ message ListAppsRestReq {
   string name = 5;
   bool all = 6;
   string top_ids = 7;
+  string config_type = 8;
 }
 
 message ListAppsResp {
   uint32 count = 1;
   repeated pbapp.App details = 2;
+  uint32 kv_apps_count = 3;
+  uint32 file_apps_count = 4;
 }
 
 message ListAppsByIDsReq {

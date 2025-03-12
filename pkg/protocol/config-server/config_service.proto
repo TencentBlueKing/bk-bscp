@@ -1478,11 +1478,18 @@ message ListAppsBySpaceRestReq {
   bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   string top_ids = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "需要置顶ID" }];
+  string config_type = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务类型：文件型=file, 键值型=kv" }
+  ];
 }
 
 message ListAppsResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbapp.App details = 2;
+  uint32 kv_apps_count = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "键值型服务总数" }];
+  uint32 file_apps_count = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件型服务总数" }];
 }
 
 message CreateConfigItemReq {

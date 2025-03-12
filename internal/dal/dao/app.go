@@ -42,7 +42,8 @@ type App interface {
 	// get app by name.
 	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.App, error)
 	// List apps with options.
-	List(kit *kit.Kit, bizList []uint32, name, operator string, opt *types.BasePage) ([]*table.App, int64, error)
+	List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) (
+		[]*table.App, int64, error)
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
 	// ListAppsByIDs list apps by app ids.
@@ -55,6 +56,8 @@ type App interface {
 	GetByAlias(kit *kit.Kit, bizID uint32, alias string) (*table.App, error)
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
+	// CountApps 统计服务数量
+	CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error)
 }
 
 var _ App = new(appDao)
@@ -64,6 +67,29 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// CountApps implements App.
+func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error) {
+	m := dao.genQ.App
+	var conds []rawgen.Condition
+	if operator != "" {
+		conds = append(conds, m.Creator.Eq(operator))
+	}
+
+	kvAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.KV))).Where(conds...).Count()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	fileAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.File))).Where(conds...).Count()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return kvAppsCount, fileAppsCount, nil
 }
 
 // BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
@@ -80,7 +106,7 @@ func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) er
 }
 
 // List app's detail info with the filter's expression.
-func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, opt *types.BasePage) (
+func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) (
 	[]*table.App, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
@@ -94,6 +120,10 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator string, o
 	if name != "" {
 		// 按名称模糊搜索
 		conds = append(conds, m.Name.Regexp("(?i)"+name)) // nolint: goconst
+	}
+
+	if configType != "" {
+		conds = append(conds, m.ConfigType.Eq(configType))
 	}
 
 	var (

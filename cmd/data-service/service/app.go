@@ -361,7 +361,7 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		return nil, fmt.Errorf("bizList is empty")
 	}
 
-	details, count, err := s.dao.App().List(kt, bizList, req.Name, req.Operator, opt)
+	details, count, err := s.dao.App().List(kt, bizList, req.Name, req.Operator, "", opt)
 	if err != nil {
 		logs.Errorf("list apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
