@@ -77,7 +77,8 @@ func mig20250311162946Up(tx *gorm.DB) error {
 
 	for _, r := range repeated {
 		releases := make([]Release, 0)
-		if err := tx.Where("name = ? AND biz_id = ? AND app_id = ?", r.Name, r.BizID, r.AppID).Find(&releases).Error; err != nil {
+		if err := tx.Where("name = ? AND biz_id = ? AND app_id = ?", r.Name, r.BizID, r.AppID).
+			Find(&releases).Error; err != nil {
 			return err
 		}
 
