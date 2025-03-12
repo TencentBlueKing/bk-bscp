@@ -34,6 +34,7 @@ func init() {
 }
 
 // mig20250311162946Up for up migration
+// nolint:funlen
 func mig20250311162946Up(tx *gorm.DB) error {
 	type Release struct {
 		ID         uint32    `db:"id" json:"id" gorm:"column:id;primaryKey"`
