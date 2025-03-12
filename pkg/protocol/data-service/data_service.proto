@@ -209,6 +209,7 @@ service Data {
   rpc GetGroupByName(GetGroupByNameReq) returns (pbgroup.Group) {}
   rpc UpdateGroup(UpdateGroupReq) returns (pbbase.EmptyResp) {}
   rpc DeleteGroup(DeleteGroupReq) returns (pbbase.EmptyResp) {}
+  rpc ListGroupSelector(ListGroupSelectorReq) returns (ListGroupSelectorResp) {}
 
   // group current release related interface.
   rpc CountGroupsReleasedApps(CountGroupsReleasedAppsReq) returns (CountGroupsReleasedAppsResp) {}
@@ -1722,6 +1723,15 @@ message UpdateGroupReq {
 message DeleteGroupReq {
   uint32 id = 1;
   pbgroup.GroupAttachment attachment = 2;
+}
+
+message ListGroupSelectorReq {
+  uint32 biz_id = 1;
+  string label_name = 2;
+}
+
+message ListGroupSelectorResp {
+  repeated string values = 1;
 }
 
 message CountGroupsReleasedAppsReq {

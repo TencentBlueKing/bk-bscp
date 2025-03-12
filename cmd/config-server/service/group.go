@@ -395,3 +395,28 @@ func (s *Service) GetGroupByName(ctx context.Context, req *pbcs.GetGroupByNameRe
 
 	return rp, nil
 }
+
+// ListGroupSelector implements pbcs.ConfigServer.
+func (s *Service) ListGroupSelector(ctx context.Context, req *pbcs.ListGroupSelectorReq) (
+	*pbcs.ListGroupSelectorResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ListGroupSelector(kit.RpcCtx(), &pbds.ListGroupSelectorReq{
+		BizId:     req.BizId,
+		LabelName: req.GetLabelName(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ListGroupSelectorResp{
+		Values: resp.GetValues(),
+	}, nil
+}

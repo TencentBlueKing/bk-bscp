@@ -83,6 +83,7 @@ func GrpcServerHandledTotalInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
+// nolint:goconst
 func mustGetRealIP(ctx context.Context) string {
 	addr, ok := realip.FromContext(ctx)
 	if !ok {
