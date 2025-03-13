@@ -106,6 +106,7 @@ const (
 	Config_DeleteTemplateSet_FullMethodName                  = "/pbcs.Config/DeleteTemplateSet"
 	Config_UpdateTemplateSet_FullMethodName                  = "/pbcs.Config/UpdateTemplateSet"
 	Config_ListTemplateSets_FullMethodName                   = "/pbcs.Config/ListTemplateSets"
+	Config_GetLatestTemplateVersionsInSpace_FullMethodName   = "/pbcs.Config/GetLatestTemplateVersionsInSpace"
 	Config_ListAppTemplateSets_FullMethodName                = "/pbcs.Config/ListAppTemplateSets"
 	Config_ListTemplateSetsByIDs_FullMethodName              = "/pbcs.Config/ListTemplateSetsByIDs"
 	Config_ListTmplSetsOfBiz_FullMethodName                  = "/pbcs.Config/ListTmplSetsOfBiz"
@@ -209,7 +210,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -366,6 +367,8 @@ type ConfigClient interface {
 	UpdateTemplateSet(ctx context.Context, in *UpdateTemplateSetReq, opts ...grpc.CallOption) (*UpdateTemplateSetResp, error)
 	// 获取模板套餐列表
 	ListTemplateSets(ctx context.Context, in *ListTemplateSetsReq, opts ...grpc.CallOption) (*ListTemplateSetsResp, error)
+	// 获取模板空间下最新的模板版本列表
+	GetLatestTemplateVersionsInSpace(ctx context.Context, in *GetLatestTemplateVersionsInSpaceReq, opts ...grpc.CallOption) (*GetLatestTemplateVersionsInSpaceResp, error)
 	// 获取模板套餐列表
 	ListAppTemplateSets(ctx context.Context, in *ListAppTemplateSetsReq, opts ...grpc.CallOption) (*ListAppTemplateSetsResp, error)
 	// 按模板套餐ID获取模板套餐列表
@@ -1275,6 +1278,15 @@ func (c *configClient) ListTemplateSets(ctx context.Context, in *ListTemplateSet
 	return out, nil
 }
 
+func (c *configClient) GetLatestTemplateVersionsInSpace(ctx context.Context, in *GetLatestTemplateVersionsInSpaceReq, opts ...grpc.CallOption) (*GetLatestTemplateVersionsInSpaceResp, error) {
+	out := new(GetLatestTemplateVersionsInSpaceResp)
+	err := c.cc.Invoke(ctx, Config_GetLatestTemplateVersionsInSpace_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ListAppTemplateSets(ctx context.Context, in *ListAppTemplateSetsReq, opts ...grpc.CallOption) (*ListAppTemplateSetsResp, error) {
 	out := new(ListAppTemplateSetsResp)
 	err := c.cc.Invoke(ctx, Config_ListAppTemplateSets_FullMethodName, in, out, opts...)
@@ -2152,7 +2164,7 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2309,6 +2321,8 @@ type ConfigServer interface {
 	UpdateTemplateSet(context.Context, *UpdateTemplateSetReq) (*UpdateTemplateSetResp, error)
 	// 获取模板套餐列表
 	ListTemplateSets(context.Context, *ListTemplateSetsReq) (*ListTemplateSetsResp, error)
+	// 获取模板空间下最新的模板版本列表
+	GetLatestTemplateVersionsInSpace(context.Context, *GetLatestTemplateVersionsInSpaceReq) (*GetLatestTemplateVersionsInSpaceResp, error)
 	// 获取模板套餐列表
 	ListAppTemplateSets(context.Context, *ListAppTemplateSetsReq) (*ListAppTemplateSetsResp, error)
 	// 按模板套餐ID获取模板套餐列表
@@ -2739,6 +2753,9 @@ func (UnimplementedConfigServer) UpdateTemplateSet(context.Context, *UpdateTempl
 }
 func (UnimplementedConfigServer) ListTemplateSets(context.Context, *ListTemplateSetsReq) (*ListTemplateSetsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTemplateSets not implemented")
+}
+func (UnimplementedConfigServer) GetLatestTemplateVersionsInSpace(context.Context, *GetLatestTemplateVersionsInSpaceReq) (*GetLatestTemplateVersionsInSpaceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestTemplateVersionsInSpace not implemented")
 }
 func (UnimplementedConfigServer) ListAppTemplateSets(context.Context, *ListAppTemplateSetsReq) (*ListAppTemplateSetsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAppTemplateSets not implemented")
@@ -4461,6 +4478,24 @@ func _Config_ListTemplateSets_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServer).ListTemplateSets(ctx, req.(*ListTemplateSetsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetLatestTemplateVersionsInSpace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestTemplateVersionsInSpaceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetLatestTemplateVersionsInSpace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetLatestTemplateVersionsInSpace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetLatestTemplateVersionsInSpace(ctx, req.(*GetLatestTemplateVersionsInSpaceReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6533,6 +6568,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTemplateSets",
 			Handler:    _Config_ListTemplateSets_Handler,
+		},
+		{
+			MethodName: "GetLatestTemplateVersionsInSpace",
+			Handler:    _Config_GetLatestTemplateVersionsInSpace_Handler,
 		},
 		{
 			MethodName: "ListAppTemplateSets",

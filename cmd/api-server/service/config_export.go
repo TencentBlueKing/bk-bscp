@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbtr "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-revision"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
@@ -291,4 +292,79 @@ func (c *configExport) getUnPublishedConfigItems(kt *kit.Kit) ([]*download, erro
 	}
 
 	return downloads, nil
+}
+
+// TemplateExport 模板导出
+func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
+	kt := kit.MustGetKit(r.Context())
+	templateSpaceId := chi.URLParam(r, "template_space_id")
+	tsId, _ := strconv.Atoi(templateSpaceId)
+	if tsId == 0 {
+		_ = render.Render(w, r, rest.BadRequest(errors.New("validation parameter fail")))
+		return
+	}
+	templateId := chi.URLParam(r, "template_id")
+	tId, _ := strconv.Atoi(templateId)
+
+	resp, err := c.cfgClient.GetLatestTemplateVersionsInSpace(kt.RpcCtx(), &pbcs.GetLatestTemplateVersionsInSpaceReq{
+		BizId:           kt.BizID,
+		TemplateSpaceId: uint32(tsId),
+		TemplateId:      uint32(tId),
+	})
+	if err != nil {
+		_ = render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
+	fileName := fmt.Sprintf("%s.zip", resp.GetTemplateSpace().GetName())
+
+	if len(resp.GetTemplateSet()) == 0 {
+		_ = render.Render(w, r, rest.BadRequest(errors.New("There are no files to download")))
+		return
+	}
+
+	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+	w.Header().Set("Content-Type", "application/zip")
+	w.WriteHeader(http.StatusOK)
+	// 创建 zip writer，将文件内容写入到 zip 文件中
+	zipWriter := zip.NewWriter(w)
+	defer func() { _ = zipWriter.Close() }()
+	for _, file := range resp.GetTemplateSet() {
+		for _, v := range file.TemplateRevision {
+			err := c.downloadTmpFileToZip(kt, file.Name, v, zipWriter)
+			if err != nil {
+				_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to download files: %v", err)))
+				return
+			}
+		}
+
+	}
+}
+
+// 下载模板文件且压缩成zip
+func (c *configExport) downloadTmpFileToZip(kt *kit.Kit, folderName string,
+	revision *pbtr.TemplateRevisionSpec, zipWriter *zip.Writer) error {
+	body, contentLength, err := c.provider.Download(kt, revision.ContentSpec.Signature)
+	if err != nil {
+		return err
+	}
+
+	defer body.Close()
+
+	fileName := filepath.Join(folderName, revision.Path, revision.Name)
+	trimmedPath := strings.TrimPrefix(fileName, "/")
+	writer, err := zipWriter.Create(trimmedPath)
+	if err != nil {
+		return fmt.Errorf("Error creating ZIP file entry:%s", err.Error())
+	}
+
+	n, err := io.Copy(writer, body)
+	if err != nil {
+		return err
+	}
+
+	if n != contentLength {
+		return errors.New("download failed file missing")
+	}
+	return nil
 }
