@@ -152,6 +152,8 @@ service Data {
   rpc ListTemplateSetsByIDs(ListTemplateSetsByIDsReq) returns (ListTemplateSetsByIDsResp) {}
   rpc ListTemplateSetBriefInfoByIDs(ListTemplateSetBriefInfoByIDsReq) returns (ListTemplateSetBriefInfoByIDsResp) {}
   rpc ListTmplSetsOfBiz(ListTmplSetsOfBizReq) returns (ListTmplSetsOfBizResp) {}
+  rpc GetLatestTemplateVersionsInSpace(GetLatestTemplateVersionsInSpaceReq)
+      returns (GetLatestTemplateVersionsInSpaceResp) {}
 
   // app template binding related interface.
   rpc CreateAppTemplateBinding(CreateAppTemplateBindingReq) returns (CreateResp) {}
@@ -2203,3 +2205,18 @@ message BatchUpdateLastConsumedTimeReq {
 }
 
 message BatchUpdateLastConsumedTimeResp {}
+
+message GetLatestTemplateVersionsInSpaceReq {
+  uint32 biz_id = 1;
+  uint32 template_space_id = 2;
+  uint32 template_id = 3;
+}
+
+message GetLatestTemplateVersionsInSpaceResp {
+  pbts.TemplateSpaceSpec template_space = 1;
+  message TemplateSetSpec {
+    string name = 1;
+    repeated pbtr.TemplateRevisionSpec template_revision = 2;
+  }
+  repeated TemplateSetSpec template_set = 2;
+}

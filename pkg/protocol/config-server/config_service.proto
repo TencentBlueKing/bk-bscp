@@ -598,6 +598,13 @@ option (google.api.http) = {
            "template_sets"
     };
   }
+  // 获取模板空间下最新的模板版本列表
+  rpc GetLatestTemplateVersionsInSpace(GetLatestTemplateVersionsInSpaceReq)
+      returns (GetLatestTemplateVersionsInSpaceResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/latest_template_versions"
+    };
+  }
   // 获取模板套餐列表
   rpc ListAppTemplateSets(ListAppTemplateSetsReq) returns (ListAppTemplateSetsResp) {
     option (google.api.http) = {
@@ -4095,4 +4102,19 @@ message GetTemplateAndNonTemplateCICountResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项数量" }];
   uint64 template_config_item_count = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件数量" }];
+}
+
+message GetLatestTemplateVersionsInSpaceReq {
+  uint32 biz_id = 1;
+  uint32 template_space_id = 2;
+  uint32 template_id = 3;
+}
+
+message GetLatestTemplateVersionsInSpaceResp {
+  pbts.TemplateSpaceSpec template_space = 1;
+  message TemplateSetSpec {
+    string name = 1;
+    repeated pbtr.TemplateRevisionSpec template_revision = 2;
+  }
+  repeated TemplateSetSpec template_set = 2;
 }

@@ -121,6 +121,7 @@ const (
 	Data_ListTemplateSetsByIDs_FullMethodName             = "/pbds.Data/ListTemplateSetsByIDs"
 	Data_ListTemplateSetBriefInfoByIDs_FullMethodName     = "/pbds.Data/ListTemplateSetBriefInfoByIDs"
 	Data_ListTmplSetsOfBiz_FullMethodName                 = "/pbds.Data/ListTmplSetsOfBiz"
+	Data_GetLatestTemplateVersionsInSpace_FullMethodName  = "/pbds.Data/GetLatestTemplateVersionsInSpace"
 	Data_CreateAppTemplateBinding_FullMethodName          = "/pbds.Data/CreateAppTemplateBinding"
 	Data_ListAppTemplateBindings_FullMethodName           = "/pbds.Data/ListAppTemplateBindings"
 	Data_UpdateAppTemplateBinding_FullMethodName          = "/pbds.Data/UpdateAppTemplateBinding"
@@ -324,6 +325,7 @@ type DataClient interface {
 	ListTemplateSetsByIDs(ctx context.Context, in *ListTemplateSetsByIDsReq, opts ...grpc.CallOption) (*ListTemplateSetsByIDsResp, error)
 	ListTemplateSetBriefInfoByIDs(ctx context.Context, in *ListTemplateSetBriefInfoByIDsReq, opts ...grpc.CallOption) (*ListTemplateSetBriefInfoByIDsResp, error)
 	ListTmplSetsOfBiz(ctx context.Context, in *ListTmplSetsOfBizReq, opts ...grpc.CallOption) (*ListTmplSetsOfBizResp, error)
+	GetLatestTemplateVersionsInSpace(ctx context.Context, in *GetLatestTemplateVersionsInSpaceReq, opts ...grpc.CallOption) (*GetLatestTemplateVersionsInSpaceResp, error)
 	// app template binding related interface.
 	CreateAppTemplateBinding(ctx context.Context, in *CreateAppTemplateBindingReq, opts ...grpc.CallOption) (*CreateResp, error)
 	ListAppTemplateBindings(ctx context.Context, in *ListAppTemplateBindingsReq, opts ...grpc.CallOption) (*ListAppTemplateBindingsResp, error)
@@ -1243,6 +1245,15 @@ func (c *dataClient) ListTemplateSetBriefInfoByIDs(ctx context.Context, in *List
 func (c *dataClient) ListTmplSetsOfBiz(ctx context.Context, in *ListTmplSetsOfBizReq, opts ...grpc.CallOption) (*ListTmplSetsOfBizResp, error) {
 	out := new(ListTmplSetsOfBizResp)
 	err := c.cc.Invoke(ctx, Data_ListTmplSetsOfBiz_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GetLatestTemplateVersionsInSpace(ctx context.Context, in *GetLatestTemplateVersionsInSpaceReq, opts ...grpc.CallOption) (*GetLatestTemplateVersionsInSpaceResp, error) {
+	out := new(GetLatestTemplateVersionsInSpaceResp)
+	err := c.cc.Invoke(ctx, Data_GetLatestTemplateVersionsInSpace_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2202,6 +2213,7 @@ type DataServer interface {
 	ListTemplateSetsByIDs(context.Context, *ListTemplateSetsByIDsReq) (*ListTemplateSetsByIDsResp, error)
 	ListTemplateSetBriefInfoByIDs(context.Context, *ListTemplateSetBriefInfoByIDsReq) (*ListTemplateSetBriefInfoByIDsResp, error)
 	ListTmplSetsOfBiz(context.Context, *ListTmplSetsOfBizReq) (*ListTmplSetsOfBizResp, error)
+	GetLatestTemplateVersionsInSpace(context.Context, *GetLatestTemplateVersionsInSpaceReq) (*GetLatestTemplateVersionsInSpaceResp, error)
 	// app template binding related interface.
 	CreateAppTemplateBinding(context.Context, *CreateAppTemplateBindingReq) (*CreateResp, error)
 	ListAppTemplateBindings(context.Context, *ListAppTemplateBindingsReq) (*ListAppTemplateBindingsResp, error)
@@ -2588,6 +2600,9 @@ func (UnimplementedDataServer) ListTemplateSetBriefInfoByIDs(context.Context, *L
 }
 func (UnimplementedDataServer) ListTmplSetsOfBiz(context.Context, *ListTmplSetsOfBizReq) (*ListTmplSetsOfBizResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTmplSetsOfBiz not implemented")
+}
+func (UnimplementedDataServer) GetLatestTemplateVersionsInSpace(context.Context, *GetLatestTemplateVersionsInSpaceReq) (*GetLatestTemplateVersionsInSpaceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestTemplateVersionsInSpace not implemented")
 }
 func (UnimplementedDataServer) CreateAppTemplateBinding(context.Context, *CreateAppTemplateBindingReq) (*CreateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAppTemplateBinding not implemented")
@@ -4481,6 +4496,24 @@ func _Data_ListTmplSetsOfBiz_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).ListTmplSetsOfBiz(ctx, req.(*ListTmplSetsOfBizReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GetLatestTemplateVersionsInSpace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestTemplateVersionsInSpaceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetLatestTemplateVersionsInSpace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetLatestTemplateVersionsInSpace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetLatestTemplateVersionsInSpace(ctx, req.(*GetLatestTemplateVersionsInSpaceReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6539,6 +6572,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTmplSetsOfBiz",
 			Handler:    _Data_ListTmplSetsOfBiz_Handler,
+		},
+		{
+			MethodName: "GetLatestTemplateVersionsInSpace",
+			Handler:    _Data_GetLatestTemplateVersionsInSpace_Handler,
 		},
 		{
 			MethodName: "CreateAppTemplateBinding",

@@ -21,8 +21,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbtr "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-revision"
 	pbts "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-space"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
@@ -174,4 +176,74 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbds.ListTmplSpa
 		Details: pbts.PbTemplateSpaces(details),
 	}
 	return resp, nil
+}
+
+// GetLatestTemplateVersionsInSpace implements pbds.DataServer.
+func (s *Service) GetLatestTemplateVersionsInSpace(ctx context.Context, req *pbds.GetLatestTemplateVersionsInSpaceReq) (
+	*pbds.GetLatestTemplateVersionsInSpaceResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	// 1. 获取空间名
+	templateSpace, err := s.dao.TemplateSpace().Get(kit, req.BizId, req.TemplateSpaceId)
+	if err != nil {
+		return nil, err
+	}
+	templateSets := make([]*table.TemplateSet, 0)
+	// 2. 模板套餐不是0表示获取某个套餐
+	if req.TemplateId != 0 {
+		templateSet, errT := s.dao.TemplateSet().GetByTemplateSetByID(kit, req.BizId, req.TemplateId)
+		if errT != nil {
+			return nil, errT
+		}
+		templateSets = append(templateSets, templateSet)
+	} else {
+		// 获取空间下的所有套餐
+		templateSets, _, err = s.dao.TemplateSet().List(kit, req.BizId, req.TemplateSpaceId, nil, &types.BasePage{All: true})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. 通过套餐获取模板
+	templateIds := []uint32{}
+	for _, v := range templateSets {
+		templateIds = append(templateIds, v.Spec.TemplateIDs...)
+	}
+
+	// 去重
+	templateIds = tools.RemoveDuplicates(templateIds)
+
+	// 4. 获取最新的模板文件
+	templateRevision, err := s.dao.TemplateRevision().ListLatestRevisionsGroupByTemplateIds(kit, templateIds)
+	if err != nil {
+		return nil, err
+	}
+
+	templateRevisionMap := make(map[uint32]*table.TemplateRevision, 0)
+
+	for _, v := range templateRevision {
+		templateRevisionMap[v.Attachment.TemplateID] = v
+	}
+
+	items := make([]*pbds.GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec, 0)
+	for _, set := range templateSets {
+		revisions := make([]*pbtr.TemplateRevisionSpec, 0)
+
+		for _, v := range set.Spec.TemplateIDs {
+			revision := templateRevisionMap[v]
+			revisions = append(revisions, pbtr.PbTemplateRevision(revision).Spec)
+		}
+		items = append(items, &pbds.GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec{
+			Name:             set.Spec.Name,
+			TemplateRevision: revisions,
+		})
+	}
+
+	return &pbds.GetLatestTemplateVersionsInSpaceResp{
+		TemplateSpace: &pbts.TemplateSpaceSpec{
+			Name: templateSpace.Spec.Name,
+			Memo: templateSpace.Spec.Memo,
+		},
+		TemplateSet: items,
+	}, nil
 }

@@ -213,5 +213,14 @@ func (p *proxy) routers() http.Handler {
 		r.Get("/", p.varService.ExportReleasedAppVariables)
 	})
 
+	// 导出模板压缩包
+	r.Route("/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/export",
+		func(r chi.Router) {
+			r.Use(p.authorizer.UnifiedAuthentication)
+			r.Use(p.authorizer.BizVerified)
+			r.Use(p.HttpServerHandledTotal("", "TemplateExport"))
+			r.Get("/", p.configExportService.TemplateExport)
+		})
+
 	return r
 }
