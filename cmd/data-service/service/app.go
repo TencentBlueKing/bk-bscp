@@ -361,15 +361,23 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		return nil, fmt.Errorf("bizList is empty")
 	}
 
-	details, count, err := s.dao.App().List(kt, bizList, req.Name, req.Operator, "", opt)
+	details, count, err := s.dao.App().List(kt, bizList, req.Name, req.Operator, req.ConfigType, opt)
 	if err != nil {
 		logs.Errorf("list apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
+	kvAppsCount, fileAppsCount, err := s.dao.App().CountApps(kt, bizList, req.Operator)
+	if err != nil {
+		logs.Errorf("count apps failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, err
+	}
+
 	resp := &pbds.ListAppsResp{
-		Count:   uint32(count),
-		Details: pbapp.PbApps(details),
+		Count:         uint32(count),
+		Details:       pbapp.PbApps(details),
+		KvAppsCount:   uint32(kvAppsCount),
+		FileAppsCount: uint32(fileAppsCount),
 	}
 	return resp, nil
 }
