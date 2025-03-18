@@ -62,3 +62,15 @@
 .bk-dialog-wrapper .bk-modal-wrapper .bk-modal-content {
   max-height: none !important;
 }
+
+// 全局设置vxe-table样式
+.vxe-table{
+  .vxe-cell {
+    padding:0 16px !important;
+  }
+  .vxe-cell--title {
+    font-size: 12px;
+    color: #313238;
+    font-weight: normal;
+  }
+}

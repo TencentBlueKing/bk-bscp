@@ -384,7 +384,7 @@
   .head-section {
     display: flex;
     justify-content: space-between;
-    padding: 24px 24px 24px 16px;
+    padding: 24px 0;
     width: 100%;
     .create-icon {
       font-size: 22px;
@@ -425,6 +425,7 @@
         font-size: 16px;
         height: 24px;
         width: 32px;
+        cursor: pointer;
         &.active {
           background-color: #fff;
           color: #3a84ff;
@@ -436,14 +437,14 @@
     display: flex;
     justify-content: center;
     padding-bottom: 24px;
-    margin-left: 13px;
     height: calc(100% - 64px);
     overflow-y: auto;
     overflow-x: hidden;
     .serving-list {
-      display: flex;
-      flex-wrap: wrap;
-      align-content: flex-start;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(304px, 1fr));
+      justify-content: center;
+      justify-items: center;
       :deep(.bk-exception-description) {
         margin-top: 5px;
         font-size: 12px;
@@ -467,6 +468,7 @@
     }
   }
   .service-list-pagination {
+    margin-top: 16px;
     padding: 0 8px;
     :deep(.bk-pagination-list.is-last) {
       margin-left: auto;

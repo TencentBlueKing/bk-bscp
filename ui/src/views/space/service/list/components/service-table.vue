@@ -1,6 +1,11 @@
 <template>
   <div ref="tableRef" class="table-wrap">
-    <vxe-table :data="data" :max-height="tableMaxHeight" show-footer-overflow :loading="props.loading">
+    <vxe-table
+      :data="data"
+      :max-height="tableMaxHeight"
+      show-footer-overflow
+      show-overflow="tooltip"
+      :loading="props.loading">
       <vxe-column :title="$t('服务别名')" width="170">
         <template #default="{ row }">
           <bk-button size="small" text theme="primary" @click="emits('edit', row)">
@@ -37,7 +42,7 @@
       </vxe-column>
       <vxe-column field="revision.creator" :title="$t('创建人')" width="123" />
       <vxe-column field="revision.reviser" :title="$t('更新人')" width="123" />
-      <vxe-column :title="$t('更新时间')" width="160">
+      <vxe-column :title="$t('更新时间')" width="200">
         <template #default="{ row }">
           <span>{{ datetimeFormat(row.revision.update_at) }}</span>
         </template>
