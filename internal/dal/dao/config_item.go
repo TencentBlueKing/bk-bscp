@@ -128,7 +128,6 @@ func (dao *configItemDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, ci *table.
 	}
 
 	m := tx.ConfigItem
-	q := tx.ConfigItem.WithContext(kit.Ctx)
 
 	// if file mode not update, need to query this ci's file mode that used to validate unix and win file related info.
 	if ci.Spec != nil && len(ci.Spec.FileMode) == 0 {
@@ -157,7 +156,7 @@ func (dao *configItemDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, ci *table.
 		return fmt.Errorf("audit update config item failed, err: %v", err)
 	}
 
-	q = tx.ConfigItem.WithContext(kit.Ctx)
+	q := tx.ConfigItem.WithContext(kit.Ctx)
 	if _, err := q.Select(m.Name, m.Path, m.FileType, m.FileMode, m.Memo, m.User, m.UserGroup,
 		m.Privilege, m.Reviser, m.UpdatedAt).
 		Where(m.ID.Eq(ci.ID), m.BizID.Eq(ci.Attachment.BizID)).Updates(ci); err != nil {
@@ -261,12 +260,12 @@ func (dao *configItemDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 		return err
 	}
 	for i, configItem := range configItems {
-		if err := configItem.ValidateCreate(kit); err != nil {
+		if err = configItem.ValidateCreate(kit); err != nil {
 			return err
 		}
 		configItem.ID = ids[i]
 	}
-	if err := tx.ConfigItem.WithContext(kit.Ctx).CreateInBatches(configItems, 500); err != nil {
+	if err = tx.ConfigItem.WithContext(kit.Ctx).CreateInBatches(configItems, 500); err != nil {
 		return err
 	}
 

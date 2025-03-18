@@ -41,7 +41,7 @@ import (
 )
 
 // CreateRelease create release.
-// nolint:funlen
+// nolint:funlen,gocyclo
 func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq) (*pbds.CreateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 

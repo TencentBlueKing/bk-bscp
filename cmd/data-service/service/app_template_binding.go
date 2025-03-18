@@ -1023,6 +1023,7 @@ func findRepeatedElements(slice []types.CIUniqueKey) []types.CIUniqueKey {
 }
 
 // ImportFromTemplateSetToApp 从配置模板导入到服务
+// nolint:funlen
 func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbds.ImportFromTemplateSetToAppReq) (
 	*pbbase.EmptyResp, error) {
 	kit := kit.FromGrpcContext(ctx)

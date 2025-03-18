@@ -93,7 +93,7 @@ func (s *Service) ListTemplateSets(ctx context.Context, req *pbds.ListTemplateSe
 }
 
 // UpdateTemplateSet update template set.
-// nolint: funlen
+// nolint:funlen,gocyclo
 func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplateSetReq) (*pbbase.EmptyResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 	// set for empty slice to ensure the data in db is not `null` but `[]`

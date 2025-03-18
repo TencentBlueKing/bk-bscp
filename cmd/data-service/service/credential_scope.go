@@ -52,6 +52,7 @@ func (s *Service) ListCredentialScopes(ctx context.Context,
 }
 
 // UpdateCredentialScopes update credential scopes
+// nolint:funlen
 func (s *Service) UpdateCredentialScopes(ctx context.Context,
 	req *pbds.UpdateCredentialScopesReq) (*pbds.UpdateCredentialScopesResp, error) {
 
