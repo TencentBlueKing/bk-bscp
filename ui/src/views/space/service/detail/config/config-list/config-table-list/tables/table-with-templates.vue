@@ -60,6 +60,7 @@
                         :items="group.configs"
                         key-field="id"
                         :item-size="40"
+                        :style="{ maxHeight: scrollerMaxHeight + 'px' }"
                         class="scroller">
                         <template #default="{ item, itemIndex }">
                           <div :class="getRowCls(item)">
@@ -440,6 +441,7 @@
   const collapseHeader = ref();
   const selectedConfigItems = ref<IConfigItem[]>([]);
   const conflictCount = ref(0);
+  const scrollerMaxHeight = ref(0); // 滚动表格最大高度
 
   // 是否为未命名版本
   const isUnNamedVersion = computed(() => versionData.value.id === 0);
@@ -531,6 +533,7 @@
 
   onMounted(async () => {
     tableRef.value.addEventListener('scroll', handleScroll);
+    scrollerMaxHeight.value = tableRef.value.parentElement.offsetHeight - 140;
     await getBindingId();
     getAllConfigList();
   });
@@ -1145,7 +1148,6 @@
     border-collapse: collapse;
     table-layout: fixed;
     .scroller {
-      max-height: 400px;
       border-collapse: collapse;
       tr {
         width: 100%;
