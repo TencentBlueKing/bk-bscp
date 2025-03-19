@@ -523,11 +523,9 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 	}
 
 	for _, kv := range req.Kvs {
-
 		var version int
 		var exists bool
 		var editing *table.Kv
-
 		if version, exists = versionMap[kv.KvSpec.Key]; !exists {
 			return nil, nil, errors.New(i18n.T(kt, "save kv failed"))
 		}
@@ -553,9 +551,6 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 		}
 
 		if editing, exists = editingKvMap[kv.KvSpec.Key]; exists {
-			if editing.KvState == table.KvStateUnchange {
-				editing.KvState = table.KvStateRevise
-			}
 			toUpdate = append(toUpdate, &table.Kv{
 				ID:          editing.ID,
 				KvState:     editing.KvState,
