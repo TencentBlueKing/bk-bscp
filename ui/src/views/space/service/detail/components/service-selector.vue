@@ -4,7 +4,7 @@
     ref="selectorRef"
     class="service-selector"
     :popover-options="{ theme: 'light bk-select-popover service-selector-popover' }"
-    :popover-min-width="360"
+    :popover-min-width="320"
     :filterable="true"
     :input-search="false"
     :clearable="false"
@@ -17,19 +17,19 @@
         <AngleUpFill class="arrow-icon arrow-fill" />
       </div>
     </template>
-    <bk-option v-for="item in serviceList" :key="item.id" :value="item.id" :label="item.spec.name">
-      <div
-        v-cursor="{
-          active: !item.permissions.view,
-        }"
-        :class="['service-option-item', { 'no-perm': !item.permissions.view }]"
-        @click="handleOptionClick(item, $event)">
-        <div class="name-text">{{ item.spec.name }}</div>
-        <div :class="['type-tag', { 'type-tag--en': locale === 'en' }]">
-          {{ item.spec.config_type === 'file' ? t('文件型') : t('键值型') }}
+    <bk-option-group v-for="group in serviceGroup" :key="group.label" :label="group.label" collapsible>
+      <bk-option v-for="item in group.list" :key="item.id" :value="item.id" :label="item.spec.name">
+        <div
+          v-cursor="{
+            active: !item.permissions.view,
+          }"
+          :class="['service-option-item', { 'no-perm': !item.permissions.view }]"
+          @click="handleOptionClick(item, $event)">
+          <span class="name-text">{{ item.spec.alias }}</span>
+          <span class="name-text">{{ item.spec.name }}</span>
         </div>
-      </div>
-    </bk-option>
+      </bk-option>
+    </bk-option-group>
     <template #extension>
       <div class="selector-extensition">
         <div class="content" @click="router.push({ name: 'service-all' })">
@@ -41,7 +41,7 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue';
+  import { ref, watch, onMounted, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
@@ -54,7 +54,7 @@
 
   const route = useRoute();
   const router = useRouter();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   const configStore = useConfigStoe();
 
@@ -73,6 +73,15 @@
   const loading = ref(false);
   const localVal = ref(props.value);
   const selectorRef = ref();
+
+  const serviceGroup = computed(() => {
+    const fileServices = serviceList.value.filter((service: IAppItem) => service.spec.config_type === 'file');
+    const kvServices = serviceList.value.filter((service: IAppItem) => service.spec.config_type === 'kv');
+    return [
+      { label: t('文件型'), list: fileServices ? fileServices : [] },
+      { label: t('键值型'), list: kvServices ? kvServices : [] },
+    ];
+  });
 
   watch(
     () => props.value,
@@ -207,9 +216,8 @@
   }
 
   .service-option-item {
-    position: relative;
-    flex: 1;
-    padding: 0 80px 0 12px;
+    display: flex;
+    flex-direction: column;
     &.no-perm {
       background-color: #fafafa !important;
       color: #cccccc !important;
@@ -218,22 +226,7 @@
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-    }
-    .type-tag {
-      position: absolute;
-      top: 5px;
-      right: 16px;
-      height: 22px;
-      width: 52px;
-      line-height: 22px;
-      color: #63656e;
-      font-size: 12px;
-      text-align: center;
-      background: #f0f1f5;
-      border-radius: 2px;
-      &--en {
-        width: 96px;
-      }
+      line-height: normal;
     }
   }
   .selector-extensition {
@@ -256,7 +249,14 @@
 <style lang="scss">
   .service-selector-popover {
     .bk-select-option {
-      padding: 0 !important;
+      padding-left: 28px !important;
+      height: 48px !important;
+      &:nth-child(odd) {
+        background-color: #fafbfd;
+      }
+      &:nth-child(even) {
+        background-color: #ffffff;
+      }
     }
   }
 </style>
