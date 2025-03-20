@@ -57,7 +57,7 @@ func (s *Service) CreateHook(ctx context.Context, req *pbds.CreateHookReq) (*pbd
 	}
 
 	// CreateWithTx create one hook instance with transaction.
-	id, err := s.dao.Hook().CreateWithTx(kt, tx, hook)
+	id, err := s.dao.Hook().CreateWithTx(kt, tx, hook, false)
 	if err != nil {
 		logs.Errorf("create hook failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {

@@ -138,7 +138,6 @@ func (dao *appTemplateVariableDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, g
 	q := dao.genQ.AppTemplateVariable.WithContext(kit.Ctx)
 	old, findErr := q.Where(m.BizID.Eq(g.Attachment.BizID), m.AppID.Eq(g.Attachment.AppID)).Take()
 
-	var ad AuditDo
 	// if old exists, update it.
 	if findErr == nil {
 		g.ID = old.ID
@@ -148,11 +147,6 @@ func (dao *appTemplateVariableDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, g
 			Updates(g); err != nil {
 			return err
 		}
-		ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-			ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
-			Status:           enumor.Success,
-			AppId:            g.Attachment.AppID,
-		}).PrepareUpdate(old)
 	} else if errors.Is(findErr, gorm.ErrRecordNotFound) {
 		// if old not exists, create it.
 		id, err := dao.idGen.One(kit, table.Name(g.TableName()))
@@ -163,14 +157,9 @@ func (dao *appTemplateVariableDao) UpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, g
 		if err := tx.AppTemplateVariable.WithContext(kit.Ctx).Create(g); err != nil {
 			return err
 		}
-		ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-			ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
-			Status:           enumor.Success,
-			AppId:            g.Attachment.AppID,
-		}).PrepareCreate(g)
 	}
 
-	return ad.Do(tx.Query)
+	return nil
 }
 
 // Get gets app template variables.

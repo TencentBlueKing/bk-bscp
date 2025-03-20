@@ -37,7 +37,7 @@ type Template interface {
 	// Create one template instance.
 	Create(kit *kit.Kit, template *table.Template) (uint32, error)
 	// CreateWithTx create one template instance with transaction.
-	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.Template) (uint32, error)
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.Template, needAudit bool) (uint32, error)
 	// Update one template's info.
 	Update(kit *kit.Kit, template *table.Template) error
 	// UpdateWithTx Update one template instance with transaction.
@@ -255,7 +255,7 @@ func (dao *templateDao) Create(kit *kit.Kit, g *table.Template) (uint32, error) 
 }
 
 // CreateWithTx create one template instance with transaction.
-func (dao *templateDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Template) (uint32, error) {
+func (dao *templateDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Template, needAudit bool) (uint32, error) {
 	if err := g.ValidateCreate(kit); err != nil {
 		return 0, err
 	}
@@ -277,6 +277,10 @@ func (dao *templateDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Tem
 	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
 	if err != nil {
 		return 0, err
+	}
+
+	if !needAudit {
+		return g.ID, nil
 	}
 
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{

@@ -111,7 +111,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 		},
 	}
 	// CreateWithTx create one template instance with transaction.
-	templateID, err := s.dao.Template().CreateWithTx(kt, tx, template)
+	templateID, err := s.dao.Template().CreateWithTx(kt, tx, template, false)
 	if err != nil {
 		logs.Errorf("create template failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
@@ -139,7 +139,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	}
 
 	// CreateWithTx create one template revision instance with transaction.
-	if _, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision); err != nil {
+	if _, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, false); err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
@@ -173,7 +173,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	}
 
 	// 9. 添加至模板套餐中
-	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets); err != nil {
+	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, true); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
@@ -528,7 +528,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	}
 
 	// 10. 添加至模板套餐中
-	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets); err != nil {
+	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, true); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
@@ -984,7 +984,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	}
 
 	// 10. 添加至模板套餐中
-	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets); err != nil {
+	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, false); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
 		if rErr := tx.Rollback(); rErr != nil {
 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)

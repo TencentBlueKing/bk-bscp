@@ -97,11 +97,6 @@ func (dao *templateSpaceDao) Create(kit *kit.Kit, g *table.TemplateSpace) (uint3
 	}
 	sg.ID = tmplSetID
 
-	tmplSpaceAD := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName, g.Spec.Name),
-		Status:           enumor.Success,
-		Detail:           g.Spec.Memo,
-	}).PrepareCreate(g)
 	tmplSetAD := dao.auditDao.Decorator(kit, sg.Attachment.BizID, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
 			g.Spec.Name, sg.Spec.Name),
@@ -120,9 +115,6 @@ func (dao *templateSpaceDao) Create(kit *kit.Kit, g *table.TemplateSpace) (uint3
 			return err
 		}
 
-		if err := tmplSpaceAD.Do(tx); err != nil {
-			return err
-		}
 		if err := tmplSetAD.Do(tx); err != nil {
 			return err
 		}

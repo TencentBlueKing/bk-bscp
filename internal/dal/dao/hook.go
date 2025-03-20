@@ -34,7 +34,7 @@ import (
 // Hook supplies all the hook related operations.
 type Hook interface {
 	// CreateWithTx create one hook instance with transaction.
-	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, hook *table.Hook) (uint32, error)
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, hook *table.Hook, needAudit bool) (uint32, error)
 	// ListWithRefer hooks with refer info.
 	ListWithRefer(kit *kit.Kit, opt *types.ListHooksWithReferOption, topIDs []uint32) (
 		[]*types.ListHooksWithReferDetail, int64, error)
@@ -152,7 +152,7 @@ func (dao *hookDao) FetchIDsExcluding(kit *kit.Kit, bizID uint32, ids []uint32) 
 }
 
 // CreateWithTx create one hook instance with transaction.
-func (dao *hookDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) (uint32, error) {
+func (dao *hookDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook, needAudit bool) (uint32, error) {
 	if g == nil {
 		return 0, errf.Errorf(errf.InvalidArgument, i18n.T(kit, "hook is nil"))
 	}
@@ -168,19 +168,21 @@ func (dao *hookDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) (
 	}
 	g.ID = id
 
-	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.HookName, g.Spec.Name),
-		Status:           enumor.Success,
-		Detail:           g.Spec.Memo,
-	}).PrepareCreate(g)
-
 	// 多个使用事务处理
-
 	q := tx.Hook.WithContext(kit.Ctx)
 	if e := q.Create(g); e != nil {
 		return 0, e
 	}
 
+	if !needAudit {
+		return g.ID, nil
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.HookName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
 	if e := ad.Do(tx.Query); e != nil {
 		return 0, e
 	}

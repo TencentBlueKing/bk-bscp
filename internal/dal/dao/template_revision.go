@@ -34,7 +34,7 @@ type TemplateRevision interface {
 	// Create one template revision instance.
 	Create(kit *kit.Kit, templateRevision *table.TemplateRevision) (uint32, error)
 	// CreateWithTx create one template revision instance with transaction.
-	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.TemplateRevision) (uint32, error)
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.TemplateRevision, needAudit bool) (uint32, error)
 	// List templates with options.
 	List(kit *kit.Kit, bizID, templateID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateRevision,
 		int64, error)
@@ -171,7 +171,8 @@ func (dao *templateRevisionDao) Create(kit *kit.Kit, g *table.TemplateRevision) 
 }
 
 // CreateWithTx create one template revision instance with transaction.
-func (dao *templateRevisionDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateRevision) (uint32, error) {
+func (dao *templateRevisionDao) CreateWithTx(
+	kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateRevision, needAudit bool) (uint32, error) {
 	if err := g.ValidateCreate(kit); err != nil {
 		return 0, err
 	}
@@ -195,6 +196,9 @@ func (dao *templateRevisionDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *t
 		return 0, err
 	}
 
+	if !needAudit {
+		return g.ID, nil
+	}
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateRevision+
 			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, g.Spec.RevisionName,

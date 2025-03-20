@@ -130,7 +130,8 @@ func (au *audit) ListAuditsAppStrategy(
 	}
 
 	// priority display publish version config
-	publishCount, err := query.Where(audit.Action.Eq(string(enumor.Publish))).
+	publishCount, err := query.Where(
+		audit.Status.In(string(enumor.PendingApproval), string(enumor.PendingPublish))).
 		Order(audit.CreatedAt.Desc()).
 		ScanByPage(&publishs, int(req.Start), int(req.Limit))
 	if err != nil {
@@ -147,7 +148,7 @@ func (au *audit) ListAuditsAppStrategy(
 	if err != nil {
 		return nil, 0, err
 	}
-	noPublishCount, err := query2.Not(audit.Action.Eq(string(enumor.Publish))).
+	noPublishCount, err := query2.Not(audit.Status.In(string(enumor.PendingApproval), string(enumor.PendingPublish))).
 		Order(audit.CreatedAt.Desc()).
 		ScanByPage(&noPublishs, int(residueOffset), int(req.Limit)-len(publishs))
 	if err != nil {

@@ -82,7 +82,7 @@ type TemplateSet interface {
 	// GetByTemplateSetByID get template set by id
 	GetByTemplateSetByID(kit *kit.Kit, bizID, id uint32) (*table.TemplateSet, error)
 	// BatchAddTmplsToTmplSetsWithTx 批量添加至某个套餐中
-	BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.QueryTx, templateSet []*table.TemplateSet) error
+	BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.QueryTx, templateSet []*table.TemplateSet, needAudit bool) error
 	// ListByTemplateSpaceIdAndIds list template sets by template set ids and template_space_id.
 	ListByTemplateSpaceIdAndIds(kit *kit.Kit, templateSpaceID uint32, ids []uint32) ([]*table.TemplateSet, error)
 }
@@ -107,9 +107,13 @@ func (dao *templateSetDao) ListByTemplateSpaceIdAndIds(kit *kit.Kit, templateSpa
 
 // BatchAddTmplsToTmplSetsWithTx 批量添加至某个套餐中
 func (dao *templateSetDao) BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.QueryTx,
-	templateSet []*table.TemplateSet) error {
+	templateSet []*table.TemplateSet, needAudit bool) error {
 	if len(templateSet) == 0 {
 		return nil
+	}
+
+	if !needAudit {
+		return tx.TemplateSet.WithContext(kit.Ctx).Save(templateSet...)
 	}
 
 	// 单个添加模板套餐
