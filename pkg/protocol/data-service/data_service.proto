@@ -86,6 +86,7 @@ service Data {
   // released kv related interface.
   rpc GetReleasedKv(GetReleasedKvReq) returns (pbrkv.ReleasedKv) {}
   rpc ListReleasedKvs(ListReleasedKvReq) returns (ListReleasedKvResp) {}
+  rpc ListAllReleasedConfigItems(ListAllReleasedConfigItemsReq) returns (ListAllReleasedConfigItemsResp) {}
 
   // hook related interface.
   rpc CreateHook(CreateHookReq) returns (CreateResp) {}
@@ -698,6 +699,19 @@ message ListReleasedKvReq {
 message ListReleasedKvResp {
   uint32 count = 1;
   repeated pbrkv.ReleasedKv details = 2;
+}
+
+message ListAllReleasedConfigItemsReq {
+  uint32 biz_id = 1;
+  uint32 app_id = 2;
+}
+
+message ListAllReleasedConfigItemsResp {
+  message Item {
+    string name = 1;
+    string sign = 2;
+  }
+  repeated Item items = 1;
 }
 
 message CreateHookReq {

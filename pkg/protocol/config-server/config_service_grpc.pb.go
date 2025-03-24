@@ -50,6 +50,7 @@ const (
 	Config_ListConfigItemByTuple_FullMethodName              = "/pbcs.Config/ListConfigItemByTuple"
 	Config_GetReleasedKv_FullMethodName                      = "/pbcs.Config/GetReleasedKv"
 	Config_ListReleasedKvs_FullMethodName                    = "/pbcs.Config/ListReleasedKvs"
+	Config_ListAllReleasedConfigItems_FullMethodName         = "/pbcs.Config/ListAllReleasedConfigItems"
 	Config_UpdateConfigHook_FullMethodName                   = "/pbcs.Config/UpdateConfigHook"
 	Config_CreateRelease_FullMethodName                      = "/pbcs.Config/CreateRelease"
 	Config_ListReleases_FullMethodName                       = "/pbcs.Config/ListReleases"
@@ -256,6 +257,8 @@ type ConfigClient interface {
 	GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, opts ...grpc.CallOption) (*GetReleasedKvResp, error)
 	// 获取已生成版本键值配置项列表
 	ListReleasedKvs(ctx context.Context, in *ListReleasedKvsReq, opts ...grpc.CallOption) (*ListReleasedKvsResp, error)
+	// 列出所有已发布的配置项
+	ListAllReleasedConfigItems(ctx context.Context, in *ListAllReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListAllReleasedConfigItemsResp, error)
 	// 引用前后置脚本
 	UpdateConfigHook(ctx context.Context, in *UpdateConfigHookReq, opts ...grpc.CallOption) (*UpdateConfigHookResp, error)
 	// 生成配置服务版本
@@ -768,6 +771,15 @@ func (c *configClient) GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, 
 func (c *configClient) ListReleasedKvs(ctx context.Context, in *ListReleasedKvsReq, opts ...grpc.CallOption) (*ListReleasedKvsResp, error) {
 	out := new(ListReleasedKvsResp)
 	err := c.cc.Invoke(ctx, Config_ListReleasedKvs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ListAllReleasedConfigItems(ctx context.Context, in *ListAllReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListAllReleasedConfigItemsResp, error) {
+	out := new(ListAllReleasedConfigItemsResp)
+	err := c.cc.Invoke(ctx, Config_ListAllReleasedConfigItems_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2210,6 +2222,8 @@ type ConfigServer interface {
 	GetReleasedKv(context.Context, *GetReleasedKvReq) (*GetReleasedKvResp, error)
 	// 获取已生成版本键值配置项列表
 	ListReleasedKvs(context.Context, *ListReleasedKvsReq) (*ListReleasedKvsResp, error)
+	// 列出所有已发布的配置项
+	ListAllReleasedConfigItems(context.Context, *ListAllReleasedConfigItemsReq) (*ListAllReleasedConfigItemsResp, error)
 	// 引用前后置脚本
 	UpdateConfigHook(context.Context, *UpdateConfigHookReq) (*UpdateConfigHookResp, error)
 	// 生成配置服务版本
@@ -2585,6 +2599,9 @@ func (UnimplementedConfigServer) GetReleasedKv(context.Context, *GetReleasedKvRe
 }
 func (UnimplementedConfigServer) ListReleasedKvs(context.Context, *ListReleasedKvsReq) (*ListReleasedKvsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListReleasedKvs not implemented")
+}
+func (UnimplementedConfigServer) ListAllReleasedConfigItems(context.Context, *ListAllReleasedConfigItemsReq) (*ListAllReleasedConfigItemsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAllReleasedConfigItems not implemented")
 }
 func (UnimplementedConfigServer) UpdateConfigHook(context.Context, *UpdateConfigHookReq) (*UpdateConfigHookResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfigHook not implemented")
@@ -3470,6 +3487,24 @@ func _Config_ListReleasedKvs_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServer).ListReleasedKvs(ctx, req.(*ListReleasedKvsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ListAllReleasedConfigItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAllReleasedConfigItemsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListAllReleasedConfigItems(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListAllReleasedConfigItems_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListAllReleasedConfigItems(ctx, req.(*ListAllReleasedConfigItemsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6344,6 +6379,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListReleasedKvs",
 			Handler:    _Config_ListReleasedKvs_Handler,
+		},
+		{
+			MethodName: "ListAllReleasedConfigItems",
+			Handler:    _Config_ListAllReleasedConfigItems_Handler,
 		},
 		{
 			MethodName: "UpdateConfigHook",

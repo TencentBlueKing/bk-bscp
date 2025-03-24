@@ -197,6 +197,12 @@ service Config {
            "kvs"
     };
   }
+  // 列出所有已发布的配置项
+  rpc ListAllReleasedConfigItems(ListAllReleasedConfigItemsReq) returns (ListAllReleasedConfigItemsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/published/all"
+    };
+  }
   // 引用前后置脚本
   rpc UpdateConfigHook(UpdateConfigHookReq) returns (UpdateConfigHookResp) {
     option (google.api.http) = {
@@ -1759,6 +1765,19 @@ message ListReleasedKvsReq {
 message ListReleasedKvsResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbrkv.ReleasedKv details = 2;
+}
+
+message ListAllReleasedConfigItemsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+}
+
+message ListAllReleasedConfigItemsResp {
+  message Item {
+    string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项名称" }];
+    string sign = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  }
+  repeated Item items = 1;
 }
 
 message UpdateConfigHookReq {
