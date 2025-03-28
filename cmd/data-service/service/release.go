@@ -1130,3 +1130,65 @@ func (s Service) checkForExpiredCertificates(kit *kit.Kit, bizID, appID uint32) 
 
 	return expirationNumber, nil
 }
+
+// ListAllReleasedConfigItems implements pbds.DataServer.
+func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbds.ListAllReleasedConfigItemsReq) (
+	*pbds.ListAllReleasedConfigItemsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+	// 获取服务信息
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	if err != nil {
+		return nil, err
+	}
+	// 通过服务获取已经上线的版本
+	releasedGroup, err := s.dao.ReleasedGroup().ListAllByAppID(grpcKit, req.AppId, req.BizId)
+	if err != nil {
+		return nil, err
+	}
+
+	releaseIds := []uint32{}
+	for _, v := range releasedGroup {
+		releaseIds = append(releaseIds, v.ReleaseID)
+	}
+
+	items := make([]*pbds.ListAllReleasedConfigItemsResp_Item, 0)
+
+	seen := map[string]bool{}
+
+	// 获取已上线的配置项
+	if app.Spec.ConfigType == table.File {
+		releasedConfigItem, err := s.dao.ReleasedCI().ListAllByReleaseIDs(grpcKit, releaseIds, req.BizId)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range releasedConfigItem {
+			if seen[v.CommitSpec.Content.Signature] {
+				continue
+			}
+			items = append(items, &pbds.ListAllReleasedConfigItemsResp_Item{
+				Name: path.Join(v.ConfigItemSpec.Path, v.ConfigItemSpec.Name),
+				Sign: v.CommitSpec.Content.Signature,
+			})
+			seen[v.CommitSpec.Content.Signature] = true
+		}
+	} else {
+		releasedKv, err := s.dao.ReleasedKv().ListAllByReleaseIDs(grpcKit, releaseIds, req.BizId)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range releasedKv {
+			if seen[v.ContentSpec.Signature] {
+				continue
+			}
+			items = append(items, &pbds.ListAllReleasedConfigItemsResp_Item{
+				Name: v.Spec.Key,
+				Sign: v.ContentSpec.Signature,
+			})
+			seen[v.ContentSpec.Signature] = true
+		}
+	}
+
+	return &pbds.ListAllReleasedConfigItemsResp{
+		Items: items,
+	}, nil
+}

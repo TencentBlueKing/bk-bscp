@@ -67,6 +67,7 @@ const (
 	Data_GetReleasedConfigItem_FullMethodName             = "/pbds.Data/GetReleasedConfigItem"
 	Data_GetReleasedKv_FullMethodName                     = "/pbds.Data/GetReleasedKv"
 	Data_ListReleasedKvs_FullMethodName                   = "/pbds.Data/ListReleasedKvs"
+	Data_ListAllReleasedConfigItems_FullMethodName        = "/pbds.Data/ListAllReleasedConfigItems"
 	Data_CreateHook_FullMethodName                        = "/pbds.Data/CreateHook"
 	Data_ListHooks_FullMethodName                         = "/pbds.Data/ListHooks"
 	Data_DeleteHook_FullMethodName                        = "/pbds.Data/DeleteHook"
@@ -265,6 +266,7 @@ type DataClient interface {
 	// released kv related interface.
 	GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, opts ...grpc.CallOption) (*released_kv.ReleasedKv, error)
 	ListReleasedKvs(ctx context.Context, in *ListReleasedKvReq, opts ...grpc.CallOption) (*ListReleasedKvResp, error)
+	ListAllReleasedConfigItems(ctx context.Context, in *ListAllReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListAllReleasedConfigItemsResp, error)
 	// hook related interface.
 	CreateHook(ctx context.Context, in *CreateHookReq, opts ...grpc.CallOption) (*CreateResp, error)
 	ListHooks(ctx context.Context, in *ListHooksReq, opts ...grpc.CallOption) (*ListHooksResp, error)
@@ -759,6 +761,15 @@ func (c *dataClient) GetReleasedKv(ctx context.Context, in *GetReleasedKvReq, op
 func (c *dataClient) ListReleasedKvs(ctx context.Context, in *ListReleasedKvReq, opts ...grpc.CallOption) (*ListReleasedKvResp, error) {
 	out := new(ListReleasedKvResp)
 	err := c.cc.Invoke(ctx, Data_ListReleasedKvs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ListAllReleasedConfigItems(ctx context.Context, in *ListAllReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListAllReleasedConfigItemsResp, error) {
+	out := new(ListAllReleasedConfigItemsResp)
+	err := c.cc.Invoke(ctx, Data_ListAllReleasedConfigItems_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2153,6 +2164,7 @@ type DataServer interface {
 	// released kv related interface.
 	GetReleasedKv(context.Context, *GetReleasedKvReq) (*released_kv.ReleasedKv, error)
 	ListReleasedKvs(context.Context, *ListReleasedKvReq) (*ListReleasedKvResp, error)
+	ListAllReleasedConfigItems(context.Context, *ListAllReleasedConfigItemsReq) (*ListAllReleasedConfigItemsResp, error)
 	// hook related interface.
 	CreateHook(context.Context, *CreateHookReq) (*CreateResp, error)
 	ListHooks(context.Context, *ListHooksReq) (*ListHooksResp, error)
@@ -2438,6 +2450,9 @@ func (UnimplementedDataServer) GetReleasedKv(context.Context, *GetReleasedKvReq)
 }
 func (UnimplementedDataServer) ListReleasedKvs(context.Context, *ListReleasedKvReq) (*ListReleasedKvResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListReleasedKvs not implemented")
+}
+func (UnimplementedDataServer) ListAllReleasedConfigItems(context.Context, *ListAllReleasedConfigItemsReq) (*ListAllReleasedConfigItemsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAllReleasedConfigItems not implemented")
 }
 func (UnimplementedDataServer) CreateHook(context.Context, *CreateHookReq) (*CreateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateHook not implemented")
@@ -3524,6 +3539,24 @@ func _Data_ListReleasedKvs_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).ListReleasedKvs(ctx, req.(*ListReleasedKvReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ListAllReleasedConfigItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAllReleasedConfigItemsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListAllReleasedConfigItems(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListAllReleasedConfigItems_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListAllReleasedConfigItems(ctx, req.(*ListAllReleasedConfigItemsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6356,6 +6389,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListReleasedKvs",
 			Handler:    _Data_ListReleasedKvs_Handler,
+		},
+		{
+			MethodName: "ListAllReleasedConfigItems",
+			Handler:    _Data_ListAllReleasedConfigItems_Handler,
 		},
 		{
 			MethodName: "CreateHook",
