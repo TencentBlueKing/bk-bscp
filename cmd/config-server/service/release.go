@@ -261,3 +261,39 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbcs.CheckReleaseNa
 
 	return &pbcs.CheckReleaseNameResp{Exist: result.GetExist()}, nil
 }
+
+// ListAllReleasedConfigItems implements pbcs.ConfigServer.
+func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbcs.ListAllReleasedConfigItemsReq) (
+	*pbcs.ListAllReleasedConfigItemsResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Find, ResourceID: req.AppId}, BizID: req.BizId},
+	}
+	err := s.authorizer.Authorize(kt, res...)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ListAllReleasedConfigItems(kt.RpcCtx(), &pbds.ListAllReleasedConfigItemsReq{
+		BizId: req.BizId,
+		AppId: req.AppId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*pbcs.ListAllReleasedConfigItemsResp_Item, 0)
+
+	for _, v := range resp.GetItems() {
+		items = append(items, &pbcs.ListAllReleasedConfigItemsResp_Item{
+			Name: v.Name,
+			Sign: v.Sign,
+		})
+	}
+
+	return &pbcs.ListAllReleasedConfigItemsResp{
+		Items: items,
+	}, nil
+}
