@@ -21,9 +21,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
@@ -326,45 +328,98 @@ func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 	w.Header().Set("Content-Type", "application/zip")
 	w.WriteHeader(http.StatusOK)
+
+	var wg sync.WaitGroup
+	// 限制最大并发数
+	sem := make(chan struct{}, 10)
+	ch := make(chan FileData, 10)
+	for _, file := range resp.GetTemplateSet() {
+		for _, v := range file.TemplateRevision {
+			wg.Add(1)
+			go c.fetchFile(kt, &wg, file.Name, v, ch, sem)
+		}
+	}
+
+	// 关闭 channel
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
 	// 创建 zip writer，将文件内容写入到 zip 文件中
 	zipWriter := zip.NewWriter(w)
 	defer func() { _ = zipWriter.Close() }()
-	for _, file := range resp.GetTemplateSet() {
-		for _, v := range file.TemplateRevision {
-			err := c.downloadTmpFileToZip(kt, file.Name, v, zipWriter)
-			if err != nil {
-				_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to download files: %v", err)))
-				return
+
+	eg, _ := errgroup.WithContext(kt.RpcCtx())
+	eg.Go(func() error {
+		for file := range ch {
+			if file.Err != nil {
+				return file.Err
 			}
+			if file.ContentLength == 0 {
+				continue
+			}
+			fileName := filepath.Join(file.FolderName, file.Revision.Path, file.Revision.Name)
+			trimmedPath := strings.TrimPrefix(fileName, "/")
+			writer, err := zipWriter.Create(trimmedPath)
+			if err != nil {
+				file.Content.Close()
+				return fmt.Errorf("failed to create compressed file: %v", err)
+			}
+			n, err := io.Copy(writer, file.Content)
+			if err != nil {
+				file.Content.Close()
+				return fmt.Errorf("failed to write file content: %v", err)
+			}
+			if n != file.ContentLength {
+				file.Content.Close()
+				return errors.New("incomplete file content")
+			}
+			file.Content.Close()
 		}
 
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = render.Render(w, r, rest.BadRequest(fmt.Errorf("failed to download files: %v", err)))
+		return
 	}
 }
 
-// 下载模板文件且压缩成zip
-func (c *configExport) downloadTmpFileToZip(kt *kit.Kit, folderName string,
-	revision *pbtr.TemplateRevisionSpec, zipWriter *zip.Writer) error {
-	body, contentLength, err := c.provider.Download(kt, revision.ContentSpec.Signature)
+// FileData 结构体用于存储下载的文件数据
+type FileData struct {
+	FolderName    string
+	Revision      *pbtr.TemplateRevisionSpec
+	Content       io.ReadCloser
+	ContentLength int64
+	Err           error
+}
+
+func (c *configExport) fetchFile(kt *kit.Kit, wg *sync.WaitGroup, folderName string, file *pbtr.TemplateRevisionSpec,
+	ch chan<- FileData, sem chan struct{}) {
+	defer wg.Done()
+
+	// 限制并发
+	sem <- struct{}{}
+	defer func() { <-sem }()
+
+	body, contentLength, err := c.provider.Download(kt, file.GetContentSpec().Signature)
 	if err != nil {
-		return err
+		ch <- FileData{
+			FolderName: folderName,
+			Revision:   file,
+			Err:        err,
+		}
+		return
 	}
 
-	defer body.Close()
-
-	fileName := filepath.Join(folderName, revision.Path, revision.Name)
-	trimmedPath := strings.TrimPrefix(fileName, "/")
-	writer, err := zipWriter.Create(trimmedPath)
-	if err != nil {
-		return fmt.Errorf("Error creating ZIP file entry:%s", err.Error())
+	ch <- FileData{
+		FolderName:    folderName,
+		Revision:      file,
+		Content:       body,
+		ContentLength: contentLength,
+		Err:           err,
 	}
-
-	n, err := io.Copy(writer, body)
-	if err != nil {
-		return err
-	}
-
-	if n != contentLength {
-		return errors.New("download failed file missing")
-	}
-	return nil
 }
