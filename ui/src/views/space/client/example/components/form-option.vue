@@ -31,6 +31,7 @@
       <config-selector
         ref="configSelectRef"
         :template-name="props.templateName!"
+        :service-type="props.serviceType"
         @select-config="formData.configName = $event" />
     </bk-form-item>
     <bk-form-item v-if="props.dualSystemSupport" :label="$t('客户端操作系统')" property="systemType">
@@ -145,6 +146,7 @@
   const props = withDefaults(
     defineProps<{
       selectedKeyData: newICredentialItem['spec'] | null; // 记忆密钥的信息
+      serviceType: string; // 服务类型
       templateName?: string;
       directoryShow?: boolean; // 临时目录(所有文件型)
       p2pShow?: boolean; // p2p网络加速（Sidecar容器）

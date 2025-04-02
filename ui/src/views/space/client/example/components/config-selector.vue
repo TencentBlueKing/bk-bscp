@@ -9,7 +9,7 @@
     :input-search="false"
     :clearable="false"
     :loading="loading"
-    :multiple="props.templateName === 'python'"
+    :multiple="multipleExample"
     :search-placeholder="basicInfo?.serviceType.value === 'file' ? $t('配置文件名') : $t('配置项名称')"
     :no-data-text="$t('暂无可用配置')"
     :no-match-text="$t('搜索结果为空')"
@@ -24,17 +24,10 @@
       </div>
     </template>
     <!-- 非模板配置和套餐合并后的数据（configList），配置项名称（文件名）可能一样，这里添加/index做唯一区分，后续使用删除/index -->
-    <bk-option
-      v-if="props.templateName === 'python' && configList.length > 0"
-      value="*"
-      :label="$t('全部配置项')"></bk-option>
-    <bk-option
-      v-for="(item, index) in configList"
-      :key="item.id + index"
-      :value="`${item.config}/${index}`"
-      :label="item.config">
+    <bk-option v-if="multipleExample && configList.length > 0" value="*" :label="$t('全部配置项')"></bk-option>
+    <bk-option v-for="item in configList" :key="item.sign" :value="item.name" :label="item.name">
       <div class="config-option-item">
-        <div class="name-text">{{ item.config }}</div>
+        <div class="name-text">{{ item.name }}</div>
       </div>
     </bk-option>
   </bk-select>
@@ -43,13 +36,13 @@
 <script lang="ts" setup>
   import { ref, onMounted, inject, Ref, computed } from 'vue';
   import { useRoute } from 'vue-router';
-  import { getConfigList, getBoundTemplates, getKvList } from '../../../../../api/config';
+  import { getAllReleasedConfigList } from '../../../../../api/config';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
-  import { IConfigItem, IBoundTemplateGroup, IConfigKvType } from '../../../../../../types/config';
   import { useI18n } from 'vue-i18n';
 
   const props = defineProps<{
     templateName: string;
+    serviceType: string;
   }>();
 
   const { t } = useI18n();
@@ -64,7 +57,7 @@
   const configName = ref<string | string[]>();
   const bizId = ref(String(route.params.spaceId));
   const appId = ref(route.params.appId);
-  const configList = ref<{ id: number; config: string }[]>([]);
+  const configList = ref<{ name: string; sign: string }[]>([]);
 
   // 选中的配置项（文件名）原始名称
   const originalConfigName = computed(() => {
@@ -72,10 +65,15 @@
       if (configName.value.includes('*')) {
         return t('全部配置项');
       }
-      return configName.value.map((item) => item.split('/')[0]).join(',');
+      return configName.value.join(',');
     }
-    return String(configName.value).replace(/\/[^\\/]*$/, '');
+    return configName.value;
   });
+
+  // 可多选的示例类型
+  const multipleExample = computed(
+    () => props.templateName === 'python' || (props.templateName === 'go' && props.serviceType === 'kv'),
+  );
 
   onMounted(async () => {
     await loadConfigList();
@@ -85,50 +83,15 @@
   const loadConfigList = async () => {
     loading.value = true;
     try {
-      const query = {
-        start: 0,
-        all: true,
-      };
-      if (basicInfo?.serviceType.value === 'file') {
-        // 文件型配置项
-        const [configRes, boundTempRes] = await Promise.all([
-          getConfigList(bizId.value, Number(appId.value), query), // 非模板配置
-          getBoundTemplates(bizId.value, Number(appId.value), query), // 套餐
-        ]);
-        // 提取非模板配置的信息
-        const configResult = configRes.details.map((item: IConfigItem) => {
-          const { path, name } = item.spec;
-          return {
-            id: item.id,
-            config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
-          };
-        });
-        // 提取套餐配置信息
-        const boundTempResult = boundTempRes.details.map((group: IBoundTemplateGroup) => {
-          // 遍历套餐
-          return group.template_revisions.map((item) => {
-            const { template_id, path, name } = item;
-            return {
-              id: template_id,
-              config: path.endsWith('/') ? `${path}${name}` : `${path}/${name}`,
-            };
-          });
-        });
-        // 合并配置信息
-        configList.value = [...configResult, ...boundTempResult].flat();
-      } else {
-        // 键值型配置项
-        const res = await getKvList(bizId.value, Number(appId.value), query);
-        configList.value = res.details.map((item: IConfigKvType) => {
-          return {
-            id: item.id,
-            config: item.spec.key,
-          };
-        });
-        if (props.templateName === 'python' && configList.value.length > 0) {
-          configName.value = ['*'];
-          handleConfigChange(configName.value);
-        }
+      const res = await getAllReleasedConfigList(bizId.value, Number(appId.value));
+      //  过滤掉重复的配置项
+      const map = new Map();
+      res.data.items.forEach((item: { name: string; sign: string }) => map.set(item.name, item));
+      Array.from(map.values());
+      configList.value = Array.from(map.values());
+      if (multipleExample.value && configList.value.length > 0) {
+        configName.value = ['*'];
+        handleConfigChange(configName.value);
       }
     } catch (e) {
       console.error(e);
@@ -139,25 +102,18 @@
 
   // 下拉列表操作
   const handleConfigChange = async (val: string | string[]) => {
-    configName.value = val;
-    let selectConfig;
+    configName.value = Array.isArray(val) ? val.filter((item) => item) : val;
     if (Array.isArray(configName.value)) {
       if (val.length === 0) {
         configName.value = '';
       }
       if (configName.value[configName.value.length - 1] === '*') {
         configName.value = ['*'];
-        selectConfig = '*';
       } else if (configName.value.length > 1 && configName.value[0] === '*') {
         configName.value = configName.value.slice(1);
-        selectConfig = originalConfigName.value;
-      } else {
-        selectConfig = originalConfigName.value;
       }
-    } else {
-      selectConfig = originalConfigName.value;
     }
-    emits('select-config', selectConfig);
+    emits('select-config', configName.value);
     validateConfig();
   };
 

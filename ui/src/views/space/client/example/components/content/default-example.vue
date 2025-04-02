@@ -9,6 +9,7 @@
       :config-label="basicInfo?.serviceType.value === 'file' ? '配置文件名' : '配置项名称'"
       :selected-key-data="props.selectedKeyData"
       :template-name="props.templateName"
+      :service-type="basicInfo!.serviceType.value"
       @update-option-data="(data) => getOptionData(data)"
       @selected-key-data="emits('selected-key-data', $event)" />
     <div class="preview-container">
@@ -137,7 +138,7 @@
         if (!activeTab.value) {
           return {
             topTip: t('Get 方法：用于一次性拉取配置文件内容，适合在需要主动拉取指定配置文件的场景下使用。'),
-            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1614 : 968,
+            codePreviewHeight: basicInfo?.serviceType.value === 'file' ? 1614 : 1680,
           };
         }
         return {
@@ -259,7 +260,7 @@
         }
         break;
       case 'trpc':
-        data.labelArr = data.labelArr.map((str: string) => (' '.repeat(18) + str.split(':').join(': ')));
+        data.labelArr = data.labelArr.map((str: string) => ' '.repeat(18) + str.split(':').join(': '));
         labelArrType = data.labelArr.length ? `\n${data.labelArr.join('\n')}` : '{}';
         break;
       default:
@@ -278,6 +279,7 @@
       updateReplaceVal();
     });
   };
+
   const updateReplaceVal = () => {
     // 获取初始值
     let updateString = replaceVal.value;
@@ -332,15 +334,14 @@
     ];
   };
 
-  const getKeyName = (val: string) => {
+  const getKeyName = (val: string | string[]) => {
     if (!val) {
       return '""';
     }
-    if (props.templateName === 'python' && val) {
-      if (val === '*') {
-        return '["*"]';
-      }
-      return JSON.stringify(val.split(','));
+    if (Array.isArray(val)) {
+      return props.templateName === 'go'
+        ? val.map((item) => `"${item}"`).join(',')
+        : JSON.stringify(val);
     }
     return val;
   };

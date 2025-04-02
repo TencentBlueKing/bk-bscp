@@ -1,11 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
+    "encoding/json"
+    "fmt"
+    "os"
+    "strconv"
+    "strings"
 
-	"github.com/TencentBlueKing/bscp-go/client"
-	"github.com/TencentBlueKing/bscp-go/pkg/logger"
+    "github.com/TencentBlueKing/bscp-go/client"
+    "github.com/TencentBlueKing/bscp-go/internal/constant"
+    "github.com/TencentBlueKing/bscp-go/pkg/logger"
 )
 
 func main() {
@@ -21,7 +25,7 @@ func main() {
 	var biz uint32 = {{ .Bk_Bscp_Variable_BkBizId }}
 	var token string = {{ .Bk_Bscp_Variable_ClientKey }}
 	var app string = "{{ .Bk_Bscp_Variable_ServiceName }}"
-	var key string = {{ .Bk_Bscp_Variable_KeyName }}
+	keys := []string{{{ .Bk_Bscp_Variable_KeyName }}}
 
 	labels := map[string]string{{ .Bk_Bscp_Variable_Leabels }}
 
@@ -38,12 +42,49 @@ func main() {
 
 	opts := []client.AppOption{}
 
-	value, err := bscp.Get(app, key, opts...)
-	if err != nil {
-		logger.Error("get value", logger.ErrAttr(err))
-		os.Exit(1)
+	values, err := fetchConfigurationValues(bscp, appName, keys, opts)
+  if err != nil {
+    logger.Error("fetch configuration values", logger.ErrAttr(err))
+    os.Exit(1)
+  }
+  for key, value := range values {
+    fmt.Printf("Key: %s, Value: %s\n", key, value)
+  }
+	
+}
+
+func fetchConfigurationValues(bscp client.Client, app string, keys []string,
+	opts []client.AppOption) (map[string]string, error) {
+	kvs := make(map[string]string)
+
+	keySet := make(map[string]struct{})
+	isAll := false
+
+	// 检查是否包含 "*"，如果包含，则获取所有数据
+	for _, v := range keys {
+		if v == "*" {
+			isAll = true
+			break // 找到 "*" 后，直接退出
+		}
+		keySet[v] = struct{}{} // 否则，将 key 加入 map
 	}
 
-	fmt.Printf("%s=%s\n", key, value)
-	
+	release, err := bscp.PullKvs(app, []string{}, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// 遍历 release.KvItems，根据 isAll 和 keySet 来获取数据
+	for _, v := range release.KvItems {
+		value, err := bscp.Get(app, v.Key, opts...)
+		if err != nil {
+			return nil, err
+		}
+		_, exists := keySet[v.Key]
+		if isAll || exists {
+			kvs[v.Key] = value
+		}
+	}
+
+	return kvs, nil
 }

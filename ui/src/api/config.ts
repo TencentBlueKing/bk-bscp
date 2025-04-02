@@ -757,3 +757,11 @@ export const batchUndeleteFile = (bizId: string, appId: number, ids: number[]) =
  */
 export const getUnExpiredCertList = (bizId: string, appId: number, params: any) =>
   http.get(`/config/biz/${bizId}/apps/${appId}/kvs/near_certificate`, { params });
+
+/**
+ * 获取所有发布版本配置项列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ */
+export const getAllReleasedConfigList = (bizId: string, appId: number) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/published/all`);
