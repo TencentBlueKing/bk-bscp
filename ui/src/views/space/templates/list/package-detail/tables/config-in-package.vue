@@ -32,7 +32,10 @@
         :data-count="acrossCheckedType.dataCount"
         @refresh="refreshConfigList"
         @moved-out="handleMovedOut" />
-      <bk-button :disabled="countOfTemplatesForCurrentPackage === 0" @click="handleExportPakage">
+      <bk-button
+        :disabled="countOfTemplatesForCurrentPackage === 0"
+        :loading="exportLoading"
+        @click="handleExportPakage">
         {{ $t('导出') }}
       </bk-button>
     </template>
@@ -63,6 +66,7 @@
     isAcrossChecked: false,
     dataCount: 0,
   });
+  const exportLoading = ref(false);
 
   const getConfigList = (params: ICommonQuery) => {
     console.log('Package Config List Loading', currentTemplateSpace.value);
@@ -92,10 +96,13 @@
 
   const handleExportPakage = async () => {
     try {
-      const res = await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, currentPkg.value);
+      exportLoading.value = true;
+      const res = await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, currentPkg.value as number);
       downloadFile(res, 'application/zip', `${currentPkgName.value}.zip`);
     } catch (error) {
       console.error(error);
+    } finally {
+      exportLoading.value = false;
     }
   };
 

@@ -312,41 +312,67 @@
       selectTypeContent.value!.infoList = [];
       return;
     }
-    try {
-      // Remove the PEM headers and footers
-      const pemCleaned = pem
-        .replace(/-----BEGIN CERTIFICATE-----/, '')
-        .replace(/-----END CERTIFICATE-----/, '')
-        .replace(/\s+/g, '');
+    // 分割PEM文件中的多个证书
+    const certPems = pem
+      .split(/-----END CERTIFICATE-----\s*/)
+      .filter((part) => part.trim().length > 0)
+      .map((part) => `${part}-----END CERTIFICATE-----`);
 
-      // Decode the PEM to DER
-      const der = forge.util.decode64(pemCleaned);
+    const results: Array<{ status: string; text: string }> = [];
+    let hasError = false;
+    let hasWarning = false;
 
-      // Convert DER to a Forge certificate object
-      const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(der));
+    // 使用forEach遍历证书链
+    certPems.forEach((certPem) => {
+      try {
+        // 清理PEM格式
+        const pemCleaned = certPem
+          .replace(/-----(BEGIN|END) CERTIFICATE-----/g, '')
+          .replace(/[\r\n\t\s]/g, '');
 
-      // 获取证书有效期
-      const notAfter = cert.validity.notAfter;
+        const der = forge.util.decode64(pemCleaned);
+        const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(der));
+        const notAfter = cert.validity.notAfter;
+        const remainingDays = Math.ceil((notAfter.getTime() - Date.now()) / 86400000);
 
-      // 计算剩余天数
-      const now = new Date();
-      const remainingDays = Math.ceil((notAfter.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (remainingDays > 0) {
-        selectTypeContent.value!.infoList = [
-          {
-            status: remainingDays > 30 ? 'normal' : 'warn',
-            text: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: datetimeFormat(notAfter), m: remainingDays }),
-          },
-        ];
-      } else {
-        selectTypeContent.value!.infoList = [
-          { status: 'error', text: t('此证书已于 {n} 过期，请更换其它证书', { n: datetimeFormat(notAfter) }) },
-        ];
+        if (remainingDays <= 0) {
+          hasError = true;
+          results.push({
+            status: 'error',
+            text: t('此证书已于 {n} 过期，请更换其它证书', { n: datetimeFormat(notAfter) }),
+          });
+        } else if (remainingDays <= 30) {
+          hasWarning = true;
+          results.push({
+            status: 'warn',
+            text: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', {
+              n: datetimeFormat(notAfter),
+              m: remainingDays,
+            }),
+          });
+        } else {
+          results.push({
+            status: 'normal',
+            text: '',
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        hasError = true;
+        results.push({
+          status: 'error',
+          text: t('证书格式不正确（只支持 X.509 类型证书）'),
+        });
       }
-    } catch (e) {
-      console.error(e);
-      selectTypeContent.value!.infoList = [{ status: 'error', text: t('证书格式不正确（只支持 X.509 类型证书）') }];
+    });
+
+    // 结果优先级：错误 > 警告 > 正常
+    if (hasError) {
+      selectTypeContent.value!.infoList = results.filter((r) => r.status === 'error');
+    } else if (hasWarning) {
+      selectTypeContent.value!.infoList = results.filter((r) => r.status === 'warn');
+    } else {
+      selectTypeContent.value!.infoList = [results[0]]; // 默认显示第一个证书
     }
   };
 

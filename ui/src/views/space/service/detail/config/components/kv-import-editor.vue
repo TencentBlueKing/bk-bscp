@@ -5,7 +5,7 @@
         <div class="tips">
           <div class="title">{{ t('导入数据') }}</div>
           <InfoLine class="info-icon" />
-          {{ t('仅支持大小不超过') }}2M
+          {{ t('仅支持大小不超过') }}1M
         </div>
         <div class="btns">
           <i
