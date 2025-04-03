@@ -776,29 +776,13 @@ func verifySecretVaule(kit *kit.Kit, secretType, key, value string) (string, err
 		return "", errors.New(i18n.T(kit, `please fill in the value of configuration item %s first`, key))
 	}
 
-	expirationTime, ok := validateCertificate(value)
-	if secretType == string(table.SecretTypeCertificate) && !ok {
-		return "", errors.New(i18n.T(kit, `the certificate format is incorrect, only X.509 format is supported`))
+	expirationTime, err := validateCertificateWithEmbeddedChain(value)
+	if secretType == string(table.SecretTypeCertificate) && err != nil {
+		return "", errors.New(i18n.T(kit,
+			`the certificate format is incorrect, only X.509 format is supported, err: %v`, err))
 	}
 
 	return expirationTime, nil
-}
-
-// 验证证书
-func validateCertificate(certPEM string) (string, bool) {
-	// 解析PEM编码的证书
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil || block.Type != "CERTIFICATE" {
-		return "", false
-	}
-
-	// 尝试解析X.509证书
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "", false
-	}
-
-	return cert.NotAfter.Format(time.RFC3339), true
 }
 
 // BatchUnDeleteKv 批量恢复删除的kv
@@ -910,4 +894,109 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearE
 		Details: resp.GetDetails(),
 		Count:   resp.GetCount(),
 	}, nil
+}
+
+func validateCertificateWithEmbeddedChain(cert string) (string, error) {
+	// 解析证书
+	root, intermediates, leaf, err := parseCertificates([]byte(cert))
+	if err != nil {
+		return "", err
+	}
+	// 处理单个证书
+	if root == nil {
+		if err = validateSingleCertificate(leaf); err != nil {
+			return "", err
+		}
+		return leaf.NotAfter.Format(time.RFC3339), nil
+	}
+
+	// 处理链式证书
+	expiryTime, err := validateCertificateChain(root, intermediates, leaf)
+	if err != nil {
+		return "", err
+	}
+
+	return expiryTime, nil
+}
+
+// 解析证书文件并分组（根证书、中间证书、终端证书）
+func parseCertificates(cert []byte) (root, intermediates, leaf *x509.Certificate, err error) {
+
+	var certs []*x509.Certificate
+	for len(cert) > 0 {
+		var block *pem.Block
+		block, cert = pem.Decode(cert)
+		if block == nil {
+			break
+		}
+		if block.Type == "CERTIFICATE" {
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("failed to parse certificate: %v", err)
+			}
+			certs = append(certs, cert)
+		}
+	}
+
+	if len(certs) == 0 {
+		return nil, nil, nil, errors.New("no valid certificates found")
+	}
+
+	if len(certs) == 1 {
+		// 只有一个证书，既是叶子证书，也是根证书
+		leaf = certs[0]
+		root = nil
+		intermediates = nil
+	} else if len(certs) == 2 {
+		// 只有根证书和叶子证书
+		root = certs[0]
+		leaf = certs[1]
+		intermediates = nil
+	} else {
+		// 标准的链式证书（根证书、中间证书、终端证书）
+		root = certs[0]
+		intermediates = certs[1]
+		leaf = certs[len(certs)-1]
+	}
+
+	return root, intermediates, leaf, nil
+}
+
+// 验证单个证书
+func validateSingleCertificate(cert *x509.Certificate) error {
+	_, err := cert.Verify(x509.VerifyOptions{})
+	if err != nil {
+		return fmt.Errorf("certificate validation failed: %v", err)
+	}
+	return nil
+}
+
+// 验证证书链，并获取最短的过期时间
+func validateCertificateChain(rootCert, intermediateCert, leafCert *x509.Certificate) (string, error) {
+	if rootCert == nil || intermediateCert == nil || leafCert == nil {
+		return "", errors.New("invalid certificate chain structure")
+	}
+
+	// 创建证书池
+	certPool := x509.NewCertPool()
+	certPool.AddCert(rootCert)
+	certPool.AddCert(intermediateCert)
+
+	_, err := leafCert.Verify(x509.VerifyOptions{
+		Roots: certPool,
+	})
+	if err != nil {
+		return "", fmt.Errorf("certificate chain validation failed: %v", err)
+	}
+
+	// 先假设 leaf 证书是最早过期的
+	shortestExpiration := leafCert.NotAfter
+	if intermediateCert.NotAfter.Before(shortestExpiration) {
+		shortestExpiration = intermediateCert.NotAfter
+	}
+	if rootCert.NotAfter.Before(shortestExpiration) {
+		shortestExpiration = rootCert.NotAfter
+	}
+
+	return shortestExpiration.Format(time.RFC3339), nil
 }
