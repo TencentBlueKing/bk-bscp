@@ -292,6 +292,9 @@ func (dao *releasedHookDao) DeleteByUniqueKeyWithTx(kit *kit.Kit, tx *gen.QueryT
 	m := tx.ReleasedHook
 	oldOne, err := m.WithContext(kit.Ctx).Where(m.BizID.Eq(rh.BizID), m.AppID.Eq(rh.AppID),
 		m.ReleaseID.Eq(rh.ReleaseID), m.HookType.Eq(rh.HookType.String())).Take()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
