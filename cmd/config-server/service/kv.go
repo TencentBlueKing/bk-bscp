@@ -776,29 +776,13 @@ func verifySecretVaule(kit *kit.Kit, secretType, key, value string) (string, err
 		return "", errors.New(i18n.T(kit, `please fill in the value of configuration item %s first`, key))
 	}
 
-	expirationTime, ok := validateCertificate(value)
-	if secretType == string(table.SecretTypeCertificate) && !ok {
-		return "", errors.New(i18n.T(kit, `the certificate format is incorrect, only X.509 format is supported`))
+	expirationTime, err := validatePemContent(value)
+	if secretType == string(table.SecretTypeCertificate) && err != nil {
+		return "", errors.New(i18n.T(kit,
+			`the certificate format is incorrect, only X.509 format is supported, err: %v`, err))
 	}
 
 	return expirationTime, nil
-}
-
-// 验证证书
-func validateCertificate(certPEM string) (string, bool) {
-	// 解析PEM编码的证书
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil || block.Type != "CERTIFICATE" {
-		return "", false
-	}
-
-	// 尝试解析X.509证书
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "", false
-	}
-
-	return cert.NotAfter.Format(time.RFC3339), true
 }
 
 // BatchUnDeleteKv 批量恢复删除的kv
@@ -910,4 +894,97 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearE
 		Details: resp.GetDetails(),
 		Count:   resp.GetCount(),
 	}, nil
+}
+
+// 解析证书或者私钥
+// 验证单个证书或者证书链格式、过期时间
+// 验证私钥格式
+func validatePemContent(pemStr string) (string, error) {
+	data := []byte(pemStr)
+	var certs []*x509.Certificate
+	var keyErr error
+	var keyValid, foundCert, foundKey bool
+
+	for len(data) > 0 {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		switch block.Type {
+		case "CERTIFICATE":
+			foundCert = true
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				return "", fmt.Errorf("invalid certificate: %v", err)
+			}
+			certs = append(certs, cert)
+
+		case "PRIVATE KEY":
+			foundKey = true
+			_, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+			keyValid = (err == nil)
+			if err != nil {
+				keyErr = fmt.Errorf("invalid PKCS8 private key: %v", err)
+			}
+
+		case "RSA PRIVATE KEY":
+			foundKey = true
+			_, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+			keyValid = (err == nil)
+			if err != nil {
+				keyErr = fmt.Errorf("invalid RSA private key: %v", err)
+			}
+
+		case "EC PRIVATE KEY":
+			foundKey = true
+			_, err := x509.ParseECPrivateKey(block.Bytes)
+			keyValid = (err == nil)
+			if err != nil {
+				keyErr = fmt.Errorf("invalid EC private key: %v", err)
+			}
+		default:
+			return "", errors.New("no valid certificate or private key was recognized")
+		}
+	}
+	// 返回分析结果
+	if foundCert && len(certs) > 0 {
+		if len(certs) == 1 {
+			return certs[0].NotAfter.Format(time.RFC3339), nil
+		}
+		// 校验证书链
+		leaf := certs[len(certs)-1]
+		root := certs[0]
+		intermediates := x509.NewCertPool()
+		for _, c := range certs[1 : len(certs)-1] {
+			intermediates.AddCert(c)
+		}
+		roots := x509.NewCertPool()
+		roots.AddCert(root)
+
+		_, err := leaf.Verify(x509.VerifyOptions{
+			Roots:         roots,
+			Intermediates: intermediates,
+		})
+		if err != nil {
+			return "", fmt.Errorf("certificate chain verification failed: %v", err)
+		}
+
+		// 获取最短的过期时间
+		shortest := leaf.NotAfter
+		for _, c := range certs {
+			if c.NotAfter.Before(shortest) {
+				shortest = c.NotAfter
+			}
+		}
+		return shortest.Format(time.RFC3339), nil
+	}
+	if foundKey {
+		if keyValid {
+			return "", nil
+		}
+		return "", keyErr
+	}
+
+	return "", errors.New("no valid certificate or private key was recognized")
 }
