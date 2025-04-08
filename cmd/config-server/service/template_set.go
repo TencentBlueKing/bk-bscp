@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -33,9 +34,10 @@ func (s *Service) CreateTemplateSet(ctx context.Context, req *pbcs.CreateTemplat
 
 	// validate input param
 	idsLen := len(req.TemplateIds)
-	if idsLen > 500 {
-		return nil, fmt.Errorf("the length of template ids is %d, it must be within the range of [0,500]",
-			idsLen)
+	limit := getAppConfigCnt(req.BizId)
+	if idsLen > limit {
+		return nil, fmt.Errorf("the length of template ids is %d, it must be within the range of [0,%d]",
+			idsLen, limit)
 	}
 
 	res := []*meta.ResourceAttribute{
@@ -298,4 +300,13 @@ func (s *Service) ListTemplateSetsAndRevisions(ctx context.Context, req *pbcs.Li
 	return &pbcs.ListTemplateSetsAndRevisionsResp{
 		Details: details,
 	}, nil
+}
+
+func getAppConfigCnt(bizID uint32) int {
+	if resLimit, ok := cc.ConfigServer().FeatureFlags.ResourceLimit.Spec[fmt.Sprintf("%d", bizID)]; ok {
+		if resLimit.AppConfigCnt > 0 {
+			return int(resLimit.AppConfigCnt)
+		}
+	}
+	return int(cc.ConfigServer().FeatureFlags.ResourceLimit.Default.AppConfigCnt)
 }
