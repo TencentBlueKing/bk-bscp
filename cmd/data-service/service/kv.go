@@ -15,13 +15,17 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -384,6 +388,21 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		if err = s.dao.Kv().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", err))
 		}
+	}
+
+	// 截取前三个对象
+	var itemNames []string
+	for i := 0; i < len(req.Kvs) && i < 3; i++ {
+		itemNames = append(itemNames, req.Kvs[i].KvSpec.Key)
+	}
+	ad := s.dao.AuditDao().Decorator(kt, req.BizId, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.ConfigItemName,
+			len(req.Kvs), strings.Join(itemNames, constant.NameSeparator)),
+		Status: enumor.Success,
+		AppId:  req.AppId,
+	}).PrepareCreate(&table.Kv{})
+	if err := ad.Do(tx.Query); err != nil {
+		return nil, err
 	}
 
 	if e := tx.Commit(); e != nil {

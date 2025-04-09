@@ -280,7 +280,7 @@ func (dao *kvDao) Update(kit *kit.Kit, kv *table.Kv) error {
 		Status:           enumor.Success,
 		Detail:           kv.Spec.Memo,
 		AppId:            kv.Attachment.AppID,
-	}).PrepareUpdate(kv)
+	})
 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
@@ -292,7 +292,13 @@ func (dao *kvDao) Update(kit *kit.Kit, kv *table.Kv) error {
 			return e
 		}
 
-		if e := ad.Do(tx); e != nil {
+		var prepare AuditDo
+		if kv.KvState == table.KvStateDelete {
+			prepare = ad.PrepareDelete(kv)
+		} else {
+			prepare = ad.PrepareUpdate(kv)
+		}
+		if e := prepare.Do(tx); e != nil {
 			return e
 		}
 		return nil

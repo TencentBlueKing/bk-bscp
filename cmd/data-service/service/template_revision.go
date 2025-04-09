@@ -394,7 +394,9 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 	err = s.dao.Template().UpdateWithTx(kt, tx, &table.Template{
 		ID: template.ID,
 		Spec: &table.TemplateSpec{
-			Memo: req.Spec.RevisionMemo,
+			Memo: req.Spec.RevisionMemo, // 仅允许修改描述
+			Path: template.Spec.Path,
+			Name: template.Spec.Name,
 		},
 		Attachment: template.Attachment,
 		Revision:   template.Revision,
