@@ -226,7 +226,7 @@
       limit,
     };
     if (searchStr.value) {
-      rules.name = searchStr.value;
+      rules.search = searchStr.value;
     }
     if (onlyShowMyService.value) {
       rules.operator = userInfo.value.username;

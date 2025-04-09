@@ -8,7 +8,7 @@
       placement="bottom-start"
       @after-hidden="isShowSelect = false">
       <bk-button text @click="isShowSelect = !isShowSelect">
-        <Funnel :fill="isShowSelect ? '#313238' : '#c4c6cc'" />
+        <Funnel :fill="fillColor" />
       </bk-button>
       <template #content>
         <div v-click-outside="handleReset">
@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
   import { Funnel } from 'bkui-vue/lib/icon';
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
 
   defineProps<{
     filterList: {
@@ -46,6 +46,16 @@
 
   const isShowSelect = ref(false);
   const selectedValues = ref<string[]>([]);
+
+  const fillColor = computed(() => {
+    if (isShowSelect.value) {
+      return '#313238';
+    }
+    if (selectedValues.value.length > 0) {
+      return '#3a84ff';
+    }
+    return '#c4c6cc';
+  });
 
   const handleConfirm = () => {
     emits('selected', selectedValues.value);

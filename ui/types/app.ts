@@ -5,6 +5,7 @@ export interface IAppListQuery {
   limit?: number;
   all?: boolean;
   config_type?: string;
+  search?: string;
 }
 
 export interface IAppItem {

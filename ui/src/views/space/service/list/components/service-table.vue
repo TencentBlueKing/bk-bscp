@@ -22,7 +22,7 @@
       <vxe-column :title="$t('配置类型')" width="110">
         <template #default="{ row }">
           <bk-tag :theme="getIsFileType(row) ? 'info' : 'warning'">
-            {{ getIsFileType(row) ? $t('文件型') : $t('键值型') }}
+            {{ getIsFileType(row) ? $t('文件型') : $t('table_键值型') }}
           </bk-tag>
         </template>
       </vxe-column>
@@ -47,7 +47,7 @@
           <span>{{ datetimeFormat(row.revision.update_at) }}</span>
         </template>
       </vxe-column>
-      <vxe-column :title="$t('操作')" width="200">
+      <vxe-column :title="$t('操作')" :width="locale === 'zh-cn' ? 200 : 260">
         <template #default="{ row }">
           <div class="operation-wrap">
             <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
@@ -89,7 +89,7 @@
   import { IPagination } from '../../../../../../types/index';
   import MoreAction from './more-action.vue';
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
 
   const props = defineProps<{
