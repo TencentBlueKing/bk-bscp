@@ -56,18 +56,11 @@
             <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
               {{ $t('客户端查询') }}
             </bk-button>
-            <bk-popover ref="popoverRef" theme="light" trigger="hover" placement="bottom-end" :arrow="false">
-              <div class="more-actions">
-                <Ellipsis class="ellipsis-icon" />
-              </div>
-              <template #content>
-                <ul class="dropdown-ul">
-                  <li class="dropdown-li" v-for="item in operationList" :key="item.name" @click="item.click(row)">
-                    {{ item.name }}
-                  </li>
-                </ul>
-              </template>
-            </bk-popover>
+            <MoreAction
+              :app="row"
+              :space-id="props.spaceId"
+              @edit="emits('edit', row)"
+              @delete="emits('delete', row)" />
           </div>
         </template>
       </vxe-column>
@@ -93,8 +86,8 @@
   import { IAppItem } from '../../../../../../types/app';
   import { useI18n } from 'vue-i18n';
   import { datetimeFormat } from '../../../../../utils';
-  import { Ellipsis } from 'bkui-vue/lib/icon';
   import { IPagination } from '../../../../../../types/index';
+  import MoreAction from './more-action.vue';
 
   const { t } = useI18n();
   const router = useRouter();
@@ -109,28 +102,6 @@
   const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete']);
 
   const tableRef = ref();
-  const operationList = [
-    {
-      name: t('客户端统计'),
-      click: (app: IAppItem) => handleJump(app.id as number, 'client-statistics'),
-    },
-    {
-      name: t('编辑基本属性'),
-      click: (app: IAppItem) => emits('edit', app),
-    },
-    {
-      name: t('配置示例'),
-      click: (app: IAppItem) => handleJump(app.id as number, 'configuration_example'),
-    },
-    {
-      name: t('操作记录'),
-      click: (app: IAppItem) => handleJump(app.id as number, 'records-app'),
-    },
-    {
-      name: t('删除'),
-      click: (app: IAppItem) => emits('delete', app),
-    },
-  ];
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -171,42 +142,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    .more-actions {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 8px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      cursor: pointer;
-      &:hover {
-        background: #dcdee5;
-        color: #3a84ff;
-      }
-      .ellipsis-icon {
-        font-size: 16px;
-        transform: rotate(90deg);
-        cursor: pointer;
-      }
-    }
+
   }
 
-  .dropdown-ul {
-    margin: -12px;
-    font-size: 12px;
-    .dropdown-li {
-      padding: 0 12px;
-      min-width: 68px;
-      font-size: 12px;
-      line-height: 32px;
-      color: #4d4f56;
-      cursor: pointer;
-      &:hover {
-        background: #f5f7fa;
-      }
-    }
-  }
   .table-pagination {
     padding: 14px 16px;
     height: 60px;
