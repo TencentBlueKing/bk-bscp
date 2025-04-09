@@ -164,3 +164,6 @@
 .icon-view-detail:before {
   content: '\e12b';
 }
+.icon-back-line:before {
+  content: "\e135";
+}
