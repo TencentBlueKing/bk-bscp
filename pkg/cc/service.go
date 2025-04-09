@@ -247,12 +247,13 @@ func (s CacheServiceSetting) Validate() error {
 
 // ConfigServerSetting defines config server used setting options.
 type ConfigServerSetting struct {
-	Network    Network    `yaml:"network"`
-	Service    Service    `yaml:"service"`
-	Credential Credential `yaml:"credential"`
-	Log        LogOption  `yaml:"log"`
-	Repo       Repository `yaml:"repository"`
-	Esb        Esb        `yaml:"esb"`
+	Network      Network      `yaml:"network"`
+	Service      Service      `yaml:"service"`
+	Credential   Credential   `yaml:"credential"`
+	Log          LogOption    `yaml:"log"`
+	Repo         Repository   `yaml:"repository"`
+	Esb          Esb          `yaml:"esb"`
+	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -270,6 +271,7 @@ func (s *ConfigServerSetting) trySetDefault() {
 	s.Network.trySetDefault()
 	s.Service.trySetDefault()
 	s.Log.trySetDefault()
+	s.FeatureFlags.trySetDefault()
 }
 
 // Validate ConfigServerSetting option.
@@ -288,6 +290,10 @@ func (s ConfigServerSetting) Validate() error {
 	}
 
 	if err := s.Credential.validate(); err != nil {
+		return err
+	}
+
+	if err := s.FeatureFlags.validate(); err != nil {
 		return err
 	}
 
