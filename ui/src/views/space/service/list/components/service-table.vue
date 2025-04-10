@@ -125,7 +125,15 @@
   };
 
   const handleJump = (id: number, name: string) => {
-    router.push({ name, params: { spaceId: props.spaceId, appId: id } });
+    if (name === 'service-config') {
+      router.push({ name, params: { spaceId: props.spaceId, appId: id } });
+    } else {
+      const routeData = router.resolve({
+        name,
+        params: { spaceId: props.spaceId, appId: id },
+      });
+      window.open(routeData.href, '_blank');
+    }
   };
 </script>
 
@@ -142,7 +150,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-
   }
 
   .table-pagination {

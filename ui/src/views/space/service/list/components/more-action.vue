@@ -60,7 +60,11 @@
   ];
 
   const handleJump = (name: string) => {
-    router.push({ name, params: { spaceId: props.spaceId, appId: props.app.id } });
+    const routeData = router.resolve({
+      name,
+      params: { spaceId: props.spaceId, appId: props.app.id },
+    });
+    window.open(routeData.href, '_blank');
   };
 </script>
 
