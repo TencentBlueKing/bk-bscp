@@ -97,6 +97,7 @@ export default {
   '搜索 服务别名、服务名称、服务描述、更新人、创建人': 'Search service alias, service name, service description, regenerator, creator',
   启用: 'Enable',
   table_键值型: 'KV Type',
+  服务列表: 'Service List',
 
 
   // 导航栏

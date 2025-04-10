@@ -33,8 +33,8 @@
     <template #extension>
       <div class="selector-extensition">
         <div class="content" @click="router.push({ name: 'service-all' })">
-          <i class="bk-bscp-icon icon-app-store app-icon"></i>
-          {{ t('服务管理') }}
+          <i class="bk-bscp-icon icon-back-line app-icon"></i>
+          {{ t('服务列表') }}
         </div>
       </div>
     </template>
@@ -232,17 +232,25 @@
   .selector-extensition {
     flex: 1;
     .content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       height: 40px;
       line-height: 40px;
       text-align: center;
       background: #fafbfd;
+      color: #4d4f56;
       cursor: pointer;
+      .app-icon {
+        color: #979ba5;
+      }
       &:hover {
         color: #3a84ff;
+        .app-icon {
+          color: #3a84ff;
+        }
       }
-    }
-    .app-icon {
-      font-size: 14px;
     }
   }
 </style>
