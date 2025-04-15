@@ -44,7 +44,7 @@ type App interface {
 	// get app by name.
 	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.App, error)
 	// List apps with options.
-	List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) (
+	List(kit *kit.Kit, bizList []uint32, search, configType string, opt *types.BasePage) (
 		[]*table.App, int64, error)
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
@@ -108,24 +108,22 @@ func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) er
 }
 
 // List app's detail info with the filter's expression.
-func (dao *appDao) List(kit *kit.Kit, bizList []uint32, name, operator, configType string, opt *types.BasePage) (
-	[]*table.App, int64, error) {
+func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType string,
+	opt *types.BasePage) ([]*table.App, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
 	var conds []rawgen.Condition
 	// 当len(bizList) > 1时，适用于导航查询场景
 	conds = append(conds, m.BizID.In(bizList...))
-	if operator != "" {
-		conds = append(conds, m.Creator.Eq(operator))
-	}
-	if name != "" {
-		// 按名称模糊搜索
-		conds = append(conds, m.Name.Regexp("(?i)"+name)) // nolint: goconst
-	}
 
 	if configType != "" {
 		conds = append(conds, m.ConfigType.Eq(configType))
+	}
+
+	if search != "" {
+		conds = append(conds, q.Where(m.Name.Like("%"+search+"%")).Or(m.Alias_.Like("%"+search+"%")).
+			Or(m.Creator.Eq(search)).Or(m.Reviser.Eq(search)).Or(m.Memo.Like("%"+search+"%")))
 	}
 
 	var (

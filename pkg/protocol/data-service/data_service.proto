@@ -448,11 +448,10 @@ message ListAppsRestReq {
   string biz_id = 1;  // 多个以逗号分割
   uint32 start = 2;
   uint32 limit = 3;
-  string operator = 4;
-  string name = 5;
-  bool all = 6;
-  string top_ids = 7;
-  string config_type = 8;
+  bool all = 4;
+  string top_ids = 5;
+  string config_type = 6;
+  string search = 7;
 }
 
 message ListAppsResp {
