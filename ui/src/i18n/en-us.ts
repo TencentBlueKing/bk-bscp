@@ -143,7 +143,7 @@ export default {
   未上线: 'Not Released',
   已上线: 'Released',
   操作: 'Operations',
-  只支持未上线版本: 'Only supports unreleased versions',
+  只支持未上线或未待审批版本: 'Only supports unreleased or pending approval versions',
   恢复: 'Restore',
   删除: 'Delete',
   版本详情: 'Version Details',

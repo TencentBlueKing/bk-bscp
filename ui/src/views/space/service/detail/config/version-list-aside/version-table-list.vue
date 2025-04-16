@@ -89,9 +89,11 @@
                     </bk-button>
                     <bk-button
                       v-bk-tooltips="{
-                        disabled: row.status.publish_status === 'not_released',
+                        disabled:
+                          row.status.publish_status === 'not_released' ||
+                          row.status.strategy_status !== 'pending_approval',
                         placement: 'bottom',
-                        content: t('只支持未上线版本'),
+                        content: t('只支持未上线或未待审批版本'),
                       }"
                       text
                       theme="primary"
