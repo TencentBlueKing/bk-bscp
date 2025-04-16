@@ -8,7 +8,7 @@
       :loading="props.loading">
       <vxe-column :title="$t('服务别名')" width="170">
         <template #default="{ row }">
-          <bk-button size="small" text theme="primary" @click="emits('edit', row)">
+          <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
             {{ row.spec.alias }}
           </bk-button>
         </template>
