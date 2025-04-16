@@ -72,7 +72,7 @@
         v-bk-tooltips="{
           disabled: !isDeprecateDisabled,
           placement: 'bottom',
-          content: t('只支持未上线或未待审批版本'),
+          content: t('只支持未上线和未待审批版本'),
         }"
         :class="['action-item', { disabled: isDeprecateDisabled }]"
         @click="handleDeprecateDialogShow(selectedVersion!)">
@@ -165,7 +165,12 @@
 
   // 选择版本是否可废弃
   const isDeprecateDisabled = computed(() => {
-    return selectedVersion.value?.status.strategy_status === 'pending_approval' || selectedVersion.value?.status.publish_status !== 'not_released';
+    const { strategy_status, publish_status } = selectedVersion.value?.status || {};
+    return (
+      strategy_status === 'pending_approval' ||
+      strategy_status === 'pending_publish' ||
+      publish_status !== 'not_released'
+    );
   });
 
   // 待审批状态版本

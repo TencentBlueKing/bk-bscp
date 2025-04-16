@@ -36,7 +36,7 @@ export const INSTANCE = {
   template_absolute_path: localT('模版文件绝对路径'),
   template_revision: localT('模版版本号'),
   credential_name: localT('密钥名称'),
-  hook_revision_name: localT('脚本版本名称'),
+  hook_revision_name: localT('脚本版本号'),
   reference_pre_hook_name: localT('引用前置脚本名称'),
   replace_pre_hook_name: localT('更换前置脚本名称'),
   cancel_pre_hook_name: localT('取消前置脚本名称'),
