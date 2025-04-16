@@ -35,11 +35,19 @@ func init() {
 func mig20241128111704Up(tx *gorm.DB) error {
 	// Audits  : audits
 	type Audits struct {
-		Detail string `gorm:"type:longtext"`
+		Detail      string `gorm:"type:longtext"`
+		ResInstance string `gorm:"type:text"`
 	}
-	// Audits add new column
+	// Audits alter column
 	if tx.Migrator().HasColumn(&Audits{}, "detail") {
 		if err := tx.Migrator().AlterColumn(&Audits{}, "detail"); err != nil {
+			return err
+		}
+	}
+
+	// Audits alter column
+	if tx.Migrator().HasColumn(&Audits{}, "res_instance") {
+		if err := tx.Migrator().AlterColumn(&Audits{}, "res_instance"); err != nil {
 			return err
 		}
 	}
@@ -60,11 +68,19 @@ func mig20241128111704Up(tx *gorm.DB) error {
 func mig20241128111704Down(tx *gorm.DB) error {
 	// Audits  : audits
 	type Audits struct {
-		Detail string `gorm:"type:longtext"`
+		Detail      string `gorm:"type:longtext"`
+		ResInstance string `gorm:"type:text"`
 	}
-	// Strategies add new column
+	// Audits alter column
 	if tx.Migrator().HasColumn(&Audits{}, "detail") {
 		if err := tx.Migrator().AlterColumn(&Audits{}, "detail"); err != nil {
+			return err
+		}
+	}
+
+	// Audits alter column
+	if tx.Migrator().HasColumn(&Audits{}, "res_instance") {
+		if err := tx.Migrator().AlterColumn(&Audits{}, "res_instance"); err != nil {
 			return err
 		}
 	}
