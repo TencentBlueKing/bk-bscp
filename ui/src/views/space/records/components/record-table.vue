@@ -545,8 +545,8 @@
   // 撤回提示框
   const handleConfirm = (row: IRowData) => {
     repealDialogShow.value = true;
-    const matchVersion = row.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
-    const matchGroup = row.audit.spec.res_instance.match(/group:([^\n]*)/);
+    const matchVersion = row.audit.spec.res_instance.match(/config_release_name:([^\n]*)/);
+    const matchGroup = row.audit.spec.res_instance.match(/config_release_scope:([^\n]*)/);
     rowAppId.value = row.audit.attachment.app_id;
     rowReleaseId.value = row.strategy.release_id;
     confirmData.value = {
@@ -563,7 +563,7 @@
   const handlePublishClick = async (row: IRowData) => {
     await getAllGroupData(row.audit.attachment.app_id);
     const publishGroupIds = row.strategy.scope.groups.map((group) => group.id);
-    const matchVersion = row.audit.spec.res_instance.match(/releases_name:([^\n]*)/);
+    const matchVersion = row.audit.spec.res_instance.match(/config_release_name:([^\n]*)/);
     if (publishGroupIds.length === 0) {
       groups.value = groupList.value;
       releaseType.value = 'all';
