@@ -1479,6 +1479,7 @@ message ListAppsRestReq {
   uint32 start = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   string search = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
+  string operator = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
 }
 
 message ListAppsBySpaceRestReq {
@@ -1492,6 +1493,7 @@ message ListAppsBySpaceRestReq {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务类型：文件型=file, 键值型=kv" }
   ];
   string search = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
+  string operator = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
 }
 
 message ListAppsResp {

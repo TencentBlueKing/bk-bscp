@@ -44,7 +44,7 @@ type App interface {
 	// get app by name.
 	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.App, error)
 	// List apps with options.
-	List(kit *kit.Kit, bizList []uint32, search, configType string, opt *types.BasePage) (
+	List(kit *kit.Kit, bizList []uint32, search, configType, operator string, opt *types.BasePage) (
 		[]*table.App, int64, error)
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
@@ -59,7 +59,7 @@ type App interface {
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 	// CountApps 统计服务数量
-	CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error)
+	CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error)
 }
 
 var _ App = new(appDao)
@@ -72,21 +72,34 @@ type appDao struct {
 }
 
 // CountApps implements App.
-func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, operator string) (int64, int64, error) {
+func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error) {
 	m := dao.genQ.App
-	var conds []rawgen.Condition
+	q := dao.genQ.App.WithContext(kit.Ctx)
+	q2 := dao.genQ.App.WithContext(kit.Ctx)
+	var conds1, conds2 []rawgen.Condition
 	if operator != "" {
-		conds = append(conds, m.Creator.Eq(operator))
+		conds1 = append(conds1, m.Creator.Eq(operator))
+		conds2 = append(conds2, m.Creator.Eq(operator))
+	}
+	if search != "" {
+		conds1 = append(conds1, q.Where(m.Name.Like("%"+search+"%")).
+			Or(m.Alias_.Like("%"+search+"%")).
+			Or(m.Memo.Like("%"+search+"%")).
+			Or(m.Creator.Eq(search)))
+		conds2 = append(conds2, q.Where(m.Name.Like("%"+search+"%")).
+			Or(m.Alias_.Like("%"+search+"%")).
+			Or(m.Memo.Like("%"+search+"%")).
+			Or(m.Creator.Eq(search)))
 	}
 
-	kvAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
-		Where(m.ConfigType.Eq(string(table.KV))).Where(conds...).Count()
+	kvAppsCount, err := q.Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.KV))).Where(conds1...).Count()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	fileAppsCount, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.BizID.In(bizList...)).
-		Where(m.ConfigType.Eq(string(table.File))).Where(conds...).Count()
+	fileAppsCount, err := q2.Where(m.BizID.In(bizList...)).
+		Where(m.ConfigType.Eq(string(table.File))).Where(conds2...).Count()
 	if err != nil {
 		return 0, 0, err
 	}
@@ -108,7 +121,7 @@ func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) er
 }
 
 // List app's detail info with the filter's expression.
-func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType string,
+func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType, operator string,
 	opt *types.BasePage) ([]*table.App, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
@@ -121,9 +134,13 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType strin
 		conds = append(conds, m.ConfigType.Eq(configType))
 	}
 
+	if operator != "" {
+		conds = append(conds, m.Creator.Eq(operator))
+	}
+
 	if search != "" {
-		conds = append(conds, q.Where(m.Name.Like("%"+search+"%")).Or(m.Alias_.Like("%"+search+"%")).
-			Or(m.Creator.Eq(search)).Or(m.Reviser.Eq(search)).Or(m.Memo.Like("%"+search+"%")))
+		conds = append(conds, q.Where(m.Name.Like("%"+search+"%")).
+			Or(m.Alias_.Like("%"+search+"%")).Or(m.Memo.Like("%"+search+"%")).Or(m.Creator.Eq(search)))
 	}
 
 	var (

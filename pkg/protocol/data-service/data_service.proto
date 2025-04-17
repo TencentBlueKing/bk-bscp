@@ -452,6 +452,7 @@ message ListAppsRestReq {
   string top_ids = 5;
   string config_type = 6;
   string search = 7;
+  string operator = 8;
 }
 
 message ListAppsResp {
