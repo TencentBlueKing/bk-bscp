@@ -640,7 +640,7 @@ export default {
   '此证书将于 {n} 到期，距离到期仅剩 {m} 天': 'This certificate will expire on {n}, and there are only {m} days left until expiration',
   '此证书已于 {n} 过期，请更换其它证书': 'This certificate has expired on {n}, please replace it with another certificate',
   '此证书已于 {n} 过期，请尽快更换证书': 'This certificate has expired on {n}, please replace it as soon as possible',
-  '证书格式不正确（只支持 X.509 类型证书）': 'The certificate format is incorrect (only X.509 type certificates are supported)',
+  '输入格式不支持，请上传 X.509 证书或 RSA 私钥': 'Input format is not supported, please upload an X.509 certificate or RSA private key',
   '证书未经受信任的证书颁发机构签发，在生产环境中建议使用经权威证书颁发机构签发的证书': 'The certificate is not issued by a trusted certificate authority, and it is recommended to use a certificate issued by an authoritative certificate authority in a production environment',
   '目前只支持 X.509 类型证书': 'Currently only X.509 type certificates are supported',
   确定启用: 'Confirm to enable',
@@ -689,6 +689,8 @@ export default {
   '请先填写配置项 {n} 的值，然后再尝试导入': 'Please fill in the value of configuration item {n} first, and then try to import',
   '提示：': 'Tip:',
   '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入': 'If the sensitive information to be batch imported contains multi-line text certificates (certificate) or custom (custom), please import using JSON or YAML format',
+  'RSA 私钥格式无效': 'Invalid RSA private key format',
+  证书和私钥: 'Certificate and private key',
 
   // 分组管理
   新增分组: 'New group',
