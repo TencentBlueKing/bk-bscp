@@ -52,6 +52,17 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbds.CreateConfigIt
 		Path: req.ConfigItemSpec.Name,
 	}}
 
+	data, err := s.dao.ConfigItem().GetByUniqueKey(grpcKit, req.ConfigItemAttachment.BizId, req.ConfigItemAttachment.AppId,
+		req.ConfigItemSpec.Name, req.ConfigItemSpec.Path)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(grpcKit, "get config item failed, err: %v", err))
+	}
+	if data != nil && data.ID != 0 {
+		return nil, errf.Errorf(errf.DBOpFailed,
+			i18n.T(grpcKit, "the config item %s under this service already exists and cannot be created again",
+				path.Join(req.ConfigItemSpec.Path, req.ConfigItemSpec.Name)))
+	}
+
 	// 检测配置项路径冲突以及是否超出服务限制
 	if err := s.checkRestorePrerequisites(grpcKit, req.ConfigItemAttachment.BizId, req.ConfigItemAttachment.AppId,
 		newFiles, nil); err != nil {
