@@ -6,7 +6,7 @@
     <template #content>
       <ul class="dropdown-ul">
         <li class="dropdown-li" v-for="item in operationList" :key="item.name" @click="item.click()">
-          {{ item.name }}
+          <span :class="{ 'no-perm': !item.perm }">{{ item.name }}</span>
         </li>
       </ul>
     </template>
@@ -33,10 +33,12 @@
   const operationList = [
     {
       name: t('客户端统计'),
+      perm: true,
       click: () => handleJump('client-statistics'),
     },
     {
       name: t('编辑基本属性'),
+      perm: props.app.permissions.update,
       click: () => {
         opPopRef.value.hide();
         emits('edit');
@@ -44,14 +46,17 @@
     },
     {
       name: t('配置示例'),
+      perm: true,
       click: () => handleJump('configuration-example'),
     },
     {
       name: t('操作记录'),
+      perm: true,
       click: () => handleJump('records-app'),
     },
     {
       name: t('删除'),
+      perm: props.app.permissions.delete,
       click: () => {
         opPopRef.value.hide();
         emits('delete');
@@ -99,6 +104,10 @@
       line-height: 32px;
       color: #4d4f56;
       cursor: pointer;
+      .no-perm {
+        color: #c4c6cc;
+        cursor: not-allowed;
+      }
       &:hover {
         background: #f5f7fa;
       }
