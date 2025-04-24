@@ -20,7 +20,7 @@ import (
 )
 
 // nolint:funlen
-func initMetric(name string) *metric {
+func initMetric(name string, blacklistBizIds []uint32) *metric {
 	m := new(metric)
 	labels := prm.Labels{"name": name}
 	m.watchTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -141,6 +141,12 @@ func initMetric(name string) *metric {
 		}, versionChange)
 	metrics.Register().MustRegister(m.changeTotalSeconds)
 
+	black := make(map[uint32]struct{}, len(blacklistBizIds))
+	for _, id := range blacklistBizIds {
+		black[id] = struct{}{}
+	}
+	m.blacklist = black
+
 	return m
 }
 
@@ -170,6 +176,7 @@ type metric struct {
 	changeTotalFileSize *prometheus.HistogramVec
 	// 变更总耗时
 	changeTotalSeconds *prometheus.HistogramVec
+	blacklist          map[uint32]struct{}
 }
 
 // collectDownload collects metrics for download
@@ -177,4 +184,9 @@ func (m *metric) collectDownload(biz string, totalSize, delayRequests, delayMill
 	m.downloadTotalSize.With(prm.Labels{"bizID": biz}).Set(float64(totalSize))
 	m.downloadDelayRequests.With(prm.Labels{"bizID": biz}).Set(float64(delayRequests))
 	m.downloadDelayMilliseconds.With(prm.Labels{"bizID": biz}).Set(float64(delayMilliseconds))
+}
+
+func (m *metric) shouldReport(bizID uint32) bool {
+	_, exists := m.blacklist[bizID]
+	return !exists
 }
