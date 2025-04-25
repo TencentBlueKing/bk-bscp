@@ -118,9 +118,9 @@
 </script>
 <style lang="scss" scoped>
   .service-card {
+    flex: 1 1 0;
     position: relative;
-    width: 304px;
-    padding: 0px 8px 16px 8px;
+    min-width: 304px;
     &.no-view-perm {
       cursor: pointer;
       .card-content-wrapper {

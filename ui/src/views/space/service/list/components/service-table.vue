@@ -49,15 +49,18 @@
       </vxe-column>
       <vxe-column :title="$t('操作')" :width="locale === 'zh-cn' ? 200 : 260">
         <template #default="{ row }">
-          <div class="operation-wrap">
-            <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
-              {{ $t('配置管理') }}
-            </bk-button>
-            <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
-              {{ $t('客户端查询') }}
-            </bk-button>
-            <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
-          </div>
+          <template v-if="row.permissions.view">
+            <div class="operation-wrap">
+              <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
+                {{ $t('配置管理') }}
+              </bk-button>
+              <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
+                {{ $t('客户端查询') }}
+              </bk-button>
+              <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
+            </div>
+          </template>
+          <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm">{{ t('申请服务权限') }}</bk-button>
         </template>
       </vxe-column>
       <template #empty>
@@ -173,6 +176,22 @@
       };
       openPermApplyDialog(query);
     }
+  };
+
+  const applyViewPerm = (row: IAppItem) => {
+    const query = {
+      resources: [
+        {
+          biz_id: row.biz_id,
+          basic: {
+            type: 'app',
+            action: 'view',
+            resource_id: row.id,
+          },
+        },
+      ],
+    };
+    openPermApplyDialog(query);
   };
 
   const openPermApplyDialog = (query: { resources: IPermissionQueryResourceItem[] }) => {
