@@ -51,10 +51,14 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 		// client的状态比较特殊，不能实时同步
 		status := value.Audit.Status
 		detail := value.Audit.Detail
-		if value.Audit.ResourceType == string(enumor.Instance) &&
-			value.Client.ReleaseChangeStatus == string(table.Failed) {
-			status = string(enumor.Failure)
-			detail = value.Client.FailedDetailReason
+		if value.Audit.ResourceType == string(enumor.Instance) {
+			if value.Client.ReleaseChangeStatus == string(table.Failed) {
+				status = string(enumor.Failure)
+				detail = value.Client.FailedDetailReason
+			}
+			if value.Client.ReleaseChangeStatus == string(table.Processing) {
+				status = string(enumor.Processing)
+			}
 		}
 		details = append(details, &pbaudit.ListAuditsAppStrategy{
 			Audit: &pbaudit.Audit{

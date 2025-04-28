@@ -226,6 +226,8 @@ const (
 	HookName = "hook_name: %s"
 	// VariableName 变量名称
 	VariableName = "variable_name: %s"
+	// SetVariableName 设置变量名称
+	SetVariableName = "set_variable_name: %s"
 	// ConfigReleaseName 配置版本名称
 	ConfigReleaseName = "config_release_name: %s"
 	// ConfigReleaseScope 配置上线范围
