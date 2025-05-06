@@ -229,13 +229,19 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 
 	if len(req.Status) != 0 {
 		auditStatus := audit.WithContext(kit.Ctx).Where(audit.Status.In(req.Status...))
-		// 失败状态的数据需要特殊处理，在clients表
+		// 失败、处理中状态的数据需要特殊处理，在clients表
+		var status []string
 		for _, v := range req.Status {
 			if v == string(enumor.Failure) {
-				auditStatus.Or(client.ReleaseChangeStatus.Eq(string(table.Failed)))
-				// 前端可能传两个failure过来
-				break
+				status = append(status, string(table.Failed))
 			}
+
+			if v == string(enumor.Processing) {
+				status = append(status, string(table.Processing))
+			}
+		}
+		if len(status) != 0 {
+			auditStatus.Or(client.ReleaseChangeStatus.In(status...))
 		}
 		result = result.Where(auditStatus)
 	}
