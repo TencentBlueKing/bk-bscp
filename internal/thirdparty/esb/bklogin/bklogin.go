@@ -16,9 +16,11 @@ package bklogin
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
@@ -45,10 +47,14 @@ type bklogin struct {
 func (c *bklogin) IsLogin(ctx context.Context, bkToken string) (string, error) {
 	resp := new(IsLoginResp)
 
+	headers := http.Header{}
+	headers.Set(constant.BkTenantID, "default")
+
 	err := c.client.Get().
-		SubResourcef("/bk_login/is_login/").
+		SubResourcef("bk-login/prod/login/api/v3/open/bk-tokens/verify/").
 		WithContext(ctx).
 		WithParam("bk_token", bkToken).
+		WithHeaders(headers).
 		Do().Into(resp)
 	if err != nil {
 		return "", err
