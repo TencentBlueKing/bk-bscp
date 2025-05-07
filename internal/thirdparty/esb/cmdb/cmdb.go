@@ -61,6 +61,7 @@ func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*Se
 
 	h := http.Header{}
 	h.Set(constant.RidKey, uuid.UUID())
+	h.Set(constant.BkTenantID, "")
 
 	err := c.client.Post().
 		SubResourcef("/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account").

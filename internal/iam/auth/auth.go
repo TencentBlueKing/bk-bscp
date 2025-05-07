@@ -67,7 +67,7 @@ type Authorizer interface {
 	// LogOut handler will build login url, client should make redirect
 	LogOut(r *http.Request) *rest.UnauthorizedData
 	// HasBiz 业务是否存在
-	HasBiz(bizID uint32) bool
+	HasBiz(ctx context.Context, bizID uint32) bool
 }
 
 // NewAuthorizer create an authorizer for iam authorize related operation.
@@ -260,6 +260,6 @@ func (a authorizer) LogOut(r *http.Request) *rest.UnauthorizedData {
 }
 
 // HasBiz 业务是否存在
-func (a authorizer) HasBiz(bizID uint32) bool {
-	return a.spaceMgr.HasCMDBSpace(strconv.Itoa(int(bizID)))
+func (a authorizer) HasBiz(ctx context.Context, bizID uint32) bool {
+	return a.spaceMgr.HasCMDBSpace(ctx, strconv.Itoa(int(bizID)))
 }

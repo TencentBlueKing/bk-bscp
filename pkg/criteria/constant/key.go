@@ -21,6 +21,8 @@ const (
 
 	// RidKey is request id header key.
 	RidKey = "X-Bkapi-Request-Id"
+	// bkTenantID is bk tenant id header key.
+	BkTenantID = "X-Bk-Tenant-Id"
 	// RidKeyGeneric for generic header key
 	RidKeyGeneric = "X-Request-Id"
 

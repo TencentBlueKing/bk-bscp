@@ -507,7 +507,7 @@ func (s *Service) ListUserSpace(ctx context.Context, req *pbas.ListUserSpaceReq)
 	}
 
 	// 定期同步
-	spaceList := s.spaceMgr.AllSpaces()
+	spaceList := s.spaceMgr.AllSpaces(ctx)
 
 	items := make([]*pbas.Space, 0, len(spaceList))
 	for _, space := range spaceList {
@@ -531,7 +531,7 @@ func (s *Service) QuerySpace(ctx context.Context, req *pbas.QuerySpaceReq) (*pba
 		return &pbas.QuerySpaceResp{}, nil
 	}
 
-	spaceList, err := s.spaceMgr.QuerySpace(uidList)
+	spaceList, err := s.spaceMgr.QuerySpace(ctx, uidList)
 	if err != nil {
 		return nil, err
 	}
