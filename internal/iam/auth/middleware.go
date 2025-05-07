@@ -15,6 +15,7 @@ package auth
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,7 +35,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
-	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
@@ -172,14 +172,14 @@ func (a authorizer) WebAuthentication(webHost string) func(http.Handler) http.Ha
 					if errors.Is(err, errf.ErrPermissionDenied) {
 						msg := base64.StdEncoding.EncodeToString([]byte(errf.GetErrMsg(err)))
 						redirectURL := fmt.Sprintf("/403.html?msg=%s", url.QueryEscape(msg))
-						logs.Infof("web auth failed, redirect to 403 page, err: %v", err)
+						slog.Info("web auth failed, redirect to 403 page", "err", err)
 						http.Redirect(w, r, redirectURL, http.StatusFound)
 						return
 					}
 				}
 
 				// web类型做302跳转登入
-				logs.Infof("web auth failed, redirect to login page, err: %v", multiErr)
+				slog.Info("web auth failed, redirect to login page", "err", multiErr)
 				http.Redirect(w, r, a.authLoginClient.BuildLoginRedirectURL(r, webHost), http.StatusFound)
 				return
 			}
