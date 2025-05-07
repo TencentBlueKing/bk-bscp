@@ -44,7 +44,7 @@
           </div>
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('配置项值预览')" prop="spec.value">
+      <bk-table-column :label="t('配置项值预览')" prop="spec.value" :min-width="240">
         <template #default="{ row }">
           <kvValuePreview
             v-if="row.spec"
