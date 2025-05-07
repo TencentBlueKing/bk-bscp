@@ -74,7 +74,7 @@
     const url = router.resolve({
       name: 'records-app',
       query: {
-        action: 'publish_release_config',
+        action: 'publish',
       },
       params: {
         appId: route.params.appId,
@@ -90,7 +90,7 @@
     confirmData.value = {
       service: appData.value.spec.name || '--',
       version: versionData.value.spec?.name || '--',
-      group: group.length ? group : '--',
+      group: group.length ? group : 'ALL', // 空数组代表全量上线
       serviceId: 0,
       releaseId: 0,
       memo: '',

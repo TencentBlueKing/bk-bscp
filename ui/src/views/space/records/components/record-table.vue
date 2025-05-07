@@ -71,6 +71,7 @@
             }">
             <template #default="{ row }">
               <template v-if="row.audit?.spec.status">
+                <Spinner v-if="row.audit.spec.status === APPROVE_STATUS.pending_approval" class="spinner-icon" />
                 <div :class="['dot', ...setApprovalClass(row.audit.spec.status)]"></div>
                 {{ STATUS[row.audit.spec.status as keyof typeof STATUS] || '--' }}
                 <!-- 上线时间icon -->
@@ -819,6 +820,11 @@
     :deep(.bk-table-body) {
       max-height: calc(100vh - 280px);
       overflow: auto;
+    }
+    .spinner-icon {
+      font-size: 14px;
+      margin: 0 7px 0 1px;
+      color: #3a84ff;
     }
     .dot {
       margin-right: 8px;
