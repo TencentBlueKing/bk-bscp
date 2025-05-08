@@ -16,6 +16,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -456,6 +457,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, err
 	}
 
+	slog.Info("get user info", "username", tenant.BkUsername, "tenant_id", tenant.TenantID)
 	return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
 }
 
