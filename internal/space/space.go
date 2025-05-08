@@ -143,7 +143,7 @@ func (s *Manager) AllSpaces(ctx context.Context) []*Space {
 	if len(s.cachedSpace) != 0 {
 		return s.cachedSpace
 	}
-	defer s.mtx.Unlock()
+	s.mtx.Unlock()
 
 	if err := s.fetchAllSpace(ctx); err != nil {
 		slog.Error("fetch all space failed", "err", err)
