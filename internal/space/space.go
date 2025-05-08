@@ -16,6 +16,7 @@ package space
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ import (
 
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	esbcli "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 )
 
@@ -138,7 +140,12 @@ func (s *Manager) reset(ctx context.Context) {
 // AllSpaces 返回全量业务
 func (s *Manager) AllSpaces(ctx context.Context) []*Space {
 	s.mtx.Lock()
+	if len(s.cachedSpace) != 0 {
+		return s.cachedSpace
+	}
 	defer s.mtx.Unlock()
+
+	_ = s.fetchAllSpace(ctx)
 
 	return s.cachedSpace
 }
@@ -187,19 +194,20 @@ func (s *Manager) QuerySpace(ctx context.Context, spaceUidList []string) ([]*Spa
 
 // fetchAllSpace 获取全量业务列表
 func (s *Manager) fetchAllSpace(ctx context.Context) error {
-	bizList, err := s.client.Cmdb().ListAllBusiness(ctx)
+	slog.Info("leijioamin")
+	bizList, err := bkcmdb.ListAllBusiness(ctx)
 	if err != nil {
 		return err
 	}
 
-	if len(bizList.Info) == 0 {
+	if len(bizList) == 0 {
 		return fmt.Errorf("biz list is empty")
 	}
 
-	spaceList := make([]*Space, 0, len(bizList.Info))
-	cmdbSpaces := make(map[string]struct{}, len(bizList.Info))
+	spaceList := make([]*Space, 0, len(bizList))
+	cmdbSpaces := make(map[string]struct{}, len(bizList))
 
-	for _, biz := range bizList.Info {
+	for _, biz := range bizList {
 		bizID := strconv.FormatInt(biz.BizID, 10)
 		spaceList = append(spaceList, &Space{
 			SpaceId:       bizID,

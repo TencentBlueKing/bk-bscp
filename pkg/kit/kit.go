@@ -41,6 +41,7 @@ var (
 	lowRidKey         = strings.ToLower(constant.RidKey)
 	lowLangKey        = strings.ToLower(constant.LangKey)
 	lowUserKey        = strings.ToLower(constant.UserKey)
+	lowTenantKey      = strings.ToLower(constant.BkTenantID)
 	lowACKey          = strings.ToLower(constant.AppCodeKey)
 	lowSpaceIDKey     = strings.ToLower(constant.SpaceIDKey)
 	lowSpaceTypeIDKey = strings.ToLower(constant.SpaceTypeIDKey)
@@ -73,6 +74,11 @@ func FromGrpcContext(ctx context.Context) *Kit {
 	user := md[lowUserKey]
 	if len(user) != 0 {
 		kit.User = user[0]
+	}
+
+	tenantID := md[lowTenantKey]
+	if len(tenantID) != 0 {
+		kit.TenantID = tenantID[0]
 	}
 
 	appCode := md[lowACKey]
@@ -169,6 +175,7 @@ func (c *Kit) Clone() *Kit {
 	return &Kit{
 		Ctx:         c.Ctx,
 		User:        c.User,
+		TenantID:    c.TenantID,
 		Rid:         c.Rid,
 		Lang:        c.Lang,
 		AppCode:     c.AppCode,
@@ -206,6 +213,7 @@ func (c *Kit) RPCMetaData() metadata.MD {
 		constant.RidKey:         c.Rid,
 		constant.LangKey:        c.Lang,
 		constant.UserKey:        c.User,
+		constant.BkTenantID:     c.TenantID,
 		constant.AppCodeKey:     c.AppCode,
 		constant.SpaceIDKey:     c.SpaceID,
 		constant.SpaceTypeIDKey: c.SpaceTypeID,

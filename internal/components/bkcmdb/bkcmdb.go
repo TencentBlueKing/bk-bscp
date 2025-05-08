@@ -24,6 +24,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 )
 
+// Biz is cmdb biz info.
+type Biz struct {
+	BizID         int64  `json:"bk_biz_id"`
+	BizName       string `json:"bk_biz_name"`
+	BizMaintainer string `json:"bk_biz_maintainer"`
+}
+
 // SearchBusiness 组件化的函数
 func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResp, error) {
 	// bk_supplier_account 是无效参数, 占位用
@@ -59,4 +66,15 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 	}
 	return bizList, nil
 
+}
+
+// ListAllBusiness 获取所有业务列表
+func ListAllBusiness(ctx context.Context) ([]cmdb.Biz, error) {
+	params := &cmdb.SearchBizParams{}
+	bizList, err := SearchBusiness(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return bizList.SearchBizResult.Info, nil
 }
