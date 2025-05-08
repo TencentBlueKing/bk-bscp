@@ -86,7 +86,13 @@ func (b *bkPaaSAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 
 // VerifyToken 校验token
 func (b *bkPaaSAuthClient) GetTenantUserInfoByToken(ctx context.Context, uid, token string) (*TenantUserInfo, error) {
-	url := fmt.Sprintf("%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify", b.conf.Host)
+	u, err := url.Parse(b.conf.Host)
+	if err != nil {
+		return nil, err
+	}
+	// 使用网关域名
+	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
+
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetQueryParam("bk_token", token).
