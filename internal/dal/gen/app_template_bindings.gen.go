@@ -36,6 +36,7 @@ func newAppTemplateBinding(db *gorm.DB, opts ...gen.DOOption) appTemplateBinding
 	_appTemplateBinding.Bindings = field.NewField(tableName, "bindings")
 	_appTemplateBinding.BizID = field.NewUint32(tableName, "biz_id")
 	_appTemplateBinding.AppID = field.NewUint32(tableName, "app_id")
+	_appTemplateBinding.TenantID = field.NewString(tableName, "tenant_id")
 	_appTemplateBinding.Creator = field.NewString(tableName, "creator")
 	_appTemplateBinding.Reviser = field.NewString(tableName, "reviser")
 	_appTemplateBinding.CreatedAt = field.NewTime(tableName, "created_at")
@@ -59,6 +60,7 @@ type appTemplateBinding struct {
 	Bindings            field.Field
 	BizID               field.Uint32
 	AppID               field.Uint32
+	TenantID            field.String
 	Creator             field.String
 	Reviser             field.String
 	CreatedAt           field.Time
@@ -88,6 +90,7 @@ func (a *appTemplateBinding) updateTableName(table string) *appTemplateBinding {
 	a.Bindings = field.NewField(table, "bindings")
 	a.BizID = field.NewUint32(table, "biz_id")
 	a.AppID = field.NewUint32(table, "app_id")
+	a.TenantID = field.NewString(table, "tenant_id")
 	a.Creator = field.NewString(table, "creator")
 	a.Reviser = field.NewString(table, "reviser")
 	a.CreatedAt = field.NewTime(table, "created_at")
@@ -120,7 +123,7 @@ func (a *appTemplateBinding) GetFieldByName(fieldName string) (field.OrderExpr, 
 }
 
 func (a *appTemplateBinding) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 13)
+	a.fieldMap = make(map[string]field.Expr, 14)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["template_space_ids"] = a.TemplateSpaceIDs
 	a.fieldMap["template_set_ids"] = a.TemplateSetIDs
@@ -130,6 +133,7 @@ func (a *appTemplateBinding) fillFieldMap() {
 	a.fieldMap["bindings"] = a.Bindings
 	a.fieldMap["biz_id"] = a.BizID
 	a.fieldMap["app_id"] = a.AppID
+	a.fieldMap["tenant_id"] = a.TenantID
 	a.fieldMap["creator"] = a.Creator
 	a.fieldMap["reviser"] = a.Reviser
 	a.fieldMap["created_at"] = a.CreatedAt

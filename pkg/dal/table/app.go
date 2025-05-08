@@ -142,6 +142,7 @@ type AppSpec struct {
 	ApproveType      ApproveType `json:"approve_type" gorm:"approve_type"`
 	IsApprove        bool        `json:"is_approve" gorm:"is_approve"`
 	Approver         string      `json:"approver" gorm:"approver"`
+	TenantID         string      `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // ValidateCreate validate spec when created.
@@ -185,6 +186,10 @@ func (as *AppSpec) ValidateCreate(kit *kit.Kit) error {
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "unknown config type: %s", as.ConfigType))
 	}
 
+	if len(as.TenantID) == 0 {
+		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "tenant id is nil"))
+	}
+
 	return nil
 }
 
@@ -215,6 +220,10 @@ func (as *AppSpec) ValidateUpdate(kit *kit.Kit, configType ConfigType) error {
 	case Table:
 	default:
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "unknown config type: %s", as.ConfigType))
+	}
+
+	if len(as.TenantID) == 0 {
+		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "tenant id is nil"))
 	}
 
 	return nil

@@ -52,8 +52,9 @@ type KvSpec struct {
 
 // KvAttachment is a kv attachment
 type KvAttachment struct {
-	BizID uint32 `db:"biz_id" gorm:"column:biz_id"`
-	AppID uint32 `db:"app_id" gorm:"column:app_id"`
+	BizID    uint32 `db:"biz_id" gorm:"column:biz_id"`
+	AppID    uint32 `db:"app_id" gorm:"column:app_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the kv database table name.

@@ -41,6 +41,7 @@ const (
 	SpaceTypeIDKey = "X-Bkapi-Space-Type-Id"
 	BizIDKey       = "X-Bkapi-Biz-Id"
 	AppIDKey       = "X-Bkapi-App-Id"
+	TenantIDKey    = "X-Bkapi-Tenant-Id"
 
 	// LanguageKey the language key word.
 	LanguageKey = "HTTP_BLUEKING_LANGUAGE"
@@ -91,6 +92,8 @@ const (
 
 	// DefaultLanguage is default language
 	DefaultLanguage = "zh-cn"
+	// DefaultTenantID is default tenant id
+	DefaultTenantID = "default"
 )
 
 // Note:

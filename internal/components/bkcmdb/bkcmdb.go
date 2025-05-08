@@ -22,6 +22,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 )
 
 // SearchBusiness 组件化的函数
@@ -42,8 +43,9 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		},
 		SearchBizParams: params,
 	}
-
+	tenantId, _ := ctx.Value(constant.TenantIDKey).(string)
 	resp, err := components.GetClient().R().
+		SetHeader(constant.TenantIDKey, tenantId).
 		SetContext(ctx).
 		SetBody(req).
 		Post(url)

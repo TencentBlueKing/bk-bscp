@@ -315,6 +315,12 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		}
 
 		kt.OperateWay = r.Header.Get(constant.OperateWayKey)
+		tenantID := r.Header.Get(constant.TenantIDKey)
+		if len(tenantID) != 0 {
+			kt.TenantID = tenantID
+		} else {
+			kt.TenantID = constant.DefaultTenantID
+		}
 		ctx := kit.WithKit(r.Context(), kt)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
