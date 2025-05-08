@@ -131,6 +131,7 @@ func FromGrpcContext(ctx context.Context) *Kit {
 type User struct {
 	Username  string `json:"username"`
 	AvatarUrl string `json:"avatar_url"`
+	TenantID  string `json:"tenant_id"`
 }
 
 // Kit defines the basic metadata info within a task.
@@ -140,6 +141,9 @@ type Kit struct {
 
 	// User's name.
 	User string
+
+	// TenantID is user's tenant id.
+	TenantID string
 
 	// Rid is request id.
 	Rid string
