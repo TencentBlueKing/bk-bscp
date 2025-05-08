@@ -21,6 +21,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 )
 
@@ -34,7 +35,7 @@ type Biz struct {
 // SearchBusiness 组件化的函数
 func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResp, error) {
 	// bk_supplier_account 是无效参数, 占位用
-	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", config.G.Base.BKPaaSHost)
+	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", cc.AuthServer().Esb.APIGWHost())
 
 	// SearchBizParams is esb search cmdb business parameter.
 	type esbSearchBizParams struct {
@@ -51,8 +52,11 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		SearchBizParams: params,
 	}
 
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader("X-Bkapi-Authorization", authHeader).
+		SetHeader("X-Bk-Tenant-Id", "system").
 		SetBody(req).
 		Post(url)
 

@@ -886,6 +886,14 @@ type Esb struct {
 	BscpHost string    `yaml:"bscpHost"`
 }
 
+// GetHost 获取网关host地址
+func (s Esb) APIGWHost() string {
+	if len(s.Endpoints) > 0 {
+		return s.Endpoints[0]
+	}
+	return ""
+}
+
 // validate esb runtime.
 func (s Esb) validate() error {
 	if len(s.Endpoints) == 0 {
