@@ -40,6 +40,7 @@ func newReleasedHook(db *gorm.DB, opts ...gen.DOOption) releasedHook {
 	_releasedHook.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedHook.Reviser = field.NewString(tableName, "reviser")
 	_releasedHook.UpdatedAt = field.NewTime(tableName, "updated_at")
+	_releasedHook.TenantID = field.NewString(tableName, "tenant_id")
 
 	_releasedHook.fillFieldMap()
 
@@ -63,6 +64,7 @@ type releasedHook struct {
 	BizID            field.Uint32
 	Reviser          field.String
 	UpdatedAt        field.Time
+	TenantID         field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -92,6 +94,7 @@ func (r *releasedHook) updateTableName(table string) *releasedHook {
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.Reviser = field.NewString(table, "reviser")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
+	r.TenantID = field.NewString(table, "tenant_id")
 
 	r.fillFieldMap()
 
@@ -120,7 +123,7 @@ func (r *releasedHook) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (r *releasedHook) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 13)
+	r.fieldMap = make(map[string]field.Expr, 14)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["app_id"] = r.AppID
 	r.fieldMap["release_id"] = r.ReleaseID
@@ -134,6 +137,7 @@ func (r *releasedHook) fillFieldMap() {
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["reviser"] = r.Reviser
 	r.fieldMap["updated_at"] = r.UpdatedAt
+	r.fieldMap["tenant_id"] = r.TenantID
 }
 
 func (r releasedHook) clone(db *gorm.DB) releasedHook {

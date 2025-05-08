@@ -53,6 +53,7 @@ type Audit struct {
 	Status       enumor.AuditStatus       `db:"status" json:"status" gorm:"column:status"`
 	StrategyId   uint32                   `db:"strategy_id" json:"strategy_id" gorm:"column:strategy_id"`
 	IsCompare    bool                     `db:"is_compare" json:"is_compare" gorm:"column:is_compare"`
+	TenantID     string                   `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the audit's database table name.

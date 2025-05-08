@@ -35,6 +35,7 @@ func newRelease(db *gorm.DB, opts ...gen.DOOption) release {
 	_release.FullyReleased = field.NewBool(tableName, "fully_released")
 	_release.BizID = field.NewUint32(tableName, "biz_id")
 	_release.AppID = field.NewUint32(tableName, "app_id")
+	_release.TenantID = field.NewString(tableName, "tenant_id")
 	_release.Creator = field.NewString(tableName, "creator")
 	_release.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -55,6 +56,7 @@ type release struct {
 	FullyReleased field.Bool
 	BizID         field.Uint32
 	AppID         field.Uint32
+	TenantID      field.String
 	Creator       field.String
 	CreatedAt     field.Time
 
@@ -81,6 +83,7 @@ func (r *release) updateTableName(table string) *release {
 	r.FullyReleased = field.NewBool(table, "fully_released")
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.AppID = field.NewUint32(table, "app_id")
+	r.TenantID = field.NewString(table, "tenant_id")
 	r.Creator = field.NewString(table, "creator")
 	r.CreatedAt = field.NewTime(table, "created_at")
 
@@ -107,7 +110,7 @@ func (r *release) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *release) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 10)
+	r.fieldMap = make(map[string]field.Expr, 11)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["name"] = r.Name
 	r.fieldMap["memo"] = r.Memo
@@ -116,6 +119,7 @@ func (r *release) fillFieldMap() {
 	r.fieldMap["fully_released"] = r.FullyReleased
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["app_id"] = r.AppID
+	r.fieldMap["tenant_id"] = r.TenantID
 	r.fieldMap["creator"] = r.Creator
 	r.fieldMap["created_at"] = r.CreatedAt
 }

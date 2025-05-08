@@ -20,6 +20,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 )
 
 type registerSystemResp struct {
@@ -58,9 +59,10 @@ func RegisterSystem(ctx context.Context) error {
 
 	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
 		cc.ApiServer().Esb.AppCode, cc.ApiServer().Esb.AppSecret)
-
+	tenantId, _ := ctx.Value(constant.TenantIDKey).(string)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.TenantIDKey, tenantId).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		Post(url)
 
@@ -88,9 +90,10 @@ func GetCurrentAnnouncements(ctx context.Context, lang string) ([]Announcement, 
 
 	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
 		cc.ApiServer().Esb.AppCode, cc.ApiServer().Esb.AppSecret)
-
+	tenantId, _ := ctx.Value(constant.TenantIDKey).(string)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.TenantIDKey, tenantId).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		Get(url)
 

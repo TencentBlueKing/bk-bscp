@@ -61,7 +61,8 @@ func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*Se
 
 	h := http.Header{}
 	h.Set(constant.RidKey, uuid.UUID())
-
+	tenantId, _ := ctx.Value(constant.TenantIDKey).(string)
+	h.Set(constant.TenantIDKey, tenantId)
 	err := c.client.Post().
 		SubResourcef("/cc/search_business/").
 		WithContext(ctx).

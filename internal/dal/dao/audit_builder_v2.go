@@ -58,6 +58,7 @@ func initAuditBuilder(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *audi
 			StrategyId:  au.StrategyId,
 			IsCompare:   au.IsCompare,
 			Detail:      au.Detail,
+			TenantID:    kit.TenantID,
 		},
 		ad:    ad,
 		bizID: bizID,
@@ -80,6 +81,10 @@ func initAuditBuilder(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *audi
 
 	if len(kit.User) == 0 {
 		ab.hitErr = errors.New("invalid audit operator")
+	}
+
+	if len(kit.TenantID) == 0 {
+		ab.hitErr = errors.New("invalid audit tenant id")
 	}
 
 	return ab

@@ -38,6 +38,7 @@ func newReleasedKv(db *gorm.DB, opts ...gen.DOOption) releasedKv {
 	_releasedKv.CertificateExpirationDate = field.NewTime(tableName, "certificate_expiration_date")
 	_releasedKv.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedKv.AppID = field.NewUint32(tableName, "app_id")
+	_releasedKv.TenantID = field.NewString(tableName, "tenant_id")
 	_releasedKv.Creator = field.NewString(tableName, "creator")
 	_releasedKv.Reviser = field.NewString(tableName, "reviser")
 	_releasedKv.CreatedAt = field.NewTime(tableName, "created_at")
@@ -66,6 +67,7 @@ type releasedKv struct {
 	CertificateExpirationDate field.Time
 	BizID                     field.Uint32
 	AppID                     field.Uint32
+	TenantID                  field.String
 	Creator                   field.String
 	Reviser                   field.String
 	CreatedAt                 field.Time
@@ -100,6 +102,7 @@ func (r *releasedKv) updateTableName(table string) *releasedKv {
 	r.CertificateExpirationDate = field.NewTime(table, "certificate_expiration_date")
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.AppID = field.NewUint32(table, "app_id")
+	r.TenantID = field.NewString(table, "tenant_id")
 	r.Creator = field.NewString(table, "creator")
 	r.Reviser = field.NewString(table, "reviser")
 	r.CreatedAt = field.NewTime(table, "created_at")
@@ -133,7 +136,7 @@ func (r *releasedKv) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *releasedKv) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 18)
+	r.fieldMap = make(map[string]field.Expr, 19)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["release_id"] = r.ReleaseID
 	r.fieldMap["key"] = r.Key
@@ -145,6 +148,7 @@ func (r *releasedKv) fillFieldMap() {
 	r.fieldMap["certificate_expiration_date"] = r.CertificateExpirationDate
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["app_id"] = r.AppID
+	r.fieldMap["tenant_id"] = r.TenantID
 	r.fieldMap["creator"] = r.Creator
 	r.fieldMap["reviser"] = r.Reviser
 	r.fieldMap["created_at"] = r.CreatedAt

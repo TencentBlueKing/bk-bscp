@@ -37,8 +37,9 @@ type ClientQuerySpec struct {
 
 // ClientQueryAttachment is a client query attachment
 type ClientQueryAttachment struct {
-	BizID uint32 `gorm:"column:biz_id"`
-	AppID uint32 `gorm:"column:app_id"`
+	BizID    uint32 `gorm:"column:biz_id"`
+	AppID    uint32 `gorm:"column:app_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // SearchType define the search type structure

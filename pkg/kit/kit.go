@@ -47,6 +47,7 @@ var (
 	lowBizIDKey       = strings.ToLower(constant.BizIDKey)
 	lowAppIDKey       = strings.ToLower(constant.AppIDKey)
 	lowOperateWayKey  = strings.ToLower(constant.OperateWayKey)
+	lowTenantIDKey    = strings.ToLower(constant.TenantIDKey)
 )
 
 // FromGrpcContext used only to obtain Kit through grpc context.
@@ -90,6 +91,13 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		kit.SpaceTypeID = spaceTypeID[0]
 	}
 
+	tenantID := md[lowTenantIDKey]
+	if len(tenantID) != 0 {
+		kit.TenantID = tenantID[0]
+	} else {
+		kit.TenantID = constant.DefaultTenantID
+	}
+
 	bizIDs := md[lowBizIDKey]
 	if len(bizIDs) != 0 {
 		bizID, err := strconv.ParseUint(bizIDs[0], 10, 64)
@@ -99,7 +107,6 @@ func FromGrpcContext(ctx context.Context) *Kit {
 			kit.BizID = uint32(bizID)
 		}
 	}
-
 	appIDs := md[lowAppIDKey]
 	if len(appIDs) != 0 {
 		appID, err := strconv.ParseUint(appIDs[0], 10, 64)
@@ -121,7 +128,8 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		kit.BizID = ctxBizID
 	}
 
-	kit.Ctx = context.WithValue(kit.Ctx, constant.RidKey, rid) //nolint
+	kit.Ctx = context.WithValue(kit.Ctx, constant.RidKey, rid)               //nolint
+	kit.Ctx = context.WithValue(kit.Ctx, constant.TenantIDKey, kit.TenantID) //nolint
 
 	// Note: need to add supplier id and authorization field.
 	return kit
@@ -154,6 +162,7 @@ type Kit struct {
 	AppCode     string
 	AppID       uint32 // 对应的应用ID
 	BizID       uint32 // 对应的业务ID
+	TenantID    string // 对应的租户ID
 	SpaceID     string // 应用对应的SpaceID
 	SpaceTypeID string // 应用对应的SpaceTypeID
 	TmplSpaceID uint32 // 配置模版对应的TemplateSpaceID
@@ -208,6 +217,7 @@ func (c *Kit) RPCMetaData() metadata.MD {
 		constant.BizIDKey:       strconv.FormatUint(uint64(c.BizID), 10),
 		constant.AppIDKey:       strconv.FormatUint(uint64(c.AppID), 10),
 		constant.OperateWayKey:  c.OperateWay,
+		constant.TenantIDKey:    c.TenantID,
 	}
 
 	md := metadata.New(m)
