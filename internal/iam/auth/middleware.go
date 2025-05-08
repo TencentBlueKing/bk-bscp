@@ -94,6 +94,7 @@ func (a authorizer) initKitWithCookie(r *http.Request, k *kit.Kit, multiErr *mul
 	// 登入态只支持用户名
 	k.User = resp.Username
 	k.TenantID = resp.TenantId
+	k.BkToken = loginCred.Token
 	return true
 }
 

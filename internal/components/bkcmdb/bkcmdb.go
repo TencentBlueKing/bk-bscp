@@ -23,6 +23,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // Biz is cmdb biz info.
@@ -52,7 +53,12 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		SearchBizParams: params,
 	}
 
-	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+	kit := kit.FromGrpcContext(ctx)
+	authHeader := components.MakeBKAPIGWAuthHeader(
+		cc.AuthServer().Esb.AppCode,
+		cc.AuthServer().Esb.AppSecret,
+		components.WithBkToken(kit.BkToken),
+	)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetHeader("X-Bkapi-Authorization", authHeader).

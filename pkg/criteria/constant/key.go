@@ -50,6 +50,8 @@ const (
 	// BKGWJWTTokenKey is blueking api gateway jwt header key.
 	BKGWJWTTokenKey = "X-Bkapi-JWT" //nolint
 
+	// BkToken is bk token header key.
+	BkToken = "X-Bk-Token" // nolint:gosec
 	// BKTokenForTest is a token for test
 	BKTokenForTest = "bk-token-for-test" //nolint:gosec
 

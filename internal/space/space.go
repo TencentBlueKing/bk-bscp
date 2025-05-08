@@ -16,7 +16,6 @@ package space
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -194,7 +193,6 @@ func (s *Manager) QuerySpace(ctx context.Context, spaceUidList []string) ([]*Spa
 
 // fetchAllSpace 获取全量业务列表
 func (s *Manager) fetchAllSpace(ctx context.Context) error {
-	slog.Info("leijioamin")
 	bizList, err := bkcmdb.ListAllBusiness(ctx)
 	if err != nil {
 		return err
