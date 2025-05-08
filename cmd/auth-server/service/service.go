@@ -429,23 +429,24 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 	}
 
 	// 优先使用 InnerHost
-	host := cc.AuthServer().LoginAuth.Host
-	if cc.AuthServer().LoginAuth.InnerHost != "" {
-		host = cc.AuthServer().LoginAuth.InnerHost
-	}
+	// host := cc.AuthServer().LoginAuth.Host
+	// if cc.AuthServer().LoginAuth.InnerHost != "" {
+	// 	host = cc.AuthServer().LoginAuth.InnerHost
+	// }
 
 	conf := cc.AuthServer().LoginAuth
 	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
 
 	var (
-		username string
-		err      error
+		// username string
+		err    error
+		tenant *bkpaas.TenantUserInfo
 	)
 
 	if cc.AuthServer().LoginAuth.UseESB && cc.AuthServer().LoginAuth.Provider != bkpaas.BKLoginProvider {
-		username, err = s.client.Esb.BKLogin().IsLogin(ctx, token)
+		tenant, err = authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
 	} else {
-		username, err = authLoginClient.GetUserInfoByToken(ctx, host, req.GetUid(), token)
+		tenant, err = authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
 	}
 
 	if err != nil {
@@ -455,7 +456,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, err
 	}
 
-	return &pbas.UserInfoResp{Username: username, AvatarUrl: ""}, nil
+	return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
 }
 
 // ListUserSpaceAnnotation list user space permission annotations

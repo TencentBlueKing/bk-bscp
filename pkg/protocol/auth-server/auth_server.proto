@@ -230,6 +230,7 @@ message UserCredentialReq {
 message UserInfoResp {
   string username = 1;
   string avatar_url = 2;
+  string tenant_id = 3;
 }
 
 message ListUserSpaceReq {

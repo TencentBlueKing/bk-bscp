@@ -96,3 +96,28 @@ func (b *bkLoginAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 	loginPlainURL := fmt.Sprintf("%s/plain/?c_url=", b.conf.Host)
 	return loginURL, loginPlainURL
 }
+
+// VerifyToken 校验token
+func (b *bkLoginAuthClient) GetTenantUserInfoByToken(ctx context.Context, uid, token string) (*TenantUserInfo, error) {
+	url := fmt.Sprintf("%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify", b.conf.Host)
+	resp, err := components.GetClient().R().
+		SetContext(ctx).
+		SetQueryParam("bk_token", token).
+		SetHeader("X-Bk-Tenant-Id", "default").
+		Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return nil, errors.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+	}
+
+	info := new(TenantUserInfo)
+	if err := json.Unmarshal(resp.Body(), info); err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}

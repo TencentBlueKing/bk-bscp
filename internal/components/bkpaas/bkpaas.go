@@ -34,10 +34,17 @@ type LoginCredential struct {
 	Token string
 }
 
+// TenantUserInfo 用户信息
+type TenantUserInfo struct {
+	BkUsername string `json:"bk_username"`
+	TenantID   string `json:"tenant_id"`
+}
+
 // AuthLoginClient 登入鉴权
 type AuthLoginClient interface {
 	GetLoginCredentialFromCookies(r *http.Request) (*LoginCredential, error)
 	GetUserInfoByToken(ctx context.Context, host, uid, token string) (string, error)
+	GetTenantUserInfoByToken(ctx context.Context, uid, token string) (*TenantUserInfo, error)
 	BuildLoginRedirectURL(r *http.Request, webHost string) string
 	BuildLoginURL(r *http.Request) (string, string)
 }
