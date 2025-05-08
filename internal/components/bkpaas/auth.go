@@ -92,9 +92,12 @@ func (b *bkPaaSAuthClient) GetTenantUserInfoByToken(ctx context.Context, uid, to
 	// 使用网关域名
 	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
 
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetQueryParam("bk_token", token).
+		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetHeader("X-Bk-Tenant-Id", "default").
 		Get(url)
 
