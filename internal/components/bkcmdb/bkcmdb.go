@@ -15,7 +15,6 @@ package bkcmdb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
@@ -71,8 +70,7 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 	}
 
 	bizRes := new(cmdb.SearchBizResult)
-	bkResult := &components.BKResult{Data: bizRes}
-	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
+	if err := components.UnmarshalBKResult(resp, bizRes); err != nil {
 		return nil, err
 	}
 
