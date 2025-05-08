@@ -110,8 +110,13 @@ func (b *bkPaaSAuthClient) GetTenantUserInfoByToken(ctx context.Context, uid, to
 	}
 
 	info := new(TenantUserInfo)
-	if err := json.Unmarshal(resp.Body(), info); err != nil {
+	bkResult := &components.BKResult{Data: info}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
 		return nil, err
+	}
+
+	if info.BkUsername == "" {
+		return nil, fmt.Errorf("bk_username not found in response: %s", resp.Body())
 	}
 
 	return info, nil
