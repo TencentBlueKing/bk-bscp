@@ -16,6 +16,7 @@ package space
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -144,7 +145,9 @@ func (s *Manager) AllSpaces(ctx context.Context) []*Space {
 	}
 	defer s.mtx.Unlock()
 
-	_ = s.fetchAllSpace(ctx)
+	if err := s.fetchAllSpace(ctx); err != nil {
+		slog.Error("fetch all space failed", "err", err)
+	}
 
 	return s.cachedSpace
 }
