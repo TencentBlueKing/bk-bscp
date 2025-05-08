@@ -51,7 +51,7 @@ func (c *bklogin) IsLogin(ctx context.Context, bkToken string) (string, error) {
 	headers.Set(constant.BkTenantID, "default")
 
 	err := c.client.Get().
-		SubResourcef("bk-login/prod/login/api/v3/open/bk-tokens/verify/").
+		SubResourcef("/bk-login/prod/login/api/v3/open/bk-tokens/verify/").
 		WithContext(ctx).
 		WithParam("bk_token", bkToken).
 		WithHeaders(headers).
