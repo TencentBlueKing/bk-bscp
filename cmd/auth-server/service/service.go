@@ -458,7 +458,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 	}
 
 	slog.Info("get user info", "username", tenant.BkUsername, "tenant_id", tenant.TenantID)
-	return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
+	return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: "system"}, nil
 }
 
 // ListUserSpaceAnnotation list user space permission annotations
