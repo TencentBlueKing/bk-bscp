@@ -139,12 +139,6 @@ func (s *Manager) reset(ctx context.Context) {
 
 // AllSpaces 返回全量业务
 func (s *Manager) AllSpaces(ctx context.Context) []*Space {
-	s.mtx.Lock()
-	if len(s.cachedSpace) != 0 {
-		return s.cachedSpace
-	}
-	s.mtx.Unlock()
-
 	if err := s.fetchAllSpace(ctx); err != nil {
 		slog.Error("fetch all space failed", "err", err)
 	}

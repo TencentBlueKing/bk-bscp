@@ -61,7 +61,7 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetHeader("X-Bkapi-Authorization", authHeader).
-		SetHeader("X-Bk-Tenant-Id", "system").
+		SetHeader("X-Bk-Tenant-Id", kit.TenantID).
 		SetBody(req).
 		Post(url)
 
