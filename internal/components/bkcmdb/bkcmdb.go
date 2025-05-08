@@ -34,7 +34,7 @@ type Biz struct {
 }
 
 // SearchBusiness 组件化的函数
-func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResp, error) {
+func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
 	// bk_supplier_account 是无效参数, 占位用
 	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", cc.AuthServer().Esb.APIGWHost())
 
@@ -70,21 +70,22 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		return nil, err
 	}
 
-	bizList := &cmdb.SearchBizResp{}
-	if err := json.Unmarshal(resp.Body(), bizList); err != nil {
+	bizRes := new(cmdb.SearchBizResult)
+	bkResult := &components.BKResult{Data: bizRes}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
 		return nil, err
 	}
-	return bizList, nil
 
+	return bizRes, nil
 }
 
 // ListAllBusiness 获取所有业务列表
 func ListAllBusiness(ctx context.Context) ([]cmdb.Biz, error) {
 	params := &cmdb.SearchBizParams{}
-	bizList, err := SearchBusiness(ctx, params)
+	bizRes, err := SearchBusiness(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	return bizList.SearchBizResult.Info, nil
+	return bizRes.Info, nil
 }
