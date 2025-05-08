@@ -15,11 +15,10 @@ package bkpaas
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"github.com/pkg/errors"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -69,7 +68,7 @@ func (b *bkLoginAuthClient) GetUserInfoByToken(ctx context.Context, host, uid, t
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return "", errors.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+		return "", fmt.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
 	}
 
 	result := new(bkLoginResult)
@@ -78,7 +77,7 @@ func (b *bkLoginAuthClient) GetUserInfoByToken(ctx context.Context, host, uid, t
 	}
 
 	if result.Code != 0 {
-		return "", errors.Errorf("ret code %d != 0, body: %s", result.Code, resp.Body())
+		return "", fmt.Errorf("ret code %d != 0, body: %s", result.Code, resp.Body())
 	}
 
 	return uid, nil
@@ -95,4 +94,42 @@ func (b *bkLoginAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 	loginURL := fmt.Sprintf("%s/?c_url=", b.conf.Host)
 	loginPlainURL := fmt.Sprintf("%s/plain/?c_url=", b.conf.Host)
 	return loginURL, loginPlainURL
+}
+
+// VerifyToken 校验token
+func (b *bkLoginAuthClient) GetTenantUserInfoByToken(ctx context.Context, uid, token string) (*TenantUserInfo, error) {
+	u, err := url.Parse(b.conf.Host)
+	if err != nil {
+		return nil, fmt.Errorf("parse host: %w", err)
+	}
+	// 使用网关域名
+	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
+
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+	resp, err := components.GetClient().R().
+		SetContext(ctx).
+		SetQueryParam("bk_token", token).
+		SetHeader("X-Bkapi-Authorization", authHeader).
+		SetHeader("X-Bk-Tenant-Id", "default").
+		Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+	}
+
+	info := new(TenantUserInfo)
+	bkResult := &components.BKResult{Data: info}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
+		return nil, err
+	}
+
+	if info.BkUsername == "" {
+		return nil, fmt.Errorf("bk_username not found in response: %s", resp.Body())
+	}
+
+	return info, nil
 }

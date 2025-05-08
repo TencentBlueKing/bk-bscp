@@ -398,7 +398,7 @@ func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]s
 		switch resType {
 		case sys.Business:
 			for _, id := range ids {
-				space, err := a.spaceMgr.GetSpaceByUID(id)
+				space, err := a.spaceMgr.GetSpaceByUID(kt.Ctx, id)
 				if err != nil {
 					return nil, err
 				}

@@ -188,6 +188,23 @@ func GetClient() *resty.Client {
 	return globalClient
 }
 
+// BKAuth 蓝鲸鉴权信息
+type BKAPIGWAuth struct {
+	AppCode   string `json:"bk_app_code"`
+	AppSecret string `json:"bk_app_secret"`
+}
+
+// MakeBKAPIGWAuthHeader 生成蓝鲸网关鉴权头部
+func MakeBKAPIGWAuthHeader(appCode, appSecret string) string {
+	auth := &BKAPIGWAuth{
+		AppCode:   appCode,
+		AppSecret: appSecret,
+	}
+
+	authBytes, _ := json.Marshal(auth)
+	return string(authBytes)
+}
+
 // BKResult 蓝鲸返回规范的结构体
 type BKResult struct {
 	Code    interface{} `json:"code"`

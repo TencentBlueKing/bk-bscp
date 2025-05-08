@@ -10,16 +10,39 @@
  * limitations under the License.
  */
 
-// main ...
-package main
+// Package logger 提供日志功能
+package logger
 
 import (
-	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
-	"github.com/TencentBlueKing/bk-bscp/internal/logger"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strconv"
 )
 
-func main() {
-	logger.Init()
+// Init 初始化 slog
+func Init() {
+	textHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       slog.LevelInfo,
+		ReplaceAttr: ReplaceSourceAttr,
+	})
 
-	_ = rootCmd.Execute()
+	logger := slog.New(textHandler)
+	slog.SetDefault(logger)
+}
+
+// ReplaceSourceAttr source 格式化为 dir/file:line 格式
+func ReplaceSourceAttr(groups []string, a slog.Attr) slog.Attr {
+	if a.Key != slog.SourceKey {
+		return a
+	}
+
+	src, ok := a.Value.Any().(*slog.Source)
+	if !ok {
+		return a
+	}
+
+	a.Value = slog.StringValue(filepath.Base(src.File) + ":" + strconv.Itoa(src.Line))
+	return a
 }

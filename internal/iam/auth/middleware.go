@@ -15,6 +15,7 @@ package auth
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -171,12 +172,14 @@ func (a authorizer) WebAuthentication(webHost string) func(http.Handler) http.Ha
 					if errors.Is(err, errf.ErrPermissionDenied) {
 						msg := base64.StdEncoding.EncodeToString([]byte(errf.GetErrMsg(err)))
 						redirectURL := fmt.Sprintf("/403.html?msg=%s", url.QueryEscape(msg))
+						slog.Info("web auth failed, redirect to 403 page", "err", err)
 						http.Redirect(w, r, redirectURL, http.StatusFound)
 						return
 					}
 				}
 
 				// web类型做302跳转登入
+				slog.Info("web auth failed, redirect to login page", "err", multiErr)
 				http.Redirect(w, r, a.authLoginClient.BuildLoginRedirectURL(r, webHost), http.StatusFound)
 				return
 			}
@@ -301,7 +304,7 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		}
 		kt.BizID = uint32(bizID)
 
-		if !a.HasBiz(uint32(bizID)) {
+		if !a.HasBiz(r.Context(), uint32(bizID)) {
 			err := fmt.Errorf("biz id %d does not exist", bizID)
 			render.Render(w, r, rest.BadRequest(err))
 			return

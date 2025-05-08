@@ -26,7 +26,8 @@ import (
 
 // SearchBusiness 组件化的函数
 func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResp, error) {
-	url := fmt.Sprintf("%s/api/c/compapi/v2/cc/search_business/", config.G.Base.BKPaaSHost)
+	// bk_supplier_account 是无效参数, 占位用
+	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", config.G.Base.BKPaaSHost)
 
 	// SearchBizParams is esb search cmdb business parameter.
 	type esbSearchBizParams struct {
