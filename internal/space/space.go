@@ -149,6 +149,9 @@ func (s *Manager) AllSpaces(ctx context.Context) []*Space {
 		slog.Error("fetch all space failed", "err", err)
 	}
 
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
 	return s.cachedSpace
 }
 
