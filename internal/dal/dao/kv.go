@@ -160,11 +160,6 @@ func (dao *kvDao) CountNumberUnDeleted(kit *kit.Kit, bizID uint32, opt *types.Li
 	m := dao.genQ.Kv
 	q := dao.genQ.Kv.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(opt.AppID),
 		m.KvState.Neq(table.KvStateDelete.String()))
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		q = q.Where(q.Where(q.Or(m.Key.Regexp(searchKey)).Or(m.Creator.Regexp(searchKey)).Or(
-			m.Reviser.Regexp(searchKey))))
-	}
 
 	if len(opt.Status) != 0 {
 		q = q.Where(m.KvState.In(opt.Status...))
