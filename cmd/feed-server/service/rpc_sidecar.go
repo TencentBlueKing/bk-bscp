@@ -1069,6 +1069,9 @@ func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
 }
 
 func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resource sfs.ResourceUsage) {
+	if !s.mc.shouldReport(bizID) {
+		return
+	}
 	s.mc.clientMaxCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuMaxUsage)
 	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
 	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
@@ -1077,6 +1080,9 @@ func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resou
 
 // 暴露客户端版本变更事件到metrics
 func (s *Service) clientEventChangeRecord(basicData *sfs.BasicData, appMeta *sfs.SideAppMeta) {
+	if !s.mc.shouldReport(basicData.BizID) {
+		return
+	}
 	if basicData == nil && appMeta == nil {
 		return
 	}

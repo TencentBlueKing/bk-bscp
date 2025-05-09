@@ -1156,6 +1156,11 @@ type RateLimiter struct {
 	IP              BasicRL `yaml:"ip"`
 }
 
+// metrics 上报时过滤的业务名单
+type Metric struct {
+	BlacklistBizIDs []uint32 `yaml:"blacklistBizIds"`
+}
+
 // BizRLs defines the rate limiters for biz
 type BizRLs struct {
 	Default BasicRL          `yaml:"default"`
