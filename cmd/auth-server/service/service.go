@@ -434,7 +434,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 
 	// 多租户模式
 	if cc.AuthServer().FeatureFlags.EnableMultiTenantMode {
-		tenant, err := authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
+		tenant, err := authLoginClient.GetTenantUserInfoByToken(ctx, token)
 		if err != nil {
 			if errors.Is(err, errf.ErrPermissionDenied) {
 				return nil, status.New(codes.PermissionDenied, errf.GetErrMsg(err)).Err()

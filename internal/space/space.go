@@ -98,7 +98,7 @@ func NewSpaceMgr(ctx context.Context, client esbcli.Client) (*Manager, error) {
 }
 
 // run 定时刷新全量业务信息
-func (s *Manager) run(ctx context.Context) {
+func (s *Manager) run(ctx context.Context) { // nolint
 	ticker := time.NewTicker(10 * time.Minute)
 
 	go func() {
@@ -158,7 +158,7 @@ func (s *Manager) AllCMDBSpaces(ctx context.Context) map[string]struct{} {
 }
 
 // reqCMDBSpaces 返回请求过的CMDB空间
-func (s *Manager) reqCMDBSpaces(ctx context.Context) map[string]struct{} {
+func (s *Manager) reqCMDBSpaces(_ context.Context) map[string]struct{} {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 

@@ -47,7 +47,7 @@ type TenantUserInfo struct {
 type AuthLoginClient interface {
 	GetLoginCredentialFromCookies(r *http.Request) (*LoginCredential, error)
 	GetUserInfoByToken(ctx context.Context, host, uid, token string) (string, error)
-	GetTenantUserInfoByToken(ctx context.Context, uid, token string) (*TenantUserInfo, error)
+	GetTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInfo, error)
 	BuildLoginRedirectURL(r *http.Request, webHost string) string
 	BuildLoginURL(r *http.Request) (string, string)
 }
@@ -71,7 +71,7 @@ func buildAbsoluteUri(webHost string, r *http.Request) string {
 }
 
 // getTenantUserInfoByToken 获取租户用户信息
-func getTenantUserInfoByToken(ctx context.Context, host, uid, token string) (*TenantUserInfo, error) {
+func getTenantUserInfoByToken(ctx context.Context, host, token string) (*TenantUserInfo, error) {
 	u, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("parse host: %w", err)
