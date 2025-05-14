@@ -429,25 +429,39 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, errors.New("token not provided")
 	}
 
-	// 优先使用 InnerHost
-	// host := cc.AuthServer().LoginAuth.Host
-	// if cc.AuthServer().LoginAuth.InnerHost != "" {
-	// 	host = cc.AuthServer().LoginAuth.InnerHost
-	// }
-
 	conf := cc.AuthServer().LoginAuth
 	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
 
+	if cc.AuthServer().FeatureFlags.EnableMultiTenantMode {
+		tenant, err := authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
+		if err != nil {
+			if errors.Is(err, errf.ErrPermissionDenied) {
+				return nil, status.New(codes.PermissionDenied, errf.GetErrMsg(err)).Err()
+			}
+			return nil, err
+		}
+
+		slog.Info("get user info success in MultiTenantMode", "username", tenant.BkUsername, "tenant_id", tenant.TenantID)
+		return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
+
+	}
+
+	// 优先使用 InnerHost
+	host := cc.AuthServer().LoginAuth.Host
+	if cc.AuthServer().LoginAuth.InnerHost != "" {
+		host = cc.AuthServer().LoginAuth.InnerHost
+	}
+
 	var (
-		// username string
-		err    error
-		tenant *bkpaas.TenantUserInfo
+		username string
+		err      error
 	)
 
 	if cc.AuthServer().LoginAuth.UseESB && cc.AuthServer().LoginAuth.Provider != bkpaas.BKLoginProvider {
-		tenant, err = authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
+		username, err = s.client.Esb.BKLogin().IsLogin(ctx, token)
+
 	} else {
-		tenant, err = authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
+		username, err = authLoginClient.GetUserInfoByToken(ctx, host, req.GetUid(), token)
 	}
 
 	if err != nil {
@@ -457,8 +471,8 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, err
 	}
 
-	slog.Info("get user info", "username", tenant.BkUsername, "tenant_id", tenant.TenantID)
-	return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
+	slog.Info("get user info success", "username", username)
+	return &pbas.UserInfoResp{Username: username, AvatarUrl: ""}, nil
 }
 
 // ListUserSpaceAnnotation list user space permission annotations
