@@ -41,6 +41,8 @@ const (
 
 // FeatureFlags 特性配置
 type FeatureFlags struct {
+	// EnableMultiTenantMode 是否开启多租户模式
+	EnableMultiTenantMode bool `json:"enableMultiTenantMode" yaml:"enableMultiTenantMode"`
 	// BizView 业务白名单
 	BizView FeatureBizView `json:"biz_view" yaml:"BIZ_VIEW"`
 	// ResourceLimit 业务资源限制

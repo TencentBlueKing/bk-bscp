@@ -126,13 +126,14 @@ func (s ApiServerSetting) Validate() error {
 
 // AuthServerSetting defines auth server used setting options.
 type AuthServerSetting struct {
-	Network    Network           `yaml:"network"`
-	Service    Service           `yaml:"service"`
-	Log        LogOption         `yaml:"log"`
-	LoginAuth  LoginAuthSettings `yaml:"loginAuth"`
-	IAM        IAM               `yaml:"iam"`
-	Esb        Esb               `yaml:"esb"`
-	ApiGateway ApiGateway        `yaml:"apiGateway"`
+	Network      Network           `yaml:"network"`
+	Service      Service           `yaml:"service"`
+	Log          LogOption         `yaml:"log"`
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	ApiGateway   ApiGateway        `yaml:"apiGateway"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
 }
 
 // LoginAuthSettings login conf
