@@ -15,9 +15,12 @@ package bkpaas
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
@@ -65,4 +68,43 @@ func buildAbsoluteUri(webHost string, r *http.Request) string {
 	}
 
 	return fmt.Sprintf("%s%s", webHost, r.RequestURI)
+}
+
+// getTenantUserInfoByToken 获取租户用户信息
+func getTenantUserInfoByToken(ctx context.Context, host, uid, token string) (*TenantUserInfo, error) {
+	u, err := url.Parse(host)
+	if err != nil {
+		return nil, fmt.Errorf("parse host: %w", err)
+	}
+
+	// 使用网关域名
+	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
+
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+	resp, err := components.GetClient().R().
+		SetContext(ctx).
+		SetQueryParam("bk_token", token).
+		SetHeader("X-Bkapi-Authorization", authHeader).
+		SetHeader("X-Bk-Tenant-Id", "default"). // 鉴权是没有租户信息, 使用默认租户
+		Get(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+	}
+
+	info := new(TenantUserInfo)
+	bkResult := &components.BKResult{Data: info}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
+		return nil, err
+	}
+
+	if info.BkUsername == "" {
+		return nil, fmt.Errorf("bk_username not found in response: %s", resp.Body())
+	}
+
+	return info, nil
 }
