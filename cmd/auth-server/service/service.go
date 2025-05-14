@@ -432,6 +432,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 	conf := cc.AuthServer().LoginAuth
 	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
 
+	// 多租户模式
 	if cc.AuthServer().FeatureFlags.EnableMultiTenantMode {
 		tenant, err := authLoginClient.GetTenantUserInfoByToken(ctx, req.GetUid(), token)
 		if err != nil {
@@ -459,7 +460,6 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 
 	if cc.AuthServer().LoginAuth.UseESB && cc.AuthServer().LoginAuth.Provider != bkpaas.BKLoginProvider {
 		username, err = s.client.Esb.BKLogin().IsLogin(ctx, token)
-
 	} else {
 		username, err = authLoginClient.GetUserInfoByToken(ctx, host, req.GetUid(), token)
 	}
