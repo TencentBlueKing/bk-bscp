@@ -20,6 +20,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // GetAuthHeader 获取蓝鲸网关通用认证头
@@ -31,10 +33,11 @@ func GetAuthHeader() string {
 // ItsmRequest itsm request
 // nolint revive
 func ItsmRequest(ctx context.Context, method, reqURL string, data interface{}) ([]byte, error) {
-
+	kit := kit.FromGrpcContext(ctx)
 	client := components.GetClient().R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bkapi-Authorization", GetAuthHeader())
 
 	switch method {

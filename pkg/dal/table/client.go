@@ -49,9 +49,10 @@ type ClientSpec struct {
 
 // ClientAttachment is a client attachment
 type ClientAttachment struct {
-	UID   string `gorm:"column:uid" json:"uid"`
-	BizID uint32 `db:"biz_id" gorm:"column:biz_id"`
-	AppID uint32 `db:"app_id" gorm:"column:app_id"`
+	UID      string `gorm:"column:uid" json:"uid"`
+	BizID    uint32 `db:"biz_id" gorm:"column:biz_id"`
+	AppID    uint32 `db:"app_id" gorm:"column:app_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Resource resource information

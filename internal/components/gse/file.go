@@ -19,6 +19,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // TransferFileReq defines transfer file task request
@@ -83,8 +85,10 @@ func CreateTransferFileTask(ctx context.Context, sourceAgentID, sourceContainerI
 	url := fmt.Sprintf("%s/api/v2/task/extensions/async_transfer_file", cc.FeedServer().GSE.Host)
 	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
 		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
+	kit := kit.FromGrpcContext(ctx)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(TransferFileReq{
 			TimeOutSeconds: 600,
@@ -164,8 +168,10 @@ func TransferFileResult(ctx context.Context, taskID string) ([]TransferFileResul
 	url := fmt.Sprintf("%s/api/v2/task/extensions/get_transfer_file_result", cc.FeedServer().GSE.Host)
 	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
 		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
+	kit := kit.FromGrpcContext(ctx)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(map[string]interface{}{
 			"task_id": taskID,
@@ -189,8 +195,10 @@ func TerminateTransferFileTask(ctx context.Context, taskID string, targetsAgents
 	url := fmt.Sprintf("%s/api/v2/task/extensions/async_terminate_transfer_file", cc.FeedServer().GSE.Host)
 	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
 		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
+	kit := kit.FromGrpcContext(ctx)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(TerminateTransferFileTaskReq{
 			TaskID: taskID,

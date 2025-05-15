@@ -95,6 +95,8 @@ const (
 
 	// DefaultLanguage is default language
 	DefaultLanguage = "zh-cn"
+	// DefaultTenantID is default tenant id
+	DefaultTenantID = "default"
 )
 
 // Note:

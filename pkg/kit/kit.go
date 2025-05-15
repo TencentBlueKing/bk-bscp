@@ -111,7 +111,6 @@ func FromGrpcContext(ctx context.Context) *Kit {
 			kit.BizID = uint32(bizID)
 		}
 	}
-
 	appIDs := md[lowAppIDKey]
 	if len(appIDs) != 0 {
 		appID, err := strconv.ParseUint(appIDs[0], 10, 64)

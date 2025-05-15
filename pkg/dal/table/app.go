@@ -142,6 +142,7 @@ type AppSpec struct {
 	ApproveType      ApproveType `json:"approve_type" gorm:"approve_type"`
 	IsApprove        bool        `json:"is_approve" gorm:"is_approve"`
 	Approver         string      `json:"approver" gorm:"approver"`
+	TenantID         string      `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // ValidateCreate validate spec when created.

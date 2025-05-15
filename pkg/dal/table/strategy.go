@@ -377,6 +377,7 @@ type StrategyAttachment struct {
 	BizID         uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
 	AppID         uint32 `db:"app_id" json:"app_id" gorm:"column:app_id"`
 	StrategySetID uint32 `db:"strategy_set_id" json:"strategy_set_id" gorm:"column:strategy_set_id"`
+	TenantID      string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // IsEmpty test whether strategy attachment is empty or not.

@@ -38,6 +38,7 @@ func newApp(db *gorm.DB, opts ...gen.DOOption) app {
 	_app.ApproveType = field.NewString(tableName, "approve_type")
 	_app.IsApprove = field.NewBool(tableName, "is_approve")
 	_app.Approver = field.NewString(tableName, "approver")
+	_app.TenantID = field.NewString(tableName, "tenant_id")
 	_app.Creator = field.NewString(tableName, "creator")
 	_app.Reviser = field.NewString(tableName, "reviser")
 	_app.CreatedAt = field.NewTime(tableName, "created_at")
@@ -63,6 +64,7 @@ type app struct {
 	ApproveType      field.String
 	IsApprove        field.Bool
 	Approver         field.String
+	TenantID         field.String
 	Creator          field.String
 	Reviser          field.String
 	CreatedAt        field.Time
@@ -94,6 +96,7 @@ func (a *app) updateTableName(table string) *app {
 	a.ApproveType = field.NewString(table, "approve_type")
 	a.IsApprove = field.NewBool(table, "is_approve")
 	a.Approver = field.NewString(table, "approver")
+	a.TenantID = field.NewString(table, "tenant_id")
 	a.Creator = field.NewString(table, "creator")
 	a.Reviser = field.NewString(table, "reviser")
 	a.CreatedAt = field.NewTime(table, "created_at")
@@ -122,7 +125,7 @@ func (a *app) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (a *app) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 15)
+	a.fieldMap = make(map[string]field.Expr, 16)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["biz_id"] = a.BizID
 	a.fieldMap["name"] = a.Name
@@ -134,6 +137,7 @@ func (a *app) fillFieldMap() {
 	a.fieldMap["approve_type"] = a.ApproveType
 	a.fieldMap["is_approve"] = a.IsApprove
 	a.fieldMap["approver"] = a.Approver
+	a.fieldMap["tenant_id"] = a.TenantID
 	a.fieldMap["creator"] = a.Creator
 	a.fieldMap["reviser"] = a.Reviser
 	a.fieldMap["created_at"] = a.CreatedAt

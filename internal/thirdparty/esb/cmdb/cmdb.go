@@ -23,6 +23,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
 
@@ -58,10 +59,11 @@ func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*Se
 	req := &esbSearchBizParams{
 		SearchBizParams: params,
 	}
+	kit := kit.FromGrpcContext(ctx)
 
 	h := http.Header{}
 	h.Set(constant.RidKey, uuid.UUID())
-	h.Set(constant.BkTenantID, "")
+	h.Set(constant.BkTenantID, kit.TenantID)
 
 	err := c.client.Post().
 		SubResourcef("/cc/search_business/").

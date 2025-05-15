@@ -51,6 +51,7 @@ func newStrategy(db *gorm.DB, opts ...gen.DOOption) strategy {
 	_strategy.BizID = field.NewUint32(tableName, "biz_id")
 	_strategy.AppID = field.NewUint32(tableName, "app_id")
 	_strategy.StrategySetID = field.NewUint32(tableName, "strategy_set_id")
+	_strategy.TenantID = field.NewString(tableName, "tenant_id")
 	_strategy.Creator = field.NewString(tableName, "creator")
 	_strategy.Reviser = field.NewString(tableName, "reviser")
 	_strategy.CreatedAt = field.NewTime(tableName, "created_at")
@@ -89,6 +90,7 @@ type strategy struct {
 	BizID             field.Uint32
 	AppID             field.Uint32
 	StrategySetID     field.Uint32
+	TenantID          field.String
 	Creator           field.String
 	Reviser           field.String
 	CreatedAt         field.Time
@@ -133,6 +135,7 @@ func (s *strategy) updateTableName(table string) *strategy {
 	s.BizID = field.NewUint32(table, "biz_id")
 	s.AppID = field.NewUint32(table, "app_id")
 	s.StrategySetID = field.NewUint32(table, "strategy_set_id")
+	s.TenantID = field.NewString(table, "tenant_id")
 	s.Creator = field.NewString(table, "creator")
 	s.Reviser = field.NewString(table, "reviser")
 	s.CreatedAt = field.NewTime(table, "created_at")
@@ -161,7 +164,7 @@ func (s *strategy) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (s *strategy) fillFieldMap() {
-	s.fieldMap = make(map[string]field.Expr, 28)
+	s.fieldMap = make(map[string]field.Expr, 29)
 	s.fieldMap["id"] = s.ID
 	s.fieldMap["name"] = s.Name
 	s.fieldMap["release_id"] = s.ReleaseID
@@ -186,6 +189,7 @@ func (s *strategy) fillFieldMap() {
 	s.fieldMap["biz_id"] = s.BizID
 	s.fieldMap["app_id"] = s.AppID
 	s.fieldMap["strategy_set_id"] = s.StrategySetID
+	s.fieldMap["tenant_id"] = s.TenantID
 	s.fieldMap["creator"] = s.Creator
 	s.fieldMap["reviser"] = s.Reviser
 	s.fieldMap["created_at"] = s.CreatedAt

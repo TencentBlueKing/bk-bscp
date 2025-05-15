@@ -182,7 +182,8 @@ func (t *TemplateVariableSpec) ValidateDefaultVal(kit *kit.Kit) error {
 
 // TemplateVariableAttachment defines the template variable attachments.
 type TemplateVariableAttachment struct {
-	BizID uint32 `json:"biz_id" gorm:"column:biz_id"`
+	BizID    uint32 `json:"biz_id" gorm:"column:biz_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate whether template variable attachment is valid or not.

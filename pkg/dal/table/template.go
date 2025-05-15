@@ -164,6 +164,7 @@ func (t *TemplateSpec) ValidateUpdate(kit *kit.Kit) error {
 type TemplateAttachment struct {
 	BizID           uint32 `json:"biz_id" gorm:"column:biz_id"`
 	TemplateSpaceID uint32 `json:"template_space_id" gorm:"column:template_space_id"`
+	TenantID        string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate whether template attachment is valid or not.

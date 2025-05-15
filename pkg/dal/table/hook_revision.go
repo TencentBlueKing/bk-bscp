@@ -42,8 +42,9 @@ type HookRevisionSpec struct {
 
 // HookRevisionAttachment defines the hook attachments.
 type HookRevisionAttachment struct {
-	BizID  uint32 `json:"biz_id" gorm:"column:biz_id"`
-	HookID uint32 `json:"hook_id" gorm:"column:hook_id"`
+	BizID    uint32 `json:"biz_id" gorm:"column:biz_id"`
+	HookID   uint32 `json:"hook_id" gorm:"column:hook_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the hook's database table name.
