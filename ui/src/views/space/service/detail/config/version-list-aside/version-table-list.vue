@@ -55,7 +55,7 @@
           </bk-table-column>
           <bk-table-column :label="t('创建人')">
             <template #default="{ row }">
-              {{ row.revision?.creator || '--' }}
+                <bk-user-display-name v-if="row.revision" :user-id="row.revision.creator"/>
             </template>
           </bk-table-column>
           <bk-table-column :label="t('生成时间')" width="220">

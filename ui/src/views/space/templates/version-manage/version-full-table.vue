@@ -36,7 +36,11 @@
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column :label="t('创建人')" prop="revision.creator"></bk-table-column>
+    <bk-table-column :label="t('创建人')" prop="revision.creator">
+      <template #default="{ row }">
+        <bk-user-display-name v-if="row.revision" :user-id="row.revision.creator" />
+      </template>
+    </bk-table-column>
     <bk-table-column :label="t('创建时间')" prop="revision.create_at">
       <template #default="{ row }">
         <template v-if="row.revision">

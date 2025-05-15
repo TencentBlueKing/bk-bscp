@@ -146,7 +146,11 @@
               <span v-else>--</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新人')" width="88" prop="revision.reviser"></bk-table-column>
+          <bk-table-column :label="t('更新人')" width="88" prop="revision.reviser">
+            <template #default="{ row }">
+              <bk-user-display-name v-if="row.revision" :user-id="row.revision.reviser" />
+            </template>
+          </bk-table-column>
           <bk-table-column :label="t('更新时间')" width="154">
             <template #default="{ row }">
               <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>

@@ -70,8 +70,16 @@
           <span v-if="row.spec">{{ row.spec.kv_type === 'secret' ? t('敏感信息') : row.spec.kv_type }}</span>
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('创建人')" prop="revision.creator" :width="150"></bk-table-column>
-      <bk-table-column :label="t('修改人')" prop="revision.reviser" :width="150"></bk-table-column>
+      <bk-table-column :label="t('创建人')" prop="revision.creator" :width="150">
+        <template #default="{ row }">
+          <bk-user-display-name v-if="row.revision" :user-id="row.revision.creator"/>
+        </template>
+      </bk-table-column>
+      <bk-table-column :label="t('修改人')" prop="revision.reviser" :width="150">
+        <template #default="{ row }">
+          <bk-user-display-name v-if="row.revision" :user-id="row.revision.reviser"/>
+        </template>
+      </bk-table-column>
       <bk-table-column :label="t('修改时间')" :sort="true" :width="180">
         <template #default="{ row }">
           <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>

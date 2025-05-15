@@ -114,8 +114,8 @@
                               </ContentWidthOverflowTips>
                             </td>
                             <td class="version">{{ item.is_latest ? 'latest' : item.versionName }}</td>
-                            <td class="user">{{ item.creator }}</td>
-                            <td class="user">{{ item.reviser }}</td>
+                            <td class="user"><bk-user-display-name :user-id="item.creator"/></td>
+                            <td class="user"><bk-user-display-name :user-id="item.reviser"/></td>
                             <td class="datetime">{{ item.update_at }}</td>
                             <td class="status" v-if="versionData.id === 0">
                               <StatusTag :status="item.file_state" />

@@ -54,7 +54,7 @@
           </bk-table-column>
           <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
-              {{ row.audit?.spec.operator || '--' }}
+              <bk-user-display-name v-if="row.audit" :user-id="row.audit.spec.operator" />
             </template>
           </bk-table-column>
           <bk-table-column :label="t('操作途径')" :width="locale === 'zh-cn' ? '90' : '150'">

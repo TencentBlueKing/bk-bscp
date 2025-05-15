@@ -31,7 +31,7 @@
             <li class="approval-li">
               <div class="approval-hd">{{ t('指定审批人') }}</div>
               <div class="approval-bd">
-                <bk-user-display-name/>
+                <bk-user-display-name :user-id="serviceData?.spec.approver"/>
               </div>
             </li>
             <li class="approval-li">
@@ -42,13 +42,13 @@
           <span v-else>{{ t('未开启') }}</span>
         </bk-form-item>
         <bk-form-item :label="t('创建人')">
-          {{ serviceData?.revision.creator }}
+          <bk-user-display-name :user-id="serviceData?.revision.creator"/>
         </bk-form-item>
         <bk-form-item :label="t('创建时间')">
           {{ datetimeFormat(serviceData!.revision.create_at) }}
         </bk-form-item>
         <bk-form-item :label="t('更新人')">
-          {{ serviceData!.revision.reviser }}
+          <bk-user-display-name :user-id="serviceData!.revision.reviser"/>
         </bk-form-item>
         <bk-form-item :label="t('更新时间')">
           {{ datetimeFormat(serviceData!.revision.update_at) }}

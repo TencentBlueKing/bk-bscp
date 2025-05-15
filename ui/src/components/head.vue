@@ -101,7 +101,7 @@
       </bk-dropdown>
       <bk-popover ext-cls="login-out-popover" trigger="click" placement="bottom-center" theme="light" :arrow="false">
         <div class="username-wrapper">
-          <span class="text">{{ userInfo.username }}</span>
+          <span class="text"><bk-user-display-name :user-id="userInfo.username"/></span>
           <DownShape class="arrow-icon" />
         </div>
         <template #content>

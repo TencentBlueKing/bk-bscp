@@ -60,7 +60,7 @@
             </div>
             <div class="table-td">{{ item.name || '--' }}</div>
             <div class="table-td">{{ item.fully_released ? '全部实例' : versionScope(item.scope.groups) }}</div>
-            <div class="table-td">{{ item.creator || '--' }}</div>
+            <div class="table-td"><bk-user-display-name :user-id="item.creator" /></div>
           </div>
         </div>
       </div>
