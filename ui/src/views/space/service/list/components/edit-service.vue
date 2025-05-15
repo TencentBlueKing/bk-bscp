@@ -31,7 +31,7 @@
             <li class="approval-li">
               <div class="approval-hd">{{ t('指定审批人') }}</div>
               <div class="approval-bd">
-                <bk-user-display-name user-id="admin"/>
+                <bk-user-display-name/>
               </div>
             </li>
             <li class="approval-li">

@@ -4,8 +4,6 @@
     v-model="selectedUsers"
     :api-base-url="api"
     :tenant-id="tenantId"
-    :current-user-id="currentUserId"
-    :exact-search-key="exactSearchKey"
     :multiple="true"
     :draggable="true"
     @change="handleUsersChange" />
@@ -27,12 +25,6 @@
 
   // 租户 ID
   const tenantId = ref(userInfo.value.tenant_id);
-
-  // 当前用户ID
-  const currentUserId = ref('admin');
-
-  // 精确查找key
-  const exactSearchKey = ref('bk_username');
 
   // 多选选中值
   const selectedUsers = ref([]);
