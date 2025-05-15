@@ -72,10 +72,8 @@
       </template>
       <div v-if="localData.is_approve" class="approval-content">
         <bk-form-item :label="t('指定审批人')" property="approver" required>
-          <bk-member-selector
+          <bk-user-selector
             v-model="selectionsApprover"
-            :api="approverApi"
-            :is-error="selValidationError"
             @change="changeApprover" />
         </bk-form-item>
         <bk-form-item property="approve_type">
@@ -143,7 +141,7 @@
   import { IServiceEditForm } from '../../../../../../types/service';
   import { CONFIG_KV_TYPE } from '../../../../../constants/config';
   import { Help, ExclamationCircleShape } from 'bkui-vue/lib/icon';
-  import BkMemberSelector from '../../../../../components/user-selector/index.vue';
+  import BkUserSelector from '../../../../../components/user-selector/index.vue';
 
   const { t, locale } = useI18n();
 
@@ -152,7 +150,6 @@
   const props = defineProps<{
     formData: IServiceEditForm;
     editable?: boolean;
-    approverApi: string;
   }>();
 
   const rules = {

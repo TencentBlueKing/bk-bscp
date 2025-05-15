@@ -1,27 +1,46 @@
 <template>
-  <BkMemberSelector v-bind="$attrs" :class="{ 'input-error': isError }">
-    <template v-for="(obj, name) in $slots" #[name]="data">
-      <slot :name="name" v-bind="data" />
-    </template>
-  </BkMemberSelector>
+  <!-- 多选模式 -->
+  <BkUserSelector
+    v-model="selectedUsers"
+    :api-base-url="api"
+    :tenant-id="tenantId"
+    :current-user-id="currentUserId"
+    :exact-search-key="exactSearchKey"
+    :multiple="true"
+    :draggable="true"
+    @change="handleUsersChange" />
 </template>
-<script setup lang="ts">
-  import BkMemberSelector from './user-selector-origin/index';
 
-  withDefaults(
-    defineProps<{
-      isError: boolean;
-    }>(),
-    {},
-  );
+<script lang="ts" setup>
+  import BkUserSelector from '@blueking/bk-user-selector';
+  import '@blueking/bk-user-selector/vue3/vue3.css';
+  import { ref } from 'vue';
+  import useUserStore from '../../store/user';
+  import { storeToRefs } from 'pinia';
+  import { getApproverListApi } from '../../api';
+
+  const { userInfo } = storeToRefs(useUserStore());
+
+  const emits = defineEmits(['change']);
+
+  const api = ref(getApproverListApi());
+
+  // 租户 ID
+  const tenantId = ref(userInfo.value.tenant_id);
+
+  // 当前用户ID
+  const currentUserId = ref('admin');
+
+  // 精确查找key
+  const exactSearchKey = ref('bk_username');
+
+  // 多选选中值
+  const selectedUsers = ref([]);
+
+  // 处理多选模式下的值变化
+  const handleUsersChange = (users: any) => {
+    emits('change', users);
+  };
 </script>
-<style lang="scss" scoped>
-  .input-error {
-    :deep(.user-selector-layout) {
-      .user-selector-container {
-        transition: all 0.3s;
-        border-color: #ea3636;
-      }
-    }
-  }
-</style>
+
+<style scoped lang="scss"></style>

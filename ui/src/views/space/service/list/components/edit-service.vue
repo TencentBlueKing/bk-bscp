@@ -31,11 +31,7 @@
             <li class="approval-li">
               <div class="approval-hd">{{ t('指定审批人') }}</div>
               <div class="approval-bd">
-                <bk-member-selector
-                  v-model="selectionsApprover"
-                  :api="getApproverListApi()"
-                  :is-error="!selectionsApprover.length"
-                  type="info" />
+                <bk-user-display-name user-id="admin"/>
               </div>
             </li>
             <li class="approval-li">
@@ -62,7 +58,6 @@
         v-else
         ref="formCompRef"
         :form-data="serviceEditForm"
-        :approver-api="getApproverListApi()"
         @change="handleChange"
         :editable="true" />
     </div>
@@ -84,7 +79,7 @@
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
-  import { updateApp, getApproverListApi } from '../../../../../api/index';
+  import { updateApp } from '../../../../../api/index';
   import { getKvList } from '../../../../../api/config';
   import { datetimeFormat } from '../../../../../utils/index';
   import { IAppItem } from '../../../../../../types/app';
@@ -93,7 +88,6 @@
   import SearviceForm from './service-form.vue';
   import { IConfigKvType } from '../../../../../../types/config';
   import { InfoBox, Message } from 'bkui-vue';
-  import BkMemberSelector from '../../../../../components/user-selector/index.vue';
 
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
 
