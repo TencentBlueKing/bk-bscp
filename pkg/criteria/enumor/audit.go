@@ -63,6 +63,8 @@ const (
 	Success AuditStatus = "success"
 	// Failure audit status
 	Failure AuditStatus = "failure"
+	// Failure audit status
+	Processing AuditStatus = "processing"
 	// PendingApproval means this strategy audit status is pending.
 	PendingApproval AuditStatus = "pending_approval"
 	// PendingPublish means this strategy audit status is pending.
