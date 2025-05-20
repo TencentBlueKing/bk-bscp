@@ -70,7 +70,9 @@ func (s *RepoSyncer) Run() {
 	go s.collectMetrics()
 
 	// sync incremental files
-	go s.syncIncremental(kt)
+	if s.state.IsMaster() {
+		go s.syncIncremental(kt)
+	}
 
 	go func() {
 		// sync all files at once after service starts a while
