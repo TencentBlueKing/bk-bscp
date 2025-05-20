@@ -28,6 +28,8 @@ func NewDB(debug bool) (*gorm.DB, error) {
 	fmt.Println("Connecting to MySQL database...")
 
 	dbConf := cc.DataService().Sharding.AdminDatabase
+	dbConf.WriteTimeoutSec = 300
+	dbConf.ReadTimeoutSec = 300
 	dsn := sharding.URI(dbConf)
 	if debug {
 		// return the gorm db instance which prints debug log
