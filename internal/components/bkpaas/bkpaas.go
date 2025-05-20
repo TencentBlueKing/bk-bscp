@@ -53,11 +53,11 @@ type AuthLoginClient interface {
 }
 
 // NewAuthLoginClient init client
-func NewAuthLoginClient(conf *cc.LoginAuthSettings) AuthLoginClient {
+func NewAuthLoginClient(conf *cc.LoginAuthSettings, esb *cc.Esb) AuthLoginClient {
 	if conf.Provider == BKLoginProvider {
-		return &bkLoginAuthClient{conf: conf}
+		return &bkLoginAuthClient{conf: conf, esb: esb}
 	}
-	return &bkPaaSAuthClient{conf: conf}
+	return &bkPaaSAuthClient{conf: conf, esb: esb}
 }
 
 // BuildAbsoluteUri
@@ -71,8 +71,8 @@ func buildAbsoluteUri(webHost string, r *http.Request) string {
 }
 
 // getTenantUserInfoByToken 获取租户用户信息
-func getTenantUserInfoByToken(ctx context.Context, host, token string) (*TenantUserInfo, error) {
-	u, err := url.Parse(host)
+func getTenantUserInfoByToken(ctx context.Context, conf *cc.LoginAuthSettings, esb *cc.Esb, token string) (*TenantUserInfo, error) {
+	u, err := url.Parse(conf.Host)
 	if err != nil {
 		return nil, fmt.Errorf("parse host: %w", err)
 	}
@@ -80,7 +80,7 @@ func getTenantUserInfoByToken(ctx context.Context, host, token string) (*TenantU
 	// 使用网关域名
 	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
 
-	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+	authHeader := components.MakeBKAPIGWAuthHeader(esb.AppCode, esb.AppSecret)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetQueryParam("bk_token", token).

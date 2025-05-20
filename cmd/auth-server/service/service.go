@@ -430,7 +430,8 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 	}
 
 	conf := cc.AuthServer().LoginAuth
-	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
+	esb := cc.AuthServer().Esb
+	authLoginClient := bkpaas.NewAuthLoginClient(&conf, &esb)
 
 	// 多租户模式
 	if cc.AuthServer().FeatureFlags.EnableMultiTenantMode {
