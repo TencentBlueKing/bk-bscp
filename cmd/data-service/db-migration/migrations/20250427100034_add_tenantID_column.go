@@ -103,21 +103,6 @@ var allModels = func() []any {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
 	}
 
-	// DataSourceContents mapped from table <data_source_contents>
-	type DataSourceContents struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
-	// DataSourceInfos mapped from table <data_source_infos>
-	type data_source_infos struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
-	// DataSourceMappings mapped from table <data_source_mappings>
-	type DataSourceMappings struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
 	// Events mapped from table <events>
 	type Events struct {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
@@ -183,11 +168,6 @@ var allModels = func() []any {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
 	}
 
-	// ReleasedTableContents mapped from table <released_table_contents>
-	type ReleasedTableContents struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
 	// Releases mapped from table <releases>
 	type Releases struct {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
@@ -238,16 +218,6 @@ var allModels = func() []any {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
 	}
 
-	// UserGroupPrivileges mapped from table <user_group_privileges>
-	type UserGroupPrivileges struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
-	// UserPrivileges mapped from table <user_privileges>
-	type UserPrivileges struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
 	return []any{
 		&AppTemplateBindings{},
 		&AppTemplateVariables{},
@@ -265,9 +235,6 @@ var allModels = func() []any {
 		&Credentials{},
 		&CurrentPublishedStrategies{},
 		&CurrentReleasedInstances{},
-		&DataSourceContents{},
-		&data_source_infos{},
-		&DataSourceMappings{},
 		&Events{},
 		&GroupAppBinds{},
 		&Groups{},
@@ -281,7 +248,6 @@ var allModels = func() []any {
 		&ReleasedGroups{},
 		&ReleasedHooks{},
 		&ReleasedKvs{},
-		&ReleasedTableContents{},
 		&Releases{},
 		&ResourceLocks{},
 		&ShardingBizs{},
@@ -292,8 +258,6 @@ var allModels = func() []any {
 		&TemplateSpaces{},
 		&TemplateVariables{},
 		&Templates{},
-		&UserGroupPrivileges{},
-		&UserPrivileges{},
 	}
 }
 
