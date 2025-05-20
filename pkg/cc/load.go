@@ -122,6 +122,13 @@ func loadFromFile(conf []byte) (Setting, error) {
 		return nil, fmt.Errorf("unmarshal Setting yaml from conf:\n%s failed, err: %v", conf, err)
 	}
 
+	// 初始化全局配置
+	g := new(GlobalSettings)
+	if err := yaml.Unmarshal(conf, g); err != nil {
+		return nil, fmt.Errorf("unmarshal global Setting yaml from conf:\n%s failed, err: %v", conf, err)
+	}
+	globalSettings = g
+
 	return s, nil
 }
 

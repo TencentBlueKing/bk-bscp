@@ -32,6 +32,7 @@ type bkLoginResult struct {
 // bkLoginAuthClient 蓝鲸内部统一登入
 type bkLoginAuthClient struct {
 	conf *cc.LoginAuthSettings
+	esb  *cc.Esb
 }
 
 // GetLoginCredentialFromCookies 从 cookie 获取 LoginCredential
@@ -98,5 +99,5 @@ func (b *bkLoginAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 
 // GetTenantUserInfoByToken 获取租户用户信息
 func (b *bkLoginAuthClient) GetTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInfo, error) {
-	return getTenantUserInfoByToken(ctx, b.conf.Host, token)
+	return getTenantUserInfoByToken(ctx, b.conf, b.esb, token)
 }

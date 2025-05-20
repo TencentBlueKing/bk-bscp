@@ -21,7 +21,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
@@ -35,7 +34,7 @@ type Biz struct {
 // SearchBusiness 组件化的函数
 func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
 	// bk_supplier_account 是无效参数, 占位用
-	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", cc.AuthServer().Esb.APIGWHost())
+	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", cc.G().Esb.APIGWHost())
 
 	// SearchBizParams is esb search cmdb business parameter.
 	type esbSearchBizParams struct {
@@ -43,19 +42,19 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		*cmdb.SearchBizParams
 	}
 
+	kit := kit.MustGetKit(ctx)
 	req := &esbSearchBizParams{
 		CommParams: &types.CommParams{
-			AppCode:   config.G.Base.AppCode,
-			AppSecret: config.G.Base.AppSecret,
+			AppCode:   cc.G().Esb.AppCode,
+			AppSecret: cc.G().Esb.AppSecret,
 			UserName:  "admin",
 		},
 		SearchBizParams: params,
 	}
 
-	kit := kit.FromGrpcContext(ctx)
 	authHeader := components.MakeBKAPIGWAuthHeader(
-		cc.AuthServer().Esb.AppCode,
-		cc.AuthServer().Esb.AppSecret,
+		cc.G().Esb.AppCode,
+		cc.G().Esb.AppSecret,
 		components.WithBkToken(kit.BkToken),
 	)
 	resp, err := components.GetClient().R().

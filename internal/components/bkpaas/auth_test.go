@@ -20,7 +20,7 @@ import (
 )
 
 func TestGetUserInfoByToken(t *testing.T) {
-	client := NewAuthLoginClient(nil)
+	client := NewAuthLoginClient(nil, nil)
 	username, err := client.GetUserInfoByToken(context.Background(), "", "dummyUser", "")
 	assert.NoError(t, err)
 	assert.True(t, username != "")
