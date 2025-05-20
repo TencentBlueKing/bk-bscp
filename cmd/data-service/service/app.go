@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
@@ -424,7 +425,7 @@ func (s *Service) validateBizExist(kt *kit.Kit, bizID uint32) error {
 			}},
 	}
 
-	bizResp, err := s.esb.Cmdb().SearchBusiness(kt.Ctx, searchBizParams)
+	bizResp, err := bkcmdb.SearchBusiness(kt.Ctx, searchBizParams)
 	if err != nil {
 		return errf.Errorf(errf.InvalidRequest, i18n.T(kt, "business query failed, err: %v", err))
 	}
