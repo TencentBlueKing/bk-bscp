@@ -81,7 +81,7 @@ func NewSpaceMgr(ctx context.Context, client esbcli.Client) (*Manager, error) {
 
 // AllSpaces 返回全量业务
 func (s *Manager) AllSpaces(ctx context.Context) []*Space {
-	kit := kit.FromGrpcContext(ctx)
+	kit := kit.MustGetKit(ctx)
 	if cacheResult, err := s.spaceCache.Get(kit.TenantID); err == nil {
 		return cacheResult.([]*Space)
 	}
@@ -146,7 +146,7 @@ func (s *Manager) fetchAllSpace(ctx context.Context) ([]*Space, error) {
 		spaceList = append(spaceList, s)
 	}
 
-	kit := kit.FromGrpcContext(ctx)
+	kit := kit.MustGetKit(ctx)
 	if err = s.spaceCache.Set(kit.TenantID, spaceList); err != nil {
 		slog.Error("set space cache failed", "tenant_id", kit.TenantID, "err", err)
 	}
@@ -175,7 +175,7 @@ func BuildSpaceUid(t Type, id string) string {
 
 // HasCMDBSpace checks if cmdb space exists
 func (s *Manager) HasCMDBSpace(ctx context.Context, spaceId string) bool {
-	kit := kit.FromGrpcContext(ctx)
+	kit := kit.MustGetKit(ctx)
 	key := fmt.Sprintf("%s/%s", kit.TenantID, spaceId)
 
 	slog.Info("leijioamin", "key", key)

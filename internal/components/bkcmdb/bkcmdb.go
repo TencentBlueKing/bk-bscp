@@ -42,6 +42,7 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		*cmdb.SearchBizParams
 	}
 
+	kit := kit.MustGetKit(ctx)
 	req := &esbSearchBizParams{
 		CommParams: &types.CommParams{
 			AppCode:   cc.G().Esb.AppCode,
@@ -51,7 +52,6 @@ func SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.Se
 		SearchBizParams: params,
 	}
 
-	kit := kit.FromGrpcContext(ctx)
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		cc.G().Esb.AppCode,
 		cc.G().Esb.AppSecret,
