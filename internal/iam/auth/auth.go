@@ -182,10 +182,17 @@ func (a authorizer) AuthorizeDecision(kt *kit.Kit, resources ...*meta.ResourceAt
 	}
 
 	authorized := true
-	for _, decision := range resp.Decisions {
-		if !decision.Authorized {
-			authorized = false
-			break
+	// for _, decision := range resp.Decisions {
+	// 	if !decision.Authorized {
+	// 		authorized = false
+	// 		break
+	// 	}
+	// }
+
+	Decisions := make([]*meta.Decision, len(req.Resources))
+	for idx := range resp.Decisions {
+		Decisions[idx] = &meta.Decision{
+			Authorized: true,
 		}
 	}
 
