@@ -70,13 +70,12 @@ func (s *RepoSyncer) Run() {
 	go s.collectMetrics()
 
 	// sync incremental files
-	if s.state.IsMaster() {
-		go s.syncIncremental(kt)
-	}
+	go s.syncIncremental(kt)
 
 	go func() {
-		// sync all files at once after service starts a while
-		time.Sleep(time.Second * 10)
+		// sync all files at once after service starts a while,
+		// wait 2 minutes to ensure one of the new instance has been elected as master.
+		time.Sleep(time.Minute * 2)
 		if s.state.IsMaster() {
 			s.syncAll(kt)
 		} else {
@@ -283,27 +282,32 @@ func (s *RepoSyncer) syncOneBiz(kt *kit.Kit, bizID uint32, signs []string) {
 
 // syncIncremental syncs incremental files
 func (s *RepoSyncer) syncIncremental(kt *kit.Kit) {
+	// wait for 2 minutes to ensure one of the new instance has been elected as master.
+	time.Sleep(time.Minute * 2)
+
 	syncMgr := s.repo.SyncManager()
 	client := syncMgr.QueueClient()
 	syncQueue := syncMgr.QueueName()
 	ackQueue := syncMgr.AckQueueName()
 
 	// consider the service crash, the ackQueue may have some messages, we move them to syncQueue and handle them again
-	mvCnt := 0
-	for {
-		kt2 := kt.Clone()
-		msg, err := client.RPopLPush(kt2.Ctx, ackQueue, syncQueue)
-		if err != nil {
-			logs.Errorf("move msg from ackQueue to syncQueue failed, err: %v, rid: %s", err, kt2.Rid)
+	if s.state.IsMaster() {
+		mvCnt := 0
+		for {
+			kt2 := kt.Clone()
+			msg, err := client.RPopLPush(kt2.Ctx, ackQueue, syncQueue)
+			if err != nil {
+				logs.Errorf("move msg from ackQueue to syncQueue failed, err: %v, rid: %s", err, kt2.Rid)
+			}
+			// msg is empty which means occurring redis.Nil and ackQueue is empty
+			if msg == "" {
+				break
+			}
+			mvCnt++
 		}
-		// msg is empty which means occurring redis.Nil and ackQueue is empty
-		if msg == "" {
-			break
+		if mvCnt > 0 {
+			logs.Errorf("have moved %d msg from ackQueue to syncQueue", mvCnt)
 		}
-		mvCnt++
-	}
-	if mvCnt > 0 {
-		logs.Errorf("have moved %d msg from ackQueue to syncQueue", mvCnt)
 	}
 
 	// sync files concurrently
@@ -314,6 +318,11 @@ func (s *RepoSyncer) syncIncremental(kt *kit.Kit) {
 		go func() {
 			defer wg.Done()
 			for {
+				if !s.state.IsMaster() {
+					logs.Infof("current service instance is slave, skip the task of syncing incremental repo files")
+					time.Sleep(time.Second * 10)
+					continue
+				}
 				kt2 := kt.Clone()
 				// block pop msg from syncQueue and push one to ackQueue
 				msg, err := client.BRPopLPush(kt2.Ctx, syncQueue, ackQueue, 0)
