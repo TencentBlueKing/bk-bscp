@@ -17,11 +17,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/changsongl/gorm-plugin/query"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
-	"gorm.io/plugin/prometheus"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/orm"
@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
 var (
@@ -94,7 +95,6 @@ func NewDaoSet(opt cc.Sharding, credentialSetting cc.Credential, gormSetting cc.
 	if err != nil {
 		return nil, err
 	}
-
 	db, err := adminDB.DB()
 	if err != nil {
 		return nil, err
@@ -107,14 +107,31 @@ func NewDaoSet(opt cc.Sharding, credentialSetting cc.Credential, gormSetting cc.
 		return nil, err
 	}
 
+	// create query plugin
+	plugin := query.New(
+		query.SlowQueryCallback(query.Config{
+			DBName:        opt.AdminDatabase.Database,
+			NamePrefix:    "db",
+			Namespace:     metrics.Namespace,
+			SlowThreshold: 500 * time.Millisecond, // 500ms
+		}),
+		query.ErrorQueryCallback(query.Config{
+			DBName:     opt.AdminDatabase.Database,
+			NamePrefix: "db",
+			Namespace:  metrics.Namespace,
+		}),
+	)
+
 	// 会定期执行 SHOW STATUS; 拿状态数据
 	// metricsCollector := []prometheus.MetricsCollector{
 	// 	&prometheus.MySQL{VariableNames: []string{"Threads_running"}},
 	// }
 
-	if e := adminDB.Use(prometheus.New(prometheus.Config{})); e != nil {
+	if e := adminDB.Use(plugin); e != nil {
 		return nil, err
 	}
+
+	metrics.Register().MustRegister(plugin.MetricsCollectors()...)
 
 	// auditor 分库, 注意需要在分表前面
 	// auditorDB := sharding.MustShardingAuditor(adminDB)
