@@ -14,6 +14,7 @@ package service
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
@@ -22,16 +23,76 @@ func initMetric() *metric {
 	m := new(metric)
 	m.currentUploadedFolderSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: metrics.Namespace,
-		Subsystem: "upload",
 		Name:      "upload_file_directory_size_bytes",
 		Help:      "Size of the directory in bytes",
 	}, []string{"bizID", "resourceID"})
 	metrics.Register().MustRegister(m.currentUploadedFolderSize)
+
+	m.requestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: metrics.Namespace,
+		Name:      "http_request_duration_seconds",
+		Help:      "Duration of HTTP requests.",
+		Buckets:   []float64{0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1},
+	}, []string{"method", "route", "biz", "app"})
+	metrics.Register().MustRegister(m.requestDuration)
+
+	m.httpRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metrics.Namespace,
+			Name:      "http_requests_total",
+			Help:      "Total HTTP requests",
+		},
+		[]string{"method", "route", "status_code", "biz", "app", "error"},
+	)
+	metrics.Register().MustRegister(m.httpRequestsTotal)
+
+	m.uploadFileCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_file_count_total",
+			Help:      "Number of uploaded files",
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadFileCount)
+
+	m.uploadDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_duration_seconds",
+			Help:      "Time taken for file upload",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadDuration)
+
+	m.uploadTotalSize = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_total_size_bytes",
+			Help:      "Total size of uploaded files",
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadTotalSize)
 
 	return m
 }
 
 type metric struct {
 	// currentUploadedFolderSize Record the current uploaded folder size
+
 	currentUploadedFolderSize *prometheus.GaugeVec
+
+	// 记录接口请求耗时
+	requestDuration *prometheus.HistogramVec
+	// 记录接口请求数
+	httpRequestsTotal *prometheus.CounterVec
+	// 文件上传数量
+	uploadFileCount *prometheus.CounterVec
+	// 文件上传耗时
+	uploadDuration *prometheus.HistogramVec
+	// 文件上传大小
+	uploadTotalSize *prometheus.CounterVec
 }
