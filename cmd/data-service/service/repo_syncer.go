@@ -156,10 +156,10 @@ func (s *RepoSyncer) syncAll(kt *kit.Kit) {
 	syncFailedCnt = 0
 
 	// get all sorted bizs
-	allBizs := s.spaceMgr.AllCMDBSpaces(kt.Ctx)
-	bizs := make([]int, 0, len(allBizs))
-	for biz := range allBizs {
-		bizID, _ := strconv.Atoi(biz)
+	allSpaces := s.spaceMgr.AllSpaces(kt.Ctx)
+	bizs := make([]int, 0, len(allSpaces))
+	for _, space := range allSpaces {
+		bizID, _ := strconv.Atoi(space.SpaceId)
 		bizs = append(bizs, bizID)
 	}
 	sort.Ints(bizs)

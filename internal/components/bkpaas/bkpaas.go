@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -71,16 +70,11 @@ func buildAbsoluteUri(webHost string, r *http.Request) string {
 }
 
 // getTenantUserInfoByToken 获取租户用户信息
-func getTenantUserInfoByToken(ctx context.Context, host, token string) (*TenantUserInfo, error) {
-	u, err := url.Parse(host)
-	if err != nil {
-		return nil, fmt.Errorf("parse host: %w", err)
-	}
-
+func getTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInfo, error) {
 	// 使用网关域名
-	url := fmt.Sprintf("%s://bkapi.%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", u.Scheme, u.Host)
+	url := fmt.Sprintf("%s/api/bk-login/prod/login/api/v3/open/bk-tokens/verify/", cc.G().Esb.APIGWHost())
 
-	authHeader := components.MakeBKAPIGWAuthHeader(cc.AuthServer().Esb.AppCode, cc.AuthServer().Esb.AppSecret)
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.G().Esb.AppCode, cc.G().Esb.AppSecret)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
 		SetQueryParam("bk_token", token).

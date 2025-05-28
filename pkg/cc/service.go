@@ -71,6 +71,14 @@ type Setting interface {
 	Validate() error
 }
 
+// GlobalSettings 全局配置, 配置所有模块可访问
+type GlobalSettings struct {
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+}
+
 // ApiServerSetting defines api server used setting options.
 type ApiServerSetting struct {
 	Network      Network      `yaml:"network"`

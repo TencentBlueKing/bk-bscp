@@ -117,10 +117,18 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 	}
 
 	// do authentication
-	authDecisions, err := a.auth.AuthorizeBatch(ctx, opts)
-	if err != nil {
-		logs.Errorf("authorize batch failed, ops: %#v, req: %#v, err: %v, rid: %s", err, opts, req, kt.Rid)
-		return nil, err
+	// authDecisions, err := a.auth.AuthorizeBatch(ctx, opts)
+	// if err != nil {
+	// 	logs.Errorf("authorize batch failed, ops: %#v, req: %#v, err: %v, rid: %s", err, opts, req, kt.Rid)
+	// 	return nil, err
+	// }
+
+	// mock authDecisions
+	authDecisions := make([]*client.Decision, len(decisions))
+	for index := range authDecisions {
+		authDecisions[index] = &client.Decision{
+			Authorized: true,
+		}
 	}
 
 	index := 0

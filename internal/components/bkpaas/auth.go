@@ -84,5 +84,5 @@ func (b *bkPaaSAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 
 // GetTenantUserInfoByToken 获取租户用户信息
 func (b *bkPaaSAuthClient) GetTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInfo, error) {
-	return getTenantUserInfoByToken(ctx, b.conf.Host, token)
+	return getTenantUserInfoByToken(ctx, token)
 }
