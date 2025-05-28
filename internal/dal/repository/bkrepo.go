@@ -138,6 +138,7 @@ func (c *bkrepoClient) Upload(kt *kit.Kit, sign string, body io.Reader) (*Object
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyOverwrite, "true")
 
@@ -182,6 +183,7 @@ func (c *bkrepoClient) Download(kt *kit.Kit, sign string) (io.ReadCloser, int64,
 		return nil, 0, err
 	}
 	req.Header.Set(constant.RidKey, kt.Rid)
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -214,6 +216,7 @@ func (c *bkrepoClient) Metadata(kt *kit.Kit, sign string) (*ObjectMetadata, erro
 		return nil, err
 	}
 	req.Header.Set(constant.RidKey, kt.Rid)
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -266,6 +269,7 @@ func (c *bkrepoClient) InitMultipartUpload(kt *kit.Kit, sign string) (string, er
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyOverwrite, "true")
 
@@ -311,6 +315,7 @@ func (c *bkrepoClient) MultipartUpload(kt *kit.Kit, sign string, uploadID string
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyUploadID, uploadID)
 	req.Header.Set(repo.HeaderKeySequence, strconv.Itoa(int(partNum)))
@@ -351,6 +356,7 @@ func (c *bkrepoClient) CompleteMultipartUpload(kt *kit.Kit, sign string, uploadI
 		return nil, err
 	}
 
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyUploadID, uploadID)
 
