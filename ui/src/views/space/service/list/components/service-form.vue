@@ -74,8 +74,6 @@
         <bk-form-item :label="t('指定审批人')" property="approver" required>
           <bk-user-selector
             v-model="selectionsApprover"
-            :api="approverApi"
-            :is-error="selValidationError"
             @change="changeApprover" />
         </bk-form-item>
         <bk-form-item property="approve_type">
@@ -152,7 +150,6 @@
   const props = defineProps<{
     formData: IServiceEditForm;
     editable?: boolean;
-    approverApi: string;
   }>();
 
   const rules = {

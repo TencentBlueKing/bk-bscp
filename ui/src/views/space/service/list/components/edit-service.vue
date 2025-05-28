@@ -58,7 +58,6 @@
         v-else
         ref="formCompRef"
         :form-data="serviceEditForm"
-        :approver-api="getApproverListApi()"
         @change="handleChange"
         :editable="true" />
     </div>
@@ -80,7 +79,7 @@
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
-  import { updateApp, getApproverListApi } from '../../../../../api/index';
+  import { updateApp } from '../../../../../api/index';
   import { getKvList } from '../../../../../api/config';
   import { datetimeFormat } from '../../../../../utils/index';
   import { IAppItem } from '../../../../../../types/app';
