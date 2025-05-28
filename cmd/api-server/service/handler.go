@@ -75,6 +75,8 @@ type FeatureFlags struct {
 	ResourceLimit cc.ResourceLimit `json:"RESOURCE_LIMIT"`
 	// TrpcGoPlugin trpc go plugin
 	TrpcGoPlugin TrpcGoPlugin `json:"TRPC_GO_PLUGIN"`
+	// EnableMultiTenantMode 是否开启多租户模式
+	EnableMultiTenantMode bool `json:"ENABLE_MULTI_TENANT_MODE"`
 }
 
 // TrpcGoPlugin trpc go plugin
@@ -117,6 +119,7 @@ func FeatureFlagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	featureFlags.TrpcGoPlugin = TrpcGoPlugin(cc.ApiServer().FeatureFlags.TrpcGoPlugin)
+	featureFlags.EnableMultiTenantMode = cc.ApiServer().FeatureFlags.EnableMultiTenantMode
 
 	render.Render(w, r, rest.OKRender(featureFlags))
 }

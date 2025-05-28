@@ -54,7 +54,7 @@
           </bk-table-column>
           <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
-              {{ row.audit?.spec.operator || '--' }}
+              <user-name v-if="row.audit" :name="row.audit.spec.operator"/>
             </template>
           </bk-table-column>
           <bk-table-column :label="t('操作途径')" :width="locale === 'zh-cn' ? '90' : '150'">
@@ -311,6 +311,7 @@
   import dayjs from 'dayjs';
   import PublishDialog from '../../service/detail/components/publish-version/confirm-dialog.vue';
   import { InfoBox } from 'bkui-vue';
+  import UserName from '../../../../components/user-name.vue';
 
   const props = withDefaults(
     defineProps<{

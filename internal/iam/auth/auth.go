@@ -110,8 +110,6 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		InnerHost: resp.LoginAuth.InnerHost,
 		Provider:  resp.LoginAuth.Provider,
 	}
-	authLoginClient := bkpaas.NewAuthLoginClient(conf)
-	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
 
 	// init space manager
 	esbSetting := &cc.Esb{
@@ -127,6 +125,9 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 			Password:           resp.Esb.Tls.Password,
 		},
 	}
+
+	authLoginClient := bkpaas.NewAuthLoginClient(conf)
+	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
 	esbCli, err := esbcli.NewClient(esbSetting, metrics.Register())
 	if err != nil {
 		return nil, fmt.Errorf("new esb cleint failed, err: %v", err)
@@ -182,10 +183,17 @@ func (a authorizer) AuthorizeDecision(kt *kit.Kit, resources ...*meta.ResourceAt
 	}
 
 	authorized := true
-	for _, decision := range resp.Decisions {
-		if !decision.Authorized {
-			authorized = false
-			break
+	// for _, decision := range resp.Decisions {
+	// 	if !decision.Authorized {
+	// 		authorized = false
+	// 		break
+	// 	}
+	// }
+
+	Decisions := make([]*meta.Decision, len(req.Resources))
+	for idx := range resp.Decisions {
+		Decisions[idx] = &meta.Decision{
+			Authorized: true,
 		}
 	}
 

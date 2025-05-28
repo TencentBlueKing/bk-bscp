@@ -313,8 +313,15 @@ func WithKit(ctx context.Context, kit *Kit) context.Context {
 // MustGetKit 从 context 获取 kit, 注意: 如果没有, 会panic, 一般在中间件中使用
 func MustGetKit(ctx context.Context) *Kit {
 	k, ok := ctx.Value(constant.KitKey).(*Kit)
-	if !ok {
-		panic(fmt.Errorf("ctx not found kit value"))
+	if ok {
+		return k
 	}
-	return k
+
+	// fallback to grpc context
+	k = FromGrpcContext(ctx)
+	if k.Rid != "" {
+		return k
+	}
+
+	panic(fmt.Errorf("ctx not found kit value"))
 }

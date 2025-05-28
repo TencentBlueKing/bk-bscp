@@ -114,8 +114,8 @@
                               </ContentWidthOverflowTips>
                             </td>
                             <td class="version">{{ item.is_latest ? 'latest' : item.versionName }}</td>
-                            <td class="user">{{ item.creator }}</td>
-                            <td class="user">{{ item.reviser }}</td>
+                            <td class="user"><user-name :name="item.creator"/></td>
+                            <td class="user"><user-name :name="item.reviser"/></td>
                             <td class="datetime">{{ item.update_at }}</td>
                             <td class="status" v-if="versionData.id === 0">
                               <StatusTag :status="item.file_state" />
@@ -324,6 +324,7 @@
   import TableFilter from '../../../components/table-filter.vue';
   import DownloadConfigBtn from '../download-config-btn.vue';
   import ContentWidthOverflowTips from '../../../../../../../../components/content-width-overflow-tips/index.vue';
+  import UserName from '../../../../../../../../components/user-name.vue';
   import { debounce } from 'lodash';
 
   interface IConfigsGroupData {

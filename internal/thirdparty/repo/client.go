@@ -51,6 +51,9 @@ func NewClient(repoSetting cc.BaseRepo, reg prometheus.Registerer) (*Client, err
 		return nil, err
 	}
 
+	// 日志中间件
+	cli.Transport = tools.NewCurlLogTransport(cli.Transport)
+
 	c := &client.Capability{
 		Client: cli,
 		Discover: &repoDiscovery{
