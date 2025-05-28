@@ -18,11 +18,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
@@ -83,12 +86,22 @@ func (c *Client) ProjectID() string {
 	return c.config.BkRepo.Project
 }
 
+func (c *Client) buildHeaders(ctx context.Context) http.Header {
+	kit := kit.FromGrpcContext(ctx)
+	headers := make(http.Header)
+	for k, v := range c.basicHeader {
+		headers[k] = slices.Clone(v)
+	}
+	headers.Set(constant.BkTenantID, kit.TenantID)
+	return headers
+}
+
 // IsProjectExist judge repo bscp project already exist.
 func (c *Client) IsProjectExist(ctx context.Context) error {
 	resp := c.client.Get().
 		WithContext(ctx).
 		SubResourcef("/repository/api/project/exist/%s", c.config.BkRepo.Project).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return resp.Err
@@ -117,7 +130,7 @@ func (c *Client) CreateRepo(ctx context.Context, req *CreateRepoReq) error {
 	resp := c.client.Post().
 		WithContext(ctx).
 		SubResourcef("/repository/api/repo/create").
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(req).
 		Do()
 	if resp.Err != nil {
@@ -155,7 +168,7 @@ func (c *Client) DeleteRepo(ctx context.Context, bizID uint32, forced bool) erro
 		WithContext(ctx).
 		SubResourcef("/repository/api/repo/delete/%s/%s", c.config.BkRepo.Project, repoName).
 		WithParam("forced", strconv.FormatBool(forced)).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return resp.Err
@@ -184,7 +197,7 @@ func (c *Client) IsNodeExist(ctx context.Context, nodePath string) (bool, error)
 	resp := c.client.Head().
 		WithContext(ctx).
 		SubResourcef(nodePath).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return false, resp.Err
@@ -206,7 +219,7 @@ func (c *Client) DeleteNode(ctx context.Context, nodePath string) error {
 	resp := c.client.Delete().
 		WithContext(ctx).
 		SubResourcef(nodePath).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return resp.Err
@@ -251,7 +264,7 @@ func (c *Client) QueryMetadata(ctx context.Context, opt *NodeOption) (map[string
 	resp := c.client.Get().
 		WithContext(ctx).
 		SubResourcef("/repository/api/metadata/%s/%s%s", opt.Project, repoName, fullPath).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return nil, resp.Err
@@ -278,7 +291,7 @@ func (c *Client) FileMetadataHead(ctx context.Context, nodePath string) (*FileMe
 	resp := c.client.Head().
 		WithContext(ctx).
 		SubResourcef(nodePath).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
 		return nil, resp.Err
@@ -302,7 +315,7 @@ func (c *Client) GenerateTempDownloadURL(ctx context.Context, req *GenerateTempD
 	resp := c.client.Post().
 		WithContext(ctx).
 		SubResourcef("/generic/temporary/url/create").
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(req).
 		Do()
 	if resp.Err != nil {
