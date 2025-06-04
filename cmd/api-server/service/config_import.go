@@ -28,6 +28,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
@@ -67,6 +68,7 @@ type configImport struct {
 // TemplateConfigFileImport Import template config file
 // nolint:funlen
 func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	kt := kit.MustGetKit(r.Context())
 
 	unzipStr := r.Header.Get("X-Bscp-Unzip")
@@ -183,6 +185,10 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	defer func() {
+		c.reporMetrics(kt.BizID, float64(len(folder)), totalSize, start)
+	}()
+
 	templateItems := []*pbcs.ListTemplateByTupleReq_Item{}
 	uploadErrCount := 0
 	for _, item := range folder {
@@ -199,10 +205,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 	batchSize := constant.UploadBatchSize
 	templateItem := map[string]*pbcs.ListTemplateByTupleResp_Item{}
 	for i := 0; i < len(templateItems); i += batchSize {
-		end := i + batchSize
-		if end > len(templateItems) {
-			end = len(templateItems)
-		}
+		end := min(i+batchSize, len(templateItems))
 		batch := templateItems[i:end]
 		// 批量验证biz_id、template_space_id、name、path是否存在
 		tuple, err := c.cfgClient.ListTemplateByTuple(kt.RpcCtx(), &pbcs.ListTemplateByTupleReq{
@@ -265,7 +268,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 // ConfigFileImport Import config file
 // nolint:funlen
 func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) {
-
+	start := time.Now()
 	kt := kit.MustGetKit(r.Context())
 	// Ensure r.Body is closed after reading
 	defer r.Body.Close()
@@ -375,6 +378,10 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 		_ = render.Render(w, r, rest.BadRequest(err))
 		return
 	}
+
+	defer func() {
+		c.reporMetrics(kt.BizID, float64(len(fileItems)), totalSize, start)
+	}()
 
 	// 批量验证biz_id、app_id、name、path是否存在
 	configItems := []*pbcs.ListConfigItemByTupleReq_Item{}
@@ -671,7 +678,6 @@ func handlerFilePath(rootDir, path string) (string, error) {
 
 // 计算文件的SHA-256散列值
 func calculateSHA256(reader io.Reader) (string, error) {
-
 	hash := sha256.New()
 	if _, err := io.Copy(hash, reader); err != nil {
 		return "", err
@@ -734,7 +740,7 @@ func isTextType(contentType string) bool {
 }
 
 func newConfigImportService(settings cc.Repository, authorizer auth.Authorizer,
-	cfgClient pbcs.ConfigClient) (*configImport, error) {
+	cfgClient pbcs.ConfigClient, mc *metric) (*configImport, error) {
 	provider, err := repository.NewProvider(settings)
 	if err != nil {
 		return nil, err
@@ -743,7 +749,7 @@ func newConfigImportService(settings cc.Repository, authorizer auth.Authorizer,
 		authorizer: authorizer,
 		provider:   provider,
 		cfgClient:  cfgClient,
-		mc:         initMetric(),
+		mc:         mc,
 	}
 	return config, nil
 }
@@ -890,4 +896,10 @@ func getAppConfigCnt(bizID uint32) int {
 		}
 	}
 	return int(cc.ApiServer().FeatureFlags.ResourceLimit.Default.AppConfigCnt)
+}
+
+func (c *configImport) reporMetrics(bizID uint32, folder float64, totalSize int64, start time.Time) {
+	c.mc.uploadDuration.WithLabelValues(strconv.Itoa(int(bizID))).Observe(time.Since(start).Seconds())
+	c.mc.uploadTotalSize.WithLabelValues(strconv.Itoa(int(bizID))).Add(float64(totalSize))
+	c.mc.uploadFileCount.WithLabelValues(strconv.Itoa(int(bizID))).Add(folder)
 }

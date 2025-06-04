@@ -12,6 +12,7 @@ require (
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v0.1.6
 	github.com/bluele/gcache v0.0.2
+	github.com/changsongl/gorm-plugin v0.0.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/httprate v0.14.1
@@ -67,7 +68,6 @@ require (
 	gorm.io/gorm v1.25.4
 	gorm.io/plugin/dbresolver v1.4.7
 	gorm.io/plugin/opentelemetry v0.1.3
-	gorm.io/plugin/prometheus v0.0.0-20230504115745-1aec2356381b
 	gorm.io/sharding v0.6.0
 	k8s.io/klog/v2 v2.110.1
 )

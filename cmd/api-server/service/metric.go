@@ -14,6 +14,7 @@ package service
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
@@ -22,16 +23,54 @@ func initMetric() *metric {
 	m := new(metric)
 	m.currentUploadedFolderSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: metrics.Namespace,
-		Subsystem: "upload",
 		Name:      "upload_file_directory_size_bytes",
 		Help:      "Size of the directory in bytes",
 	}, []string{"bizID", "resourceID"})
 	metrics.Register().MustRegister(m.currentUploadedFolderSize)
+
+	m.uploadFileCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_file_count_total",
+			Help:      "Number of uploaded files",
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadFileCount)
+
+	m.uploadDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_duration_seconds",
+			Help:      "Time taken for file upload",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadDuration)
+
+	m.uploadTotalSize = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metrics.Namespace,
+			Name:      "upload_total_size_bytes",
+			Help:      "Total size of uploaded files",
+		},
+		[]string{"biz"},
+	)
+	metrics.Register().MustRegister(m.uploadTotalSize)
 
 	return m
 }
 
 type metric struct {
 	// currentUploadedFolderSize Record the current uploaded folder size
+
 	currentUploadedFolderSize *prometheus.GaugeVec
+
+	// 文件上传数量
+	uploadFileCount *prometheus.CounterVec
+	// 文件上传耗时
+	uploadDuration *prometheus.HistogramVec
+	// 文件上传大小
+	uploadTotalSize *prometheus.CounterVec
 }
