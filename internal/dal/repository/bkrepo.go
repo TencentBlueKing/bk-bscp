@@ -353,6 +353,7 @@ func (c *bkrepoClient) CompleteMultipartUpload(kt *kit.Kit, sign string, uploadI
 
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyUploadID, uploadID)
+	req.Header.Set(repo.HeaderKeyOverwrite, "true")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
