@@ -87,7 +87,7 @@ func (c *Client) ProjectID() string {
 }
 
 func (c *Client) buildHeaders(ctx context.Context) http.Header {
-	kit := kit.FromGrpcContext(ctx)
+	kit := kit.MustGetKit(ctx)
 	headers := make(http.Header)
 	for k, v := range c.basicHeader {
 		headers[k] = slices.Clone(v)
@@ -96,11 +96,18 @@ func (c *Client) buildHeaders(ctx context.Context) http.Header {
 	return headers
 }
 
+func (c *Client) buildProject(ctx context.Context) string {
+	kit := kit.MustGetKit(ctx)
+
+	projectID := fmt.Sprintf("%s.%s", kit.TenantID, c.config.BkRepo.Project)
+	return projectID
+}
+
 // IsProjectExist judge repo bscp project already exist.
 func (c *Client) IsProjectExist(ctx context.Context) error {
 	resp := c.client.Get().
 		WithContext(ctx).
-		SubResourcef("/repository/api/project/exist/%s", c.config.BkRepo.Project).
+		SubResourcef("/repository/api/project/exist/%s", c.buildProject(ctx)).
 		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	if resp.Err != nil {
@@ -166,7 +173,7 @@ func (c *Client) DeleteRepo(ctx context.Context, bizID uint32, forced bool) erro
 
 	resp := c.client.Delete().
 		WithContext(ctx).
-		SubResourcef("/repository/api/repo/delete/%s/%s", c.config.BkRepo.Project, repoName).
+		SubResourcef("/repository/api/repo/delete/%s/%s", c.buildProject(ctx), repoName).
 		WithParam("forced", strconv.FormatBool(forced)).
 		WithHeaders(c.buildHeaders(ctx)).
 		Do()

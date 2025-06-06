@@ -27,7 +27,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-resty/resty/v2"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/klog/v2"
 )
@@ -239,7 +238,7 @@ type BKResult struct {
 // UnmarshalBKResult 反序列化为蓝鲸返回规范
 func UnmarshalBKResult(resp *resty.Response, data interface{}) error {
 	if resp.StatusCode() != http.StatusOK {
-		return errors.Errorf("http code %d != 200", resp.StatusCode())
+		return fmt.Errorf("http code %d != 200", resp.StatusCode())
 	}
 
 	// 部分接口，如 usermanager 返回的content-type不是json, 需要手动Unmarshal
@@ -262,7 +261,7 @@ func (r *BKResult) ValidateCode() error {
 		return err
 	}
 	if code != 0 {
-		return errors.Errorf("resp code %d != 0, %s", code, r.Message)
+		return fmt.Errorf("resp code %d != 0, %s", code, r.Message)
 	}
 	return nil
 }
@@ -283,7 +282,7 @@ func refineCode(code interface{}) (int, error) {
 		}
 		resultCode = c
 	default:
-		return -1, errors.Errorf("conversion to int from %T not supported", code)
+		return -1, fmt.Errorf("conversion to int from %T not supported", code)
 	}
 	return resultCode, nil
 }

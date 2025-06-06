@@ -82,6 +82,13 @@ func ListAllBusiness(ctx context.Context) ([]cmdb.Biz, error) {
 	params := &cmdb.SearchBizParams{}
 	bizRes, err := SearchBusiness(ctx, params)
 	if err != nil {
+		// slog.Error("list bus err, try to mock", "err", err)
+		// return []cmdb.Biz{
+		// 	{
+		// 		BizID:   1,
+		// 		BizName: "蓝鲸",
+		// 	},
+		// }, nil
 		return nil, err
 	}
 
