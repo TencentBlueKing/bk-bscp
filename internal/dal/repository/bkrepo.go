@@ -93,10 +93,11 @@ func (c *bkrepoClient) SyncManager() *SyncManager {
 }
 
 func (c *bkrepoClient) buildProject(kt *kit.Kit) string {
-	// 多租户环境
+	// 多租户下, bkrepo项目格式{tenantID}.{projectID}
 	if kt.TenantID != "" {
 		return fmt.Sprintf("%s.%s", kt.TenantID, c.project)
 	}
+
 	return c.project
 }
 

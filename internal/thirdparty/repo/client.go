@@ -99,8 +99,12 @@ func (c *Client) buildHeaders(ctx context.Context) http.Header {
 func (c *Client) buildProject(ctx context.Context) string {
 	kit := kit.MustGetKit(ctx)
 
-	projectID := fmt.Sprintf("%s.%s", kit.TenantID, c.config.BkRepo.Project)
-	return projectID
+	// 多租户下, bkrepo项目格式{tenantID}.{projectID}
+	if kit.TenantID != "" {
+		return fmt.Sprintf("%s.%s", kit.TenantID, c.config.BkRepo.Project)
+	}
+
+	return c.config.BkRepo.Project
 }
 
 // IsProjectExist judge repo bscp project already exist.
