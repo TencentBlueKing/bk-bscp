@@ -6,7 +6,7 @@
       show-footer-overflow
       show-overflow="tooltip"
       :loading="props.loading">
-      <vxe-column :title="$t('服务别名')" width="170">
+      <vxe-column :title="$t('服务别名')" fixed="left" width="170">
         <template #default="{ row }">
           <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
             {{ row.spec.alias }}
@@ -47,7 +47,7 @@
           <span>{{ datetimeFormat(row.revision.update_at) }}</span>
         </template>
       </vxe-column>
-      <vxe-column :title="$t('操作')" :width="locale === 'zh-cn' ? 200 : 260">
+      <vxe-column :title="$t('操作')" fixed="right" :width="locale === 'zh-cn' ? 200 : 260">
         <template #default="{ row }">
           <template v-if="row.permissions.view">
             <div class="operation-wrap">
