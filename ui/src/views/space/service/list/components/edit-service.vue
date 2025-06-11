@@ -251,6 +251,7 @@
     padding: 20px 24px;
     height: calc(100vh - 101px);
     font-size: 12px;
+    overflow: auto;
     :deep(.bk-form-item) {
       .bk-form-label,
       .bk-form-content {

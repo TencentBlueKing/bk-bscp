@@ -155,6 +155,7 @@
   .create-app-form {
     padding: 20px 24px;
     height: calc(100vh - 101px);
+    overflow: auto;
   }
   .create-app-footer {
     padding: 8px 24px;
