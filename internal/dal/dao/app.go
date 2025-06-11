@@ -60,6 +60,8 @@ type App interface {
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 	// CountApps 统计服务数量
 	CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error)
+	// GetOneAppByBiz 通过业务获取其中一个app
+	GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error)
 }
 
 var _ App = new(appDao)
@@ -69,6 +71,22 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// GetOneAppByBiz 通过业务获取其中一个app
+func (dao *appDao) GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error) {
+	if bizID == 0 {
+		return nil, errors.New("biz id is 0")
+	}
+
+	m := dao.genQ.App
+	q := dao.genQ.App.WithContext(kit.Ctx)
+
+	detail, err := q.Where(m.BizID.Eq(bizID)).Take()
+	if err != nil {
+		return nil, err
+	}
+	return detail, nil
 }
 
 // CountApps implements App.

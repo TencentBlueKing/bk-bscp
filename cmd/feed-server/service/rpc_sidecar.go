@@ -56,7 +56,8 @@ func (s *Service) Handshake(ctx context.Context, hm *pbfs.HandshakeMessage) (*pb
 		return nil, status.Error(codes.InvalidArgument, "invalid handshake message, "+err.Error())
 	}
 
-	if !s.authorizer.HasBiz(ctx, hm.Spec.BizId) {
+	// 验证业务是否存在
+	if !s.bll.AppCache().HasBiz(im.Kit, hm.Spec.BizId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid handshake message, "+
 			"biz id %d does not exist", hm.Spec.BizId))
 	}

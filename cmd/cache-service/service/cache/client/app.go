@@ -238,3 +238,102 @@ func (c *client) refreshAppMetaCache(kt *kit.Kit, bizID uint32, appID uint32) (s
 
 	return string(js), nil
 }
+
+// GetTenantIDByBiz 通过业务获取租户ID
+func (c *client) GetTenantIDByBiz(kit *kit.Kit, bizID uint32, refresh bool) (string, error) {
+	var (
+		tenantID string
+		hit      bool
+		err      error
+	)
+
+	// 强制刷新获取
+	if !refresh {
+		tenantID, hit, err = c.getTenantIDByBizFromCache(kit, bizID)
+		if err != nil {
+			return "", err
+		}
+		if hit {
+			c.mc.hitCounter.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Inc()
+			return tenantID, nil
+		}
+	}
+
+	state := c.rLock.Acquire(keys.ResKind.TenantID(bizID))
+	if state.Acquired || (!state.Acquired && state.WithLimit) {
+		start := time.Now()
+		tenantID, err = c.refreshTenantIDCache(kit, bizID)
+		if err != nil {
+			state.Release(true)
+			return "", err
+		}
+
+		state.Release(false)
+
+		c.mc.refreshLagMS.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Observe(tools.SinceMS(start))
+
+		return tenantID, nil
+	}
+
+	tenantID, hit, err = c.getTenantIDByBizFromCache(kit, bizID)
+	if err != nil {
+		return "", err
+	}
+
+	if !hit {
+		return "", errf.New(errf.RecordNotFound, fmt.Sprintf("app %d tenant id cache not found", bizID))
+	}
+
+	c.mc.hitCounter.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Inc()
+
+	return tenantID, nil
+}
+
+// getTenantIDByBizFromCache get tenant id from cache
+func (c *client) getTenantIDByBizFromCache(kit *kit.Kit, bizID uint32) (string, bool, error) {
+	val, err := c.bds.Get(kit.Ctx, keys.Key.TenantIDKey(bizID))
+	if err != nil {
+		return "", false, err
+	}
+
+	if len(val) == 0 {
+		return "", false, nil
+	}
+
+	if val == keys.Key.NullValue() {
+		return "", false, errf.New(errf.RecordNotFound, fmt.Sprintf("tenant %d not found", bizID))
+	}
+
+	var tenantID string
+	if e := jsoni.UnmarshalFromString(val, &tenantID); e != nil {
+		return "", false, e
+	}
+
+	return tenantID, true, nil
+}
+
+// refreshTenantIDCache get the tenant id from db and try to refresh to the cache.
+func (c *client) refreshTenantIDCache(kit *kit.Kit, bizID uint32) (string, error) {
+	cancel := kit.CtxWithTimeoutMS(200)
+	defer cancel()
+
+	app, err := c.op.App().GetOneAppByBiz(kit, bizID)
+	if err != nil {
+		return "", err
+	}
+	b, err := jsoni.Marshal(app.Spec.TenantID)
+	if err != nil {
+		return "", err
+	}
+
+	// update the app meta to cache.
+	err = c.bds.Set(kit.Ctx, keys.Key.TenantIDKey(bizID), string(b), keys.Key.AppMetaTtlSec(false))
+	if err != nil {
+		logs.Errorf("set app: %d cache failed, err: %v, rid: %s", bizID, err, kit.Rid)
+		return "", err
+	}
+
+	c.mc.cacheItemByteSize.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Observe(float64(len(b)))
+
+	return app.Spec.TenantID, nil
+}

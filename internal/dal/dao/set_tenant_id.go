@@ -42,8 +42,9 @@ func beforeQuery(db *gorm.DB) {
 	if _, excluded := excludedTables[db.Statement.Table]; excluded {
 		return
 	}
+
 	kit := kit.FromGrpcContext(db.Statement.Context)
-	if kit.TenantID != "" || db.Statement.Schema == nil {
+	if kit.TenantID == "" || db.Statement.Schema == nil {
 		return
 	}
 	// 查找 TenantID 字段
@@ -86,7 +87,7 @@ func beforeAnyOp(db *gorm.DB) {
 		return
 	}
 	kit := kit.FromGrpcContext(db.Statement.Context)
-	if kit.TenantID != "" || db.Statement.Schema == nil {
+	if kit.TenantID == "" || db.Statement.Schema == nil {
 		return
 	}
 	rv := db.Statement.ReflectValue

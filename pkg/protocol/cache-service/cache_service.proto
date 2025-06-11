@@ -110,6 +110,8 @@ service Cache {
       body: "*"
     };
   }
+
+  rpc GetTenantIDByBiz(GetTenantIDByBizReq) returns (GetTenantIDByBizResp) {}
 }
 
 message JsonRawResp {
@@ -258,3 +260,12 @@ message SetAppLastConsumedTimeReq {
 }
 
 message SetAppLastConsumedTimeResp {}
+
+message GetTenantIDByBizReq {
+  uint32 biz_id = 1;
+  bool refresh = 2;
+}
+
+message GetTenantIDByBizResp {
+  string tenant_id = 1;
+}

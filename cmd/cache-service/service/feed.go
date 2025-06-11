@@ -42,6 +42,22 @@ func (s *Service) GetAppID(ctx context.Context, req *pbcs.GetAppIDReq) (*pbcs.Ge
 	}, nil
 }
 
+// GetTenantIDByBiz 通过业务获取租户ID
+func (s *Service) GetTenantIDByBiz(ctx context.Context, req *pbcs.GetTenantIDByBizReq) (
+	*pbcs.GetTenantIDByBizResp, error) {
+	if req.GetBizId() <= 0 {
+		return nil, errf.New(errf.InvalidParameter, "invalid biz id")
+	}
+	kit := kit.FromGrpcContext(ctx)
+
+	tenantID, err := s.op.GetTenantIDByBiz(kit, req.GetBizId(), req.GetRefresh())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetTenantIDByBizResp{TenantId: tenantID}, nil
+}
+
 // GetAppMeta get app's basic info.
 func (s *Service) GetAppMeta(ctx context.Context, req *pbcs.GetAppMetaReq) (*pbcs.JsonRawResp, error) {
 	if req.BizId <= 0 || req.AppId <= 0 {
