@@ -23,15 +23,13 @@
             <span class="text">{{ `${panel.label}(${panel.count})` }}</span>
           </div>
         </div>
-        <bk-input
+        <SearchSelector
+          ref="searchSelectorRef"
+          :search-filed="searchFiled"
+          :user-filed="['reviser']"
+          :placeholder="t('搜索 服务别名、服务名称、服务描述、更新人')"
           class="search-app-name"
-          type="search"
-          v-model="searchStr"
-          :placeholder="t('搜索 服务别名、服务名称、服务描述、更新人、创建人')"
-          :clearable="true"
-          @input="handleSearch"
-          @clear="handleClearSearchStr">
-        </bk-input>
+          @search="handleSearch" />
         <div class="panel-wrap">
           <div
             v-for="panel in showPanels"
@@ -54,7 +52,7 @@
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
             @create="handleCreateServiceClick"
-            @clear="handleClearSearchStr" />
+            @clear="handleClearsearchQuery" />
           <template v-else>
             <div class="serving-list">
               <Card
@@ -94,7 +92,7 @@
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
             @create="handleCreateServiceClick"
-            @clear="handleClearSearchStr" />
+            @clear="handleClearsearchQuery" />
         </template>
       </ServiceTable>
     </div>
@@ -154,11 +152,12 @@
   import CreateService from './create-service.vue';
   import EditService from './edit-service.vue';
   import Message from 'bkui-vue/lib/message';
-  import { debounce } from 'lodash';
+  // import { debounce } from 'lodash';
   import ServiceTable from './service-table.vue';
   import EmptyList from './empty-list.vue';
+  import SearchSelector from '../../../../../components/search-selector.vue';
 
-  const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
+  const { permissionQuery, showApplyPermDialog, spaceFeatureFlags } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
@@ -170,7 +169,7 @@
 
   const serviceList = ref<IAppItem[]>([]);
   const isLoading = ref(true);
-  const searchStr = ref('');
+  const searchQuery = ref<{ [key: string]: string }>({});
   const isCreateServiceOpen = ref(false);
   const isEditServiceOpen = ref(false);
   const dialogInputStr = ref('');
@@ -216,6 +215,13 @@
   ];
   const activeType = ref('all');
   const activeShow = ref('table');
+  const searchFiled = [
+    { field: 'alias', label: t('服务别名') },
+    { field: 'name', label: t('服务名称') },
+    { field: 'memo', label: t('服务描述') },
+    { field: 'reviser', label: t('更新人') },
+  ];
+  const searchSelectorRef = ref();
 
   // 查询条件
   const filters = computed(() => {
@@ -225,12 +231,12 @@
       start: (current - 1) * limit,
       limit,
     };
-    if (searchStr.value) {
-      rules.search = searchStr.value;
-    }
     if (onlyShowMyService.value) {
-      rules.operator = userInfo.value.username;
+      searchQuery.value.creator = spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE
+        ? userInfo.value.tenant_id
+        : userInfo.value.username;
     }
+    rules.search = searchQuery.value;
     if (activeType.value) {
       rules.config_type = activeType.value === 'all' ? '' : activeType.value;
     }
@@ -241,7 +247,7 @@
   watch(
     () => [onlyShowMyService.value, props.spaceId, activeType.value],
     () => {
-      searchStr.value = '';
+      searchQuery.value = {};
       isSearchEmpty.value = false;
       pagination.value.limit = 50;
       refreshSeviceList();
@@ -366,12 +372,14 @@
     loadAppList();
   };
 
-  const handleSearch = debounce(() => {
+  const handleSearch = (list: { [key: string]: string }) => {
+    searchQuery.value = list;
     isSearchEmpty.value = true;
     refreshSeviceList();
-  }, 300);
-  const handleClearSearchStr = () => {
-    searchStr.value = '';
+  };
+  const handleClearsearchQuery = () => {
+    searchQuery.value = {};
+    searchSelectorRef.value.clear();
     isSearchEmpty.value = false;
     refreshSeviceList();
   };

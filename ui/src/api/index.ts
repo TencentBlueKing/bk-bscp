@@ -41,8 +41,8 @@ export const getSpaceFeatureFlag = (biz: string) =>
  * @param params 查询过滤条件
  * @returns
  */
-export const getAppList = (biz_id: string, params: IAppListQuery = {}) =>
-  http.get(`config/list/app/app/biz_id/${biz_id}`, { params }).then((resp) => {
+export const getAppList = (biz_id: string, query: IAppListQuery = {}) =>
+  http.post(`config/list/app/app/biz_id/${biz_id}`, query).then((resp) => {
     resp.data.details.forEach((item: IAppItem) => {
       // @ts-ignore
       item.permissions = resp.web_annotations.perms[item.id] || {};
@@ -119,6 +119,5 @@ export const loginOut = () =>
  * 获取人员名单
  * @returns
  */
-export const getApproverListApi = () =>
-  `${(window as any).USER_MAN_HOST}`;
-// `${(window as any).USER_MAN_HOST}/api/c/compapi/v2/usermanage/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1`;
+export const getUserList = (keyword: string) =>
+  http.get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, { params: { keyword } }).then((resp) => resp.data);

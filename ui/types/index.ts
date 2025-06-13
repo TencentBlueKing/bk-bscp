@@ -51,3 +51,14 @@ export interface IPermissionResource {
   type: string;
   type_name: string;
 }
+
+// 多租户用户信息
+export interface ITenantUser {
+  bk_username: string;
+  login_name: string;
+  full_name: string;
+  display_name: string;
+  data_source_type: string;
+  owner_tenant_id: string;
+  organization_paths: string[];
+}
