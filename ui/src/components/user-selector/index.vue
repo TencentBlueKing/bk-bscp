@@ -19,7 +19,7 @@
   import BkUserSelector from '@blueking/bk-user-selector';
   import BkMemberSelector from './user-selector-origin/index';
   import '@blueking/bk-user-selector/vue3/vue3.css';
-  import { ref } from 'vue';
+  import { ref, onBeforeMount } from 'vue';
   import useUserStore from '../../store/user';
   import useGlobalStore from '../../store/global';
   import { storeToRefs } from 'pinia';
@@ -27,7 +27,6 @@
   withDefaults(
     defineProps<{
       isError: boolean;
-      api: string;
     }>(),
     {},
   );
@@ -36,13 +35,21 @@
   const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
 
   const emits = defineEmits(['change']);
-
+  const api = ref(''); // API 基础路径
 
   // 租户 ID
   const tenantId = ref(userInfo.value.tenant_id);
 
   // 多选选中值
   const selectedUsers = ref([]);
+
+  onBeforeMount(() => {
+    if (spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE) {
+      api.value = `${(window as any).USER_MAN_HOST}`;
+    } else {
+      api.value = `${(window as any).USER_MAN_HOST}/fs_list_users/?app_code=bk-magicbox&page_size=1000&page=1`;
+    }
+  });
 
   // 处理多选模式下的值变化
   const handleUsersChange = (users: any) => {

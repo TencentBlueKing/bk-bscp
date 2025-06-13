@@ -74,6 +74,7 @@
         <bk-form-item :label="t('指定审批人')" property="approver" required>
           <bk-user-selector
             v-model="selectionsApprover"
+            :is-error="selValidationError"
             @change="changeApprover" />
         </bk-form-item>
         <bk-form-item property="approve_type">
