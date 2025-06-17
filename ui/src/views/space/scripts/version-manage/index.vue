@@ -13,8 +13,8 @@
             ref="searchSelectorRef"
             class="search-input"
             :search-filed="searchFiled"
-            :user-filed="['reviser']"
-            :placeholder="t('版本号/版本说明/更新人')"
+            :user-filed="['creator']"
+            :placeholder="t('版本号/版本说明/创建人')"
             @search="handleSearch" />
         </div>
         <div :class="['version-data-container', { 'script-panel-open': versionEditData.panelOpen }]">
@@ -191,7 +191,7 @@
   const searchFiled = [
     { field: 'name', label: t('版本号') },
     { field: 'memo', label: t('版本说明') },
-    { field: 'reviser', label: t('更新人') },
+    { field: 'creator', label: t('创建人') },
   ];
 
   onMounted(async () => {

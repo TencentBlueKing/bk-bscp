@@ -530,9 +530,10 @@ export const getTemplateVersionList = (
   params: ICommonQuery,
 ) =>
   http
-    .get(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions`, {
+    .post(
+      `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/list`,
       params,
-    })
+    )
     .then((res) => res.data);
 
 /**

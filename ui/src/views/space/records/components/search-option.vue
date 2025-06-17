@@ -8,6 +8,7 @@
         unique-select
         :placeholder="$t('资源类型/操作行为/资源实例/状态/操作人/操作途径')"
         :data="searchData"
+        :get-menu-list="getMenuList"
         @update:model-value="change" />
     </div>
   </section>
@@ -19,12 +20,26 @@
   import { debounce } from 'lodash';
   import { useI18n } from 'vue-i18n';
   import { RECORD_RES_TYPE, ACTION, STATUS, FILTER_KEY, SEARCH_ID, OPERATE_WAY } from '../../../../constants/record';
+  import { getUserList } from '../../../../api';
+  import { ITenantUser } from '../../../../../types/index';
+  import { storeToRefs } from 'pinia';
+  import useGlobalStore from '../../../../store/global';
 
   interface ISearchValueItem {
     id: string;
     name: string;
     values: { id: string; name: string }[];
   }
+
+  interface ISearchMenuItem {
+    id: string;
+    name: string;
+    children?: any[];
+    placeholder?: string;
+    async?: boolean;
+  }
+
+  const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
 
   const emits = defineEmits(['sendSearchData']);
 
@@ -84,7 +99,7 @@
       id: SEARCH_ID.operator,
       multiple: false,
       children: [],
-      async: false,
+      async: true,
     },
     {
       name: t('操作途径'),
@@ -111,6 +126,20 @@
     // 获取地址栏参数
     formatUrlParams();
   });
+
+  const getMenuList = async (item: ISearchMenuItem, keyword: string) => {
+    if (!item) return searchData.value;
+    if (item.async && keyword && spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE) {
+      const res = await getUserList(keyword);
+      return res.data.map((user: ITenantUser) => {
+        return {
+          id: user.bk_username,
+          name: user.display_name,
+        };
+      });
+    }
+    return [];
+  };
 
   // 搜索框值变化时 两个“仅看”选项联动
   const change = (data: ISearchValueItem[]) => {
