@@ -30,6 +30,7 @@ export interface ICommonQuery {
   sort?: string;
   status?: string[];
   top_ids?: number[];
+  search?: { [key: string]: string };
 }
 
 // 权限查询参数单个资源条目

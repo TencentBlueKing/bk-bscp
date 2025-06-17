@@ -28,7 +28,7 @@
               @view="handleViewVersionClick"
               @page-change="refreshList"
               @page-limit-change="handlePageLimitChange"
-              @clear-str="clearStr">
+              @clear-str="clearSearchQuery">
               <template #operations="{ data }">
                 <div v-if="data.hook_revision" class="action-btns">
                   <bk-button
@@ -376,6 +376,7 @@
   };
 
   const refreshList = () => {
+    isSearchEmpty.value = Object.keys(searchQuery.value).length > 0;
     pagination.value.current = 1;
     getVersionList();
   };
@@ -389,7 +390,7 @@
     router.push({ name: 'script-list', params: { spaceId: spaceId.value } });
   };
 
-  const clearStr = () => {
+  const clearSearchQuery = () => {
     searchQuery.value = {};
     searchSelectorRef.value.clear();
     isSearchEmpty.value = false;

@@ -4,18 +4,13 @@
       <div class="table-operate-btns">
         <slot name="tableOperations"> </slot>
       </div>
-      <bk-input
-        v-model="searchStr"
+      <SearchSelector
+        ref="searchSelectorRef"
         class="search-script-input"
+        :search-filed="searchFiled"
+        :user-filed="['creator', 'reviser']"
         :placeholder="t('配置文件名/描述/创建人/更新人')"
-        :clearable="true"
-        @clear="refreshList()"
-        @input="handleSearchInputChange"
-        v-bk-tooltips="{ content: t('配置文件名/描述/创建人/更新人'), disabled: locale === 'zh-cn' }">
-        <template #suffix>
-          <Search class="search-input-icon" />
-        </template>
-      </bk-input>
+        @search="handleSearch" />
     </div>
     <bk-loading style="min-height: 200px" :loading="listLoading">
       <bk-table
@@ -82,7 +77,7 @@
         </bk-table-column>
         <bk-table-column :label="t('更新人')" prop="revision.reviser" :width="100">
           <template #default="{ row }">
-            <user-name v-if="row.revision" :name="row.revision.reviser"/>
+            <user-name v-if="row.revision" :name="row.revision.reviser" />
           </template>
         </bk-table-column>
         <bk-table-column :label="t('更新时间')" prop="" :width="180">
@@ -135,7 +130,7 @@
           </template>
         </bk-table-column>
         <template #empty>
-          <TableEmpty :is-search-empty="isSearchEmpty" @clear="clearSearchStr"></TableEmpty>
+          <TableEmpty :is-search-empty="isSearchEmpty" @clear="clearSearchQuery"></TableEmpty>
         </template>
       </bk-table>
     </bk-loading>
@@ -182,8 +177,7 @@
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import { Ellipsis, Search, Spinner } from 'bkui-vue/lib/icon';
-  import { debounce } from 'lodash';
+  import { Ellipsis, Spinner } from 'bkui-vue/lib/icon';
   import useGlobalStore from '../../../../../../store/global';
   import useTemplateStore from '../../../../../../store/template';
   import { ICommonQuery } from '../../../../../../../types/index';
@@ -208,6 +202,7 @@
   import ViewConfig from '../operations/view-config/view-config.vue';
   import EditConfig from '../operations/edit-config/edit-config.vue';
   import UserName from '../../../../../../components/user-name.vue';
+  import SearchSelector from '../../../../../../components/search-selector.vue';
 
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -235,7 +230,6 @@
   const citeByPkgsList = ref<ITemplateCitedByPkgs[][]>([]);
   const boundByAppsCountLoading = ref(false);
   const boundByAppsCountList = ref<ITemplateCitedCountDetailItem[]>([]);
-  const searchStr = ref('');
   const isAddToPkgsDialogShow = ref(false); // 显示添加至套餐弹窗
   const isMoveOutFromPkgsDialogShow = ref(false); // 显示从套餐移除弹窗
   const isDeleteConfigDialogShow = ref(false); // 显示删除配置弹窗
@@ -255,6 +249,14 @@
   const selectConfigMemo = ref('');
   const configCiteByPkgIds = ref<number[]>([]);
   const isAcrossChecked = ref(false);
+  const searchQuery = ref<{ [key: string]: string }>({});
+  const searchSelectorRef = ref();
+  const searchFiled = [
+    { field: 'path_name', label: t('配置文件名') },
+    { field: 'memo', label: t('描述') },
+    { field: 'creator', label: t('创建人') },
+    { field: 'reviser', label: t('更新人') },
+  ];
 
   const crossPageSelect = computed(() => pagination.value.limit < pagination.value.count);
 
@@ -269,7 +271,9 @@
   watch(
     () => props.currentPkg,
     () => {
-      searchStr.value = '';
+      searchQuery.value = {};
+      searchSelectorRef.value.clear();
+      isSearchEmpty.value = false;
       loadConfigList();
     },
   );
@@ -307,10 +311,7 @@
     if (topIds.value.length > 0) {
       params.ids = topIds.value;
     }
-    if (searchStr.value) {
-      params.search_fields = 'name,path,memo,creator,reviser';
-      params.search_value = searchStr.value;
-    }
+    params.search = searchQuery.value;
     const res = await props.getConfigList(params);
     list.value = res.details;
     pagination.value.count = res.count;
@@ -353,7 +354,7 @@
   };
 
   const refreshList = (current = 1, createConfig = false, pageChange = false) => {
-    isSearchEmpty.value = searchStr.value !== '';
+    isSearchEmpty.value = Object.keys(searchQuery.value).length > 0;
     pagination.value.current = current;
     // 非跨页全选/半选 需要重置全选状态
     if (![CheckType.HalfAcrossChecked, CheckType.AcrossChecked].includes(selectType.value) || !pageChange) {
@@ -372,10 +373,6 @@
     });
     refreshList();
   };
-
-  const handleSearchInputChange = debounce(() => {
-    refreshList();
-  }, 300);
 
   const handleSelectionChange = (row: ITemplateConfigItem) => {
     const isSelected = selections.value.some((item) => item.id === row.id);
@@ -486,8 +483,16 @@
     refreshList(1, true);
   };
 
-  const clearSearchStr = () => {
-    searchStr.value = '';
+  const clearSearchQuery = () => {
+    searchQuery.value = {};
+    searchSelectorRef.value.clear();
+    isSearchEmpty.value = false;
+    refreshList();
+  };
+
+  const handleSearch = (list: { [key: string]: string }) => {
+    searchQuery.value = list;
+    isSearchEmpty.value = true;
     refreshList();
   };
 
