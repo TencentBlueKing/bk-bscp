@@ -72,12 +72,12 @@
       </bk-table-column>
       <bk-table-column :label="t('创建人')" prop="revision.creator" :width="150">
         <template #default="{ row }">
-          <user-name v-if="row.revision" :name="row.revision.creator"/>
+          <user-name v-if="row.revision" :name="row.revision.creator" />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('修改人')" prop="revision.reviser" :width="150">
         <template #default="{ row }">
-          <user-name v-if="row.revision" :name="row.revision.reviser"/>
+          <user-name v-if="row.revision" :name="row.revision.reviser" />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('修改时间')" :sort="true" :width="180">
@@ -225,7 +225,7 @@
   const props = defineProps<{
     bkBizId: string;
     appId: number;
-    searchStr: string;
+    searchQuery: { [key: string]: string };
   }>();
 
   const emits = defineEmits(['clearStr', 'sendTableDataCount', 'updateSelectedItems']);
@@ -305,11 +305,12 @@
   );
 
   watch(
-    () => props.searchStr,
+    () => props.searchQuery,
     () => {
-      isSearchEmpty.value = !!props.searchStr;
+      isSearchEmpty.value = Object.keys(props.searchQuery).length > 0;
       refresh();
     },
+    { deep: true },
   );
 
   watch(
@@ -357,15 +358,12 @@
         start: (pagination.value.current - 1) * pagination.value.limit,
         limit: pagination.value.limit,
         with_status: true,
+        search: props.searchQuery,
       };
       if (!createConfig) {
         serviceStore.$patch((state) => {
           state.topIds = [];
         });
-      }
-      if (props.searchStr) {
-        params.search_fields = 'key,revister,creator';
-        params.search_key = props.searchStr;
       }
       if (typeFilterChecked.value!.length > 0) {
         params.kv_type = typeFilterChecked.value;

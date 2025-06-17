@@ -114,8 +114,8 @@
                               </ContentWidthOverflowTips>
                             </td>
                             <td class="version">{{ item.is_latest ? 'latest' : item.versionName }}</td>
-                            <td class="user"><user-name :name="item.creator"/></td>
-                            <td class="user"><user-name :name="item.reviser"/></td>
+                            <td class="user"><user-name :name="item.creator" /></td>
+                            <td class="user"><user-name :name="item.reviser" /></td>
                             <td class="datetime">{{ item.update_at }}</td>
                             <td class="status" v-if="versionData.id === 0">
                               <StatusTag :status="item.file_state" />
@@ -376,7 +376,7 @@
   const props = defineProps<{
     bkBizId: string;
     appId: number;
-    searchStr: string;
+    searchQuery: { [key: string]: string };
   }>();
 
   const emits = defineEmits(['clearStr', 'deleteConfig', 'updateSelectedItems']);
@@ -517,11 +517,12 @@
   );
 
   watch(
-    () => props.searchStr,
+    () => props.searchQuery,
     () => {
-      props.searchStr ? (isSearchEmpty.value = true) : (isSearchEmpty.value = false);
+      isSearchEmpty.value = Object.keys(props.searchQuery).length > 0;
       getAllConfigList();
     },
+    { deep: true },
   );
 
   watch(
@@ -552,7 +553,6 @@
     configStore.$patch((state) => {
       state.createVersionBtnLoading = true;
     });
-    const currentSearchStr = props.searchStr;
     loading.value = true;
     await Promise.all([getCommonConfigList(createConfig), getBoundTemplateList()]);
     const existConfigCount = configList.value.filter((item) => item.file_state !== 'DELETE').length;
@@ -563,8 +563,6 @@
       state.createVersionBtnLoading = false;
     });
     loading.value = false;
-    // 处理文件数量过多 导致上一次搜索结果返回比这一次慢 导入搜索结果错误 取消数据处理
-    if (currentSearchStr !== props.searchStr) return;
     tableGroupsData.value = transListToTableData();
   }, 500);
 
@@ -575,6 +573,7 @@
       const params: ICommonQuery = {
         start: 0,
         all: true,
+        search: props.searchQuery,
       };
       if (!createConfig) {
         serviceStore.$patch((state) => {
@@ -584,17 +583,9 @@
       if (topIds.value.length > 0) params.ids = topIds.value;
       let res;
       if (isUnNamedVersion.value) {
-        if (props.searchStr) {
-          params.search_fields = 'name,path,memo,creator,reviser';
-          params.search_value = props.searchStr;
-        }
         if (statusFilterChecked.value.length > 0) params.status = statusFilterChecked.value;
         res = await getConfigList(props.bkBizId, props.appId, params);
       } else {
-        if (props.searchStr) {
-          params.search_fields = 'name,path,memo,creator';
-          params.search_value = props.searchStr;
-        }
         res = await getReleasedConfigList(props.bkBizId, props.appId, versionData.value.id, params);
       }
       configList.value = res.details.sort((a: IConfigItem, b: IConfigItem) => {
@@ -627,12 +618,8 @@
       const params: ICommonQuery = {
         start: 0,
         all: true,
+        search: props.searchQuery,
       };
-      if (props.searchStr) {
-        params.search_fields = 'revision_name,revision_memo,name,path,creator';
-        params.search_value = props.searchStr;
-      }
-
       let res;
       if (isUnNamedVersion.value) {
         if (statusFilterChecked.value.length > 0) params.status = statusFilterChecked.value;
