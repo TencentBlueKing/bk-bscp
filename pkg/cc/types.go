@@ -1148,8 +1148,9 @@ func (lm *MatchReleaseLimiter) trySetDefault() {
 }
 
 // RateLimiter defines the rate limiter options for traffic control.
+// requires bscp-go init/sidecar mode and v1.3.1 or above
 type RateLimiter struct {
-	Enable          bool    `yaml:"enable"`
+	Enable          bool    `yaml:"enabled"`
 	ClientBandwidth uint    `yaml:"clientBandwidth"`
 	Global          BasicRL `yaml:"global"`
 	Biz             BizRLs  `yaml:"biz"`

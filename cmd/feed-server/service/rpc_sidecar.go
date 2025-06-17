@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	prm "github.com/prometheus/client_golang/prometheus"
 	"github.com/samber/lo"
 	"google.golang.org/grpc/codes"
@@ -42,6 +43,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 	sfs "github.com/TencentBlueKing/bk-bscp/pkg/sf-share"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
+	pkgtypes "github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // Handshake received handshake from sidecar to validate the app instance's authorization and legality.
@@ -418,9 +420,52 @@ func (s *Service) PullAppFileMeta(ctx context.Context, req *pbfs.PullAppFileMeta
 	return resp, nil
 }
 
+// getWaitTimeMil 流量控制
+func (s *Service) getWaitTimeMil(req *pbfs.GetDownloadURLReq, app *pkgtypes.AppCacheMeta) int64 {
+	if !s.rl.Enable() {
+		return 0
+	}
+
+	// 对于单个大文件下载，受限于单个客户端和服务端之间的带宽（比如为10MB/s=80Mb/s），而在存储服务端支持更高带宽的情况下（比如100MB/s），
+	// 哪怕单个文件2GB，在限流器阈值比单个客户端下载带宽高的情况下，还是应该允许其他客户端去存储服务端下载，
+	// 超过客户端下载带宽的大文件暂且按客户端带宽计入流控
+	// 多个大文件的持续下载，会影响到限流器流控的精确性，当前暂时只计入每个大文件首次一秒内的流控情况，后续的流量消耗不计入
+	var gWaitTimeMil, bWaitTimeMil int64
+	bandwidth := int(s.rl.ClientBandwidth()) * ratelimiter.MB
+	if int(req.FileMeta.CommitSpec.Content.ByteSize) > bandwidth {
+		gWaitTimeMil = s.rl.Global().WaitTimeMil(bandwidth)
+		bWaitTimeMil = s.rl.UseBiz(uint(req.BizId)).WaitTimeMil(bandwidth)
+	} else {
+		gWaitTimeMil = s.rl.Global().WaitTimeMil(int(req.FileMeta.CommitSpec.Content.ByteSize))
+		bWaitTimeMil = s.rl.UseBiz(uint(req.BizId)).WaitTimeMil(int(req.FileMeta.CommitSpec.Content.ByteSize))
+	}
+
+	// 分别统计全局和业务粒度流控情况
+	gs := s.rl.Global().Stats()
+	s.mc.collectDownload("0", gs.TotalByteSize, gs.DelayCnt, gs.DelayMilliseconds)
+	bs := s.rl.UseBiz(uint(req.BizId)).Stats()
+	s.mc.collectDownload(fmt.Sprintf("%d", req.BizId), bs.TotalByteSize, bs.DelayCnt, bs.DelayMilliseconds)
+
+	// 优先使用流控时间长的
+	wt := max(bWaitTimeMil, gWaitTimeMil)
+	if wt <= 0 {
+		return 0
+	}
+
+	logs.Warnf("rateLimiter: biz[%d] app[%s] download is limited, file name=%s, size=%s, waitTimeMil=%d, globalCount=%d, bizCount=%d", // nolint
+		req.BizId, app.Name,
+		req.FileMeta.ConfigItemSpec.Name,
+		humanize.Bytes(req.FileMeta.CommitSpec.Content.ByteSize),
+		wt,
+		gs.DelayCnt,
+		bs.DelayCnt,
+	)
+
+	return wt
+}
+
 // GetDownloadURL get the download url of the file.
-func (s *Service) GetDownloadURL(ctx context.Context, req *pbfs.GetDownloadURLReq) (
-	*pbfs.GetDownloadURLResp, error) {
+func (s *Service) GetDownloadURL(ctx context.Context, req *pbfs.GetDownloadURLReq) (*pbfs.GetDownloadURLResp, error) {
 	// check if the sidecar's version can be accepted.
 	if !sfs.IsAPIVersionMatch(req.ApiVersion) {
 		st := status.New(codes.FailedPrecondition, "sdk's api version is too low, should be upgraded")
@@ -467,43 +512,16 @@ func (s *Service) GetDownloadURL(ctx context.Context, req *pbfs.GetDownloadURLRe
 		return nil, status.Errorf(codes.Aborted, "generate temp download url failed, %s", err.Error())
 	}
 
-	if !s.rl.Enable() {
-		return &pbfs.GetDownloadURLResp{
-			Url:         downloadLink[0], // 保留Url兼容老版客户端，DownloadLink方法返回无错误则downloadLink长度必大于0，无需判断
-			Urls:        downloadLink,
-			WaitTimeMil: 0}, nil
-	}
-	// 对于单个大文件下载，受限于单个客户端和服务端之间的带宽（比如为10MB/s=80Mb/s），而在存储服务端支持更高带宽的情况下（比如100MB/s），
-	// 哪怕单个文件2GB，在限流器阈值比单个客户端下载带宽高的情况下，还是应该允许其他客户端去存储服务端下载，
-	// 超过客户端下载带宽的大文件暂且按客户端带宽计入流控
-	// 多个大文件的持续下载，会影响到限流器流控的精确性，当前暂时只计入每个大文件首次一秒内的流控情况，后续的流量消耗不计入
-	var gWaitTimeMil, bWaitTimeMil int64
-	bandwidth := int(s.rl.ClientBandwidth()) * ratelimiter.MB
-	if int(req.FileMeta.CommitSpec.Content.ByteSize) > bandwidth {
-		gWaitTimeMil = s.rl.Global().WaitTimeMil(bandwidth)
-		bWaitTimeMil = s.rl.UseBiz(uint(req.BizId)).WaitTimeMil(bandwidth)
-	} else {
-		gWaitTimeMil = s.rl.Global().WaitTimeMil(int(req.FileMeta.CommitSpec.Content.ByteSize))
-		bWaitTimeMil = s.rl.UseBiz(uint(req.BizId)).WaitTimeMil(int(req.FileMeta.CommitSpec.Content.ByteSize))
-	}
+	// 流量控制
+	waitTimeMil := s.getWaitTimeMil(req, app)
 
-	// 分别统计全局和业务粒度流控情况
-	gs := s.rl.Global().Stats()
-	s.mc.collectDownload("0", gs.TotalByteSize, gs.DelayCnt, gs.DelayMilliseconds)
-	bs := s.rl.UseBiz(uint(req.BizId)).Stats()
-	logs.V(1).Infof("biz: %d, download file total byte size:%d, delay cnt:%d, delay milliseconds:%d",
-		req.BizId, bs.TotalByteSize, bs.DelayCnt, bs.DelayMilliseconds)
-	s.mc.collectDownload(fmt.Sprintf("%d", req.BizId), bs.TotalByteSize, bs.DelayCnt, bs.DelayMilliseconds)
-
-	// 优先使用流控时间长的
-	wt := bWaitTimeMil
-	if bWaitTimeMil < gWaitTimeMil {
-		wt = gWaitTimeMil
-	}
-	return &pbfs.GetDownloadURLResp{
+	resp := &pbfs.GetDownloadURLResp{
 		Url:         downloadLink[0], // 保留Url兼容老版客户端，DownloadLink方法返回无错误则downloadLink长度必大于0，无需判断
 		Urls:        downloadLink,
-		WaitTimeMil: wt}, nil
+		WaitTimeMil: waitTimeMil,
+	}
+
+	return resp, nil
 }
 
 // PullKvMeta pull an app's latest release metadata only when the app's configures is kv type.
