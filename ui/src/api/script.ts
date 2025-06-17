@@ -87,8 +87,8 @@ export const getScriptTagList = (biz_id: string) => http.get(`/config/biz/${biz_
 export const getScriptVersionList = (
   biz_id: string,
   hook_id: number,
-  params: { start: number; limit?: number; searchKey?: string; all?: boolean },
-) => http.get(`/config/biz/${biz_id}/hooks/${hook_id}/hook_revisions`, { params }).then((res) => res.data);
+  query: { start: number; limit?: number; searchKey?: string; all?: boolean },
+) => http.post(`/config/biz/${biz_id}/hooks/${hook_id}/hook_revisions/list`, query).then((res) => res.data);
 
 /**
  * 创建脚本版本
