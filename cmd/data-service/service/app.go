@@ -349,6 +349,7 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		Limit:  limit,
 		All:    req.All,
 		TopIds: topIds,
+		Search: req.GetSearch(),
 	}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
@@ -362,13 +363,13 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		return nil, fmt.Errorf("bizList is empty")
 	}
 
-	details, count, err := s.dao.App().List(kt, bizList, req.Search, req.ConfigType, req.Operator, opt)
+	details, count, err := s.dao.App().List(kt, bizList, req.ConfigType, opt)
 	if err != nil {
 		logs.Errorf("list apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
-	kvAppsCount, fileAppsCount, err := s.dao.App().CountApps(kt, bizList, req.Operator, req.Search)
+	kvAppsCount, fileAppsCount, err := s.dao.App().CountApps(kt, bizList, req.GetSearch())
 	if err != nil {
 		logs.Errorf("count apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

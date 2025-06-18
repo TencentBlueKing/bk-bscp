@@ -106,13 +106,12 @@ func (s *Service) ListHookRevisions(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	page := &types.BasePage{Start: req.Start, Limit: uint(req.Limit)}
+	page := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), Search: req.GetSearch()}
 	opt := &types.ListHookRevisionsOption{
-		BizID:     req.BizId,
-		HookID:    req.HookId,
-		SearchKey: req.SearchKey,
-		Page:      page,
-		State:     table.HookRevisionStatus(req.State),
+		BizID:  req.BizId,
+		HookID: req.HookId,
+		Page:   page,
+		State:  table.HookRevisionStatus(req.State),
 	}
 	po := &types.PageOption{
 		EnableUnlimitedLimit: true,

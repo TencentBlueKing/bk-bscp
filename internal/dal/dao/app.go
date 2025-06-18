@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/structpb"
 	rawgen "gorm.io/gen"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
@@ -44,7 +45,7 @@ type App interface {
 	// get app by name.
 	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.App, error)
 	// List apps with options.
-	List(kit *kit.Kit, bizList []uint32, search, configType, operator string, opt *types.BasePage) (
+	List(kit *kit.Kit, bizList []uint32, configType string, opt *types.BasePage) (
 		[]*table.App, int64, error)
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
@@ -59,7 +60,7 @@ type App interface {
 	// BatchUpdateLastConsumedTime 批量更新最后一次拉取时间
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 	// CountApps 统计服务数量
-	CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error)
+	CountApps(kit *kit.Kit, bizList []uint32, search *structpb.Struct) (int64, int64, error)
 	// GetOneAppByBiz 通过业务获取其中一个app
 	GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error)
 }
@@ -90,25 +91,16 @@ func (dao *appDao) GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error
 }
 
 // CountApps implements App.
-func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error) {
+func (dao *appDao) CountApps(kit *kit.Kit, bizList []uint32, search *structpb.Struct) (int64, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 	q2 := dao.genQ.App.WithContext(kit.Ctx)
-	var conds1, conds2 []rawgen.Condition
-	if operator != "" {
-		conds1 = append(conds1, m.Creator.Eq(operator))
-		conds2 = append(conds2, m.Creator.Eq(operator))
-	}
-	if search != "" {
-		conds1 = append(conds1, q.Where(m.Name.Like("%"+search+"%")).
-			Or(m.Alias_.Like("%"+search+"%")).
-			Or(m.Memo.Like("%"+search+"%")).
-			Or(m.Creator.Eq(search)))
-		conds2 = append(conds2, q.Where(m.Name.Like("%"+search+"%")).
-			Or(m.Alias_.Like("%"+search+"%")).
-			Or(m.Memo.Like("%"+search+"%")).
-			Or(m.Creator.Eq(search)))
-	}
+	var (
+		conds1, conds2 []rawgen.Condition
+	)
+
+	conds1 = dao.handleSearch(conds1, search.AsMap())
+	conds2 = dao.handleSearch(conds2, search.AsMap())
 
 	kvAppsCount, err := q.Where(m.BizID.In(bizList...)).
 		Where(m.ConfigType.Eq(string(table.KV))).Where(conds1...).Count()
@@ -139,12 +131,16 @@ func (dao *appDao) BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) er
 }
 
 // List app's detail info with the filter's expression.
-func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType, operator string,
-	opt *types.BasePage) ([]*table.App, int64, error) {
+func (dao *appDao) List(kit *kit.Kit, bizList []uint32, configType string, opt *types.BasePage) (
+	[]*table.App, int64, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-
-	var conds []rawgen.Condition
+	var (
+		conds  []rawgen.Condition
+		result []*table.App
+		count  int64
+		err    error
+	)
 	// 当len(bizList) > 1时，适用于导航查询场景
 	conds = append(conds, m.BizID.In(bizList...))
 
@@ -152,23 +148,10 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType, oper
 		conds = append(conds, m.ConfigType.Eq(configType))
 	}
 
-	if operator != "" {
-		conds = append(conds, m.Creator.Eq(operator))
-	}
-
-	if search != "" {
-		conds = append(conds, q.Where(m.Name.Like("%"+search+"%")).
-			Or(m.Alias_.Like("%"+search+"%")).Or(m.Memo.Like("%"+search+"%")).Or(m.Creator.Eq(search)))
-	}
-
-	var (
-		result []*table.App
-		count  int64
-		err    error
-	)
+	conds = dao.handleSearch(conds, opt.Search.AsMap())
 
 	if len(opt.TopIds) != 0 {
-		q = q.Order(utils.NewCustomExpr(`CASE WHEN id IN (?) THEN 0 ELSE 1 END,name ASC`, []interface{}{opt.TopIds}))
+		q = q.Order(utils.NewCustomExpr(`CASE WHEN id IN (?) THEN 0 ELSE 1 END,name ASC`, []any{opt.TopIds}))
 	}
 
 	if opt.All {
@@ -182,6 +165,41 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, search, configType, oper
 	}
 
 	return result, count, nil
+}
+
+// 支持别名、名称、描述、更新人、创建人搜索
+func (dao *appDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.App
+
+	if search["alias"] != nil {
+		alias, _ := search["alias"].(string)
+		conds = append(conds, m.Alias_.Like("%"+alias+"%"))
+	}
+
+	if search["name"] != nil {
+		name, _ := search["name"].(string)
+		conds = append(conds, m.Name.Like("%"+name+"%"))
+	}
+
+	if search["memo"] != nil {
+		memo, _ := search["memo"].(string)
+		conds = append(conds, m.Memo.Like("%"+memo+"%"))
+	}
+
+	if search["creator"] != nil {
+		creator, _ := search["creator"].(string)
+		conds = append(conds, m.Creator.Like("%"+creator+"%"))
+	}
+
+	if search["reviser"] != nil {
+		reviser, _ := search["reviser"].(string)
+		conds = append(conds, m.Reviser.Like("%"+reviser+"%"))
+	}
+
+	return conds
 }
 
 // ListAppsByGroupID list apps by group id.

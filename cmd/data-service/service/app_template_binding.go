@@ -22,7 +22,6 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -301,25 +300,42 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 		}
 	}
 
-	// search by logic
-	if req.SearchValue != "" {
-		searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.TemplateRevision)
-		if err != nil {
-			return nil, err
-		}
-		fields := searcher.SearchFields()
-		fieldsMap := make(map[string]bool)
-		for _, f := range fields {
-			fieldsMap[f] = true
-		}
-		fieldsMap["combinedPathName"] = true
+	if len(req.GetSearch().AsMap()) != 0 {
 		newDetails := make([]*pbatb.AppBoundTmplRevision, 0)
 		for _, detail := range details {
-			combinedPathName := path.Join(detail.Path, detail.Name)
-			if (fieldsMap["revision_name"] && strings.Contains(detail.TemplateRevisionName, req.SearchValue)) ||
-				(fieldsMap["revision_memo"] && strings.Contains(detail.TemplateRevisionMemo, req.SearchValue)) ||
-				(fieldsMap["combinedPathName"] && strings.Contains(combinedPathName, req.SearchValue)) ||
-				(fieldsMap["creator"] && strings.Contains(detail.Creator, req.SearchValue)) {
+			// 拼接 path 和 name 成 path_name
+			pathName := path.Join(detail.Path, detail.Name)
+			match := false
+			for key, val := range req.GetSearch().AsMap() {
+				searchVal, ok := val.(string)
+				if !ok || searchVal == "" {
+					continue
+				}
+				switch key {
+				case "path_name":
+					if strings.Contains(pathName, searchVal) {
+						match = true
+						break
+					}
+				case "revision_memo":
+					if strings.Contains(detail.TemplateRevisionMemo, searchVal) {
+						match = true
+						break
+					}
+				case "creator":
+					if strings.Contains(detail.Creator, searchVal) {
+						match = true
+						break
+					}
+				case "revision_name":
+					if strings.Contains(detail.TemplateRevisionName, searchVal) {
+						match = true
+						break
+					}
+				}
+			}
+
+			if match {
 				newDetails = append(newDetails, detail)
 			}
 		}
@@ -453,18 +469,13 @@ func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context,
 	kt := kit.FromGrpcContext(ctx)
 
 	// validate the page params
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, Search: req.GetSearch()}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
 
-	searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.ReleasedAppTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	details, count, err := s.dao.ReleasedAppTemplate().List(kt, req.BizId,
-		req.AppId, req.ReleaseId, searcher, opt, req.SearchValue)
+		req.AppId, req.ReleaseId, opt)
 	if err != nil {
 		logs.Errorf("list released app bound templates revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

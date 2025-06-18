@@ -15,6 +15,8 @@ package types
 import (
 	"errors"
 	"fmt"
+
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -108,6 +110,8 @@ type BasePage struct {
 	All bool `json:"all"`
 	// TopIds 需要置顶的id
 	TopIds []uint32 `json:"top_ids"`
+	// Search 搜索
+	Search *structpb.Struct
 }
 
 // Offset 偏移量

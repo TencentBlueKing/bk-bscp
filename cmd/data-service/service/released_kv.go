@@ -71,17 +71,17 @@ func (s *Service) ListReleasedKvs(ctx context.Context, req *pbds.ListReleasedKvR
 		req.Sort = "key"
 	}
 	page := &types.BasePage{
-		Start: req.Start,
-		Limit: uint(req.Limit),
-		Sort:  req.Sort,
-		Order: types.Order(req.Order),
+		Start:  req.Start,
+		Limit:  uint(req.Limit),
+		Sort:   req.Sort,
+		Order:  types.Order(req.Order),
+		Search: req.GetSearch(),
 	}
 	opt := &types.ListRKvOption{
 		ReleaseID: req.ReleaseId,
 		BizID:     req.BizId,
 		AppID:     req.AppId,
 		Key:       req.Key,
-		SearchKey: req.SearchKey,
 		All:       req.All,
 		Page:      page,
 		KvType:    req.KvType,

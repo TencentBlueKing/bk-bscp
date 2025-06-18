@@ -24,7 +24,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -46,8 +45,8 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	kt := kit.FromGrpcContext(ctx)
 
 	// Get all configuration files under a certain package of the service
-	items, _, err := s.dao.Template().List(kt, req.Attachment.BizId, req.Attachment.TemplateSpaceId,
-		nil, &types.BasePage{All: true}, nil, "")
+	items, _, err := s.dao.Template().List(kt, req.Attachment.BizId,
+		req.Attachment.TemplateSpaceId, &types.BasePage{All: true})
 	if err != nil {
 		return nil, err
 	}
@@ -192,18 +191,19 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 func (s *Service) ListTemplates(ctx context.Context, req *pbds.ListTemplatesReq) (*pbds.ListTemplatesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{
+		Start:  req.Start,
+		Limit:  uint(req.Limit),
+		All:    req.All,
+		Search: req.GetSearch(),
+		TopIds: req.GetIds(),
+	}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
 
-	searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.Template)
-	if err != nil {
-		return nil, err
-	}
 	// List templates with options.
-	details, count, err := s.dao.Template().List(kt, req.BizId, req.TemplateSpaceId, searcher,
-		opt, req.Ids, req.SearchValue)
+	details, count, err := s.dao.Template().List(kt, req.BizId, req.TemplateSpaceId, opt)
 
 	if err != nil {
 		logs.Errorf("list templates failed, err: %v, rid: %s", err, kt.Rid)
@@ -659,12 +659,13 @@ func (s *Service) ListTemplatesByIDs(ctx context.Context, req *pbds.ListTemplate
 
 // ListTemplatesNotBound list templates not bound.
 // 先获取所有模版ID列表，再获取该空间下所有套餐的template_ids字段进行合并，做差集得到目标ID列表，根据这批ID获取对应的详情，做逻辑分页和搜索
+// nolint:funlen
 func (s *Service) ListTemplatesNotBound(ctx context.Context, req *pbds.ListTemplatesNotBoundReq) (
 	*pbds.ListTemplatesNotBoundResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
 	// validate the page params
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, Search: req.GetSearch()}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
@@ -689,25 +690,42 @@ func (s *Service) ListTemplatesNotBound(ctx context.Context, req *pbds.ListTempl
 	}
 	details := pbtemplate.PbTemplates(templates)
 
-	// search by logic
-	if req.SearchValue != "" {
-		searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.Template)
-		if err != nil {
-			return nil, err
-		}
-		fields := searcher.SearchFields()
-		fieldsMap := make(map[string]bool)
-		for _, f := range fields {
-			fieldsMap[f] = true
-		}
-		fieldsMap["combinedPathName"] = true
+	if len(req.GetSearch().AsMap()) != 0 {
 		newDetails := make([]*pbtemplate.Template, 0)
 		for _, detail := range details {
-			combinedPathName := path.Join(detail.Spec.Path, detail.Spec.Name)
-			if (fieldsMap["combinedPathName"] && strings.Contains(combinedPathName, req.SearchValue)) ||
-				(fieldsMap["memo"] && strings.Contains(detail.Spec.Memo, req.SearchValue)) ||
-				(fieldsMap["creator"] && strings.Contains(detail.Revision.Creator, req.SearchValue)) ||
-				(fieldsMap["reviser"] && strings.Contains(detail.Revision.Reviser, req.SearchValue)) {
+			// 拼接 path 和 name 成 path_name
+			pathName := path.Join(detail.Spec.Path, detail.Spec.Name)
+			match := false
+			for key, val := range req.GetSearch().AsMap() {
+				searchVal, ok := val.(string)
+				if !ok || searchVal == "" {
+					continue
+				}
+				switch key {
+				case "path_name":
+					if strings.Contains(pathName, searchVal) {
+						match = true
+						break
+					}
+				case "memo":
+					if strings.Contains(detail.Spec.Memo, searchVal) {
+						match = true
+						break
+					}
+				case "creator":
+					if strings.Contains(detail.Revision.Creator, searchVal) {
+						match = true
+						break
+					}
+				case "reviser":
+					if strings.Contains(detail.Revision.Reviser, searchVal) {
+						match = true
+						break
+					}
+				}
+			}
+
+			if match {
 				newDetails = append(newDetails, detail)
 			}
 		}
@@ -742,12 +760,13 @@ func (s *Service) ListTemplatesNotBound(ctx context.Context, req *pbds.ListTempl
 
 // ListTmplsOfTmplSet list templates of template set.
 // 获取到该套餐的template_ids字段，根据这批ID获取对应的详情，做逻辑分页和搜索
+// nolint:funlen
 func (s *Service) ListTmplsOfTmplSet(ctx context.Context, req *pbds.ListTmplsOfTmplSetReq) (
 	*pbds.ListTmplsOfTmplSetResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
 	// validate the page params
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, Search: req.GetSearch()}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
@@ -768,31 +787,48 @@ func (s *Service) ListTmplsOfTmplSet(ctx context.Context, req *pbds.ListTmplsOfT
 	}
 	details := pbtemplate.PbTemplates(templates)
 
-	// search by logic
-	if req.SearchValue != "" {
-		searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.Template)
-		if err != nil {
-			return nil, err
-		}
-		fields := searcher.SearchFields()
-		fieldsMap := make(map[string]bool)
-		for _, f := range fields {
-			fieldsMap[f] = true
-		}
-		fieldsMap["combinedPathName"] = true
+	if len(req.GetSearch().AsMap()) != 0 {
 		newDetails := make([]*pbtemplate.Template, 0)
 		for _, detail := range details {
-			// 拼接path和name
-			combinedPathName := path.Join(detail.Spec.Path, detail.Spec.Name)
-			if (fieldsMap["combinedPathName"] && strings.Contains(combinedPathName, req.SearchValue)) ||
-				(fieldsMap["memo"] && strings.Contains(detail.Spec.Memo, req.SearchValue)) ||
-				(fieldsMap["creator"] && strings.Contains(detail.Revision.Creator, req.SearchValue)) ||
-				(fieldsMap["reviser"] && strings.Contains(detail.Revision.Reviser, req.SearchValue)) {
+			// 拼接 path 和 name 成 path_name
+			pathName := path.Join(detail.Spec.Path, detail.Spec.Name)
+			match := false
+			for key, val := range req.GetSearch().AsMap() {
+				searchVal, ok := val.(string)
+				if !ok || searchVal == "" {
+					continue
+				}
+				switch key {
+				case "path_name":
+					if strings.Contains(pathName, searchVal) {
+						match = true
+						break
+					}
+				case "memo":
+					if strings.Contains(detail.Spec.Memo, searchVal) {
+						match = true
+						break
+					}
+				case "creator":
+					if strings.Contains(detail.Revision.Creator, searchVal) {
+						match = true
+						break
+					}
+				case "reviser":
+					if strings.Contains(detail.Revision.Reviser, searchVal) {
+						match = true
+						break
+					}
+				}
+			}
+
+			if match {
 				newDetails = append(newDetails, detail)
 			}
 		}
 		details = newDetails
 	}
+
 	sort.SliceStable(details, func(i, j int) bool {
 		iInTopID := tools.Contains(req.Ids, details[i].Id)
 		jInTopID := tools.Contains(req.Ids, details[j].Id)

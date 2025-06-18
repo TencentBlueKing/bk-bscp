@@ -232,12 +232,11 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context, req *pbcs.ListA
 	}
 
 	r := &pbds.ListAppBoundTmplRevisionsReq{
-		BizId:        req.BizId,
-		AppId:        req.AppId,
-		SearchFields: req.SearchFields,
-		SearchValue:  req.SearchValue,
-		All:          true,
-		WithStatus:   req.WithStatus,
+		BizId:      req.BizId,
+		AppId:      req.AppId,
+		Search:     req.GetSearch(),
+		All:        true,
+		WithStatus: req.WithStatus,
 	}
 
 	var rp *pbds.ListAppBoundTmplRevisionsResp
@@ -409,12 +408,11 @@ func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context,
 	}
 
 	r := &pbds.ListReleasedAppBoundTmplRevisionsReq{
-		BizId:        req.BizId,
-		AppId:        req.AppId,
-		ReleaseId:    req.ReleaseId,
-		SearchFields: req.SearchFields,
-		SearchValue:  req.SearchValue,
-		All:          true,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ReleaseId: req.ReleaseId,
+		Search:    req.GetSearch(),
+		All:       true,
 	}
 
 	rp, err := s.client.DS.ListReleasedAppBoundTmplRevisions(grpcKit.RpcCtx(), r)
