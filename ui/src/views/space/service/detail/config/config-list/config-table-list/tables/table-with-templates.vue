@@ -135,16 +135,25 @@
                                         @click="handleEditOpen(item, itemIndex)">
                                         {{ t('编辑') }}
                                       </bk-button>
-                                      <bk-button
-                                        v-if="item.file_state === 'REVISE'"
-                                        v-cursor="{ active: !hasEditServicePerm }"
-                                        text
-                                        theme="primary"
-                                        :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                                        :disabled="!hasEditServicePerm"
-                                        @click="handleUnModify(item, itemIndex)">
-                                        {{ t('撤销') }}
-                                      </bk-button>
+                                      <template v-if="item.file_state === 'REVISE'">
+                                        <bk-button
+                                          v-cursor="{ active: !hasEditServicePerm }"
+                                          text
+                                          theme="primary"
+                                          :disabled="!hasEditServicePerm"
+                                          @click="handleConfigDiff(group.id, item)">
+                                          {{ t('对比') }}
+                                        </bk-button>
+                                        <bk-button
+                                          v-cursor="{ active: !hasEditServicePerm }"
+                                          text
+                                          theme="primary"
+                                          :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
+                                          :disabled="!hasEditServicePerm"
+                                          @click="handleUnModify(item, itemIndex)">
+                                          {{ t('撤销') }}
+                                        </bk-button>
+                                      </template>
                                       <DownloadConfigBtn
                                         type="config"
                                         :bk-biz-id="props.bkBizId"
@@ -1137,7 +1146,7 @@
       width: 140px;
     }
     .operation {
-      width: 150px;
+      width: 200px;
     }
     .exception-tips {
       margin: 20px 0;

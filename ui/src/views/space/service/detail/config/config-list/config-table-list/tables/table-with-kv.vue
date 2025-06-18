@@ -109,16 +109,26 @@
                 @click="handleEditOrView(row, index)">
                 {{ versionData.id === 0 ? t('编辑') : t('查看') }}
               </bk-button>
-              <bk-button
-                v-cursor="{ active: !hasEditServicePerm }"
-                v-if="row.kv_state === 'REVISE'"
-                :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                :disabled="!hasEditServicePerm"
-                text
-                theme="primary"
-                @click="handleUnModify(row, index)">
-                {{ t('撤销') }}
-              </bk-button>
+              <template v-if="row.kv_state === 'REVISE'">
+                <bk-button
+                  v-if="row.kv_state === 'REVISE'"
+                  :disabled="!hasEditServicePerm"
+                  text
+                  theme="primary"
+                  @click="handleDiff(row)">
+                  {{ t('对比') }}
+                </bk-button>
+                <bk-button
+                  v-cursor="{ active: !hasEditServicePerm }"
+                  v-if="row.kv_state === 'REVISE'"
+                  :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
+                  :disabled="!hasEditServicePerm"
+                  text
+                  theme="primary"
+                  @click="handleUnModify(row, index)">
+                  {{ t('撤销') }}
+                </bk-button>
+              </template>
               <bk-button
                 v-if="versionData.status.publish_status !== 'editing'"
                 text
