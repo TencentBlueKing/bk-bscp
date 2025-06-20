@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sdk/operator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
 )
@@ -76,13 +78,23 @@ func NewClient(cfg *Config, reg prometheus.Registerer) (*Client, error) {
 	return cli, nil
 }
 
+func (c *Client) buildHeaders(ctx context.Context) http.Header {
+	kit := kit.FromGrpcContext(ctx)
+	headers := make(http.Header)
+	for k, v := range c.basicHeader {
+		headers[k] = slices.Clone(v)
+	}
+	headers.Set(constant.BkTenantID, kit.TenantID)
+	return headers
+}
+
 // RegisterSystem register a system in IAM
 func (c *Client) RegisterSystem(ctx context.Context, sys System) error {
 	resp := new(BaseResponse)
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems").
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(sys).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -115,7 +127,7 @@ func (c *Client) GetSystemInfo(ctx context.Context, fields []SystemQueryField) (
 	result := c.client.Get().
 		SubResourcef("/api/v1/model/systems/%s/query", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		WithParam("fields", fieldsStr).
 		Body(nil).Do()
 	err := result.Into(resp)
@@ -142,7 +154,7 @@ func (c *Client) UpdateSystem(ctx context.Context, sys System) error {
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(sys).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -165,7 +177,7 @@ func (c *Client) RegisterResourcesTypes(ctx context.Context, resTypes []Resource
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/resource-types", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(resTypes).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -189,7 +201,7 @@ func (c *Client) UpdateResourcesType(ctx context.Context, resType ResourceType) 
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/resource-types/%s", c.config.SystemID, resType.ID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(resType).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -220,7 +232,7 @@ func (c *Client) DeleteResourcesTypes(ctx context.Context, resTypeIDs []TypeID) 
 	result := c.client.Delete().
 		SubResourcef("/api/v1/model/systems/%s/resource-types", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(ids).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -244,7 +256,7 @@ func (c *Client) RegisterActions(ctx context.Context, actions []ResourceAction) 
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(actions).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -268,7 +280,7 @@ func (c *Client) UpdateAction(ctx context.Context, action ResourceAction) error 
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/actions/%s", c.config.SystemID, action.ID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(action).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -298,7 +310,7 @@ func (c *Client) DeleteActions(ctx context.Context, actionIDs []ActionID) error 
 	result := c.client.Delete().
 		SubResourcef("/api/v1/model/systems/%s/actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(ids).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -322,7 +334,7 @@ func (c *Client) RegisterActionGroups(ctx context.Context, actionGroups []Action
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/configs/action_groups", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(actionGroups).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -346,7 +358,7 @@ func (c *Client) UpdateActionGroups(ctx context.Context, actionGroups []ActionGr
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/configs/action_groups", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(actionGroups).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -370,7 +382,7 @@ func (c *Client) RegisterInstanceSelections(ctx context.Context, instanceSelecti
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/instance-selections", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(instanceSelections).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -395,7 +407,7 @@ func (c *Client) UpdateInstanceSelection(ctx context.Context, instanceSelection 
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/instance-selections/%s", c.config.SystemID, instanceSelection.ID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(instanceSelection).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -426,7 +438,7 @@ func (c *Client) DeleteInstanceSelections(ctx context.Context, instanceSelection
 	result := c.client.Delete().
 		SubResourcef("/api/v1/model/systems/%s/instance-selections", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(ids).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -452,7 +464,7 @@ func (c *Client) RegisterResourceCreatorActions(ctx context.Context, resourceCre
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/configs/resource_creator_actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(resourceCreatorActions).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -478,7 +490,7 @@ func (c *Client) UpdateResourceCreatorActions(ctx context.Context, resourceCreat
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/configs/resource_creator_actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(resourceCreatorActions).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -502,7 +514,7 @@ func (c *Client) RegisterCommonActions(ctx context.Context, commonActions []Comm
 	result := c.client.Post().
 		SubResourcef("/api/v1/model/systems/%s/configs/common_actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(commonActions).Do()
 
 	err := result.Into(resp)
@@ -527,7 +539,7 @@ func (c *Client) UpdateCommonActions(ctx context.Context, commonActions []Common
 	result := c.client.Put().
 		SubResourcef("/api/v1/model/systems/%s/configs/common_actions", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(commonActions).Do()
 
 	err := result.Into(resp)
@@ -552,7 +564,7 @@ func (c *Client) DeleteActionPolicies(ctx context.Context, actionID ActionID) er
 	result := c.client.Delete().
 		SubResourcef("/api/v1/model/systems/%s/actions/%s/policies", c.config.SystemID, actionID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -586,7 +598,7 @@ func (c *Client) ListPolicies(ctx context.Context, params *ListPoliciesParams) (
 	result := c.client.Get().
 		SubResourcef("/api/v1/systems/%s/policies", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		WithParams(parsedParams).
 		Body(nil).Do()
 
@@ -616,7 +628,7 @@ func (c *Client) GetSystemToken(ctx context.Context) (string, error) {
 	result := c.client.Get().
 		SubResourcef("/api/v1/model/systems/%s/token", c.config.SystemID).
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(nil).Do()
 	err := result.Into(resp)
 	if err != nil {
@@ -731,12 +743,15 @@ func (c *Client) GetUserPolicyByExtRes(ctx context.Context, opts *GetPolicyByExt
 }
 
 func (c *Client) cloneHeader(ctx context.Context) http.Header {
+	kit := kit.FromGrpcContext(ctx)
 	h := http.Header{}
 	rid, ok := ctx.Value(constant.RidKey).(string)
 	if ok {
 		h.Set(RequestIDHeader, rid)
 	}
-
+	if len(kit.TenantID) != 0 {
+		h.Set(constant.BkTenantID, kit.TenantID)
+	}
 	for key := range c.basicHeader {
 		h.Set(key, c.basicHeader.Get(key))
 	}
@@ -749,7 +764,7 @@ func (c *Client) GrantResourceCreatorAction(ctx context.Context, opt GrantResour
 	result := c.client.Post().
 		SubResourcef("api/v1/open/authorization/resource_creator_action").
 		WithContext(ctx).
-		WithHeaders(c.basicHeader).
+		WithHeaders(c.buildHeaders(ctx)).
 		Body(opt).Do()
 
 	err := result.Into(resp)
