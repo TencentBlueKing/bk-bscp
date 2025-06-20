@@ -244,15 +244,18 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 		ReportCaller: false,
 	}
 	bkiamlogger.SetLogger(log)
-	apiGatewayIAM := bkiam.NewAPIGatewayIAM(
-		sys.SystemIDBSCP, iamSettings.AppCode, iamSettings.AppSecret, iamSettings.APIURL)
 
 	cs := &ClientSet{
-		DS:        ds,
-		sys:       iamSys,
-		auth:      authSdk,
-		Esb:       esbCli,
-		iamClient: apiGatewayIAM,
+		DS:   ds,
+		sys:  iamSys,
+		auth: authSdk,
+		Esb:  esbCli,
+		iam: &auth.Iam{
+			SystemID:  sys.SystemIDBSCP,
+			AppCode:   iamSettings.AppCode,
+			AppSecret: iamSettings.AppSecret,
+			APIURL:    iamSettings.APIURL,
+		},
 	}
 	logs.Infof("initialize the client set success.")
 	return cs, nil
@@ -261,14 +264,13 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 // ClientSet defines configure server's all the depends api client.
 type ClientSet struct {
 	// data service's sys api
-	DS pbds.DataClient
-	// iam sys related operate.
-	iamClient *bkiam.IAM
-	sys       *sys.Sys
+	DS  pbds.DataClient
+	sys *sys.Sys
 	// auth related operate.
 	auth pkgauth.Authorizer
 	// Esb Esb client api
 	Esb esbcli.Client
+	iam *auth.Iam
 }
 
 // PullResource init auth center's auth model.
@@ -413,7 +415,10 @@ func (s *Service) initLogicModule() error {
 		return err
 	}
 
-	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, s.client.iamClient, s.disableWriteOpt,
+	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, func(tenantID string) *bkiam.IAM {
+		return s.client.iam.WithTenant(tenantID)
+	},
+		s.disableWriteOpt,
 		s.spaceMgr)
 	if err != nil {
 		return err
