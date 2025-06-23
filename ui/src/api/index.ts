@@ -1,7 +1,10 @@
 import http from '../request';
 import { ISpaceDetail, IPermissionQueryResourceItem } from '../../types/index';
 import { IAppItem, IAppListQuery } from '../../types/app';
+import useUserStore from '../store/user';
+import pinia from '../store/index';
 
+const userStore = useUserStore(pinia);
 /**
  * 获取空间、项目列表
  * @param biz_id 业务ID
@@ -120,4 +123,9 @@ export const loginOut = () =>
  * @returns
  */
 export const getUserList = (keyword: string) =>
-  http.get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, { params: { keyword } }).then((resp) => resp.data);
+  http
+    .get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, {
+      params: { keyword },
+      headers: { 'X-Bk-Tenant-Id': userStore.userInfo.tenant_id || 'system' },
+    })
+    .then((resp) => resp.data);
