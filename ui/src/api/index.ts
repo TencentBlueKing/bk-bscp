@@ -119,5 +119,10 @@ export const loginOut = () =>
  * 获取人员名单
  * @returns
  */
-export const getUserList = (keyword: string) =>
-  http.get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, { params: { keyword } }).then((resp) => resp.data);
+export const getUserList = (keyword: string, tenantId: string) =>
+  http
+    .get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, {
+      params: { keyword },
+      headers: { 'X-Bk-Tenant-Id': tenantId },
+    })
+    .then((resp) => resp.data);

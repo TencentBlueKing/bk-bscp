@@ -13,9 +13,11 @@
   import { getUserList } from '../api';
   import { ITenantUser } from '../../types/index';
   import useGlobalStore from '../store/global';
+  import useUserStore from '../store/user';
   import { storeToRefs } from 'pinia';
 
   const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { userInfo } = storeToRefs(useUserStore());
 
   interface ISearchField {
     field: string;
@@ -74,7 +76,7 @@
   const getMenuList = async (item: ISearchMenuItem, keyword: string) => {
     if (!item) return data.value;
     if (item.async && keyword && spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE) {
-      const res = await getUserList(keyword);
+      const res = await getUserList(keyword, userInfo.value.tenant_id);
       return res.data.map((user: ITenantUser) => {
         return {
           id: user.bk_username,
