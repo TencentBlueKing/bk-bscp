@@ -1164,8 +1164,8 @@ type Metric struct {
 
 // BizRLs defines the rate limiters for biz
 type BizRLs struct {
-	Default BasicRL          `yaml:"default"`
-	Spec    map[uint]BasicRL `yaml:"spec"`
+	Default BasicRL            `yaml:"default"`
+	Spec    map[string]BasicRL `yaml:"spec"` // 业务使用字符串做key, 兼容helm渲染
 }
 
 // BasicRL defines the basic options for rate limiter.
