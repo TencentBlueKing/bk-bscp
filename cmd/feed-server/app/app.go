@@ -149,7 +149,7 @@ func (fs *feedServer) listenAndServe() error {
 		// add bscp unary interceptor and standard grpc server metrics interceptor.
 		grpc.ChainUnaryInterceptor(
 			realip.UnaryServerInterceptorOpts(),
-			brpc.LogUnaryServerInterceptor(),
+			service.LogUnaryServerInterceptor(),
 			grpcMetrics.UnaryServerInterceptor(),
 			ratelimit.UnaryServerInterceptor(ipLimiter),
 			service.FeedUnaryAuthInterceptor,

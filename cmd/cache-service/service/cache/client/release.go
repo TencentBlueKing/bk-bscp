@@ -13,10 +13,14 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -99,6 +103,9 @@ func (c *client) refreshReleasedCICache(kt *kit.Kit, bizID uint32, releaseID uin
 	releasedCIs, err := c.op.ReleasedCI().ListAllByReleaseIDs(kt, []uint32{releaseID}, bizID)
 	if err != nil {
 		logs.Errorf("get biz: %d release: %d CI from db failed, err: %v, rid: %s", bizID, releaseID, err, kt.Rid)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", status.Errorf(codes.NotFound, err.Error())
+		}
 		return "", err
 	}
 

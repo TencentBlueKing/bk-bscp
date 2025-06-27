@@ -431,7 +431,7 @@ func (dao *appDao) GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Ap
 
 	app, err := q.Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
 	if err != nil {
-		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kit, "get app failed, err: %v", err))
+		return nil, err
 	}
 
 	return app, nil

@@ -13,10 +13,14 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -180,6 +184,9 @@ func (c *client) refreshAppIDCache(kt *kit.Kit, bizID uint32, appName string) (u
 
 	app, err := c.op.App().GetByName(kt, bizID, appName)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, status.Errorf(codes.NotFound, err.Error())
+		}
 		return 0, err
 	}
 
@@ -208,6 +215,9 @@ func (c *client) refreshAppMetaCache(kt *kit.Kit, bizID uint32, appID uint32) (s
 
 	metaMap, err := c.op.App().ListAppMetaForCache(kt, bizID, []uint32{appID})
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", status.Errorf(codes.NotFound, err.Error())
+		}
 		return "", err
 	}
 

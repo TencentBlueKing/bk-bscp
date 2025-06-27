@@ -50,7 +50,7 @@ func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		kt := kit.FromGrpcContext(ctx)
 		service := path.Dir(info.FullMethod)[1:]
 		method := path.Base(info.FullMethod)
-		realIP := mustGetRealIP(ctx)
+		realIP := MustGetRealIP(ctx)
 
 		defer func() {
 			if err != nil {
@@ -84,7 +84,8 @@ func GrpcServerHandledTotalInterceptor() grpc.UnaryServerInterceptor {
 }
 
 // nolint:goconst
-func mustGetRealIP(ctx context.Context) string {
+// MustGetRealIP 获取真实IP地址
+func MustGetRealIP(ctx context.Context) string {
 	addr, ok := realip.FromContext(ctx)
 	if !ok {
 		return "unknown"

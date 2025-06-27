@@ -14,6 +14,11 @@ package service
 
 import (
 	"context"
+	"errors"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -35,6 +40,9 @@ func (s *Service) GetReleasedKv(ctx context.Context, req *pbds.GetReleasedKvReq)
 	rkv, err := s.dao.ReleasedKv().Get(kt, req.BizId, req.AppId, req.ReleaseId, req.Key)
 	if err != nil {
 		logs.Errorf("get released kv failed, err: %v, rid: %s", err, kt.Rid)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Errorf(codes.NotFound, err.Error())
+		}
 		return nil, err
 	}
 
@@ -59,7 +67,6 @@ func (s *Service) GetReleasedKv(ctx context.Context, req *pbds.GetReleasedKvReq)
 		Revision:    pbbase.PbRevision(rkv.Revision),
 		ContentSpec: pbcontent.PbContentSpec(rkv.ContentSpec),
 	}, nil
-
 }
 
 // ListReleasedKvs list app bound kv revisions.

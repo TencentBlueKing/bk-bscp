@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -31,7 +30,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -76,7 +74,7 @@ func (s *Service) Handshake(ctx context.Context, hm *pbfs.HandshakeMessage) (*pb
 	ra := &meta.ResourceAttribute{Basic: meta.Basic{Type: meta.Sidecar, Action: meta.Access}, BizID: hm.Spec.BizId}
 	authorized, err := s.bll.Auth().Authorize(im.Kit, ra)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, err.Error())
+		return nil, status.Error(codes.Aborted, err.Error())
 	}
 
 	if !authorized {
@@ -142,7 +140,10 @@ func (s *Service) Watch(swm *pbfs.SideWatchMeta, fws pbfs.Upstream_WatchServer) 
 	for i := range payload.Applications {
 		appID, err := s.bll.AppCache().GetAppID(im.Kit, payload.BizID, payload.Applications[i].App)
 		if err != nil {
-			return status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+			if isNotFoundErr(err) {
+				return status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+			}
+			return status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 		}
 		payload.Applications[i].AppID = appID
 	}
@@ -341,7 +342,10 @@ func (s *Service) PullAppFileMeta(ctx context.Context, req *pbfs.PullAppFileMeta
 
 	appID, err := s.bll.AppCache().GetAppID(im.Kit, req.BizId, req.GetAppMeta().App)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 	meta := &types.AppInstanceMeta{
 		BizID:  req.BizId,
@@ -357,7 +361,7 @@ func (s *Service) PullAppFileMeta(ctx context.Context, req *pbfs.PullAppFileMeta
 	metas, err := s.bll.Release().ListAppLatestReleaseMeta(im.Kit, meta)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(im.Kit, req.BizId, req.GetAppMeta().App)
 		}
 		return nil, err
@@ -382,6 +386,9 @@ func (s *Service) PullAppFileMeta(ctx context.Context, req *pbfs.PullAppFileMeta
 
 		app, err := s.bll.AppCache().GetMeta(im.Kit, req.BizId, ci.ConfigItemAttachment.AppId)
 		if err != nil {
+			if isNotFoundErr(err) {
+				return nil, status.Errorf(codes.NotFound, "get app meta failed, %s", err.Error())
+			}
 			return nil, status.Errorf(codes.Aborted, "get app meta failed, %s", err.Error())
 		}
 		match, err := s.bll.Auth().CanMatchCI(im.Kit, req.BizId, app.Name, req.Token,
@@ -539,12 +546,18 @@ func (s *Service) PullKvMeta(ctx context.Context, req *pbfs.PullKvMetaReq) (*pbf
 
 	appID, err := s.bll.AppCache().GetAppID(kt, req.BizId, req.AppMeta.App)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
 	app, err := s.bll.AppCache().GetMeta(kt, req.BizId, appID)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app failed, %s", err.Error()))
 	}
 
 	if app.ConfigType != table.KV {
@@ -562,7 +575,7 @@ func (s *Service) PullKvMeta(ctx context.Context, req *pbfs.PullKvMetaReq) (*pbf
 	metas, err := s.bll.Release().ListAppLatestReleaseKvMeta(kt, meta)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(kt, req.BizId, req.AppMeta.App)
 		}
 		return nil, err
@@ -618,12 +631,18 @@ func (s *Service) GetKvValue(ctx context.Context, req *pbfs.GetKvValueReq) (*pbf
 
 	appID, err := s.bll.AppCache().GetAppID(kt, req.BizId, req.GetAppMeta().App)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
 	app, err := s.bll.AppCache().GetMeta(kt, req.BizId, appID)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app failed, %s", err.Error()))
 	}
 
 	if app.ConfigType != table.KV {
@@ -646,8 +665,9 @@ func (s *Service) GetKvValue(ctx context.Context, req *pbfs.GetKvValueReq) (*pbf
 	rkv, err := s.bll.RKvCache().GetKvValue(kt, req.BizId, appID, metas.ReleaseId, req.Key)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(kt, req.BizId, req.GetAppMeta().App)
+			return nil, status.Errorf(codes.NotFound, "get rkv failed, %s", err.Error())
 		}
 
 		return nil, status.Errorf(codes.Aborted, "get rkv failed, %s", err.Error())
@@ -661,20 +681,8 @@ func (s *Service) GetKvValue(ctx context.Context, req *pbfs.GetKvValueReq) (*pbf
 	return kv, nil
 }
 
-// isAppNotExistErr 检测app不存在错误, 有grpc，目前通过 msg 判断
-// msg = rpc error: code = Code(4000005) desc = app %d not exist
-func isAppNotExistErr(err error) bool {
-	e := err.Error()
-
-	if !strings.Contains(e, fmt.Sprintf("Code(%d)", errf.RecordNotFound)) {
-		return false
-	}
-
-	if strings.Contains(e, "app") && strings.Contains(e, "not exist") {
-		return true
-	}
-
-	return false
+func isNotFoundErr(err error) bool {
+	return status.Code(err) == codes.NotFound
 }
 
 // ListApps 获取服务列表
@@ -865,12 +873,18 @@ func (s *Service) GetSingleKvMeta(ctx context.Context, req *pbfs.GetSingleKvValu
 
 	appID, err := s.bll.AppCache().GetAppID(kt, req.BizId, req.AppMeta.App)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
 	app, err := s.bll.AppCache().GetMeta(kt, req.BizId, appID)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app failed, %s", err.Error()))
 	}
 
 	if app.ConfigType != table.KV {
@@ -888,7 +902,7 @@ func (s *Service) GetSingleKvMeta(ctx context.Context, req *pbfs.GetSingleKvValu
 	metas, err := s.bll.Release().ListAppLatestReleaseKvMeta(kt, meta)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(kt, req.BizId, req.AppMeta.App)
 		}
 		return nil, err
@@ -938,12 +952,18 @@ func (s *Service) GetSingleKvValue(ctx context.Context, req *pbfs.GetSingleKvVal
 
 	appID, err := s.bll.AppCache().GetAppID(kt, req.BizId, req.GetAppMeta().App)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
 	app, err := s.bll.AppCache().GetMeta(kt, req.BizId, appID)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, "get app failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("get app failed, %s", err.Error()))
+		}
+		return nil, status.Error(codes.Aborted, fmt.Sprintf("get app failed, %s", err.Error()))
 	}
 
 	if app.ConfigType != table.KV {
@@ -966,8 +986,9 @@ func (s *Service) GetSingleKvValue(ctx context.Context, req *pbfs.GetSingleKvVal
 	rkv, err := s.bll.RKvCache().GetKvValue(kt, req.BizId, appID, metas.ReleaseId, req.Key)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(kt, req.BizId, req.GetAppMeta().App)
+			return nil, status.Errorf(codes.NotFound, "get rkv failed, %s", err.Error())
 		}
 
 		return nil, status.Errorf(codes.Aborted, "get rkv failed, %s", err.Error())
@@ -1018,7 +1039,10 @@ func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
 
 	appID, err := s.bll.AppCache().GetAppID(im.Kit, req.BizId, req.GetAppMeta().App)
 	if err != nil {
-		return status.Errorf(codes.Aborted, "get app id failed, %s", err.Error())
+		if isNotFoundErr(err) {
+			return status.Error(codes.NotFound, fmt.Sprintf("get app id failed, %s", err.Error()))
+		}
+		return status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
 	filePath, fileName := tools.SplitPathAndName(req.FilePath)
@@ -1048,7 +1072,7 @@ func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
 	metas, err := s.bll.Release().ListAppLatestReleaseMeta(im.Kit, meta)
 	if err != nil {
 		// appid等未找到, 刷新缓存, 客户端重试请求
-		if isAppNotExistErr(err) {
+		if isNotFoundErr(err) {
 			s.bll.AppCache().RemoveCache(im.Kit, req.BizId, req.GetAppMeta().App)
 		}
 		return err
