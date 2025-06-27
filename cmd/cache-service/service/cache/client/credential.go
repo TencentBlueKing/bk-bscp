@@ -18,6 +18,9 @@ import (
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -93,6 +96,9 @@ func (c *client) refreshCredentialFromCache(kt *kit.Kit, bizID uint32, credentia
 func (c *client) queryCredentialFromCahce(kt *kit.Kit, bizID uint32, credential string) (string, int, error) {
 	cred, err := c.op.Credential().GetByCredentialString(kt, bizID, credential)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", 0, status.Errorf(codes.NotFound, err.Error())
+		}
 		return "", 0, err
 	}
 	if errors.Is(err, errf.ErrCredentialInvalid) {
@@ -100,6 +106,9 @@ func (c *client) queryCredentialFromCahce(kt *kit.Kit, bizID uint32, credential 
 	}
 	details, _, err := c.op.CredentialScope().Get(kt, cred.ID, bizID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", 0, status.Errorf(codes.NotFound, err.Error())
+		}
 		return "", 0, err
 	}
 	scope := make([]string, 0, len(details))

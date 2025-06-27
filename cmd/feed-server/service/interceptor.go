@@ -15,13 +15,17 @@ package service
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -87,7 +91,10 @@ func (s *Service) authorize(ctx context.Context, bizID uint32) (context.Context,
 
 	cred, err := s.bll.Auth().GetCred(kit.FromGrpcContext(ctx), bizID, token)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+		if isNotFoundErr(err) {
+			return nil, err
+		}
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	if !cred.Enabled {
 		return nil, status.Errorf(codes.PermissionDenied, "credential is disabled")
@@ -128,6 +135,34 @@ func FeedUnaryAuthInterceptor(
 	}
 
 	return handler(ctx, req)
+}
+
+// LogUnaryServerInterceptor 添加请求日志
+func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (
+		resp any, err error) {
+		st := time.Now()
+		kt := kit.FromGrpcContext(ctx)
+		service := path.Dir(info.FullMethod)[1:]
+		method := path.Base(info.FullMethod)
+		realIP := brpc.MustGetRealIP(ctx)
+
+		biz, app := extractBizIDAndApp(req, info.FullMethod)
+
+		defer func() {
+			if err != nil {
+				klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP, "biz", biz, "app", app,
+					"service", service, "method", method, "grpc.duration", time.Since(st), "err", err)
+				return
+			}
+
+			klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP, "biz", biz, "app", app,
+				"service", service, "method", method, "grpc.duration", time.Since(st))
+		}()
+
+		resp, err = handler(ctx, req)
+		return resp, err
+	}
 }
 
 // FeedUnaryUpdateLastConsumedTimeInterceptor feed 更新拉取时间中间件
@@ -252,4 +287,102 @@ func FeedStreamAuthInterceptor(
 
 	w := &wrappedStream{ServerStream: ss, ctx: ctx}
 	return handler(srv, w)
+}
+
+type bizAppParam struct {
+	BizID uint32
+	App   string
+}
+
+func extractBizAndApp(req any, fullMethod string) *bizAppParam {
+	switch fullMethod {
+	case pbfs.Upstream_Messaging_FullMethodName:
+		if m, ok := req.(*pbfs.MessagingMeta); ok {
+			switch sfs.MessagingType(m.Type) {
+			case sfs.VersionChangeMessage:
+				vc := new(sfs.VersionChangePayload)
+				if err := vc.Decode(m.Payload); err != nil {
+					logs.Errorf("version change message decoding failed: %v", err)
+					break
+				}
+				return &bizAppParam{
+					BizID: vc.BasicData.BizID,
+					App:   vc.Application.App,
+				}
+
+			case sfs.Heartbeat:
+				hb := new(sfs.HeartbeatPayload)
+				if err := hb.Decode(m.Payload); err != nil {
+					logs.Errorf("heartbeat payload decoding failed: %v", err)
+					break
+				}
+				if len(hb.Applications) > 0 {
+					var apps []string
+					for _, v := range hb.Applications {
+						apps = append(apps, v.App)
+					}
+					return &bizAppParam{
+						BizID: hb.BasicData.BizID,
+						App:   strings.Join(apps, ","),
+					}
+				}
+				return &bizAppParam{
+					BizID: hb.BasicData.BizID,
+				}
+			}
+
+		}
+	case pbfs.Upstream_Watch_FullMethodName:
+		if m, ok := req.(*pbfs.SideWatchMeta); ok {
+			payload := new(sfs.SideWatchPayload)
+			if err := jsoni.Unmarshal(m.Payload, payload); err != nil {
+				logs.Errorf("watch payload unmarshal failed: %v", err)
+				return nil
+			}
+			var apps []string
+			for _, app := range payload.Applications {
+				apps = append(apps, app.App)
+			}
+			return &bizAppParam{
+				BizID: payload.BizID,
+				App:   strings.Join(apps, ","),
+			}
+		}
+	case pbfs.Upstream_Handshake_FullMethodName:
+		if m, ok := req.(*pbfs.HandshakeMessage); ok && m.Spec != nil {
+			return &bizAppParam{
+				BizID: m.Spec.BizId,
+			}
+		}
+	}
+	return nil
+}
+
+func extractBizIDAndApp(req any, fullMethod string) (uint32, string) {
+	// 尝试接口断言提取
+	if r, ok := req.(interface{ GetBizId() uint32 }); ok {
+		biz := r.GetBizId()
+
+		if am, ok := req.(interface {
+			GetAppMeta() *pbfs.AppMeta
+		}); ok && am.GetAppMeta() != nil {
+			return biz, am.GetAppMeta().GetApp()
+		}
+
+		if fm, ok := req.(interface {
+			GetFileMeta() *pbfs.FileMeta
+		}); ok && fm.GetFileMeta() != nil && fm.GetFileMeta().GetConfigItemAttachment() != nil {
+			app := fmt.Sprintf("%d", fm.GetFileMeta().GetConfigItemAttachment().GetAppId())
+			return biz, app
+		}
+
+		return biz, ""
+	}
+
+	// payload 特殊提取逻辑
+	if param := extractBizAndApp(req, fullMethod); param != nil {
+		return param.BizID, param.App
+	}
+
+	return 0, ""
 }
