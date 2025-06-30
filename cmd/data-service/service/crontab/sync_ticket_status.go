@@ -22,7 +22,8 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
-	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsmv4"
+	itsm "github.com/TencentBlueKing/bk-bscp/internal/components/itsmv4"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -109,7 +110,7 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 	if len(snList) == 0 {
 		return
 	}
-	tickets, err := itsm.ListTickets(kt.Ctx, snList)
+	tickets, err := itsmv4.ListTickets(kt.Ctx, snList)
 	if err != nil {
 		logs.Errorf("list approve itsm tickets %v failed, err: %s", snList, err.Error())
 		return
@@ -129,7 +130,7 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 				StrategyId:    strategyMap[ticket.SN].ID,
 			}
 
-			approveData, errResult := itsm.GetTicketLogs(kt.Ctx, ticket.SN)
+			approveData, errResult := itsmv4.GetTicketLogs(kt.Ctx, ticket.SN)
 			if errResult != nil {
 				logs.Errorf("GetTicketLogs failed, err: %s", errResult.Error())
 				return
