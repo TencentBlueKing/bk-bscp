@@ -10,8 +10,8 @@
  * limitations under the License.
  */
 
-// Package itsm xxx
-package itsm
+// Package itsmv4 xxx
+package itsmv4
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func GetAuthHeader() string {
 
 // ItsmRequest itsm request
 // nolint revive
-func ItsmRequest(ctx context.Context, method, reqURL string, data interface{}) ([]byte, error) {
+func ItsmRequest(ctx context.Context, method, reqURL string, data any) ([]byte, error) {
 	kit := kit.FromGrpcContext(ctx)
 	client := components.GetClient().R().
 		SetContext(ctx).

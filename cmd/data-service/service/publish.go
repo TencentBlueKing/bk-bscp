@@ -24,6 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsmv4"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -335,7 +336,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		strategy.Spec.ItsmTicketStatus == constant.ItsmTicketStatusCreated {
 		// 撤销状态下，直接撤销
 		if req.PublishStatus == string(table.RevokedPublish) {
-			err = itsm.WithdrawTicket(grpcKit.Ctx, itsmUpdata)
+			err = itsmv4.WithdrawTicket(grpcKit.Ctx, itsmUpdata)
 			if err != nil {
 				return nil, err
 			}
@@ -956,7 +957,7 @@ func (s *Service) createReleasedHook(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, a
 // submitCreateApproveTicket create new itsm create approve ticket
 // nolint: funlen
 func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, releaseName, scope, memo string,
-	aduitId, releaseID uint32) (*itsm.CreateTicketData, error) {
+	aduitId, releaseID uint32) (*itsmv4.CreateTicketData, error) {
 
 	// 或签和会签是不同的模板
 	stateIDKey := constant.CreateOrSignApproveItsmStateID
@@ -1041,7 +1042,7 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 			}},
 	}
 
-	resp, err := itsm.CreateTicket(kt.Ctx, reqData)
+	resp, err := itsmv4.CreateTicket(kt.Ctx, reqData)
 	if err != nil {
 		return nil, err
 	}
@@ -1130,7 +1131,7 @@ func checkTicketStatus(grpcKit *kit.Kit,
 	}
 
 	// 先获取tikect status
-	ticketStatus, err := itsm.GetTicketStatus(grpcKit.Ctx, sn)
+	ticketStatus, err := itsmv4.GetTicketStatus(grpcKit.Ctx, sn)
 	if err != nil {
 		return req, message, err
 	}
@@ -1142,7 +1143,7 @@ func checkTicketStatus(grpcKit *kit.Kit,
 			return req, message, nil
 		}
 		// 统计itsm有多少人已经审批通过,有可能处于回调过程中
-		approveData, err := itsm.GetTicketLogs(grpcKit.Ctx, sn)
+		approveData, err := itsmv4.GetTicketLogs(grpcKit.Ctx, sn)
 		if err != nil {
 			return req, message, err
 		}

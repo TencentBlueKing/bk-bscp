@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsmv4"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
@@ -66,7 +67,7 @@ func InitApproveITSMServices() error {
 		return err
 	}
 
-	services, err := itsm.ListServices(kt.Ctx, catalogID)
+	services, err := itsmv4.ListServices(kt.Ctx, catalogID)
 	if err != nil {
 		return err
 	}
@@ -128,7 +129,7 @@ func createITSMCatalog(ctx context.Context) (uint32, error) {
 	return catalogID, nil
 }
 
-func importApproveService(kt *kit.Kit, catalogID uint32, services []itsm.Service) error {
+func importApproveService(kt *kit.Kit, catalogID uint32, services []itsmv4.Service) error {
 	// check whether the service has been imported before
 	// if not, import it, else update it.
 
@@ -188,7 +189,7 @@ func importApproveService(kt *kit.Kit, catalogID uint32, services []itsm.Service
 		}
 	}
 
-	workflowId, err := itsm.GetWorkflowByService(kt.Ctx, serviceID)
+	workflowId, err := itsmv4.GetWorkflowByService(kt.Ctx, serviceID)
 	if err != nil {
 		return err
 	}
