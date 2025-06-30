@@ -126,6 +126,9 @@ export const getUserList = (keyword: string) =>
   http
     .get(`${(window as any).USER_MAN_HOST}/api/v3/open-web/tenant/users/-/search/`, {
       params: { keyword },
-      headers: { 'X-Bk-Tenant-Id': userStore.userInfo.tenant_id || 'system' },
+      headers: {
+        'X-Bscp-Operate-Way': undefined,
+        'X-Bk-Tenant-Id': userStore.userInfo.tenant_id || 'system',
+      },
     })
     .then((resp) => resp.data);
