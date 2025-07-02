@@ -47,7 +47,7 @@ func (t *AppTemplateVariable) ResID() uint32 {
 
 // ResType AuditRes interface
 func (t *AppTemplateVariable) ResType() string {
-	return string(enumor.Variable)
+	return string(enumor.Config)
 }
 
 // ValidateUpsert validate AppTemplateVariable is valid or not when create or update it.
