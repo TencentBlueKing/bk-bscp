@@ -157,7 +157,7 @@
   import EmptyList from './empty-list.vue';
   import SearchSelector from '../../../../../components/search-selector.vue';
 
-  const { permissionQuery, showApplyPermDialog, spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
@@ -232,9 +232,7 @@
       limit,
     };
     if (onlyShowMyService.value) {
-      searchQuery.value.creator = spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE
-        ? userInfo.value.tenant_id
-        : userInfo.value.username;
+      searchQuery.value.creator = userInfo.value.username;
     }
     rules.search = searchQuery.value;
     if (activeType.value) {
