@@ -256,7 +256,6 @@ func (c *client) GetTenantIDByBiz(kit *kit.Kit, bizID uint32, refresh bool) (str
 		hit      bool
 		err      error
 	)
-
 	// 强制刷新获取
 	if !refresh {
 		tenantID, hit, err = c.getTenantIDByBizFromCache(kit, bizID)
@@ -264,8 +263,10 @@ func (c *client) GetTenantIDByBiz(kit *kit.Kit, bizID uint32, refresh bool) (str
 			return "", err
 		}
 		if hit {
-			c.mc.hitCounter.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Inc()
-			return tenantID, nil
+			if tenantID != "" {
+				c.mc.hitCounter.With(prm.Labels{"rsc": tenantID, "biz": tools.Itoa(bizID)}).Inc()
+				return tenantID, nil
+			}
 		}
 	}
 
@@ -331,6 +332,7 @@ func (c *client) refreshTenantIDCache(kit *kit.Kit, bizID uint32) (string, error
 	if err != nil {
 		return "", err
 	}
+
 	b, err := jsoni.Marshal(app.Spec.TenantID)
 	if err != nil {
 		return "", err

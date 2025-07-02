@@ -243,7 +243,8 @@ func (ap *App) SetAppLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32
 
 // HasBiz 业务是否存在
 func (ap *App) HasBiz(kt *kit.Kit, bizID uint32) bool {
-	val, err := ap.idClient.GetIFPresent(bizID)
+	key := fmt.Sprintf("%d-%s", bizID, "tenant-id")
+	val, err := ap.idClient.GetIFPresent(key)
 	if err == nil {
 		ap.mc.hitCounter.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Inc()
 
@@ -275,21 +276,14 @@ func (ap *App) HasBiz(kt *kit.Kit, bizID uint32) bool {
 		Refresh: false,
 	})
 
-	if err != nil {
+	if err != nil || len(resp.TenantId) == 0 {
 		ap.mc.errCounter.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Inc()
 		logs.Errorf("get biz: %d, tenant id failed, err: %v, rid: %s", bizID,
 			err, kt.Rid)
 		return false
 	}
 
-	if resp == nil {
-		ap.mc.errCounter.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Inc()
-		logs.Errorf("biz: %d, does not exist, err: %v, rid: %s", bizID,
-			err, kt.Rid)
-		return false
-	}
-
-	err = ap.idClient.Set(bizID, resp.TenantId)
+	err = ap.idClient.Set(key, resp.TenantId)
 	if err != nil {
 		logs.Errorf("update biz: %d, tenant id cache failed, err: %v, rid: %s", bizID, err, kt.Rid)
 		// do not return, ignore the error directly.
