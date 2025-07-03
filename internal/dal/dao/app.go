@@ -83,7 +83,8 @@ func (dao *appDao) GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
-	detail, err := q.Where(m.BizID.Eq(bizID), m.TenantID.IsNotNull()).Take()
+	// 租户ID不能为空
+	detail, err := q.Where(m.BizID.Eq(bizID), m.TenantID.Neq("")).Take()
 	if err != nil {
 		return nil, err
 	}
