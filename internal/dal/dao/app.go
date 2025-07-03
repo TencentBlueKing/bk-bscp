@@ -528,6 +528,7 @@ func (dao *appDao) ListAppMetaForCache(kit *kit.Kit, bizID uint32, appIDs []uint
 	for _, one := range result {
 		meta[one.ID] = &types.AppCacheMeta{
 			Name:       one.Spec.Name,
+			TenantID:   one.Spec.TenantID,
 			ConfigType: one.Spec.ConfigType,
 		}
 	}

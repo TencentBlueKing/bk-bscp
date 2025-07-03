@@ -154,7 +154,6 @@ func (ap *App) GetAppID(kt *kit.Kit, bizID uint32, appName string) (uint32, erro
 
 // GetMeta the app meta cache.
 func (ap *App) GetMeta(kt *kit.Kit, bizID uint32, appID uint32) (*types.AppCacheMeta, error) {
-
 	val, err := ap.metaClient.GetIFPresent(appID)
 	if err == nil {
 		ap.mc.hitCounter.With(prm.Labels{"resource": "app_meta", "biz": tools.Itoa(bizID)}).Inc()
