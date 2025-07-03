@@ -471,6 +471,8 @@ func (s *Service) GetDownloadURL(ctx context.Context, req *pbfs.GetDownloadURLRe
 	// 生成下载链接
 	im.Kit.BizID = req.BizId
 	im.Kit.TenantID = app.TenantID
+	// 带上租户ID
+	// im.Kit.Ctx = kit.WithKit(im.Kit.Ctx, im.Kit)
 	downloadLink, err := s.provider.DownloadLink(im.Kit, req.FileMeta.CommitSpec.Content.Signature, fetchLimit)
 	if err != nil {
 		return nil, status.Errorf(codes.Aborted, "generate temp download url failed, %s", err.Error())

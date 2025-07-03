@@ -518,7 +518,7 @@ func (dao *appDao) ListAppMetaForCache(kit *kit.Kit, bizID uint32, appIDs []uint
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
-	result, err := q.Select(m.ID, m.Name, m.ConfigType).
+	result, err := q.Select(m.ID, m.Name, m.TenantID, m.ConfigType).
 		Where(m.BizID.Eq(bizID), m.ID.In(appIDs...)).Find()
 	if err != nil {
 		return nil, err
