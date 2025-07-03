@@ -145,14 +145,6 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 		return nil, err
 	}
 
-	// mock authDecisions
-	// authDecisions := make([]*client.Decision, len(decisions))
-	// for index := range authDecisions {
-	// 	authDecisions[index] = &client.Decision{
-	// 		Authorized: true,
-	// 	}
-	// }
-
 	index := 0
 	decisionLen := len(decisions)
 	for _, decision := range authDecisions {
