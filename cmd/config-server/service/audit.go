@@ -31,7 +31,6 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.Audit, Action: meta.View, ResourceID: req.BizId}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -39,17 +38,18 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 	}
 
 	r := &pbds.ListAuditsReq{
-		BizId:       req.BizId,
-		AppId:       req.AppId,
-		StartTime:   req.StartTime,
-		EndTime:     req.EndTime,
-		Start:       req.Start,
-		Limit:       req.Limit,
-		All:         req.All,
-		Name:        req.Name,
-		ResInstance: req.ResInstance,
-		Operator:    req.Operator,
-		Id:          req.Id,
+		BizId:              req.BizId,
+		AppId:              req.AppId,
+		StartTime:          req.StartTime,
+		EndTime:            req.EndTime,
+		Start:              req.Start,
+		Limit:              req.Limit,
+		All:                req.All,
+		Name:               req.Name,
+		ResInstance:        req.ResInstance,
+		Operator:           req.Operator,
+		Id:                 req.Id,
+		UnauthorizedAppIds: req.GetUnauthorizedAppIds(),
 	}
 	// 前端组件以逗号分开
 	if req.Action != "" {
