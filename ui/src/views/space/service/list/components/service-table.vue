@@ -8,7 +8,12 @@
       :loading="props.loading">
       <vxe-column :title="$t('服务别名')" fixed="left" width="170">
         <template #default="{ row }">
-          <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'service-config')">
+          <bk-button
+            :disabled="!row.permissions.view"
+            size="small"
+            text
+            theme="primary"
+            @click="handleJump(row.id, 'service-config')">
             {{ row.spec.alias }}
           </bk-button>
         </template>
@@ -60,7 +65,9 @@
               <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
             </div>
           </template>
-          <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm">{{ t('申请服务权限') }}</bk-button>
+          <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm(row)">{{
+            t('申请服务权限')
+          }}</bk-button>
         </template>
       </vxe-column>
       <template #empty>

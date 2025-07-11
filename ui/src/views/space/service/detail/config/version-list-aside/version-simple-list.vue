@@ -1,7 +1,14 @@
 <template>
   <section class="version-container">
     <div class="service-selector-wrapper">
-      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="editingService = $event" />
+      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="handleAppChange">
+        <template #trigger>
+          <div class="selector-trigger">
+            <input readonly :value="editingService.spec.name" />
+            <AngleUpFill class="arrow-icon arrow-fill" />
+          </div>
+        </template>
+      </ServiceSelector>
       <div class="details-btn" v-bk-tooltips="{ content: t('查看服务属性') }" @click="isEditServicePopShow = true">
         <span class="bk-bscp-icon icon-view-detail"></span>
       </div>
@@ -91,13 +98,13 @@
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { Message } from 'bkui-vue';
-  import { Ellipsis } from 'bkui-vue/lib/icon';
+  import { Ellipsis, AngleUpFill } from 'bkui-vue/lib/icon';
   import useConfigStore from '../../../../../../store/config';
   import { getConfigVersionList, deprecateVersion } from '../../../../../../api/config';
   import { GET_UNNAMED_VERSION_DATA } from '../../../../../../constants/config';
   import { IConfigVersion } from '../../../../../../../types/config';
   import { IAppItem } from '../../../../../../../types/app';
-  import ServiceSelector from '../../components/service-selector.vue';
+  import ServiceSelector from '../../../../../../components/service-selector.vue';
   import SearchInput from '../../../../../../components/search-input.vue';
   import TableEmpty from '../../../../../../components/table/table-empty.vue';
   import VersionDiff from '../../config/components/version-diff/index.vue';
@@ -361,6 +368,21 @@
   const handleReloadService = () => {
     serviceSelectorRef.value.reloadService();
   };
+
+  const handleAppChange = (service: IAppItem) => {
+    editingService.value = service;
+    configStore.$patch((state) => {
+      state.conflictFileCount = 0;
+      state.allConfigCount = 0;
+      state.allExistConfigCount = 0;
+    });
+    let name = route.name as string;
+    if (route.name === 'init-script' && service.spec.config_type === 'kv') {
+      name = 'service-config';
+    }
+
+    router.push({ name, params: { spaceId: service.space_id, appId: service.id } });
+  };
 </script>
 
 <style lang="scss" scoped>
@@ -389,6 +411,47 @@
       &:hover {
         color: #3a84ff;
         background: #e1ecff;
+      }
+    }
+    .selector-trigger {
+      display: inline-flex;
+      align-items: stretch;
+      width: 100%;
+      height: 32px;
+      font-size: 12px;
+      border-radius: 2px;
+      transition: all 0.3s;
+      & > input {
+        flex: 1;
+        width: 100%;
+        padding: 0 24px 0 10px;
+        line-height: 1;
+        font-size: 14px;
+        color: #313238;
+        background: #f0f1f5;
+        border-radius: 2px;
+        border: none;
+        outline: none;
+        transition: all 0.3s;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .arrow-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        right: 4px;
+        top: 0;
+        width: 20px;
+        height: 100%;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #979ba5;
+        &.arrow-line {
+          font-size: 20px;
+        }
       }
     }
   }

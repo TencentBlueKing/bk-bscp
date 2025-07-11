@@ -302,7 +302,7 @@
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import RepealDialog from './dialog-confirm.vue';
-  import { InfoLine, Copy, TextFile } from 'bkui-vue/lib/icon';
+  import { InfoLine, Copy, TextFile, Spinner } from 'bkui-vue/lib/icon';
   import VersionDiff from './version-diff.vue';
   import VersionInfo from './version-info.vue';
   import BkMessage from 'bkui-vue/lib/message';
