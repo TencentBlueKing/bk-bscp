@@ -15,6 +15,7 @@ export interface IRecordQuery {
   status?: string;
   operator?: string;
   operate_way?: string;
+  unauthorized_app_ids?: number[];
 }
 
 // 审批操作：撤销/驳回/通过/手动上线

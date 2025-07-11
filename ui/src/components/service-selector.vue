@@ -9,13 +9,13 @@
     :input-search="false"
     :clearable="false"
     :loading="loading"
-    :search-placeholder="$t('请输入关键字')"
-    @change="handleAppChange">
-    <template #trigger>
-      <div class="selector-trigger">
-        <input readonly :value="appData.spec.name" />
-        <AngleUpFill class="arrow-icon arrow-fill" />
-      </div>
+    v-bind="$attrs"
+    @clear="emits('clear')">
+    <template v-if="customTrigger" #trigger>
+      <slot name="trigger"></slot>
+    </template>
+    <template #prefix>
+      <slot name="prefix"></slot>
     </template>
     <bk-option-group v-for="group in serviceGroup" :key="group.label" :label="group.label" collapsible>
       <bk-option v-for="item in group.list" :key="item.id" :value="item.id" :label="item.spec.name">
@@ -41,38 +41,41 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onMounted, computed } from 'vue';
+  import { ref, watch, onBeforeMount, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import { AngleUpFill } from 'bkui-vue/lib/icon';
-  import useGlobalStore from '../../../../../store/global';
-  import useServiceStore from '../../../../../store/service';
-  import useConfigStoe from '../../../../../store/config';
-  import { IAppItem } from '../../../../../../types/app';
-  import { getAppList } from '../../../../../api';
+  import useGlobalStore from '../store/global';
+  import { IAppItem } from '../../types/app';
+  import { getAppList } from '../api';
   import { useI18n } from 'vue-i18n';
 
   const route = useRoute();
   const router = useRouter();
   const { t } = useI18n();
 
-  const configStore = useConfigStoe();
-
-  const { appData } = storeToRefs(useServiceStore());
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
 
   const bizId = route.params.spaceId as string;
 
-  const props = defineProps<{
-    value: number;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      value?: number;
+      customTrigger?: boolean;
+      isRecord?: boolean;
+    }>(),
+    {
+      customTrigger: true,
+      isRecord: false,
+    },
+  );
 
-  const emits = defineEmits(['change']);
+  const emits = defineEmits(['change', 'clear']);
 
   const serviceList = ref<IAppItem[]>([]);
   const loading = ref(false);
   const localVal = ref(props.value);
   const selectorRef = ref();
+  const noPermisionIds = ref<number[]>([]);
 
   const serviceGroup = computed(() => {
     const fileServices = serviceList.value.filter((service: IAppItem) => service.spec.config_type === 'file');
@@ -90,9 +93,25 @@
     },
   );
 
-  onMounted(async () => {
+  onBeforeMount(async () => {
     await loadServiceList();
-    const service = serviceList.value.find((service) => service.id === localVal.value);
+    noPermisionIds.value = serviceList.value
+      .filter((service) => !service.permissions.view)
+      .map((service) => service.id!);
+    let service;
+    if (props.value) {
+      localVal.value = props.value;
+      service = serviceList.value.find((service) => service.id === localVal.value);
+    } else {
+      if (props.isRecord) {
+        // 如果是记录页面，默认选择当前路由参数中的服务
+        service = serviceList.value.find((service) => service.id === Number(route.params.appId));
+      } else {
+        // 如果不是记录页面，默认选择第一个有查看权限的服务
+        service = serviceList.value.find((service) => service.permissions.view);
+      }
+      localVal.value = service ? service.id : undefined;
+    }
     emits('change', service);
   });
 
@@ -131,23 +150,7 @@
       };
 
       showApplyPermDialog.value = true;
-    }
-  };
-
-  const handleAppChange = (id: number) => {
-    const service = serviceList.value.find((service) => service.id === id);
-    if (service) {
-      configStore.$patch((state) => {
-        state.conflictFileCount = 0;
-        state.allConfigCount = 0;
-        state.allExistConfigCount = 0;
-      });
-      let name = route.name as string;
-      if (route.name === 'init-script' && service.spec.config_type === 'kv') {
-        name = 'service-config';
-      }
-
-      router.push({ name, params: { spaceId: service.space_id, appId: id } });
+    } else {
       emits('change', service);
     }
   };
@@ -158,6 +161,7 @@
       const service = serviceList.value.find((service) => service.id === localVal.value);
       emits('change', service);
     },
+    noPermisionIds,
   });
 </script>
 <style lang="scss" scoped>
