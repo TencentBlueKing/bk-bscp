@@ -33,7 +33,12 @@ http.interceptors.response.use(
       let message = response.statusText;
 
       if (response.status === 401) {
-        const loginUrl = `${response.data.error.data.login_plain_url + window.location.origin}/web/login_success.html`;
+        const urlStr = response.data.error.data.login_plain_url;
+        const url = new URL(urlStr);
+        const loginUrl = `${urlStr + window.location.origin}/web/login_success.html`;
+        globalStore.$patch((state) => {
+          state.loginOriginUrl = url.origin;
+        });
         showLoginModal({ loginUrl });
         return;
       }
