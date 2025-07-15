@@ -23,7 +23,7 @@ export default defineConfig(({ command, mode }) => {
       cache: true,
     }),
     viteCompression({
-      filter: /\.js|.css$/,
+      filter: /\.(js|css)$/,
       threshold: 1,
     }),
     vueJsx(),
