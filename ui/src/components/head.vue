@@ -15,16 +15,15 @@
               <div
                 v-for="secondNav in nav.children"
                 :key="secondNav.id"
-                :class="['secondNav-item', { actived: isSecondNavActived(secondNav.module) }]">
-                <a @click.stop="handleNavClick(secondNav.id)">
-                  {{ secondNav.name }}
-                </a>
+                :class="['secondNav-item', { actived: isSecondNavActived(secondNav.module) }]"
+                @click.stop="handleNavClick(secondNav.id)">
+                {{ secondNav.name }}
               </div>
             </div>
           </div>
-          <a v-else @click.stop="handleNavClick(nav.id)">
+          <div v-else @click.stop="handleNavClick(nav.id)">
             {{ nav.name }}
-          </a>
+          </div>
         </div>
       </div>
     </div>
@@ -411,15 +410,16 @@
         font-size: 14px;
         .nav-item {
           position: relative;
-          display: flex;
-          align-items: center;
           height: 52px;
+          line-height: 52px;
           padding: 0 16px;
           font-size: 14px;
           color: #96a2b9;
           cursor: pointer;
           a {
             color: #96a2b9;
+            width: 100%;
+            height: 100%;
           }
           &:hover {
             color: #c2cee5;
