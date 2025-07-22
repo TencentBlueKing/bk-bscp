@@ -25,6 +25,9 @@ server:
 	@cd auth-server && make package
 	@cd cache-service && make package
 
+vault:
+	@cd vault-server && make
+
 clean:
 	@cd api-server && make clean
 	@cd config-server && make clean

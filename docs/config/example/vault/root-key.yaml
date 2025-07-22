@@ -1,0 +1,10 @@
+vault:
+  address: http://127.0.0.1:8200
+  pluginDir: [path to vault-plugins]
+  unsealKeys:
+    - [unseal key 1]
+    - [unseal key 2]
+    - [unseal key 3]
+    - [unseal key 4]
+    - [unseal key 5]
+  token: [vault token]

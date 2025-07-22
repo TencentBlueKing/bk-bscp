@@ -127,16 +127,10 @@ test: pre
 	@cd test/suite && make && cp -rf suite-test ${OUTPUT_DIR}/ && rm -rf suite-test
 	@cd test/benchmark && make && cp -rf bench-test ${OUTPUT_DIR}/ && rm -rf bench-test
 
-unit-test: pre
-	@echo -e "\e[34;1mExec Unit Test...\033[0m"
-	@mkdir -p ${OUTPUT_DIR}/unit-test
-	@cd cmd/sidecar/scheduler && go test -o ${OUTPUT_DIR}/unit-test/scheduler.test -c
-	@echo -e "\e[34;1mExec Unit Test Success\n\033[0m"
-
 mock: pre
 	@cd ${PRO_DIR}/test/mock/repo && make
 
-all: pre validate pb install test unit-test api mock build_bscp
+all: pre validate pb install test api mock build_bscp
 	@echo -e "\e[34;1mBuild All Success!\n\033[0m"
 
 server: validate api
@@ -148,13 +142,6 @@ server: validate api
 	@mkdir -p ${OUTPUT_DIR}/etc
 	@cd ${PRO_DIR}/cmd && make server
 	@echo -e "\e[34;1mMake Server All Success!\n\033[0m"
-
-sidecar: pre validate
-	@echo -e "\e[34;1mMaking Sidecar...\n\033[0m"
-	@echo "version: ${VERSION}" > ${OUTPUT_DIR}/VERSION
-	@cp -rf ${PRO_DIR}/sidecar-CHANGELOG.md ${OUTPUT_DIR}
-	@cd ${PRO_DIR}/cmd/sidecar && make
-	@echo -e "\e[34;1mMake Sidecar Success!\n\033[0m"
 
 validate:
 	@if [ "$(VERSION)" != "" ];then \
@@ -184,12 +171,18 @@ build_bscp:
 build_feed:
 	@cd ${PRO_DIR}/cmd && make feed
 
+.PHONY: build_vault
+build_vault:
+	@cd ${PRO_DIR}/cmd && make vault
+
 .PHONY: build_frontend
 build_frontend:
+	@echo "tips: ensure you have installed node and npm"
 	cd ui; npm install --legacy-peer-deps; npm run build
 
 .PHONY: build_ui
-build_ui:
+build_ui: 
+	@echo -e "\e[34;1mTips: ensure you have execute 'make build_frontend' first\033[0m"
 	${GOBUILD} -ldflags ${LDVersionFLAG} -o bscp-ui ./cmd/ui
 
 .PHONY: docker

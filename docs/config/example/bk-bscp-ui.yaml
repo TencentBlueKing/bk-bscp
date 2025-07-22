@@ -1,0 +1,40 @@
+# 基础信息
+base_conf:
+  app_code: "[app code]"
+  app_secret: "[app secret]"
+  bk_paas_host: "[bkpaas url]"
+  time_zone: "Asia/Shanghai"
+  language_code: "en"
+  run_env: "dev"
+  grpc_addr: "[bscp-feed url]"
+  http_addr: "[bscp-feed url]"
+# etcd 配置
+etcd:
+  endpoints: "[etcd url]"
+  ca: "[etcd ca]"
+  cert: "[etcd cert]"
+  key: "[etcd key]"
+web:
+  # bscp 访问域名，与 ingress 保持一致
+  host: "[bscp api url]"
+  route_prefix: ""
+  preferred_domains: ""
+
+frontend_conf:
+  # 暂无对外文档
+  docs:
+    help: "https://bk.tencent.com/docs/markdown/BSCP/UserGuide/Introduction/product_introduction.md"
+    variable_template_doc: "https://bk.tencent.com/docs/markdown/BSCP/UserGuide/Function/configuration_templates_and_variables.md"
+    group_doc: "https://bk.tencent.com/docs/markdown/BSCP/UserGuide/Function/group_management.md"
+    python_sdk_dependency_doc: "https://bk.tencent.com/docs/markdown/BSCP/UserGuide/Function/python_sdk_dependency.md"
+    client_configuration_doc: "https://bk.tencent.com/docs/markdown/BSCP/UserGuide/Function/client_configuration.md"
+  hosts:
+    bk_iam_host: "[bkiam url]"
+    bk_cmdb_host: "[cmdb url]"
+    bk_nodeman_host: "[nodeman url]"
+    bk_shared_res_url: "[bkrepo url]"
+    # bscp api 域名，与 ingress 保持一致
+    bscp_api_url: "[bscp api url]"
+    user_man_host: "[bkapi url]"
+  helper: "[helper]"
+  enable_bk_notice: false

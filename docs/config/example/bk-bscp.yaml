@@ -1,0 +1,196 @@
+# defines all the network related options.
+network:
+  # bindIP is ip where server working on.
+  bindIP: [ip]
+  # rpcPort is port where server listen to rpc port.
+  # rpcPort: 9511
+  # httpPort is port where server listen to http port.
+  # httpPort: 9611
+  # defines tls related options.
+  tls:
+    # server should be accessed without verifying the TLS certificate.
+    insecureSkipVerify: 
+    # server requires TLS client certificate authentication.
+    certFile:
+    # server requires TLS client certificate authentication.
+    keyFile:
+    # trusted root certificates for server.
+    caFile:
+    # the password to decrypt the certificate.
+    password:
+
+# 凭证管理加密密码，生成后不能修改
+credential:
+  encryption_algorithm: "aes"
+  # 32位大小写+数字
+  master_key: "[master key]"
+# bkapi 配置
+esb:
+  appCode: "[app code]"
+  appSecret: "[app secret]"
+  endpoints:
+    - "[bkapi url]"
+  user: "[bkapi user]"
+  bscpHost: "[bscp api url]"
+  
+# defines all the iam related settings.
+iam:
+  api_url: "[bk iam url]"
+  user: "[bk iam user]"
+  # endpoints is a seed list of host:port addresses of iam nodes.
+  endpoints:
+    - "[bk iam url]"
+  # appCode is bscp app code.
+  appCode: "[app code]"
+  # appSecret is bscp app secret.
+  appSecret: "[app secret]"
+  # defines tls related options.
+  tls:
+    # server should be accessed without verifying the TLS certificate.
+    insecureSkipVerify:
+    # server requires TLS client certificate authentication.
+    certFile:
+    # server requires TLS client certificate authentication.
+    keyFile:
+    # trusted root certificates for server.
+    caFile:
+    # the password to decrypt the certificate.
+    password:
+
+# defines service related settings.
+service:
+  # defines etcd related settings
+  etcd:
+    # endpoints is a list of URLs.
+    endpoints:
+      - 127.0.0.1:2379
+    # dialTimeoutMS is the timeout milliseconds for failing to establish a connection.
+    dialTimeoutMS:
+    # username is a user's name for authentication.
+    username:
+    # password is a password for authentication.
+    password:
+    # defines tls related options.
+    tls:
+      # server should be accessed without verifying the TLS certificate.
+      insecureSkipVerify: 
+      # server requires TLS client certificate authentication.
+      certFile:
+      # server requires TLS client certificate authentication.
+      keyFile:
+      # trusted root certificates for server.
+      caFile:
+      # the password to decrypt the certificate.
+      password:
+
+# defines sharding related settings.
+sharding:
+  # defines database related settings.
+  adminDatabase:
+    # is a seed list of host:port addresses of database nodes.
+    endpoints:
+      - [mysql url]
+    database: [database]
+    user: [user]
+    password: [password]
+    # DialTimeoutSec is timeout in seconds to wait for a response from the db server
+    # all the timeout default value reference:
+    # https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html.
+    dialTimeoutSec:
+    readTimeoutSec:
+    writeTimeoutSec:
+    maxIdleTimeoutMin:
+    maxOpenConn:
+    maxIdleConn:
+    # defines tls related options.
+    tls:
+      # server should be accessed without verifying the TLS certificate.
+      insecureSkipVerify: 
+      # server requires TLS client certificate authentication.
+      certFile:
+      # server requires TLS client certificate authentication.
+      keyFile:
+      # trusted root certificates for server.
+      caFile:
+      # the password to decrypt the certificate.
+      password:
+  # maxSlowLogLatencyMS defines the max tolerance in millisecond to execute
+  # the database command, if the cost time of execute have >= the maxSlowLogLatencyMS
+  # then this request will be logged.
+  maxSlowLogLatencyMS: 200
+  # limiter limit the incoming request frequency to database for each sharding, and
+  # each sharding have the independent request limitation.
+  limiter:
+    qps: 500
+    burst: 500
+
+# 特性配置
+featureFlags:
+  # 业务展示白名单
+  BIZ_VIEW:
+    # 全局默认配置(优先级低于业务级配置)，默认为true（展示）
+    default:
+    # 业务级配置，默认为空
+    spec:
+      "2":
+  # 业务资源限制
+  RESOURCE_LIMIT:
+    # 全局默认配置(优先级低于业务级配置)
+    default:
+      # 配置文件大小上限，单位为MB，默认为100MB
+      maxFileSize:
+      # 单个app下允许创建的配置数（模版+非模版），默认为2000
+      appConfigCnt:
+      # 单个模版套餐下允许创建的模版数，默认为2000
+      tmplSetTmplCnt:
+    # 业务级配置，默认为空
+    spec:
+      "2":
+        # 配置文件大小上限，单位为MB
+        maxFileSize:
+        # 单个app下允许创建的配置数（模版+非模版）
+        appConfigCnt:
+        # 单个模版套餐下允许创建的模版数
+        tmplSetTmplCnt:
+
+# defines log's related configuration
+log:
+  # log storage directory.
+  logDir: ./log
+  # per file max size, uint: MB.
+  maxPerFileSizeMB: 1024
+  # per line max size, uint: KB.
+  maxPerLineSizeKB: 2
+  # log file max storage number.
+  maxFileNum: 5
+  # whether the restart service log is appended to the latest log file, or whether a new log file is created.
+  logAppend: false
+  # log the log to std err only, it can not be used with AlsoToStdErr at the same time.
+  toStdErr: false
+  # log the log to file and also to std err. it can not be used with ToStdErr at the same time.
+  alsoToStdErr: false
+  # log level.
+  verbosity: 0
+
+
+# defines all the repo related settings.
+repository:
+  # storageType: S3
+  storageType: BKREPO
+  bkRepo:
+    endpoints:
+        - [bkrepo url]
+    project: [bkrepo project]
+    username: [bkrepo username]
+    password: [bkrepo password]
+  s3:
+    endpoint: [s3 endpoint]
+    accessKeyID: [s3 access key]
+    secretAccessKey: [s3 secret key]
+    useSSL: true
+    bucketName: [s3 bucket name]
+  redisCluster:
+    endpoints:
+        - [redis url]
+    db: 1
+    password: [redis password]
