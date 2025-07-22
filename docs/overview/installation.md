@@ -136,5 +136,5 @@ bk-bscp-configserver -c ./config/bk-bscp.yaml
 bk-bscp-apiserver -c ./config/bk-bscp.yaml --port 8081
 bk-bscp-cachserver -c ./config/bk-bscp.yaml
 bk-bscp-feedserver  -c ./config/bk-bscp-feed.yaml
-bk-bscp-ui --config ./build/config/bk-bscp-ui.yaml --bind-address=[替换为机器IP]
+bk-bscp-ui --config ./config/bk-bscp-ui.yaml --bind-address=[替换为机器IP]
 ```
