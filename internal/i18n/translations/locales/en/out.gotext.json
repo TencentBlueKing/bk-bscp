@@ -562,10 +562,20 @@
             "fuzzy": true
         },
         {
-            "id": "the certificate format is incorrect, only X.509 format is supported",
-            "message": "the certificate format is incorrect, only X.509 format is supported",
-            "translation": "the certificate format is incorrect, only X.509 format is supported",
+            "id": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
+            "message": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
+            "translation": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
             "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
             "fuzzy": true
         },
         {
@@ -579,20 +589,6 @@
             "id": "batch recovery kv failed",
             "message": "batch recovery kv failed",
             "translation": "batch recovery kv failed",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "create release failed there is a file conflict",
-            "message": "create release failed there is a file conflict",
-            "translation": "create release failed there is a file conflict",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "create release failed there is a certificate expiration exists",
-            "message": "create release failed there is a certificate expiration exists",
-            "translation": "create release failed there is a certificate expiration exists",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -1093,6 +1089,40 @@
             "fuzzy": true
         },
         {
+            "id": "get config item failed, err: {Err}",
+            "message": "get config item failed, err: {Err}",
+            "translation": "get config item failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "the config item {Name} under this service already exists and cannot be created again",
+            "message": "the config item {Name} under this service already exists and cannot be created again",
+            "translation": "the config item {Name} under this service already exists and cannot be created again",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path.Join(req.ConfigItemSpec.Path, req.ConfigItemSpec.Name)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "delete one app template binding instance by app id failed, err: {Err}",
             "message": "delete one app template binding instance by app id failed, err: {Err}",
             "translation": "delete one app template binding instance by app id failed, err: {Err}",
@@ -1139,23 +1169,6 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "e"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "get config item failed, err: {Err}",
-            "message": "get config item failed, err: {Err}",
-            "translation": "get config item failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
                 }
             ],
             "fuzzy": true
@@ -1394,23 +1407,6 @@
             "fuzzy": true
         },
         {
-            "id": "the config item {Key} under this service already exists and cannot be created again",
-            "message": "the config item {Key} under this service already exists and cannot be created again",
-            "translation": "the config item {Key} under this service already exists and cannot be created again",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Key",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "req.Spec.Key"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
             "id": "get app fail, key: {Key}, err: {Err}",
             "message": "get app fail, key: {Key}, err: {Err}",
             "translation": "get app fail, key: {Key}, err: {Err}",
@@ -1480,6 +1476,22 @@
             "id": "get a list of expired certificates failed, err: {Arg_1}",
             "message": "get a list of expired certificates failed, err: {Arg_1}",
             "translation": "get a list of expired certificates failed, err: {Arg_1}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get key value failed, err: {Arg_1}",
+            "message": "get key value failed, err: {Arg_1}",
+            "translation": "get key value failed, err: {Arg_1}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -1580,6 +1592,23 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "there are duplicate keys {Key}",
+            "message": "there are duplicate keys {Key}",
+            "translation": "there are duplicate keys {Key}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "kv.KvSpec.Key"
                 }
             ],
             "fuzzy": true
@@ -1840,6 +1869,52 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "ticketStatus.Data.CurrentStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create release failed there is a file conflict",
+            "message": "create release failed there is a file conflict",
+            "translation": "create release failed there is a file conflict",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "create release failed there is a certificate expiration exists",
+            "message": "create release failed there is a certificate expiration exists",
+            "translation": "create release failed there is a certificate expiration exists",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get the package associated with the app failed, err: {Arg_1}",
+            "message": "get the package associated with the app failed, err: {Arg_1}",
+            "translation": "get the package associated with the app failed, err: {Arg_1}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get template file failed, err: {Arg_1}",
+            "message": "get template file failed, err: {Arg_1}",
+            "translation": "get template file failed, err: {Arg_1}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
                 }
             ],
             "fuzzy": true
