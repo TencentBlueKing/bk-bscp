@@ -36,9 +36,9 @@ package pbcs;
 option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server;pbcs";
 
 service Config {
-  option (google.api.api_visibility).restriction = "BKAPIGW";
   //  创建服务
   rpc CreateApp(CreateAppReq) returns (CreateAppResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/create/app/app/biz_id/{biz_id}"
       body: "*"
@@ -46,6 +46,7 @@ service Config {
   }
   // 更新服务
   rpc UpdateApp(UpdateAppReq) returns (pbapp.App) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/update/app/app/app_id/{id}/biz_id/{biz_id}"
       body: "*"
@@ -53,30 +54,35 @@ service Config {
   }
   // 删除服务
   rpc DeleteApp(DeleteAppReq) returns (DeleteAppResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/delete/app/app/app_id/{id}/biz_id/{biz_id}"
     };
   }
   // 获取服务
   rpc GetApp(GetAppReq) returns (pbapp.App) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}"
     };
   }
   // 按服务名称获取
   rpc GetAppByName(GetAppByNameReq) returns (pbapp.App) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/query/name/{app_name}"
     };
   }
   // 获取用户有权限的 spaces 所有的 apps
   rpc ListAppsRest(ListAppsRestReq) returns (ListAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps"
     };
   }
   // 按 space 查询 app 信息
   rpc ListAppsBySpaceRest(ListAppsBySpaceRestReq) returns (ListAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/list/app/app/biz_id/{biz_id}"
     };
@@ -84,6 +90,7 @@ service Config {
 
   // 创建文件配置项
   rpc CreateConfigItem(CreateConfigItemReq) returns (CreateConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/create/config_item/config_item/app_id/{app_id}/"
             "biz_id/{biz_id}"
@@ -92,6 +99,7 @@ service Config {
   }
   // 批量创建或更新文件配置项
   rpc BatchUpsertConfigItems(BatchUpsertConfigItemsReq) returns (BatchUpsertConfigItemsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
@@ -99,6 +107,7 @@ service Config {
   }
   // 更新文件配置项
   rpc UpdateConfigItem(UpdateConfigItemReq) returns (UpdateConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/update/config_item/config_item/config_item_id/{id}/"
            "app_id/{app_id}/biz_id/{biz_id}"
@@ -107,6 +116,7 @@ service Config {
   }
   // 删除文件配置项
   rpc DeleteConfigItem(DeleteConfigItemReq) returns (DeleteConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/delete/config_item/config_item/config_item_id/"
               "{id}/app_id/{app_id}/biz_id/{biz_id}"
@@ -114,6 +124,7 @@ service Config {
   }
   // 批量删除文件配置项
   rpc BatchDeleteConfigItems(BatchDeleteAppResourcesReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/"
             "batch_delete"
@@ -122,6 +133,7 @@ service Config {
   }
   // 恢复文件配置项
   rpc UnDeleteConfigItem(UnDeleteConfigItemReq) returns (UnDeleteConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/undelete/config_item/config_item/config_item_id/"
             "{id}/app_id/{app_id}/biz_id/{biz_id}"
@@ -129,6 +141,7 @@ service Config {
   }
   // 批量恢复文件配置项
   rpc BatchUnDeleteConfigItem(BatchUnDeleteConfigItemReq) returns (BatchUnDeleteConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/config_items/batch_undelete"
       body: "*"
@@ -136,6 +149,7 @@ service Config {
   }
   // 撤销文件配置项
   rpc UndoConfigItem(UndoConfigItemReq) returns (UndoConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/undo/config_item/config_item/config_item_id/{id}/"
             "app_id/{app_id}/biz_id/{biz_id}"
@@ -143,6 +157,7 @@ service Config {
   }
   // 获取文件配置项
   rpc GetConfigItem(GetConfigItemReq) returns (GetConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/"
            "{config_item_id}"
@@ -150,6 +165,7 @@ service Config {
   }
   // 获取已发布文件配置项
   rpc GetReleasedConfigItem(GetReleasedConfigItemReq) returns (GetReleasedConfigItemResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "config_items/{config_item_id}"
@@ -157,6 +173,7 @@ service Config {
   }
   // 获取文件配置项列表
   rpc ListConfigItems(ListConfigItemsReq) returns (ListConfigItemsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
@@ -164,6 +181,7 @@ service Config {
   }
   // 获取已发布文件配置项列表
   rpc ListReleasedConfigItems(ListReleasedConfigItemsReq) returns (ListReleasedConfigItemsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "config_items"
@@ -171,6 +189,7 @@ service Config {
   }
   // 获取文件型服务配置数量列表
   rpc ListConfigItemCount(ListConfigItemCountReq) returns (ListConfigItemCountResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/config_item_count/biz_id/{biz_id}"
       body: "*"
@@ -178,6 +197,7 @@ service Config {
   }
   // 按绝对路径获取文件配置项列表
   rpc ListConfigItemByTuple(ListConfigItemByTupleReq) returns (ListConfigItemByTupleResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/tuple"
       body: "*"
@@ -185,6 +205,7 @@ service Config {
   }
   // 获取已生成版本键值配置项
   rpc GetReleasedKv(GetReleasedKvReq) returns (GetReleasedKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "kvs/{key}"
@@ -192,6 +213,7 @@ service Config {
   }
   // 获取已生成版本键值配置项列表
   rpc ListReleasedKvs(ListReleasedKvsReq) returns (ListReleasedKvsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "kvs"
@@ -199,19 +221,22 @@ service Config {
   }
   // 列出所有已发布的配置项
   rpc ListAllReleasedConfigItems(ListAllReleasedConfigItemsReq) returns (ListAllReleasedConfigItemsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/published/all"
     };
   }
   // 引用前后置脚本
   rpc UpdateConfigHook(UpdateConfigHookReq) returns (UpdateConfigHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_hooks"
       body: "*"
     };
   }
-  // 生成配置服务版本
+  // 生成版本
   rpc CreateRelease(CreateReleaseReq) returns (CreateReleaseResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/create/release/release/app_id/{app_id}/biz_id/"
             "{biz_id}"
@@ -220,12 +245,14 @@ service Config {
   }
   // 获取服务版本列表
   rpc ListReleases(ListReleasesReq) returns (ListReleasesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases"
     };
   }
   // 按服务版本名
   rpc GetReleaseByName(GetReleaseByNameReq) returns (pbrelease.Release) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/query/name/"
            "{release_name}"
@@ -233,12 +260,14 @@ service Config {
   }
   // 获取服务版本
   rpc GetRelease(GetReleaseReq) returns (pbrelease.Release) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}"
     };
   }
   // 废弃服务版本
   rpc DeprecateRelease(DeprecateReleaseReq) returns (DeprecateReleaseResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "deprecate"
@@ -246,6 +275,7 @@ service Config {
   }
   // 撤回废弃服务版本
   rpc UnDeprecateRelease(UnDeprecateReleaseReq) returns (UnDeprecateReleaseResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "undeprecate"
@@ -254,18 +284,21 @@ service Config {
   }
   // 删除服务版本
   rpc DeleteRelease(DeleteReleaseReq) returns (DeleteReleaseResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}"
     };
   }
   // 检测服务版本名
   rpc CheckReleaseName(CheckReleaseNameReq) returns (CheckReleaseNameResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release/{name}/check"
     };
   }
   // 创建脚本
   rpc CreateHook(CreateHookReq) returns (CreateHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks"
       body: "*"
@@ -273,12 +306,14 @@ service Config {
   }
   // 删除脚本
   rpc DeleteHook(DeleteHookReq) returns (DeleteHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
     };
   }
   // 批量删除脚本
   rpc BatchDeleteHook(BatchDeleteHookReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks/batch_delete"
       body: "*"
@@ -286,6 +321,7 @@ service Config {
   }
   // 更新脚本
   rpc UpdateHook(UpdateHookReq) returns (UpdateHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
       body: "*"
@@ -293,24 +329,28 @@ service Config {
   }
   // 获取脚本列表
   rpc ListHooks(ListHooksReq) returns (ListHooksResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks"
     };
   }
   // 获取脚本标签列表
   rpc ListHookTags(ListHookTagsReq) returns (ListHookTagsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hook_tags"
     };
   }
   // 获取脚本
   rpc GetHook(GetHookReq) returns (GetHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
     };
   }
   // 创建脚本版本
   rpc CreateHookRevision(CreateHookRevisionReq) returns (CreateHookRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions"
       body: "*"
@@ -318,12 +358,14 @@ service Config {
   }
   // 获取脚本版本列表
   rpc ListHookRevisions(ListHookRevisionsReq) returns (ListHookRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions"
     };
   }
-  // 删除骄傲本版本
+  // 删除脚本版本
   rpc DeleteHookRevision(DeleteHookRevisionReq) returns (DeleteHookRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
               "{revision_id}"
@@ -331,6 +373,7 @@ service Config {
   }
   // 上线脚本版本
   rpc PublishHookRevision(PublishHookRevisionReq) returns (PublishHookRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}/publish"
@@ -338,6 +381,7 @@ service Config {
   }
   // 获取脚本版本
   rpc GetHookRevision(GetHookRevisionReq) returns (pbhr.HookRevision) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}"
@@ -345,6 +389,7 @@ service Config {
   }
   // 更新脚本版本
   rpc UpdateHookRevision(UpdateHookRevisionReq) returns (UpdateHookRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}"
@@ -353,12 +398,14 @@ service Config {
   }
   // 获取被引用的脚本配置服务列表
   rpc ListHookReferences(ListHookReferencesReq) returns (ListHookReferencesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/references"
     };
   }
   // 获取被引用的脚本版本配置服务列表
   rpc ListHookRevisionReferences(ListHookRevisionReferencesReq) returns (ListHookRevisionReferencesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}/references"
@@ -366,6 +413,7 @@ service Config {
   }
   // TODO
   rpc GetReleaseHook(GetReleaseHookReq) returns (GetReleaseHookResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "hooks"
@@ -373,6 +421,7 @@ service Config {
   }
   // 创建模板空间
   rpc CreateTemplateSpace(CreateTemplateSpaceReq) returns (CreateTemplateSpaceResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces"
       body: "*"
@@ -380,12 +429,14 @@ service Config {
   }
   // 删除模板空间
   rpc DeleteTemplateSpace(DeleteTemplateSpaceReq) returns (DeleteTemplateSpaceResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}"
     };
   }
   // 更新模板空间
   rpc UpdateTemplateSpace(UpdateTemplateSpaceReq) returns (UpdateTemplateSpaceResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}"
       body: "*"
@@ -393,24 +444,28 @@ service Config {
   }
   // 获取模板空间列表
   rpc ListTemplateSpaces(ListTemplateSpacesReq) returns (ListTemplateSpacesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces"
     };
   }
   // GetAllBizsOfTmplSpaces called only by system itself
   rpc GetAllBizsOfTmplSpaces(pbbase.EmptyReq) returns (GetAllBizsOfTmplSpacesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/template_spaces/bizs"
     };
   }
   // 创建模板默认空间(仅由系统本身调用)
   rpc CreateDefaultTmplSpace(CreateDefaultTmplSpaceReq) returns (CreateDefaultTmplSpaceResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/template_spaces/default"
       body: "*"
     };
   }
   rpc ListTmplSpacesByIDs(ListTmplSpacesByIDsReq) returns (ListTmplSpacesByIDsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/list_by_ids"
       body: "*"
@@ -418,6 +473,7 @@ service Config {
   }
   // 创建模板
   rpc CreateTemplate(CreateTemplateReq) returns (CreateTemplateResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates"
@@ -426,6 +482,7 @@ service Config {
   }
   // 删除模板
   rpc DeleteTemplate(DeleteTemplateReq) returns (DeleteTemplateResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/template_spaces/"
               "{template_space_id}/templates/{template_id}"
@@ -433,6 +490,7 @@ service Config {
   }
   // 批量删除模板
   rpc BatchDeleteTemplate(BatchDeleteTemplateReq) returns (BatchDeleteTemplateResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/template_spaces/"
               "{template_space_id}/templates"
@@ -440,6 +498,7 @@ service Config {
   }
   // 更新模板
   rpc UpdateTemplate(UpdateTemplateReq) returns (UpdateTemplateResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}"
@@ -448,6 +507,7 @@ service Config {
   }
   // 获取模板列表(全部配置文件)
   rpc ListTemplates(ListTemplatesReq) returns (ListTemplatesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/list"
       body: "*"
@@ -455,6 +515,7 @@ service Config {
   }
   // 批量创建或更新模板
   rpc BatchUpsertTemplates(BatchUpsertTemplatesReq) returns (BatchUpsertTemplatesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/batch_upsert_templates"
@@ -463,6 +524,7 @@ service Config {
   }
   // 批量更新模板权限
   rpc BatchUpdateTemplatePermissions(BatchUpdateTemplatePermissionsReq) returns (BatchUpdateTemplatePermissionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/template_set/{template_set_id}/templates/batch_update_templates_permissions"
       body: "*"
@@ -470,6 +532,7 @@ service Config {
   }
   // 添加至模板套餐中
   rpc AddTmplsToTmplSets(AddTmplsToTmplSetsReq) returns (AddTmplsToTmplSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/template_set/{template_set_id}/"
             "templates/add_to_template_sets"
@@ -478,6 +541,7 @@ service Config {
   }
   // 从模板套餐中移出
   rpc DeleteTmplsFromTmplSets(DeleteTmplsFromTmplSetsReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/delete_from_template_sets"
@@ -486,6 +550,7 @@ service Config {
   }
   // 按模板ID获取模板列表
   rpc ListTemplatesByIDs(ListTemplatesByIDsReq) returns (ListTemplatesByIDsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/templates/list_by_ids"
       body: "*"
@@ -493,6 +558,7 @@ service Config {
   }
   // 获取未绑定的模板列表
   rpc ListTemplatesNotBound(ListTemplatesNotBoundReq) returns (ListTemplatesNotBoundResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/list_not_bound"
@@ -500,6 +566,7 @@ service Config {
   }
   // 按模板绝对路径获取模板列表
   rpc ListTemplateByTuple(ListTemplateByTupleReq) returns (ListTemplateByTupleResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/tuple"
@@ -508,6 +575,7 @@ service Config {
   }
   // 按模板套餐获取模板列表
   rpc ListTmplsOfTmplSet(ListTmplsOfTmplSetReq) returns (ListTmplsOfTmplSetResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "template_sets/{template_set_id}/templates"
@@ -516,12 +584,14 @@ service Config {
   }
   // 获取模板套餐下的所有版本列表
   rpc ListTemplateSetsAndRevisions(ListTemplateSetsAndRevisionsReq) returns (ListTemplateSetsAndRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_sets/{template_set_id}/template_revisions"
     };
   }
   // 创建模板版本
   rpc CreateTemplateRevision(CreateTemplateRevisionReq) returns (CreateTemplateRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/{template_id}/template_revisions"
@@ -530,6 +600,7 @@ service Config {
   }
   // 更新模板版本
   rpc UpdateTemplateRevision(UpdateTemplateRevisionReq) returns (UpdateTemplateRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/template_revisions"
@@ -538,6 +609,7 @@ service Config {
   }
   // 获取模板版本列表
   rpc ListTemplateRevisions(ListTemplateRevisionsReq) returns (ListTemplateRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/template_revisions"
@@ -545,6 +617,7 @@ service Config {
   }
   // 获取模板版本
   rpc GetTemplateRevision(GetTemplateRevisionReq) returns (GetTemplateRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/templates/{template_id}/template_revisions"
     };
@@ -553,7 +626,8 @@ service Config {
   rpc DeleteTemplateRevision(DeleteTemplateRevisionReq) returns
 (DeleteTemplateRevisionResp) {
 
-option (google.api.http) = {
+option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
           delete :
   "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/template_revisions/{template_revision_id}"
       };
@@ -561,6 +635,7 @@ option (google.api.http) = {
   */
   // 按模板版本ID获取模板版本列表
   rpc ListTemplateRevisionsByIDs(ListTemplateRevisionsByIDsReq) returns (ListTemplateRevisionsByIDsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_revisions/list_by_ids"
       body: "*"
@@ -568,6 +643,7 @@ option (google.api.http) = {
   }
   // 按模板ID获取模板版本列表
   rpc ListTmplRevisionNamesByTmplIDs(ListTmplRevisionNamesByTmplIDsReq) returns (ListTmplRevisionNamesByTmplIDsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_revisions/"
             "list_names_by_template_ids"
@@ -576,6 +652,7 @@ option (google.api.http) = {
   }
   // 创建模板套餐
   rpc CreateTemplateSet(CreateTemplateSetReq) returns (CreateTemplateSetResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "template_sets"
@@ -584,6 +661,7 @@ option (google.api.http) = {
   }
   // 删除模板套餐
   rpc DeleteTemplateSet(DeleteTemplateSetReq) returns (DeleteTemplateSetResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/template_spaces/"
               "{template_space_id}/template_sets/{template_set_id}"
@@ -591,6 +669,7 @@ option (google.api.http) = {
   }
   // 更新模板套餐
   rpc UpdateTemplateSet(UpdateTemplateSetReq) returns (UpdateTemplateSetResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "template_sets/{template_set_id}"
@@ -599,6 +678,7 @@ option (google.api.http) = {
   }
   // 获取模板套餐列表
   rpc ListTemplateSets(ListTemplateSetsReq) returns (ListTemplateSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "template_sets"
@@ -607,18 +687,21 @@ option (google.api.http) = {
   // 获取模板空间下最新的模板版本列表
   rpc GetLatestTemplateVersionsInSpace(GetLatestTemplateVersionsInSpaceReq)
       returns (GetLatestTemplateVersionsInSpaceResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/latest_template_versions"
     };
   }
   // 获取模板套餐列表
   rpc ListAppTemplateSets(ListAppTemplateSetsReq) returns (ListAppTemplateSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_sets"
     };
   }
   // 按模板套餐ID获取模板套餐列表
   rpc ListTemplateSetsByIDs(ListTemplateSetsByIDsReq) returns (ListTemplateSetsByIDsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_sets/list_by_ids"
       body: "*"
@@ -626,12 +709,14 @@ option (google.api.http) = {
   }
   // 按服务ID获取模板套餐列表
   rpc ListTmplSetsOfBiz(ListTmplSetsOfBizReq) returns (ListTmplSetsOfBizResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_sets/list_all_of_biz"
     };
   }
   // 创建绑定服务的模板(暂无用到)
   rpc CreateAppTemplateBinding(CreateAppTemplateBindingReq) returns (CreateAppTemplateBindingResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings"
       body: "*"
@@ -639,6 +724,7 @@ option (google.api.http) = {
   }
   // 删除绑定服务的模板
   rpc DeleteAppTemplateBinding(DeleteAppTemplateBindingReq) returns (DeleteAppTemplateBindingResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/"
               "{binding_id}"
@@ -646,6 +732,7 @@ option (google.api.http) = {
   }
   // 更新绑定服务的模板
   rpc UpdateAppTemplateBinding(UpdateAppTemplateBindingReq) returns (UpdateAppTemplateBindingResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/"
            "{binding_id}"
@@ -654,12 +741,14 @@ option (google.api.http) = {
   }
   // 按服务获取绑定的模板列表
   rpc ListAppTemplateBindings(ListAppTemplateBindingsReq) returns (ListAppTemplateBindingsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings"
     };
   }
   // 按未命名版本服务获取绑定的模板版本列表
   rpc ListAppBoundTmplRevisions(ListAppBoundTmplRevisionsReq) returns (ListAppBoundTmplRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_revisions"
     };
@@ -667,6 +756,7 @@ option (google.api.http) = {
   // 按已发布版本服务获取绑定的模板版本列表
   rpc ListReleasedAppBoundTmplRevisions(ListReleasedAppBoundTmplRevisionsReq)
       returns (ListReleasedAppBoundTmplRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "template_revisions"
@@ -675,6 +765,7 @@ option (google.api.http) = {
   // 查看已发布版本服务的模板版本详情
   rpc GetReleasedAppBoundTmplRevision(GetReleasedAppBoundTmplRevisionReq)
       returns (GetReleasedAppBoundTmplRevisionResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "template_revisions/{template_revision_id}"
@@ -682,6 +773,7 @@ option (google.api.http) = {
   }
   // 替换服务引用后的模板版本
   rpc UpdateAppBoundTmplRevisions(UpdateAppBoundTmplRevisionsReq) returns (UpdateAppBoundTmplRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/"
            "{binding_id}/template_revisions"
@@ -690,6 +782,7 @@ option (google.api.http) = {
   }
   // 移除服务引用的模板套餐(暂未用到)
   rpc DeleteAppBoundTmplSets(DeleteAppBoundTmplSetsReq) returns (DeleteAppBoundTmplSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/"
               "{binding_id}/template_sets"
@@ -697,12 +790,14 @@ option (google.api.http) = {
   }
   // 移除服务引用的模板套餐
   rpc RemoveAppBoundTmplSet(RemoveAppBoundTmplSetReq) returns (RemoveAppBoundTmplSetResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_set/{template_set_id}"
     };
   }
   // 检测服务绑定的模板套餐
   rpc CheckAppTemplateBinding(CheckAppTemplateBindingReq) returns (CheckAppTemplateBindingResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/"
             "conflict_check"
@@ -711,6 +806,7 @@ option (google.api.http) = {
   }
   // 配置服务引用模版套餐
   rpc ImportFromTemplateSetToApp(ImportFromTemplateSetToAppReq) returns (ImportFromTemplateSetToAppResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_bindings/import_template_set"
       body: "*"
@@ -718,6 +814,7 @@ option (google.api.http) = {
   }
   // 获取模板绑定服务数列表
   rpc ListTmplBoundCounts(ListTmplBoundCountsReq) returns (ListTmplBoundCountsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/bound_counts"
@@ -726,6 +823,7 @@ option (google.api.http) = {
   }
   // 获取模板版本绑定服务数列表
   rpc ListTmplRevisionBoundCounts(ListTmplRevisionBoundCountsReq) returns (ListTmplRevisionBoundCountsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/{template_id}/template_revisions/bound_counts"
@@ -734,6 +832,7 @@ option (google.api.http) = {
   }
   // 获取模板套餐绑定服务数列表
   rpc ListTmplSetBoundCounts(ListTmplSetBoundCountsReq) returns (ListTmplSetBoundCountsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "template_sets/bound_counts"
@@ -742,6 +841,7 @@ option (google.api.http) = {
   }
   // 获取模板绑定的服务列表
   rpc ListTmplBoundUnnamedApps(ListTmplBoundUnnamedAppsReq) returns (ListTmplBoundUnnamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/bound_unnamed_app_details"
@@ -749,6 +849,7 @@ option (google.api.http) = {
   }
   // 获取模板绑定的服务以及模板版本列表
   rpc ListTmplBoundNamedApps(ListTmplBoundNamedAppsReq) returns (ListTmplBoundNamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/bound_named_app_details"
@@ -756,6 +857,7 @@ option (google.api.http) = {
   }
   // 获取服务绑定的模板套餐列表
   rpc ListTmplBoundTmplSets(ListTmplBoundTmplSetsReq) returns (ListTmplBoundTmplSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/bound_template_set_details"
@@ -763,6 +865,7 @@ option (google.api.http) = {
   }
   // 获取服务绑定的模板套餐以及模板列表
   rpc ListMultiTmplBoundTmplSets(ListMultiTmplBoundTmplSetsReq) returns (ListMultiTmplBoundTmplSetsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/bound_template_set_details"
@@ -771,6 +874,7 @@ option (google.api.http) = {
   // 按模板版本获取绑定的未命名版本服务列表
   rpc ListTmplRevisionBoundUnnamedApps(ListTmplRevisionBoundUnnamedAppsReq)
       returns (ListTmplRevisionBoundUnnamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/template_revisions/{template_revision_id}/"
@@ -779,6 +883,7 @@ option (google.api.http) = {
   }
   // 按模板版本获取绑定的已命名版本服务列表
   rpc ListTmplRevisionBoundNamedApps(ListTmplRevisionBoundNamedAppsReq) returns (ListTmplRevisionBoundNamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/template_revisions/{template_revision_id}/"
@@ -787,6 +892,7 @@ option (google.api.http) = {
   }
   // 按模板套餐获取绑定的未命名版本服务列表
   rpc ListTmplSetBoundUnnamedApps(ListTmplSetBoundUnnamedAppsReq) returns (ListTmplSetBoundUnnamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "template_sets/{template_set_id}/bound_unnamed_app_details"
@@ -795,6 +901,7 @@ option (google.api.http) = {
   // 按多模板套餐获取绑定的未命名版本服务列表
   rpc ListMultiTmplSetBoundUnnamedApps(ListMultiTmplSetBoundUnnamedAppsReq)
       returns (ListMultiTmplSetBoundUnnamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "template_sets/bound_unnamed_app_details"
@@ -802,6 +909,7 @@ option (google.api.http) = {
   }
   // 检测模板套餐引用的服务
   rpc CheckTemplateSetReferencesApps(CheckTemplateSetReferencesAppsReq) returns (CheckTemplateSetReferencesAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "template_sets/check_template_set_references_apps"
@@ -810,6 +918,7 @@ option (google.api.http) = {
   }
   // 按模板套餐获取绑定的已命名版本服务列表
   rpc ListTmplSetBoundNamedApps(ListTmplSetBoundNamedAppsReq) returns (ListTmplSetBoundNamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "template_sets/{template_set_id}/bound_named_app_details"
@@ -817,6 +926,7 @@ option (google.api.http) = {
   }
   // 按最新的模板版本获取未命名版本服务列表
   rpc ListLatestTmplBoundUnnamedApps(ListLatestTmplBoundUnnamedAppsReq) returns (ListLatestTmplBoundUnnamedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
            "templates/{template_id}/latest/bound_unnamed_app_details"
@@ -824,6 +934,7 @@ option (google.api.http) = {
   }
   // 创建模板变量
   rpc CreateTemplateVariable(CreateTemplateVariableReq) returns (CreateTemplateVariableResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables"
       body: "*"
@@ -831,6 +942,7 @@ option (google.api.http) = {
   }
   // 删除模板变量
   rpc DeleteTemplateVariable(DeleteTemplateVariableReq) returns (DeleteTemplateVariableResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/template_variables/"
               "{template_variable_id}"
@@ -838,6 +950,7 @@ option (google.api.http) = {
   }
   // 批量删除模板变量
   rpc BatchDeleteTemplateVariable(BatchDeleteBizResourcesReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables/batch_delete"
       body: "*"
@@ -845,6 +958,7 @@ option (google.api.http) = {
   }
   // 更新模板变量
   rpc UpdateTemplateVariable(UpdateTemplateVariableReq) returns (UpdateTemplateVariableResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/template_variables/"
            "{template_variable_id}"
@@ -853,6 +967,7 @@ option (google.api.http) = {
   }
   // 获取模板变量列表
   rpc ListTemplateVariables(ListTemplateVariablesReq) returns (ListTemplateVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables/list"
       body: "*"
@@ -860,6 +975,7 @@ option (google.api.http) = {
   }
   // 批量导入简单文件模板变量
   rpc ImportTemplateVariables(ImportTemplateVariablesReq) returns (ImportTemplateVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables/import"
       body: "*"
@@ -867,6 +983,7 @@ option (google.api.http) = {
   }
   rpc ImportOtherFormatTemplateVariables(ImportOtherFormatTemplateVariablesReq)
       returns (ImportOtherFormatTemplateVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_variables/{format}/import"
       body: "*"
@@ -874,6 +991,7 @@ option (google.api.http) = {
   }
   // 提取模板变量
   rpc ExtractAppTmplVariables(ExtractAppTmplVariablesReq) returns (ExtractAppTmplVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/"
            "extract_template_variables"
@@ -881,6 +999,7 @@ option (google.api.http) = {
   }
   // 获取未命名服务版本被引用的变量
   rpc GetAppTmplVariableRefs(GetAppTmplVariableRefsReq) returns (GetAppTmplVariableRefsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/"
            "template_variables_references"
@@ -888,6 +1007,7 @@ option (google.api.http) = {
   }
   // 获取服务版本下被引用的变量
   rpc GetReleasedAppTmplVariableRefs(GetReleasedAppTmplVariableRefsReq) returns (GetReleasedAppTmplVariableRefsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "template_variables_references"
@@ -895,6 +1015,7 @@ option (google.api.http) = {
   }
   // 更新未命名服务版本变量
   rpc UpdateAppTmplVariables(UpdateAppTmplVariablesReq) returns (UpdateAppTmplVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_variables"
       body: "*"
@@ -902,12 +1023,14 @@ option (google.api.http) = {
   }
   // 获取未命名服务版本模板变量
   rpc ListAppTmplVariables(ListAppTmplVariablesReq) returns (ListAppTmplVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_variables"
     };
   }
   // 获取服务版本的模板变量列表
   rpc ListReleasedAppTmplVariables(ListReleasedAppTmplVariablesReq) returns (ListReleasedAppTmplVariablesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
            "template_variables"
@@ -915,6 +1038,7 @@ option (google.api.http) = {
   }
   // 创建分组
   rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/groups"
       body: "*"
@@ -922,12 +1046,14 @@ option (google.api.http) = {
   }
   // 删除分组
   rpc DeleteGroup(DeleteGroupReq) returns (DeleteGroupResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/groups/{group_id}"
     };
   }
   // 批量删除分组
   rpc BatchDeleteGroups(BatchDeleteBizResourcesReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/groups/batch_delete"
       body: "*"
@@ -935,6 +1061,7 @@ option (google.api.http) = {
   }
   // 更新分组
   rpc UpdateGroup(UpdateGroupReq) returns (UpdateGroupResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/groups/{group_id}"
       body: "*"
@@ -942,46 +1069,51 @@ option (google.api.http) = {
   }
   // 获取所有分组列表
   rpc ListAllGroups(ListAllGroupsReq) returns (ListAllGroupsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups"
     };
   }
   // 按服务获取分组
   rpc ListAppGroups(ListAppGroupsReq) returns (ListAppGroupsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/groups"
     };
   }
   // 按分组获取服务
   rpc ListGroupReleasedApps(ListGroupReleasedAppsReq) returns (ListGroupReleasedAppsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/{group_id}/released_apps"
     };
   }
   // 按名称获取分组
   rpc GetGroupByName(GetGroupByNameReq) returns (pbgroup.Group) {
-    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/query/name/{group_name}"
     };
   }
   // 分组选择器
   rpc ListGroupSelector(ListGroupSelectorReq) returns (ListGroupSelectorResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/selector/{label_name}"
     };
   }
-  // 发布服务版本
+  // 发布指定版本
   rpc Publish(PublishReq) returns (PublishResp) {
-    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/update/strategy/publish/publish/release_id/"
             "{release_id}/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
     };
   }
-  // 生成新的服务版本并发布
+  // 生成版本并发布
   rpc GenerateReleaseAndPublish(GenerateReleaseAndPublishReq) returns (PublishResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/publish"
       body: "*"
@@ -989,7 +1121,7 @@ option (google.api.http) = {
   }
   // 上线服务版本
   rpc SubmitPublishApprove(SubmitPublishApproveReq) returns (PublishResp) {
-    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/submit"
       body: "*"
@@ -997,7 +1129,7 @@ option (google.api.http) = {
   }
 
   rpc Approve(ApproveReq) returns (ApproveResp) {
-    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
       body: "*"
@@ -1005,24 +1137,28 @@ option (google.api.http) = {
   }
 
   rpc GetLastSelect(GetLastSelectReq) returns (GetLastSelectResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/last/select"
     };
   }
 
   rpc GetLastPublish(GetLastPublishReq) returns (GetLastPublishResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/last/publish"
     };
   }
 
   rpc GetReleasesStatus(GetReleasesStatusReq) returns (pbstrategy.Strategy) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/status"
     };
   }
 
   rpc ListAudits(ListAuditsReq) returns (ListAuditsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/audits"
     };
@@ -1030,6 +1166,7 @@ option (google.api.http) = {
 
   // 创建客户端密钥
   rpc CreateCredentials(CreateCredentialReq) returns (CreateCredentialResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/credentials"
       body: "*"
@@ -1037,18 +1174,21 @@ option (google.api.http) = {
   }
   // 获取客户端密钥
   rpc ListCredentials(ListCredentialsReq) returns (ListCredentialsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credentials"
     };
   }
   // 删除客户端密钥
   rpc DeleteCredential(DeleteCredentialsReq) returns (DeleteCredentialsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz_id/{biz_id}/credential"
     };
   }
   // 更新客户端密钥
   rpc UpdateCredential(UpdateCredentialsReq) returns (UpdateCredentialsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz_id/{biz_id}/credential"
       body: "*"
@@ -1056,18 +1196,21 @@ option (google.api.http) = {
   }
   // 检测客户端密钥名称
   rpc CheckCredentialName(CheckCredentialNameReq) returns (CheckCredentialNameResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/{credential_name}/check"
     };
   }
   // 获取客户端密钥关联服务的列表
   rpc ListCredentialScopes(ListCredentialScopesReq) returns (ListCredentialScopesResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/{credential_id}/scopes"
     };
   }
   // 更新客户端密钥关联服务规则
   rpc UpdateCredentialScope(UpdateCredentialScopeReq) returns (UpdateCredentialScopeResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz_id/{biz_id}/credential/{credential_id}/scope"
       body: "*"
@@ -1075,6 +1218,7 @@ option (google.api.http) = {
   }
   // 预览客户端密钥关联配置项
   rpc CredentialScopePreview(CredentialScopePreviewReq) returns (CredentialScopePreviewResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/scope/preview"
     };
@@ -1082,6 +1226,7 @@ option (google.api.http) = {
 
   // 创建键值配置项
   rpc CreateKv(CreateKvReq) returns (CreateKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
@@ -1089,6 +1234,7 @@ option (google.api.http) = {
   };
   // 更新键值配置项
   rpc UpdateKv(UpdateKvReq) returns (UpdateKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}"
       body: "*"
@@ -1096,6 +1242,7 @@ option (google.api.http) = {
   };
   // 获取键值配置项列表
   rpc ListKvs(ListKvsReq) returns (ListKvsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/list"
       body: "*"
@@ -1103,12 +1250,14 @@ option (google.api.http) = {
   };
   // 删除键值配置项
   rpc DeleteKv(DeleteKvReq) returns (DeleteKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{id}"
     };
   };
   // 批量删除键值配置项
   rpc BatchDeleteKv(BatchDeleteAppResourcesReq) returns (BatchDeleteResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/batch_delete"
       body: "*"
@@ -1116,6 +1265,7 @@ option (google.api.http) = {
   };
   // 批量创建或更新键值配置项
   rpc BatchUpsertKvs(BatchUpsertKvsReq) returns (BatchUpsertKvsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
@@ -1123,12 +1273,14 @@ option (google.api.http) = {
   };
   // 恢复键值配置项
   rpc UnDeleteKv(UnDeleteKvReq) returns (UnDeleteKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}/undelete"
     };
   };
   // 批量恢复键值配置项
   rpc BatchUnDeleteKv(BatchUnDeleteKvReq) returns (BatchUnDeleteKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/batch_undelete"
       body: "*"
@@ -1136,12 +1288,14 @@ option (google.api.http) = {
   };
   // 撤销修改的键值配置项
   rpc UndoKv(UndoKvReq) returns (UndoKvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}/undo"
     };
   };
   // 批量导出文本格式键值配置项
   rpc ImportKvs(ImportKvsReq) returns (ImportKvsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{format}/import"
       body: "*"
@@ -1149,12 +1303,14 @@ option (google.api.http) = {
   };
   // 查找临近到期证书
   rpc FindNearExpiryCertKvs(FindNearExpiryCertKvsReq) returns (FindNearExpiryCertKvsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/near_certificate"
     };
   };
   // 获取客户端列表
   rpc ListClients(ListClientsReq) returns (ListClientsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients"
       body: "*"
@@ -1162,6 +1318,7 @@ option (google.api.http) = {
   };
   // 获取客户端拉取记录列表
   rpc ListClientEvents(ListClientEventsReq) returns (ListClientEventsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_events/"
             "{client_id}"
@@ -1170,6 +1327,7 @@ option (google.api.http) = {
   };
   // 重试客户端拉取
   rpc RetryClients(RetryClientsReq) returns (RetryClientsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/retry"
       body: "*"
@@ -1177,12 +1335,14 @@ option (google.api.http) = {
   };
   // 获取客户端查询条件列表
   rpc ListClientQuerys(ListClientQuerysReq) returns (ListClientQuerysResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys"
     };
   };
   // 创建客户端查询条件
   rpc CreateClientQuery(CreateClientQueryReq) returns (CreateClientQueryResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys"
       body: "*"
@@ -1190,6 +1350,7 @@ option (google.api.http) = {
   };
   // 更新客户端查询条件
   rpc UpdateClientQuery(UpdateClientQueryReq) returns (UpdateClientQueryResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/{id}"
       body: "*"
@@ -1197,12 +1358,14 @@ option (google.api.http) = {
   };
   // 删除客户端查询条件
   rpc DeleteClientQuery(DeleteClientQueryReq) returns (DeleteClientQueryResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/{id}"
     };
   };
   // 检测客户端查询条件名
   rpc CheckClientQueryName(CheckClientQueryNameReq) returns (CheckClientQueryNameResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/"
            "check_exists"
@@ -1210,6 +1373,7 @@ option (google.api.http) = {
   };
   // 客户端配置版本统计
   rpc ClientConfigVersionStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "config_version_statistics"
@@ -1218,6 +1382,7 @@ option (google.api.http) = {
   };
   // 客户端拉取趋势统计
   rpc ClientPullTrendStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "pull_trend_statistics"
@@ -1226,6 +1391,7 @@ option (google.api.http) = {
   };
   // 客户端拉取状态统计
   rpc ClientPullStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/pull_statistics"
       body: "*"
@@ -1233,6 +1399,7 @@ option (google.api.http) = {
   };
   // 客户端标签统计
   rpc ClientLabelStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "label_statistics"
@@ -1241,6 +1408,7 @@ option (google.api.http) = {
   };
   // 客户端附加信息统计
   rpc ClientAnnotationStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "annotation_statistics"
@@ -1249,6 +1417,7 @@ option (google.api.http) = {
   };
   // 客户端组件版本统计
   rpc ClientVersionStatistics(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "version_statistics"
@@ -1257,6 +1426,7 @@ option (google.api.http) = {
   };
   // 获取客户端标签和附加信息列表
   rpc ListClientLabelAndAnnotation(ListClientLabelAndAnnotationReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "labels_and_annotations"
@@ -1265,6 +1435,7 @@ option (google.api.http) = {
   };
   // 获取客户端失败原因
   rpc ClientSpecificFailedReason(pbclient.ClientCommonReq) returns (google.protobuf.Struct) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "specific_failed_reason"
@@ -1273,6 +1444,7 @@ option (google.api.http) = {
   }
   // 文件服务以及和其他服务版本之间对比
   rpc CompareConfigItemConflicts(CompareConfigItemConflictsReq) returns (CompareConfigItemConflictsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/"
            "compare_conflicts"
@@ -1280,6 +1452,7 @@ option (google.api.http) = {
   }
   // 键值服务以及和其他服务版本之间对比
   rpc CompareKvConflicts(CompareKvConflictsReq) returns (CompareKvConflictsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/compare_conflicts"
     };
@@ -1287,6 +1460,7 @@ option (google.api.http) = {
   // 获取模板和非模板配置项数量
   rpc GetTemplateAndNonTemplateCICount(GetTemplateAndNonTemplateCICountReq)
       returns (GetTemplateAndNonTemplateCICountResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/apps/{app_id}/config_items/count"
     };

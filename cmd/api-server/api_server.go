@@ -18,6 +18,8 @@ import (
 	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
 )
 
+// @title		API Gateway Resources
+// @version		0.1
 func main() {
 	cmd.Execute()
 }

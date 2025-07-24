@@ -51,7 +51,8 @@ init:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
-	go install github.com/ifooth/grpc-gateway/v2/protoc-gen-openapiv2@v2.20.0-r2
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.1
+	go install github.com/swaggo/swag/cmd/swag@v1.16.5
 	@echo Download gotext
 	go install golang.org/x/text/cmd/gotext@v0.20.0
 
@@ -93,25 +94,28 @@ docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
+	@swag init -g cmd/api-server/api_server.go -o ${PREFIX}/docs/swagger/ -ot json
+	@mv ${PREFIX}/docs/swagger/swagger.json ${PREFIX}/docs/swagger/bkapigw_thirdparty.swagger.json
 	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \
 	--openapiv2_opt merge_file_name=api \
 	--openapiv2_opt output_format=json \
-	--openapiv2_opt include_without_visibility=true \
+	--openapiv2_opt visibility_restriction_selectors=INTERNAL \
 	--openapiv2_opt visibility_restriction_selectors=BKAPIGW \
 	--openapiv2_opt use_go_templates=true pkg/protocol/config-server/*.proto
 
 bkapigw_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
+	@swag init -g cmd/api-server/api_server.go -o ${PREFIX}/docs/swagger/ -ot json
+	@mv ${PREFIX}/docs/swagger/swagger.json ${PREFIX}/docs/swagger/bkapigw_thirdparty.swagger.json
 	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
 	--openapiv2_opt preserve_rpc_order=true \
 	--openapiv2_opt merge_file_name=bkapigw \
 	--openapiv2_opt output_format=json \
-	--openapiv2_opt include_without_visibility=false \
 	--openapiv2_opt visibility_restriction_selectors=BKAPIGW \
 	--openapiv2_opt use_go_templates=true pkg/protocol/config-server/*.proto
 

@@ -16,14 +16,15 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/config/biz/{bizId}/groups/query/name/{groupName}": {
-      "get": {
-        "operationId": "Config_GetGroupByName",
+    "/api/v1/config/biz/{bizId}/apps/{appId}/config_items": {
+      "put": {
+        "summary": "批量创建或更新文件配置项",
+        "operationId": "Config_BatchUpsertConfigItems",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbgroupGroup"
+              "$ref": "#/definitions/pbcsBatchUpsertConfigItemsResp"
             }
           },
           "default": {
@@ -36,16 +37,76 @@
         "parameters": [
           {
             "name": "bizId",
+            "description": "业务ID",
             "in": "path",
             "required": true,
             "type": "integer",
             "format": "int64"
           },
           {
-            "name": "groupName",
+            "name": "appId",
+            "description": "服务ID",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertConfigItemsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId}": {
+      "post": {
+        "summary": "生成版本",
+        "operationId": "Config_CreateRelease",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateReleaseResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateReleaseBody"
+            }
           }
         ],
         "tags": [
@@ -55,6 +116,7 @@
     },
     "/api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
       "post": {
+        "summary": "发布指定版本",
         "operationId": "Config_Publish",
         "responses": {
           "200": {
@@ -73,6 +135,7 @@
         "parameters": [
           {
             "name": "releaseId",
+            "description": "服务版本ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -80,6 +143,7 @@
           },
           {
             "name": "appId",
+            "description": "服务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -87,6 +151,7 @@
           },
           {
             "name": "bizId",
+            "description": "业务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -106,9 +171,10 @@
         ]
       }
     },
-    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/submit": {
+    "/api/v1/config/biz/{bizId}/apps/{appId}/publish": {
       "post": {
-        "operationId": "Config_SubmitPublishApprove",
+        "summary": "生成版本并发布",
+        "operationId": "Config_GenerateReleaseAndPublish",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -126,6 +192,7 @@
         "parameters": [
           {
             "name": "bizId",
+            "description": "业务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -133,13 +200,7 @@
           },
           {
             "name": "appId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "releaseId",
+            "description": "服务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -150,60 +211,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ConfigSubmitPublishApproveBody"
-            }
-          }
-        ],
-        "tags": [
-          "Config"
-        ]
-      }
-    },
-    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
-      "post": {
-        "operationId": "Config_Approve",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/pbcsApproveResp"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "bizId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "appId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "releaseId",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/ConfigApproveBody"
+              "$ref": "#/definitions/ConfigGenerateReleaseAndPublishBody"
             }
           }
         ],
@@ -214,27 +222,347 @@
     }
   },
   "definitions": {
-    "ConfigApproveBody": {
-      "type": "object"
+    "ConfigBatchUpsertConfigItemsBody": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsBatchUpsertConfigItemsReqConfigItem"
+          }
+        },
+        "replaceAll": {
+          "type": "boolean",
+          "default": "false",
+          "description": "是否替换全部：如果为true会覆盖已有的文件，不存在的则删除"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsBatchUpsertConfigItemsReqTemplateBinding"
+          }
+        }
+      }
+    },
+    "ConfigCreateReleaseBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "版本名称"
+        },
+        "memo": {
+          "type": "string",
+          "description": "版本描述"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        }
+      }
+    },
+    "ConfigGenerateReleaseAndPublishBody": {
+      "type": "object",
+      "properties": {
+        "releaseName": {
+          "type": "string",
+          "description": "服务版本名"
+        },
+        "releaseMemo": {
+          "type": "string",
+          "description": "版本描述"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        },
+        "all": {
+          "type": "boolean",
+          "description": "全部实例上线：是=true，否=false"
+        },
+        "grayPublishMode": {
+          "type": "string",
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "default": "[]"
+          },
+          "description": "分组上线：分组ID，如果有值那么all必须是false"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
+        },
+        "groupName": {
+          "type": "string",
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+        }
+      }
     },
     "ConfigPublishBody": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "memo": {
+          "type": "string",
+          "description": "上线说明"
+        },
+        "all": {
+          "type": "boolean",
+          "description": "全部实例上线：是=true，否=false"
+        },
+        "grayPublishMode": {
+          "type": "string",
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups "
+        },
+        "default": {
+          "type": "boolean"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64",
+            "default": "[]"
+          },
+          "description": "分组上线：分组ID，如果有值那么all必须是false"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
+        },
+        "groupName": {
+          "type": "string",
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+        }
+      }
     },
-    "ConfigSubmitPublishApproveBody": {
-      "type": "object"
+    "pbatbTemplateBinding": {
+      "type": "object",
+      "properties": {
+        "templateSetId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板套餐ID"
+        },
+        "templateRevisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbTemplateRevisionBinding"
+          }
+        }
+      },
+      "title": "TemplateBinding source resource reference: pkg/dal/table/app_template_binding.go"
     },
-    "pbcsApproveResp": {
-      "type": "object"
+    "pbatbTemplateRevisionBinding": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件ID"
+        },
+        "templateRevisionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件版本ID"
+        },
+        "isLatest": {
+          "type": "boolean",
+          "description": "是否是最新：模板文件版本ID在该模板文件中是最新的一个版本"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsReqConfigItem": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "文件路径"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary"
+        },
+        "fileMode": {
+          "type": "string",
+          "default": "unix",
+          "description": "文件模式"
+        },
+        "memo": {
+          "type": "string",
+          "description": "文件描述"
+        },
+        "user": {
+          "type": "string",
+          "description": "用户权限名"
+        },
+        "userGroup": {
+          "type": "string",
+          "description": "用户组权限名"
+        },
+        "privilege": {
+          "type": "string",
+          "description": "文件权限"
+        },
+        "sign": {
+          "type": "string",
+          "description": "文件sha256"
+        },
+        "byteSize": {
+          "type": "string",
+          "format": "uint64",
+          "description": "文件大小"
+        },
+        "md5": {
+          "type": "string",
+          "description": "文件md5"
+        },
+        "charset": {
+          "type": "string",
+          "description": "文件编码"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsReqTemplateBinding": {
+      "type": "object",
+      "properties": {
+        "templateSpaceId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板空间ID"
+        },
+        "templateBinding": {
+          "$ref": "#/definitions/pbatbTemplateBinding"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsResp": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "文件配置项ID"
+        }
+      }
+    },
+    "pbcsCreateReleaseResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "生成配置服务版本ID"
+        }
+      }
     },
     "pbcsPublishResp": {
-      "type": "object"
-    },
-    "pbgroupGroup": {
       "type": "object",
-      "title": "Group source resource reference: pkg/dal/table/group.go"
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "版本发布后的ID"
+        },
+        "haveCredentials": {
+          "type": "boolean",
+          "description": "是否有关联密钥"
+        },
+        "havePull": {
+          "type": "boolean",
+          "description": "是否被客户端拉取过"
+        }
+      }
+    },
+    "pbtvTemplateVariableSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "变量名称"
+        },
+        "type": {
+          "type": "string",
+          "description": "变量类型：string、number"
+        },
+        "defaultVal": {
+          "type": "string",
+          "description": "默认值"
+        },
+        "memo": {
+          "type": "string",
+          "description": "变量描述"
+        }
+      },
+      "title": "TemplateVariableSpec source resource reference: pkg/dal/table/template_variable.go"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
     },
     "rpcStatus": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
     }
   }
 }

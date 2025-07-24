@@ -30,12 +30,6 @@ const (
 // ReleaseSwagger 导入swagge 文档
 // nolint:funlen
 func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version string) error {
-
-	// 获取需要导入的文档
-	swaggerData, err := docs.Assets.ReadFile("swagger/bkapigw.swagger.json")
-	if err != nil {
-		return fmt.Errorf("reads and returns the content of the named file failed, err: %s", err.Error())
-	}
 	// 初始化网关
 	gw, err := NewApiGw(esbOpt, apiGwOpt)
 	if err != nil {
@@ -56,7 +50,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 	}
 
 	// 同步环境
-	syncStageResp, err := gw.SyncStage(syncApiResp.Data.Name, &SyncStageReq{
+	syncStageResp, errS := gw.SyncStage(syncApiResp.Data.Name, &SyncStageReq{
 		Name: env,
 		Vars: map[string]string{},
 		ProxyHttp: ProxyHttp{
@@ -74,36 +68,47 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 			},
 		},
 	})
-	if err != nil {
-		return fmt.Errorf("sync stage failed, err: %s", err.Error())
+	if errS != nil {
+		return fmt.Errorf("sync stage failed, err: %s", errS.Error())
 	}
 	if syncStageResp.Code != 0 && syncStageResp.Data.ID == 0 {
 		return fmt.Errorf("sync stage failed, err: %s", syncStageResp.Message)
 	}
 
-	// 同步资源
-	syncResourcesResp, err := gw.SyncResources(syncApiResp.Data.Name, &SyncResourcesReq{
-		Content: string(swaggerData),
-		Delete:  false,
-	})
-	if err != nil {
-		return fmt.Errorf("sync resource failed, err: %s", err.Error())
-	}
-	if syncResourcesResp.Code != 0 {
-		return fmt.Errorf("sync resource failed, err: %s", syncResourcesResp.Message)
+	// 定义需要同步的 swagger 文件路径
+	swaggerFiles := []string{
+		"swagger/bkapigw.swagger.json",
+		"swagger/bkapigw_thirdparty.swagger.json",
 	}
 
-	// 导入swagger文档
-	importResp, err := gw.ImportResourceDocsBySwagger(syncApiResp.Data.Name, &ImportResourceDocsBySwaggerReq{
-		Language: language,
-		Swagger:  string(swaggerData),
-	})
+	// 同步资源和文档导入
+	for _, file := range swaggerFiles {
+		data, errF := docs.Assets.ReadFile(file)
+		if errF != nil {
+			return fmt.Errorf("read swagger file %s failed, err: %s", file, errF.Error())
+		}
 
-	if err != nil {
-		return fmt.Errorf("import resource docs by swagger failed, err: %s", err.Error())
-	}
-	if importResp.Code != 0 {
-		return fmt.Errorf("import resource docs by swagger failed, err: %s", importResp.Message)
+		syncResourcesResp, errS := gw.SyncResources(syncApiResp.Data.Name, &SyncResourcesReq{
+			Content: string(data),
+			Delete:  false,
+		})
+		if err != nil {
+			return fmt.Errorf("sync resource from %s failed, err: %s", file, errS.Error())
+		}
+		if syncResourcesResp.Code != 0 {
+			return fmt.Errorf("sync resource from %s failed, err: %s", file, syncResourcesResp.Message)
+		}
+
+		importResp, errI := gw.ImportResourceDocsBySwagger(syncApiResp.Data.Name, &ImportResourceDocsBySwaggerReq{
+			Language: language,
+			Swagger:  string(data),
+		})
+		if errI != nil {
+			return fmt.Errorf("import swagger docs from %s failed, err: %s", file, errI.Error())
+		}
+		if importResp.Code != 0 {
+			return fmt.Errorf("import swagger docs from %s failed, err: %s", file, importResp.Message)
+		}
 	}
 
 	// 获取资源最新版本
