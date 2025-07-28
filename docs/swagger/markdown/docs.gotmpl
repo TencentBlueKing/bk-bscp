@@ -257,37 +257,6 @@ any
 
 {{ . }}
 
-{{- if eq $opname "CloudDevVmStatus" }}
-
-状态取值如下：
-- creating: 创建中
-- created: 已创建(vm创建成功，但是没有注册cgs时的状态)
-- allocating: 分配cgs中
-- initializing: 初始化中(重新初始化场景使用)
-- running: 运行中
-- stopping: 停止中
-- starting: 启动中
-- restarting: 重启中
-- stopped: 已关机
-- readyToRun: vm可启动(aka 已关机, 云研发兼容使用)
-- readyDelete: 延迟删除中
-- deleting: 删除中
-- deleted: 已删除成功(内部状态，查询会返回资源不存在)
-- rebuilding: 重装中
-- upgrading: 升配中
-- expanding: 扩容中
-- copying: 制作镜像中(aka 备份镜像, 是备份镜像copyvm接口成功后, vm返回的状态)
-- cloning: 克隆中（克隆接口过程中的状态）
-- paused: 已休眠
-- operating: 操作中(通用锁定状态，底层操作中)
-- error: vm状态异常(可通过underlyingStatus查看具体原因)
-
-可操作说明:
-- running/paused/error 可执行关机，重启操作
-- stopped/readyToRun 可执行启动操作
-- 其他没特别说明，都是锁定状态，不允许操作
-{{- end }}
-
   {{- end }}
 
   {{- with .ExternalDocs }}
