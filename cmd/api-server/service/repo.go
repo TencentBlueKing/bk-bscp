@@ -39,17 +39,17 @@ type repoService struct {
 // UploadFile upload to repo provider
 // UploadFile godoc
 //
-//	@Summary		上传文件内容
-//	@Tags			配置项元数据管理
-//	@Accept			plain
-//	@Produce		json
-//	@Param			biz_id						query		int		true	"业务ID"
-//	@Param			X-Bscp-App-Id				header		int		false	"如果是应用配置项，则设置该应用ID"
-//	@Param			X-Bscp-Template-Space-Id	header		int		false	"如果是模版配置项，则设置该模版空间ID"
-//	@Param			X-Bkapi-File-Content-Id		header		string	true	"上传文件内容的SHA256值"
-//	@Success		200							{object}	rest.OKResponse{data=repository.ObjectMetadata} "desc"
-//	@Router			/api/v1/biz/{biz_id}/content/upload [put]
-//	@ID				upload_content
+//	@Summary	上传文件内容
+//	@Tags		文件相关
+//	@Accept		plain
+//	@Produce	json
+//	@Param		biz_id						path		int												true	"业务ID"
+//	@Param		X-Bscp-App-Id				header		int												false	"如果是应用配置项，则设置该应用ID"
+//	@Param		X-Bscp-Template-Space-Id	header		int												false	"如果是模版配置项，则设置该模版空间ID"
+//	@Param		X-Bkapi-File-Content-Id		header		string											true	"上传文件内容的SHA256值"
+//	@Success	200							{object}	rest.OKResponse{data=repository.ObjectMetadata}	"desc"
+//	@Router		/api/v1/biz/{biz_id}/content/upload [put]
+//	@ID			upload_content
 func (s *repoService) UploadFile(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 
@@ -152,17 +152,17 @@ func (s *repoService) CompleteMultipartUploadFile(w http.ResponseWriter, r *http
 // DownloadFile download file from provider repo
 // DownloadFile godoc
 //
-//	@Summary		下载文件内容
-//	@Tags			配置项元数据管理
-//	@Accept			json
-//	@Produce		json
-//	@Param			biz_id						query		int		true	"业务ID"
-//	@Param			X-Bscp-App-Id				header		int		false	"如果是应用配置项，则设置该应用ID"
-//	@Param			X-Bscp-Template-Space-Id	header		int		false	"如果是模版配置项，则设置该模版空间ID"
-//	@Param			X-Bkapi-File-Content-Id		header		string	true	"上传文件内容的SHA256值"
-//	@Success		200							{object}	rest.OKResponse{data=repository.ObjectMetadata} "desc"
-//	@Router			/api/v1/biz/{biz_id}/content/download [get]
-//	@ID				download_content
+//	@Summary	下载文件内容
+//	@Tags		文件相关
+//	@Accept		json
+//	@Produce	json
+//	@Param		biz_id						path		int												true	"业务ID"
+//	@Param		X-Bscp-App-Id				header		int												false	"如果是应用配置项，则设置该应用ID"
+//	@Param		X-Bscp-Template-Space-Id	header		int												false	"如果是模版配置项，则设置该模版空间ID"
+//	@Param		X-Bkapi-File-Content-Id		header		string											true	"上传文件内容的SHA256值"
+//	@Success	200							{object}	rest.OKResponse{data=repository.ObjectMetadata}	"desc"
+//	@Router		/api/v1/biz/{biz_id}/content/download [get]
+//	@ID			download_content
 func (s *repoService) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 
@@ -190,16 +190,16 @@ func (s *repoService) DownloadFile(w http.ResponseWriter, r *http.Request) {
 // FileMetadata get repo head data
 // FileMetadata godoc
 //
-//	@Summary		获取文件内容元数据
-//	@Tags			配置项元数据管理
-//	@Accept			json
-//	@Produce		json
-//	@Param			biz_id						query		int		true	"业务ID"
-//	@Param			app-id						query		int		true	"如果是应用配置项，则设置该应用ID"
-//	@Param			X-Bkapi-File-Content-Id		header		string	true	"上传文件内容的SHA256值"
-//	@Success		200							{object}	rest.OKResponse{data=repository.ObjectMetadata} "desc"
-//	@Router			/api/v1/biz/{biz_id}/content/metadata [get]
-//	@ID				get_content_metadata
+//	@Summary	获取文件内容元数据
+//	@Tags		文件相关
+//	@Accept		json
+//	@Produce	json
+//	@Param		biz_id					path		int												true	"业务ID"
+//	@Param		app-id					query		int												true	"如果是应用配置项，则设置该应用ID"
+//	@Param		X-Bkapi-File-Content-Id	header		string											true	"上传文件内容的SHA256值"
+//	@Success	200						{object}	rest.OKResponse{data=repository.ObjectMetadata}	"desc"
+//	@Router		/api/v1/biz/{biz_id}/content/metadata [get]
+//	@ID			get_content_metadata
 func (s *repoService) FileMetadata(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 

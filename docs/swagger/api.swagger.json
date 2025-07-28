@@ -10693,8 +10693,7 @@
         "groups": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": "[]"
+            "type": "string"
           },
           "description": "分组上线：分组ID，如果有值那么all必须是false"
         },
@@ -11220,8 +11219,7 @@
           "type": "array",
           "items": {
             "type": "integer",
-            "format": "int64",
-            "default": "[]"
+            "format": "int64"
           },
           "description": "分组上线：分组ID，如果有值那么all必须是false"
         },

@@ -165,8 +165,9 @@ func (s *WebServer) newRouter() http.Handler {
 }
 
 // subRouter xxx
-// @Title     BSCP-UI OpenAPI
-// @BasePath  /bscp
+//
+//	@Title		BSCP-UI OpenAPI
+//	@BasePath	/bscp
 func (s *WebServer) subRouter() http.Handler {
 	r := chi.NewRouter()
 
@@ -208,10 +209,11 @@ func (s *WebServer) subRouter() http.Handler {
 }
 
 // HealthzHandler Healthz 接口
-// @Summary  Healthz 接口
-// @Tags     Healthz
-// @Success  200  {string}  string
-// @Router   /healthz [get]
+//
+//	@Summary	Healthz 接口
+//	@Tags		Healthz
+//	@Success	200	{string}	string
+//	@Router		/healthz [get]
 func (s *WebServer) HealthzHandler(w http.ResponseWriter, r *http.Request) {
 	if err := s.state.Healthz(); err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)

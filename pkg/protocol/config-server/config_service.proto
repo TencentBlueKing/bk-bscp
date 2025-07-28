@@ -3673,7 +3673,6 @@ message PublishReq {
   bool default = 7;
   repeated uint32 groups = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "分组上线：分组ID，如果有值那么all必须是false",
-    default: "[]"
   }];
   repeated google.protobuf.Struct labels = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"
@@ -3706,7 +3705,6 @@ message GenerateReleaseAndPublishReq {
   }];
   repeated string groups = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "分组上线：分组ID，如果有值那么all必须是false",
-    default: "[]"
   }];
   repeated google.protobuf.Struct labels = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效"

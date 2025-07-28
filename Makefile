@@ -14,6 +14,8 @@ DEBUG     = $(shell echo ${ENV_BK_BSCP_ENABLE_DEBUG})
 PREFIX   ?= $(shell pwd)
 GOBIN     = ${PREFIX}/bin/proto
 PATH     := ${PREFIX}/bin/proto:${PATH}
+swag      = ${PREFIX}/bin/swag
+swagger   = ${PREFIX}/bin/swagger
 # protoc v4.22.0
 export PROTOC_VERSION=25.1
 GOBUILD=CGO_ENABLED=0 go build -trimpath
@@ -52,7 +54,7 @@ init:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.1
-	go install github.com/swaggo/swag/cmd/swag@v1.16.5
+
 	@echo Download gotext
 	go install golang.org/x/text/cmd/gotext@v0.20.0
 
@@ -94,8 +96,6 @@ docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@swag init -g cmd/api-server/api_server.go -o ${PREFIX}/docs/swagger/ -ot json
-	@mv ${PREFIX}/docs/swagger/swagger.json ${PREFIX}/docs/swagger/bkapigw_thirdparty.swagger.json
 	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
@@ -108,8 +108,6 @@ api_docs:
 
 bkapigw_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
-	@swag init -g cmd/api-server/api_server.go -o ${PREFIX}/docs/swagger/ -ot json
-	@mv ${PREFIX}/docs/swagger/swagger.json ${PREFIX}/docs/swagger/bkapigw_thirdparty.swagger.json
 	@protoc --proto_path=. --proto_path=internal/thirdparty/protobuf/ \
 	--openapiv2_out docs/swagger \
 	--openapiv2_opt allow_merge=true \
@@ -160,13 +158,6 @@ clean:
 	@cd ${PRO_DIR}/cmd && make clean
 	@rm -rf ${PRO_DIR}/build
 
-
-.PHONY: openapi
-openapi:
-	@swag init --outputTypes go,json -g pkg/web/web.go --exclude ./
-	@swag fmt -g pkg/web/web.go --exclude ./
-
-
 .PHONY: build_bscp
 build_bscp:
 	@cd ${PRO_DIR}/cmd && make all
@@ -197,3 +188,26 @@ docker:
 i18n:
 	@go generate ./internal/i18n/translations/translations.go
 	@cp ./internal/i18n/translations/locales/zh/out.gotext.json ./internal/i18n/translations/locales/zh/messages.gotext.json
+
+
+${swag}:
+	@echo ">> downloading swag"
+	@mkdir -p ${PREFIX}/bin
+	@wget -q -O ${swag} https://github.com/ifooth/swag/releases/download/v1.16.4-r1/swag && chmod a+x ${swag}
+
+${swagger}:
+	@echo ">> downloading swagger"
+	@mkdir -p ${PREFIX}/bin
+	@wget -q -O ${swagger} https://github.com/ifooth/go-swagger/releases/download/v0.31.0-r1/swagger && chmod a+x ${swagger}
+
+
+.PHONY: docs
+docs: ${swag} ${swagger}
+	${swag} fmt -d ./cmd
+	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
+	# 修正bkapigw的swagger.json 的default值()
+	sed -i 's/"default": "false"/"default": false/g' ./docs/swagger/bkapigw.swagger.json
+	${swagger} validate ./docs/swagger/bkapigw.swagger.json
+	# 合并bkapigw和apiserver的swagger.json
+	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json
+	${swagger} generate markdown  --output=bkapigw_swagger.md -T ./docs/swagger -f ./docs/swagger/bkapigw/swagger.json -t ./docs/swagger/bkapigw

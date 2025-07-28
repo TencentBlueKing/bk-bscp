@@ -15,7 +15,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "配置项元数据管理"
+                    "文件"
                 ],
                 "summary": "下载文件内容",
                 "operationId": "download_content",
@@ -24,7 +24,7 @@
                         "type": "integer",
                         "description": "业务ID",
                         "name": "biz_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -78,7 +78,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "配置项元数据管理"
+                    "文件"
                 ],
                 "summary": "获取文件内容元数据",
                 "operationId": "get_content_metadata",
@@ -87,7 +87,7 @@
                         "type": "integer",
                         "description": "业务ID",
                         "name": "biz_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -136,7 +136,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "配置项元数据管理"
+                    "文件"
                 ],
                 "summary": "上传文件内容",
                 "operationId": "upload_content",
@@ -145,7 +145,7 @@
                         "type": "integer",
                         "description": "业务ID",
                         "name": "biz_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -196,7 +196,6 @@
                     "Healthz"
                 ],
                 "summary": "Healthz 接口",
-                "operationId": "healthz",
                 "responses": {
                     "200": {
                         "description": "OK",

@@ -19,7 +19,7 @@ import (
 )
 
 // @title		API Gateway Resources
-// @version		0.1
+// @version	0.1
 func main() {
 	cmd.Execute()
 }
