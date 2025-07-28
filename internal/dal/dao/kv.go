@@ -164,7 +164,11 @@ func (dao *kvDao) CountNumberUnDeleted(kit *kit.Kit, bizID uint32, opt *types.Li
 		m.KvState.Neq(table.KvStateDelete.String()))
 
 	var conds []rawgen.Condition
-	conds = dao.handleSearch(conds, opt.Page.Search.AsMap())
+	var searchMap map[string]any
+	if opt.Page != nil && opt.Page.Search != nil {
+		searchMap = opt.Page.Search.AsMap()
+	}
+	conds = dao.handleSearch(conds, searchMap)
 	q = q.Where(conds...)
 
 	if len(opt.Status) != 0 {
