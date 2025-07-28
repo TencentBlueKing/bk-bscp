@@ -92,7 +92,6 @@ pb:
 	@cd pkg/protocol && make clean && make
 	@echo -e "\e[34;1mMake Protocol Done\n\033[0m"
 
-docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
@@ -200,9 +199,8 @@ ${swagger}:
 	@mkdir -p ${PREFIX}/bin
 	@wget -q -O ${swagger} https://github.com/ifooth/go-swagger/releases/download/v0.31.0-r1/swagger && chmod a+x ${swagger}
 
-
-.PHONY: docs
-docs: ${swag} ${swagger}
+.PHONY: markdown_docs
+markdown_docs: ${swag} ${swagger}
 	${swag} fmt -d ./cmd
 	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
 	# 修正bkapigw的swagger.json 的default值()
@@ -211,3 +209,6 @@ docs: ${swag} ${swagger}
 	# 合并bkapigw和apiserver的swagger.json
 	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json
 	${swagger} generate markdown  --output=bkapigw_swagger.md -T ./docs/swagger -f ./docs/swagger/bkapigw/swagger.json -t ./docs/swagger/bkapigw
+
+.PHONY: docs
+docs: api_docs bkapigw_docs markdown_docs
