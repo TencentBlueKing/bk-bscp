@@ -1226,7 +1226,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 创建键值配置项
   rpc CreateKv(CreateKvReq) returns (CreateKvResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
@@ -1234,7 +1234,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   };
   // 更新键值配置项
   rpc UpdateKv(UpdateKvReq) returns (UpdateKvResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}"
       body: "*"
@@ -1242,7 +1242,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   };
   // 获取键值配置项列表
   rpc ListKvs(ListKvsReq) returns (ListKvsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/list"
       body: "*"
@@ -1250,7 +1250,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   };
   // 删除键值配置项
   rpc DeleteKv(DeleteKvReq) returns (DeleteKvResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{id}"
     };

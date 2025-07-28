@@ -15,7 +15,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "文件"
+                    "文件相关"
                 ],
                 "summary": "下载文件内容",
                 "operationId": "download_content",
@@ -78,7 +78,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "文件"
+                    "文件相关"
                 ],
                 "summary": "获取文件内容元数据",
                 "operationId": "get_content_metadata",
@@ -136,7 +136,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "文件"
+                    "文件相关"
                 ],
                 "summary": "上传文件内容",
                 "operationId": "upload_content",

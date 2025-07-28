@@ -13,9 +13,13 @@
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
+| POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
+| DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
+| POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
+| PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key} | [Config_UpdateKv](#config-update-kv) | 更新键值配置项 |
 
 ### healthz
 
@@ -23,7 +27,7 @@
 |---------|---------|--------|---------|
 | GET | /healthz | [GetHealthz](#get-healthz) | Healthz 接口 |
 
-### 文件
+### 文件相关
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
@@ -111,6 +115,54 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-create-kv"></span> 创建键值配置项 (*Config_CreateKv*)
+
+```
+POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| certificateExpirationDate | string |  | 证书过期时间 |
+| key | string | ✓ | 配置项名 |
+| kvType | string | ✓ | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
+| memo | string |  | 描述 |
+| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
+| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
+| value | string | ✓ | 配置项值 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "certificateExpirationDate": "",
+  "key": "",
+  "kvType": "",
+  "memo": "",
+  "secretHidden": false,
+  "secretType": "",
+  "value": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-create-release"></span> 生成版本 (*Config_CreateRelease*)
 
 ```
@@ -150,6 +202,40 @@ Content-Type: application/json
     }
   ]
 }
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-delete-kv"></span> 删除键值配置项 (*Config_DeleteKv*)
+
+```
+DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| id | int64 (formatted integer) | ✓ | 键值配置项ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} HTTP/1.1
+Content-Type: application/json
+
+
 ```
 
 #### 输出示例
@@ -219,6 +305,74 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-list-kvs"></span> 获取键值配置项列表 (*Config_ListKvs*)
+
+```
+POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| all | boolean |  | 是否获取所有 |
+| key | []string |  | 查询特定的配置项名 |
+| kvType | []string |  | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| order | string |  | 排序类型：desc |
+| searchFields | string |  | 支持搜索的字段：key,revister,creator |
+| searchKey | string |  | 搜索的值 |
+| searchValue | string |  | 搜索的值 |
+| sort | string |  | 排序的值，例如：key |
+| start | int64 (formatted integer) |  | 当前页码 |
+| status | []string |  | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
+| topIds | []int64 (formatted integer) |  | 需要置顶ID |
+| withStatus | boolean |  | 暂时未用到 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "key": [
+    {}
+  ],
+  "kvType": [
+    {}
+  ],
+  "limit": 0,
+  "order": "",
+  "searchFields": "",
+  "searchKey": "",
+  "searchValue": "",
+  "sort": "",
+  "start": 0,
+  "status": [
+    {}
+  ],
+  "topIds": [
+    {}
+  ],
+  "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-publish"></span> 发布指定版本 (*Config_Publish*)
 
 ```
@@ -263,6 +417,49 @@ Content-Type: application/json
     {}
   ],
   "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-update-kv"></span> 更新键值配置项 (*Config_UpdateKv*)
+
+```
+PUT /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| key | string | ✓ | 配置项名 |
+| memo | string |  | 描述 |
+| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
+| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
+| value | string | ✓ | 配置项值 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key} HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "secretHidden": false,
+  "secretType": "",
+  "value": ""
 }
 ```
 
@@ -470,6 +667,30 @@ Content-Type: application/json
 
 
 
+### <span id="config-create-kv-body"></span> ConfigCreateKvBody
+
+
+> 请求参数
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| certificateExpirationDate | string| `string` |  | | 证书过期时间 |  |
+| key | string| `string` | ✓ | | 配置项名 |  |
+| kvType | string| `string` | ✓ | | 键值类型：(any、string、number、text、json、yaml、xml、secret) |  |
+| memo | string| `string` |  | | 描述 |  |
+| secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
+| secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |  |
+| value | string| `string` | ✓ | | 配置项值 |  |
+
+
+
 ### <span id="config-create-release-body"></span> ConfigCreateReleaseBody
 
 
@@ -509,6 +730,33 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-kvs-body"></span> ConfigListKvsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| all | boolean| `bool` |  | | 是否获取所有 |  |
+| key | []string| `[]string` |  | | 查询特定的配置项名 |  |
+| kvType | []string| `[]string` |  | | 键值类型：(any、string、number、text、json、yaml、xml、secret) |  |
+| limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
+| order | string| `string` |  | | 排序类型：desc |  |
+| searchFields | string| `string` |  | `"key,revister,creator"`| 支持搜索的字段：key,revister,creator |  |
+| searchKey | string| `string` |  | | 搜索的值 |  |
+| searchValue | string| `string` |  | | 搜索的值 |  |
+| sort | string| `string` |  | | 排序的值，例如：key |  |
+| start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
+| status | []string| `[]string` |  | | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |  |
+| topIds | []int64 (formatted integer)| `[]int64` |  | | 需要置顶ID |  |
+| withStatus | boolean| `bool` |  | | 暂时未用到 |  |
+
+
+
 ### <span id="config-publish-body"></span> ConfigPublishBody
 
 
@@ -527,6 +775,27 @@ Content-Type: application/json
 | groups | []int64 (formatted integer)| `[]int64` |  | | 分组上线：分组ID，如果有值那么all必须是false |  |
 | labels | \[\][interface{}](#interface)| `[]interface{}` |  | | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |  |
 | memo | string| `string` |  | | 上线说明 |  |
+
+
+
+### <span id="config-update-kv-body"></span> ConfigUpdateKvBody
+
+
+> 请求参数
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| memo | string| `string` |  | | 描述 |  |
+| secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
+| secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |  |
+| value | string| `string` | ✓ | | 配置项值 |  |
 
 
 
@@ -560,6 +829,41 @@ Content-Type: application/json
 | isLatest | boolean| `bool` |  | | 是否是最新：模板文件版本ID在该模板文件中是最新的一个版本 |  |
 | templateId | int64 (formatted integer)| `int64` |  | | 模板文件ID |  |
 | templateRevisionId | int64 (formatted integer)| `int64` |  | | 模板文件版本ID |  |
+
+
+
+### <span id="pbbase-revision"></span> pbbaseRevision
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| createAt | string| `string` |  | | 创建时间 |  |
+| creator | string| `string` |  | | 创建人 |  |
+| reviser | string| `string` |  | | 更新人 |  |
+| updateAt | string| `string` |  | | 更新时间 |  |
+
+
+
+### <span id="pbcontent-content-spec"></span> pbcontentContentSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| byteSize | uint64 (formatted string)| `string` |  | | 文件大小 |  |
+| md5 | string| `string` |  | | 文件md5 |  |
+| signature | string| `string` |  | | 文件sha256 |  |
 
 
 
@@ -620,6 +924,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-create-kv-resp"></span> pbcsCreateKvResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| id | int64 (formatted integer)| `int64` |  | | 键值配置项ID |  |
+
+
+
 ### <span id="pbcs-create-release-resp"></span> pbcsCreateReleaseResp
 
 
@@ -632,6 +951,31 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | id | int64 (formatted integer)| `int64` |  | | 生成配置服务版本ID |  |
+
+
+
+### <span id="pbcs-delete-kv-resp"></span> pbcsDeleteKvResp
+
+
+  
+
+[interface{}](#interface)
+
+### <span id="pbcs-list-kvs-resp"></span> pbcsListKvsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 总数 |  |
+| details | \[\][PbkvKv](#pbkv-kv)| `[]*PbkvKv` |  | |  |  |
+| exclusionCount | int64 (formatted integer)| `int64` |  | | 排除删除后的数量 |  |
+| isCertExpired | boolean| `bool` |  | | 是否有证书过期：是=true，否=false |  |
 
 
 
@@ -649,6 +993,70 @@ Content-Type: application/json
 | haveCredentials | boolean| `bool` |  | | 是否有关联密钥 |  |
 | havePull | boolean| `bool` |  | | 是否被客户端拉取过 |  |
 | id | int64 (formatted integer)| `int64` |  | | 版本发布后的ID |  |
+
+
+
+### <span id="pbcs-update-kv-resp"></span> pbcsUpdateKvResp
+
+
+  
+
+[interface{}](#interface)
+
+### <span id="pbkv-kv"></span> pbkvKv
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbkvKvAttachment](#pbkv-kv-attachment)| `PbkvKvAttachment` |  | |  |  |
+| contentSpec | [PbcontentContentSpec](#pbcontent-content-spec)| `PbcontentContentSpec` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 键值配置项ID |  |
+| kvState | string| `string` |  | | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spec | [PbkvKvSpec](#pbkv-kv-spec)| `PbkvKvSpec` |  | |  |  |
+
+
+
+### <span id="pbkv-kv-attachment"></span> pbkvKvAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appId | int64 (formatted integer)| `int64` |  | | 服务ID |  |
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+
+
+
+### <span id="pbkv-kv-spec"></span> pbkvKvSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| certificateExpirationDate | string| `string` |  | | 证书过期时间 |  |
+| key | string| `string` |  | | 配置项名 |  |
+| kvType | string| `string` |  | | 键值类型：(any、string、number、text、json、yaml、xml、secret) |  |
+| memo | string| `string` |  | | 描述 |  |
+| secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
+| secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom) |  |
+| value | string| `string` |  | | 配置项值 |  |
 
 
 

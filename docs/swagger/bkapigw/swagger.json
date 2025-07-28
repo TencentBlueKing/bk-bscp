@@ -21,7 +21,7 @@
           "application/json"
         ],
         "tags": [
-          "文件"
+          "文件相关"
         ],
         "summary": "下载文件内容",
         "operationId": "download_content",
@@ -84,7 +84,7 @@
           "application/json"
         ],
         "tags": [
-          "文件"
+          "文件相关"
         ],
         "summary": "获取文件内容元数据",
         "operationId": "get_content_metadata",
@@ -142,7 +142,7 @@
           "application/json"
         ],
         "tags": [
-          "文件"
+          "文件相关"
         ],
         "summary": "上传文件内容",
         "operationId": "upload_content",
@@ -234,6 +234,209 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/pbcsBatchUpsertConfigItemsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "创建键值配置项",
+        "operationId": "Config_CreateKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateKvBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateKvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/list": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取键值配置项列表",
+        "operationId": "Config_ListKvs",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListKvsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}": {
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除键值配置项",
+        "operationId": "Config_DeleteKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "键值配置项ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteKvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key}": {
+      "put": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新键值配置项",
+        "operationId": "Config_UpdateKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "配置项名",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateKvBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateKvResp"
             }
           },
           "default": {
@@ -449,6 +652,45 @@
         }
       }
     },
+    "ConfigCreateKvBody": {
+      "description": "请求参数",
+      "type": "object",
+      "required": [
+        "key",
+        "kvType",
+        "value"
+      ],
+      "properties": {
+        "certificateExpirationDate": {
+          "description": "证书过期时间",
+          "type": "string"
+        },
+        "key": {
+          "description": "配置项名",
+          "type": "string"
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "string"
+        },
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
     "ConfigCreateReleaseBody": {
       "type": "object",
       "properties": {
@@ -515,6 +757,80 @@
         }
       }
     },
+    "ConfigListKvsBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "key": {
+          "description": "查询特定的配置项名",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "order": {
+          "description": "排序类型：desc",
+          "type": "string"
+        },
+        "searchFields": {
+          "description": "支持搜索的字段：key,revister,creator",
+          "type": "string",
+          "default": "key,revister,creator"
+        },
+        "searchKey": {
+          "description": "搜索的值",
+          "type": "string"
+        },
+        "searchValue": {
+          "description": "搜索的值",
+          "type": "string"
+        },
+        "sort": {
+          "description": "排序的值，例如：key",
+          "type": "string"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
+        },
+        "status": {
+          "description": "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "topIds": {
+          "description": "需要置顶ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "withStatus": {
+          "description": "暂时未用到",
+          "type": "boolean"
+        }
+      }
+    },
     "ConfigPublishBody": {
       "type": "object",
       "properties": {
@@ -554,6 +870,31 @@
         }
       }
     },
+    "ConfigUpdateKvBody": {
+      "description": "请求参数",
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
     "pbatbTemplateBinding": {
       "type": "object",
       "title": "TemplateBinding source resource reference: pkg/dal/table/app_template_binding.go",
@@ -588,6 +929,47 @@
           "description": "模板文件版本ID",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "pbbaseRevision": {
+      "type": "object",
+      "title": "Revision source resource reference: pkg/dal/table/table.go",
+      "properties": {
+        "createAt": {
+          "description": "创建时间",
+          "type": "string"
+        },
+        "creator": {
+          "description": "创建人",
+          "type": "string"
+        },
+        "reviser": {
+          "description": "更新人",
+          "type": "string"
+        },
+        "updateAt": {
+          "description": "更新时间",
+          "type": "string"
+        }
+      }
+    },
+    "pbcontentContentSpec": {
+      "type": "object",
+      "title": "ContentSpec source resource reference: pkg/dal/table/content.go",
+      "properties": {
+        "byteSize": {
+          "description": "文件大小",
+          "type": "string",
+          "format": "uint64"
+        },
+        "md5": {
+          "description": "文件md5",
+          "type": "string"
+        },
+        "signature": {
+          "description": "文件sha256",
+          "type": "string"
         }
       }
     },
@@ -672,6 +1054,16 @@
         }
       }
     },
+    "pbcsCreateKvResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "键值配置项ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "pbcsCreateReleaseResp": {
       "type": "object",
       "properties": {
@@ -679,6 +1071,35 @@
           "description": "生成配置服务版本ID",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "pbcsDeleteKvResp": {
+      "type": "object"
+    },
+    "pbcsListKvsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbkvKv"
+          }
+        },
+        "exclusionCount": {
+          "description": "排除删除后的数量",
+          "type": "integer",
+          "format": "int64"
+        },
+        "isCertExpired": {
+          "description": "是否有证书过期：是=true，否=false",
+          "type": "boolean"
         }
       }
     },
@@ -697,6 +1118,86 @@
           "description": "版本发布后的ID",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "pbcsUpdateKvResp": {
+      "type": "object"
+    },
+    "pbkvKv": {
+      "type": "object",
+      "title": "Kv source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbkvKvAttachment"
+        },
+        "contentSpec": {
+          "$ref": "#/definitions/pbcontentContentSpec"
+        },
+        "id": {
+          "description": "键值配置项ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "kvState": {
+          "description": "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)",
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbkvKvSpec"
+        }
+      }
+    },
+    "pbkvKvAttachment": {
+      "type": "object",
+      "title": "KvAttachment source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "appId": {
+          "description": "服务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbkvKvSpec": {
+      "type": "object",
+      "title": "KvSpec source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "certificateExpirationDate": {
+          "description": "证书过期时间",
+          "type": "string"
+        },
+        "key": {
+          "description": "配置项名",
+          "type": "string"
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "string"
+        },
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
         }
       }
     },
