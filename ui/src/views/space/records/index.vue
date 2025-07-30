@@ -58,7 +58,6 @@
       ...dateTimeParams.value,
       app_id: Number(route.params.appId),
       all: Number(route.params.appId) <= -1,
-      unauthorized_app_id: serviceSelectorRef.value.noPermisionIds,
     };
     // 操作记录id
     const id = Number(route.query.id);

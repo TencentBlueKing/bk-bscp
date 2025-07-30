@@ -616,9 +616,8 @@ export default {
   配置文件绝对路径: 'Config File Absolute Path',
   更新: 'Update',
   查看操作: 'View Operation',
-
   查看全部配置项: 'View all configuration items',
-  只看冲突配置项: 'Only view conflict configuration items     ',
+  只看冲突配置项: 'Only view conflict configuration items',
   '已限制该服务下所有配置项数据类型为{n}，如需其他数据类型，请调整服务属性下的数据类型': 'All configuration item data types under the service are limited to {n}, if you need other data types, please adjust the data type under the service attributes',
   敏感信息不可见: 'Sensitive information is not visible',
   '「敏感信息不可见」启用提示': '"Sensitive information is not visible" enabled prompt',
@@ -691,6 +690,7 @@ export default {
   '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入': 'If the sensitive information to be batch imported contains multi-line text certificates (certificate) or custom (custom), please import using JSON or YAML format',
   'RSA 私钥格式无效': 'Invalid RSA private key format',
   证书和私钥: 'Certificate and private key',
+  版本废弃成功: 'Version discarded successfully',
 
   // 分组管理
   新增分组: 'New group',

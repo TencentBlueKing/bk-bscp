@@ -310,8 +310,10 @@
         showOperateConfirmDialog.value = false;
         Message({
           theme: 'success',
-          message: '版本废弃成功',
+          message: t('版本废弃成功'),
         });
+
+        versionList.value = versionList.value.filter((item) => item.id !== id);
         if (id !== versionData.value.id) {
           return;
         }
@@ -326,8 +328,6 @@
         } else {
           handleSelectVersion(versions[index + 1]);
         }
-
-        versionList.value = versionList.value.filter((item) => item.id !== id);
       });
     });
 

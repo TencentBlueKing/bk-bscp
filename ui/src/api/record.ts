@@ -8,7 +8,7 @@ import { IRecordQuery } from '../../types/record';
  * @returns
  */
 export const getRecordList = (biz_id: string, params: IRecordQuery) =>
-  http.post(`/config/biz_id/${biz_id}/audits`, params).then((res) => res.data);
+  http.get(`/config/biz_id/${biz_id}/audits`, { params }).then((res) => res.data);
 
 /**
  * 审批操作：撤销/驳回/通过/手动上线

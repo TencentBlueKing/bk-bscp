@@ -75,7 +75,6 @@
   const loading = ref(false);
   const localVal = ref(props.value);
   const selectorRef = ref();
-  const noPermisionIds = ref<number[]>([]);
 
   const serviceGroup = computed(() => {
     const fileServices = serviceList.value.filter((service: IAppItem) => service.spec.config_type === 'file');
@@ -95,9 +94,6 @@
 
   onBeforeMount(async () => {
     await loadServiceList();
-    noPermisionIds.value = serviceList.value
-      .filter((service) => !service.permissions.view)
-      .map((service) => service.id!);
     let service;
     if (props.value) {
       localVal.value = props.value;
@@ -161,7 +157,6 @@
       const service = serviceList.value.find((service) => service.id === localVal.value);
       emits('change', service);
     },
-    noPermisionIds,
   });
 </script>
 <style lang="scss" scoped>
