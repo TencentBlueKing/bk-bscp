@@ -203,7 +203,7 @@ export default {
   '检测到模板冲突，请先删除冲突套餐': 'Template conflict detected, please delete the conflicting package first',
   模板名称: 'Template name',
   模板路径: 'Template path',
-  版本号: 'version number',
+  版本号: 'Version number',
   该套餐下暂无模板: 'There are currently no templates under this package',
   批量上传配置文件: 'Upload configuration files in batches',
   上传配置文件包: 'Upload configuration file package',
@@ -748,9 +748,14 @@ export default {
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx port',
   导出变量: 'Export variables',
   全局变量: 'Global variables',
-  变量值已复制: '变量值已复制',
+  变量值已复制: 'Variable value copied',
   设置: 'Set',
   复制变量值: 'Copy variable value',
+  '每行表示一个变量，包含变量名称、变量类型、默认值与描述（可选），默认使用空格分隔': 'Each line represents a variable, including variable name, variable type, default value, and description (optional), separated by spaces by default',
+  '以 JSON 格式批量导入变量，变量名称作为 JSON 对象的 Key，而变量类型、默认值、描述组成一个嵌套对象，作为对应 Key 的 Value': 'In JSON format, the variable name is used as the Key of the JSON object, while the variable type, default value, and description form a nested object as the value of the corresponding key',
+  '以 YAML 格式批量导入变量，变量名称作为 YAML 对象的 Key，而变量类型、默认值、描述分别作为嵌套对象的子键，形成对应键的值 ': 'In YAML format, the variable name is used as the Key of the YAML object, while the variable type, default value, and description are used as subkeys of the nested object to form the value of the corresponding key',
+  '变量名称 变量类型 默认值 描述（可选）': 'Variable name Variable type Default value Description (optional)',
+  '简单文本格式：': 'Simple text format:',
 
   // 配置模板
   '配置模板用于同一业务下服务间配置文件复用，可以在创建服务配置时引用配置模板。': 'Configuration templates are used to reuse configuration files between services under same services, and can be referenced when creating service configurations.',
@@ -820,7 +825,7 @@ export default {
   添加至模板套餐: 'Add to template package',
   以下服务配置的未命名版本中将添加已选配置文件的: 'The following unnamed version of the service configuration will be added with the selected profile\'s',
   目标模板套餐: 'Target Template Package',
-  批量删除: 'batch deletion',
+  批量删除: 'Batch delete',
   '确认删除以下配置文件？': 'Are you sure you want to delete the following configuration files?',
   批量移出: 'Move out in batches',
   批量移出当前套餐: 'Move out current plans in batches',
@@ -904,6 +909,7 @@ export default {
   '脚本已被引用，不能删除': 'Script is referenced, cannot be deleted',
   '脚本名称有误，请重新输入': 'Script name is incorrect, please re-enter',
   请输入脚本名称: 'Please enter script name',
+  变量名已复制: 'Variable name copied',
 
   // 服务密钥
   '密钥仅用于 SDK/API 拉取配置使用。服务管理/配置管理/分组管理等功能的权限申请，请前往': 'The key is only used for SDK/API pull configurations. To apply for permissions for functions such as service management/configuration management/group management, please go to',

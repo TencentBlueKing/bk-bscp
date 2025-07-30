@@ -134,6 +134,9 @@
 </style>
 <style lang="scss">
   .create-version-confirm-dialog.bk-modal-wrapper {
+    .bk-dialog-header .bk-dialog-title {
+      white-space: normal;
+    }
     .bk-modal-footer {
       position: static;
       padding: 32px 0 48px;

@@ -459,14 +459,9 @@
               font-size: 14px;
               white-space: nowrap;
               cursor: pointer;
-              a {
-                color: #96a2b9;
-              }
+              color: #96a2b9;
               &:hover {
                 color: #c2cee5;
-                a {
-                  color: #c2cee5;
-                }
               }
               &.actived {
                 background: #2f3746;
