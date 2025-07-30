@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
@@ -65,6 +66,8 @@ type Template interface {
 	ListTemplateByTuple(kit *kit.Kit, data [][]interface{}) ([]*table.Template, error)
 	// ListByExclusionIDs list templates by template exclusion ids.
 	ListByExclusionIDs(kit *kit.Kit, ids []uint32) ([]*table.Template, error)
+	// BatchUpdateTimeTx batch update template time instances with transaction.
+	BatchUpdateTimeTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error
 }
 
 var _ Template = new(templateDao)
@@ -73,6 +76,18 @@ type templateDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// BatchUpdateTimeTx batch update template time instances with transaction.
+func (dao *templateDao) BatchUpdateTimeTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error {
+	m := tx.Template
+	q := tx.Template.WithContext(kit.Ctx)
+
+	if _, err := q.Where(m.ID.In(ids...)).Update(m.UpdatedAt, time.Now().UTC()); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // UpdateWithTx Update one template instance with transaction.
