@@ -16,6 +16,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/samber/lo"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -57,6 +59,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 	}
 	if req.Status != "" {
 		r.Status = strings.Split(req.Status, ",")
+		r.Status = lo.Uniq(r.Status) // 查询条件去重
 	}
 	if req.ResourceType != "" {
 		r.ResourceType = strings.Split(req.ResourceType, ",")
