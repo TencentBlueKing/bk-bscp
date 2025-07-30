@@ -14,6 +14,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
@@ -26,30 +27,69 @@ import (
 // ListAudits list audits
 func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 	*pbcs.ListAuditsResp, error) {
-
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
 		{Basic: meta.Basic{Type: meta.Audit, Action: meta.View, ResourceID: req.BizId}, BizID: req.BizId},
 	}
-	err := s.authorizer.Authorize(grpcKit, res...)
+
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	apps, err := s.client.DS.ListAppsRest(grpcKit.RpcCtx(),
+		&pbds.ListAppsRestReq{BizId: strconv.Itoa(int(req.GetBizId())), All: true})
 	if err != nil {
 		return nil, err
 	}
 
+	authorizedAppIds := []uint32{}
+	authorizedAppMap := map[uint32]bool{}
+	authRes := make([]*meta.ResourceAttribute, 0, len(apps.GetDetails()))
+	for _, v := range apps.GetDetails() {
+		bID, _ := strconv.ParseInt(v.SpaceId, 10, 64)
+		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
+			Type: meta.App, Action: meta.View, ResourceID: v.Id}, BizID: uint32(bID)},
+		)
+		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
+			Type: meta.App, Action: meta.Update, ResourceID: v.Id}, BizID: uint32(bID)},
+		)
+		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
+			Type: meta.App, Action: meta.Delete, ResourceID: v.Id}, BizID: uint32(bID)},
+		)
+		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
+			Type: meta.App, Action: meta.Publish, ResourceID: v.Id}, BizID: uint32(bID)},
+		)
+		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
+			Type: meta.App, Action: meta.GenerateRelease, ResourceID: v.Id}, BizID: uint32(bID)},
+		)
+	}
+	decisions, _, err := s.authorizer.AuthorizeDecision(grpcKit, authRes...)
+	if err != nil {
+		return nil, err
+	}
+	dMap := meta.DecisionsMap(decisions)
+	for k, v := range dMap {
+		if v && !authorizedAppMap[k.ResourceID] {
+			authorizedAppIds = append(authorizedAppIds, k.ResourceID)
+			authorizedAppMap[k.ResourceID] = true
+		}
+	}
+
 	r := &pbds.ListAuditsReq{
-		BizId:       req.BizId,
-		AppId:       req.AppId,
-		StartTime:   req.StartTime,
-		EndTime:     req.EndTime,
-		Start:       req.Start,
-		Limit:       req.Limit,
-		All:         req.All,
-		Name:        req.Name,
-		ResInstance: req.ResInstance,
-		Operator:    req.Operator,
-		Id:          req.Id,
+		BizId:            req.BizId,
+		AppId:            req.AppId,
+		StartTime:        req.StartTime,
+		EndTime:          req.EndTime,
+		Start:            req.Start,
+		Limit:            req.Limit,
+		All:              req.All,
+		Name:             req.Name,
+		ResInstance:      req.ResInstance,
+		Operator:         req.Operator,
+		Id:               req.Id,
+		AuthorizedAppIds: authorizedAppIds,
 	}
 	// 前端组件以逗号分开
 	if req.Action != "" {

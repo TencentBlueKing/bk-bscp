@@ -193,6 +193,8 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		result = result.Where(audit.AppID.Eq(req.AppId))
 	}
 
+	result = result.Where(audit.AppID.In(req.GetAuthorizedAppIds()...))
+
 	if req.StartTime != "" {
 		startTime, err := time.Parse(time.DateTime, req.StartTime)
 		if err != nil {
