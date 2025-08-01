@@ -14,6 +14,7 @@ package tools
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -162,5 +163,22 @@ func TestMatch(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("MatchPattern(%s, %v) = %t, want %t", test.input, test.patterns, result, test.expected)
 		}
+	}
+}
+
+func TestTruncateWithHumanize(t *testing.T) {
+	// 模拟一个大字符串（70KB）
+	s := strings.Repeat("这是一段测试内容。This is test content. ", 2000) // 大概 > 60KB
+
+	result := TruncateWithHumanize(s)
+
+	// 判断是否被截断（应包含 "...(Truncated, Total "）
+	if !strings.Contains(result, "...(Truncated, Total ") {
+		t.Errorf("expected truncated output, got:\n%s", result)
+	}
+
+	// 检查结果是否不超过 65535 字节（TEXT 最大限制）
+	if len(result) > 65535 {
+		t.Errorf("result exceeds TEXT field size: %d bytes", len(result))
 	}
 }
