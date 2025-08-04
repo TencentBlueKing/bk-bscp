@@ -67,13 +67,18 @@ func (s *Service) CreateHookRevision(ctx context.Context,
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	id, err := s.dao.HookRevision().CreateWithTx(kt, tx, hookRevision)
 	if err != nil {
 		logs.Errorf("create HookRevision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -85,9 +90,6 @@ func (s *Service) CreateHookRevision(ctx context.Context,
 	}).PrepareCreate(hookRevision).Do(tx.Query)
 	if err != nil {
 		logs.Errorf("PrepareCreate HookRevision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -95,6 +97,7 @@ func (s *Service) CreateHookRevision(ctx context.Context,
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 
 	resp := &pbds.CreateResp{Id: id}
 	return resp, nil
@@ -165,20 +168,22 @@ func (s *Service) DeleteHookRevision(ctx context.Context,
 	kt := kit.FromGrpcContext(ctx)
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 1. check if hook was bound to an editing release
 	count, err := s.dao.ReleasedHook().CountByHookRevisionIDAndReleaseID(kt, req.BizId, req.HookId, req.RevisionId, 0)
 	if err != nil {
 		logs.Errorf("count hook revision bound editing releases failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 	if count > 0 && !req.Force {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, fmt.Errorf("hook revision was bound to %d editing releases, "+
 			"set force=true to delete hook revision with references, rid: %s", count, kt.Rid)
 	}
@@ -187,9 +192,6 @@ func (s *Service) DeleteHookRevision(ctx context.Context,
 	if e := s.dao.ReleasedHook().DeleteByHookRevisionIDAndReleaseIDWithTx(kt, tx,
 		req.BizId, req.HookId, req.RevisionId, 0); e != nil {
 		logs.Errorf("delete released hook failed, err: %v, rid: %s", e, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, e
 	}
 	// 3. delete hook revision
@@ -203,9 +205,6 @@ func (s *Service) DeleteHookRevision(ctx context.Context,
 
 	if e := s.dao.HookRevision().DeleteWithTx(kt, tx, HookRevision); e != nil {
 		logs.Errorf("delete HookRevision failed, err: %v, rid: %s", e, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, e
 	}
 
@@ -213,6 +212,7 @@ func (s *Service) DeleteHookRevision(ctx context.Context,
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -223,6 +223,14 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 	kt := kit.FromGrpcContext(ctx)
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 1. 上线的版本下线
 	opt := &types.GetByPubStateOption{
@@ -235,9 +243,6 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 		old.Spec.State = table.HookRevisionStatusShutdown
 		if e := s.dao.HookRevision().UpdatePubStateWithTx(kt, tx, old); e != nil {
 			logs.Errorf("update HookRevision State failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, e
 		}
 	}
@@ -245,9 +250,6 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 	hookRevision, err := s.dao.HookRevision().Get(kt, req.BizId, req.HookId, req.Id)
 	if err != nil {
 		logs.Errorf("get HookRevision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -269,9 +271,7 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 		}
 		if err = s.dao.Hook().UpdateWithTx(kt, tx, hookData); err != nil {
 			logs.Errorf("update hook failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
+			return nil, err
 		}
 	}
 
@@ -279,9 +279,6 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 	hookRevision.Spec.State = table.HookRevisionStatusDeployed
 	if e := s.dao.HookRevision().UpdatePubStateWithTx(kt, tx, hookRevision); e != nil {
 		logs.Errorf("update HookRevision State failed, err: %v, rid: %s", e, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, e
 	}
 
@@ -289,9 +286,6 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 	if e := s.dao.ReleasedHook().UpdateHookRevisionByReleaseIDWithTx(kt, tx,
 		req.BizId, 0, req.HookId, hookRevision); e != nil {
 		logs.Errorf("update released hook failed, err: %v, rid: %s", e, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, e
 	}
 
@@ -299,6 +293,7 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 

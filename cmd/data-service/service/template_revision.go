@@ -51,6 +51,16 @@ func (s *Service) CreateTemplateRevision(ctx context.Context,
 
 	tx := s.dao.GenQuery().Begin()
 
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
 	// 1. create template revision
 	spec := req.Spec.TemplateRevisionSpec()
 	// if no revision name is specified, generate it by system
@@ -71,9 +81,6 @@ func (s *Service) CreateTemplateRevision(ctx context.Context,
 	id, err := s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, true)
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -88,9 +95,6 @@ func (s *Service) CreateTemplateRevision(ctx context.Context,
 		for _, atb := range atbs {
 			if e := s.CascadeUpdateATB(kt, tx, atb); e != nil {
 				logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", e, kt.Rid)
-				if rErr := tx.Rollback(); rErr != nil {
-					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-				}
 				return nil, e
 			}
 		}
@@ -100,6 +104,7 @@ func (s *Service) CreateTemplateRevision(ctx context.Context,
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 	return &pbds.CreateResp{Id: id}, nil
 }
 
@@ -335,6 +340,17 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 	}
 
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
 	// 1. create template revision
 	spec := req.Spec.TemplateRevisionSpec()
 	spec.RevisionMemo = ""
@@ -374,9 +390,6 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 			for _, atb := range atbs {
 				if e := s.CascadeUpdateATB(kt, tx, atb); e != nil {
 					logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", e, kt.Rid)
-					if rErr := tx.Rollback(); rErr != nil {
-						logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-					}
 					return nil, e
 				}
 			}
@@ -384,9 +397,6 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 	}
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -402,9 +412,7 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 		Revision:   template.Revision,
 	})
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("update template failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -412,5 +420,6 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 	return &pbds.CreateResp{Id: id}, nil
 }

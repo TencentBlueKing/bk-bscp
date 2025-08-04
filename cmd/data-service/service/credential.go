@@ -122,21 +122,23 @@ func (s *Service) DeleteCredential(ctx context.Context, req *pbds.DeleteCredenti
 	kt := kit.FromGrpcContext(ctx)
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if e := tx.Rollback(); e != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", e, kt.Rid)
+			}
+		}
+	}()
 
 	// 查看credential_scopes表中的数据
 	if err := s.dao.CredentialScope().DeleteByCredentialIDWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
 		logs.Errorf("delete credential scope by credential id failed, err: %v, rid: %s", err, kt.Rid)
-		if e := tx.Rollback(); e != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", e, kt.Rid)
-		}
 		return nil, err
 	}
 
 	if err := s.dao.Credential().DeleteWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
 		logs.Errorf("delete credential failed, err: %v, rid: %s", err, kt.Rid)
-		if e := tx.Rollback(); e != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", e, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -144,6 +146,7 @@ func (s *Service) DeleteCredential(ctx context.Context, req *pbds.DeleteCredenti
 		logs.Errorf("transaction commit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }

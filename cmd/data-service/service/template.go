@@ -70,14 +70,20 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 2. 验证套餐是否超出
 	templateSets, err := s.verifyTemplateSetAndReturnData(kt, tx, req.GetAttachment().BizId,
 		req.GetTemplateSetIds(), []uint32{}, 1)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify template set and return data failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -85,9 +91,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	bindings, err := s.dao.AppTemplateBinding().GetBindingAppByTemplateSetID(kt, req.GetAttachment().BizId,
 		req.GetTemplateSetIds())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("get app template bindings by template set ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "get app template bindings by template set ids, err: %s", err))
 	}
@@ -95,9 +99,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	// 4. 验证服务套餐下是否超出限制
 	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetAttachment().BizId, bindings, req.GetTemplateSetIds(),
 		[]uint32{}, 1); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -114,9 +116,6 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	templateID, err := s.dao.Template().CreateWithTx(kt, tx, template, false)
 	if err != nil {
 		logs.Errorf("create template failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -141,9 +140,6 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	// CreateWithTx create one template revision instance with transaction.
 	if _, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, false); err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -151,9 +147,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	appTemplateBindings, errH := s.handleAppTemplateBindings(kt, tx, req.GetAttachment().BizId, bindings,
 		req.GetTemplateSetIds(), []uint32{templateID})
 	if errH != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", errH, kt.Rid)
 		return nil, errH
 	}
 
@@ -161,9 +155,6 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	if len(appTemplateBindings) > 0 {
 		if err = s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, appTemplateBindings); err != nil {
 			logs.Errorf("batch update app template binding's failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch update app template binding's failed, err: %s", err))
 		}
 	}
@@ -175,9 +166,6 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	// 9. 添加至模板套餐中
 	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, true); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch add templates to template sets failed, err: %s", err))
 	}
 
@@ -185,6 +173,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 	return &pbds.CreateResp{Id: templateID}, nil
 }
 
@@ -276,6 +265,14 @@ func (s *Service) DeleteTemplate(ctx context.Context, req *pbds.DeleteTemplateRe
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 1. delete template
 	template := &table.Template{
@@ -284,18 +281,12 @@ func (s *Service) DeleteTemplate(ctx context.Context, req *pbds.DeleteTemplateRe
 	}
 	if err = s.dao.Template().DeleteWithTx(kt, tx, template); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
 	// 2. delete template revisions of current template
 	if err = s.dao.TemplateRevision().DeleteForTmplWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -303,9 +294,6 @@ func (s *Service) DeleteTemplate(ctx context.Context, req *pbds.DeleteTemplateRe
 	if hasTmplSet {
 		if err = s.dao.TemplateSet().DeleteTmplFromAllTmplSetsWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
 			logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
@@ -315,18 +303,12 @@ func (s *Service) DeleteTemplate(ctx context.Context, req *pbds.DeleteTemplateRe
 		atbs, err := s.dao.TemplateBindingRelation().ListTemplatesBoundATBs(kt, req.Attachment.BizId, []uint32{req.Id})
 		if err != nil {
 			logs.Errorf("list templates bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
-			if e := tx.Rollback(); e != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", e, kt.Rid)
-			}
 			return nil, err
 		}
 		if len(atbs) > 0 {
 			for _, atb := range atbs {
 				if err := s.CascadeUpdateATB(kt, tx, atb); err != nil {
 					logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", err, kt.Rid)
-					if rErr := tx.Rollback(); rErr != nil {
-						logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-					}
 					return nil, err
 				}
 			}
@@ -336,6 +318,7 @@ func (s *Service) DeleteTemplate(ctx context.Context, req *pbds.DeleteTemplateRe
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -381,6 +364,14 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// NOTE: if consider to optimize it with batch interface, consider how to add audit record as the same time
 	for _, templateID := range req.Ids {
@@ -391,18 +382,12 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 		}
 		if err = s.dao.Template().DeleteWithTx(kt, tx, template); err != nil {
 			logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 
 		// 2. delete template revisions of current template
 		if err = s.dao.TemplateRevision().DeleteForTmplWithTx(kt, tx, req.Attachment.BizId, templateID); err != nil {
 			logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 
@@ -410,9 +395,6 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 		if hasTmplSets[templateID] {
 			if err = s.dao.TemplateSet().DeleteTmplFromAllTmplSetsWithTx(kt, tx, req.Attachment.BizId, templateID); err != nil {
 				logs.Errorf("delete template failed, err: %v, rid: %s", err, kt.Rid)
-				if rErr := tx.Rollback(); rErr != nil {
-					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-				}
 				return nil, err
 			}
 		}
@@ -423,18 +405,12 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 				[]uint32{templateID})
 			if e != nil {
 				logs.Errorf("list templates bound app template bindings failed, err: %v, rid: %s", e, kt.Rid)
-				if rErr := tx.Rollback(); rErr != nil {
-					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-				}
 				return nil, e
 			}
 			if len(atbs) > 0 {
 				for _, atb := range atbs {
 					if err := s.CascadeUpdateATB(kt, tx, atb); err != nil {
 						logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", err, kt.Rid)
-						if rErr := tx.Rollback(); rErr != nil {
-							logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-						}
 						return nil, err
 					}
 				}
@@ -446,6 +422,7 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -474,22 +451,26 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 2. 验证套餐是否超出
 	templateSets, err := s.verifyTemplateSetAndReturnData(kt, tx, req.GetBizId(), req.TemplateSetIds, templateIds, 0)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify template set and return data failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 3. 通过套餐获取绑定的服务数据
 	bindings, err := s.dao.AppTemplateBinding().GetBindingAppByTemplateSetID(kt, req.BizId, req.TemplateSetIds)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("get app template bindings by template set ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "get app template bindings by template set ids, err: %s", err))
 	}
@@ -497,9 +478,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	// 4. 验证需要编辑和新增的模板是否超出服务限制
 	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), bindings,
 		req.GetTemplateSetIds(), templateIds, 0); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -507,9 +486,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	appTemplateBindings, err := s.handleAppTemplateBindings(kt, tx, req.GetBizId(), bindings,
 		req.GetTemplateSetIds(), templateIds)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -517,9 +494,6 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	if len(appTemplateBindings) > 0 {
 		if err = s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, appTemplateBindings); err != nil {
 			logs.Errorf("batch update app template binding's failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch update app template binding's failed, err: %s", err))
 		}
 	}
@@ -530,9 +504,6 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	// 10. 添加至模板套餐中
 	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, true); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch add templates to template sets failed, err: %s", err))
 	}
 
@@ -540,6 +511,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -582,6 +554,14 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbds.DeleteT
 	templateSet.Spec.TemplateIDs = excludedTemplateIDs
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 2. 移除套餐中指定的模板
 	if err = s.dao.TemplateSet().UpdateWithTx(kt, tx, &table.TemplateSet{
@@ -596,9 +576,6 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbds.DeleteT
 		},
 	}); err != nil {
 		logs.Errorf("delete template from template sets failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "delete template from template sets failed, err: %v", err))
 	}
@@ -607,9 +584,7 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbds.DeleteT
 	bindings, err := s.dao.AppTemplateBinding().GetBindingAppByTemplateSetID(kt, req.BizId,
 		[]uint32{req.TemplateSetId})
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("get app template bindings by template set ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "get app template bindings by template set ids, err: %v", err))
 	}
@@ -619,9 +594,6 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbds.DeleteT
 		appTemplateBindings := deleteTemplateSetReferencedApp(req.TemplateSetId, req.TemplateIds, bindings)
 		if err = s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, appTemplateBindings); err != nil {
 			logs.Errorf("batch update app template binding's failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed,
 				i18n.T(kt, "batch update app template binding's failed, err: %v", err))
 		}
@@ -632,6 +604,7 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbds.DeleteT
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "delete template from template sets failed, err: %v", e))
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -902,23 +875,27 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 
 	now := time.Now().UTC()
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	// 3. 验证套餐是否超出
 	templateSets, err := s.verifyTemplateSetAndReturnData(kt, tx, req.GetBizId(),
 		req.GetTemplateSetIds(), updateIds, len(createData))
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify template set and return data failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 4. 通过套餐获取绑定的服务数据
 	bindings, err := s.dao.AppTemplateBinding().GetBindingAppByTemplateSetID(kt, req.GetBizId(), req.GetTemplateSetIds())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("get app template bindings by template set ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, "get app template bindings by template set ids, err: %s", err))
 	}
@@ -926,18 +903,14 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	// 5. 验证需要编辑和新增的模板是否超出服务限制
 	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), bindings, req.GetTemplateSetIds(),
 		updateIds, len(createData)); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 6. 批量创建模板以及模板版本
 	createIds, e := s.doBatchCreateTemplates(kt, tx, createData, now)
 	if e != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("do batch create templates failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
 
@@ -945,12 +918,11 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	if len(updateIds) > 0 {
 		oldTemplateData, errV := s.validateBatchUpsertTemplates(kt, updateIds, updateData)
 		if errV != nil {
+			logs.Errorf("validate batch upsert templates failed, err: %v, rid: %s", errV, kt.Rid)
 			return nil, errV
 		}
 		if e := s.doBatchUpdateTemplates(kt, tx, updateData, oldTemplateData, now); e != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
+			logs.Errorf("do batch update templates failed, err: %v, rid: %s", e, kt.Rid)
 			return nil, e
 		}
 	}
@@ -962,9 +934,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	appTemplateBindings, errH := s.handleAppTemplateBindings(kt, tx, req.GetBizId(), bindings,
 		req.GetTemplateSetIds(), templateIDs)
 	if errH != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", errH, kt.Rid)
 		return nil, errH
 	}
 
@@ -972,9 +942,6 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	if len(appTemplateBindings) > 0 {
 		if err = s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, appTemplateBindings); err != nil {
 			logs.Errorf("batch update app template binding's failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch update app template binding's failed, err: %s", err))
 		}
 	}
@@ -986,9 +953,6 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	// 10. 添加至模板套餐中
 	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, false); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch add templates to template sets failed, err: %s", err))
 	}
 
@@ -996,6 +960,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return &pbds.BatchUpsertTemplatesReqResp{
 		Ids: templateIDs,
@@ -1179,10 +1144,16 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 	}
 
 	tx := s.dao.GenQuery().Begin()
-	if err := s.dao.TemplateRevision().BatchCreateWithTx(kt, tx, toCreate); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
 		}
+	}()
+	if err := s.dao.TemplateRevision().BatchCreateWithTx(kt, tx, toCreate); err != nil {
+		logs.Errorf("batch create template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, fmt.Sprintf("batch update of template permissions failed, err: %s", err.Error())))
 	}
@@ -1200,9 +1171,7 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 		// 更新引用的服务
 		items, err := s.dao.AppTemplateBinding().ListAppTemplateBindingByAppIds(kt, req.GetBizId(), req.GetAppIds())
 		if err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
+			logs.Errorf("list app template bindings by app ids failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, errf.Errorf(errf.DBOpFailed,
 				i18n.T(kt, "list app template bindings by app ids failed, err: %s", err))
 		}
@@ -1229,9 +1198,7 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 
 		// 更新未命名版本绑定关系
 		if err := s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, items); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
+			logs.Errorf("batch update app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, errf.Errorf(errf.DBOpFailed,
 				i18n.T(kt, fmt.Sprintf("batch update of template permissions failed, err: %s", err.Error())))
 		}
@@ -1242,6 +1209,7 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kt, fmt.Sprintf("batch update of template permissions failed, err: %s", e.Error())))
 	}
+	committed = true
 
 	return &pbds.BatchUpdateTemplatePermissionsResp{Ids: ids}, nil
 }

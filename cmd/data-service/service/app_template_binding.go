@@ -56,22 +56,24 @@ func (s *Service) CreateAppTemplateBinding(ctx context.Context, req *pbds.Create
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	id, err := s.dao.AppTemplateBinding().CreateWithTx(kt, tx, appTemplateBinding)
 	if err != nil {
 		logs.Errorf("create app template binding failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
 	// validate config items count.
 	if err = s.dao.ConfigItem().ValidateAppCINumber(kt, tx, req.Attachment.BizId, req.Attachment.AppId); err != nil {
 		logs.Errorf("validate config items count failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -79,6 +81,7 @@ func (s *Service) CreateAppTemplateBinding(ctx context.Context, req *pbds.Create
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	resp := &pbds.CreateResp{Id: id}
 	return resp, nil
@@ -127,11 +130,16 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbds.Update
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	if err := s.dao.AppTemplateBinding().UpdateWithTx(kt, tx, appTemplateBinding); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		logs.Errorf("update app template binding failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -139,9 +147,6 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbds.Update
 	// validate config items count.
 	if err := s.dao.ConfigItem().ValidateAppCINumber(kt, tx, req.Attachment.BizId, req.Attachment.AppId); err != nil {
 		logs.Errorf("validate config items count failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -149,6 +154,7 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbds.Update
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }
@@ -1082,10 +1088,10 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbds.Impo
 		return nil, err
 	}
 
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
 			}
@@ -1121,7 +1127,7 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbds.Impo
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
-	isRollback = false
+	committed = true
 
 	return &pbbase.EmptyResp{}, nil
 }

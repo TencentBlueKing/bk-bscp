@@ -106,10 +106,10 @@ func (s *Service) SubmitPublishApprove(
 		return nil, errors.New(i18n.T(grpcKit, "there is a release in publishing currently"))
 	}
 
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
 			}
@@ -204,7 +204,7 @@ func (s *Service) SubmitPublishApprove(
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
-	isRollback = false
+	committed = true
 
 	resp := &pbds.PublishResp{
 		PublishedStrategyHistoryId: pshID,
@@ -259,10 +259,10 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 	}
 
 	// 默认要回滚，除非已经提交
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
 			}
@@ -363,7 +363,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
-	isRollback = false
+	committed = true
 	return &pbds.ApproveResp{
 		HaveCredentials: haveCredentials,
 		HavePull:        havePull,
@@ -407,10 +407,10 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 	}
 
 	// 默认要回滚，除非已经提交
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
 			}
@@ -561,7 +561,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
-	isRollback = false
+	committed = true
 	return &pbds.PublishResp{PublishedStrategyHistoryId: pshID}, nil
 }
 
