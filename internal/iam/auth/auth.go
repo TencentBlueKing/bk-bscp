@@ -68,6 +68,8 @@ type Authorizer interface {
 	LogOut(r *http.Request) *rest.UnauthorizedData
 	// HasBiz 业务是否存在
 	HasBiz(bizID uint32) bool
+	// IAMVerify iam 验证
+	IAMVerify(next http.Handler) http.Handler
 }
 
 // NewAuthorizer create an authorizer for iam authorize related operation.

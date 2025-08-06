@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	bkiam "github.com/TencentBlueKing/iam-go-sdk"
 	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
@@ -569,4 +570,27 @@ func (s *Service) QuerySpaceByAppID(ctx context.Context, req *pbas.QuerySpaceByA
 		SpaceTypeName: space.BK_CMDB.Name,
 	}
 	return resp, nil
+}
+
+// IAMVerify implements pbas.AuthServer.
+func (s *Service) IAMVerify(ctx context.Context, req *pbas.IAMVerifyReq) (*pbas.IAMVerifyResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	if iamToken.token != "" && time.Since(iamToken.tokenRefreshTime) <= time.Minute && req.GetToken() == iamToken.token {
+		return &pbas.IAMVerifyResp{IsAuthorized: true}, nil
+	}
+
+	var err error
+	iamToken.token, err = s.gateway.iamSys.GetSystemToken(kt.Ctx)
+	if err != nil {
+		logs.Errorf("check request authorization get system token failed, error: %s, rid: %s", err.Error(), kt.Rid)
+		return &pbas.IAMVerifyResp{IsAuthorized: false}, err
+	}
+
+	iamToken.tokenRefreshTime = time.Now()
+	if req.GetToken() != iamToken.token {
+		logs.Errorf("check request authorization get system token failed, error: %s, rid: %s", err.Error(), kt.Rid)
+		return &pbas.IAMVerifyResp{IsAuthorized: false}, errors.New("request password not match system token")
+	}
+
+	return &pbas.IAMVerifyResp{IsAuthorized: true}, nil
 }

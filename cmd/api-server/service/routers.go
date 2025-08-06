@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/audit"
-	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
 )
@@ -44,7 +43,7 @@ func (p *proxy) routers() http.Handler {
 	// iam 回调接口
 	r.Route("/api/v1/auth/iam/find/resource", func(r chi.Router) {
 		r.Use(handler.RequestBodyLogger())
-		r.Use(auth.IAMVerified)
+		r.Use(p.authorizer.IAMVerify)
 		r.Mount("/", p.authSvrMux)
 	})
 

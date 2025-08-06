@@ -62,6 +62,17 @@ service Auth {
   rpc GetAuthConf(GetAuthConfReq) returns (GetAuthConfResp) {}
 
   rpc GrantResourceCreatorAction(GrantResourceCreatorActionReq) returns (pbbase.EmptyResp) {}
+
+  // 验证iam
+  rpc IAMVerify(IAMVerifyReq) returns (IAMVerifyResp);
+}
+
+message IAMVerifyReq {
+  string token = 1;
+}
+
+message IAMVerifyResp {
+  bool is_authorized = 1;
 }
 
 message InitAuthCenterReq {
