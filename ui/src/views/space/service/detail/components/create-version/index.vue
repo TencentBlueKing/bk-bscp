@@ -87,13 +87,11 @@
   ]);
 
   const createBtnDisabled = computed(() => {
+    const commonCondition = !props.hasPerm || allExistConfigCount.value === 0 || props.permCheckLoading;
     if (appData.value.spec.config_type === 'file') {
-      return conflictFileCount.value > 0;
+      return conflictFileCount.value > 0 || commonCondition;
     }
-    if (appData.value.spec.config_type === 'kv') {
-      return hasExpiredCert.value;
-    }
-    return !props.hasPerm || allExistConfigCount.value === 0 || props.permCheckLoading;
+    return hasExpiredCert.value || commonCondition;
   });
 
   const handleBtnClick = () => {

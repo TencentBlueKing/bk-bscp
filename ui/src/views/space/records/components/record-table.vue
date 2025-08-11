@@ -54,7 +54,7 @@
           </bk-table-column>
           <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
-              <user-name v-if="row.audit" :name="row.audit.spec.operator"/>
+              <user-name v-if="row.audit" :name="row.audit.spec.operator" />
             </template>
           </bk-table-column>
           <bk-table-column :label="t('操作途径')" :width="locale === 'zh-cn' ? '90' : '150'">
@@ -133,17 +133,30 @@
                   </template>
                 </bk-popover>
                 <!-- 信息提示icon：已上线/已撤销/失败样式 -->
-                <info-line
-                  v-if="
-                    [APPROVE_STATUS.already_publish, APPROVE_STATUS.revoked_publish, APPROVE_STATUS.failure].includes(
-                      row.audit.spec.status,
-                    )
-                  "
-                  v-bk-tooltips="{
-                    content: statusTip(row),
-                    placement: 'top',
-                  }"
-                  class="info-line" />
+                <bk-popover placement="top" theme="dark">
+                  <info-line
+                    v-if="
+                      [APPROVE_STATUS.already_publish, APPROVE_STATUS.revoked_publish, APPROVE_STATUS.failure].includes(
+                        row.audit.spec.status,
+                      )
+                    "
+                    class="info-line" />
+                  <template #content>
+                    <template v-if="row.audit.spec.status === APPROVE_STATUS.already_publish">
+                      {{ $t('上线操作人: ') }}<user-name :name="row.strategy.reviser" /><br />
+                      {{ $t('上线时间: {n}', { n: convertTime(row.strategy.final_approval_time, 'local') }) }}<br />
+                      {{ $t('上线说明: {n}', { n: row.strategy.memo || '--' }) }}
+                    </template>
+                    <template v-else-if="row.audit.spec.status === APPROVE_STATUS.revoked_publish">
+                      {{ $t('撤销人: ') }}<user-name :name="row.strategy.reviser" /><br />
+                      {{ $t('撤销时间: {n}', { n: convertTime(row.strategy.final_approval_time, 'local') }) }}<br />
+                      {{ $t('撤销说明: {n}', { n: row.strategy.reject_reason || '--' }) }}
+                    </template>
+                    <template v-else-if="row.audit.spec.status === APPROVE_STATUS.failure">
+                      {{ row.audit.spec.detail }}
+                    </template>
+                  </template>
+                </bk-popover>
               </template>
               <template v-else>--</template>
             </template>
@@ -489,40 +502,6 @@
     }
 
     return resultList.join('<br />');
-  };
-
-  // 状态提示信息
-  const statusTip = (row: IRowData) => {
-    if (!row) {
-      return '--';
-    }
-    const { status, detail } = row.audit.spec;
-    // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
-    const {
-      final_approval_time: time,
-      reviser,
-      reject_reason: reason,
-      memo,
-      final_approval_time: publish_time,
-    } = row.strategy;
-    switch (status) {
-      // case APPROVE_STATUS.pending_approval:
-      //   return t('提示-待审批', { approver_progress, approveType });
-      case APPROVE_STATUS.already_publish:
-        return t('提示-已上线文案', { time: convertTime(publish_time, 'local'), reviser, memo: memo || '--' });
-      // case APPROVE_STATUS.rejected_approval:
-      //   return t('提示-审批驳回', {
-      //     reviser,
-      //     time: convertTime(time, 'local'),
-      //     reason,
-      //   });
-      case APPROVE_STATUS.revoked_publish:
-        return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
-      case APPROVE_STATUS.failure:
-        return detail;
-      default:
-        return '--';
-    }
   };
 
   // 复制审批链接

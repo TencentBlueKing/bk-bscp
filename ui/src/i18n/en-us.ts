@@ -538,11 +538,13 @@ export default {
   删除服务: 'Delete service',
   上线版本配置: 'Publish',
   '提示-待审批': 'Approver({approveType})：{approver}',
-  '提示-已上线文案': `Publish operator:{reviser}
-                      Publish time:{time}
-                      Publish reason:{memo}`,
+  '上线操作人: ': 'Publisher: ',
+  '上线时间: {n}': 'Publish time: {n}',
+  '上线说明: {n}': 'Publish memo: {n}',
   '提示-审批驳回': 'Approval has been rejected\nApprover: {reviser}\nPublish time: {time}\nRejection reason: {reason}',
-  '提示-已撤销': 'Canceler: {reviser}\nCancellation time: {time}\nCancellation reason: {reason}',
+  '撤销人: ': 'Canceler: ',
+  '撤销时间: {n}': 'Cancellation time: {n}',
+  '撤销说明: {n}': 'Cancellation reason: {n}',
   '提示-失败': 'This script version is currently being used by the service, deletion failed',
   配置版本名称: 'Configuration version name',
   配置上线范围: 'Configuration publish scope',

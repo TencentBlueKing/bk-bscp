@@ -44,6 +44,7 @@
           :row-class="getRowCls"
           :remote-pagination="true"
           :pagination="pagination"
+          show-overflow-tooltip
           @page-limit-change="handlePageLimitChange"
           @page-value-change="refreshListWithLoading"
           @column-filter="handleFilter">
@@ -146,7 +147,7 @@
               <span v-else>--</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新人')" width="88" prop="revision.reviser">
+          <bk-table-column :label="t('更新人')" width="140" prop="revision.reviser">
             <template #default="{ row }">
               <user-name v-if="row.revision" :name="row.revision.reviser"/>
             </template>

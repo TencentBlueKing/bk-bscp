@@ -8,14 +8,17 @@ const routes = [
     name: 'home',
     redirect: () => {
       // 访问首页，默认跳到服务管理列表页
-      // 优先取localstorage里存的上次访问的空间id
+      // 优先取localstorage里存的上次访问的空间id 判断空间是否存在 是否有权限
       // 不存在时取空间列表中第一个有权限的空间
       // 仍不存在时取空间列表中第一个空间
       let spaceId = localStorage.getItem('lastAccessedSpace');
-      if (!spaceId) {
-        const { spaceList } = useGlobalStore();
-        const firstHasPermSpace = spaceList.find((item: ISpaceDetail) => item.permission);
-        spaceId = firstHasPermSpace ? firstHasPermSpace.space_id : spaceList[0]?.space_id;
+      const { spaceList } = useGlobalStore();
+      if (spaceId) {
+        const hasPermSpace = spaceList.find((item: ISpaceDetail) => item.space_id === spaceId && item.permission);
+        if (!hasPermSpace) {
+          const firstHasPermSpace = spaceList.find((item: ISpaceDetail) => item.permission);
+          spaceId = firstHasPermSpace ? firstHasPermSpace.space_id : spaceList[0]?.space_id;
+        }
       }
       return { name: 'service-all', params: { spaceId } };
     },
