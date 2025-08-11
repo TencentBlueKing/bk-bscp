@@ -5,8 +5,9 @@
       :max-height="tableMaxHeight"
       show-footer-overflow
       show-overflow="tooltip"
+      resizable
       :loading="props.loading">
-      <vxe-column :title="$t('服务别名')" fixed="left" width="170">
+      <vxe-column :title="$t('服务别名')" fixed="left" width="200">
         <template #default="{ row }">
           <bk-button
             :disabled="!row.permissions.view"
@@ -18,7 +19,7 @@
           </bk-button>
         </template>
       </vxe-column>
-      <vxe-column field="spec.name" :title="$t('服务名称')" width="160" />
+      <vxe-column field="spec.name" :title="$t('服务名称')" width="200" />
       <vxe-column :title="$t('服务描述')" min-width="160">
         <template #default="{ row }">
           <span>{{ row.spec.memo || '--' }}</span>
