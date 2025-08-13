@@ -131,7 +131,7 @@
     if (!item) return searchData.value;
     if (item.async && keyword && spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE) {
       const res = await getUserList(keyword);
-      return res.data.map((user: ITenantUser) => {
+      return res.map((user: ITenantUser) => {
         return {
           id: user.bk_username,
           name: user.display_name,

@@ -57,7 +57,7 @@
         ref="searchSelectorRef"
         class="config-search-input"
         :search-filed="searchFiled"
-        :user-filed="['reviser']"
+        :user-filed="['creator', 'reviser']"
         :placeholder="searchPlaceholder"
         @search="searchQuery = $event" />
     </div>
