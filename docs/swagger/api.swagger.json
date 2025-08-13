@@ -272,15 +272,15 @@
             "format": "int64"
           },
           {
-            "name": "operator",
-            "description": "操作人",
+            "name": "search",
+            "description": "搜索条件",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "name",
-            "description": "服务名称",
+            "name": "operator",
+            "description": "操作人",
             "in": "query",
             "required": false,
             "type": "string"
@@ -335,26 +335,40 @@
             "format": "int64"
           },
           {
-            "name": "operator",
-            "description": "操作人",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "description": "服务名称",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
             "name": "all",
             "description": "是否获取所有",
             "in": "query",
             "required": false,
             "type": "boolean",
             "default": "false"
+          },
+          {
+            "name": "topIds",
+            "description": "需要置顶ID",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "configType",
+            "description": "服务类型：文件型=file, 键值型=kv",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "search",
+            "description": "搜索条件",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "operator",
+            "description": "操作人",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -1258,6 +1272,47 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/published/all": {
+      "get": {
+        "summary": "列出所有已发布的配置项",
+        "operationId": "Config_ListAllReleasedConfigItems",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAllReleasedConfigItemsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/config_hooks": {
       "put": {
         "summary": "引用前后置脚本",
@@ -1309,7 +1364,7 @@
     },
     "/api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId}": {
       "post": {
-        "summary": "生成配置服务版本",
+        "summary": "生成版本",
         "operationId": "Config_CreateRelease",
         "responses": {
           "200": {
@@ -2242,7 +2297,7 @@
         ]
       },
       "delete": {
-        "summary": "删除骄傲本版本",
+        "summary": "删除脚本版本",
         "operationId": "Config_DeleteHookRevision",
         "responses": {
           "200": {
@@ -4184,6 +4239,52 @@
             "schema": {
               "$ref": "#/definitions/ConfigUpdateTemplateSetBody"
             }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/latest_template_versions": {
+      "get": {
+        "summary": "获取模板空间下最新的模板版本列表",
+        "operationId": "Config_GetLatestTemplateVersionsInSpace",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetLatestTemplateVersionsInSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -6877,9 +6978,49 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/groups/selector/{labelName}": {
+      "get": {
+        "summary": "分组选择器",
+        "operationId": "Config_ListGroupSelector",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListGroupSelectorResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "labelName",
+            "description": "标签名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
       "post": {
-        "summary": "发布服务版本",
+        "summary": "发布指定版本",
         "operationId": "Config_Publish",
         "responses": {
           "200": {
@@ -6936,7 +7077,7 @@
     },
     "/api/v1/config/biz/{bizId}/apps/{appId}/publish": {
       "post": {
-        "summary": "生成新的服务版本并发布",
+        "summary": "生成版本并发布",
         "operationId": "Config_GenerateReleaseAndPublish",
         "responses": {
           "200": {
@@ -7259,10 +7400,11 @@
             "type": "string"
           },
           {
-            "name": "operate",
+            "name": "id",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           },
           {
             "name": "operateWay",
@@ -7325,13 +7467,6 @@
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "id",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int64"
           }
         ],
         "tags": [
@@ -8236,15 +8371,15 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/expired_certificate": {
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/near_certificate": {
       "get": {
-        "summary": "获取键值配置项证书过期列表",
-        "operationId": "Config_ListExpiredCertificateKvs",
+        "summary": "查找临近到期证书",
+        "operationId": "Config_FindNearExpiryCertKvs",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbcsListExpiredCertificateKvsResp"
+              "$ref": "#/definitions/pbcsFindNearExpiryCertKvsResp"
             }
           },
           "default": {
@@ -8268,6 +8403,38 @@
             "description": "服务ID",
             "in": "path",
             "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": "false"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "days",
+            "description": "单位天，获取在指定天数内即将过期的证书",
+            "in": "query",
+            "required": false,
             "type": "integer",
             "format": "int64"
           }
@@ -10526,8 +10693,7 @@
         "groups": {
           "type": "array",
           "items": {
-            "type": "string",
-            "default": "[]"
+            "type": "string"
           },
           "description": "分组上线：分组ID，如果有值那么all必须是false"
         },
@@ -11053,8 +11219,7 @@
           "type": "array",
           "items": {
             "type": "integer",
-            "format": "int64",
-            "default": "[]"
+            "format": "int64"
           },
           "description": "分组上线：分组ID，如果有值那么all必须是false"
         },
@@ -14175,6 +14340,23 @@
         }
       }
     },
+    "pbcsFindNearExpiryCertKvsResp": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbkvKv"
+          }
+        },
+        "count": {
+          "type": "string",
+          "format": "int64",
+          "description": "总数"
+        }
+      }
+    },
     "pbcsGetAllBizsOfTmplSpacesResp": {
       "type": "object",
       "properties": {
@@ -14289,6 +14471,36 @@
         },
         "isApprove": {
           "type": "boolean"
+        }
+      }
+    },
+    "pbcsGetLatestTemplateVersionsInSpaceResp": {
+      "type": "object",
+      "properties": {
+        "templateSpace": {
+          "$ref": "#/definitions/pbtsTemplateSpaceSpec"
+        },
+        "templateSet": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsGetLatestTemplateVersionsInSpaceRespTemplateSetSpec"
+          }
+        }
+      }
+    },
+    "pbcsGetLatestTemplateVersionsInSpaceRespTemplateSetSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "templateRevision": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtrTemplateRevisionSpec"
+          }
         }
       }
     },
@@ -14531,6 +14743,31 @@
         }
       }
     },
+    "pbcsListAllReleasedConfigItemsResp": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsListAllReleasedConfigItemsRespItem"
+          }
+        }
+      }
+    },
+    "pbcsListAllReleasedConfigItemsRespItem": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "配置项名称"
+        },
+        "sign": {
+          "type": "string",
+          "description": "文件sha256"
+        }
+      }
+    },
     "pbcsListAppBoundTmplRevisionsResp": {
       "type": "object",
       "properties": {
@@ -14610,6 +14847,16 @@
             "type": "object",
             "$ref": "#/definitions/pbappApp"
           }
+        },
+        "kvAppsCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "键值型服务总数"
+        },
+        "fileAppsCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "文件型服务总数"
         }
       }
     },
@@ -14829,18 +15076,6 @@
         }
       }
     },
-    "pbcsListExpiredCertificateKvsResp": {
-      "type": "object",
-      "properties": {
-        "details": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/pbkvKv"
-          }
-        }
-      }
-    },
     "pbcsListGroupReleasedAppsResp": {
       "type": "object",
       "properties": {
@@ -14854,6 +15089,17 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/ListGroupReleasedAppsRespListGroupReleasedAppsData"
+          }
+        }
+      }
+    },
+    "pbcsListGroupSelectorResp": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }

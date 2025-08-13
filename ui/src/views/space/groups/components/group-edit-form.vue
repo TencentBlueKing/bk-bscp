@@ -43,17 +43,16 @@
           ref="tagSelectorRef"
           :rule="rule"
           :length="index"
-          :bk-biz-id="route.params.spaceId as string"
+          :bk-biz-id="(route.params.spaceId as string)"
           @change="handleRuleChange(index, $event)"
           @add="handleAddRule(index)"
           @delete="handleDeleteRule(index)" />
       </div>
-      <!-- <div v-if="!rulesValid" class="bk-form-error">{{ t('分组规则表单不能为空') }}</div> -->
     </bk-form-item>
   </bk-form>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
   import { cloneDeep } from 'lodash';
@@ -108,13 +107,6 @@
       },
     ],
   };
-
-  watch(
-    () => props.group,
-    (val) => {
-      formData.value = cloneDeep(val);
-    },
-  );
 
   onMounted(() => {
     getServiceList();

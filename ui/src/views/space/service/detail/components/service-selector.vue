@@ -216,10 +216,13 @@
   }
 
   .service-option-item {
+    flex: 1;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    padding: 0 12px 0 28px;
     &.no-perm {
-      background-color: #fafafa !important;
       color: #cccccc !important;
     }
     .name-text {
@@ -257,7 +260,7 @@
 <style lang="scss">
   .service-selector-popover {
     .bk-select-option {
-      padding-left: 28px !important;
+      padding: 0px !important;
       height: 48px !important;
       &:nth-child(odd) {
         background-color: #fafbfd;

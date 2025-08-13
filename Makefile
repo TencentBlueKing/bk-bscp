@@ -14,6 +14,8 @@ DEBUG     = $(shell echo ${ENV_BK_BSCP_ENABLE_DEBUG})
 PREFIX   ?= $(shell pwd)
 GOBIN     = ${PREFIX}/bin/proto
 PATH     := ${PREFIX}/bin/proto:${PATH}
+swag      = ${PREFIX}/bin/swag
+swagger   = ${PREFIX}/bin/swagger
 # protoc v4.22.0
 export PROTOC_VERSION=25.1
 GOBUILD=CGO_ENABLED=0 go build -trimpath
@@ -51,7 +53,8 @@ init:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
-	go install github.com/ifooth/grpc-gateway/v2/protoc-gen-openapiv2@v2.20.0-r2
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.1
+
 	@echo Download gotext
 	go install golang.org/x/text/cmd/gotext@v0.20.0
 
@@ -89,7 +92,6 @@ pb:
 	@cd pkg/protocol && make clean && make
 	@echo -e "\e[34;1mMake Protocol Done\n\033[0m"
 
-docs: api_docs bkapigw_docs
 
 api_docs:
 	@mkdir -p ${PREFIX}/docs/swagger
@@ -99,7 +101,7 @@ api_docs:
 	--openapiv2_opt preserve_rpc_order=true \
 	--openapiv2_opt merge_file_name=api \
 	--openapiv2_opt output_format=json \
-	--openapiv2_opt include_without_visibility=true \
+	--openapiv2_opt visibility_restriction_selectors=INTERNAL \
 	--openapiv2_opt visibility_restriction_selectors=BKAPIGW \
 	--openapiv2_opt use_go_templates=true pkg/protocol/config-server/*.proto
 
@@ -111,7 +113,6 @@ bkapigw_docs:
 	--openapiv2_opt preserve_rpc_order=true \
 	--openapiv2_opt merge_file_name=bkapigw \
 	--openapiv2_opt output_format=json \
-	--openapiv2_opt include_without_visibility=false \
 	--openapiv2_opt visibility_restriction_selectors=BKAPIGW \
 	--openapiv2_opt use_go_templates=true pkg/protocol/config-server/*.proto
 
@@ -127,16 +128,10 @@ test: pre
 	@cd test/suite && make && cp -rf suite-test ${OUTPUT_DIR}/ && rm -rf suite-test
 	@cd test/benchmark && make && cp -rf bench-test ${OUTPUT_DIR}/ && rm -rf bench-test
 
-unit-test: pre
-	@echo -e "\e[34;1mExec Unit Test...\033[0m"
-	@mkdir -p ${OUTPUT_DIR}/unit-test
-	@cd cmd/sidecar/scheduler && go test -o ${OUTPUT_DIR}/unit-test/scheduler.test -c
-	@echo -e "\e[34;1mExec Unit Test Success\n\033[0m"
-
 mock: pre
 	@cd ${PRO_DIR}/test/mock/repo && make
 
-all: pre validate pb install test unit-test api mock build_bscp
+all: pre validate pb install test api mock build_bscp
 	@echo -e "\e[34;1mBuild All Success!\n\033[0m"
 
 server: validate api
@@ -148,13 +143,6 @@ server: validate api
 	@mkdir -p ${OUTPUT_DIR}/etc
 	@cd ${PRO_DIR}/cmd && make server
 	@echo -e "\e[34;1mMake Server All Success!\n\033[0m"
-
-sidecar: pre validate
-	@echo -e "\e[34;1mMaking Sidecar...\n\033[0m"
-	@echo "version: ${VERSION}" > ${OUTPUT_DIR}/VERSION
-	@cp -rf ${PRO_DIR}/sidecar-CHANGELOG.md ${OUTPUT_DIR}
-	@cd ${PRO_DIR}/cmd/sidecar && make
-	@echo -e "\e[34;1mMake Sidecar Success!\n\033[0m"
 
 validate:
 	@if [ "$(VERSION)" != "" ];then \
@@ -169,13 +157,6 @@ clean:
 	@cd ${PRO_DIR}/cmd && make clean
 	@rm -rf ${PRO_DIR}/build
 
-
-.PHONY: openapi
-openapi:
-	@swag init --outputTypes go,json -g pkg/web/web.go --exclude ./
-	@swag fmt -g pkg/web/web.go --exclude ./
-
-
 .PHONY: build_bscp
 build_bscp:
 	@cd ${PRO_DIR}/cmd && make all
@@ -184,12 +165,18 @@ build_bscp:
 build_feed:
 	@cd ${PRO_DIR}/cmd && make feed
 
+.PHONY: build_vault
+build_vault:
+	@cd ${PRO_DIR}/cmd && make vault
+
 .PHONY: build_frontend
 build_frontend:
+	@echo "tips: ensure you have installed node and npm"
 	cd ui; npm install --legacy-peer-deps; npm run build
 
 .PHONY: build_ui
-build_ui:
+build_ui: 
+	@echo -e "\e[34;1mTips: ensure you have execute 'make build_frontend' first\033[0m"
 	${GOBUILD} -ldflags ${LDVersionFLAG} -o bscp-ui ./cmd/ui
 
 .PHONY: docker
@@ -200,3 +187,28 @@ docker:
 i18n:
 	@go generate ./internal/i18n/translations/translations.go
 	@cp ./internal/i18n/translations/locales/zh/out.gotext.json ./internal/i18n/translations/locales/zh/messages.gotext.json
+
+
+${swag}:
+	@echo ">> downloading swag"
+	@mkdir -p ${PREFIX}/bin
+	@wget -q -O ${swag} https://github.com/ifooth/swag/releases/download/v1.16.4-r1/swag && chmod a+x ${swag}
+
+${swagger}:
+	@echo ">> downloading swagger"
+	@mkdir -p ${PREFIX}/bin
+	@wget -q -O ${swagger} https://github.com/ifooth/go-swagger/releases/download/v0.31.0-r1/swagger && chmod a+x ${swagger}
+
+.PHONY: markdown_docs
+markdown_docs: ${swag} ${swagger}
+	${swag} fmt -d ./cmd
+	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
+	# 修正bkapigw的swagger.json 的default值()
+	sed -i 's/"default": "false"/"default": false/g' ./docs/swagger/bkapigw.swagger.json
+	${swagger} validate ./docs/swagger/bkapigw.swagger.json
+	# 合并bkapigw和apiserver的swagger.json
+	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json
+	${swagger} generate markdown  --output=bkapigw_swagger.md -T ./docs/swagger -f ./docs/swagger/bkapigw/swagger.json -t ./docs/swagger/bkapigw
+
+.PHONY: docs
+docs: api_docs bkapigw_docs markdown_docs

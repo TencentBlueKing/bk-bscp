@@ -150,7 +150,7 @@
       placeholder: t('请输入密码'),
     },
     {
-      label: t('证书'),
+      label: t('证书和私钥'),
       value: 'certificate',
       infoList: [],
     },
@@ -312,23 +312,56 @@
       selectTypeContent.value!.infoList = [];
       return;
     }
-    // 分割PEM文件中的多个证书
-    const certPems = pem
-      .split(/-----END CERTIFICATE-----\s*/)
-      .filter((part) => part.trim().length > 0)
-      .map((part) => `${part}-----END CERTIFICATE-----`);
 
     const results: Array<{ status: string; text: string }> = [];
     let hasError = false;
     let hasWarning = false;
 
-    // 使用forEach遍历证书链
+    // 检测输入类型（证书或 RSA 私钥）
+    const isCertificate = pem.includes('-----BEGIN CERTIFICATE-----');
+    const isRsaPrivateKey = pem.includes('-----BEGIN RSA PRIVATE KEY-----');
+
+    // 如果是 RSA 私钥（PKCS#1 格式）
+    if (isRsaPrivateKey) {
+      try {
+        const pemCleaned = pem.replace(/-----(BEGIN|END) RSA PRIVATE KEY-----/g, '').replace(/[\r\n\t\s]/g, '');
+
+        const der = forge.util.decode64(pemCleaned);
+        forge.pki.privateKeyFromAsn1(forge.asn1.fromDer(der));
+
+        results.push({
+          status: 'normal',
+        });
+      } catch (e) {
+        results.push({
+          status: 'error',
+          text: t('RSA 私钥格式无效'),
+        });
+      }
+      selectTypeContent.value!.infoList = results;
+      return;
+    }
+
+    // 如果不是证书格式，直接报错
+    if (!isCertificate) {
+      selectTypeContent.value!.infoList = [
+        {
+          status: 'error',
+          text: t('输入格式不支持，请上传 X.509 证书或 RSA 私钥'),
+        },
+      ];
+      return;
+    }
+
+    // 以下是证书校验逻辑
+    const certPems = pem
+      .split(/-----END CERTIFICATE-----\s*/)
+      .filter((part) => part.trim().length > 0)
+      .map((part) => `${part}-----END CERTIFICATE-----`);
+
     certPems.forEach((certPem) => {
       try {
-        // 清理PEM格式
-        const pemCleaned = certPem
-          .replace(/-----(BEGIN|END) CERTIFICATE-----/g, '')
-          .replace(/[\r\n\t\s]/g, '');
+        const pemCleaned = certPem.replace(/-----(BEGIN|END) CERTIFICATE-----/g, '').replace(/[\r\n\t\s]/g, '');
 
         const der = forge.util.decode64(pemCleaned);
         const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(der));
@@ -353,15 +386,14 @@
         } else {
           results.push({
             status: 'normal',
-            text: '',
+            text: t('此证书将于 {n} 到期，距离到期仅剩 {m} 天', { n: datetimeFormat(notAfter), m: remainingDays }),
           });
         }
       } catch (e) {
-        console.error(e);
         hasError = true;
         results.push({
           status: 'error',
-          text: t('证书格式不正确（只支持 X.509 类型证书）'),
+          text: t('证书解析失败：格式错误'),
         });
       }
     });
@@ -372,7 +404,8 @@
     } else if (hasWarning) {
       selectTypeContent.value!.infoList = results.filter((r) => r.status === 'warn');
     } else {
-      selectTypeContent.value!.infoList = [results[0]]; // 默认显示第一个证书
+      // 默认显示第一个结果（如果没有错误或警告）
+      selectTypeContent.value!.infoList = [results[0]];
     }
   };
 

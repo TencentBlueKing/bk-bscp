@@ -173,12 +173,19 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbds.DeleteAppReq) (*pbbas
 
 	tx := s.dao.GenQuery().Begin()
 
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+			}
+		}
+	}()
+
 	// 1. delete app related resources
 	if err := s.deleteAppRelatedResources(grpcKit, req, tx); err != nil {
 		logs.Errorf("delete app related resources failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(grpcKit, "delete app related resources failed, err: %v", err))
 	}
@@ -186,9 +193,6 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbds.DeleteAppReq) (*pbbas
 	// 2. delete app
 	if err := s.dao.App().DeleteWithTx(grpcKit, tx, app); err != nil {
 		logs.Errorf("delete app failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(grpcKit, "delete app failed, err: %v", err))
 	}
@@ -198,6 +202,7 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbds.DeleteAppReq) (*pbbas
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(grpcKit, "delete app failed, err: %v", err))
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }

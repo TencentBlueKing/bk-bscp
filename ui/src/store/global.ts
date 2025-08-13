@@ -16,6 +16,7 @@ export default defineStore('global', () => {
   const showPermApplyPage = ref(false); // 无业务查看权限时，申请页面
   const applyPermUrl = ref(''); // 跳转到权限中心的申请链接
   const applyPermResource = ref<IPermissionResource[]>([]); // 无权限提示页的action
+  const loginOriginUrl = ref(''); // 登录页的origin url
   const permissionQuery = ref<{ resources: IPermissionQueryResourceItem[] }>({
     resources: [],
   });
@@ -75,5 +76,6 @@ export default defineStore('global', () => {
     permissionQuery,
     appGlobalConfig,
     getAppGlobalConfig,
+    loginOriginUrl,
   };
 });

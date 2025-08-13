@@ -261,7 +261,7 @@ type ConfigClient interface {
 	ListAllReleasedConfigItems(ctx context.Context, in *ListAllReleasedConfigItemsReq, opts ...grpc.CallOption) (*ListAllReleasedConfigItemsResp, error)
 	// 引用前后置脚本
 	UpdateConfigHook(ctx context.Context, in *UpdateConfigHookReq, opts ...grpc.CallOption) (*UpdateConfigHookResp, error)
-	// 生成配置服务版本
+	// 生成版本
 	CreateRelease(ctx context.Context, in *CreateReleaseReq, opts ...grpc.CallOption) (*CreateReleaseResp, error)
 	// 获取服务版本列表
 	ListReleases(ctx context.Context, in *ListReleasesReq, opts ...grpc.CallOption) (*ListReleasesResp, error)
@@ -295,7 +295,7 @@ type ConfigClient interface {
 	CreateHookRevision(ctx context.Context, in *CreateHookRevisionReq, opts ...grpc.CallOption) (*CreateHookRevisionResp, error)
 	// 获取脚本版本列表
 	ListHookRevisions(ctx context.Context, in *ListHookRevisionsReq, opts ...grpc.CallOption) (*ListHookRevisionsResp, error)
-	// 删除骄傲本版本
+	// 删除脚本版本
 	DeleteHookRevision(ctx context.Context, in *DeleteHookRevisionReq, opts ...grpc.CallOption) (*DeleteHookRevisionResp, error)
 	// 上线脚本版本
 	PublishHookRevision(ctx context.Context, in *PublishHookRevisionReq, opts ...grpc.CallOption) (*PublishHookRevisionResp, error)
@@ -473,9 +473,9 @@ type ConfigClient interface {
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
 	// 分组选择器
 	ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error)
-	// 发布服务版本
+	// 发布指定版本
 	Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*PublishResp, error)
-	// 生成新的服务版本并发布
+	// 生成版本并发布
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
@@ -2226,7 +2226,7 @@ type ConfigServer interface {
 	ListAllReleasedConfigItems(context.Context, *ListAllReleasedConfigItemsReq) (*ListAllReleasedConfigItemsResp, error)
 	// 引用前后置脚本
 	UpdateConfigHook(context.Context, *UpdateConfigHookReq) (*UpdateConfigHookResp, error)
-	// 生成配置服务版本
+	// 生成版本
 	CreateRelease(context.Context, *CreateReleaseReq) (*CreateReleaseResp, error)
 	// 获取服务版本列表
 	ListReleases(context.Context, *ListReleasesReq) (*ListReleasesResp, error)
@@ -2260,7 +2260,7 @@ type ConfigServer interface {
 	CreateHookRevision(context.Context, *CreateHookRevisionReq) (*CreateHookRevisionResp, error)
 	// 获取脚本版本列表
 	ListHookRevisions(context.Context, *ListHookRevisionsReq) (*ListHookRevisionsResp, error)
-	// 删除骄傲本版本
+	// 删除脚本版本
 	DeleteHookRevision(context.Context, *DeleteHookRevisionReq) (*DeleteHookRevisionResp, error)
 	// 上线脚本版本
 	PublishHookRevision(context.Context, *PublishHookRevisionReq) (*PublishHookRevisionResp, error)
@@ -2438,9 +2438,9 @@ type ConfigServer interface {
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
 	// 分组选择器
 	ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error)
-	// 发布服务版本
+	// 发布指定版本
 	Publish(context.Context, *PublishReq) (*PublishResp, error)
-	// 生成新的服务版本并发布
+	// 生成版本并发布
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)

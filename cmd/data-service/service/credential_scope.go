@@ -64,6 +64,14 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 	}
 
 	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
 
 	for _, updated := range req.Updated {
 		credScope, err := credential.New(updated.App, updated.Scope)
@@ -87,18 +95,12 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		}
 		if err := s.dao.CredentialScope().UpdateWithTx(kt, tx, credentialScope); err != nil {
 			logs.Errorf("update credential scope failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
 	for _, deleted := range req.Deleted {
 		if err := s.dao.CredentialScope().DeleteWithTx(kt, tx, req.BizId, deleted); err != nil {
 			logs.Errorf("delete credential scope failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
@@ -125,18 +127,12 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		}
 		if _, err := s.dao.CredentialScope().CreateWithTx(kt, tx, credentialScope); err != nil {
 			logs.Errorf("create credential scope failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
 
 	if err := s.dao.Credential().UpdateRevisionWithTx(kt, tx, req.BizId, req.CredentialId); err != nil {
 		logs.Errorf("update credential revision failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -145,9 +141,6 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		Status:           enumor.Success,
 	}).PrepareUpdate(&table.Credential{ID: req.CredentialId})
 	if err := ad.Do(tx.Query); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -155,6 +148,7 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 	resp := &pbds.UpdateCredentialScopesResp{}
 	return resp, nil
 }

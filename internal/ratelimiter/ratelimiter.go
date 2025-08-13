@@ -16,6 +16,7 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -97,12 +98,12 @@ func NewGlobalRL(limit, burst uint) *globalRL {
 type bizRLs struct {
 	mutex       sync.Mutex
 	defaultConf cc.BasicRL
-	bizLimiters map[uint]*baseRL
+	bizLimiters map[string]*baseRL
 }
 
 // NewBizRLs news rate limiters for biz
 func NewBizRLs(b cc.BizRLs) *bizRLs {
-	bizLimiters := make(map[uint]*baseRL)
+	bizLimiters := make(map[string]*baseRL)
 	for bizID, rl := range b.Spec {
 		bizLimiters[bizID] = newBaseRL(rl.Limit, rl.Burst)
 	}
@@ -114,13 +115,15 @@ func NewBizRLs(b cc.BizRLs) *bizRLs {
 
 // getLimiter get rate limiter for specific biz
 func (b *bizRLs) getLimiter(bizID uint) *baseRL {
+	biz := strconv.FormatUint(uint64(bizID), 10)
+
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	if limiter, exists := b.bizLimiters[bizID]; exists {
+	if limiter, exists := b.bizLimiters[biz]; exists {
 		return limiter
 	}
 	defaultLimiter := newBaseRL(b.defaultConf.Limit, b.defaultConf.Burst)
-	b.bizLimiters[bizID] = defaultLimiter
+	b.bizLimiters[biz] = defaultLimiter
 	return defaultLimiter
 }
 

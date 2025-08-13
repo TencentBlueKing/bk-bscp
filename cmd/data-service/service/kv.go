@@ -340,52 +340,62 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "list kv failed, err: %v", err))
 	}
 
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
 			}
 		}
 	}()
+
 	// 2. 检测服务配置项类型（相同的key类型是否一致）
 	if err = s.checkKVConfigItemTypes(kt, req, kvs); err != nil {
+		logs.Errorf("check KV config item types failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 3. 清空草稿区域
 	if err = s.clearDraftKVStore(kt, tx, req, kvs); err != nil {
+		logs.Errorf("clear draft KV store failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 4. 在vault中执行更新
 	versionMap, err := s.doBatchUpsertVault(kt, req)
 	if err != nil {
+		logs.Errorf("batch upsert vault failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errors.New(i18n.T(kt, "batch import of KV config failed, err: %v", err))
 	}
 
 	// 5. 处理需要编辑和创建的数据
 	toUpdate, toCreate, err := s.checkKvs(kt, tx, req, versionMap, kvStateArr)
 	if err != nil {
+		logs.Errorf("check kvs failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 检测kv配置项是否超出服务限制
 	err = s.checkKVConfigItemExceedsAppLimit(kt, req.BizId, req.AppId, int64(len(toCreate)), int64(len(toUpdate)))
 	if err != nil {
+		logs.Errorf("check KV config item exceeds app limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// 5. 创建或更新kv等操作
 	if len(toCreate) > 0 {
 		if err = s.dao.Kv().BatchCreateWithTx(kt, tx, toCreate); err != nil {
+			logs.Errorf("batch create kv failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", err))
 		}
 	}
 
 	if len(toUpdate) > 0 {
 		if err = s.dao.Kv().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
+			logs.Errorf("batch update kv failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", err))
 		}
 	}
@@ -402,6 +412,7 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		AppId:  req.AppId,
 	}).PrepareCreate(&table.Kv{})
 	if err := ad.Do(tx.Query); err != nil {
+		logs.Errorf("audit create kv failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -409,7 +420,7 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch import of KV config failed, err: %v", e))
 	}
-	isRollback = false
+	committed = true
 
 	createIds, updateIds := []uint32{}, []uint32{}
 	for _, item := range toCreate {
@@ -621,35 +632,40 @@ func (s *Service) UnDeleteKv(ctx context.Context, req *pbds.UnDeleteKvReq) (*pbb
 	}
 
 	tx := s.dao.GenQuery().Begin()
-	if addKv != nil && addKv.ID > 0 {
-		if e := s.dao.Kv().DeleteWithTx(kt, tx, addKv); e != nil {
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
 			}
+		}
+	}()
+
+	if addKv != nil && addKv.ID > 0 {
+		if e := s.dao.Kv().DeleteWithTx(kt, tx, addKv); e != nil {
 			logs.Errorf("delete kv (%s) failed, err: %v, rid: %s", req.GetKey(), e, kt.Rid)
+			return nil, e
 		}
 	}
 
 	toUpdate, err := s.getLatestReleasedKV(kt, req.GetBizId(), req.GetAppId(), kv)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("get latest released kv failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	if err = s.dao.Kv().UpdateWithTx(kt, tx, toUpdate); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		logs.Errorf("undelete kv (%s) failed, err: %v, rid: %s", req.GetKey(), err, kt.Rid)
-
+		return nil, err
 	}
 
 	if e := tx.Commit(); e != nil {
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 

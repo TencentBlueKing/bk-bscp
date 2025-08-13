@@ -34,8 +34,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
+	"github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
@@ -350,12 +354,91 @@ func dummyVerified(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// IAMVerified IAM 回调鉴权
-func IAMVerified(next http.Handler) http.Handler {
-	return dummyVerified(next)
-}
-
 // BKRepoVerified bk_repo 回调鉴权
 func BKRepoVerified(next http.Handler) http.Handler {
 	return dummyVerified(next)
+}
+
+// IAMVerify IAM 回调鉴权
+func (a *authorizer) IAMVerify(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		k := &kit.Kit{
+			Ctx: r.Context(),
+		}
+
+		if err := a.iamRequestFilter(w, r, k); err != nil {
+			render.Render(w, r, rest.BadRequest(errors.Wrap(errf.ErrPermissionDenied, "authorized failed")))
+			return
+		}
+
+		ctx := kit.WithKit(r.Context(), k)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func (a *authorizer) iamRequestFilter(w http.ResponseWriter, req *http.Request, kit *kit.Kit) error {
+	isAuthorized, err := a.checkRequestAuthorization(req)
+	if err != nil {
+		return errf.New(http.StatusInternalServerError, err.Error())
+	}
+	if !isAuthorized {
+		return errf.New(types.UnauthorizedErrorCode, "authorized failed")
+	}
+
+	rid := getRid(req.Header)
+	req.Header.Set(constant.RidKey, rid)
+
+	// set rid to response header, used to troubleshoot the problem.
+	w.Header().Set(client.RequestIDHeader, rid)
+
+	// use sys language as bscp language
+	req.Header.Set(constant.LanguageKey, req.Header.Get("Blueking-Language"))
+
+	user := req.Header.Get(constant.UserKey)
+	if len(user) == 0 {
+		req.Header.Set(constant.UserKey, "auth")
+	}
+
+	appCode := req.Header.Get(constant.AppCodeKey)
+	if len(appCode) == 0 {
+		req.Header.Set(constant.AppCodeKey, client.SystemIDIAM)
+	}
+
+	kit.AppCode = appCode
+	kit.Rid = rid
+	kit.User = user
+
+	return nil
+}
+
+// getRid get request id from header. if rid is empty, generate a rid to return.
+func getRid(h http.Header) string {
+	if rid := h.Get(client.RequestIDHeader); len(rid) != 0 {
+		return rid
+	}
+
+	if rid := h.Get(constant.RidKey); len(rid) != 0 {
+		return rid
+	}
+
+	return uuid.UUID()
+}
+
+func (a *authorizer) checkRequestAuthorization(req *http.Request) (bool, error) {
+	rid := req.Header.Get(client.RequestIDHeader)
+	name, pwd, ok := req.BasicAuth()
+	if !ok || name != client.SystemIDIAM {
+		logs.Errorf("request have no basic authorization, rid: %s", rid)
+		return false, nil
+	}
+
+	resp, err := a.authClient.IAMVerify(req.Context(), &pbas.IAMVerifyReq{Token: pwd})
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetIsAuthorized(), nil
 }

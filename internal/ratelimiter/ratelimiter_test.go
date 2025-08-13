@@ -33,12 +33,12 @@ var config = cc.RateLimiter{
 			Limit: 5,
 			Burst: 5,
 		},
-		Spec: map[uint]cc.BasicRL{
-			1: {
+		Spec: map[string]cc.BasicRL{
+			"1": {
 				Limit: 10,
 				Burst: 20,
 			},
-			2: {
+			"2": {
 				Limit: 10,
 				Burst: 10,
 			},

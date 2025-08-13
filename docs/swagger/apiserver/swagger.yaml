@@ -1,0 +1,144 @@
+definitions:
+  repository.ObjectMetadata:
+    properties:
+      byte_size:
+        type: integer
+      md5:
+        type: string
+      sha256:
+        type: string
+    type: object
+  rest.OKResponse:
+    properties:
+      data: {}
+    type: object
+info:
+  contact: {}
+  title: API Gateway Resources
+  version: "0.1"
+paths:
+  /api/v1/biz/{biz_id}/content/download:
+    get:
+      consumes:
+      - application/json
+      operationId: download_content
+      parameters:
+      - description: 业务ID
+        in: path
+        name: biz_id
+        required: true
+        type: integer
+      - description: 如果是应用配置项，则设置该应用ID
+        in: header
+        name: X-Bscp-App-Id
+        type: integer
+      - description: 如果是模版配置项，则设置该模版空间ID
+        in: header
+        name: X-Bscp-Template-Space-Id
+        type: integer
+      - description: 上传文件内容的SHA256值
+        in: header
+        name: X-Bkapi-File-Content-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.OKResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/repository.ObjectMetadata'
+              type: object
+      summary: 下载文件内容
+      tags:
+      - 配置项元数据管理
+  /api/v1/biz/{biz_id}/content/metadata:
+    get:
+      consumes:
+      - application/json
+      operationId: get_content_metadata
+      parameters:
+      - description: 业务ID
+        in: path
+        name: biz_id
+        required: true
+        type: integer
+      - description: 如果是应用配置项，则设置该应用ID
+        in: query
+        name: app-id
+        required: true
+        type: integer
+      - description: 上传文件内容的SHA256值
+        in: header
+        name: X-Bkapi-File-Content-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.OKResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/repository.ObjectMetadata'
+              type: object
+      summary: 获取文件内容元数据
+      tags:
+      - 配置项元数据管理
+  /api/v1/biz/{biz_id}/content/upload:
+    put:
+      consumes:
+      - text/plain
+      operationId: upload_content
+      parameters:
+      - description: 业务ID
+        in: path
+        name: biz_id
+        required: true
+        type: integer
+      - description: 如果是应用配置项，则设置该应用ID
+        in: header
+        name: X-Bscp-App-Id
+        type: integer
+      - description: 如果是模版配置项，则设置该模版空间ID
+        in: header
+        name: X-Bscp-Template-Space-Id
+        type: integer
+      - description: 上传文件内容的SHA256值
+        in: header
+        name: X-Bkapi-File-Content-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            allOf:
+            - $ref: '#/definitions/rest.OKResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/repository.ObjectMetadata'
+              type: object
+      summary: 上传文件内容
+      tags:
+      - 配置项元数据管理
+  /healthz:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Healthz 接口
+      tags:
+      - Healthz
+swagger: "2.0"

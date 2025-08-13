@@ -15,6 +15,7 @@ package service
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -58,6 +59,13 @@ func (p *proxy) HttpServerHandledTotal(serviceName, handler string) func(next ht
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			kt := kit.MustGetKit(r.Context())
+
+			var bizID string
+			bizID, _ = extractBizAndAppID(r)
+			if len(bizID) == 0 {
+				bizID = strconv.Itoa(int(kt.BizID))
+			}
+
 			var status string
 			if serviceName == "" {
 				serviceName = chi.RouteContext(r.Context()).RoutePattern()
@@ -67,7 +75,7 @@ func (p *proxy) HttpServerHandledTotal(serviceName, handler string) func(next ht
 			}
 			defer func() {
 				metrics.BSCPServerHandledTotal.
-					WithLabelValues(serviceName, handler, status, strconv.Itoa(int(kt.BizID)), kt.User).
+					WithLabelValues(serviceName, handler, status, bizID, kt.User).
 					Inc()
 			}()
 			next.ServeHTTP(w, r)
@@ -78,4 +86,25 @@ func (p *proxy) HttpServerHandledTotal(serviceName, handler string) func(next ht
 		}
 		return http.HandlerFunc(fn)
 	}
+}
+
+func extractBizAndAppID(r *http.Request) (bizID, appID string) {
+	// 优先使用 chi.URLParam
+	bizID = chi.URLParam(r, "biz_id")
+	appID = chi.URLParam(r, "app_id")
+
+	// 如果 URLParam 没取到，再从路径中尝试提取
+	if bizID == "" || appID == "" {
+		parts := strings.Split(r.URL.Path, "/")
+		for idx, v := range parts {
+			if bizID == "" && (v == "biz" || v == "biz_id") && len(parts) > idx+1 {
+				bizID = parts[idx+1]
+			}
+			if appID == "" && (v == "app" || v == "app_id") && len(parts) > idx+1 {
+				appID = parts[idx+1]
+			}
+		}
+	}
+
+	return
 }

@@ -52,6 +52,7 @@ export const INSTANCE = {
   config_retry_client_uid: localT('配置重新拉取客户端UID'),
   config_retry_client_ip: localT('配置重新拉取客户端IP'),
   // operate_objects: localT('等 xx 个对象进行操作'),
+  set_variable_name: localT('设置变量'),
 };
 
 // 操作途径
@@ -69,6 +70,7 @@ export const STATUS = {
   already_publish: localT('已上线'),
   failure: localT('失败'),
   success: localT('成功'),
+  processing: localT('处理中'),
 };
 
 // 版本状态
@@ -80,6 +82,7 @@ export enum APPROVE_STATUS {
   already_publish = 'already_publish', // 已上线
   failure = 'failure',
   success = 'success',
+  processing = 'processing', // 处理中
 }
 
 // 版本上线方式

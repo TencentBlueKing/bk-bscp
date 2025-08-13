@@ -102,7 +102,7 @@ func NewService(sd serviced.Discover, name string) (*Service, error) {
 		state:      state,
 		name:       name,
 		provider:   provider,
-		mc:         initMetric(name),
+		mc:         initMetric(name, cc.FeedServer().Metric.BlacklistBizIDs),
 		gwMux:      gwMux,
 		rl:         rl,
 	}, nil

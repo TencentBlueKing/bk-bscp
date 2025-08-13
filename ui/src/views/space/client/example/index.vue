@@ -2,7 +2,17 @@
   <section class="configuration-example-page">
     <div class="example-aside">
       <!-- 选择服务 -->
-      <service-selector class="sel-service" @select-service="selectService" />
+      <ServiceSelector class="sel-service" @change="selectService">
+        <template #trigger>
+          <div class="selector-trigger">
+            <bk-overflow-title v-if="serviceName" class="app-name" type="tips">
+              {{ serviceName }}
+            </bk-overflow-title>
+            <span v-else class="no-app">{{ $t('暂无服务') }}</span>
+            <AngleUpFill class="arrow-icon arrow-fill" />
+          </div>
+        </template>
+      </ServiceSelector>
       <!-- 示例列表 -->
       <div class="type-wrap" v-show="serviceName && serviceType">
         <bk-menu :active-key="renderComponent" @update:active-key="changeTypeItem">
@@ -36,7 +46,7 @@
 
 <script lang="ts" setup>
   import { computed, ref, nextTick, provide } from 'vue';
-  import ServiceSelector from './components/service-selector.vue';
+  import ServiceSelector from '../../../../components/service-selector.vue';
   import { useI18n } from 'vue-i18n';
   import useGlobalStore from '../../../../store/global';
   import { storeToRefs } from 'pinia';
@@ -45,8 +55,13 @@
   import CmdExample from './components/content/cmd-example.vue';
   import DefaultExample from './components/content/default-example.vue';
   import Exception from '../components/exception.vue';
+  import { IAppItem } from '../../../../../types/app';
+  import { useRoute, useRouter } from 'vue-router';
+  import { AngleUpFill } from 'bkui-vue/lib/icon';
 
   const { t } = useI18n();
+  const route = useRoute();
+  const router = useRouter();
 
   const globalStore = useGlobalStore();
   const { spaceFeatureFlags } = storeToRefs(globalStore);
@@ -74,6 +89,7 @@
     { name: t('命令行工具'), val: 'shell' },
   ];
 
+  const bizId = ref(String(route.params.spaceId));
   const selectedClientKey = ref(); // 记忆选择的客户端密钥信息,用于切换不同示例时默认选中密钥
   const exampleMainRef = ref();
   const renderComponent = ref(''); // 渲染的示例组件
@@ -118,16 +134,19 @@
   });
 
   // 服务切换
-  const selectService = (serviceTypeVal: string, serviceNameVal: string) => {
+  const selectService = async (service: IAppItem) => {
     // 重置已选择的密钥信息
     selectedClientKey.value = null;
-    if (!serviceTypeVal || !serviceNameVal) {
-      return (loading.value = false);
+    if (service) {
+      await router.push({ name: route.name!, params: { spaceId: bizId.value, appId: service.id } });
+      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: bizId.value, appId: service.id }));
+    } else {
+      loading.value = false;
     }
-    if (serviceName.value !== serviceNameVal || serviceType.value !== serviceTypeVal) {
+    if (serviceName.value !== service.spec.name || serviceType.value !== service.spec.config_type) {
       loading.value = true;
-      serviceName.value = serviceNameVal;
-      serviceType.value = serviceTypeVal;
+      serviceName.value = service.spec.name;
+      serviceType.value = service.spec.config_type;
     }
     changeTypeItem(navList.value[0].val);
   };
@@ -220,5 +239,43 @@
     background-color: #fff;
     flex: 1;
     min-height: 1px;
+  }
+
+  .service-selector {
+    &.popover-show {
+      .selector-trigger .arrow-icon {
+        transform: rotate(-180deg);
+      }
+    }
+    &.is-focus {
+      .selector-trigger {
+        outline: 0;
+      }
+    }
+    .selector-trigger {
+      padding: 0 10px 0;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 2px;
+      transition: all 0.3s;
+      background: #f0f1f5;
+      font-size: 14px;
+      .app-name {
+        max-width: 220px;
+        color: #313238;
+      }
+      .no-app {
+        font-size: 16px;
+        color: #c4c6cc;
+      }
+      .arrow-icon {
+        margin-left: 13.5px;
+        color: #979ba5;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
   }
 </style>

@@ -204,7 +204,7 @@ export default {
   '检测到模板冲突，请先删除冲突套餐': 'Template conflict detected, please delete the conflicting package first',
   模板名称: 'Template name',
   模板路径: 'Template path',
-  版本号: 'version number',
+  版本号: 'Version number',
   该套餐下暂无模板: 'There are currently no templates under this package',
   批量上传配置文件: 'Upload configuration files in batches',
   上传配置文件包: 'Upload configuration file package',
@@ -619,9 +619,8 @@ export default {
   配置文件绝对路径: 'Config File Absolute Path',
   更新: 'Update',
   查看操作: 'View Operation',
-
   查看全部配置项: 'View all configuration items',
-  只看冲突配置项: 'Only view conflict configuration items     ',
+  只看冲突配置项: 'Only view conflict configuration items',
   '已限制该服务下所有配置项数据类型为{n}，如需其他数据类型，请调整服务属性下的数据类型': 'All configuration item data types under the service are limited to {n}, if you need other data types, please adjust the data type under the service attributes',
   敏感信息不可见: 'Sensitive information is not visible',
   '「敏感信息不可见」启用提示': '"Sensitive information is not visible" enabled prompt',
@@ -643,7 +642,7 @@ export default {
   '此证书将于 {n} 到期，距离到期仅剩 {m} 天': 'This certificate will expire on {n}, and there are only {m} days left until expiration',
   '此证书已于 {n} 过期，请更换其它证书': 'This certificate has expired on {n}, please replace it with another certificate',
   '此证书已于 {n} 过期，请尽快更换证书': 'This certificate has expired on {n}, please replace it as soon as possible',
-  '证书格式不正确（只支持 X.509 类型证书）': 'The certificate format is incorrect (only X.509 type certificates are supported)',
+  '输入格式不支持，请上传 X.509 证书或 RSA 私钥': 'Input format is not supported, please upload an X.509 certificate or RSA private key',
   '证书未经受信任的证书颁发机构签发，在生产环境中建议使用经权威证书颁发机构签发的证书': 'The certificate is not issued by a trusted certificate authority, and it is recommended to use a certificate issued by an authoritative certificate authority in a production environment',
   '目前只支持 X.509 类型证书': 'Currently only X.509 type certificates are supported',
   确定启用: 'Confirm to enable',
@@ -692,6 +691,9 @@ export default {
   '请先填写配置项 {n} 的值，然后再尝试导入': 'Please fill in the value of configuration item {n} first, and then try to import',
   '提示：': 'Tip:',
   '如果要批量导入的敏感信息包含多行文本的证书（certificate）或自定义（custom），请使用JSON或YAML格式进行导入': 'If the sensitive information to be batch imported contains multi-line text certificates (certificate) or custom (custom), please import using JSON or YAML format',
+  'RSA 私钥格式无效': 'Invalid RSA private key format',
+  证书和私钥: 'Certificate and private key',
+  版本废弃成功: 'Version discarded successfully',
 
   // 分组管理
   新增分组: 'New group',
@@ -749,9 +751,14 @@ export default {
   ' bk_bscp_nginx_port number 8080 nginx端口': ' bk_bscp_nginx_port number 8080 nginx port',
   导出变量: 'Export variables',
   全局变量: 'Global variables',
-  变量值已复制: '变量值已复制',
+  变量值已复制: 'Variable value copied',
   设置: 'Set',
   复制变量值: 'Copy variable value',
+  '每行表示一个变量，包含变量名称、变量类型、默认值与描述（可选），默认使用空格分隔': 'Each line represents a variable, including variable name, variable type, default value, and description (optional), separated by spaces by default',
+  '以 JSON 格式批量导入变量，变量名称作为 JSON 对象的 Key，而变量类型、默认值、描述组成一个嵌套对象，作为对应 Key 的 Value': 'In JSON format, the variable name is used as the Key of the JSON object, while the variable type, default value, and description form a nested object as the value of the corresponding key',
+  '以 YAML 格式批量导入变量，变量名称作为 YAML 对象的 Key，而变量类型、默认值、描述分别作为嵌套对象的子键，形成对应键的值 ': 'In YAML format, the variable name is used as the Key of the YAML object, while the variable type, default value, and description are used as subkeys of the nested object to form the value of the corresponding key',
+  '变量名称 变量类型 默认值 描述（可选）': 'Variable name Variable type Default value Description (optional)',
+  '简单文本格式：': 'Simple text format:',
 
   // 配置模板
   '配置模板用于同一业务下服务间配置文件复用，可以在创建服务配置时引用配置模板。': 'Configuration templates are used to reuse configuration files between services under same services, and can be referenced when creating service configurations.',
@@ -821,7 +828,7 @@ export default {
   添加至模板套餐: 'Add to template package',
   以下服务配置的未命名版本中将添加已选配置文件的: 'The following unnamed version of the service configuration will be added with the selected profile\'s',
   目标模板套餐: 'Target Template Package',
-  批量删除: 'batch deletion',
+  批量删除: 'Batch delete',
   '确认删除以下配置文件？': 'Are you sure you want to delete the following configuration files?',
   批量移出: 'Move out in batches',
   批量移出当前套餐: 'Move out current plans in batches',
@@ -905,6 +912,7 @@ export default {
   '脚本已被引用，不能删除': 'Script is referenced, cannot be deleted',
   '脚本名称有误，请重新输入': 'Script name is incorrect, please re-enter',
   请输入脚本名称: 'Please enter script name',
+  变量名已复制: 'Variable name copied',
 
   // 服务密钥
   '密钥仅用于 SDK/API 拉取配置使用。服务管理/配置管理/分组管理等功能的权限申请，请前往': 'The key is only used for SDK/API pull configurations. To apply for permissions for functions such as service management/configuration management/group management, please go to',

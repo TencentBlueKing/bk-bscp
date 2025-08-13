@@ -58,7 +58,7 @@
   import { Search, RightShape } from 'bkui-vue/lib/icon';
   import { IConfigKvType } from '../../../../../../../../../types/config';
   import { ISingleLineKVDIffItem } from '../../../../../../../../../types/service';
-  import { getReleaseKvList } from '../../../../../../../../api/config';
+  import { getKvList, getReleaseKvList } from '../../../../../../../../api/config';
   import SearchInput from '../../../../../../../../components/search-input.vue';
   import tableEmpty from '../../../../../../../../components/table/table-empty.vue';
 
@@ -164,10 +164,20 @@
     if (typeof releaseId !== 'number') {
       return [];
     }
-    const res = await getReleaseKvList(bkBizId.value, Number(currentAppId), releaseId, {
-      start: 0,
-      all: true,
-    });
+    let res;
+    if (releaseId === 0) {
+      // 未命名版本
+      res = await getKvList(bkBizId.value, Number(currentAppId), {
+        start: 0,
+        all: true,
+      });
+    } else {
+      res = await getReleaseKvList(bkBizId.value, Number(currentAppId), releaseId, {
+        start: 0,
+        all: true,
+      });
+    }
+
     return res.details;
   };
 

@@ -48,11 +48,20 @@ func (s *Service) BatchUpsertClientMetrics(ctx context.Context, req *pbds.BatchU
 	}
 
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
 	err = s.dao.Client().BatchCreateWithTx(kt, tx, toCreate)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("batch create clients failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -80,17 +89,13 @@ func (s *Service) BatchUpsertClientMetrics(ctx context.Context, req *pbds.BatchU
 	errH := s.dao.Client().UpsertHeartbeat(kt, tx, toUpdate[sfs.Heartbeat.String()])
 	errV := s.dao.Client().UpsertVersionChange(kt, tx, toUpdate[sfs.VersionChangeMessage.String()])
 	if errH != nil && errV != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("upsert heartbeat err: %v, upsert version change err: %v, rid: %s", errH, errV, kt.Rid)
 		return nil, fmt.Errorf("upsert heartbeat err: %v, upsert version change err: %v", errH, errV)
 	}
 
 	err = s.doBatchCreateClientEvents(kt, tx, req.GetClientEventItems(), createID)
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
+		logs.Errorf("batch create client events failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
@@ -98,6 +103,7 @@ func (s *Service) BatchUpsertClientMetrics(ctx context.Context, req *pbds.BatchU
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
 		return nil, e
 	}
+	committed = true
 	return &pbds.BatchUpsertClientMetricsResp{}, nil
 }
 
@@ -913,10 +919,12 @@ func formatCpu(number float64) string {
 func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (*pbbase.EmptyResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	isRollback := true
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
 	defer func() {
-		if isRollback {
+		if !committed {
 			if rErr := tx.Rollback(); rErr != nil {
 				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
 			}
@@ -934,15 +942,18 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 			Revision:   &table.CreatedRevision{Creator: kit.User},
 		}
 		if err := s.dao.Client().UpdateRetriedClientsStatusWithTx(kit, tx, []uint32{}, req.All); err != nil {
+			logs.Errorf("update retried clients status failed, err: %v, rid: %s", err, kit.Rid)
 			return nil, err
 		}
 		if err := s.dao.Event().Eventf(kit).FireWithTx(tx, event); err != nil {
+			logs.Errorf("fire event failed, err: %v, rid: %s", err, kit.Rid)
 			return nil, err
 		}
 		if err := tx.Commit(); err != nil {
 			logs.Errorf("commit retry clients transaction failed, err: %v, rid: %s", err, kit.Rid)
 			return nil, err
 		}
+		committed = true
 		return &pbbase.EmptyResp{}, nil
 	}
 
@@ -950,6 +961,7 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 	clientUIDMap := make(map[uint32]string)
 	clients, err := s.dao.Client().ListClientByIDs(kit, req.BizId, req.AppId, req.ClientIds)
 	if err != nil {
+		logs.Errorf("list clients by IDs failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
 
@@ -969,16 +981,18 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 		})
 	}
 	if err := s.dao.Client().UpdateRetriedClientsStatusWithTx(kit, tx, req.ClientIds, req.All); err != nil {
+		logs.Errorf("update retried clients status failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
 	if err := s.dao.Event().Eventf(kit).FireWithTx(tx, events...); err != nil {
+		logs.Errorf("fire events failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		logs.Errorf("commit retry clients transaction failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err
 	}
-	isRollback = false
+	committed = true
 
 	return &pbbase.EmptyResp{}, nil
 }

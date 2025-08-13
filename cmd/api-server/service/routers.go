@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/audit"
-	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
 )
@@ -44,7 +43,7 @@ func (p *proxy) routers() http.Handler {
 	// iam 回调接口
 	r.Route("/api/v1/auth/iam/find/resource", func(r chi.Router) {
 		r.Use(handler.RequestBodyLogger())
-		r.Use(auth.IAMVerified)
+		r.Use(p.authorizer.IAMVerify)
 		r.Mount("/", p.authSvrMux)
 	})
 
@@ -89,6 +88,7 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.HttpServerHandledTotal("", ""))
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)
 	})
@@ -161,7 +161,6 @@ func (p *proxy) routers() http.Handler {
 			r.Use(p.authorizer.BizVerified)
 			r.Use(p.HttpServerHandledTotal("", "TemplateConfigFileImport"))
 			r.Post("/", p.configImportService.TemplateConfigFileImport)
-
 		})
 
 	// 导入配置压缩包

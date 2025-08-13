@@ -240,12 +240,14 @@ func (s *SyncManager) QueueClient() bedis.Client {
 
 // QueueName returns name of sync queue
 func (s *SyncManager) QueueName() string {
-	return "sync_repo_queue"
+	// 使用{sync_repo}作为 Redis 哈希标签，使得 sync_queue 和 ack_queue 在同一个 Redis 哈希槽中
+	return "{sync_repo}sync_queue"
 }
 
 // AckQueueName returns name of ack queue
 func (s *SyncManager) AckQueueName() string {
-	return "sync_repo_ack_queue"
+	// 使用{sync_repo}作为 Redis 哈希标签，使得 sync_queue 和 ack_queue 在同一个 Redis 哈希槽中
+	return "{sync_repo}ack_queue"
 }
 
 // QueueMsg returns msg for sync queue

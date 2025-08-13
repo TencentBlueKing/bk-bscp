@@ -449,8 +449,8 @@
     .serving-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(304px, 1fr));
-      justify-content: center;
-      justify-items: center;
+      gap: 24px;
+      align-items: start;
       :deep(.bk-exception-description) {
         margin-top: 5px;
         font-size: 12px;

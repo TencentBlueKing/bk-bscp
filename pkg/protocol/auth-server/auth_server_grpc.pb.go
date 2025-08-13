@@ -32,6 +32,7 @@ const (
 	Auth_QuerySpace_FullMethodName                 = "/pbas.Auth/QuerySpace"
 	Auth_GetAuthConf_FullMethodName                = "/pbas.Auth/GetAuthConf"
 	Auth_GrantResourceCreatorAction_FullMethodName = "/pbas.Auth/GrantResourceCreatorAction"
+	Auth_IAMVerify_FullMethodName                  = "/pbas.Auth/IAMVerify"
 )
 
 // AuthClient is the client API for Auth service.
@@ -57,6 +58,8 @@ type AuthClient interface {
 	// auth login conf
 	GetAuthConf(ctx context.Context, in *GetAuthConfReq, opts ...grpc.CallOption) (*GetAuthConfResp, error)
 	GrantResourceCreatorAction(ctx context.Context, in *GrantResourceCreatorActionReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
+	// 验证iam
+	IAMVerify(ctx context.Context, in *IAMVerifyReq, opts ...grpc.CallOption) (*IAMVerifyResp, error)
 }
 
 type authClient struct {
@@ -166,6 +169,15 @@ func (c *authClient) GrantResourceCreatorAction(ctx context.Context, in *GrantRe
 	return out, nil
 }
 
+func (c *authClient) IAMVerify(ctx context.Context, in *IAMVerifyReq, opts ...grpc.CallOption) (*IAMVerifyResp, error) {
+	out := new(IAMVerifyResp)
+	err := c.cc.Invoke(ctx, Auth_IAMVerify_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations should embed UnimplementedAuthServer
 // for forward compatibility
@@ -189,6 +201,8 @@ type AuthServer interface {
 	// auth login conf
 	GetAuthConf(context.Context, *GetAuthConfReq) (*GetAuthConfResp, error)
 	GrantResourceCreatorAction(context.Context, *GrantResourceCreatorActionReq) (*base.EmptyResp, error)
+	// 验证iam
+	IAMVerify(context.Context, *IAMVerifyReq) (*IAMVerifyResp, error)
 }
 
 // UnimplementedAuthServer should be embedded to have forward compatible implementations.
@@ -227,6 +241,9 @@ func (UnimplementedAuthServer) GetAuthConf(context.Context, *GetAuthConfReq) (*G
 }
 func (UnimplementedAuthServer) GrantResourceCreatorAction(context.Context, *GrantResourceCreatorActionReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GrantResourceCreatorAction not implemented")
+}
+func (UnimplementedAuthServer) IAMVerify(context.Context, *IAMVerifyReq) (*IAMVerifyResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IAMVerify not implemented")
 }
 
 // UnsafeAuthServer may be embedded to opt out of forward compatibility for this service.
@@ -438,6 +455,24 @@ func _Auth_GrantResourceCreatorAction_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_IAMVerify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IAMVerifyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).IAMVerify(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_IAMVerify_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).IAMVerify(ctx, req.(*IAMVerifyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -488,6 +523,10 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GrantResourceCreatorAction",
 			Handler:    _Auth_GrantResourceCreatorAction_Handler,
+		},
+		{
+			MethodName: "IAMVerify",
+			Handler:    _Auth_IAMVerify_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

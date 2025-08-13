@@ -56,6 +56,17 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 	}
 	// begin transaction to create release and released config item.
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+			}
+		}
+	}()
+
 	// 1. create release, and create release and released config item need to begin tx.
 	release := &table.Release{
 		Spec:       req.Spec.ReleaseSpec(),
@@ -67,9 +78,6 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 	id, err := s.dao.Release().CreateWithTx(grpcKit, tx, release)
 	if err != nil {
 		logs.Errorf("create release failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
 		return nil, err
 	}
 
@@ -80,34 +88,23 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		pre.ReleaseID = release.ID
 		if _, e := s.dao.ReleasedHook().CreateWithTx(grpcKit, tx, pre); e != nil {
 			logs.Errorf("create released pre-hook failed, err: %v, rid: %s", e, grpcKit.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			return nil, e
 		}
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("query released pre-hook failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
 		return nil, err
 	}
+
 	post, err := s.dao.ReleasedHook().Get(grpcKit, req.Attachment.BizId, req.Attachment.AppId, 0, table.PostHook)
 	if err == nil {
 		post.ID = 0
 		post.ReleaseID = release.ID
 		if _, e := s.dao.ReleasedHook().CreateWithTx(grpcKit, tx, post); e != nil {
 			logs.Errorf("create released post-hook failed, err: %v, rid: %s", e, grpcKit.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			return nil, e
 		}
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("query released post-hook failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
 		return nil, err
 	}
 
@@ -126,9 +123,6 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		// get app's all config items.
 		cis, fErr := s.getAppConfigItems(grpcKit)
 		if fErr != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			logs.Errorf("get app's all config items failed, err: %v, rid: %s", fErr, grpcKit.Rid)
 			return nil, fErr
 		}
@@ -136,39 +130,33 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		// get app template revisions which are template config items
 		tmplRevisions, fErr := s.getAppTmplRevisions(grpcKit)
 		if fErr != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			logs.Errorf("get app template revisions failed, err: %v, rid: %s", fErr, grpcKit.Rid)
 			return nil, fErr
 		}
 
 		// if no config item, return directly.
 		if len(cis) == 0 && len(tmplRevisions) == 0 {
+			logs.Errorf("app config items is empty, rid: %s", grpcKit.Rid)
 			return nil, errors.New("app config items is empty")
 		}
 
 		// 3: do template and non-template config item related operations for create release.
 		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, release.ID, tmplRevisions, cis); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			logs.Errorf("do template action for create release failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
 	case table.KV:
 		expirationNumber, errC := s.checkForExpiredCertificates(grpcKit, req.Attachment.BizId, req.Attachment.AppId)
 		if errC != nil {
+			logs.Errorf("check for expired certificates failed, err: %v, rid: %s", errC, grpcKit.Rid)
 			return nil, errC
 		}
 		if expirationNumber > 0 {
+			logs.Errorf("create release failed there is a certificate expiration exists, rid: %s", grpcKit.Rid)
 			return nil, errors.New(i18n.T(grpcKit, "create release failed there is a certificate expiration exists"))
 		}
 
 		if err = s.doKvOperations(grpcKit, tx, req.Attachment.AppId, req.Attachment.BizId, release.ID); err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-			}
 			logs.Errorf("do kv action for create release failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
@@ -179,6 +167,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
+	committed = true
 	return &pbds.CreateResp{Id: id}, nil
 }
 
@@ -305,9 +294,6 @@ func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.Template
 
 	if err = s.createReleasedRenderedCIs(kt, tx, releaseID, cis, ciRenderedContentMap, ciByteSizeMap,
 		ciSignatureMap, ciMd5Map); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		logs.Errorf("create released config items failed, err: %v, rid: %s", err, kt.Rid)
 		return err
 	}
@@ -362,6 +348,7 @@ func (s *Service) getRenderedVars(kt *kit.Kit, allVars []string, inputVarMap map
 		missingVars = append(missingVars, name)
 	}
 	if len(missingVars) > 0 {
+		logs.Errorf("variable name in %v is missing for render the app's template config, rid: %s", missingVars, kt.Rid)
 		return nil, nil, fmt.Errorf("variable name in %v is missing for render the app's template config", missingVars)
 	}
 
@@ -449,10 +436,12 @@ func (s *Service) createReleasedRenderedCIs(kt *kit.Kit, tx *gen.QueryTx, releas
 		var err error
 		createdAt, err = time.Parse(time.RFC3339, ci.Revision.CreateAt)
 		if err != nil {
+			logs.Errorf("parse time from createAt string failed, err: %v, rid: %s", err, kt.Rid)
 			return fmt.Errorf("parse time from createAt string failed, err: %v", err)
 		}
 		updatedAt, err = time.Parse(time.RFC3339, ci.Revision.UpdateAt)
 		if err != nil {
+			logs.Errorf("parse time from UpdateAt string failed, err: %v, rid: %s", err, kt.Rid)
 			return fmt.Errorf("parse time from UpdateAt string failed, err: %v", err)
 		}
 		// if rendered with variables, which means the config item is new generated, update the user and time
@@ -535,6 +524,7 @@ func (s *Service) createReleasedAppTemplates(kt *kit.Kit, tx *gen.QueryTx, relea
 		var createdAt time.Time
 		createdAt, err = time.Parse(time.RFC3339, r.CreateAt)
 		if err != nil {
+			logs.Errorf("parse time from createAt string failed, err: %v, rid: %s", err, kt.Rid)
 			return fmt.Errorf("parse time from createAt string failed, err: %v", err)
 		}
 		updatedAt := createdAt
@@ -697,6 +687,7 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 	// 追加发布状态
 	st, err := s.dao.Strategy().ListStrategyByReleasesIDs(grpcKit, releaseIDs)
 	if err != nil {
+		logs.Errorf("list strategy by releases ids failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
@@ -794,12 +785,17 @@ func (s *Service) DeprecateRelease(ctx context.Context, req *pbds.DeprecateRelea
 	// check if release was published
 	rgs, err := s.dao.ReleasedGroup().ListAllByReleaseID(grpcKit, req.ReleaseId, req.BizId)
 	if err != nil {
+		logs.Errorf("list released group by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 	if len(rgs) > 0 {
+		logs.Errorf("release %d was published, can not deprecate, rid: %s", req.ReleaseId, grpcKit.Rid)
 		return nil, fmt.Errorf("release %d was published, can not deprecate", req.ReleaseId)
 	}
 	err = s.dao.Release().UpdateDeprecated(grpcKit, req.BizId, req.AppId, req.ReleaseId, true)
+	if err != nil {
+		logs.Errorf("update release deprecated failed, err: %v, rid: %s", err, grpcKit.Rid)
+	}
 	return new(pbbase.EmptyResp), err
 }
 
@@ -817,6 +813,7 @@ func (s *Service) DeleteRelease(ctx context.Context, req *pbds.DeleteReleaseReq)
 
 	release, err := s.dao.Release().Get(grpcKit, req.BizId, req.AppId, req.ReleaseId)
 	if err != nil {
+		logs.Errorf("get release failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 	if !release.Spec.Deprecated {
@@ -826,31 +823,37 @@ func (s *Service) DeleteRelease(ctx context.Context, req *pbds.DeleteReleaseReq)
 	// get app type
 	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
 	if err != nil {
+		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
 	tx := s.dao.GenQuery().Begin()
 
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+			}
+		}
+	}()
+
 	if err := s.deleteReleaseRelatedResources(grpcKit, tx, req.BizId, req.AppId, req.ReleaseId, app); err != nil {
 		logs.Errorf("delete release related resources failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
-		return nil, err
+		return nil, fmt.Errorf("delete release related resources failed, err: %v", err)
 	}
 
 	if err := s.dao.Release().DeleteWithTx(grpcKit, tx, req.BizId, req.AppId, req.ReleaseId); err != nil {
 		logs.Errorf("delete release failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
-		}
-		return nil, err
+		return nil, fmt.Errorf("delete release failed, err: %v", err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, fmt.Errorf("commit transaction failed, err: %v", err)
 	}
+	committed = true
 	return new(pbbase.EmptyResp), nil
 }
 
@@ -1013,23 +1016,28 @@ func (s *Service) deleteReleaseRelatedResources(grpcKit *kit.Kit, tx *gen.QueryT
 	case table.File:
 		if err := s.dao.ReleasedAppTemplate().BatchDeleteByReleaseIDWithTx(grpcKit, tx,
 			bizID, appID, releaseID); err != nil {
+			logs.Errorf("batch delete released app template by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return err
 		}
 		if err := s.dao.ReleasedAppTemplateVariable().BatchDeleteByReleaseIDWithTx(grpcKit, tx,
 			bizID, appID, releaseID); err != nil {
+			logs.Errorf("batch delete released app template variable by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return err
 		}
 		if err := s.dao.ReleasedHook().BatchDeleteByReleaseIDWithTx(grpcKit, tx,
 			bizID, appID, releaseID); err != nil {
+			logs.Errorf("batch delete released hook by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return err
 		}
 		if err := s.dao.ReleasedCI().BatchDeleteByReleaseIDWithTx(grpcKit, tx,
 			bizID, appID, releaseID); err != nil {
+			logs.Errorf("batch delete released ci by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return err
 		}
 	case table.KV:
 		if err := s.dao.ReleasedKv().BatchDeleteByReleaseIDWithTx(grpcKit, tx,
 			bizID, appID, releaseID); err != nil {
+			logs.Errorf("batch delete released kv by release id failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return err
 		}
 	}
@@ -1043,6 +1051,7 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbds.CheckReleaseNa
 
 	result, err := s.dao.Release().GetByName(grpcKit, req.GetBizId(), req.GetAppId(), req.GetName())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logs.Errorf("get release by name failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
 			i18n.T(grpcKit, fmt.Sprintf("get release by name failed, err: %s", err.Error())))
 	}
@@ -1082,6 +1091,7 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 	// 2. 获取服务关联的套餐
 	binding, err := s.dao.AppTemplateBinding().GetAppTemplateBindingByAppID(kit, bizID, appID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logs.Errorf("get the package associated with the app failed, err: %v, rid: %s", err, kit.Rid)
 		return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
 			i18n.T(kit, "get the package associated with the app failed, err: %v"), err)
 	}
@@ -1103,6 +1113,7 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 		// 如有绑定，根据绑定的模板ID查询模板文件
 		templates, err := s.dao.Template().ListByIDs(kit, templateIDs)
 		if err != nil {
+			logs.Errorf("get template file failed, err: %v, rid: %s", err, kit.Rid)
 			return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
 				i18n.T(kit, "get template file failed, err: %v"), err)
 		}
@@ -1124,6 +1135,7 @@ func (s Service) checkForExpiredCertificates(kit *kit.Kit, bizID, appID uint32) 
 	// 0 代表过期
 	_, expirationNumber, err := s.dao.Kv().FindNearExpiryCertKvs(kit, bizID, appID, 0, &types.BasePage{All: true})
 	if err != nil {
+		logs.Errorf("get a list of expired certificates failed, err: %v, rid: %s", err, kit.Rid)
 		return expirationNumber, errf.Errorf(errf.DBOpFailed,
 			i18n.T(kit, "get a list of expired certificates failed, err: %v"), err)
 	}
@@ -1138,11 +1150,13 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbds.List
 	// 获取服务信息
 	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
 	if err != nil {
+		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 	// 通过服务获取已经上线的版本
 	releasedGroup, err := s.dao.ReleasedGroup().ListAllByAppID(grpcKit, req.AppId, req.BizId)
 	if err != nil {
+		logs.Errorf("list released group by app id failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
@@ -1159,6 +1173,7 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbds.List
 	if app.Spec.ConfigType == table.File {
 		releasedConfigItem, err := s.dao.ReleasedCI().ListAllByReleaseIDs(grpcKit, releaseIds, req.BizId)
 		if err != nil {
+			logs.Errorf("list released ci by release ids failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
 		for _, v := range releasedConfigItem {
@@ -1174,6 +1189,7 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbds.List
 	} else {
 		releasedKv, err := s.dao.ReleasedKv().ListAllByReleaseIDs(grpcKit, releaseIds, req.BizId)
 		if err != nil {
+			logs.Errorf("list released kv by release ids failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
 		for _, v := range releasedKv {

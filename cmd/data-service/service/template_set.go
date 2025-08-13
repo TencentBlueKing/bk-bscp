@@ -145,21 +145,25 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 
 	tx := s.dao.GenQuery().Begin()
 
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
 	// 1. update template set
 	if err = s.dao.TemplateSet().UpdateWithTx(kt, tx, templateSet); err != nil {
 		logs.Errorf("update template set failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
 	// validate template set's templates count.
 	if err = s.dao.TemplateSet().ValidateTmplNumber(kt, tx, req.Attachment.BizId, req.Id); err != nil {
 		logs.Errorf("validate template set's templates count failed, err: %v, rid: %s", err, kt.Rid)
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		return nil, err
 	}
 
@@ -180,9 +184,6 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 			}
 			if err = s.CascadeUpdateATB(kt, tx, atb); err != nil {
 				logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", err, kt.Rid)
-				if rErr := tx.Rollback(); rErr != nil {
-					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-				}
 				return nil, err
 			}
 		}
@@ -193,9 +194,6 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 	var oldTmplSets []*table.TemplateSet
 	oldTmplSets, err = s.dao.TemplateSet().ListByIDs(kt, []uint32{req.Id})
 	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-		}
 		logs.Errorf("list template sets by ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -204,9 +202,6 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 		atbs, err = s.dao.TemplateBindingRelation().
 			ListTemplateSetsBoundATBs(kt, req.Attachment.BizId, []uint32{req.Id})
 		if err != nil {
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			logs.Errorf("list template set bound app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
@@ -214,9 +209,6 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 			for _, atb := range atbs {
 				if err = s.CascadeUpdateATB(kt, tx, atb); err != nil {
 					logs.Errorf("cascade update app template binding failed, err: %v, rid: %s", err, kt.Rid)
-					if rErr := tx.Rollback(); rErr != nil {
-						logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-					}
 					return nil, err
 				}
 			}
@@ -227,6 +219,7 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbds.UpdateTemplat
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	return new(pbbase.EmptyResp), nil
 }

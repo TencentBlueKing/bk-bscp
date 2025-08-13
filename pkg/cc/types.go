@@ -1158,18 +1158,24 @@ func (lm *MatchReleaseLimiter) trySetDefault() {
 }
 
 // RateLimiter defines the rate limiter options for traffic control.
+// requires bscp-go init/sidecar mode and v1.3.1 or above
 type RateLimiter struct {
-	Enable          bool    `yaml:"enable"`
+	Enable          bool    `yaml:"enabled"`
 	ClientBandwidth uint    `yaml:"clientBandwidth"`
 	Global          BasicRL `yaml:"global"`
 	Biz             BizRLs  `yaml:"biz"`
 	IP              BasicRL `yaml:"ip"`
 }
 
+// metrics 上报时过滤的业务名单
+type Metric struct {
+	BlacklistBizIDs []uint32 `yaml:"blacklistBizIds"`
+}
+
 // BizRLs defines the rate limiters for biz
 type BizRLs struct {
-	Default BasicRL          `yaml:"default"`
-	Spec    map[uint]BasicRL `yaml:"spec"`
+	Default BasicRL            `yaml:"default"`
+	Spec    map[string]BasicRL `yaml:"spec"` // 业务使用字符串做key, 兼容helm渲染
 }
 
 // BasicRL defines the basic options for rate limiter.

@@ -1,0 +1,351 @@
+{{- define "externalDoc" }}{{/* renders external documentation */}}
+  {{- with .ExternalDocs }}
+    {{- if .URL }}
+      {{- if .Description }}
+> [{{ mdBlock .Description }}]({{ .URL }})
+      {{- else }}
+> [Read more]({{ .URL }})
+      {{- end }}
+    {{- else }}
+> {{ mdBlock .Description }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- define "docParam" }}{{/* renders a parameter with simple schema */}}
+| {{ .Name }} | {{ paramDocType . }} | {{ if .Required }}✓{{ end }} | {{ mdBlock .Description }} |
+{{- end }}
+
+{{- define "docModelSchema" }}{{/* renders a schema */}}
+  {{- if .IsArray }}
+    {{- if .IsAliased }}
+ [{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+    {{- else if .Items }}
+      {{- if and .Items.IsPrimitive (not .Items.IsAliased) -}}
+ {{- schemaDocType . -}}
+      {{- else -}}
+ [][{{- dropPackage .Items.GoType }}](#{{ dasherize (dropPackage .Items.GoType) -}})
+      {{- end -}}
+    {{- else -}}
+ []any{{ printf " " -}}
+    {{- end -}}
+  {{- else if and .IsMap (not .IsAdditionalProperties) -}}
+    {{- if .IsAliased -}}
+ [{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+    {{- else if .ElemType }}
+      {{- if and .ElemType.IsPrimitive (not .ElemType.IsAliased) (not .ElemType.IsInterface) -}}
+ {{ schemaDocMapType . -}}
+      {{- else if .ElemType.IsInterface -}}
+ map of any{{ printf " " -}}
+      {{- else -}}
+ map of [{{- dropPackage .ElemType.GoType }}](#{{ dasherize (dropPackage .ElemType.GoType) -}})
+      {{- end -}}
+    {{- else -}}
+ map of any{{ printf " " -}}
+    {{- end -}}
+  {{- else if and .IsAliased .IsPrimitive (not .IsSuperAlias) -}}
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| {{ .Name }} | {{ schemaDocType . }}| {{ .AliasedType }} | {{ if .Default }}`{{ json .Default }}`{{ end }}| {{ mdBlock .Description }} | {{ if .Example }}`{{ .Example }}`{{ end }} |
+{{ printf "\n" }}
+  {{- else if or (and .IsAliased (not (.IsAdditionalProperties))) (and .IsComplexObject (not .Properties) (not .AllOf)) -}}
+[{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+  {{- else if and .IsInterface (not .IsAliased) (not .IsMap) -}}
+any
+  {{- else -}}
+    {{- range .AllOf }}
+      {{- if .IsAnonymous }}
+* inlined member (*{{ .Name }}*)
+
+{{ template "docModelSchema" . }}
+      {{- else if or .IsComplexObject .IsPrimitive }}
+* composed type [{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+      {{- else }}
+* {{ template "docModelSchema" . }}
+      {{- end }}
+    {{- end }}
+    {{- if .Properties }}
+
+**{{ if .IsTuple }}Tuple members{{ else }}Properties{{ end }}**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+      {{- range .Properties }}
+| {{ .Name }} | {{ template "docSchemaSimple" . }}| `{{ .GoType }}` | {{ if .Required }}✓{{ end }} | {{ if .Default }}`{{ json .Default }}`{{ end }}| {{ mdBlock .Description }} | {{ if .Example }}`{{ .Example }}`{{ end }} |
+      {{- end }}
+{{ printf "\n" }}
+    {{- end }}
+    {{- if .HasAdditionalProperties }}
+
+**Additional Properties**
+      {{- with .AdditionalProperties }}
+        {{- if .IsInterface }}
+
+any
+        {{- else if .IsPrimitive }}
+
+| Type | Go type | Default | Description | Example |
+|------|---------| ------- |-------------|---------|
+| {{ template "docSchemaSimple" . }} | `{{ .GoType }}` |{{ if .Default }}`{{ json .Default }}`{{ end }}| {{ mdBlock .Description }} | {{ if .Example }}`{{ .Example }}`{{ end }} |
+        {{- else }}
+
+{{ template "docModelSchema" . }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if and .IsTuple .HasAdditionalItems }}
+      {{- with .AdditionalItems }}
+
+**Additional Items**
+        {{- if .IsInterface }}
+
+any
+        {{- else if .IsPrimitive }}
+
+| Type | Go type | Default | Description | Example |
+|------|---------| ------- |-------------|---------|
+| {{ template "docSchemaSimple" . }} | `{{ .GoType }}` |{{ if .Default }}`{{ json .Default }}`{{ end }}| {{ mdBlock .Description }} | {{ if .Example }}`{{ .Example }}`{{ end }} |
+        {{- else }}
+
+{{ template "docModelSchema" . }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end -}}
+{{- end }}
+
+{{- define "docModel" }}{{/* renders a definition */}}
+  {{- with .Description }}
+> {{ .}}
+  {{- end }}
+  {{- if .ExternalDocs }}
+{{ template "externalDoc" . }}
+  {{- end }}
+  {{ if or .Description .ExternalDocs }}
+{{ printf "\n" }}
+  {{- end }}
+
+{{ template "docModelSchema" .}}
+{{- end }}
+
+{{- define "docSchemaSimple" }}{{/* renders a simple property */}}
+  {{- if .IsAliased -}}
+ [{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+  {{- else if .IsArray }}
+    {{- if .Items }}
+      {{- if and .Items.IsPrimitive (not .Items.IsAliased) -}}
+ {{- schemaDocType . -}}
+      {{- else -}}
+ \[\][{{- dropPackage .Items.GoType }}](#{{ dasherize (dropPackage .Items.GoType) -}})
+      {{- end -}}
+    {{- else -}}
+ []any{{ printf " " -}}
+    {{- end -}}
+  {{- else if .IsMap -}}
+    {{- if .ElemType }}
+      {{- if and .ElemType.IsPrimitive (not .ElemType.IsAliased) (not .ElemType.IsInterface) -}}
+ {{ schemaDocMapType . -}}
+      {{- else if .ElemType.IsInterface -}}
+ map of any{{ printf " " -}}
+      {{- else -}}
+ map of [{{- dropPackage .ElemType.GoType }}](#{{ dasherize (dropPackage .ElemType.GoType) -}})
+      {{- end -}}
+    {{- else -}}
+ map of any{{ printf " " -}}
+    {{- end -}}
+  {{- else if .IsPrimitive -}}
+ {{- schemaDocType . -}}
+  {{- else -}}
+ [{{- dropPackage .GoType }}](#{{ dasherize (dropPackage .GoType) -}})
+  {{- end -}}
+{{- end }}
+
+{{- define "docModelBodyParam" }}{{/* layout for body param schema */}}
+| {{ .Name }} | `body` | {{ template "docSchemaSimple" .Schema }} | `{{ .Schema.GoType }}` | | {{ if .Required }}✓{{ end }} | {{ if .Default }}`{{ json .Default }}`{{ end }}| {{ mdBlock .Description }} |
+{{- end }}
+
+{{- define "docModelBodyParamFlat" }}{{/* layout for body first flat param schema */}}
+{{- range .Properties }}
+| {{ .Name }} | {{ template "docSchemaSimple" . }} | {{ if .Required }}✓{{ end }} | {{ mdBlock .Description }} |
+{{- end }}
+{{- end }}
+
+{{- define "respModelTable" }}
+{{- range .Properties }}
+| data.{{ .Name }} | {{ template "docSchemaSimple" . }} | {{ mdBlock .Description }} |
+      {{- end }}
+{{ printf "\n" }}
+{{- end }}
+
+{{- define "responseFlat" }}{{/* layout for body first flat param schema */}}
+{{- range .op.AllOf }}
+{{- if ne "models.HTTPAPIResponse" .GoType }}
+| code | integer | 返回码 |
+| message | string | 返回消息 |
+{{- if gt (len .Properties) 0 }}
+{{- if (index .Properties 0).IsArray }}
+| data | []object | 返回body |
+{{- range ((getSchema $.app .).Properties) }}
+| data[0].{{ .Name }} | {{ template "docSchemaSimple" . }} | {{ mdBlock .Description }} |
+{{- end }}
+{{ printf "\n" }}
+{{- else }}
+{{- end }}
+| data | object | 返回body |
+{{- range ((getSchema $.app .).Properties) }}
+| data.{{ .Name }} | {{ template "docSchemaSimple" . }} | {{ mdBlock .Description }} |
+{{- end }}
+{{ printf "\n" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "docHeaders" }}{{/* renders response headers */}}
+  {{- if .Headers }}
+| Name | Type | Go type | Separator | Default | Description |
+|------|------|---------|-----------|---------|-------------|
+    {{- range .Headers }}
+| {{ .Name }} | {{ headerDocType . }} | `{{ .GoType }}` | {{ if .CollectionFormat }}`{{ docCollectionFormat .CollectionFormat .Child }}`{{ end }} | {{ if .Default }}`{{ json .Default }}`{{ end }} | {{ mdBlock .Description }} |
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- /* spec top-level information block */ -}}
+{{- $app := . -}}
+> 此文档自动化生成，请勿修改
+
+## 基本信息
+
+开发注意：
+- 记录返回的 `x-request-id` header,可排查用
+- 返回格式默认为 `application/json`
+
+## 接口列表{{/* an index of all API endpoints */}}
+
+{{ $alltags := .Tags -}}
+{{- range .OperationGroups -}}
+
+### {{ .PackageAlias -}}
+  {{- $pkg := .PackageAlias -}}
+  {{- range $alltags -}}
+    {{- if eq .Name $pkg -}}
+
+  {{ template "externalDoc" . -}}
+    {{- end -}}
+  {{- end }}
+
+| Method  | URI     | Name   | Summary |
+|---------|---------|--------|---------|
+{{- range .Operations }}
+| {{ upper .Method }} | {{ joinPath .BasePath .Path }} | [{{ .Name }}](#{{ dasherize .Name }}) | {{ .Summary }} |
+{{- end }}
+{{ printf "\n" }}
+{{- end -}}
+
+## 接口详情{{/* all paths to operations */}}
+
+{{- range .Operations }}
+ {{- $opname := .Name }}
+
+### <span id="{{ dasherize .Name }}"></span> {{ if .Summary }}{{ mdBlock .Summary }}{{ else }}{{ humanize .Name }}{{ end }} (*{{ .Name }}*)
+
+```
+{{ upper .Method }} {{ joinPath .BasePath .Path }}
+```
+  {{- with .Description }}
+
+{{ . }}
+
+  {{- end }}
+
+  {{- with .ExternalDocs }}
+
+> {{ if .URL }}[Read more]({{ .URL }} "{{ .Description }}"){{ end }}
+  {{- end }}
+
+  {{- if or (gt (len .SchemeOverrides)  0) (gt (len .ExtraSchemeOverrides) 0) }}
+
+#### URI Schemes
+
+    {{- range .SchemeOverrides }}
+  * {{ . }}
+    {{- end }}
+    {{- range .ExtraSchemeOverrides }}
+  * {{ . }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .SecurityRequirements }}
+
+#### Security Requirements
+    {{- range .SecurityRequirements }}
+  * {{ .Name }}{{ if .Scopes }}: {{ range $idx, $scope := .Scopes }}{{ if gt $idx 0 }}, {{ end }}{{ $scope }}{{ end }}{{ end }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Params }}
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+{{- range .PathParams }}{{ template "docParam" . }}{{- end }}
+{{- range .HeaderParams }}{{ template "docParam" . }}{{- end }}
+{{- range .QueryParams }}{{ template "docParam" . }}{{- end }}
+{{- range .FormParams }}{{ template "docParam" . }}{{- end }}
+{{- range .Params }}
+{{- if .IsBodyParam }}
+  {{- template "docModelBodyParamFlat" (getSchema $app .) }}
+{{- end }}
+{{- end }}
+{{- end }}{{/* end .Params */}}
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+{{- template "responseFlat" (dict "app" $app "op" (respSchema .)) }}
+
+#### 输入示例
+
+```bash
+{{ upper .Method }} {{ joinPath .BasePath .Path }} HTTP/1.1
+Content-Type: application/json
+
+{{ range .Params -}}
+{{ if .IsBodyParam -}}
+{{ genJsonExample $app (getSchema $app .) }}
+{{- end -}}
+{{- end }}
+```
+
+#### 输出示例
+
+```json
+{{ genJsonExample $app (respSchema .) }}
+```
+
+{{- end }}{{- /* end .Operations */}}
+
+## Models
+
+{{- range .Models }}
+
+### <span id="{{ dasherize .Name }}"></span> {{ .Name }}
+
+{{ template "docModel" . }}
+
+  {{- if .ExtraSchemas }}
+
+#### Inlined models
+    {{- range .ExtraSchemas }}
+      {{- if ne .Name "" }}
+
+**<span id="{{ dasherize .Name }}"></span> {{ .Name }}**
+
+{{ template "docModel" . }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}

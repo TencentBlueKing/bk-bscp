@@ -187,13 +187,21 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 	}
 
 	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
 	// 1. batch create template variables
 	if len(toCreate) > 0 {
 		if err = s.dao.TemplateVariable().BatchCreateWithTx(kt, tx, toCreate); err != nil {
 			logs.Errorf("batch create template variables failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
@@ -202,9 +210,6 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 	if len(toUpdate) > 0 {
 		if err = s.dao.TemplateVariable().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
 			logs.Errorf("batch update template variables failed, err: %v, rid: %s", err, kt.Rid)
-			if rErr := tx.Rollback(); rErr != nil {
-				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
-			}
 			return nil, err
 		}
 	}
@@ -213,6 +218,7 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+	committed = true
 
 	createIds := []uint32{}
 	for _, v := range toCreate {

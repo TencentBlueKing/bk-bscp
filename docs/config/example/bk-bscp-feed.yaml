@@ -1,0 +1,135 @@
+bcs:
+  host: ""
+  token: ""
+credential:
+  encryption_algorithm: "aes"
+  # 32位大小写+数字
+  master_key: "[master key]"
+downstream:
+  bounceIntervalHour: 48
+# bkapi 配置
+esb:
+  appCode: "[app code]"
+  appSecret: "[app secret]"
+  endpoints:
+    - "[bkapi url]"
+  user: "[bkapi user]"
+  bscpHost: "[bscp api url]"
+  
+# defines service related settings.
+service:
+  # defines etcd related settings
+  etcd:
+    # endpoints is a list of URLs.
+    endpoints:
+      - [etcd url]
+    # dialTimeoutMS is the timeout milliseconds for failing to establish a connection.
+    dialTimeoutMS:
+    # username is a user's name for authentication.
+    username:
+    # password is a password for authentication.
+    password:
+    # defines tls related options.
+    tls:
+      # server should be accessed without verifying the TLS certificate.
+      insecureSkipVerify: 
+      # server requires TLS client certificate authentication.
+      certFile:
+      # server requires TLS client certificate authentication.
+      keyFile:
+      # trusted root certificates for server.
+      caFile:
+      # the password to decrypt the certificate.
+      password:
+
+log:
+  alsoToStdErr: false
+  logAppend: false
+  logDir: ./log
+  maxFileNum: 5
+  maxPerFileSizeMB: 1024
+  maxPerLineSizeKB: 2
+  toStdErr: true
+  verbosity: 1
+loginAuth: null
+network:
+  bindIP: [ip]
+  gwHttpPort: 80
+rateLimiter:
+  biz:
+    default:
+      burst: 200
+      limit: 100
+  clientBandwidth: 50
+  enabled: true
+  global:
+    burst: 1000
+    limit: 500
+redisCluster:
+  db: 1
+  endpoints:
+  - [redis url]
+  password: [redis password]
+
+# defines all the repo related settings.
+repository:
+  # storageType: S3
+  storageType: BKREPO
+  bkRepo:
+    endpoints:
+        - [bkrepo url]
+    project: [bkrepo project]
+    username: [bkrepo username]
+    password: [bkrepo password]
+  s3:
+    endpoint: [s3 endpoint]
+    accessKeyID: [s3 access key]
+    secretAccessKey: [s3 secret key]
+    useSSL: true
+    bucketName: [s3 bucket name]
+  redisCluster:
+    endpoints:
+        - [redis url]
+    db: 1
+    password: [redis password]
+    
+# defines sharding related settings.
+sharding:
+  # defines database related settings.
+  adminDatabase:
+    # is a seed list of host:port addresses of database nodes.
+    endpoints:
+      - [mysql url]
+    database: [database]
+    user: [user]
+    password: [password]
+    # DialTimeoutSec is timeout in seconds to wait for a response from the db server
+    # all the timeout default value reference:
+    # https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html.
+    dialTimeoutSec:
+    readTimeoutSec:
+    writeTimeoutSec:
+    maxIdleTimeoutMin:
+    maxOpenConn:
+    maxIdleConn:
+    # defines tls related options.
+    tls:
+      # server should be accessed without verifying the TLS certificate.
+      insecureSkipVerify: 
+      # server requires TLS client certificate authentication.
+      certFile:
+      # server requires TLS client certificate authentication.
+      keyFile:
+      # trusted root certificates for server.
+      caFile:
+      # the password to decrypt the certificate.
+      password:
+  # maxSlowLogLatencyMS defines the max tolerance in millisecond to execute
+  # the database command, if the cost time of execute have >= the maxSlowLogLatencyMS
+  # then this request will be logged.
+  maxSlowLogLatencyMS: 200
+  # limiter limit the incoming request frequency to database for each sharding, and
+  # each sharding have the independent request limitation.
+  limiter:
+    qps: 500
+    burst: 500

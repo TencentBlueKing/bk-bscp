@@ -624,8 +624,8 @@
     clientStore.$patch((state) => {
       state.searchQuery.search = {};
     });
-    releaseChangeStatusFilterChecked.value = [];
-    onlineStatusFilterChecked.value = [];
+    releaseChangeStatusFilterChecked.value.length = 0;
+    onlineStatusFilterChecked.value.length = 0;
   };
 
   // 更改每页条数

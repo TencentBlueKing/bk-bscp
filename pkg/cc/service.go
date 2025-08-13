@@ -400,6 +400,7 @@ type FeedServerSetting struct {
 	Downstream   Downstream          `yaml:"downstream"`
 	MRLimiter    MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
 	RateLimiter  RateLimiter         `yaml:"rateLimiter"`
+	Metric       Metric              `yaml:"metrics"`
 }
 
 // trySetFlagBindIP try set flag bind ip.

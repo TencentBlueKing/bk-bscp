@@ -46,6 +46,7 @@ type proxy struct {
 	configExportService *configExport
 	kvService           *kvService
 	varService          *variableService
+	mc                  *metric
 }
 
 // newProxy create new mux proxy.
@@ -85,7 +86,9 @@ func newProxy(dis serviced.Discover) (*proxy, error) {
 		return nil, err
 	}
 
-	configImportService, err := newConfigImportService(cc.ApiServer().Repo, authorizer, cfgClient)
+	mc := initMetric()
+
+	configImportService, err := newConfigImportService(cc.ApiServer().Repo, authorizer, cfgClient, mc)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +113,7 @@ func newProxy(dis serviced.Discover) (*proxy, error) {
 		cfgClient:           cfgClient,
 		kvService:           kv,
 		varService:          variable,
+		mc:                  mc,
 	}
 
 	p.initBizsOfTmplSpaces()

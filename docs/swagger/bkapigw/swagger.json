@@ -1,0 +1,1288 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "title": "pkg/protocol/config-server/config_service.proto",
+    "contact": {},
+    "version": "version not set"
+  },
+  "paths": {
+    "/api/v1/biz/{biz_id}/content/download": {
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "下载文件内容",
+        "operationId": "download_content",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "X-Bscp-App-Id",
+            "in": "header"
+          },
+          {
+            "type": "integer",
+            "description": "如果是模版配置项，则设置该模版空间ID",
+            "name": "X-Bscp-Template-Space-Id",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/biz/{biz_id}/content/metadata": {
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "获取文件内容元数据",
+        "operationId": "get_content_metadata",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "app-id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/biz/{biz_id}/content/upload": {
+      "put": {
+        "consumes": [
+          "text/plain"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "上传文件内容",
+        "operationId": "upload_content",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "X-Bscp-App-Id",
+            "in": "header"
+          },
+          {
+            "type": "integer",
+            "description": "如果是模版配置项，则设置该模版空间ID",
+            "name": "X-Bscp-Template-Space-Id",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/config_items": {
+      "put": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "批量创建或更新文件配置项",
+        "operationId": "Config_BatchUpsertConfigItems",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertConfigItemsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertConfigItemsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "创建键值配置项",
+        "operationId": "Config_CreateKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateKvBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateKvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/list": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取键值配置项列表",
+        "operationId": "Config_ListKvs",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListKvsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}": {
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除键值配置项",
+        "operationId": "Config_DeleteKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "键值配置项ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteKvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key}": {
+      "put": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新键值配置项",
+        "operationId": "Config_UpdateKv",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "配置项名",
+            "name": "key",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateKvBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateKvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/publish": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "生成版本并发布",
+        "operationId": "Config_GenerateReleaseAndPublish",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigGenerateReleaseAndPublishBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId}": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "生成版本",
+        "operationId": "Config_CreateRelease",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateReleaseBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateReleaseResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "发布指定版本",
+        "operationId": "Config_Publish",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务版本ID",
+            "name": "releaseId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigPublishBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "Healthz"
+        ],
+        "summary": "Healthz 接口",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ConfigBatchUpsertConfigItemsBody": {
+      "type": "object",
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsBatchUpsertConfigItemsReqTemplateBinding"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsBatchUpsertConfigItemsReqConfigItem"
+          }
+        },
+        "replaceAll": {
+          "description": "是否替换全部：如果为true会覆盖已有的文件，不存在的则删除",
+          "type": "boolean",
+          "default": false
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        }
+      }
+    },
+    "ConfigCreateKvBody": {
+      "description": "请求参数",
+      "type": "object",
+      "required": [
+        "key",
+        "kvType",
+        "value"
+      ],
+      "properties": {
+        "certificateExpirationDate": {
+          "description": "证书过期时间",
+          "type": "string"
+        },
+        "key": {
+          "description": "配置项名",
+          "type": "string"
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "string"
+        },
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "ConfigCreateReleaseBody": {
+      "type": "object",
+      "properties": {
+        "memo": {
+          "description": "版本描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "版本名称",
+          "type": "string"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        }
+      }
+    },
+    "ConfigGenerateReleaseAndPublishBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "全部实例上线：是=true，否=false",
+          "type": "boolean"
+        },
+        "grayPublishMode": {
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups ",
+          "type": "string"
+        },
+        "groupName": {
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组",
+          "type": "string"
+        },
+        "groups": {
+          "description": "分组上线：分组ID，如果有值那么all必须是false",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "releaseMemo": {
+          "description": "版本描述",
+          "type": "string"
+        },
+        "releaseName": {
+          "description": "服务版本名",
+          "type": "string"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        }
+      }
+    },
+    "ConfigListKvsBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "key": {
+          "description": "查询特定的配置项名",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "order": {
+          "description": "排序类型：desc",
+          "type": "string"
+        },
+        "searchFields": {
+          "description": "支持搜索的字段：key,revister,creator",
+          "type": "string",
+          "default": "key,revister,creator"
+        },
+        "searchKey": {
+          "description": "搜索的值",
+          "type": "string"
+        },
+        "searchValue": {
+          "description": "搜索的值",
+          "type": "string"
+        },
+        "sort": {
+          "description": "排序的值，例如：key",
+          "type": "string"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
+        },
+        "status": {
+          "description": "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "topIds": {
+          "description": "需要置顶ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "withStatus": {
+          "description": "暂时未用到",
+          "type": "boolean"
+        }
+      }
+    },
+    "ConfigPublishBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "全部实例上线：是=true，否=false",
+          "type": "boolean"
+        },
+        "default": {
+          "type": "boolean"
+        },
+        "grayPublishMode": {
+          "description": "灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups ",
+          "type": "string"
+        },
+        "groupName": {
+          "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组",
+          "type": "string"
+        },
+        "groups": {
+          "description": "分组上线：分组ID，如果有值那么all必须是false",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "labels": {
+          "description": "要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "memo": {
+          "description": "上线说明",
+          "type": "string"
+        }
+      }
+    },
+    "ConfigUpdateKvBody": {
+      "description": "请求参数",
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "pbatbTemplateBinding": {
+      "type": "object",
+      "title": "TemplateBinding source resource reference: pkg/dal/table/app_template_binding.go",
+      "properties": {
+        "templateRevisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbTemplateRevisionBinding"
+          }
+        },
+        "templateSetId": {
+          "description": "模板套餐ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbatbTemplateRevisionBinding": {
+      "type": "object",
+      "properties": {
+        "isLatest": {
+          "description": "是否是最新：模板文件版本ID在该模板文件中是最新的一个版本",
+          "type": "boolean"
+        },
+        "templateId": {
+          "description": "模板文件ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "templateRevisionId": {
+          "description": "模板文件版本ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbbaseRevision": {
+      "type": "object",
+      "title": "Revision source resource reference: pkg/dal/table/table.go",
+      "properties": {
+        "createAt": {
+          "description": "创建时间",
+          "type": "string"
+        },
+        "creator": {
+          "description": "创建人",
+          "type": "string"
+        },
+        "reviser": {
+          "description": "更新人",
+          "type": "string"
+        },
+        "updateAt": {
+          "description": "更新时间",
+          "type": "string"
+        }
+      }
+    },
+    "pbcontentContentSpec": {
+      "type": "object",
+      "title": "ContentSpec source resource reference: pkg/dal/table/content.go",
+      "properties": {
+        "byteSize": {
+          "description": "文件大小",
+          "type": "string",
+          "format": "uint64"
+        },
+        "md5": {
+          "description": "文件md5",
+          "type": "string"
+        },
+        "signature": {
+          "description": "文件sha256",
+          "type": "string"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsReqConfigItem": {
+      "type": "object",
+      "properties": {
+        "byteSize": {
+          "description": "文件大小",
+          "type": "string",
+          "format": "uint64"
+        },
+        "charset": {
+          "description": "文件编码",
+          "type": "string"
+        },
+        "fileMode": {
+          "description": "文件模式",
+          "type": "string",
+          "default": "unix"
+        },
+        "fileType": {
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary",
+          "type": "string"
+        },
+        "md5": {
+          "description": "文件md5",
+          "type": "string"
+        },
+        "memo": {
+          "description": "文件描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "文件名",
+          "type": "string"
+        },
+        "path": {
+          "description": "文件路径",
+          "type": "string"
+        },
+        "privilege": {
+          "description": "文件权限",
+          "type": "string"
+        },
+        "sign": {
+          "description": "文件sha256",
+          "type": "string"
+        },
+        "user": {
+          "description": "用户权限名",
+          "type": "string"
+        },
+        "userGroup": {
+          "description": "用户组权限名",
+          "type": "string"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsReqTemplateBinding": {
+      "type": "object",
+      "properties": {
+        "templateBinding": {
+          "$ref": "#/definitions/pbatbTemplateBinding"
+        },
+        "templateSpaceId": {
+          "description": "模板空间ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbcsBatchUpsertConfigItemsResp": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "description": "文件配置项ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    "pbcsCreateKvResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "键值配置项ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbcsCreateReleaseResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "生成配置服务版本ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbcsDeleteKvResp": {
+      "type": "object"
+    },
+    "pbcsListKvsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbkvKv"
+          }
+        },
+        "exclusionCount": {
+          "description": "排除删除后的数量",
+          "type": "integer",
+          "format": "int64"
+        },
+        "isCertExpired": {
+          "description": "是否有证书过期：是=true，否=false",
+          "type": "boolean"
+        }
+      }
+    },
+    "pbcsPublishResp": {
+      "type": "object",
+      "properties": {
+        "haveCredentials": {
+          "description": "是否有关联密钥",
+          "type": "boolean"
+        },
+        "havePull": {
+          "description": "是否被客户端拉取过",
+          "type": "boolean"
+        },
+        "id": {
+          "description": "版本发布后的ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbcsUpdateKvResp": {
+      "type": "object"
+    },
+    "pbkvKv": {
+      "type": "object",
+      "title": "Kv source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbkvKvAttachment"
+        },
+        "contentSpec": {
+          "$ref": "#/definitions/pbcontentContentSpec"
+        },
+        "id": {
+          "description": "键值配置项ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "kvState": {
+          "description": "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)",
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbkvKvSpec"
+        }
+      }
+    },
+    "pbkvKvAttachment": {
+      "type": "object",
+      "title": "KvAttachment source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "appId": {
+          "description": "服务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbkvKvSpec": {
+      "type": "object",
+      "title": "KvSpec source resource reference: pkg/dal/table/kvs.go",
+      "properties": {
+        "certificateExpirationDate": {
+          "description": "证书过期时间",
+          "type": "string"
+        },
+        "key": {
+          "description": "配置项名",
+          "type": "string"
+        },
+        "kvType": {
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)",
+          "type": "string"
+        },
+        "memo": {
+          "description": "描述",
+          "type": "string"
+        },
+        "secretHidden": {
+          "description": "是否隐藏值：是=true，否=false",
+          "type": "boolean"
+        },
+        "secretType": {
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)",
+          "type": "string"
+        },
+        "value": {
+          "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "pbtvTemplateVariableSpec": {
+      "type": "object",
+      "title": "TemplateVariableSpec source resource reference: pkg/dal/table/template_variable.go",
+      "properties": {
+        "defaultVal": {
+          "description": "默认值",
+          "type": "string"
+        },
+        "memo": {
+          "description": "变量描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "变量名称",
+          "type": "string"
+        },
+        "type": {
+          "description": "变量类型：string、number",
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "protobufNullValue": {
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value.",
+      "type": "string",
+      "default": "NULL_VALUE",
+      "enum": [
+        "NULL_VALUE"
+      ]
+    },
+    "repository.ObjectMetadata": {
+      "type": "object",
+      "properties": {
+        "byte_size": {
+          "type": "integer"
+        },
+        "md5": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "rest.OKResponse": {
+      "type": "object",
+      "properties": {
+        "data": {}
+      }
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Config"
+    }
+  ]
+}

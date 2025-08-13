@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -187,8 +188,8 @@ func ValidateFileName(kit *kit.Kit, name string) error {
 	if len(name) < 1 {
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid name, length should >= 1"))
 	}
-
-	if len(name) > 64 {
+	charLength := utf8.RuneCountInString(name)
+	if charLength > 64 {
 		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid name, length should <= 64"))
 	}
 

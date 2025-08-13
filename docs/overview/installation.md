@@ -1,4 +1,5 @@
 # BSCP部署文档
+> 这里展示在单台机器上直接通过二进制方式直接启动，并且你已经通过编译得到了二进制
 
 ## 1. 依赖
 
@@ -15,8 +16,6 @@
 - Etcd >= 3.2.0
 - Redis-Cluster >= 4.0
 
-
-
 ## 2. BSCP 微服务进程
 
 | 微服务名称           | 描述                             |
@@ -27,6 +26,7 @@
 | bk-bscp-configserver | 配置微服务，提供各类资源管理功能 |
 | bk-bscp-dataservice  | 数据微服务，提供数据管理功能     |
 | bk-bscp-feedserver   | 配置拉取微服务，提供拉取配置功能 |
+| vault                | 键值加密存储系统               |
 
 
 
@@ -81,33 +81,60 @@ mysql -uroot -p
 
 
 ## 4. 修改微服务配置文件
+参考配置：[config/example](../config/example/) 
 
-前置准备已经获取到了BSCP配置文件中需要的全部必填配置参数，将 Release包中的 etc 目录下的各微服务配置文件进行修改，部分 mysql 或者 redis 等配置参数可按需配置，如果不配置则使用默认值，配置文件中有详细说明。apiserver_api_gw_public.key 与 feedserver_api_gw_public.key 文件分别替换为 apiserver 和 feedserver 网关的API公钥(指纹)。
+前置准备已经获取到了BSCP配置文件中需要的全部必填配置参数，部分 mysql 或者 redis 等配置参数可按需配置，如果不配置则使用默认值，配置文件中有详细说明。apiserver_api_gw_public.key 与 feedserver_api_gw_public.key 文件分别替换为 apiserver 和 feedserver 网关的API公钥(指纹)。
 
-**bscp-release/etc下文件说明：**
-
-```shell
-├── api_server.yaml												# apiserver 配置文件
-├── apiserver_api_gw_public.key						# apiserver 网关的API公钥(指纹)
-├── auth_server.yaml											# authserver 配置文件
-├── cache_service.yaml										# cacheservice 配置文件
-├── config_server.yaml										# configserver 配置文件
-├── data_service.yaml											# dataservice 配置文件
-├── feed_server.yaml											# feedserver 配置文件
-└── feedserver_api_gw_public.key					# feedserver 网关的API公钥(指纹)
+配置文件主要有三份：
 ```
-
+- vault/vault.hcl : vault 服务启动配置
+- vault/root-key.yaml : vault-sidecar vault 解密以及插件注册
+- bk-bscp-feed.yaml : feedserver 启动配置
+- bk-bscp.yaml : apiserver,authserver,cacheservice,configserver,dataservice 启动配置
+- bk-bscp-ui.yaml: ui 前端服务启动配置
+```
 
 
 ### 5. 启动服务
 
-**各服务启动命令如下：**
+#### 5.1 启动 vault 以及初始化
+1、先启动 vault
+```
+./vault server -config=./config/vault/vault_barrier.hcl 
+```
+
+2、配置 VAULT_ADDR 环境变量：假设vault监听的是127.0.0.1:8200 
+```
+export VAULT_ADDR=http://127.0.0.1:8200
+```
+
+3、支持init
+执行
+```
+vault-sidecar init
+```
+
+获取5个`unsealKeys`和一个`token`，填入vault/root-key.yaml配置中
+
+```
+# 设置 VAULT_TOKEN 环境变量，启动dataserver从这里读取
+export VAULT_TOKEN=xxxx  
+```
+
+4、解密
+
+```
+vault-sidecar server -c ./config/vault/root-key.yaml
+```
+
+#### 5.2 依次启动其他服务
 
 ```shell
-bk-bscp-apiserver --config-file /data/bkee/etc/bscp/api_server.yaml --public-key /data/bkee/etc/bscp/api_gw_public.key
-bk-bscp-authserver --config-file /data/bkee/etc/bscp/auth_server.yaml
-bk-bscp-cacheservice --config-file /data/bkee/etc/bscp/cache_service.yaml
-bk-bscp-configserver --config-file /data/bkee/etc/bscp/config_server.yaml
-bk-bscp-dataservice --config-file /data/bkee/etc/bscp/data_service.yaml
-bk-bscp-feedserver --config-file /data/bkee/etc/bscp/feed_server.yaml --public-key /data/bkee/etc/bscp/fs_api_gw_public.key
+bk-bscp-authserver -c ./config/bk-bscp.yaml
+bk-bscp-dataservice -c ./config/bk-bscp.yaml
+bk-bscp-configserver -c ./config/bk-bscp.yaml
+bk-bscp-apiserver -c ./config/bk-bscp.yaml --port 8081
+bk-bscp-cachserver -c ./config/bk-bscp.yaml
+bk-bscp-feedserver  -c ./config/bk-bscp-feed.yaml
+bk-bscp-ui --config ./config/bk-bscp-ui.yaml --bind-address=[替换为机器IP]
 ```

@@ -92,7 +92,7 @@
                         disabled:
                           row.status.publish_status === 'not_released' ||
                           row.status.strategy_status !== 'pending_approval' ||
-                          row.status.publish_status === 'pending_publish',
+                          row.status.publish_status !== 'pending_publish',
                         placement: 'bottom',
                         content: t('只支持未上线和未待审批版本'),
                       }"
@@ -101,7 +101,7 @@
                       :disabled="
                         row.status.publish_status !== 'not_released' ||
                         row.status.strategy_status === 'pending_approval' ||
-                        row.status.publish_status !== 'pending_publish'
+                        row.status.publish_status === 'pending_publish'
                       "
                       @click.stop="handleDeprecate(row)">
                       {{ t('版本废弃') }}
