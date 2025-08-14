@@ -13,13 +13,9 @@ const routes = [
       // 仍不存在时取空间列表中第一个空间
       let spaceId = localStorage.getItem('lastAccessedSpace');
       const { spaceList } = useGlobalStore();
-      if (spaceId) {
-        const hasPermSpace = spaceList.find((item: ISpaceDetail) => item.space_id === spaceId && item.permission);
-        if (!hasPermSpace) {
-          const firstHasPermSpace = spaceList.find((item: ISpaceDetail) => item.permission);
-          spaceId = firstHasPermSpace ? firstHasPermSpace.space_id : spaceList[0]?.space_id;
-        }
-      }
+      const firstHasPermSpace = spaceList.find((item: ISpaceDetail) => item.permission);
+      const hasPermSpace = spaceList.find((item: ISpaceDetail) => item.space_id === spaceId && item.permission);
+      spaceId = hasPermSpace ? spaceId : (firstHasPermSpace?.space_id ?? spaceList[0]?.space_id);
       return { name: 'service-all', params: { spaceId } };
     },
   },
