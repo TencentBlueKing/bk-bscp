@@ -2,13 +2,18 @@
   <!-- 多选模式 -->
   <BkUserSelector
     v-if="spaceFeatureFlags.ENABLE_MULTI_TENANT_MODE"
-    v-model="selectedUsers"
+    :model-value="modelValue"
     :api-base-url="api"
     :tenant-id="tenantId"
     :multiple="true"
     :draggable="true"
     @change="handleUsersChange" />
-  <BkMemberSelector v-else v-bind="$attrs" :api="api" :class="{ 'input-error': isError }">
+  <BkMemberSelector
+    v-else
+    :model-value="modelValue"
+    :api="api"
+    :class="{ 'input-error': isError }"
+    @change="emits('change', $event)">
     <template v-for="(obj, name) in $slots" #[name]="data">
       <slot :name="name" v-bind="data" />
     </template>
@@ -23,10 +28,12 @@
   import useUserStore from '../../store/user';
   import useGlobalStore from '../../store/global';
   import { storeToRefs } from 'pinia';
+  import { ITenantUser } from '../../../types/index';
 
   withDefaults(
     defineProps<{
       isError: boolean;
+      modelValue: string[];
     }>(),
     {},
   );
@@ -40,8 +47,6 @@
   // 租户 ID
   const tenantId = ref(userInfo.value.tenant_id);
 
-  // 多选选中值
-  const selectedUsers = ref([]);
 
   onBeforeMount(() => {
     if (spaceFeatureFlags.value.ENABLE_MULTI_TENANT_MODE) {
@@ -52,8 +57,9 @@
   });
 
   // 处理多选模式下的值变化
-  const handleUsersChange = (users: any) => {
-    emits('change', users);
+  const handleUsersChange = (users: ITenantUser[]) => {
+    const userList = users.map((user: ITenantUser) => user.bk_username);
+    emits('change', userList);
   };
 </script>
 
