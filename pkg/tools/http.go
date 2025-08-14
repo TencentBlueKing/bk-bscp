@@ -30,9 +30,9 @@ import (
 var (
 	// maskKeys 敏感参数和头部key
 	maskKeys = map[string]struct{}{
-		// "bk_app_secret": {},
-		// "bk_token":      {},
-		// "Authorization": {},
+		"bk_app_secret": {},
+		"bk_token":      {},
+		"Authorization": {},
 	}
 )
 

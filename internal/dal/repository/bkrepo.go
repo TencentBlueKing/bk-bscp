@@ -103,7 +103,7 @@ func (c *bkrepoClient) buildProject(kt *kit.Kit) string {
 	return c.project
 }
 
-// ensureProject 多租户或者为外部自动化创建项目场景，固定自动化创建{tenantID}.bk-bscp项目
+// ensureProject 多租户或者为外部自动化创建项目
 func (c *bkrepoClient) ensureProject(ctx context.Context) error {
 	exist, err := c.cli.IsProjectExist(ctx)
 	if err != nil {
