@@ -10,6 +10,10 @@
  * limitations under the License.
  */
 
+// 项目接口文档 https://github.com/TencentBlueKing/bk-repo/blob/master/docs/apidoc/repo/project.md
+// 仓库接口文档 https://github.com/TencentBlueKing/bk-repo/blob/master/docs/apidoc/repo/repository.md
+// 通用制品接口文档 https://github.com/TencentBlueKing/bk-repo/blob/master/docs/apidoc/generic/simple.md
+
 // Package repo provides bkrepo client.
 package repo
 
@@ -114,6 +118,43 @@ func (c *Client) IsProjectExist(ctx context.Context) error {
 		SubResourcef("/repository/api/project/exist/%s", c.buildProject(ctx)).
 		WithHeaders(c.buildHeaders(ctx)).
 		Do()
+	if resp.Err != nil {
+		return resp.Err
+	}
+
+	// repo uses StatusBadRequest to mark the failure of the request, so StatusBadRequest
+	// needs special handling to read out the error information in the body message.
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest {
+		return fmt.Errorf("response status code: %d", resp.StatusCode)
+	}
+
+	respBody := new(rest.BaseResp)
+	if err := resp.Into(respBody); err != nil {
+		return err
+	}
+
+	if respBody.Code != 0 {
+		return fmt.Errorf("code: %d, message: %s", respBody.Code, respBody.Message)
+	}
+
+	return nil
+}
+
+// CreateProject 创建项目
+func (c *Client) CreateProject(ctx context.Context) error {
+	req := &CreateProjectReq{
+		Name:        c.buildProject(ctx),
+		DisplayName: "bk-bscp",
+		Description: "bk-bscp repository",
+	}
+
+	resp := c.client.Get().
+		WithContext(ctx).
+		SubResourcef("/repository/api/project/create", c.buildProject(ctx)).
+		WithHeaders(c.buildHeaders(ctx)).
+		Body(req).
+		Do()
+
 	if resp.Err != nil {
 		return resp.Err
 	}

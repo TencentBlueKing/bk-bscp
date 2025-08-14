@@ -101,6 +101,19 @@ func (c *bkrepoClient) buildProject(kt *kit.Kit) string {
 	return c.project
 }
 
+// ensureProject 多租户或者为外部自动化创建项目场景，固定自动化创建{tenantID}.bk-bscp项目
+func (c *bkrepoClient) ensureProject(kt *kit.Kit) error {
+	if err := c.cli.IsProjectExist(kt.Ctx); err != nil {
+		return err
+	}
+
+	if err := c.cli.CreateProject(kt.Ctx); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
 func (c *bkrepoClient) ensureRepo(kt *kit.Kit) error {
 	repoName, err := repo.GenRepoName(kt.BizID)
 	if err != nil {
@@ -109,6 +122,10 @@ func (c *bkrepoClient) ensureRepo(kt *kit.Kit) error {
 
 	if c.repoCreated.Exist(repoName) {
 		return nil
+	}
+
+	if err = c.ensureProject(kt); err != nil {
+		return err
 	}
 
 	repoReq := &repo.CreateRepoReq{
