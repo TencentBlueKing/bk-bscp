@@ -117,7 +117,7 @@ type ProjectExistResp struct {
 
 // CreateProjectReq 创建项目接口
 type CreateProjectReq struct {
-	Name        string `json:"name"` // 非多租户bk-bscp / 多租户下{tenantID}.bk-bscp
+	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 	Description string `json:"description"`
 }
