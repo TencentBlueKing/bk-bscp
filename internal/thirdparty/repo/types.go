@@ -110,6 +110,11 @@ type BkRepoBaseResp struct {
 	TraceID string `json:"traceId"`
 }
 
+type ProjectExistResp struct {
+	BkRepoBaseResp
+	Data bool `json:"data"` // 是否存在, true存在, false不存在
+}
+
 // CreateProjectReq 创建项目接口
 type CreateProjectReq struct {
 	Name        string `json:"name"` // 非多租户bk-bscp / 多租户下{tenantID}.bk-bscp
