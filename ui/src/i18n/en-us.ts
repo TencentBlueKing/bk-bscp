@@ -94,7 +94,7 @@ export default {
   任意类型: 'Any type',
   编辑基本属性: 'Edit basic properties',
   只显示我创建的服务: 'Show only services I created',
-  '搜索 服务别名、服务名称、服务描述、更新人': 'Search service alias, service name, service description, regenerator',
+  '搜索 服务别名、服务名称、服务描述、创建人、更新人': 'Search service alias, service name, service description, creator, updater',
   启用: 'Enable',
   table_键值型: 'KV Type',
   服务列表: 'Service List',

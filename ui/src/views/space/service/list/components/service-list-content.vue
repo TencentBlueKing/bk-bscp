@@ -27,7 +27,7 @@
           ref="searchSelectorRef"
           :search-filed="searchFiled"
           :user-filed="['reviser']"
-          :placeholder="t('搜索 服务别名、服务名称、服务描述、更新人')"
+          :placeholder="t('搜索 服务别名、服务名称、服务描述、创建人、更新人')"
           class="search-app-name"
           @search="handleSearch" />
         <div class="panel-wrap">
@@ -219,6 +219,7 @@
     { field: 'alias', label: t('服务别名') },
     { field: 'name', label: t('服务名称') },
     { field: 'memo', label: t('服务描述') },
+    { field: 'creator', label: t('创建人') },
     { field: 'reviser', label: t('更新人') },
   ];
   const searchSelectorRef = ref();
@@ -231,9 +232,6 @@
       start: (current - 1) * limit,
       limit,
     };
-    if (onlyShowMyService.value) {
-      searchQuery.value.creator = userInfo.value.username;
-    }
     rules.search = searchQuery.value;
     if (activeType.value) {
       rules.config_type = activeType.value === 'all' ? '' : activeType.value;
@@ -243,11 +241,8 @@
   const isEmpty = computed(() => serviceList.value.length === 0);
 
   watch(
-    () => [onlyShowMyService.value, props.spaceId, activeType.value],
+    () => [props.spaceId, activeType.value],
     () => {
-      searchQuery.value = {};
-      isSearchEmpty.value = false;
-      pagination.value.limit = 50;
       refreshSeviceList();
     },
   );
@@ -304,7 +299,6 @@
           },
         ],
       };
-
       showApplyPermDialog.value = true;
     }
   };
@@ -356,7 +350,15 @@
 
   // 切换展示我创建的服务
   const handleChangeShowService = (val: boolean) => {
+    if (val) {
+      // 勾选只显示我的服务 清除创建人搜索项
+      searchSelectorRef.value.clearCreator();
+      searchQuery.value.creator = userInfo.value.username;
+    } else {
+      searchQuery.value.creator = '';
+    }
     localStorage.setItem('onlyShowMyService', val.toString());
+    refreshSeviceList();
   };
 
   const handleLimitChange = (limit: number) => {
@@ -371,6 +373,11 @@
   };
 
   const handleSearch = (list: { [key: string]: string }) => {
+    // 搜索项中包含创建人 取消勾选只显示我创建的服务
+    if (list.creator) {
+      onlyShowMyService.value = false;
+      localStorage.setItem('onlyShowMyService', 'false');
+    }
     searchQuery.value = list;
     isSearchEmpty.value = true;
     refreshSeviceList();

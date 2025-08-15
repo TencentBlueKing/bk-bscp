@@ -98,6 +98,12 @@
     clear: () => {
       searchValue.value = [];
     },
+    clearCreator: () => {
+      const creatorIndex = searchValue.value.findIndex((item) => item.id === 'creator');
+      if (creatorIndex !== -1) {
+        searchValue.value.splice(creatorIndex, 1);
+      }
+    },
   });
 </script>
 
