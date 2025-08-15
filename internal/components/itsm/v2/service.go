@@ -10,8 +10,8 @@
  * limitations under the License.
  */
 
-// Package itsmv4 xxx
-package itsmv4
+// Package itsm xxx
+package v2
 
 import (
 	"context"
@@ -26,9 +26,9 @@ import (
 )
 
 var (
-	getServiceDetailPath  = "/itsm/workflow/"
+	getServiceDetailPath  = "/itsm/get_service_detail/"
 	getWorkflowDetailPath = "/itsm/get_workflow_detail/"
-	listServicesPath      = "/itsm/system_workflow/list/"
+	listServicesPath      = "/itsm/get_services/"
 	importServicePath     = "/itsm/import_service/"
 	updateServicePath     = "/itsm/update_service/"
 )

@@ -11,7 +11,7 @@
  */
 
 // Package itsm xxx
-package itsm
+package v2
 
 import (
 	"context"
