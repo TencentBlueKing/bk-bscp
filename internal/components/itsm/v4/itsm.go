@@ -11,7 +11,7 @@
  */
 
 // Package itsmv4 xxx
-package itsmv4
+package v4
 
 import (
 	"context"
@@ -24,21 +24,32 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
+// ItsmV4SystemMigrate 初始化模板
+func ItsmV4SystemMigrate(ctx context.Context) {
+	// kit := kit.FromGrpcContext(ctx)
+
+	// 读取模板内容
+
+}
+
 // GetAuthHeader 获取蓝鲸网关通用认证头
-func GetAuthHeader() string {
-	return fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s", "bk_username": "%s"}`,
-		cc.DataService().Esb.AppCode, cc.DataService().Esb.AppSecret, cc.DataService().Esb.User)
+func GetAuthHeader(ctx context.Context) map[string]string {
+	kit := kit.FromGrpcContext(ctx)
+
+	return map[string]string{
+		"Content-Type": "application/json",
+		"X-Bkapi-Authorization": fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s", "bk_username": "%s"}`,
+			cc.DataService().Esb.AppCode, cc.DataService().Esb.AppSecret, cc.DataService().Esb.User),
+		constant.BkTenantID: kit.TenantID,
+	}
 }
 
 // ItsmRequest itsm request
-// nolint revive
 func ItsmRequest(ctx context.Context, method, reqURL string, data any) ([]byte, error) {
-	kit := kit.FromGrpcContext(ctx)
+
 	client := components.GetClient().R().
 		SetContext(ctx).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("X-Bkapi-Authorization", GetAuthHeader()).
-		SetHeader(constant.BkTenantID, kit.TenantID)
+		SetHeaders(GetAuthHeader(ctx))
 
 	switch method {
 	case http.MethodGet:
