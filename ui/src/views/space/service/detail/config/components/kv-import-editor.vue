@@ -388,12 +388,6 @@
           height: 100%;
           .content {
             height: calc(100% - 40px);
-            .example {
-              height: 100%;
-            }
-            .bk-textarea {
-              height: 100%;
-            }
           }
         }
       }
@@ -461,7 +455,8 @@
       .separator {
         position: absolute;
         right: 10px;
-        top: -13px;
+        top: 0px;
+        z-index: 99;
       }
     }
   }

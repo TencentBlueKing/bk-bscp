@@ -8,6 +8,7 @@
     ext-cls="import-kv-dialog"
     :before-close="handleBeforeClose"
     :quick-close="false"
+    :esc-close="false"
     @closed="handleClose">
     <div :class="['select-wrap', { 'en-select-wrap': locale === 'en' }]">
       <div class="import-type-select">
