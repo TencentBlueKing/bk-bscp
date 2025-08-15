@@ -381,7 +381,14 @@
 
   // 切换语言
   const switchLanguage = (language: string) => {
-    const domain = window.location.hostname.replace(/^[^.]+(.*)$/, '$1');
+    // 只截取一级域名
+    let domain;
+    const parts = window.location.hostname.split('.');
+    if (parts.length <= 2) {
+      domain = parts.join('.');
+    } else {
+      domain = parts.slice(-2).join('.');
+    }
     setCookie('blueking_language', language, domain);
     locale.value = language;
     location.reload();
