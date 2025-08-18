@@ -11,7 +11,7 @@
  */
 
 // Package itsm xxx
-package itsm
+package v2
 
 import (
 	"context"
@@ -35,7 +35,7 @@ type OperateTicketResp struct {
 }
 
 // WithdrawTicket withdraw itsm ticket
-func WithdrawTicket(ctx context.Context, reqData map[string]interface{}) error {
+func WithdrawTicket(ctx context.Context, reqData map[string]any) error {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost

@@ -1472,4 +1472,5 @@ type ITSMConfig struct {
 	Host        string `yaml:"host" usage:"itsm esb host"`
 	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
 	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
+	EnableV4    bool   `yaml:"enableV4" usage:"use itsm v4 instead of v2"`
 }

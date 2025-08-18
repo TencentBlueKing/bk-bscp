@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -47,6 +48,7 @@ type Service struct {
 	esb      client.Client
 	repo     repository.Provider
 	tmplProc tmplprocess.TmplProcessor
+	itsm     itsm.Service
 }
 
 // NewService create a service instance.
@@ -98,6 +100,7 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 		repo:     repo,
 		tmplProc: tmplprocess.NewTmplProcessor(),
 		cs:       pbcs.NewCacheClient(csConn),
+		itsm:     itsm.NewITSMService(),
 	}
 
 	return svc, nil
