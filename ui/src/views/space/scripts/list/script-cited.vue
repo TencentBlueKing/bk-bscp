@@ -123,6 +123,7 @@
 
   const handleClose = () => {
     emits('update:show', false);
+    searchStr.value = '';
     list.value = [];
     pagination.value.count = 0;
     pagination.value.current = 1;

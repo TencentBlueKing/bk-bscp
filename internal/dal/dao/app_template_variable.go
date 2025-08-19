@@ -15,6 +15,7 @@ package dao
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -97,8 +98,9 @@ func (dao *appTemplateVariableDao) Upsert(kit *kit.Kit, g *table.AppTemplateVari
 				Updates(g); err != nil {
 				return err
 			}
+			diffVar := structDiffVarName(g.Spec.Variables, old.Spec.Variables)
 			ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-				ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+				ResourceInstance: fmt.Sprintf(constant.SetVariableName, strings.Join(diffVar, constant.NameSeparator)),
 				Status:           enumor.Success,
 				AppId:            g.Attachment.AppID,
 			}).PrepareUpdate(old)
@@ -113,7 +115,7 @@ func (dao *appTemplateVariableDao) Upsert(kit *kit.Kit, g *table.AppTemplateVari
 				return err
 			}
 			ad = dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-				ResourceInstance: fmt.Sprintf(constant.VariableName, g.Spec.GetVariableNames()),
+				ResourceInstance: fmt.Sprintf(constant.SetVariableName, g.Spec.GetVariableNames()),
 				Status:           enumor.Success,
 				AppId:            g.Attachment.AppID,
 			}).PrepareCreate(g)
@@ -189,4 +191,24 @@ func (dao *appTemplateVariableDao) ListVariables(kit *kit.Kit, bizID, appID uint
 		return []*table.TemplateVariableSpec{}, nil
 	}
 	return appVars[0].Spec.Variables, nil
+}
+
+// structDiffVarName diff struct and get variable name
+func structDiffVarName(new, old []*table.TemplateVariableSpec) []string {
+
+	// 用 map 建索引，加速查找
+	bIndex := make(map[string]struct{})
+	for _, o := range old {
+		bIndex[o.Name+"-"+string(o.Type)+"-"+o.Memo+"-"+o.DefaultVal] = struct{}{}
+	}
+
+	var result []string
+	// 遍历 new，找出不在 old 中的数据
+	for _, n := range new {
+		if _, found := bIndex[n.Name+"-"+string(n.Type)+"-"+n.Memo+"-"+n.DefaultVal]; !found {
+			result = append(result, n.Name)
+		}
+	}
+
+	return result
 }

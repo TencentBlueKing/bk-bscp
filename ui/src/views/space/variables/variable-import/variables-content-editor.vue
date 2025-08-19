@@ -330,11 +330,21 @@
     }
     .editor-content {
       position: relative;
-      height: calc(100% - 130px);
+      height: 100%;
       .separator {
         position: absolute;
         right: 0;
         top: 0;
+        z-index: 99;
+      }
+      :deep(.example-wrap) {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        .content {
+          height: calc(100% - 40px);
+        }
       }
     }
   }

@@ -473,7 +473,7 @@
         {
             "id": "please fill in the value of configuration item {Key} first",
             "message": "please fill in the value of configuration item {Key} first",
-            "translation": "",
+            "translation": "请先填写配置项{Key}的值",
             "placeholders": [
                 {
                     "id": "Key",
@@ -486,9 +486,19 @@
             ]
         },
         {
-            "id": "the certificate format is incorrect, only X.509 format is supported",
-            "message": "the certificate format is incorrect, only X.509 format is supported",
-            "translation": "证书格式不正确, 仅支持X.509格式"
+            "id": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
+            "message": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
+            "translation": "证书格式不正确，仅支持X.509格式, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
         },
         {
             "id": "keys is required",
@@ -499,16 +509,6 @@
             "id": "batch recovery kv failed",
             "message": "batch recovery kv failed",
             "translation": "批量恢复 kv 失败"
-        },
-        {
-            "id": "create release failed there is a file conflict",
-            "message": "create release failed there is a file conflict",
-            "translation": "创建发布失败，存在文件冲突"
-        },
-        {
-            "id": "create release failed there is a certificate expiration exists",
-            "message": "create release failed there is a certificate expiration exists",
-            "translation": "创建发布失败，存在证书过期问题"
         },
         {
             "id": "delete template from template sets failed",
@@ -951,6 +951,36 @@
             ]
         },
         {
+            "id": "get config item failed, err: {Err}",
+            "message": "get config item failed, err: {Err}",
+            "translation": "获取配置项失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "the config item {Name} under this service already exists and cannot be created again",
+            "message": "the config item {Name} under this service already exists and cannot be created again",
+            "translation": "此服务下的配置项 {Name} 已存在，无法再次创建",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "path.Join(req.ConfigItemSpec.Path, req.ConfigItemSpec.Name)"
+                }
+            ]
+        },
+        {
             "id": "delete one app template binding instance by app id failed, err: {Err}",
             "message": "delete one app template binding instance by app id failed, err: {Err}",
             "translation": "移除服务模板套餐失败, err: {Err}",
@@ -992,21 +1022,6 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "e"
-                }
-            ]
-        },
-        {
-            "id": "get config item failed, err: {Err}",
-            "message": "get config item failed, err: {Err}",
-            "translation": "获取配置项失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
                 }
             ]
         },
@@ -1214,21 +1229,6 @@
             ]
         },
         {
-            "id": "the config item {Key} under this service already exists and cannot be created again",
-            "message": "the config item {Key} under this service already exists and cannot be created again",
-            "translation": "该服务下的配置项{Key}已存在, 无法重复创建",
-            "placeholders": [
-                {
-                    "id": "Key",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "req.Spec.Key"
-                }
-            ]
-        },
-        {
             "id": "get app fail, key: {Key}, err: {Err}",
             "message": "get app fail, key: {Key}, err: {Err}",
             "translation": "获取服务失败, key: {Key}, err: {Err}",
@@ -1290,6 +1290,20 @@
             "id": "get a list of expired certificates failed, err: {Arg_1}",
             "message": "get a list of expired certificates failed, err: {Arg_1}",
             "translation": "获取过期证书列表失败，错误：{Arg_1}",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ]
+        },
+        {
+            "id": "get key value failed, err: {Arg_1}",
+            "message": "get key value failed, err: {Arg_1}",
+            "translation": "获取键值失败, err: {Arg_1}",
             "placeholders": [
                 {
                     "id": "Arg_1",
@@ -1377,6 +1391,21 @@
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
                     "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "there are duplicate keys {Key}",
+            "message": "there are duplicate keys {Key}",
+            "translation": "存在重复的 {Key}",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "kv.KvSpec.Key"
                 }
             ]
         },
@@ -1597,6 +1626,44 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "ticketStatus.Data.CurrentStatus"
+                }
+            ]
+        },
+        {
+            "id": "create release failed there is a file conflict",
+            "message": "create release failed there is a file conflict",
+            "translation": "创建发布失败，存在文件冲突"
+        },
+        {
+            "id": "create release failed there is a certificate expiration exists",
+            "message": "create release failed there is a certificate expiration exists",
+            "translation": "创建发布失败，存在证书过期问题"
+        },
+        {
+            "id": "get the package associated with the app failed, err: {Arg_1}",
+            "message": "get the package associated with the app failed, err: {Arg_1}",
+            "translation": "获取服务关联的套餐失败, err: {Arg_1}",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
+                }
+            ]
+        },
+        {
+            "id": "get template file failed, err: {Arg_1}",
+            "message": "get template file failed, err: {Arg_1}",
+            "translation": "获取模板文件失败, err: {Arg_1}",
+            "placeholders": [
+                {
+                    "id": "Arg_1",
+                    "string": "%[1]v",
+                    "type": "",
+                    "underlyingType": "interface{}",
+                    "argNum": 1
                 }
             ]
         },
@@ -2775,7 +2842,7 @@
         {
             "id": "unsupported file charset: {FileCharset}",
             "message": "unsupported file charset: {FileCharset}",
-            "translation": "",
+            "translation": "不支持的文件字符集: {FileCharset}",
             "placeholders": [
                 {
                     "id": "FileCharset",

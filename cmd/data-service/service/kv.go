@@ -552,7 +552,14 @@ func (s *Service) checkKvs(kt *kit.Kit, tx *gen.QueryTx, req *pbds.BatchUpsertKv
 		editingKvMap[kv.Spec.Key] = kv
 	}
 
+	keySet := make(map[string]struct{})
+
 	for _, kv := range req.Kvs {
+		// 检查重复 key
+		if _, found := keySet[kv.KvSpec.Key]; found {
+			return nil, nil, errors.New(i18n.T(kt, "there are duplicate keys %s", kv.KvSpec.Key))
+		}
+		keySet[kv.KvSpec.Key] = struct{}{}
 		var version int
 		var exists bool
 		var editing *table.Kv

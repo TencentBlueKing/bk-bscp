@@ -16,10 +16,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -212,6 +215,25 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 			logs.Errorf("batch update template variables failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
+	}
+
+	// 截取前三个对象
+	var varName []string
+	for i := 0; i < len(req.Specs) && i < 3; i++ {
+		varName = append(varName, req.Specs[i].Name)
+	}
+	ad := s.dao.AuditDao().Decorator(kt, req.BizId, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.VariableName,
+			len(varName), strings.Join(varName, constant.NameSeparator)),
+		Status: enumor.Success,
+	}).PrepareCreate(&table.TemplateVariable{})
+	err = ad.Do(tx.Query)
+	if err != nil {
+		logs.Errorf("audit template variables failed, err: %v, rid: %s", err, kt.Rid)
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
+		return nil, err
 	}
 
 	if err = tx.Commit(); err != nil {

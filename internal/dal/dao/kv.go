@@ -13,6 +13,7 @@
 package dao
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -595,9 +596,26 @@ func (dao *kvDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, kvs []*table.
 	if len(kvs) == 0 {
 		return nil
 	}
-	if err := tx.Kv.WithContext(kit.Ctx).Save(kvs...); err != nil {
+	if err := saveKvInBatches(kit.Ctx, tx, kvs, 500); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func saveKvInBatches(ctx context.Context, tx *gen.QueryTx, kvs []*table.Kv, batchSize int) error {
+	withCtx := tx.Kv.WithContext(ctx)
+	for i := 0; i < len(kvs); i += batchSize {
+		end := i + batchSize
+		if end > len(kvs) {
+			end = len(kvs)
+		}
+		batch := kvs[i:end]
+		if err := withCtx.Save(batch...); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
