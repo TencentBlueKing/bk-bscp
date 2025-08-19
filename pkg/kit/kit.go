@@ -57,7 +57,11 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		Ctx: ctx,
 	}
 
-	md, _ := metadata.FromIncomingContext(ctx)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		klog.Errorf("get rpc ctx failed, will ignore")
+	}
+
 	rid := md[lowRidKey]
 	if len(rid) != 0 {
 		kit.Rid = rid[0]
@@ -83,7 +87,7 @@ func FromGrpcContext(ctx context.Context) *Kit {
 	}
 
 	bkToken := md[lowbkTokenKey]
-	if len(tenantID) != 0 {
+	if len(bkToken) != 0 {
 		kit.BkToken = bkToken[0]
 	}
 
@@ -238,7 +242,7 @@ func (c *Kit) RPCMetaData() metadata.MD {
 
 // RpcCtx create a new rpc request context, context's metadata is copied current context's metadata info.
 func (c *Kit) RpcCtx() context.Context {
-	return metadata.NewOutgoingContext(c.Ctx, c.RPCMetaData())
+	return metadata.NewIncomingContext(c.Ctx, c.RPCMetaData())
 }
 
 // CtxWithTimeoutMS create a new context with basic info and timout configuration.

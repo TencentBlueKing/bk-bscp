@@ -21,6 +21,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 )
 
 const (
@@ -79,7 +80,7 @@ func getTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInf
 		SetContext(ctx).
 		SetQueryParam("bk_token", token).
 		SetHeader("X-Bkapi-Authorization", authHeader).
-		SetHeader("X-Bk-Tenant-Id", "default"). // 鉴权是没有租户信息, 使用默认租户
+		SetHeader("X-Bk-Tenant-Id", constant.DefaultTenantID). // 鉴权是没有租户信息, 使用默认租户
 		Get(url)
 
 	if err != nil {
