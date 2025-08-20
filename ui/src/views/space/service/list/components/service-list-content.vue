@@ -26,7 +26,7 @@
         <SearchSelector
           ref="searchSelectorRef"
           :search-filed="searchFiled"
-          :user-filed="['reviser']"
+          :user-filed="['reviser', 'creator']"
           :placeholder="t('搜索 服务别名、服务名称、服务描述、创建人、更新人')"
           class="search-app-name"
           @search="handleSearch" />
