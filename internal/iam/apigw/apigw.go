@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
 )
@@ -363,6 +364,7 @@ func (a *apiGw) newRequest(method, url string, body []byte) (*http.Request, erro
 	req.Header.Set("X-Bkapi-Authorization", fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s"}`,
 		a.esbOpt.AppCode, a.esbOpt.AppSecret))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Bk-Tenant-Id", constant.DefaultTenantID)
 
 	return req, nil
 }
