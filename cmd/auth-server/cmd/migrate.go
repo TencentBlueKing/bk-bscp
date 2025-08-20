@@ -60,7 +60,7 @@ var migrateInitCmd = &cobra.Command{
 			TenantID: constant.DefaultTenantID,
 		}
 
-		if err := iamSys.Register(kt.RpcCtx(), cc.AuthServer().Esb.BscpHost); err != nil {
+		if err := iamSys.Register(kt.InternalRpcCtx(), cc.AuthServer().Esb.BscpHost); err != nil {
 			fmt.Printf("initialize service failed, err: %v\n", err)
 			return
 		}

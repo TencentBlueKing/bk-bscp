@@ -242,6 +242,11 @@ func (c *Kit) RPCMetaData() metadata.MD {
 
 // RpcCtx create a new rpc request context, context's metadata is copied current context's metadata info.
 func (c *Kit) RpcCtx() context.Context {
+	return metadata.NewOutgoingContext(c.Ctx, c.RPCMetaData())
+}
+
+// InternalRpcCtx 同一进程内,仅传递values值使用,对应FromGrpcContext的值
+func (c *Kit) InternalRpcCtx() context.Context {
 	return metadata.NewIncomingContext(c.Ctx, c.RPCMetaData())
 }
 
