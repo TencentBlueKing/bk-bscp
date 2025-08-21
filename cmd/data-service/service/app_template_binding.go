@@ -333,6 +333,11 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 						match = true
 						break
 					}
+				case "reviser": // template_revisions 暂时创建人/修改人一致
+					if strings.Contains(detail.Creator, searchVal) {
+						match = true
+						break
+					}
 				case "revision_name":
 					if strings.Contains(detail.TemplateRevisionName, searchVal) {
 						match = true
