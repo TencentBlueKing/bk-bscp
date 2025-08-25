@@ -224,7 +224,7 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 	}
 	ad := s.dao.AuditDao().Decorator(kt, req.BizId, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.OperateObject+constant.ResSeparator+constant.VariableName,
-			len(varName), strings.Join(varName, constant.NameSeparator)),
+			len(req.Specs), strings.Join(varName, constant.NameSeparator)),
 		Status: enumor.Success,
 	}).PrepareCreate(&table.TemplateVariable{})
 	err = ad.Do(tx.Query)
