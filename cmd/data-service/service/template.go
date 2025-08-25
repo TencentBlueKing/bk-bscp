@@ -1188,6 +1188,15 @@ func (s *Service) BatchUpdateTemplatePermissions(ctx context.Context, req *pbds.
 			}
 		}
 	}()
+
+	if err := s.dao.Template().BatchUpdateTimeTx(kt, tx, req.TemplateIds); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+		}
+		return nil, errf.Errorf(errf.DBOpFailed,
+			i18n.T(kt, fmt.Sprintf("batch update of template permissions failed, err: %s", err.Error())))
+	}
+
 	if err := s.dao.TemplateRevision().BatchCreateWithTx(kt, tx, toCreate); err != nil {
 		logs.Errorf("batch create template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
