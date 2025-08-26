@@ -1144,6 +1144,22 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
+  rpc SubmitApproval(SubmitApprovalReq) returns (SubmitApprovalResp) {
+    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/submit_approval"
+      body: "*"
+    };
+  }
+
+  rpc ApprovalCallback(ApprovalCallbackReq) returns (ApprovalCallbackResp) {
+    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/release/approval_callback"
+      body: "*"
+    };
+  }
+
   rpc GetLastSelect(GetLastSelectReq) returns (GetLastSelectResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
@@ -4298,4 +4314,28 @@ message GetLatestTemplateVersionsInSpaceResp {
     repeated pbtr.TemplateRevisionSpec template_revision = 2;
   }
   repeated TemplateSetSpec template_set = 2;
+}
+
+message SubmitApprovalReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  string action = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审判通过还是拒绝" }];
+  string reason = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批备注" }];
+}
+
+message SubmitApprovalResp {
+  string message = 1;
+}
+
+message ApprovalCallbackReq {
+  string callback_token = 1;
+  pbrelease.Ticket ticket = 2;
+}
+
+message ApprovalCallbackResp {
+  uint32 code = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "code", description: "返回错误码" }];
+  string message = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "message", description: "返回错误信息" }];
 }

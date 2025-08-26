@@ -40,4 +40,6 @@ type Service interface {
 	TicketDetail(ctx context.Context, req api.TicketDetailReq) (*api.Ticket, error)
 	GetApproveNodeResult(ctx context.Context, req api.GetApproveNodeResultReq) (*api.GetApproveNodeResultDetail, error)
 	ListTickets(ctx context.Context, req api.ListTicketsReq) (*api.ListTicketsData, error)
+	ApprovalTasks(ctx context.Context, req api.ApprovalTasksReq) (*api.TasksData, error)
+	ListWorkflow(ctx context.Context, req api.ListWorkflowReq) (map[string]string, error)
 }

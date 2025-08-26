@@ -958,103 +958,119 @@ func (s *Service) createReleasedHook(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, a
 func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, releaseName, scope, memo string,
 	aduitId, releaseID uint32) (*api.CreateTicketData, error) {
 
-	// 或签和会签是不同的模板
-	stateIDKey := constant.CreateOrSignApproveItsmStateID
-	approveType := table.OrSignCH
-	if app.Spec.ApproveType == table.CountSign {
-		stateIDKey = constant.CreateCountSignApproveItsmStateID
-		approveType = table.CountSignCH
-	}
+	// 根据版本和审批类型获取 stateIDKey 和 approveType
+	stateIDKey, approveType := buildApproveConfig(kt.TenantID, app.Spec.ApproveType, cc.DataService().ITSM.EnableV4)
+
+	// 获取 ITSM 配置
 	itsmSign, err := s.dao.Config().GetConfig(kt, stateIDKey)
 	if err != nil {
 		return nil, err
 	}
-
 	itsmService, err := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取所有的业务信息
-	bizList, err := s.esb.Cmdb().ListAllBusiness(kt.Ctx)
+	// 获取业务名
+	bizName, err := s.getBizName(kt, app.BizID)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(bizList.Info) == 0 {
-		return nil, errors.New(i18n.T(kt, "biz list is empty"))
-	}
+	// 组装字段
+	fields := buildFields(bizName, app, releaseName, scope, aduitId, releaseID, approveType, memo)
 
-	var bizName string
-	for _, biz := range bizList.Info {
-		if biz.BizID == int64(app.BizID) {
-			bizName = biz.BizName
-			break
-		}
-	}
-
-	fields := []map[string]any{
-		{
-			"key":   "title",
-			"value": "服务配置中心(BSCP)版本上线审批",
-		}, {
-			"key":   "BIZ",
-			"value": fmt.Sprintf(bizName+"(%d)", app.BizID),
-		}, {
-			"key":   "APP",
-			"value": app.Spec.Name,
-		}, {
-			"key":   "RELEASE_NAME",
-			"value": releaseName,
-		}, {
-			"key":   "SCOPE",
-			"value": scope,
-		}, {
-			"key": "COMPARE",
-			"value": fmt.Sprintf("%s/space/%d/records/all?limit=1&id=%d",
-				cc.DataService().ITSM.BscpPageUrl, app.BizID, aduitId),
-		}, {
-			"key":   "BIZ_ID",
-			"value": app.BizID,
-		}, {
-			"key":   "APP_ID",
-			"value": app.ID,
-		}, {
-			"key":   "RELEASE_ID",
-			"value": releaseID,
-		}, {
-			"key":   "APPROVE_TYPE",
-			"value": approveType,
-		}, {
-			"key":   "MEMO",
-			"value": memo,
+	// 创建工单
+	resp, err := s.itsm.CreateTicket(kt.Ctx, api.CreateTicketReq{
+		WorkFlowKey: fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmWorkflowID),
+		ServiceID:   itsmService.Value,
+		Fields:      fields,
+		Operator:    kt.User,
+		Meta: map[string]any{
+			"state_processors": map[string]any{itsmSign.Value: app.Spec.Approver},
 		},
-	}
-
-	resp, err := s.itsm.CreateTicket(kt.Ctx,
-		api.CreateTicketReq{
-			WorkFlowKey:   fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmServiceID),
-			ServiceID:     itsmService.Value,
-			Fields:        fields,
-			CallbackUrl:   "",
-			CallbackToken: "",
-			Options:       api.Options{},
-			Operator:      kt.User,
-			Meta:          map[string]any{"state_processors": map[string]any{itsmSign.Value: app.Spec.Approver}},
-		},
-	)
-
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	stateID, err := strconv.Atoi(itsmSign.Value)
+	// 获取审批节点 stateID
+	resp.StateID, err = s.resolveStateID(kt, resp.SN, itsmSign.Value, cc.DataService().ITSM.EnableV4)
 	if err != nil {
 		return nil, err
 	}
-	resp.StateID = stateID
 
 	return resp, nil
+}
+
+// 提取配置
+func buildApproveConfig(tenantID string, approveType table.ApproveType, enableV4 bool) (string, table.ApproveType) {
+	if enableV4 {
+		if approveType == table.CountSign {
+			return fmt.Sprintf("%s-%s", tenantID, constant.CreateCountSignApproveItsmStateID), table.CountSignCH
+		}
+		return fmt.Sprintf("%s-%s", tenantID, constant.CreateOrSignApproveItsmStateID), table.OrSignCH
+	}
+
+	if approveType == table.CountSign {
+		return constant.CreateCountSignApproveItsmStateID, table.CountSignCH
+	}
+	return constant.CreateOrSignApproveItsmStateID, table.OrSignCH
+}
+
+// 获取业务名
+func (s *Service) getBizName(kt *kit.Kit, bizID uint32) (string, error) {
+	bizList, err := s.esb.Cmdb().ListAllBusiness(kt.Ctx)
+	if err != nil {
+		return "", err
+	}
+	if len(bizList.Info) == 0 {
+		return "", errors.New(i18n.T(kt, "biz list is empty"))
+	}
+	for _, biz := range bizList.Info {
+		if biz.BizID == int64(bizID) {
+			return biz.BizName, nil
+		}
+	}
+	return "", fmt.Errorf("biz %d not found", bizID)
+}
+
+// 构建 fields
+func buildFields(bizName string, app *table.App, releaseName, scope string, aduitId, releaseID uint32,
+	approveType table.ApproveType, memo string) []map[string]any {
+
+	return []map[string]any{
+		{"key": "title", "value": "服务配置中心(BSCP)版本上线审批"},
+		{"key": "BIZ", "value": fmt.Sprintf("%s(%d)", bizName, app.BizID)},
+		{"key": "APP", "value": app.Spec.Name},
+		{"key": "RELEASE_NAME", "value": releaseName},
+		{"key": "SCOPE", "value": scope},
+		{"key": "COMPARE", "value": fmt.Sprintf("%s/space/%d/records/all?limit=1&id=%d",
+			cc.DataService().ITSM.BscpPageUrl, app.BizID, aduitId)},
+		{"key": "BIZ_ID", "value": app.BizID},
+		{"key": "APP_ID", "value": app.ID},
+		{"key": "RELEASE_ID", "value": releaseID},
+		{"key": "APPROVE_TYPE", "value": approveType},
+		{"key": "MEMO", "value": memo},
+	}
+}
+
+// 解析 stateID
+func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enableV4 bool) (int, error) {
+	if enableV4 {
+		tasks, err := s.itsm.ApprovalTasks(kt.Ctx, api.ApprovalTasksReq{
+			TicketID:    ticketSN,
+			ActivityKey: activityKey,
+		})
+		if err != nil {
+			return 0, err
+		}
+		if len(tasks.Items) == 0 {
+			return 0, fmt.Errorf("approval tasks is empty")
+		}
+		return strconv.Atoi(tasks.Items[0].ID)
+	}
+	return strconv.Atoi(activityKey)
 }
 
 // 定时上线
@@ -1232,4 +1248,54 @@ func (s *Service) handleTicketStatusV4(kt *kit.Kit, sn string, req *pbds.Approve
 	req.PublishStatus = string(table.RevokedPublish)
 	req.Reason = detail.CallbackResult.Message
 	return req, "", nil
+}
+
+// ApprovalCallback implements pbds.DataServer.
+func (s *Service) ApprovalCallback(ctx context.Context, req *pbds.ApprovalCallbackReq) (*pbds.ApprovalCallbackResp, error) {
+	// kit := kit.FromGrpcContext(ctx)
+
+	// 通过回调返回的状态来同步我们表中的状态
+	// 只需要处理 处理中 的状态
+
+	return &pbds.ApprovalCallbackResp{
+		Code:    0,
+		Message: "",
+	}, nil
+}
+
+// SubmitApproval implements pbds.DataServer.
+func (s *Service) SubmitApproval(ctx context.Context, req *pbds.SubmitApprovalReq) (*pbds.SubmitApprovalResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	logs.Infof("start approve operateway: %s, user: %s, req: %v", grpcKit.OperateWay, grpcKit.User, req)
+
+	release, err := s.dao.Release().Get(grpcKit, req.BizId, req.AppId, req.ReleaseId)
+	if err != nil {
+		return nil, err
+	}
+	if release.Spec.Deprecated {
+		return nil, errors.New(i18n.T(grpcKit, "release %s is deprecated, can not be revoke", release.Spec.Name))
+	}
+
+	strategy, err := s.dao.Strategy().GetLast(grpcKit, req.BizId, req.AppId, req.ReleaseId, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.itsm.ApprovalTicket(grpcKit.Ctx, api.ApprovalTicketReq{
+		TicketID:     strategy.Spec.ItsmTicketSn,
+		TaskID:       strconv.Itoa(strategy.Spec.ItsmTicketStateID),
+		Operator:     grpcKit.TenantID,
+		OperatorType: grpcKit.User,
+		Action:       req.Action,
+		Desc:         req.Reason,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.SubmitApprovalResp{
+		Message: "审批中",
+	}, nil
 }

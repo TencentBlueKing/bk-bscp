@@ -288,3 +288,34 @@ type GetApproveNodeResultDetail struct {
 	ApproveResult bool   `json:"approve_result"`
 	ApproveRemark string `json:"approve_remark"`
 }
+
+// ApprovalTicketReq xxx
+type ApprovalTasksReq struct {
+	TicketID    string `json:"ticket_id"`
+	ActivityKey string `json:"activity_key"`
+}
+
+// TasksData xxx
+type TasksData struct {
+	Items []*Tasks `json:"items"`
+}
+
+// Tasks xxx
+type Tasks struct {
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	ActivityKey       string    `json:"activity_key"`
+	Desc              string    `json:"desc"`
+	Type              string    `json:"type"`
+	Status            string    `json:"status"`
+	StatusDisplay     string    `json:"status_display"`
+	Operator          string    `json:"operator"`
+	OperatorType      string    `json:"operator_type"`
+	OperatorAt        time.Time `json:"operator_at"`
+	CurrentProcessors []any     `json:"current_processors"`
+}
+
+// ListWorkflowReq xxx
+type ListWorkflowReq struct {
+	WorkflowKeys string `json:"workflow_keys"`
+}

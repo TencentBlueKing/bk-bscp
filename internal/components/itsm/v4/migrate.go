@@ -23,15 +23,16 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 const (
-	migrateItsm = "/data/bcs/bcs-project-manager/itsmv4.json"
+	migrateItsm = "../../scripts/itsm-templates/system_bk_bscp.json"
 	migratePath = "/api/v1/system/migrate/"
 
-	fileName = "itsmv4.json"
+	fileName = "system_bk_bscp.json"
 )
 
 // MigrateResp resp
@@ -47,10 +48,17 @@ type MigrateData struct {
 	Message string `json:"message"`
 }
 
+// MigrateSystem xxx
 func MigrateSystem(ctx context.Context, content []byte) error {
 	kit := kit.FromGrpcContext(ctx)
 
+	tenantID := ctx.Value(constant.BkTenantID)
+	if tenantID != nil {
+		kit.TenantID = tenantID.(string)
+	}
+
 	itsmConf := cc.DataService().ITSM
+
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
 	if itsmConf.External {
@@ -58,7 +66,6 @@ func MigrateSystem(ctx context.Context, content []byte) error {
 	}
 
 	reqURL := fmt.Sprintf("%s%s", host, migratePath)
-
 	request := resty.New().R()
 	request.SetHeaders(GetAuthHeader(ctx))
 	request.SetMultipartFormData(map[string]string{

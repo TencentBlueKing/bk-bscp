@@ -132,3 +132,15 @@ type ListTicketResp struct {
 	api.CommonResp
 	Data *api.ListTicketsData `json:"data"`
 }
+
+// ApprovalTicketReq xxx
+type ApprovalTasksReq struct {
+	TicketID    string `json:"ticket_id"`
+	ActivityKey string `json:"activity_key"`
+}
+
+// ApprovalTasksResp xxx
+type ApprovalTasksResp struct {
+	api.CommonResp
+	Data *api.TasksData `json:"data"`
+}

@@ -23,6 +23,21 @@ import (
 // ITSMV4Adapter xxx
 type ITSMV4Adapter struct{}
 
+// ListWorkflow implements itsm.Service.
+func (a *ITSMV4Adapter) ListWorkflow(ctx context.Context, req api.ListWorkflowReq) (map[string]string, error) {
+	return ListWorkflow(ctx, ListWorkflowReq{
+		WorkflowKeys: req.WorkflowKeys,
+	})
+}
+
+// ApprovalTasks implements itsm.Service.
+func (a *ITSMV4Adapter) ApprovalTasks(ctx context.Context, req api.ApprovalTasksReq) (*api.TasksData, error) {
+	return ApprovalTasks(ctx, ApprovalTasksReq{
+		TicketID:    req.TicketID,
+		ActivityKey: req.ActivityKey,
+	})
+}
+
 // CreateTicket implements itsm.ITSMService.
 func (a *ITSMV4Adapter) CreateTicket(ctx context.Context, req api.CreateTicketReq) (*api.CreateTicketData, error) {
 	v4Resp, err := CreateTicket(ctx, convertCreateTicketReq(req))

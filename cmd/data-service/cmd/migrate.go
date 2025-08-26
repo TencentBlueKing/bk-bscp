@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -24,6 +25,7 @@ import (
 	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
@@ -211,6 +213,8 @@ var migrateStatusCmd = &cobra.Command{
 	},
 }
 
+var tenantID string
+
 var migrateInitITSMCmd = &cobra.Command{
 	Use:   "init-itsm",
 	Short: "Register bcsp approve services into itsm",
@@ -221,7 +225,10 @@ var migrateInitITSMCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if err := itsm.InitServices(); err != nil {
+		// 把 -t 传进来的参数放进
+		ctx := context.WithValue(context.Background(), constant.BkTenantID, tenantID) // nolint: staticcheck
+
+		if err := itsm.InitServices(ctx); err != nil {
 			fmt.Printf("init itsm services failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}
@@ -241,6 +248,8 @@ func init() {
 	// Add "--step" flag to both "up" and "down" command
 	migrateUpCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
 	migrateDownCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
+
+	migrateInitITSMCmd.Flags().StringVarP(&tenantID, "tenant", "t", "", "tenant id")
 
 	// Add "create", "up" and "down" commands to the "migrate" command
 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateCreateCmd, migrateStatusCmd)

@@ -26,30 +26,38 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // TenantWorkflowData tenant workflow data
 type TenantWorkflowData struct {
-	CreateApproveItsmServiceID        *table.Config
-	CreateApproveItsmWorkflowID       *table.Config
-	CreateCountSignApproveItsmStateID *table.Config
-	CreateOrSignApproveItsmStateID    *table.Config
+	CreateApproveItsmWorkflowID *table.Config
 }
 
 // ItsmV4TemplateRender xxx
 type ItsmV4TemplateRender struct {
-	ServiceID  string `json:"ServiceID"`
-	WorkflowID string `json:"WorkflowID"`
+	FormModel        string `json:"FormModel"`
+	WorkflowCategory string `json:"WorkflowCategory"`
+	Workflow         string `json:"Workflow"`
 }
 
+const (
+	formModel        = "formmodel"
+	workflowCategory = "workflowcategory"
+	workflow         = "workflow"
+)
+
 func generateTemplateId(tenant string, systemCode string, category string) string {
-	return fmt.Sprintf("%s_%s_%s", tenant, systemCode, category)
+	return tools.RandomString(fmt.Sprintf("%s_%s_%s", tenant, systemCode, category), 8)
 }
 
 // ItsmV4SystemMigrate 初始化模板
 func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
-	kit := kit.FromGrpcContext(ctx)
-	tenantId := kit.TenantID
+	var tenantId string
+	tenantID := ctx.Value(constant.BkTenantID)
+	if tenantID != nil {
+		tenantId = tenantID.(string)
+	}
 	// 读取模板文件内容
 	templateContent, err := os.ReadFile(migrateItsm)
 	if err != nil {
@@ -62,8 +70,9 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 	}
 
 	values := ItsmV4TemplateRender{
-		ServiceID:  generateTemplateId(tenantId, systemCode, "formModel"),
-		WorkflowID: generateTemplateId(tenantId, systemCode, "workflowCategory"),
+		FormModel:        generateTemplateId(tenantId, systemCode, formModel),
+		WorkflowCategory: generateTemplateId(tenantId, systemCode, workflowCategory),
+		Workflow:         generateTemplateId(tenantId, systemCode, workflow),
 	}
 
 	var buf bytes.Buffer
@@ -73,28 +82,16 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 	}
 	content := buf.String()
 
-	err = MigrateSystem(ctx, []byte(content))
-	if err != nil {
+	if err = MigrateSystem(ctx, []byte(content)); err != nil {
 		return nil, err
 	}
 
 	return &TenantWorkflowData{
-		CreateApproveItsmServiceID: &table.Config{
-			Key:   fmt.Sprintf("%s-%s", tenantId, constant.CreateApproveItsmServiceID),
-			Value: values.ServiceID,
-		},
 		CreateApproveItsmWorkflowID: &table.Config{
 			Key:   fmt.Sprintf("%s-%s", tenantId, constant.CreateApproveItsmWorkflowID),
-			Value: values.WorkflowID,
-		},
-		CreateCountSignApproveItsmStateID: &table.Config{
-			Key: fmt.Sprintf("%s-%s", tenantId, constant.CreateCountSignApproveItsmStateID),
-		},
-		CreateOrSignApproveItsmStateID: &table.Config{
-			Key: fmt.Sprintf("%s-%s", tenantId, constant.CreateOrSignApproveItsmStateID),
+			Value: values.Workflow,
 		},
 	}, nil
-
 }
 
 // GetAuthHeader 获取蓝鲸网关通用认证头
@@ -104,7 +101,7 @@ func GetAuthHeader(ctx context.Context) map[string]string {
 	return map[string]string{
 		"Content-Type": "application/json",
 		"X-Bkapi-Authorization": fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s", "bk_username": "%s"}`,
-			cc.DataService().Esb.AppCode, cc.DataService().Esb.AppSecret, cc.DataService().Esb.User),
+			cc.DataService().ITSM.AppCode, cc.DataService().ITSM.AppSecret, cc.DataService().ITSM.User),
 		constant.BkTenantID: kit.TenantID,
 	}
 }

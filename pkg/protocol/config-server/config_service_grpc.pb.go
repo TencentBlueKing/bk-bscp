@@ -163,6 +163,8 @@ const (
 	Config_GenerateReleaseAndPublish_FullMethodName          = "/pbcs.Config/GenerateReleaseAndPublish"
 	Config_SubmitPublishApprove_FullMethodName               = "/pbcs.Config/SubmitPublishApprove"
 	Config_Approve_FullMethodName                            = "/pbcs.Config/Approve"
+	Config_SubmitApproval_FullMethodName                     = "/pbcs.Config/SubmitApproval"
+	Config_ApprovalCallback_FullMethodName                   = "/pbcs.Config/ApprovalCallback"
 	Config_GetLastSelect_FullMethodName                      = "/pbcs.Config/GetLastSelect"
 	Config_GetLastPublish_FullMethodName                     = "/pbcs.Config/GetLastPublish"
 	Config_GetReleasesStatus_FullMethodName                  = "/pbcs.Config/GetReleasesStatus"
@@ -211,7 +213,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -480,6 +482,8 @@ type ConfigClient interface {
 	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
+	SubmitApproval(ctx context.Context, in *SubmitApprovalReq, opts ...grpc.CallOption) (*SubmitApprovalResp, error)
+	ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error)
 	GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error)
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
 	GetReleasesStatus(ctx context.Context, in *GetReleasesStatusReq, opts ...grpc.CallOption) (*strategy.Strategy, error)
@@ -1794,6 +1798,24 @@ func (c *configClient) Approve(ctx context.Context, in *ApproveReq, opts ...grpc
 	return out, nil
 }
 
+func (c *configClient) SubmitApproval(ctx context.Context, in *SubmitApprovalReq, opts ...grpc.CallOption) (*SubmitApprovalResp, error) {
+	out := new(SubmitApprovalResp)
+	err := c.cc.Invoke(ctx, Config_SubmitApproval_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error) {
+	out := new(ApprovalCallbackResp)
+	err := c.cc.Invoke(ctx, Config_ApprovalCallback_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error) {
 	out := new(GetLastSelectResp)
 	err := c.cc.Invoke(ctx, Config_GetLastSelect_FullMethodName, in, out, opts...)
@@ -2176,7 +2198,7 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2445,6 +2467,8 @@ type ConfigServer interface {
 	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
+	SubmitApproval(context.Context, *SubmitApprovalReq) (*SubmitApprovalResp, error)
+	ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error)
 	GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error)
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)
 	GetReleasesStatus(context.Context, *GetReleasesStatusReq) (*strategy.Strategy, error)
@@ -2938,6 +2962,12 @@ func (UnimplementedConfigServer) SubmitPublishApprove(context.Context, *SubmitPu
 }
 func (UnimplementedConfigServer) Approve(context.Context, *ApproveReq) (*ApproveResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Approve not implemented")
+}
+func (UnimplementedConfigServer) SubmitApproval(context.Context, *SubmitApprovalReq) (*SubmitApprovalResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitApproval not implemented")
+}
+func (UnimplementedConfigServer) ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApprovalCallback not implemented")
 }
 func (UnimplementedConfigServer) GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLastSelect not implemented")
@@ -5525,6 +5555,42 @@ func _Config_Approve_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_SubmitApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitApprovalReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).SubmitApproval(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_SubmitApproval_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).SubmitApproval(ctx, req.(*SubmitApprovalReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ApprovalCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApprovalCallbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ApprovalCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ApprovalCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ApprovalCallback(ctx, req.(*ApprovalCallbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_GetLastSelect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLastSelectReq)
 	if err := dec(in); err != nil {
@@ -6831,6 +6897,14 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Approve",
 			Handler:    _Config_Approve_Handler,
+		},
+		{
+			MethodName: "SubmitApproval",
+			Handler:    _Config_SubmitApproval_Handler,
+		},
+		{
+			MethodName: "ApprovalCallback",
+			Handler:    _Config_ApprovalCallback_Handler,
 		},
 		{
 			MethodName: "GetLastSelect",

@@ -15,6 +15,7 @@ package v2
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 )
@@ -102,4 +103,19 @@ func convertListTicketResp(resp *ListTicketsData) *api.ListTicketsData {
 		PageSize: resp.TotalPage,
 		Count:    resp.Count,
 	}
+}
+
+func convertListWorkflowReq(req api.ListWorkflowReq) int {
+	id, _ := strconv.Atoi(req.WorkflowKeys)
+	return id
+}
+
+func convertListWorkflowResp(resp map[string]int) map[string]string {
+
+	dst := make(map[string]string, len(resp))
+	for k, v := range resp {
+		dst[k] = strconv.Itoa(v)
+	}
+
+	return dst
 }

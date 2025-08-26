@@ -14,11 +14,18 @@
 package itsm
 
 import (
+	"context"
 	"embed"
 	"fmt"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
+	v4 "github.com/TencentBlueKing/bk-bscp/internal/components/itsm/v4"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 var (
@@ -31,7 +38,7 @@ var (
 )
 
 // InitServices 初始化BSCP相关流程服务
-func InitServices() error {
+func InitServices(ctx context.Context) error {
 
 	// initial DAO set
 	set, err := dao.NewDaoSet(cc.DataService().Sharding, cc.DataService().Credential, cc.DataService().Gorm)
@@ -41,12 +48,36 @@ func InitServices() error {
 
 	daoSet = set
 
-	if err := InitApproveITSMServices(); err != nil {
+	resp, err := v4.ItsmV4SystemMigrate(ctx)
+	if err != nil {
 		fmt.Printf("init approve itsm services failed, err: %s\n", err.Error())
 		return err
 	}
 
-	return nil
+	itsm := itsm.NewITSMService()
+	// 通过 workflow_keys 获取 activity_key
+	workflow, err := itsm.ListWorkflow(ctx, api.ListWorkflowReq{
+		WorkflowKeys: resp.CreateApproveItsmWorkflowID.Key,
+	})
+	if err != nil {
+		fmt.Printf("itsm list workflows failed, err: %s\n", err.Error())
+		return err
+	}
+	// 存入配置表
+	itsmConfigs := []*table.Config{
+		{
+			Key:   constant.CreateApproveItsmWorkflowID,
+			Value: resp.CreateApproveItsmWorkflowID.Value,
+		}, {
+			Key:   constant.CreateCountSignApproveItsmStateID,
+			Value: workflow[constant.ItsmApproveCountSignType],
+		}, {
+			Key:   constant.CreateOrSignApproveItsmStateID,
+			Value: workflow[constant.ItsmApproveOrSignType],
+		},
+	}
+
+	return daoSet.Config().UpsertConfig(kit.New(), itsmConfigs)
 }
 
 // InitApproveITSMServices 初始化上线审批相关流程服务
@@ -190,20 +221,20 @@ func InitApproveITSMServices() error {
 // 		return err
 // 	}
 
-// 	itsmConfigs := []*table.Config{
-// 		{
-// 			Key:   constant.CreateApproveItsmServiceID,
-// 			Value: strconv.Itoa(serviceID),
-// 		}, {
-// 			Key:   constant.CreateApproveItsmWorkflowID,
-// 			Value: strconv.Itoa(workflowId),
-// 		}, {
-// 			Key:   constant.CreateCountSignApproveItsmStateID,
-// 			Value: strconv.Itoa(stateApproveId[constant.ItsmApproveCountSignType]),
-// 		}, {
-// 			Key:   constant.CreateOrSignApproveItsmStateID,
-// 			Value: strconv.Itoa(stateApproveId[constant.ItsmApproveOrSignType]),
-// 		},
-// 	}
-// 	return daoSet.Config().UpsertConfig(kt, itsmConfigs)
+// itsmConfigs := []*table.Config{
+// 	{
+// 		Key:   constant.CreateApproveItsmServiceID,
+// 		Value: strconv.Itoa(serviceID),
+// 	}, {
+// 		Key:   constant.CreateApproveItsmWorkflowID,
+// 		Value: strconv.Itoa(workflowId),
+// 	}, {
+// 		Key:   constant.CreateCountSignApproveItsmStateID,
+// 		Value: strconv.Itoa(stateApproveId[constant.ItsmApproveCountSignType]),
+// 	}, {
+// 		Key:   constant.CreateOrSignApproveItsmStateID,
+// 		Value: strconv.Itoa(stateApproveId[constant.ItsmApproveOrSignType]),
+// 	},
+// }
+// return daoSet.Config().UpsertConfig(kt, itsmConfigs)
 // }

@@ -226,6 +226,8 @@ service Data {
   rpc GetLastPublish(GetLastPublishReq) returns (GetLastPublishResp) {}
   rpc GetReleasesStatus(GetReleasesStatusReq) returns (pbstrategy.Strategy) {}
   rpc GenerateReleaseAndPublish(GenerateReleaseAndPublishReq) returns (PublishResp) {}
+  rpc SubmitApproval(SubmitApprovalReq) returns (SubmitApprovalResp) {}
+  rpc ApprovalCallback(ApprovalCallbackReq) returns (ApprovalCallbackResp) {}
 
   // audit related interface.
   rpc ListAudits(ListAuditsReq) returns (ListAuditsResp) {}
@@ -2219,4 +2221,26 @@ message GetLatestTemplateVersionsInSpaceResp {
     repeated pbtr.TemplateRevisionSpec template_revision = 2;
   }
   repeated TemplateSetSpec template_set = 2;
+}
+
+message SubmitApprovalReq {
+  uint32 biz_id = 1;
+  uint32 app_id = 2;
+  uint32 release_id = 3;
+  string action = 4;
+  string reason = 5;
+}
+
+message SubmitApprovalResp {
+  string message = 1;
+}
+
+message ApprovalCallbackReq {
+  string callback_token = 1;
+  pbrelease.Ticket ticket = 2;
+}
+
+message ApprovalCallbackResp {
+  uint32 code = 1;
+  string message = 2;
 }

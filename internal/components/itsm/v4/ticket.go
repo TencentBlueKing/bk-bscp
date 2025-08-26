@@ -32,6 +32,7 @@ var (
 	revokedTicketPath  = "/api/v1/tickets/revoked"
 	approvalTicketPath = "/api/v1/handle_approval_node"
 	ticketLogsPath     = "/api/v1/ticket/logs"
+	approvalTasksPath  = "/api/v1/approval_tasks"
 
 	systemCode = "bk_bscp"
 )
@@ -208,5 +209,34 @@ func ListTickets(ctx context.Context, req ListTicketsReq) (*api.ListTicketsData,
 		return nil, errors.New(resp.Message)
 	}
 
+	return resp.Data, nil
+}
+
+// ApprovalTasks approval itsm tasks
+func ApprovalTasks(ctx context.Context, req ApprovalTasksReq) (*api.TasksData, error) {
+	itsmConf := cc.DataService().ITSM
+	// 默认使用网关访问，如果为外部版，则使用ESB访问
+	host := itsmConf.GatewayHost
+	if itsmConf.External {
+		host = itsmConf.Host
+	}
+	reqURL := fmt.Sprintf("%s%s", host, approvalTasksPath)
+
+	// 请求API
+	body, err := ItsmRequest(ctx, http.MethodPost, reqURL, req)
+	if err != nil {
+		logs.Errorf("request itsm approval tasks failed, %s", err.Error())
+		return nil, fmt.Errorf("request itsm approval tasks failed, %s", err.Error())
+	}
+	// 解析返回的body
+	resp := &ApprovalTasksResp{}
+	if err := json.Unmarshal(body, resp); err != nil {
+		logs.Errorf("parse itsm body error, body: %v", body)
+		return nil, err
+	}
+	if resp.Code != 0 {
+		logs.Errorf("request create itsm tasks %v failed, msg: %s", req, resp.Message)
+		return nil, errors.New(resp.Message)
+	}
 	return resp.Data, nil
 }

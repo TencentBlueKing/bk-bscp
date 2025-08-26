@@ -49,9 +49,7 @@ func convertCreateTicketReq(req api.CreateTicketReq) CreateTicketReq {
 // convertCreateTicketResp 将 v2 的响应转为统一的 CreateTicketResp
 func convertCreateTicketResp(resp *CreateTicketResp) *api.CreateTicketData {
 	return &api.CreateTicketData{
-		SN: resp.Data.SN,
-		// TicketID: resp.ID,
-		// 其他字段映射
+		SN: resp.Data.ID,
 	}
 }
 

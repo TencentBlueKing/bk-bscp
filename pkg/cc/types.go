@@ -1479,4 +1479,10 @@ type ITSMConfig struct {
 	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
 	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
 	EnableV4    bool   `yaml:"enableV4" usage:"use itsm v4 instead of v2"`
+	// AppCode is the blueking app code of bscp to request esb.
+	AppCode string `yaml:"appCode"`
+	// AppSecret is the blueking app secret of bscp to request esb.
+	AppSecret string `yaml:"appSecret"`
+	// User is the blueking user of bscp to request esb.
+	User string `yaml:"user"`
 }
