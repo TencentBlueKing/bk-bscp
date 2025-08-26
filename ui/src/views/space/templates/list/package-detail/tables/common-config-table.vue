@@ -20,6 +20,7 @@
         :row-class="getRowCls"
         :remote-pagination="true"
         :pagination="pagination"
+        show-overflow-tooltip
         @page-limit-change="handlePageLimitChange"
         @page-value-change="handlePageChange($event)">
         <template #prepend>

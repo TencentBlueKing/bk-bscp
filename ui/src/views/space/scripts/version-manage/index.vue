@@ -13,8 +13,8 @@
             ref="searchSelectorRef"
             class="search-input"
             :search-filed="searchFiled"
-            :user-filed="['creator']"
-            :placeholder="t('版本号/版本说明/创建人')"
+            :user-filed="['reviser']"
+            :placeholder="t('版本号/版本说明/更新人')"
             @search="handleSearch" />
         </div>
         <div :class="['version-data-container', { 'script-panel-open': versionEditData.panelOpen }]">

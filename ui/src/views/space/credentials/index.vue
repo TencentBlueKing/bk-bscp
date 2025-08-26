@@ -147,9 +147,9 @@
               <span v-else>--</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新人')" width="140" prop="revision.reviser">
+          <bk-table-column :label="t('更新人')" width="140" prop="revision.reviser" :resizable="false">
             <template #default="{ row }">
-              <user-name v-if="row.revision" :name="row.revision.reviser"/>
+              <user-name v-if="row.revision" :name="row.revision.reviser" />
             </template>
           </bk-table-column>
           <bk-table-column :label="t('更新时间')" width="154">
