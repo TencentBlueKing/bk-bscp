@@ -191,7 +191,7 @@
   const searchFiled = [
     { field: 'name', label: t('版本号') },
     { field: 'memo', label: t('版本说明') },
-    { field: 'creator', label: t('创建人') },
+    { field: 'reviser', label: t('更新人') },
   ];
 
   onMounted(async () => {
