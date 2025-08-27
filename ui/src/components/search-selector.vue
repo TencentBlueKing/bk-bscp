@@ -6,7 +6,8 @@
     value-behavior="need-key"
     unique-select
     :placeholder="placeholder"
-    @update:model-value="handleChange" />
+    @update:model-value="handleChange"
+    @paste="handlePaste" />
 </template>
 <script setup lang="ts">
   import { ref, onBeforeMount } from 'vue';
@@ -92,6 +93,16 @@
       searchQuery[item.id] = item.values.map((value) => value.id).join(',');
     });
     emits('search', searchQuery);
+  };
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+    const isText = clipboardData.types.includes('text/plain');
+    if (!isText) {
+      // 只允许文本粘贴
+      e.preventDefault();
+    }
   };
 
   defineExpose({

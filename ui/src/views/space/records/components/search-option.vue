@@ -9,7 +9,8 @@
         :placeholder="$t('资源类型/操作行为/资源实例/状态/操作人/操作途径')"
         :data="searchData"
         :get-menu-list="getMenuList"
-        @update:model-value="change" />
+        @update:model-value="change"
+        @paste="handlePaste" />
     </div>
   </section>
 </template>
@@ -243,6 +244,16 @@
   // 发送数据
   const sendSearchData = () => {
     emits('sendSearchData', routeSearchValue.value);
+  };
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+    const isText = clipboardData.types.includes('text/plain');
+    if (!isText) {
+      // 只允许文本粘贴
+      e.preventDefault();
+    }
   };
 </script>
 
