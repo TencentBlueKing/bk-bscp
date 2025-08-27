@@ -1052,6 +1052,8 @@ func buildFields(bizName string, app *table.App, releaseName, scope string, adui
 		{"key": "RELEASE_ID", "value": releaseID},
 		{"key": "APPROVE_TYPE", "value": approveType},
 		{"key": "MEMO", "value": memo},
+		{"key": "approve_type", "value": approveType},
+		{"key": "approve", "value": app.Spec.Approver},
 	}
 }
 
