@@ -56,6 +56,7 @@ func InitServices(ctx context.Context, tenantID string) error {
 
 	itsm := itsm.NewITSMService()
 	// 通过 workflow_keys 获取 activity_key
+	ctx = context.WithValue(context.Background(), constant.BkTenantID, tenantID)
 	workflow, err := itsm.ListWorkflow(ctx, api.ListWorkflowReq{
 		WorkflowKeys: resp.CreateApproveItsmWorkflowID.Value,
 	})
