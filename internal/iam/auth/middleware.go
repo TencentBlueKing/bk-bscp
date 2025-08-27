@@ -410,6 +410,7 @@ func (a *authorizer) iamRequestFilter(w http.ResponseWriter, req *http.Request, 
 	kit.AppCode = appCode
 	kit.Rid = rid
 	kit.User = user
+	kit.TenantID = req.Header.Get(constant.BkTenantID) // 多租户环境权限中心回调时会带上
 
 	return nil
 }
@@ -435,7 +436,12 @@ func (a *authorizer) checkRequestAuthorization(req *http.Request) (bool, error) 
 		return false, nil
 	}
 
-	resp, err := a.authClient.IAMVerify(req.Context(), &pbas.IAMVerifyReq{Token: pwd})
+	// grpc call
+	kt := kit.New()
+	kt.TenantID = req.Header.Get(constant.BkTenantID) // 多租户环境权限中心回调时会带上
+	kt.Ctx = req.Context()
+
+	resp, err := a.authClient.IAMVerify(kt.RpcCtx(), &pbas.IAMVerifyReq{Token: pwd})
 	if err != nil {
 		return false, err
 	}
