@@ -97,7 +97,10 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 // GetAuthHeader 获取蓝鲸网关通用认证头
 func GetAuthHeader(ctx context.Context) map[string]string {
 	kit := kit.FromGrpcContext(ctx)
-
+	tenantID := ctx.Value(constant.BkTenantID)
+	if tenantID != nil {
+		kit.TenantID = tenantID.(string)
+	}
 	return map[string]string{
 		"Content-Type": "application/json",
 		"X-Bkapi-Authorization": fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s", "bk_username": "%s"}`,
