@@ -59,7 +59,7 @@ func CreateTicket(ctx context.Context, req CreateTicketReq) (*CreateTicketResp, 
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request create itsm ticket %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}
@@ -88,7 +88,7 @@ func ApprovalTicket(ctx context.Context, req ApprovalTicketReq) error {
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request create itsm ticket %v failed, msg: %s", req, resp.Message)
 		return errors.New(resp.Message)
 	}
@@ -117,7 +117,7 @@ func RevokedTicket(ctx context.Context, req RevokedTicketReq) (*RevokedTicketRes
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request revoke itsm ticket %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}
@@ -146,7 +146,7 @@ func TicketDetail(ctx context.Context, req TicketDetailReq) (*api.Ticket, error)
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request get itsm ticket %v detail failed, msg: %s", req.ID, resp.Message)
 		return nil, errors.New(resp.Message)
 	}
@@ -175,7 +175,7 @@ func GetTicketLogs(ctx context.Context, req TicketDetailReq) (*api.TicketLogsDat
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request get ticket logs %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}
@@ -205,7 +205,7 @@ func ListTickets(ctx context.Context, req ListTicketsReq) (*api.ListTicketsData,
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request itsm list tickets %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}
@@ -235,7 +235,7 @@ func ApprovalTasks(ctx context.Context, req ApprovalTasksReq) (*api.TasksData, e
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request create itsm tasks %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}

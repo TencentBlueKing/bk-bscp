@@ -41,7 +41,7 @@ type ListTicketsReq struct {
 
 // ListTicketsResp itsm list tickets resp
 type ListTicketsResp struct {
-	api.CommonResp
+	CommonResp
 	Data *ListTicketsData `json:"data"`
 }
 
@@ -112,7 +112,7 @@ func ListTickets(ctx context.Context, req ListTicketsReq) (*ListTicketsData, err
 
 // GetTicketStatusData get ticket status
 type GetTicketStatusData struct {
-	api.CommonResp
+	CommonResp
 	Data *api.GetTicketStatusDetail `json:"data"`
 }
 
@@ -147,7 +147,7 @@ func GetTicketStatus(ctx context.Context, sn string) (*api.GetTicketStatusDetail
 
 // GetApproveNodeResultData get ticket approve node result
 type GetApproveNodeResultData struct {
-	api.CommonResp
+	CommonResp
 	Data *api.GetApproveNodeResultDetail `json:"data"`
 }
 
@@ -182,7 +182,7 @@ func GetApproveNodeResult(ctx context.Context, sn string, stateID int) (*api.Get
 
 // GetTicketLogsData get ticket logs result
 type GetTicketLogsData struct {
-	api.CommonResp
+	CommonResp
 	Data *GetTicketLogsDetail `json:"data"`
 }
 

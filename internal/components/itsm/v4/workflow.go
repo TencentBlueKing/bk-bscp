@@ -51,7 +51,7 @@ func ListWorkflow(ctx context.Context, req ListWorkflowReq) (map[string]string, 
 		logs.Errorf("parse itsm body error, body: %v", body)
 		return nil, err
 	}
-	if resp.Code != 0 {
+	if !resp.Result {
 		logs.Errorf("request itsm list workflows %v failed, msg: %s", req, resp.Message)
 		return nil, errors.New(resp.Message)
 	}

@@ -58,7 +58,7 @@ type CreateTicketData struct {
 
 // CommonResp xxx
 type CommonResp struct {
-	Code    int    `json:"code"`
+	Code    string `json:"code"`
 	Result  bool   `json:"result"`
 	Message string `json:"message"`
 }
