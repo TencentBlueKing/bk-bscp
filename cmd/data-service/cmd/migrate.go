@@ -25,7 +25,6 @@ import (
 	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
@@ -225,10 +224,7 @@ var migrateInitITSMCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// 把 -t 传进来的参数放进
-		ctx := context.WithValue(context.Background(), constant.BkTenantID, tenantID) // nolint: staticcheck
-
-		if err := itsm.InitServices(ctx); err != nil {
+		if err := itsm.InitServices(context.Background(), tenantID); err != nil {
 			fmt.Printf("init itsm services failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}

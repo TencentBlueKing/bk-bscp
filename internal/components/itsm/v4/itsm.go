@@ -52,12 +52,8 @@ func generateTemplateId(tenant string, systemCode string, category string) strin
 }
 
 // ItsmV4SystemMigrate 初始化模板
-func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
-	var tenantId string
-	tenantID := ctx.Value(constant.BkTenantID)
-	if tenantID != nil {
-		tenantId = tenantID.(string)
-	}
+func ItsmV4SystemMigrate(ctx context.Context, tenantID string) (*TenantWorkflowData, error) {
+
 	// 读取模板文件内容
 	templateContent, err := os.ReadFile(migrateItsm)
 	if err != nil {
@@ -70,9 +66,9 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 	}
 
 	values := ItsmV4TemplateRender{
-		FormModel:        generateTemplateId(tenantId, systemCode, formModel),
-		WorkflowCategory: generateTemplateId(tenantId, systemCode, workflowCategory),
-		Workflow:         generateTemplateId(tenantId, systemCode, workflow),
+		FormModel:        generateTemplateId(tenantID, systemCode, formModel),
+		WorkflowCategory: generateTemplateId(tenantID, systemCode, workflowCategory),
+		Workflow:         generateTemplateId(tenantID, systemCode, workflow),
 	}
 
 	var buf bytes.Buffer
@@ -82,13 +78,13 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 	}
 	content := buf.String()
 
-	if err = MigrateSystem(ctx, []byte(content)); err != nil {
+	if err = MigrateSystem(ctx, []byte(content), tenantID); err != nil {
 		return nil, err
 	}
 
 	return &TenantWorkflowData{
 		CreateApproveItsmWorkflowID: &table.Config{
-			Key:   fmt.Sprintf("%s-%s", tenantId, constant.CreateApproveItsmWorkflowID),
+			Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateApproveItsmWorkflowID),
 			Value: values.Workflow,
 		},
 	}, nil
@@ -97,10 +93,15 @@ func ItsmV4SystemMigrate(ctx context.Context) (*TenantWorkflowData, error) {
 // GetAuthHeader 获取蓝鲸网关通用认证头
 func GetAuthHeader(ctx context.Context) map[string]string {
 	kit := kit.FromGrpcContext(ctx)
-	tenantID := ctx.Value(constant.BkTenantID)
-	if tenantID != nil {
-		kit.TenantID = tenantID.(string)
+	if len(kit.TenantID) == 0 {
+		// 尝试直接从 ctx.Value 取
+		if v := ctx.Value(constant.BkTenantID); v != nil {
+			if s, ok := v.(string); ok {
+				kit.TenantID = s
+			}
+		}
 	}
+
 	return map[string]string{
 		"Content-Type": "application/json",
 		"X-Bkapi-Authorization": fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s", "bk_username": "%s"}`,

@@ -23,8 +23,6 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -49,14 +47,7 @@ type MigrateData struct {
 }
 
 // MigrateSystem xxx
-func MigrateSystem(ctx context.Context, content []byte) error {
-	kit := kit.FromGrpcContext(ctx)
-
-	tenantID := ctx.Value(constant.BkTenantID)
-	if tenantID != nil {
-		kit.TenantID = tenantID.(string)
-	}
-
+func MigrateSystem(ctx context.Context, content []byte, tenantID string) error {
 	itsmConf := cc.DataService().ITSM
 
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
@@ -69,7 +60,7 @@ func MigrateSystem(ctx context.Context, content []byte) error {
 	request := resty.New().SetDebug(true).R()
 	request.SetHeaders(GetAuthHeader(ctx))
 	request.SetMultipartFormData(map[string]string{
-		"tenant_id": kit.TenantID,
+		"tenant_id": tenantID,
 	})
 
 	request.SetMultipartField("file", fileName, "text/plain", bytes.NewReader(content))
