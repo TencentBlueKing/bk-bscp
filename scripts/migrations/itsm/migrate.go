@@ -57,7 +57,7 @@ func InitServices(ctx context.Context) error {
 	itsm := itsm.NewITSMService()
 	// 通过 workflow_keys 获取 activity_key
 	workflow, err := itsm.ListWorkflow(ctx, api.ListWorkflowReq{
-		WorkflowKeys: resp.CreateApproveItsmWorkflowID.Key,
+		WorkflowKeys: resp.CreateApproveItsmWorkflowID.Value,
 	})
 	if err != nil {
 		fmt.Printf("itsm list workflows failed, err: %s\n", err.Error())

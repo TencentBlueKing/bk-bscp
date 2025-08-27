@@ -48,7 +48,7 @@ const (
 )
 
 func generateTemplateId(tenant string, systemCode string, category string) string {
-	return tools.RandomString(fmt.Sprintf("%s_%s_%s", tenant, systemCode, category), 8)
+	return tools.RandomString(fmt.Sprintf("%s_%s_%s_", tenant, systemCode, category), 8)
 }
 
 // ItsmV4SystemMigrate 初始化模板

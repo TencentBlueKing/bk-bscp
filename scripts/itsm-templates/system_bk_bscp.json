@@ -3385,13 +3385,13 @@
     }],
     "key_mapping": {
         "form_models": {
-            "20250813115300000101": "$FormModel20250813115300000101"
+            "{{ .FormModel }}": "$FormModel20250813115300000101"
         },
         "workflow_categories": {
-            "20250813115700000101": "$WorkflowCategory20250813115700000101"
+            "{{ .WorkflowCategory }}": "$WorkflowCategory20250813115700000101"
         },
         "workflows": {
-            "20250813120300000201": "$Workflow20250813120300000201"
+            "{{ .Workflow }}": "$Workflow20250813120300000201"
         }
     }
 }

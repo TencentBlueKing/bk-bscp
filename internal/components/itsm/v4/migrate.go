@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	migrateItsm = "../../scripts/itsm-templates/system_bk_bscp.json"
+	migrateItsm = "/bk-bscp/etc/itsm/system_bk_bscp.json"
 	migratePath = "/api/v1/system/migrate/"
 
 	fileName = "system_bk_bscp.json"
@@ -66,13 +66,14 @@ func MigrateSystem(ctx context.Context, content []byte) error {
 	}
 
 	reqURL := fmt.Sprintf("%s%s", host, migratePath)
-	request := resty.New().R()
+	request := resty.New().SetDebug(true).R()
 	request.SetHeaders(GetAuthHeader(ctx))
 	request.SetMultipartFormData(map[string]string{
 		"tenant_id": kit.TenantID,
 	})
 
 	request.SetMultipartField("file", fileName, "text/plain", bytes.NewReader(content))
+
 	resp, err := request.Post(reqURL)
 
 	if err != nil {

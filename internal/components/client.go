@@ -173,7 +173,7 @@ func GetClient() *resty.Client {
 		clientOnce.Do(func() {
 			globalClient = resty.New().
 				SetTimeout(timeout).
-				SetDebug(false).   // 更多详情, 可以开启为 true
+				SetDebug(true).    // 更多详情, 可以开启为 true
 				SetCookieJar(nil). // 后台API去掉 cookie 记录
 				SetDebugBodyLimit(1024).
 				SetPreRequestHook(restyBeforeRequestHook).
