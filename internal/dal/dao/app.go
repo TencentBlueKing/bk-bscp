@@ -144,7 +144,9 @@ func (dao *appDao) List(kit *kit.Kit, bizList []uint32, configType string, opt *
 		err    error
 	)
 	// 当len(bizList) > 1时，适用于导航查询场景
-	conds = append(conds, m.BizID.In(bizList...))
+	if len(bizList) > 0 {
+		conds = append(conds, m.BizID.In(bizList...))
+	}
 
 	if configType != "" {
 		conds = append(conds, m.ConfigType.Eq(configType))
