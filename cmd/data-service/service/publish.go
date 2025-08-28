@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -966,10 +967,6 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 	if err != nil {
 		return nil, err
 	}
-	itsmService, err := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
-	if err != nil {
-		return nil, err
-	}
 
 	// 获取业务名
 	bizName, err := s.getBizName(kt, app.BizID)
@@ -979,17 +976,27 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 
 	// 组装字段
 	fields := buildFields(bizName, app, releaseName, scope, aduitId, releaseID, approveType, memo)
-
-	// 创建工单
-	resp, err := s.itsm.CreateTicket(kt.Ctx, api.CreateTicketReq{
-		WorkFlowKey: fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmWorkflowID),
-		ServiceID:   itsmService.Value,
+	workFlowKey, err := s.dao.Config().GetConfig(kt, fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmWorkflowID))
+	if err != nil {
+		return nil, err
+	}
+	createTicketReq := api.CreateTicketReq{
+		WorkFlowKey: workFlowKey.Value,
 		Fields:      fields,
 		Operator:    kt.User,
 		Meta: map[string]any{
 			"state_processors": map[string]any{itsmSign.Value: app.Spec.Approver},
 		},
-	})
+	}
+	if !cc.DataService().ITSM.EnableV4 {
+		itsmService, err := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
+		if err != nil {
+			return nil, err
+		}
+		createTicketReq.ServiceID = itsmService.Value
+	}
+	// 创建工单
+	resp, err := s.itsm.CreateTicket(kt.Ctx, createTicketReq)
 	if err != nil {
 		return nil, err
 	}
@@ -1020,14 +1027,11 @@ func buildApproveConfig(tenantID string, approveType table.ApproveType, enableV4
 
 // 获取业务名
 func (s *Service) getBizName(kt *kit.Kit, bizID uint32) (string, error) {
-	bizList, err := s.esb.Cmdb().ListAllBusiness(kt.Ctx)
+	bizList, err := bkcmdb.ListAllBusiness(kt.Ctx)
 	if err != nil {
 		return "", err
 	}
-	if len(bizList.Info) == 0 {
-		return "", errors.New(i18n.T(kt, "biz list is empty"))
-	}
-	for _, biz := range bizList.Info {
+	for _, biz := range bizList {
 		if biz.BizID == int64(bizID) {
 			return biz.BizName, nil
 		}
@@ -1047,9 +1051,9 @@ func buildFields(bizName string, app *table.App, releaseName, scope string, adui
 		{"key": "SCOPE", "value": scope},
 		{"key": "COMPARE", "value": fmt.Sprintf("%s/space/%d/records/all?limit=1&id=%d",
 			cc.DataService().ITSM.BscpPageUrl, app.BizID, aduitId)},
-		{"key": "BIZ_ID", "value": app.BizID},
-		{"key": "APP_ID", "value": app.ID},
-		{"key": "RELEASE_ID", "value": releaseID},
+		{"key": "BIZ_ID", "value": fmt.Sprintf("%d", app.BizID)}, // v4 校验字符串
+		{"key": "APP_ID", "value": fmt.Sprintf("%d", app.ID)},
+		{"key": "RELEASE_ID", "value": fmt.Sprintf("%d", releaseID)},
 		{"key": "APPROVE_TYPE", "value": approveType},
 		{"key": "MEMO", "value": memo},
 		{"key": "approve_type", "value": approveType},
@@ -1058,21 +1062,35 @@ func buildFields(bizName string, app *table.App, releaseName, scope string, adui
 }
 
 // 解析 stateID
-func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enableV4 bool) (int, error) {
+func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enableV4 bool) (string, error) {
 	if enableV4 {
-		tasks, err := s.itsm.ApprovalTasks(kt.Ctx, api.ApprovalTasksReq{
-			TicketID:    ticketSN,
-			ActivityKey: activityKey,
-		})
-		if err != nil {
-			return 0, err
+		// v4版本差异：审批任务ID是单据级别的，流程进入到审批流程中存在延迟，需要设置轮询
+		// v2版本的这个任务ID是全局无需这样的操作
+		tick := time.Tick(1 * time.Second) // 优化为1秒重试
+		// 加上超时时间30s
+		timeout := time.After(30 * time.Second)
+		for {
+			select {
+			case <-tick:
+				tasks, err := s.itsm.ApprovalTasks(kt.Ctx, api.ApprovalTasksReq{
+					TicketID:    ticketSN,
+					ActivityKey: activityKey,
+				})
+				if err != nil {
+					logs.Warnf("get approval tasks failed, err: %v, will retry, rid: %s", err, kt.Rid)
+					continue
+				}
+				if len(tasks.Items) == 0 {
+					logs.Infof("no approval tasks found, will retry, rid: %s", kt.Rid)
+					continue
+				}
+				return tasks.Items[0].ID, nil
+			case <-timeout:
+				return "", fmt.Errorf("resolveStateID timeout after 30s")
+			}
 		}
-		if len(tasks.Items) == 0 {
-			return 0, fmt.Errorf("approval tasks is empty")
-		}
-		return strconv.Atoi(tasks.Items[0].ID)
 	}
-	return strconv.Atoi(activityKey)
+	return activityKey, nil
 }
 
 // 定时上线
