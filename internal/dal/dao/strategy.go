@@ -34,6 +34,9 @@ type Strategy interface {
 	// UpdateByIDs update strategy kv by ids
 	UpdateByIDs(
 		kit *kit.Kit, tx *gen.QueryTx, strategyID []uint32, m map[string]interface{}) error
+	// GetStrategyBySnAndState 根据单据ID和状态获取对应的数据
+	GetStrategyBySnAndState(kit *kit.Kit, itsmTicketSn string, itsmTicketStatus table.ItsmTicketStatus) (
+		*table.Strategy, error)
 }
 
 var _ Strategy = new(strategyDao)
@@ -42,6 +45,14 @@ type strategyDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetStrategyBySn implements Strategy.
+func (dao *strategyDao) GetStrategyBySnAndState(kit *kit.Kit, itsmTicketSn string, itsmTicketStatus table.ItsmTicketStatus) (
+	*table.Strategy, error) {
+	m := dao.genQ.Strategy
+	return m.WithContext(kit.Ctx).Where(m.ItsmTicketSn.Eq(itsmTicketSn),
+		m.ItsmTicketStatus.Eq(itsmTicketStatus.String())).Take()
 }
 
 // GetLast Get strategy kv.

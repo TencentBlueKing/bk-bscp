@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	migrateItsm = "/bk-bscp/etc/itsm/system_bk_bscp.json"
-	migratePath = "/api/v1/system/migrate/"
+	migrateItsm      = "/bk-bscp/etc/itsm/system_bk_bscp.json"
+	migratePath      = "/api/v1/system/migrate/"
+	systemCreatePath = "/api/v1/system_create/"
 
 	fileName = "system_bk_bscp.json"
 )
@@ -84,6 +85,58 @@ func MigrateSystem(ctx context.Context, content []byte, tenantID string) error {
 
 	if !migrateData.Result {
 		logs.Errorf("request migrate itsm system %v failed, msg: %s", migrateData.Code, migrateData.Message)
+		return errors.New(migrateData.Message)
+	}
+
+	return nil
+}
+
+// MigrateReq 定义请求参数
+type MigrateReq struct {
+	Name  string `json:"name"`
+	Token string `json:"token"`
+	Code  string `json:"code"`
+}
+
+func SystemCreate(ctx context.Context) error {
+	itsmConf := cc.DataService().ITSM
+
+	// 默认使用网关访问，如果为外部版，则使用ESB访问
+	host := itsmConf.GatewayHost
+	if itsmConf.External {
+		host = itsmConf.Host
+	}
+
+	reqURL := fmt.Sprintf("%s%s", host, migratePath)
+
+	reqBody := MigrateReq{
+		Name: itsmConf.SystemId,
+		Code: itsmConf.SystemId,
+	}
+
+	request := resty.New().SetDebug(true).R()
+	request.SetHeaders(GetAuthHeader(ctx))
+	request.SetBody(reqBody)
+
+	resp, err := request.Post(reqURL)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.RawResponse.StatusCode < 200 || resp.RawResponse.StatusCode >= 300 {
+		return fmt.Errorf("system create api failed return statusCode: %d", resp.StatusCode())
+	}
+
+	// 解析返回的body
+	migrateData := &MigrateResp{}
+	if err := json.Unmarshal(resp.Body(), migrateData); err != nil {
+		logs.Errorf("parse itsm body error, body: %v", string(resp.Body()))
+		return err
+	}
+
+	if !migrateData.Result {
+		logs.Errorf("request system create %v failed, msg: %s", migrateData.Code, migrateData.Message)
 		return errors.New(migrateData.Message)
 	}
 

@@ -1254,10 +1254,66 @@ func (s *Service) handleTicketStatusV4(kt *kit.Kit, sn string, req *pbds.Approve
 
 // ApprovalCallback implements pbds.DataServer.
 func (s *Service) ApprovalCallback(ctx context.Context, req *pbds.ApprovalCallbackReq) (*pbds.ApprovalCallbackResp, error) {
-	// kit := kit.FromGrpcContext(ctx)
+	// grpcKit := kit.FromGrpcContext(ctx)
+	// // 单据创建时会触发回调
+	// // 单据更新状态时也会触发回调
+	// // 通过回调返回的状态来同步我们表中的状态
+	// // 只需要处理 处理中 的状态
+	// strategy, err := s.dao.Strategy().GetStrategyBySnAndState(grpcKit, req.Ticket.Id, table.RunningItsmTicketStatus)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	// 通过回调返回的状态来同步我们表中的状态
-	// 只需要处理 处理中 的状态
+	// if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	// 	return nil, err
+	// }
+
+	// // 默认要回滚，除非已经提交
+	// tx := s.dao.GenQuery().Begin()
+	// committed := false
+	// defer func() {
+	// 	if !committed {
+	// 		if rErr := tx.Rollback(); rErr != nil {
+	// 			logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+	// 		}
+	// 	}
+	// }()
+
+	// // 只处理已完成、终止、撤单的状态
+	// if req.Ticket.Status == table.FinishedItsmTicketStatus.String() ||
+	// 	req.Ticket.Status == table.TerminationItsmTicketStatus.String() ||
+	// 	req.Ticket.Status == table.RevokedItsmTicketStatus.String() {
+
+	// }
+
+	// var updateContent map[string]any
+
+	// switch req.Ticket.Status {
+	// // 撤单
+	// case table.RevokedItsmTicketStatus.String():
+	// 	// 只有待上线以及审批中的才能撤单
+	// 	if strategy.Spec.PublishStatus != table.PendingPublish && strategy.Spec.PublishStatus != table.PendingApproval {
+	// 		return nil, errors.New(i18n.T(grpcKit, "revoked not allowed, current publish status is: %s",
+	// 			strategy.Spec.PublishStatus))
+	// 	}
+
+	// 	updateContent = map[string]any{
+	// 		"publish_status":     table.RevokedPublish,
+	// 		"reject_reason":      req.GetTicket().GetCallbackResult().String(), // 目前把回调的结果当原因，如果获取不到，那只能通过日志
+	// 		"approver_progress":  strategy.Revision.Creator,
+	// 		"itsm_ticket_status": constant.ItsmTicketStatusRevoked,
+	// 	}
+	// case table.TerminationItsmTicketStatus.String():
+
+	// case table.FinishedItsmTicketStatus.String():
+	// 	updateContent = map[string]any{
+	// 		"publish_status":     table.RevokedPublish,
+	// 		"reject_reason":
+	// 		"approver_progress":  strategy.Revision.Creator,
+	// 		"itsm_ticket_status": constant.ItsmTicketStatusRevoked,
+	// 	}
+
+	// }
 
 	return &pbds.ApprovalCallbackResp{
 		Code:    0,
@@ -1284,20 +1340,35 @@ func (s *Service) SubmitApproval(ctx context.Context, req *pbds.SubmitApprovalRe
 		return nil, err
 	}
 
-	err = s.itsm.ApprovalTicket(grpcKit.Ctx, api.ApprovalTicketReq{
-		TicketID:     strategy.Spec.ItsmTicketSn,
-		TaskID:       strconv.Itoa(strategy.Spec.ItsmTicketStateID),
-		Operator:     grpcKit.TenantID,
-		OperatorType: grpcKit.User,
-		Action:       req.Action,
-		Desc:         req.Reason,
-	})
-
-	if err != nil {
-		return nil, err
+	switch req.Action {
+	// 同意和拒绝
+	case "approve", "refuse":
+		err = s.itsm.ApprovalTicket(grpcKit.Ctx, api.ApprovalTicketReq{
+			TicketID:     strategy.Spec.ItsmTicketSn,
+			TaskID:       strconv.Itoa(strategy.Spec.ItsmTicketStateID),
+			Operator:     grpcKit.TenantID,
+			OperatorType: grpcKit.User,
+			Action:       req.Action,
+			Desc:         req.Reason,
+		})
+		if err != nil {
+			return nil, err
+		}
+	// 撤单
+	case "revoked":
+		resp, errR := s.itsm.RevokedTicket(grpcKit.Ctx, api.ApprovalTicketReq{
+			TicketID: strategy.Spec.ItsmTicketSn,
+			SystemID: cc.DataService().ITSM.SystemId,
+		})
+		if errR != nil {
+			return nil, errR
+		}
+		if !resp.Result {
+			return nil, fmt.Errorf("单据撤回失败")
+		}
 	}
 
 	return &pbds.SubmitApprovalResp{
-		Message: "审批中",
+		Message: "单据审核中",
 	}, nil
 }

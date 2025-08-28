@@ -224,21 +224,21 @@ type StrategySpec struct {
 	// 3. if this strategy is set to default strategy and works at namespace mode,
 	//    then its namespace should be the reserved namespace DefaultNamespace(
 	//    'bscp_default_ns')
-	Namespace         string        `db:"namespace" json:"namespace" gorm:"column:namespace"`
-	Memo              string        `db:"memo" json:"memo" gorm:"column:memo"`
-	PublishType       PublishType   `db:"publish_type" json:"publish_type" gorm:"column:publish_type"`
-	PublishTime       string        `db:"publish_time" json:"publish_time" gorm:"column:publish_time"`
-	PublishStatus     PublishStatus `db:"publish_status" json:"publish_status" gorm:"column:publish_status"`
-	RejectReason      string        `db:"reject_reason" json:"reject_reason" gorm:"column:reject_reason"`
-	Approver          string        `db:"approver" json:"approver" approver:"column:approver"`
-	ApproverProgress  string        `db:"approver_progress" json:"approver_progress" gorm:"column:approver_progress"`
-	FinalApprovalTime time.Time     `db:"final_approval_time" json:"final_approval_time" gorm:"column:final_approval_time"` // nolint
-	ApproveType       string        `db:"approve_type" json:"approve_type" gorm:"column:approve_type"`                      // nolint
-	ItsmTicketType    string        `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
-	ItsmTicketUrl     string        `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
-	ItsmTicketSn      string        `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
-	ItsmTicketStatus  string        `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
-	ItsmTicketStateID int           `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
+	Namespace         string           `db:"namespace" json:"namespace" gorm:"column:namespace"`
+	Memo              string           `db:"memo" json:"memo" gorm:"column:memo"`
+	PublishType       PublishType      `db:"publish_type" json:"publish_type" gorm:"column:publish_type"`
+	PublishTime       string           `db:"publish_time" json:"publish_time" gorm:"column:publish_time"`
+	PublishStatus     PublishStatus    `db:"publish_status" json:"publish_status" gorm:"column:publish_status"`
+	RejectReason      string           `db:"reject_reason" json:"reject_reason" gorm:"column:reject_reason"`
+	Approver          string           `db:"approver" json:"approver" approver:"column:approver"`
+	ApproverProgress  string           `db:"approver_progress" json:"approver_progress" gorm:"column:approver_progress"`
+	FinalApprovalTime time.Time        `db:"final_approval_time" json:"final_approval_time" gorm:"column:final_approval_time"` // nolint
+	ApproveType       string           `db:"approve_type" json:"approve_type" gorm:"column:approve_type"`                      // nolint
+	ItsmTicketType    string           `db:"itsm_ticket_type" json:"itsm_ticket_type" gorm:"column:itsm_ticket_type"`
+	ItsmTicketUrl     string           `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
+	ItsmTicketSn      string           `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
+	ItsmTicketStatus  ItsmTicketStatus `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
+	ItsmTicketStateID int              `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
 }
 
 // ValidateCreate validate strategy spec when it is created.
@@ -678,4 +678,43 @@ func (p PublishStatus) ValidatePublishStatus() error {
 		return fmt.Errorf("unsupported publish status: %s", p)
 	}
 	return nil
+}
+
+// ItsmTicketStatus defining itsm status
+type ItsmTicketStatus string
+
+const (
+	// DraftItsmTicketStatus 草稿
+	DraftItsmTicketStatus ItsmTicketStatus = "draft"
+	// NewItsmTicketStatus 新
+	NewItsmTicketStatus ItsmTicketStatus = "new"
+	// RunningItsmTicketStatus 处理中
+	RunningItsmTicketStatus ItsmTicketStatus = "running"
+	// SuspendItsmTicketStatus 挂起
+	SuspendItsmTicketStatus ItsmTicketStatus = "suspend"
+	// FinishedItsmTicketStatus 已完成
+	FinishedItsmTicketStatus ItsmTicketStatus = "finished"
+	// TerminationItsmTicketStatus 终止
+	TerminationItsmTicketStatus ItsmTicketStatus = "termination"
+	// RevokedItsmTicketStatus 已撤回
+	RevokedItsmTicketStatus ItsmTicketStatus = "revoked"
+)
+
+// ValidatePublishStatus validate publish status
+func (i ItsmTicketStatus) ValidatePublishStatus() error {
+	switch i {
+	case DraftItsmTicketStatus:
+	case NewItsmTicketStatus:
+	case RunningItsmTicketStatus:
+	case SuspendItsmTicketStatus:
+	case FinishedItsmTicketStatus:
+	case TerminationItsmTicketStatus:
+	case RevokedItsmTicketStatus:
+	default:
+		return fmt.Errorf("unsupported publish status: %s", i)
+	}
+	return nil
+}
+func (i ItsmTicketStatus) String() string {
+	return string(i)
 }

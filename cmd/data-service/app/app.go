@@ -254,6 +254,10 @@ func (ds *dataService) listenAndServe() error {
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
+	// 初始化多租户ITSM模板
+	registerTenantTemplates := crontab.RegisterTenantTemplates(ds.daoSet, ds.sd)
+	registerTenantTemplates.Run()
+
 	pbds.RegisterDataServer(serve, svc)
 
 	// initialize and register standard grpc server grpcMetrics.

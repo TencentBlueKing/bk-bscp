@@ -148,6 +148,11 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 			}
 		}
 
+		page += pageSize
+		if page >= resp.Count {
+			break
+		}
+
 	}
 
 }
