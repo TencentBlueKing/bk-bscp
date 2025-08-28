@@ -53,7 +53,7 @@ func generateTemplateId(tenant string, systemCode string, category string) strin
 
 // ItsmV4SystemMigrate 初始化模板
 func ItsmV4SystemMigrate(ctx context.Context, tenantID string) (*TenantWorkflowData, error) {
-
+	ctx = context.WithValue(ctx, constant.BkTenantID, tenantID) // nolint: staticcheck
 	// 读取模板文件内容
 	templateContent, err := os.ReadFile(migrateItsm)
 	if err != nil {
