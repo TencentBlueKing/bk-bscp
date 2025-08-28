@@ -93,6 +93,7 @@ func (i *ItsmTenantRegistry) registerTenantTemplates(kt *kit.Kit) {
 
 	for {
 		// 获取服务列表
+		logs.Infof("get list of apps, page: %d, pageSize: %d", page, pageSize)
 		apps, count, err := i.set.App().List(kt, nil, "", &types.BasePage{
 			Start: uint32(page),
 			Limit: uint(pageSize),

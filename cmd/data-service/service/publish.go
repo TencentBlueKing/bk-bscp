@@ -1065,12 +1065,13 @@ func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enab
 	if enableV4 {
 		// v4版本差异：审批任务ID是单据级别的，流程进入到审批流程中存在延迟，需要设置轮询
 		// v2版本的这个任务ID是全局无需这样的操作
-		tick := time.Tick(1 * time.Second) // 优化为1秒重试
+		ticker := time.NewTicker(1 * time.Second) // 优化为1秒重试
+		defer ticker.Stop()
 		// 加上超时时间30s
 		timeout := time.After(30 * time.Second)
 		for {
 			select {
-			case <-tick:
+			case <-ticker.C:
 				tasks, err := s.itsm.ApprovalTasks(kt.Ctx, api.ApprovalTasksReq{
 					TicketID:    ticketSN,
 					ActivityKey: activityKey,
