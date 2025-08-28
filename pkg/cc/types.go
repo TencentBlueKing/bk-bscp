@@ -1485,4 +1485,6 @@ type ITSMConfig struct {
 	AppSecret string `yaml:"appSecret"`
 	// User is the blueking user of bscp to request esb.
 	User string `yaml:"user"`
+	// SystemId 系统标识
+	SystemId string `yaml:"systemId"`
 }
