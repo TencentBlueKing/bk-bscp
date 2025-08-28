@@ -988,9 +988,9 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 		},
 	}
 	if !cc.DataService().ITSM.EnableV4 {
-		itsmService, err := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
-		if err != nil {
-			return nil, err
+		itsmService, err1 := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
+		if err1 != nil {
+			return nil, err1
 		}
 		createTicketReq.ServiceID = itsmService.Value
 	}
