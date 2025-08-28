@@ -53,7 +53,7 @@ type CreateTicketData struct {
 	SN        string `json:"sn"`
 	ID        int    `json:"id"`
 	TicketURL string `json:"ticket_url"`
-	StateID   int    `json:"state_id"`
+	StateID   string `json:"state_id"`
 }
 
 // CommonResp xxx
@@ -78,7 +78,7 @@ type ApprovalTicketReq struct {
 	ActionMessage string `json:"action_message"`
 	ActionType    string `json:"action_type"`
 	Approver      string `json:"approver"`
-	StateId       int    `json:"state_id"`
+	StateId       string `json:"state_id"`
 }
 
 // RevokedTicketReq xxx
@@ -272,7 +272,7 @@ type GetApproveNodeResultReq struct {
 	// TicketID 工单标识 对应v2版本的sn
 	TicketID string `json:"ticket_id"`
 	// v2 版本中的字段
-	StateID int `json:"state_id"`
+	StateID string `json:"state_id"`
 }
 
 // GetApproveNodeResultResp xxx

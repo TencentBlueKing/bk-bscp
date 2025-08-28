@@ -269,7 +269,7 @@ func parseApproveLogs(items []*api.TicketLogsDataItems) map[string][]string {
 	return result
 }
 
-func (c *SyncTicketStatus) getApproveReason(kt *kit.Kit, sn string, stateID int) (string, error) {
+func (c *SyncTicketStatus) getApproveReason(kt *kit.Kit, sn, stateID string) (string, error) {
 	data, err := c.itsm.GetApproveNodeResult(kt.Ctx, api.GetApproveNodeResultReq{
 		TicketID: sn,
 		StateID:  stateID,

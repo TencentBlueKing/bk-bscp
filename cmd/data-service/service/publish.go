@@ -16,7 +16,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1058,21 +1057,21 @@ func buildFields(bizName string, app *table.App, releaseName, scope string, adui
 }
 
 // 解析 stateID
-func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enableV4 bool) (int, error) {
+func (s *Service) resolveStateID(kt *kit.Kit, ticketSN, activityKey string, enableV4 bool) (string, error) {
 	if enableV4 {
 		tasks, err := s.itsm.ApprovalTasks(kt.Ctx, api.ApprovalTasksReq{
 			TicketID:    ticketSN,
 			ActivityKey: activityKey,
 		})
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 		if len(tasks.Items) == 0 {
-			return 0, fmt.Errorf("approval tasks is empty")
+			return "", fmt.Errorf("approval tasks is empty")
 		}
-		return strconv.Atoi(tasks.Items[0].ID)
+		return tasks.Items[0].ID, nil
 	}
-	return strconv.Atoi(activityKey)
+	return activityKey, nil
 }
 
 // 定时上线
@@ -1141,7 +1140,7 @@ func (s *Service) parseGroup(
 	return groupIDs, groupName, nil
 }
 
-func (s *Service) checkTicketStatus(kt *kit.Kit, sn string, stateID int, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
+func (s *Service) checkTicketStatus(kt *kit.Kit, sn, stateID string, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
 	if req.PublishStatus == string(table.AlreadyPublish) {
 		return req, "", nil
 	}
@@ -1152,7 +1151,7 @@ func (s *Service) checkTicketStatus(kt *kit.Kit, sn string, stateID int, req *pb
 	return s.handleTicketStatusV2(kt, sn, stateID, req)
 }
 
-func (s *Service) handleTicketStatusV2(kt *kit.Kit, sn string, stateID int, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
+func (s *Service) handleTicketStatusV2(kt *kit.Kit, sn, stateID string, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
 	statusResp, err := s.itsm.GetTicketStatus(kt.Ctx, api.GetTicketStatusReq{TicketID: sn})
 	if err != nil {
 		return req, "", err
@@ -1176,7 +1175,7 @@ func (s *Service) handleTicketStatusV2(kt *kit.Kit, sn string, stateID int, req 
 	}
 }
 
-func (s *Service) handleRunningStatus(kt *kit.Kit, sn string, stateID int, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
+func (s *Service) handleRunningStatus(kt *kit.Kit, sn, stateID string, req *pbds.ApproveReq) (*pbds.ApproveReq, string, error) {
 	// 页面撤回直接返回
 	if kt.OperateWay == string(enumor.WebUI) && req.PublishStatus == string(table.RevokedPublish) {
 		return req, "", nil
@@ -1228,7 +1227,7 @@ func (s *Service) parseApproveLogs(items []*api.TicketLogsDataItems) map[string]
 	return result
 }
 
-func (s *Service) getApproveReason(kt *kit.Kit, sn string, stateID int) (string, error) {
+func (s *Service) getApproveReason(kt *kit.Kit, sn, stateID string) (string, error) {
 	data, err := s.itsm.GetApproveNodeResult(kt.Ctx, api.GetApproveNodeResultReq{
 		TicketID: sn,
 		StateID:  stateID,
@@ -1345,7 +1344,7 @@ func (s *Service) SubmitApproval(ctx context.Context, req *pbds.SubmitApprovalRe
 	case "approve", "refuse":
 		err = s.itsm.ApprovalTicket(grpcKit.Ctx, api.ApprovalTicketReq{
 			TicketID:     strategy.Spec.ItsmTicketSn,
-			TaskID:       strconv.Itoa(strategy.Spec.ItsmTicketStateID),
+			TaskID:       strategy.Spec.ItsmTicketStateID,
 			Operator:     grpcKit.TenantID,
 			OperatorType: grpcKit.User,
 			Action:       req.Action,
