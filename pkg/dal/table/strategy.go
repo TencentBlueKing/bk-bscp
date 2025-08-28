@@ -238,7 +238,7 @@ type StrategySpec struct {
 	ItsmTicketUrl     string           `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
 	ItsmTicketSn      string           `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
 	ItsmTicketStatus  ItsmTicketStatus `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
-	ItsmTicketStateID int              `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
+	ItsmTicketStateID string           `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
 }
 
 // ValidateCreate validate strategy spec when it is created.

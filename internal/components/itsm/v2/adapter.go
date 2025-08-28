@@ -16,6 +16,7 @@ package v2
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 )
@@ -92,7 +93,8 @@ func (a *ITSMV2Adapter) ListTickets(ctx context.Context, req api.ListTicketsReq)
 // GetApproveNodeResult implements itsm.ITSMService.
 func (a *ITSMV2Adapter) GetApproveNodeResult(ctx context.Context, req api.GetApproveNodeResultReq) (
 	*api.GetApproveNodeResultDetail, error) {
-	return GetApproveNodeResult(ctx, req.TicketID, req.StateID)
+	stateID, _ := strconv.Atoi(req.StateID)
+	return GetApproveNodeResult(ctx, req.TicketID, stateID)
 }
 
 // TicketDetail implements itsm.ITSMService.

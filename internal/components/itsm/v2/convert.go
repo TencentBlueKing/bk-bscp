@@ -36,7 +36,7 @@ func convertCreateTicketResp(resp *CreateTicketData) *api.CreateTicketData {
 		SN:        resp.SN,
 		ID:        resp.ID,
 		TicketURL: resp.TicketURL,
-		StateID:   resp.StateID,
+		StateID:   strconv.Itoa(resp.StateID),
 	}
 }
 

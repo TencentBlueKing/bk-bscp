@@ -67,7 +67,7 @@ func PbStrategySpec(s *table.StrategySpec) *StrategySpec {
 		ItsmTicketUrl:     s.ItsmTicketUrl,
 		ItsmTicketSn:      s.ItsmTicketSn,
 		ItsmTicketStatus:  s.ItsmTicketStatus.String(),
-		ItsmTicketStateId: int32(s.ItsmTicketStateID),
+		ItsmTicketStateId: s.ItsmTicketStateID,
 	}
 }
 

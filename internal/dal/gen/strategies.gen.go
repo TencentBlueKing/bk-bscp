@@ -46,7 +46,7 @@ func newStrategy(db *gorm.DB, opts ...gen.DOOption) strategy {
 	_strategy.ItsmTicketUrl = field.NewString(tableName, "itsm_ticket_url")
 	_strategy.ItsmTicketSn = field.NewString(tableName, "itsm_ticket_sn")
 	_strategy.ItsmTicketStatus = field.NewString(tableName, "itsm_ticket_status")
-	_strategy.ItsmTicketStateID = field.NewInt(tableName, "itsm_ticket_state_id")
+	_strategy.ItsmTicketStateID = field.NewString(tableName, "itsm_ticket_state_id")
 	_strategy.PubState = field.NewString(tableName, "pub_state")
 	_strategy.BizID = field.NewUint32(tableName, "biz_id")
 	_strategy.AppID = field.NewUint32(tableName, "app_id")
@@ -85,7 +85,7 @@ type strategy struct {
 	ItsmTicketUrl     field.String
 	ItsmTicketSn      field.String
 	ItsmTicketStatus  field.String
-	ItsmTicketStateID field.Int
+	ItsmTicketStateID field.String
 	PubState          field.String
 	BizID             field.Uint32
 	AppID             field.Uint32
@@ -130,7 +130,7 @@ func (s *strategy) updateTableName(table string) *strategy {
 	s.ItsmTicketUrl = field.NewString(table, "itsm_ticket_url")
 	s.ItsmTicketSn = field.NewString(table, "itsm_ticket_sn")
 	s.ItsmTicketStatus = field.NewString(table, "itsm_ticket_status")
-	s.ItsmTicketStateID = field.NewInt(table, "itsm_ticket_state_id")
+	s.ItsmTicketStateID = field.NewString(table, "itsm_ticket_state_id")
 	s.PubState = field.NewString(table, "pub_state")
 	s.BizID = field.NewUint32(table, "biz_id")
 	s.AppID = field.NewUint32(table, "app_id")
