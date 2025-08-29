@@ -1296,8 +1296,9 @@ func (s *Service) ApprovalCallback(ctx context.Context, req *pbds.ApprovalCallba
 // ProcessItsmTicket 根据工单(ticket)状态，更新策略表和审计表
 func (s *Service) ProcessItsmTicket(kit *kit.Kit, ticketID string) error {
 	// 查询策略
-	strategy, err := s.dao.Strategy().GetStrategyBySnAndState(kit, ticketID, table.RunningItsmTicketStatus)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	strategy, err := s.dao.Strategy().GetStrategyBySnAndState(kit, ticketID,
+		[]string{table.RunningItsmTicketStatus.String(), constant.ItsmTicketStatusCreated})
+	if err != nil {
 		return err
 	}
 
@@ -1509,6 +1510,7 @@ func (s *Service) SubmitApproval(ctx context.Context, req *pbds.SubmitApprovalRe
 			OperatorType: grpcKit.User,
 			Action:       req.Action,
 			Desc:         req.Reason,
+			SystemID:     cc.DataService().ITSM.SystemId,
 		})
 		if err != nil {
 			return nil, err

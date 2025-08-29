@@ -97,7 +97,7 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 		c.mutex.Unlock()
 	}()
 
-	// 获取CREATED、待上线，待审批状态的strategy记录
+	// 获取running、待上线，待审批状态的strategy记录
 	strategys, err := c.set.Strategy().ListStrategyByItsm(kt)
 	if err != nil {
 		logs.Errorf("list strategy by itsm failed: %s", err.Error())
