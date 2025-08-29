@@ -17,14 +17,17 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/metadata"
 	"gorm.io/gorm"
 
 	// run the init function to add migrations
 	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
@@ -213,6 +216,7 @@ var migrateStatusCmd = &cobra.Command{
 }
 
 var tenantID string
+var createTemplate bool
 
 var migrateInitITSMCmd = &cobra.Command{
 	Use:   "init-itsm",
@@ -223,8 +227,11 @@ var migrateInitITSMCmd = &cobra.Command{
 			fmt.Printf("load config failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}
-
-		if err := itsm.InitServices(context.Background(), tenantID); err != nil {
+		md := metadata.MD{
+			strings.ToLower(constant.BkTenantID): []string{tenantID},
+		}
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+		if err := itsm.InitServices(ctx, createTemplate); err != nil {
 			fmt.Printf("init itsm services failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}
@@ -246,6 +253,7 @@ func init() {
 	migrateDownCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
 
 	migrateInitITSMCmd.Flags().StringVarP(&tenantID, "tenant", "t", "", "tenant id")
+	migrateInitITSMCmd.Flags().BoolVar(&createTemplate, "create-template", false, "Whether to create template")
 
 	// Add "create", "up" and "down" commands to the "migrate" command
 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateCreateCmd, migrateStatusCmd)

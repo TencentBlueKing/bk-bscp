@@ -23,6 +23,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -48,7 +49,9 @@ type MigrateData struct {
 }
 
 // MigrateSystem xxx
-func MigrateSystem(ctx context.Context, content []byte, tenantID string) error {
+func MigrateSystem(ctx context.Context, content []byte) error {
+	kit := kit.FromGrpcContext(ctx)
+
 	itsmConf := cc.DataService().ITSM
 
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
@@ -61,7 +64,7 @@ func MigrateSystem(ctx context.Context, content []byte, tenantID string) error {
 	request := resty.New().SetDebug(true).R()
 	request.SetHeaders(GetAuthHeader(ctx))
 	request.SetMultipartFormData(map[string]string{
-		"tenant_id": tenantID,
+		"tenant_id": kit.TenantID,
 	})
 
 	request.SetMultipartField("file", fileName, "text/plain", bytes.NewReader(content))
@@ -107,7 +110,7 @@ func SystemCreate(ctx context.Context) error {
 		host = itsmConf.Host
 	}
 
-	reqURL := fmt.Sprintf("%s%s", host, migratePath)
+	reqURL := fmt.Sprintf("%s%s", host, systemCreatePath)
 
 	reqBody := MigrateReq{
 		Name: itsmConf.SystemId,

@@ -38,8 +38,9 @@ var (
 )
 
 // InitServices 初始化BSCP相关流程服务
-func InitServices(ctx context.Context, tenantID string) error {
-	ctx = context.WithValue(ctx, constant.BkTenantID, tenantID) // nolint: staticcheck
+func InitServices(ctx context.Context, createTemplate bool) error {
+	kit := kit.FromGrpcContext(ctx)
+
 	// initial DAO set
 	set, err := dao.NewDaoSet(cc.DataService().Sharding, cc.DataService().Credential, cc.DataService().Gorm)
 	if err != nil {
@@ -48,7 +49,16 @@ func InitServices(ctx context.Context, tenantID string) error {
 
 	daoSet = set
 
-	resp, err := v4.ItsmV4SystemMigrate(ctx, tenantID)
+	if err = v4.SystemCreate(ctx); err != nil {
+		return fmt.Errorf("itsm system create failed, err: %v", err)
+	}
+
+	if !createTemplate {
+		// 不需要创建模板，直接返回
+		return nil
+	}
+
+	resp, err := v4.ItsmV4SystemMigrate(ctx)
 	if err != nil {
 		fmt.Printf("init approve itsm services failed, err: %s\n", err.Error())
 		return err
@@ -66,18 +76,18 @@ func InitServices(ctx context.Context, tenantID string) error {
 	// 存入配置表
 	itsmConfigs := []*table.Config{
 		{
-			Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateApproveItsmWorkflowID),
+			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateApproveItsmWorkflowID),
 			Value: resp.CreateApproveItsmWorkflowID.Value,
 		}, {
-			Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateCountSignApproveItsmStateID),
+			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateCountSignApproveItsmStateID),
 			Value: workflow[constant.ItsmApproveCountSignType],
 		}, {
-			Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateOrSignApproveItsmStateID),
+			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateOrSignApproveItsmStateID),
 			Value: workflow[constant.ItsmApproveOrSignType],
 		},
 	}
 
-	return daoSet.Config().UpsertConfig(kit.New(), itsmConfigs)
+	return daoSet.Config().UpsertConfig(kit, itsmConfigs)
 }
 
 // InitApproveITSMServices 初始化上线审批相关流程服务
