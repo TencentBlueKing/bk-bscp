@@ -48,7 +48,7 @@ func ListWorkflow(ctx context.Context, req ListWorkflowReq) (map[string]string, 
 	// 解析返回的body
 	resp := &ListWorkflowResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {

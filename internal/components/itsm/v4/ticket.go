@@ -56,7 +56,7 @@ func CreateTicket(ctx context.Context, req CreateTicketReq) (*CreateTicketResp, 
 	// 解析返回的body
 	resp := &CreateTicketResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {
@@ -85,7 +85,7 @@ func ApprovalTicket(ctx context.Context, req ApprovalTicketReq) error {
 	// 解析返回的body
 	resp := &ApprovalTicketResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return err
 	}
 	if !resp.Result {
@@ -114,7 +114,7 @@ func RevokedTicket(ctx context.Context, req RevokedTicketReq) (*RevokedTicketRes
 	// 解析返回的body
 	resp := &RevokedTicketResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {
@@ -143,7 +143,7 @@ func TicketDetail(ctx context.Context, req TicketDetailReq) (*api.Ticket, error)
 	// 解析返回的body
 	resp := &TicketDetailResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {
@@ -172,7 +172,7 @@ func GetTicketLogs(ctx context.Context, req TicketDetailReq) (*api.TicketLogsDat
 	// 解析返回的body
 	resp := &GetTicketLogsResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {
@@ -202,7 +202,7 @@ func ListTickets(ctx context.Context, req ListTicketsReq) (*api.ListTicketsData,
 	// 解析返回的body
 	resp := &ListTicketResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {
@@ -232,7 +232,7 @@ func ApprovalTasks(ctx context.Context, req ApprovalTasksReq) (*api.TasksData, e
 	// 解析返回的body
 	resp := &ApprovalTasksResp{}
 	if err := json.Unmarshal(body, resp); err != nil {
-		logs.Errorf("parse itsm body error, body: %v", body)
+		logs.Errorf("parse itsm body error, body: %s", string(body))
 		return nil, err
 	}
 	if !resp.Result {

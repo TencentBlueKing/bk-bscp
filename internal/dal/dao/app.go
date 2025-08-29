@@ -63,6 +63,8 @@ type App interface {
 	CountApps(kit *kit.Kit, bizList []uint32, search *structpb.Struct) (int64, int64, error)
 	// GetOneAppByBiz 通过业务获取其中一个app
 	GetOneAppByBiz(kit *kit.Kit, bizID uint32) (*table.App, error)
+	// 获取不同租户ID
+	GetDistinctTenantIDs(kit *kit.Kit) ([]*table.App, error)
 }
 
 var _ App = new(appDao)
@@ -72,6 +74,12 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// GetDistinctTenantIDs 获取不同租户ID.
+func (dao *appDao) GetDistinctTenantIDs(kit *kit.Kit) ([]*table.App, error) {
+	m := dao.genQ.App
+	return dao.genQ.App.WithContext(kit.Ctx).Distinct(m.TenantID).Find()
 }
 
 // GetOneAppByBiz 通过业务获取其中一个app

@@ -196,6 +196,11 @@ const (
 	// ItsmRejectApproveResult itsm已处理人的结果
 	ItsmRejectedApproveResult = "拒绝"
 
+	// itsm 审批任务状态：approve(通过) refuse(拒绝) revoked(撤单)
+	ItsmApproveAction = "approve"
+	ItsmRefuseAction  = "refuse"
+	ItsmRevokedAction = "revoked"
+
 	// 单据状态:
 
 	// TicketRunningStatu 处理中

@@ -15,10 +15,11 @@ package crontab
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
@@ -31,11 +32,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbrelease "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/release"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 const (
-	defaultSyncTicketStatusInterval = 30 * time.Second
+	defaultSyncTicketStatusInterval = 10 * time.Second
 )
 
 // NewSyncTicketStatus init sync ticket status
@@ -101,158 +103,132 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 		logs.Errorf("list strategy by itsm failed: %s", err.Error())
 		return
 	}
-	snList := []string{}
-	strategyMap := map[string]*table.Strategy{}
+	// 根据 tenantID 分组
+	tenantSNMap := make(map[string][]string)                         // tenantID -> sn 列表
+	tenantStrategyMap := make(map[string]map[string]*table.Strategy) // tenantID -> (sn -> strategy)
+
 	for _, strategy := range strategys {
-		snList = append(snList, strategy.Spec.ItsmTicketSn)
-		strategyMap[strategy.Spec.ItsmTicketSn] = strategy
+		tenantID := strategy.Attachment.TenantID
+		if tenantSNMap[tenantID] == nil {
+			tenantSNMap[tenantID] = []string{}
+		}
+		tenantSNMap[tenantID] = append(tenantSNMap[tenantID], strategy.Spec.ItsmTicketSn)
+
+		if tenantStrategyMap[tenantID] == nil {
+			tenantStrategyMap[tenantID] = make(map[string]*table.Strategy)
+		}
+		tenantStrategyMap[tenantID][strategy.Spec.ItsmTicketSn] = strategy
 	}
 
-	if len(snList) == 0 {
-		return
-	}
-
-	page, pageSize := 0, 100
-
-	for {
-		resp, err := c.itsm.ListTickets(kt.Ctx, api.ListTicketsReq{
-			Page:     page,
-			PageSize: pageSize,
-			Sns:      snList,
-		})
-		if err != nil {
-			logs.Errorf("list approve itsm tickets %v failed, err: %s", snList, err.Error())
-			return
-		}
-
-		if resp.Count == 0 {
-			break
-		}
-
-		var approveReqs []*pbds.ApproveReq
-
-		if cc.DataService().ITSM.EnableV4 {
-			approveReqs, err = c.handleTicketStatusV4(kt, resp.Results, strategyMap)
-		} else {
-			approveReqs, err = c.handleTicketStatusV2(kt, resp.Results, strategyMap)
-		}
-		if err != nil {
-			logs.Errorf("handle Ticket v2 status failed, err: %s", err.Error())
-			return
-		}
-
-		for _, req := range approveReqs {
-			if _, err := c.srv.Approve(kt.Ctx, req); err != nil {
-				logs.Errorf("sync ticket status approve failed, strategyId=%d, err=%v", req.StrategyId, err)
-				continue // 不中断整个批次
-			}
-		}
-
-		page += pageSize
-		if page >= resp.Count {
-			break
-		}
-
-	}
-
-}
-
-// 批量 V2：运行中读取日志判断通过/拒绝；其它状态一律撤销
-func (c *SyncTicketStatus) handleTicketStatusV2(kt *kit.Kit, tickets []*api.Ticket, strategyMap map[string]*table.Strategy,
-) ([]*pbds.ApproveReq, error) {
-	approveReqs := make([]*pbds.ApproveReq, 0, len(tickets))
-
-	for _, ticket := range tickets {
-		strategy, ok := strategyMap[ticket.SN]
-		if !ok || strategy == nil {
-			return nil, fmt.Errorf("strategy not found for ticket %s", ticket.SN)
-		}
-
-		status := strings.ToUpper(ticket.Status)
-
-		if status == constant.TicketRunningStatu {
-			// 运行中：看日志
-			req := newApproveReq(strategy, string(table.PendingPublish))
-
-			logsResp, err := c.itsm.GetTicketLogs(kt.Ctx, api.GetTicketLogsReq{TicketID: ticket.SN})
-			if err != nil {
-				return nil, fmt.Errorf("GetTicketLogs failed, sn=%s, err=%v", ticket.SN, err)
-			}
-
-			approveMap := parseApproveLogs(logsResp.Items)
-			if len(approveMap) == 0 {
-				// 没有有效日志：不下发请求（保持沉默）
-				continue
-			}
-
-			if rejected, ok := approveMap[constant.ItsmRejectedApproveResult]; ok {
-				reason, err := c.getApproveReason(kt, ticket.SN, strategy.Spec.ItsmTicketStateID)
-				if err != nil {
-					return nil, fmt.Errorf("GetApproveNodeResult failed, sn=%s, err=%v", ticket.SN, err)
-				}
-				req.PublishStatus = string(table.RejectedApproval)
-				req.Reason = reason
-				req.ApprovedBy = rejected
-				approveReqs = append(approveReqs, req)
-				continue
-			}
-
-			if passed, ok := approveMap[constant.ItsmPassedApproveResult]; ok {
-				req.ApprovedBy = passed
-				approveReqs = append(approveReqs, req)
-				continue
-			}
-
-			// 未命中任何已知结果：跳过
+	for tenantID, snList := range tenantSNMap {
+		if len(snList) == 0 {
 			continue
 		}
 
-		// 非运行中：撤销
-		req := newApproveReq(strategy, string(table.RevokedPublish))
-		approveReqs = append(approveReqs, req)
-	}
-
-	// 批处理场景：错误都已日志并跳过，函数返回 nil error
-	return approveReqs, nil
-}
-
-// 批量 V4：走 TicketDetail
-func (c *SyncTicketStatus) handleTicketStatusV4(kt *kit.Kit, tickets []*api.Ticket, strategyMap map[string]*table.Strategy,
-) ([]*pbds.ApproveReq, error) {
-
-	approveReqs := make([]*pbds.ApproveReq, 0, len(tickets))
-
-	for _, ticket := range tickets {
-		strategy, ok := strategyMap[ticket.SN]
-		if !ok || strategy == nil {
-			return nil, fmt.Errorf("strategy not found for ticket %s", ticket.SN)
+		if cc.DataService().ITSM.EnableV4 {
+			md := metadata.MD{
+				strings.ToLower(constant.BkTenantID): []string{tenantID},
+			}
+			ctx := metadata.NewIncomingContext(kt.Ctx, md)
+			c.handleTicketStatusV4(ctx, snList)
+		} else {
+			c.handleTicketStatusV2(kt.Ctx, snList, tenantStrategyMap[tenantID])
 		}
 
-		req := newApproveReq(strategy, string(table.RevokedPublish))
+	}
 
-		detail, err := c.itsm.TicketDetail(kt.Ctx, api.TicketDetailReq{ID: ticket.ID})
+}
+
+func (c *SyncTicketStatus) handleTicketStatusV4(ctx context.Context, ticketIDs []string) {
+	for _, id := range ticketIDs {
+		_, err := c.srv.ApprovalCallback(ctx, &pbds.ApprovalCallbackReq{
+			Ticket: &pbrelease.Ticket{
+				Id: id,
+			},
+		})
 		if err != nil {
-			return nil, fmt.Errorf("TicketDetail failed, sn=%s, id=%s, err=%v", ticket.SN, ticket.ID, err)
+			logs.Errorf("sync ticket status approve failed, ticketID=%d, err=%v", id, err)
+			continue
 		}
-
-		for _, p := range detail.CurrentProcessors {
-			req.ApprovedBy = append(req.ApprovedBy, p.Processor)
-		}
-		req.Reason = detail.CallbackResult.Message
-
-		approveReqs = append(approveReqs, req)
 	}
-
-	return approveReqs, nil
 }
 
-func newApproveReq(strategy *table.Strategy, publishStatus string) *pbds.ApproveReq {
-	return &pbds.ApproveReq{
-		BizId:         strategy.Attachment.BizID,
-		AppId:         strategy.Attachment.AppID,
-		ReleaseId:     strategy.Spec.ReleaseID,
-		PublishStatus: publishStatus,
-		StrategyId:    strategy.ID,
+// 批量 V2：运行中读取日志判断通过/拒绝；其它状态一律撤销
+func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs []string, strategyMap map[string]*table.Strategy) {
+
+	for _, id := range ticketIDs {
+		strategy, ok := strategyMap[id]
+		if !ok || strategy == nil {
+			logs.Errorf("strategy not found for ticket %s", id)
+			return
+		}
+
+		// 获取单据状态
+		ticket, err := c.itsm.GetTicketStatus(ctx, api.GetTicketStatusReq{
+			TicketID: id,
+		})
+		if err != nil {
+			logs.Errorf("get itsm ticket %d status %s failed, err: %v", id, err)
+			return
+		}
+
+		// 正常状态的单据
+		if ticket.CurrentStatus == constant.TicketRunningStatu {
+			req := &pbds.ApproveReq{
+				BizId:         strategyMap[id].Attachment.BizID,
+				AppId:         strategyMap[id].Attachment.AppID,
+				ReleaseId:     strategyMap[id].Spec.ReleaseID,
+				PublishStatus: string(table.PendingPublish),
+				StrategyId:    strategyMap[id].ID,
+			}
+
+			logsResp, errResult := c.itsm.GetTicketLogs(ctx, api.GetTicketLogsReq{TicketID: id})
+			if errResult != nil {
+				logs.Errorf("GetTicketLogs failed, err: %s", errResult.Error())
+				return
+			}
+			approveMap := parseApproveLogs(logsResp.Items)
+			if len(approveMap) == 0 {
+				continue
+			}
+
+			// 失败需要有reason
+			if _, ok := approveMap[constant.ItsmRejectedApproveResult]; ok {
+				reason, err := c.getApproveReason(ctx, id, strategy.Spec.ItsmTicketStateID)
+				if err != nil {
+					logs.Errorf("GetApproveNodeResult failed, sn=%s, err=%v", id, err)
+					return
+				}
+
+				req.Reason = reason
+				req.PublishStatus = string(table.RejectedApproval)
+				req.ApprovedBy = approveMap[constant.ItsmRejectedApproveResult]
+			}
+
+			if _, ok := approveMap[constant.ItsmPassedApproveResult]; ok {
+				req.ApprovedBy = approveMap[constant.ItsmPassedApproveResult]
+			}
+
+			_, err := c.srv.Approve(ctx, req)
+			if err != nil {
+				logs.Errorf("sync ticket status approve failed, err: %s", err.Error())
+				continue
+			}
+		} else {
+			// 其他状态的单据直接撤销
+			req := &pbds.ApproveReq{
+				BizId:         strategyMap[id].Attachment.BizID,
+				AppId:         strategyMap[id].Attachment.AppID,
+				ReleaseId:     strategyMap[id].Spec.ReleaseID,
+				PublishStatus: string(table.RevokedPublish),
+				StrategyId:    strategyMap[id].ID,
+			}
+			_, err := c.srv.Approve(ctx, req)
+			if err != nil {
+				logs.Errorf("sync ticket status approve failed, err: %s", err.Error())
+				continue
+			}
+		}
 	}
 }
 
@@ -269,8 +245,8 @@ func parseApproveLogs(items []*api.TicketLogsDataItems) map[string][]string {
 	return result
 }
 
-func (c *SyncTicketStatus) getApproveReason(kt *kit.Kit, sn, stateID string) (string, error) {
-	data, err := c.itsm.GetApproveNodeResult(kt.Ctx, api.GetApproveNodeResultReq{
+func (c *SyncTicketStatus) getApproveReason(ctx context.Context, sn, stateID string) (string, error) {
+	data, err := c.itsm.GetApproveNodeResult(ctx, api.GetApproveNodeResultReq{
 		TicketID: sn,
 		StateID:  stateID,
 	})
