@@ -17,8 +17,13 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // ITSMV2Adapter xxx
@@ -101,4 +106,60 @@ func (a *ITSMV2Adapter) GetApproveNodeResult(ctx context.Context, req api.GetApp
 // v2版本对应的方法是 GetTicketStatus
 func (a *ITSMV2Adapter) TicketDetail(ctx context.Context, req api.TicketDetailReq) (*api.Ticket, error) {
 	return nil, fmt.Errorf("TicketDetail is not supported in v2 adapter")
+}
+
+// GetApproveResult 获取审批结果
+func (a *ITSMV2Adapter) GetApproveResult(ctx context.Context, req api.GetApproveResultReq) (*api.ApproveResultData, error) {
+	v2Resp, err := GetTicketLogs(ctx, req.TicketID)
+	if err != nil {
+		logs.Errorf("GetApproveResult failed, err: %v", err)
+		return nil, err
+	}
+
+	res := &api.ApproveResultData{
+		Result:      nil,
+		Items:       []*api.ApproveResultDataItem{},
+		PassUsers:   []string{},
+		RejectUsers: []string{},
+	}
+	// 提取审批信息
+	for _, v := range v2Resp.Logs {
+		// 审批拒绝
+		if strings.Contains(v.Message, constant.ItsmRejectedApproveResult) {
+			// 审批拒绝，提取审批拒绝原因
+			stateID, err := strconv.Atoi(req.StateID)
+			if err != nil {
+				logs.Errorf("GetApproveResult failed, err: %v", err)
+				return nil, err
+			}
+			approveNodeResult, err := GetApproveNodeResult(ctx, req.TicketID, stateID)
+			if err != nil {
+				logs.Errorf("GetApproveResult failed, err: %v", err)
+				return nil, err
+			}
+			res.Result = pointer.Bool(false)
+			res.RejectUsers = append(res.RejectUsers, v.Operator)
+
+			res.Items = append(res.Items, &api.ApproveResultDataItem{
+				Result: pointer.Bool(false),
+				Reason: approveNodeResult.ApproveRemark,
+			})
+		}
+		// 审批通过
+		if strings.Contains(v.Message, constant.ItsmPassedApproveResult) {
+			// 审批通过，提取审批人
+			res.Items = append(res.Items, &api.ApproveResultDataItem{
+				Result:   pointer.Bool(true),
+				Operator: v.Operator,
+			})
+			res.PassUsers = append(res.PassUsers, v.Operator)
+		}
+	}
+
+	// 有记录，并且最终result没有记录，说明审批通过
+	if len(res.Items) > 0 && res.Result == nil {
+		res.Result = pointer.Bool(true)
+	}
+
+	return res, nil
 }

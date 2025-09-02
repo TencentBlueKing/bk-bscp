@@ -54,14 +54,17 @@ func convertCreateTicketResp(resp *CreateTicketResp) *api.CreateTicketData {
 }
 
 func convertApprovalTicketReq(req api.ApprovalTicketReq) ApprovalTicketReq {
-
+	action := "refuse"
+	if req.Action == "true" {
+		action = "approve"
+	}
 	return ApprovalTicketReq{
 		TicketID:     req.TicketID,
 		TaskID:       req.TaskID,
 		Operator:     req.Operator,
-		OperatorType: req.OperatorType,
+		OperatorType: "user",
 		SystemID:     req.SystemID,
-		Action:       req.Action,
+		Action:       action,
 		Desc:         req.Desc,
 	}
 }

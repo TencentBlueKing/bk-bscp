@@ -111,6 +111,12 @@ type GetTicketLogsReq struct {
 	TicketID string `json:"ticket_id"`
 }
 
+// GetApproveResultReq xxx
+type GetApproveResultReq struct {
+	TicketID string `json:"ticket_id"`
+	StateID  string `json:"state_id"`
+}
+
 // TicketDetailReq xxx
 type TicketDetailReq struct {
 	// ID 工单id
@@ -170,6 +176,10 @@ type Step struct {
 	TicketID string `json:"ticket_id"`
 	// Name 步骤名称
 	Name string `json:"name"`
+	// ActivityKey [v4]activity_key
+	ActivityKey string `json:"activity_key"`
+	// TaskID: [v4] task id
+	TaskID string `json:"task_id"`
 }
 
 // CallbackResult 回调结果
@@ -187,6 +197,8 @@ type Processor struct {
 	Processor string `json:"processor"`
 	// ProcessorType 处理人类型: user/group/organization
 	ProcessorType string `json:"processor_type"`
+	// TaskID 任务ID
+	TaskID string `json:"task_id"`
 }
 
 type RevokedTicketResp struct {
@@ -197,6 +209,22 @@ type RevokedTicketResp struct {
 // TicketLogsData xxx
 type TicketLogsData struct {
 	Items []*TicketLogsDataItems `json:"items"`
+}
+
+// ApproveResultData 审批结果数据
+type ApproveResultData struct {
+	Result      *bool                    `json:"result"` // nil 还没有审批，true 已经审批通过，false 已经审批驳回
+	RejectUsers []string                 `json:"reject_users"`
+	PassUsers   []string                 `json:"pass_users"`
+	Reasons     []string                 `json:"reason"`
+	Items       []*ApproveResultDataItem `json:"items"`
+}
+
+// ApproveResultDataItem 单项审批结果
+type ApproveResultDataItem struct {
+	Result   *bool  `json:"result"` // nil 还没有审批，true 已经审批通过，false 已经审批驳回
+	Reason   string `json:"reason"`
+	Operator string `json:"operator"` // 操作人
 }
 
 // TicketLogsDataItems xxx

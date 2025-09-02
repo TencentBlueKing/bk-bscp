@@ -29,7 +29,7 @@ var rt *runtime
 // globalSettings : Global Configurations
 var globalSettings *GlobalSettings
 
-func initRuntime(s Setting) {
+func InitRuntime(s Setting) {
 	runtimeOnce.Do(func() {
 		rt = &runtime{
 			settings: s,

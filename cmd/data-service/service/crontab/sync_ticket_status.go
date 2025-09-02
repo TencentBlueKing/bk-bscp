@@ -32,7 +32,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	pbrelease "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/release"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
@@ -83,7 +82,7 @@ func (c *SyncTicketStatus) Run() {
 					continue
 				}
 				logs.Infof("starts to synchronize the tickets status")
-				c.syncTicketStatus(kt)
+				// c.syncTicketStatus(kt)
 			}
 		}
 	}()
@@ -125,37 +124,23 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 			continue
 		}
 
+		ctx := kt.Ctx
+		// 对于 v4 版本，添加租户信息到上下文
 		if cc.DataService().ITSM.EnableV4 {
 			md := metadata.MD{
 				strings.ToLower(constant.BkTenantID): []string{tenantID},
 			}
-			ctx := metadata.NewIncomingContext(kt.Ctx, md)
-			c.handleTicketStatusV4(ctx, snList)
-		} else {
-			c.handleTicketStatusV2(kt.Ctx, snList, tenantStrategyMap[tenantID])
+			ctx = metadata.NewIncomingContext(kt.Ctx, md)
 		}
 
+		c.handleTicketStatus(ctx, snList, tenantStrategyMap[tenantID])
 	}
 
 }
 
-func (c *SyncTicketStatus) handleTicketStatusV4(ctx context.Context, ticketIDs []string) {
-	for _, id := range ticketIDs {
-		_, err := c.srv.ApprovalCallback(ctx, &pbds.ApprovalCallbackReq{
-			Ticket: &pbrelease.Ticket{
-				Id: id,
-			},
-		})
-		if err != nil {
-			logs.Errorf("sync ticket status approve failed, ticketID=%d, err=%v", id, err)
-			continue
-		}
-	}
-}
-
-// 批量 V2：运行中读取日志判断通过/拒绝；其它状态一律撤销
-func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs []string, strategyMap map[string]*table.Strategy) {
-
+// handleTicketStatus 处理工单状态，统一处理V2和V4版本
+func (c *SyncTicketStatus) handleTicketStatus(ctx context.Context, ticketIDs []string, strategyMap map[string]*table.Strategy) {
+	// V2和V4版本使用相同的处理逻辑：运行中读取日志判断通过/拒绝；其它状态一律撤销
 	for _, id := range ticketIDs {
 		strategy, ok := strategyMap[id]
 		if !ok || strategy == nil {
@@ -168,7 +153,7 @@ func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs [
 			TicketID: id,
 		})
 		if err != nil {
-			logs.Errorf("get itsm ticket %d status %s failed, err: %v", id, err)
+			logs.Errorf("get itsm ticket %s status failed, err: %v", id, err)
 			return
 		}
 
@@ -189,6 +174,7 @@ func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs [
 			}
 			approveMap := parseApproveLogs(logsResp.Items)
 			if len(approveMap) == 0 {
+				logs.Infof("no approve logs, id=%s", id)
 				continue
 			}
 
@@ -196,7 +182,7 @@ func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs [
 			if _, ok := approveMap[constant.ItsmRejectedApproveResult]; ok {
 				reason, err := c.getApproveReason(ctx, id, strategy.Spec.ItsmTicketStateID)
 				if err != nil {
-					logs.Errorf("GetApproveNodeResult failed, sn=%s, err=%v", id, err)
+					logs.Errorf("GetApproveReason failed, sn=%s, err=%v", id, err)
 					return
 				}
 
@@ -214,7 +200,7 @@ func (c *SyncTicketStatus) handleTicketStatusV2(ctx context.Context, ticketIDs [
 				logs.Errorf("sync ticket status approve failed, err: %s", err.Error())
 				continue
 			}
-		} else {
+		} else if ticket.CurrentStatus == constant.TicketRevokedStatu {
 			// 其他状态的单据直接撤销
 			req := &pbds.ApproveReq{
 				BizId:         strategyMap[id].Attachment.BizID,
