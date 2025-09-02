@@ -241,4 +241,3 @@ func ApprovalTasks(ctx context.Context, req ApprovalTasksReq) (*api.TasksData, e
 	}
 	return resp.Data, nil
 }
-

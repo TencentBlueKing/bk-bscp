@@ -30,6 +30,7 @@ const (
 // ReleaseSwagger 导入swagge 文档
 // nolint:funlen
 func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version string) error {
+	fmt.Printf("release swagger docs, language: %s, version: %s\n", language, version)
 	// 初始化网关
 	gw, err := NewApiGw(esbOpt, apiGwOpt)
 	if err != nil {
@@ -77,8 +78,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 
 	// 定义需要同步的 swagger 文件路径
 	swaggerFiles := []string{
-		"swagger/bkapigw.swagger.json",
-		"swagger/bkapigw_thirdparty.swagger.json",
+		"swagger/bkapigw/swagger.json",
 	}
 
 	// 同步资源和文档导入

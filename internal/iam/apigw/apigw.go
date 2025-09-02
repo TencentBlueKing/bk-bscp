@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
@@ -161,7 +163,6 @@ func (a *apiGw) SyncResources(gwName string, req *SyncResourcesReq) (*SyncResour
 	defer resp.Body.Close()
 
 	result := new(SyncResourcesResp)
-
 	// 将响应体解析为结构体
 	if err = json.NewDecoder(resp.Body).Decode(result); err != nil {
 		return nil, err
@@ -211,7 +212,7 @@ func (a *apiGw) CreateResourceVersion(gwName string, req *CreateResourceVersionR
 	if err != nil {
 		return nil, fmt.Errorf("create resource version serialization JSON failed: %s", err.Error())
 	}
-
+	spew.Dump(string(jsonData))
 	request, err := a.newRequest("POST", url, jsonData)
 	if err != nil {
 		return nil, err
@@ -230,6 +231,7 @@ func (a *apiGw) CreateResourceVersion(gwName string, req *CreateResourceVersionR
 		return nil, err
 	}
 
+	spew.Dump(result)
 	return result, nil
 }
 
@@ -364,7 +366,7 @@ func (a *apiGw) newRequest(method, url string, body []byte) (*http.Request, erro
 	req.Header.Set("X-Bkapi-Authorization", fmt.Sprintf(`{"bk_app_code": "%s", "bk_app_secret": "%s"}`,
 		a.esbOpt.AppCode, a.esbOpt.AppSecret))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Bk-Tenant-Id", constant.DefaultTenantID)
+	req.Header.Set("X-Bk-Tenant-Id", constant.SystemTenantID)
 
 	return req, nil
 }

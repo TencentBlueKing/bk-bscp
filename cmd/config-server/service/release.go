@@ -315,23 +315,3 @@ func (s *Service) ApprovalCallback(ctx context.Context, req *pbcs.ApprovalCallba
 		Message: resp.Message,
 	}, nil
 }
-
-// SubmitApproval implements pbcs.ConfigServer.
-func (s *Service) SubmitApproval(ctx context.Context, req *pbcs.SubmitApprovalReq) (*pbcs.SubmitApprovalResp, error) {
-	grpcKit := kit.FromGrpcContext(ctx)
-
-	resp, err := s.client.DS.SubmitApproval(grpcKit.RpcCtx(), &pbds.SubmitApprovalReq{
-		BizId:     req.BizId,
-		AppId:     req.AppId,
-		ReleaseId: req.ReleaseId,
-		Action:    req.Action,
-		Reason:    req.Reason,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &pbcs.SubmitApprovalResp{
-		Message: resp.Message,
-	}, nil
-}

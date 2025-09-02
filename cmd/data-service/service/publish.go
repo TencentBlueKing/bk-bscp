@@ -1261,29 +1261,6 @@ func (s *Service) handleRunningStatus(kt *kit.Kit, sn, stateID string, req *pbds
 	return req, "", nil
 }
 
-func (s *Service) parseApproveLogs(items []*api.TicketLogsDataItems) map[string][]string {
-	result := make(map[string][]string)
-	for _, v := range items {
-		if strings.Contains(v.Message, constant.ItsmRejectedApproveResult) {
-			result[constant.ItsmRejectedApproveResult] = append(result[constant.ItsmRejectedApproveResult], v.Operator)
-		} else if strings.Contains(v.Message, constant.ItsmPassedApproveResult) {
-			result[constant.ItsmPassedApproveResult] = append(result[constant.ItsmPassedApproveResult], v.Operator)
-		}
-	}
-	return result
-}
-
-func (s *Service) getApproveReason(kt *kit.Kit, sn, stateID string) (string, error) {
-	data, err := s.itsm.GetApproveNodeResult(kt.Ctx, api.GetApproveNodeResultReq{
-		TicketID: sn,
-		StateID:  stateID,
-	})
-	if err != nil {
-		return "", err
-	}
-	return data.ApproveRemark, nil
-}
-
 // ApprovalCallback implements pbds.DataServer.
 func (s *Service) ApprovalCallback(ctx context.Context, req *pbds.ApprovalCallbackReq) (*pbds.ApprovalCallbackResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
@@ -1486,57 +1463,4 @@ func (s *Service) handleAutoPublish(kit *kit.Kit, tx *gen.QueryTx, strategy *tab
 		All:       len(strategy.Spec.Scope.Groups) == 0,
 	}
 	return s.dao.Publish().UpsertPublishWithTx(kit, tx, &opt, strategy)
-}
-
-// SubmitApproval implements pbds.DataServer.
-func (s *Service) SubmitApproval(ctx context.Context, req *pbds.SubmitApprovalReq) (*pbds.SubmitApprovalResp, error) {
-	grpcKit := kit.FromGrpcContext(ctx)
-
-	logs.Infof("start approve operateway: %s, user: %s, req: %v", grpcKit.OperateWay, grpcKit.User, req)
-
-	release, err := s.dao.Release().Get(grpcKit, req.BizId, req.AppId, req.ReleaseId)
-	if err != nil {
-		return nil, err
-	}
-	if release.Spec.Deprecated {
-		return nil, errors.New(i18n.T(grpcKit, "release %s is deprecated, can not be revoke", release.Spec.Name))
-	}
-
-	strategy, err := s.dao.Strategy().GetLast(grpcKit, req.BizId, req.AppId, req.ReleaseId, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	switch req.Action {
-	// 同意和拒绝
-	case constant.ItsmApproveAction, constant.ItsmRefuseAction:
-		err = s.itsm.ApprovalTicket(grpcKit.Ctx, api.ApprovalTicketReq{
-			TicketID:     strategy.Spec.ItsmTicketSn,
-			TaskID:       strategy.Spec.ItsmTicketStateID,
-			Operator:     grpcKit.User,
-			OperatorType: "user",
-			Action:       req.Action,
-			Desc:         req.Reason,
-			SystemID:     cc.DataService().ITSM.SystemId,
-		})
-		if err != nil {
-			return nil, err
-		}
-	// 撤单
-	case constant.ItsmRevokedAction:
-		resp, errR := s.itsm.RevokedTicket(grpcKit.Ctx, api.ApprovalTicketReq{
-			TicketID: strategy.Spec.ItsmTicketSn,
-			SystemID: cc.DataService().ITSM.SystemId,
-		})
-		if errR != nil {
-			return nil, errR
-		}
-		if !resp.Result {
-			return nil, fmt.Errorf("单据撤回失败")
-		}
-	}
-
-	return &pbds.SubmitApprovalResp{
-		Message: "单据审核中",
-	}, nil
 }
