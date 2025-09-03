@@ -57,14 +57,6 @@ type ItsmItsmV4Registry struct {
 func (i *ItsmItsmV4Registry) Run() {
 	logs.Infof("start itsm itsm v4 template registration")
 	// 单租户模式只跑一次
-	if !cc.DataService().FeatureFlags.EnableMultiTenantMode {
-		kt := kit.New()
-		ctx, cancel := context.WithCancel(kt.Ctx)
-		defer cancel()
-		kt.Ctx = ctx
-		i.registerItsmV4Templates(kt)
-		return
-	}
 	notifier := shutdown.AddNotifier()
 	go func() {
 		ticker := time.NewTicker(defaultRegisterItsmV4TemplatesInterval)
