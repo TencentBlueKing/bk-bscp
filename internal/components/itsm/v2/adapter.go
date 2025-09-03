@@ -29,15 +29,6 @@ import (
 // ITSMV2Adapter xxx
 type ITSMV2Adapter struct{}
 
-// ListWorkflow implements itsm.Service.
-func (a *ITSMV2Adapter) ListWorkflow(ctx context.Context, req api.ListWorkflowReq) (map[string]string, error) {
-	v2Resp, err := GetStateApproveByWorkfolw(ctx, convertListWorkflowReq(req))
-	if err != nil {
-		return nil, err
-	}
-	return convertListWorkflowResp(v2Resp), nil
-}
-
 // ApprovalTasks implements itsm.Service.
 func (a *ITSMV2Adapter) ApprovalTasks(ctx context.Context, req api.ApprovalTasksReq) (*api.TasksData, error) {
 	return nil, fmt.Errorf("ApprovalTasks is not supported in v2 adapter")

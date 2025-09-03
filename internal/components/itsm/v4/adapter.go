@@ -26,13 +26,6 @@ import (
 // ITSMV4Adapter xxx
 type ITSMV4Adapter struct{}
 
-// ListWorkflow implements itsm.Service.
-func (a *ITSMV4Adapter) ListWorkflow(ctx context.Context, req api.ListWorkflowReq) (map[string]string, error) {
-	return ListWorkflow(ctx, ListWorkflowReq{
-		WorkflowKeys: req.WorkflowKeys,
-	})
-}
-
 // ApprovalTasks implements itsm.Service.
 func (a *ITSMV4Adapter) ApprovalTasks(ctx context.Context, req api.ApprovalTasksReq) (*api.TasksData, error) {
 	return ApprovalTasks(ctx, ApprovalTasksReq{
@@ -47,7 +40,7 @@ func (a *ITSMV4Adapter) CreateTicket(ctx context.Context, req api.CreateTicketRe
 	if err != nil {
 		return &api.CreateTicketData{}, err
 	}
-	return convertCreateTicketResp(v4Resp), nil
+	return convertCreateTicketResp(ctx, req.ActivityKey, v4Resp)
 }
 
 // GetTicketLogs implements itsm.ITSMService.
@@ -112,9 +105,9 @@ func (a *ITSMV4Adapter) GetApproveResult(ctx context.Context, req api.GetApprove
 		PassUsers:   []string{},
 	}
 
-	// 在日志中查找匹配 stateID（即 activity_key）的记录
+	// 在日志中查找匹配  activity_key 的记录
 	for _, item := range logs.Items {
-		if item.ActivityKey == req.StateID {
+		if item.ActivityKey == req.ActivityKey {
 			// 找到匹配的记录，提取审批信息
 			itemRes := &api.ApproveResultDataItem{
 				Result:   pointer.Bool(item.Action == "approve"),
@@ -135,8 +128,6 @@ func (a *ITSMV4Adapter) GetApproveResult(ctx context.Context, req api.GetApprove
 				res.Reasons = append(res.Reasons, remark)
 			}
 			res.Items = append(res.Items, itemRes)
-
-			return res, nil
 		}
 	}
 

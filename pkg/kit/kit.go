@@ -26,6 +26,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // New initial a kit with rid and context.
@@ -259,13 +260,15 @@ func (c *Kit) CtxWithTimeoutMS(timeoutMS int) context.CancelFunc {
 }
 
 // Validate context kit.
-func (c *Kit) Validate() error {
+func (c *Kit) Validate(validateUser bool) error {
 	if c.Ctx == nil {
 		return errors.New("context is required")
 	}
-
-	if len(c.User) == 0 {
-		return errors.New("user is required")
+	if validateUser {
+		if len(c.User) == 0 {
+			logs.Errorf("user is required")
+			return errors.New("user is required")
+		}
 	}
 
 	ridLen := len(c.Rid)

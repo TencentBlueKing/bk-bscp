@@ -250,13 +250,15 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 同步客户端在线状态
+	// 同步itsm 单据状态：避免单据没回被正确回调感知
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
-	// 初始化多租户ITSM模板
-	registerTenantTemplates := crontab.RegisterTenantTemplates(ds.daoSet, ds.sd)
-	registerTenantTemplates.Run()
+	// 初始化ITSM模板[只有v4版本才需要]
+	if cc.DataService().ITSM.EnableV4 {
+		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
+		registerItsmV4Templates.Run()
+	}
 
 	pbds.RegisterDataServer(serve, svc)
 

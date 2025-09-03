@@ -35,8 +35,10 @@ type CreateTicketReq struct {
 	// SystemID 如果传入system_id，需要在请求头加入SYSTEM-TOKEN
 	SystemID string `json:"system_id"`
 	// Operator 实际提单人
-	Operator string         `json:"operator"`
-	Meta     map[string]any `json:"meta"`
+	Operator string `json:"operator"`
+	// ActivityKey [v4]activity_key
+	ActivityKey string         `json:"activity_key"`
+	Meta        map[string]any `json:"meta"`
 }
 
 // Options options
@@ -115,6 +117,8 @@ type GetTicketLogsReq struct {
 type GetApproveResultReq struct {
 	TicketID string `json:"ticket_id"`
 	StateID  string `json:"state_id"`
+	// v4使用activity_key 匹配结果
+	ActivityKey string `json:"activity_key"`
 }
 
 // TicketDetailReq xxx

@@ -23,11 +23,11 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
-	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	v4 "github.com/TencentBlueKing/bk-bscp/internal/components/itsm/v4"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -35,31 +35,39 @@ import (
 )
 
 const (
-	defaultRegisterTenantTemplatesInterval = 20 * time.Second
+	defaultRegisterItsmV4TemplatesInterval = 20 * time.Second
 )
 
-// RegisterTenantTemplates register tenant templates
-func RegisterTenantTemplates(set dao.Set, sd serviced.Service) ItsmTenantRegistry {
-	return ItsmTenantRegistry{
+// RegisterItsmV4Templates register itsm v4 templates
+func RegisterItsmV4Templates(set dao.Set, sd serviced.Service) ItsmItsmV4Registry {
+	return ItsmItsmV4Registry{
 		set:   set,
 		state: sd,
 		itsm:  itsm.NewITSMService(),
 	}
 }
 
-type ItsmTenantRegistry struct {
+type ItsmItsmV4Registry struct {
 	set   dao.Set
 	state serviced.Service
 	mutex sync.Mutex
 	itsm  itsm.Service
 }
 
-func (i *ItsmTenantRegistry) Run() {
-	logs.Infof("start itsm multi-tenant template registration")
-
+func (i *ItsmItsmV4Registry) Run() {
+	logs.Infof("start itsm itsm v4 template registration")
+	// 单租户模式只跑一次
+	if !cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.New()
+		ctx, cancel := context.WithCancel(kt.Ctx)
+		defer cancel()
+		kt.Ctx = ctx
+		i.registerItsmV4Templates(kt)
+		return
+	}
 	notifier := shutdown.AddNotifier()
 	go func() {
-		ticker := time.NewTicker(defaultRegisterTenantTemplatesInterval)
+		ticker := time.NewTicker(defaultRegisterItsmV4TemplatesInterval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()
@@ -68,93 +76,110 @@ func (i *ItsmTenantRegistry) Run() {
 
 			select {
 			case <-notifier.Signal:
-				logs.Infof("stop itsm multi-tenant template registration")
+				logs.Infof("stop itsm itsm v4 template registration")
 				cancel()
 				notifier.Done()
 				return
 			case <-ticker.C:
 				if !i.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip itsm multi-tenant template registration")
+					logs.Infof("current service instance is slave, skip itsm itsm v4 template registration")
 					continue
 				}
 
-				i.registerTenantTemplates(kt)
+				i.registerItsmV4Templates(kt)
 			}
 		}
 	}()
 }
 
-func (i *ItsmTenantRegistry) registerTenantTemplates(kt *kit.Kit) {
+func (i *ItsmItsmV4Registry) registerItsmV4Templates(kt *kit.Kit) {
 	i.mutex.Lock()
 	defer func() {
 		i.mutex.Unlock()
 	}()
 
-	// 获取租户ID
-	tenantIDs, err := i.set.App().GetDistinctTenantIDs(kt)
-	if err != nil {
-		logs.Errorf("get the tenant ID list. failed, err: %s", err.Error())
-		return
-	}
-
-	if len(tenantIDs) == 0 {
-		return
+	tenantIDs := []string{}
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		// 获取租户ID
+		apps, err := i.set.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get the tenant ID list. failed, err: %s", err.Error())
+			return
+		}
+		if len(apps) == 0 {
+			logs.Warnf("tenant list is empty")
+			return
+		}
+		for _, v := range apps {
+			// 多租户模式下就不允许租户ID为空
+			if v.Spec.TenantID == "" {
+				continue
+			}
+			tenantIDs = append(tenantIDs, v.Spec.TenantID)
+		}
+	} else {
+		// 单租户模式，租户ID为空
+		tenantIDs = append(tenantIDs, "")
 	}
 
 	keys := []string{}
 	for _, v := range tenantIDs {
-		if v.Spec.TenantID == "" {
-			continue
+		prefix := ""
+		if v != "" {
+			prefix = fmt.Sprintf("%s-", v)
 		}
-		keys = append(keys, fmt.Sprintf("%s-%s", v.Spec.TenantID, constant.CreateApproveItsmWorkflowID))
+		keys = append(keys, fmt.Sprintf("%s%s", prefix, constant.CreateApproveItsmWorkflowID))
 	}
 
-	// 通过租户ID获取已经注册的租户
+	// 获取已经注册的模板
 	itsmConfigs, err := i.set.Config().ListConfigByKeys(kt, keys)
 	if err != nil {
 		logs.Errorf("get the configuration list by %v failed, err: %s", keys, err.Error())
 		return
 	}
-	// 过滤没有注册的租户
+	// 过滤还没有注册的
 	missing := diffKeys(keys, itsmConfigs)
 
 	for _, v := range missing {
-		// 去掉后缀，只保留 TenantID 部分
-		tenantID := strings.TrimSuffix(v, "-"+constant.CreateApproveItsmWorkflowID)
-
-		md := metadata.MD{
-			strings.ToLower(constant.BkTenantID): []string{tenantID},
+		// 去掉后缀，只保留 TenantID 部分(兼容为空的情况)
+		tenantID := strings.TrimSuffix(v, constant.CreateApproveItsmWorkflowID)
+		tenantID = strings.TrimSuffix(tenantID, "-")
+		md := metadata.MD{}
+		prefix := ""
+		if tenantID != "" {
+			md.Set(strings.ToLower(constant.BkTenantID), tenantID)
+			prefix = fmt.Sprintf("%s-", tenantID)
 		}
-		ctx := metadata.NewIncomingContext(kt.Ctx, md)
 
+		ctx := metadata.NewIncomingContext(kt.Ctx, md)
 		resp, err := v4.ItsmV4SystemMigrate(ctx)
 		if err != nil {
-			logs.Errorf("init approve itsm services failed, err: %s\n", err.Error())
+			logs.Errorf("ItsmV4SystemMigrate failed, err: %s\n", err.Error())
 			return
 		}
 
-		workflow, err := i.itsm.ListWorkflow(ctx, api.ListWorkflowReq{
+		workflow, err := v4.ListWorkflow(ctx, v4.ListWorkflowReq{
 			WorkflowKeys: resp.CreateApproveItsmWorkflowID.Value,
 		})
 		if err != nil {
 			logs.Errorf("itsm list workflows failed, err: %s\n", err.Error())
 			return
 		}
-		// 存入配置表
+		// 存入配置表(如果有租户则以租户为前缀)
 		itsmConfigs := []*table.Config{
 			{
-				Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateApproveItsmWorkflowID),
+				Key:   fmt.Sprintf("%s%s", prefix, constant.CreateApproveItsmWorkflowID),
 				Value: resp.CreateApproveItsmWorkflowID.Value,
 			}, {
-				Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateCountSignApproveItsmStateID),
+				Key:   fmt.Sprintf("%s%s", prefix, constant.CreateCountSignApproveItsmStateID),
 				Value: workflow[constant.ItsmApproveCountSignType],
 			}, {
-				Key:   fmt.Sprintf("%s-%s", tenantID, constant.CreateOrSignApproveItsmStateID),
+				Key:   fmt.Sprintf("%s%s", prefix, constant.CreateOrSignApproveItsmStateID),
 				Value: workflow[constant.ItsmApproveOrSignType],
 			},
 		}
 		if err = i.set.Config().UpsertConfig(kt, itsmConfigs); err != nil {
-			logs.Errorf("itsm multi-tenant template registration failed, err: %s\n", err.Error())
+			logs.Errorf("itsm itsm v4 template registration failed, err: %s\n", err.Error())
 			return
 		}
 	}

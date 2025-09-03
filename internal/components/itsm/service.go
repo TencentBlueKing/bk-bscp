@@ -15,11 +15,14 @@ package itsm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	v2 "github.com/TencentBlueKing/bk-bscp/internal/components/itsm/v2"
 	v4 "github.com/TencentBlueKing/bk-bscp/internal/components/itsm/v4"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // NewITSMService new itsm service
@@ -36,11 +39,19 @@ type Service interface {
 	ApprovalTicket(ctx context.Context, req api.ApprovalTicketReq) error
 	RevokedTicket(ctx context.Context, req api.ApprovalTicketReq) (*api.RevokedTicketResp, error)
 	GetTicketStatus(ctx context.Context, req api.GetTicketStatusReq) (*api.GetTicketStatusDetail, error)
-	GetTicketLogs(ctx context.Context, req api.GetTicketLogsReq) (*api.TicketLogsData, error)
-	TicketDetail(ctx context.Context, req api.TicketDetailReq) (*api.Ticket, error)
 	GetApproveNodeResult(ctx context.Context, req api.GetApproveNodeResultReq) (*api.GetApproveNodeResultDetail, error)
-	ListTickets(ctx context.Context, req api.ListTicketsReq) (*api.ListTicketsData, error)
-	ApprovalTasks(ctx context.Context, req api.ApprovalTasksReq) (*api.TasksData, error)
-	ListWorkflow(ctx context.Context, req api.ListWorkflowReq) (map[string]string, error)
 	GetApproveResult(ctx context.Context, req api.GetApproveResultReq) (*api.ApproveResultData, error)
+}
+
+// BuildStateIDKey 获取stateID配置
+func BuildStateIDKey(tenantID string, approveType table.ApproveType) string {
+	prefix := ""
+	if tenantID != "" {
+		prefix = fmt.Sprintf("%s-", tenantID)
+	}
+
+	if approveType == table.CountSign {
+		return fmt.Sprintf("%s%s", prefix, constant.CreateCountSignApproveItsmStateID)
+	}
+	return fmt.Sprintf("%s%s", prefix, constant.CreateOrSignApproveItsmStateID)
 }

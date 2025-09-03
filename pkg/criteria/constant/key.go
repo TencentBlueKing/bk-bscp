@@ -204,14 +204,14 @@ const (
 
 	// 单据状态:
 
-	// TicketRunningStatu 处理中
-	TicketRunningStatu = "RUNNING"
-	// TicketFinishedStatu 已结束
-	TicketFinishedStatu = "FINISHED"
-	// TicketTerminatedStatu 被终止
-	TicketTerminatedStatu = "TERMINATED"
-	// TicketSuspendedStatu 被挂起
-	TicketSuspendedStatu = "SUSPENDED"
-	// TicketRevokedStatu 被撤销
-	TicketRevokedStatu = "REVOKED"
+	// TicketRunningStatus 处理中
+	TicketRunningStatus = "RUNNING"
+	// TicketFinishedStatus 已结束
+	TicketFinishedStatus = "FINISHED"
+	// TicketTerminatedStatus 被终止
+	TicketTerminatedStatus = "TERMINATED"
+	// TicketSuspendedStatus 被挂起
+	TicketSuspendedStatus = "SUSPENDED"
+	// TicketRevokedStatus 被撤销
+	TicketRevokedStatus = "REVOKED"
 )

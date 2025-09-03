@@ -44,12 +44,12 @@ func TestGetApproveResult(t *testing.T) {
 
 	// 测试工单ID - 注意：这个ID需要是实际存在的工单ID，否则会报错
 	ticketID := "102025083023304300009701"
-	stateID := "activityobject_20250813130257_2"
+	activeKey := "activityobject_20250813130257_2"
 
 	// 调用GetApproveResult方法
 	result, err := adapter.GetApproveResult(ctx, api.GetApproveResultReq{
-		TicketID: ticketID,
-		StateID:  stateID,
+		TicketID:    ticketID,
+		ActivityKey: activeKey,
 	})
 
 	// 打印结果或错误

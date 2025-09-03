@@ -1136,6 +1136,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
+  // 审批同步，其中v2版本中itsm也是复用这个接口进行回调
   rpc Approve(ApproveReq) returns (ApproveResp) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
@@ -1144,11 +1145,53 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
+  // itsm v4 回调接口
   rpc ApprovalCallback(ApprovalCallbackReq) returns (ApprovalCallbackResp) {
-    option (google.api.method_visibility).restriction = "BKAPIGW";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
-      post: "/api/v1/config/release/approval_callback"
+      post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approval_callback"
       body: "*"
+    };
+    // 在这里添加自定义 swagger 字段
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-bk-apigateway-resource",
+        value: {
+          struct_value: {
+            // 定义第一层字段
+            fields: {
+              key: "isPublic",
+              value: { bool_value: true }
+            },
+            fields: {
+              key: "allowApplyPermission",
+              value: { bool_value: true }
+            },
+            // 定义 authConfig 嵌套对象
+            fields: {
+              key: "authConfig",
+              value: {
+                struct_value: {
+                  // 定义第二层字段
+                  fields: {
+                    key: "appVerifiedRequired",
+                    value: { bool_value: true }
+                  },
+                  // 回调结构不校验用户权限
+                  fields: {
+                    key: "userVerifiedRequired",
+                    value: { bool_value: false }
+                  },
+                  fields: {
+                    key: "resourcePermissionRequired",
+                    value: { bool_value: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     };
   }
 
@@ -4308,14 +4351,19 @@ message GetLatestTemplateVersionsInSpaceResp {
   repeated TemplateSetSpec template_set = 2;
 }
 
+// ApprovalCallbackReq itsm v4回调请求
 message ApprovalCallbackReq {
-  string callback_token = 1;
-  pbrelease.Ticket ticket = 2;
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  string callback_token = 4;
+  pbrelease.Ticket ticket = 5;
 }
 
+// itsm v4回调请求 返回
 message ApprovalCallbackResp {
-  uint32 code = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "code", description: "返回错误码" }];
+  bool result = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "bool", description: "结果" }];
   string message = 2
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "message", description: "返回错误信息" }];
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "message", description: "消息" }];
 }

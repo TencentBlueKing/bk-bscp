@@ -480,7 +480,9 @@ type ConfigClient interface {
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
+	// itsm v4 回调接口
 	ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error)
 	GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error)
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
@@ -2455,7 +2457,9 @@ type ConfigServer interface {
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
+	// itsm v4 回调接口
 	ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error)
 	GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error)
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)

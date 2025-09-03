@@ -497,11 +497,78 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "itsm v4 回调接口",
+        "operationId": "Config_ApprovalCallback",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务版本ID",
+            "name": "releaseId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigApprovalCallbackBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsApprovalCallbackResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "resourcePermissionRequired": true,
+            "userVerifiedRequired": false
+          },
+          "isPublic": true
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
       "post": {
         "tags": [
           "Config"
         ],
+        "summary": "审批同步，其中v2版本中itsm也是复用这个接口进行回调",
         "operationId": "Config_Approve",
         "parameters": [
           {
@@ -599,38 +666,6 @@
         }
       }
     },
-    "/api/v1/config/release/approval_callback": {
-      "post": {
-        "tags": [
-          "Config"
-        ],
-        "operationId": "Config_ApprovalCallback",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/pbcsApprovalCallbackReq"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/pbcsApprovalCallbackResp"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        }
-      }
-    },
     "/api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
       "post": {
         "tags": [
@@ -707,6 +742,18 @@
     }
   },
   "definitions": {
+    "ConfigApprovalCallbackBody": {
+      "type": "object",
+      "title": "ApprovalCallbackReq itsm v4回调请求",
+      "properties": {
+        "callbackToken": {
+          "type": "string"
+        },
+        "ticket": {
+          "$ref": "#/definitions/pbreleaseTicket"
+        }
+      }
+    },
     "ConfigApproveBody": {
       "type": "object",
       "properties": {
@@ -1061,30 +1108,19 @@
         }
       }
     },
-    "pbcsApprovalCallbackReq": {
-      "type": "object",
-      "properties": {
-        "callbackToken": {
-          "type": "string"
-        },
-        "ticket": {
-          "$ref": "#/definitions/pbreleaseTicket"
-        }
-      }
-    },
     "pbcsApprovalCallbackResp": {
       "type": "object",
+      "title": "itsm v4回调请求 返回",
       "properties": {
-        "code": {
-          "description": "返回错误码",
-          "type": "integer",
-          "format": "int64",
-          "title": "code"
-        },
         "message": {
-          "description": "返回错误信息",
+          "description": "消息",
           "type": "string",
           "title": "message"
+        },
+        "result": {
+          "description": "结果",
+          "type": "boolean",
+          "title": "bool"
         }
       }
     },

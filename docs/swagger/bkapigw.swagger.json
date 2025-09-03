@@ -222,6 +222,7 @@
     },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
       "post": {
+        "summary": "审批同步，其中v2版本中itsm也是复用这个接口进行回调",
         "operationId": "Config_Approve",
         "responses": {
           "200": {
@@ -273,8 +274,9 @@
         ]
       }
     },
-    "/api/v1/config/release/approval_callback": {
+    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {
       "post": {
+        "summary": "itsm v4 回调接口",
         "operationId": "Config_ApprovalCallback",
         "responses": {
           "200": {
@@ -292,17 +294,50 @@
         },
         "parameters": [
           {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/pbcsApprovalCallbackReq"
+              "$ref": "#/definitions/ConfigApprovalCallbackBody"
             }
           }
         ],
         "tags": [
           "Config"
-        ]
+        ],
+        "x-bk-apigateway-resource": {
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "resourcePermissionRequired": true,
+            "userVerifiedRequired": false
+          },
+          "isPublic": true
+        }
       }
     },
     "/api/v1/config/biz/{bizId}/apps/{appId}/kvs": {
@@ -510,6 +545,18 @@
     }
   },
   "definitions": {
+    "ConfigApprovalCallbackBody": {
+      "type": "object",
+      "properties": {
+        "callbackToken": {
+          "type": "string"
+        },
+        "ticket": {
+          "$ref": "#/definitions/pbreleaseTicket"
+        }
+      },
+      "title": "ApprovalCallbackReq itsm v4回调请求"
+    },
     "ConfigApproveBody": {
       "type": "object",
       "properties": {
@@ -864,32 +911,21 @@
       },
       "title": "ContentSpec source resource reference: pkg/dal/table/content.go"
     },
-    "pbcsApprovalCallbackReq": {
-      "type": "object",
-      "properties": {
-        "callbackToken": {
-          "type": "string"
-        },
-        "ticket": {
-          "$ref": "#/definitions/pbreleaseTicket"
-        }
-      }
-    },
     "pbcsApprovalCallbackResp": {
       "type": "object",
       "properties": {
-        "code": {
-          "type": "integer",
-          "format": "int64",
-          "description": "返回错误码",
-          "title": "code"
+        "result": {
+          "type": "boolean",
+          "description": "结果",
+          "title": "bool"
         },
         "message": {
           "type": "string",
-          "description": "返回错误信息",
+          "description": "消息",
           "title": "message"
         }
-      }
+      },
+      "title": "itsm v4回调请求 返回"
     },
     "pbcsApproveResp": {
       "type": "object",

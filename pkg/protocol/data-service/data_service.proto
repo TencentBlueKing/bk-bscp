@@ -2223,11 +2223,14 @@ message GetLatestTemplateVersionsInSpaceResp {
 }
 
 message ApprovalCallbackReq {
-  string callback_token = 1;
-  pbrelease.Ticket ticket = 2;
+  uint32 biz_id = 1;
+  uint32 app_id = 2;
+  uint32 release_id = 3;
+  string callback_token = 4;
+  pbrelease.Ticket ticket = 5;
 }
 
 message ApprovalCallbackResp {
-  uint32 code = 1;
+  bool result = 1;
   string message = 2;
 }

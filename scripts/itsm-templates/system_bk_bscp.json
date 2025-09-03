@@ -5,7 +5,7 @@
     },
     "form_models": [
         {
-            "key": "$FormModel20250813115300000101",
+            "key": "$FormModelsystem_bk_bscp_formmodel_haZsOAoV",
             "name": "bk_bscp_创建上线审批",
             "desc": "服务上线审批流程",
             "portal_id": "DEFAULT",
@@ -550,7 +550,7 @@
     ],
     "workflow_categories": [
         {
-            "key": "$WorkflowCategory20250813115700000101",
+            "key": "$WorkflowCategorysystem_bk_bscp_workflowcategory_AqSPPoko",
             "name": "服务配置中心",
             "app_id": "core",
             "portal_id": "DEFAULT",
@@ -564,11 +564,11 @@
     "workflows": [
         {
             "workflow": {
-                "key": "$Workflow20250813120300000201",
+                "key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                 "name": "创建上线审批",
                 "portal_id": "DEFAULT",
                 "desc": "",
-                "category": "$WorkflowCategory20250813115700000101",
+                "category": "$WorkflowCategorysystem_bk_bscp_workflowcategory_AqSPPoko",
                 "translations": {
                     "name": "创建上线审批",
                     "name_en": "Create online approval",
@@ -576,7 +576,7 @@
                     "desc_en": ""
                 },
                 "engine_pattern": "FORMAL",
-                "form_model_key": "$FormModel20250813115300000101",
+                "form_model_key": "$FormModelsystem_bk_bscp_formmodel_haZsOAoV",
                 "app_id": "core",
                 "meta": {
                     "workflow_button": [
@@ -644,17 +644,17 @@
                 }
             },
             "version": {
-                "key": "20250813120300008301",
-                "workflow_key": "$Workflow20250813120300000201",
+                "key": "20250830224800010401",
+                "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                 "desc": null,
                 "workflows": {
-                    "$Workflow20250813120300000201": {
+                    "$Workflowsystem_bk_bscp_workflow_vzruKMLC": {
                         "translations": {
                             "name": "创建上线审批",
                             "name_en": "创建上线审批",
                             "name_zh_hans": "创建上线审批"
                         },
-                        "key": "$Workflow20250813120300000201",
+                        "key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "创建上线审批",
                         "desc": "",
                         "type": "",
@@ -757,7 +757,7 @@
                             "name_zh_hans": "或签审批"
                         },
                         "key": "activityobject_20250813120429_1",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "或签审批",
                         "desc": "",
                         "type": "APPROVE_TASK",
@@ -983,7 +983,7 @@
                             "name_zh_hans": "或签审批"
                         },
                         "key": "activityobject_20250813130257_2",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "会签审批",
                         "desc": "",
                         "type": "APPROVE_TASK",
@@ -1209,7 +1209,7 @@
                             "name_zh_hans": "提单"
                         },
                         "key": "activityobject20250813120300000201",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "提单",
                         "desc": "",
                         "type": "SUBMIT",
@@ -1320,7 +1320,7 @@
                             "name_zh_hant": "結束"
                         },
                         "key": "eventobject_20250813130848_1",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "结束",
                         "desc": "",
                         "type": "end",
@@ -1338,7 +1338,7 @@
                             "name_zh_hans": "开始"
                         },
                         "key": "eventobject20250813120300000201",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "开始",
                         "desc": "",
                         "type": "start",
@@ -1357,7 +1357,7 @@
                             "name_zh_hant": "分支網關"
                         },
                         "key": "gatewayobject_20250813130337_1",
-                        "workflow_key": "$Workflow20250813120300000201",
+                        "workflow_key": "$Workflowsystem_bk_bscp_workflow_vzruKMLC",
                         "name": "分支网关",
                         "desc": "",
                         "type": "ExclusiveGateway",
@@ -1476,7 +1476,7 @@
                             {
                                 "translations": {
                                     "name": "恢复",
-                                    "name_en": "Restore",
+                                    "name_en": "Resume",
                                     "name_zh_hant": "恢復"
                                 },
                                 "key": "recovery",
@@ -2143,7 +2143,7 @@
                                         "key": "approve",
                                         "desc": "",
                                         "tips": "请选择",
-                                        "type": "user",
+                                        "type": "multiUser",
                                         "class": [],
                                         "state": "default",
                                         "title": {
@@ -2151,7 +2151,7 @@
                                             "isHide": false
                                         },
                                         "width": "COL_6",
-                                        "columnId": "vWtJG2VS",
+                                        "columnId": "p5nGRnSb",
                                         "location": "form",
                                         "userScope": {
                                             "type": "custom",
@@ -2160,10 +2160,8 @@
                                         },
                                         "userConfig": {
                                             "setSelf": false,
-                                            "multiple": false,
-                                            "userInfo": [
-                                                "username"
-                                            ],
+                                            "multiple": true,
+                                            "userInfo": [],
                                             "showStyle": "flat",
                                             "showVipIcon": true,
                                             "isShowUserInfo": false
@@ -2172,7 +2170,7 @@
                                         "translations": {
                                             "title": {
                                                 "name": "审批人员",
-                                                "name_en": "Single person",
+                                                "name_en": "Multiple person",
                                                 "name_zh_hans": "审批人员"
                                             }
                                         },
@@ -2323,10 +2321,10 @@
                             "approve": {
                                 "translations": {
                                     "title": "审批人员",
-                                    "title_en": "Single person",
+                                    "title_en": "Multiple person",
                                     "title_zh_hans": "审批人员"
                                 },
-                                "type": "string",
+                                "type": "array",
                                 "title": "审批人员",
                                 "number_unit": "",
                                 "table_relation": null,
@@ -2336,10 +2334,30 @@
                                 "itsm_jmespath": null,
                                 "itsm_options": null,
                                 "itsm_options_type": null,
-                                "format": "user",
+                                "format": null,
                                 "columns": null,
                                 "properties": null,
-                                "items": null
+                                "items": {
+                                    "translations": {
+                                        "title": "",
+                                        "title_en": "",
+                                        "title_zh_hans": ""
+                                    },
+                                    "type": "string",
+                                    "title": "",
+                                    "number_unit": "",
+                                    "table_relation": null,
+                                    "into_todo": [],
+                                    "out_todo": [],
+                                    "attr_relation": null,
+                                    "itsm_jmespath": null,
+                                    "itsm_options": null,
+                                    "itsm_options_type": null,
+                                    "format": "user",
+                                    "columns": null,
+                                    "properties": null,
+                                    "items": null
+                                }
                             },
                             "compare": {
                                 "translations": {
@@ -3825,13 +3843,13 @@
     ],
     "key_mapping": {
         "form_models": {
-            "{{ .FormModel }}": "$FormModel20250813115300000101"
+            "{{ .FormModel }}": "$FormModelsystem_bk_bscp_formmodel_haZsOAoV"
         },
         "workflow_categories": {
-            "{{ .WorkflowCategory }}": "$WorkflowCategory20250813115700000101"
+            "{{ .WorkflowCategory }}": "$WorkflowCategorysystem_bk_bscp_workflowcategory_AqSPPoko"
         },
         "workflows": {
-            "{{ .Workflow }}": "$Workflow20250813120300000201"
+            "{{ .Workflow }}": "$Workflowsystem_bk_bscp_workflow_vzruKMLC"
         }
     }
 }

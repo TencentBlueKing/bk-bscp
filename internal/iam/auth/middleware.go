@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,6 +45,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
+var (
+	// skipValidateUserPaths 那些路径不需要校验用户，比如v4 itsm中的回调
+	skipValidateUserPaths = []string{
+		"approval_callback",
+	}
+)
+
 // initKitWithBKJWT 蓝鲸网关鉴权
 func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *multierror.Error) bool {
 	if a.gwParser == nil {
@@ -51,8 +59,14 @@ func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *mult
 		multiErr.Errors = append(multiErr.Errors, errors.Wrap(err, "auth with bk_jwt"))
 		return false
 	}
-
-	kt, err := a.gwParser.Parse(r.Context(), r.Header)
+	validateUser := true
+	for _, path := range skipValidateUserPaths {
+		if strings.HasSuffix(r.URL.Path, path) {
+			validateUser = false
+			break
+		}
+	}
+	kt, err := a.gwParser.Parse(r.Context(), r.Header, validateUser)
 	if err != nil {
 		multiErr.Errors = append(multiErr.Errors, errors.Wrap(err, "auth with bk_jwt"))
 		return false
@@ -62,6 +76,7 @@ func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *mult
 	// user 会从jwt获取, fallback 从 X-Bkapi-User-Name 头部获取(app校验成功, 说明有权限, 网关使用场景)
 	k.AppCode = kt.AppCode
 	k.User = kt.User
+	k.TenantID = r.Header.Get(constant.BkTenantID) // 接口调用会带上这个租户ID
 	return true
 }
 
@@ -125,7 +140,8 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 		}
 		k.Lang = tools.GetLangFromReq(r)
 		multiErr := &multierror.Error{}
-
+		// log 打印，将header 信息打印出来
+		slog.Info("request header", "header", r.Header, "path", path.Base(r.URL.Path))
 		switch {
 		case a.initKitWithBKJWT(r, k, multiErr):
 		case a.initKitWithCookie(r, k, multiErr):
@@ -141,7 +157,6 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 		r.Header.Set(constant.AppCodeKey, k.AppCode)
 		r.Header.Set(constant.RidKey, k.Rid)
 		r.Header.Set(constant.UserKey, k.User)
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)

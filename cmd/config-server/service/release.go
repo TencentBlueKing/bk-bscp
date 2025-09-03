@@ -303,6 +303,9 @@ func (s *Service) ApprovalCallback(ctx context.Context, req *pbcs.ApprovalCallba
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	resp, err := s.client.DS.ApprovalCallback(grpcKit.RpcCtx(), &pbds.ApprovalCallbackReq{
+		BizId:         req.GetBizId(),
+		AppId:         req.GetAppId(),
+		ReleaseId:     req.GetReleaseId(),
 		CallbackToken: req.GetCallbackToken(),
 		Ticket:        req.GetTicket(),
 	})
@@ -311,7 +314,7 @@ func (s *Service) ApprovalCallback(ctx context.Context, req *pbcs.ApprovalCallba
 	}
 
 	return &pbcs.ApprovalCallbackResp{
-		Code:    resp.GetCode(),
-		Message: resp.Message,
+		Result:  resp.GetResult(),
+		Message: resp.GetMessage(),
 	}, nil
 }

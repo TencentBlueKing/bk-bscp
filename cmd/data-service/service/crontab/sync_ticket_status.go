@@ -19,15 +19,12 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/metadata"
-
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -36,7 +33,7 @@ import (
 )
 
 const (
-	defaultSyncTicketStatusInterval = 10 * time.Second
+	defaultSyncTicketStatusInterval = 30 * time.Second
 )
 
 // NewSyncTicketStatus init sync ticket status
@@ -82,7 +79,7 @@ func (c *SyncTicketStatus) Run() {
 					continue
 				}
 				logs.Infof("starts to synchronize the tickets status")
-				// c.syncTicketStatus(kt)
+				c.syncTicketStatus(kt)
 			}
 		}
 	}()
@@ -96,148 +93,89 @@ func (c *SyncTicketStatus) syncTicketStatus(kt *kit.Kit) {
 		c.mutex.Unlock()
 	}()
 
-	// 获取running、待上线，待审批状态的strategy记录
+	// 获取CREATED、待上线，待审批状态的strategy记录
 	strategys, err := c.set.Strategy().ListStrategyByItsm(kt)
 	if err != nil {
 		logs.Errorf("list strategy by itsm failed: %s", err.Error())
 		return
 	}
-	// 根据 tenantID 分组
-	tenantSNMap := make(map[string][]string)                         // tenantID -> sn 列表
-	tenantStrategyMap := make(map[string]map[string]*table.Strategy) // tenantID -> (sn -> strategy)
-
 	for _, strategy := range strategys {
-		tenantID := strategy.Attachment.TenantID
-		if tenantSNMap[tenantID] == nil {
-			tenantSNMap[tenantID] = []string{}
-		}
-		tenantSNMap[tenantID] = append(tenantSNMap[tenantID], strategy.Spec.ItsmTicketSn)
-
-		if tenantStrategyMap[tenantID] == nil {
-			tenantStrategyMap[tenantID] = make(map[string]*table.Strategy)
-		}
-		tenantStrategyMap[tenantID][strategy.Spec.ItsmTicketSn] = strategy
-	}
-
-	for tenantID, snList := range tenantSNMap {
-		if len(snList) == 0 {
+		err := c.processTicket(kt, strategy)
+		if err != nil {
+			logs.Errorf("process ticket failed: %s", err.Error())
 			continue
 		}
-
-		ctx := kt.Ctx
-		// 对于 v4 版本，添加租户信息到上下文
-		if cc.DataService().ITSM.EnableV4 {
-			md := metadata.MD{
-				strings.ToLower(constant.BkTenantID): []string{tenantID},
-			}
-			ctx = metadata.NewIncomingContext(kt.Ctx, md)
-		}
-
-		c.handleTicketStatus(ctx, snList, tenantStrategyMap[tenantID])
-	}
-
-}
-
-// handleTicketStatus 处理工单状态，统一处理V2和V4版本
-func (c *SyncTicketStatus) handleTicketStatus(ctx context.Context, ticketIDs []string, strategyMap map[string]*table.Strategy) {
-	// V2和V4版本使用相同的处理逻辑：运行中读取日志判断通过/拒绝；其它状态一律撤销
-	for _, id := range ticketIDs {
-		strategy, ok := strategyMap[id]
-		if !ok || strategy == nil {
-			logs.Errorf("strategy not found for ticket %s", id)
-			return
-		}
-
-		// 获取单据状态
-		ticket, err := c.itsm.GetTicketStatus(ctx, api.GetTicketStatusReq{
-			TicketID: id,
-		})
-		if err != nil {
-			logs.Errorf("get itsm ticket %s status failed, err: %v", id, err)
-			return
-		}
-
-		// 正常状态的单据
-		if ticket.CurrentStatus == constant.TicketRunningStatu {
-			req := &pbds.ApproveReq{
-				BizId:         strategyMap[id].Attachment.BizID,
-				AppId:         strategyMap[id].Attachment.AppID,
-				ReleaseId:     strategyMap[id].Spec.ReleaseID,
-				PublishStatus: string(table.PendingPublish),
-				StrategyId:    strategyMap[id].ID,
-			}
-
-			logsResp, errResult := c.itsm.GetTicketLogs(ctx, api.GetTicketLogsReq{TicketID: id})
-			if errResult != nil {
-				logs.Errorf("GetTicketLogs failed, err: %s", errResult.Error())
-				return
-			}
-			approveMap := parseApproveLogs(logsResp.Items)
-			if len(approveMap) == 0 {
-				logs.Infof("no approve logs, id=%s", id)
-				continue
-			}
-
-			// 失败需要有reason
-			if _, ok := approveMap[constant.ItsmRejectedApproveResult]; ok {
-				reason, err := c.getApproveReason(ctx, id, strategy.Spec.ItsmTicketStateID)
-				if err != nil {
-					logs.Errorf("GetApproveReason failed, sn=%s, err=%v", id, err)
-					return
-				}
-
-				req.Reason = reason
-				req.PublishStatus = string(table.RejectedApproval)
-				req.ApprovedBy = approveMap[constant.ItsmRejectedApproveResult]
-			}
-
-			if _, ok := approveMap[constant.ItsmPassedApproveResult]; ok {
-				req.ApprovedBy = approveMap[constant.ItsmPassedApproveResult]
-			}
-
-			_, err := c.srv.Approve(ctx, req)
-			if err != nil {
-				logs.Errorf("sync ticket status approve failed, err: %s", err.Error())
-				continue
-			}
-		} else if ticket.CurrentStatus == constant.TicketRevokedStatu {
-			// 其他状态的单据直接撤销
-			req := &pbds.ApproveReq{
-				BizId:         strategyMap[id].Attachment.BizID,
-				AppId:         strategyMap[id].Attachment.AppID,
-				ReleaseId:     strategyMap[id].Spec.ReleaseID,
-				PublishStatus: string(table.RevokedPublish),
-				StrategyId:    strategyMap[id].ID,
-			}
-			_, err := c.srv.Approve(ctx, req)
-			if err != nil {
-				logs.Errorf("sync ticket status approve failed, err: %s", err.Error())
-				continue
-			}
-		}
 	}
 }
 
-func parseApproveLogs(items []*api.TicketLogsDataItems) map[string][]string {
-	result := make(map[string][]string)
-	for _, v := range items {
-		switch {
-		case strings.Contains(v.Message, constant.ItsmRejectedApproveResult):
-			result[constant.ItsmRejectedApproveResult] = append(result[constant.ItsmRejectedApproveResult], v.Operator)
-		case strings.Contains(v.Message, constant.ItsmPassedApproveResult):
-			result[constant.ItsmPassedApproveResult] = append(result[constant.ItsmPassedApproveResult], v.Operator)
-		}
-	}
-	return result
-}
+func (c *SyncTicketStatus) processTicket(kit *kit.Kit, strategy *table.Strategy) error {
+	logs.Infof("process ticket %s", strategy.Spec.ItsmTicketSn)
+	// 获取单据状态，只处理已结束的单据
+	kit.TenantID = strategy.Attachment.TenantID
+	kit.User = strategy.Revision.Creator
 
-func (c *SyncTicketStatus) getApproveReason(ctx context.Context, sn, stateID string) (string, error) {
-	data, err := c.itsm.GetApproveNodeResult(ctx, api.GetApproveNodeResultReq{
-		TicketID: sn,
-		StateID:  stateID,
+	ticksetStatus, err := c.itsm.GetTicketStatus(kit.InternalRpcCtx(), api.GetTicketStatusReq{
+		TicketID: strategy.Spec.ItsmTicketSn,
 	})
 	if err != nil {
-		return "", err
+		logs.Errorf("get itsm ticket status failed: %s", err.Error())
+		return nil
 	}
-	return data.ApproveRemark, nil
+	if ticksetStatus.CurrentStatus == constant.TicketRunningStatus {
+		logs.Warnf("ticket %s is running, ignore", strategy.Spec.ItsmTicketSn)
+		return nil
+	}
+	// 查看单据审批状态，最终是拒绝还是同步
+
+	// 查看状态是审批通过还是拒绝
+	approveReq := &pbds.ApproveReq{
+		BizId:         strategy.Attachment.BizID,
+		AppId:         strategy.Attachment.AppID,
+		ReleaseId:     strategy.Spec.ReleaseID,
+		PublishStatus: string(table.PendingPublish),
+		StrategyId:    strategy.ID,
+	}
+
+	// 获取active key
+	// 根据版本和审批类型获取 stateIDKey 和 approveType
+	stateIDKey := itsm.BuildStateIDKey(kit.TenantID, table.ApproveType(strategy.Spec.ApproveType))
+
+	// 获取 ITSM 配置
+	itsmSign, err := c.set.Config().GetConfig(kit, stateIDKey)
+	if err != nil {
+		logs.Errorf("get itsm config failed: %s", err.Error())
+		return err
+	}
+	activeKey := itsmSign.Value
+	approveResult, err := c.itsm.GetApproveResult(kit.InternalRpcCtx(), api.GetApproveResultReq{
+		TicketID:    strategy.Spec.ItsmTicketSn,
+		ActivityKey: activeKey,
+	})
+	if err != nil {
+		logs.Errorf("get itsm approve result failed, err=%v, rid=%s", err, kit.Rid)
+		return err
+	}
+	logs.Infof("itsm approve result: %v", approveResult)
+	if approveResult.Result == nil {
+		// 还没有结果， 等待
+		logs.Errorf("itsm state is in processing,ticket %s", strategy.Spec.ItsmTicketSn)
+		return nil
+	}
+	if *approveResult.Result {
+		// 通过
+		approveReq.PublishStatus = string(table.PendingPublish)
+		approveReq.ApprovedBy = approveResult.PassUsers
+	} else {
+		// 拒绝
+		approveReq.PublishStatus = string(table.RejectedApproval)
+		approveReq.ApprovedBy = approveResult.RejectUsers
+		approveReq.Reason = strings.Join(approveResult.Reasons, ",")
+	}
+	logs.Infof("itsm approve req: %v", approveReq)
+	_, err = c.srv.Approve(kit.InternalRpcCtx(), approveReq)
+	if err != nil {
+		logs.Errorf("approve failed, err=%v, rid=%s", err, kit.Rid)
+		return err
+	}
+	return nil
 }

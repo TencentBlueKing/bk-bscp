@@ -12,8 +12,8 @@
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| POST | /api/v1/config/release/approval_callback | [Config_ApprovalCallback](#config-approval-callback) |  |
-| POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) |  |
+| POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback | [Config_ApprovalCallback](#config-approval-callback) | itsm v4 回调接口 |
+| POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
@@ -39,16 +39,19 @@
 
 ## 接口详情
 
-### <span id="config-approval-callback"></span> config approval callback (*Config_ApprovalCallback*)
+### <span id="config-approval-callback"></span> itsm v4 回调接口 (*Config_ApprovalCallback*)
 
 ```
-POST /api/v1/config/release/approval_callback
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback
 ```
 
 #### 输入参数
 
 | 参数名称 | 类型 | 是否必填 | 描述 |
 |------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
 | callbackToken | string |  |  |
 | ticket | [PbreleaseTicket](#pbrelease-ticket) |  |  |
 
@@ -60,7 +63,7 @@ POST /api/v1/config/release/approval_callback
 #### 输入示例
 
 ```bash
-POST /api/v1/config/release/approval_callback HTTP/1.1
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback HTTP/1.1
 Content-Type: application/json
 
 {
@@ -104,7 +107,7 @@ Content-Type: application/json
 {}
 ```
 
-### <span id="config-approve"></span> config approve (*Config_Approve*)
+### <span id="config-approve"></span> 审批同步，其中v2版本中itsm也是复用这个接口进行回调 (*Config_Approve*)
 
 ```
 POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve
@@ -751,6 +754,22 @@ Content-Type: application/json
 
 ## Models
 
+### <span id="config-approval-callback-body"></span> ConfigApprovalCallbackBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| callbackToken | string| `string` |  | |  |  |
+| ticket | [PbreleaseTicket](#pbrelease-ticket)| `PbreleaseTicket` |  | |  |  |
+
+
+
 ### <span id="config-approve-body"></span> ConfigApproveBody
 
 
@@ -983,22 +1002,6 @@ Content-Type: application/json
 
 
 
-### <span id="pbcs-approval-callback-req"></span> pbcsApprovalCallbackReq
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| callbackToken | string| `string` |  | |  |  |
-| ticket | [PbreleaseTicket](#pbrelease-ticket)| `PbreleaseTicket` |  | |  |  |
-
-
-
 ### <span id="pbcs-approval-callback-resp"></span> pbcsApprovalCallbackResp
 
 
@@ -1010,8 +1013,8 @@ Content-Type: application/json
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| code | int64 (formatted integer)| `int64` |  | | 返回错误码 |  |
-| message | string| `string` |  | | 返回错误信息 |  |
+| message | string| `string` |  | | 消息 |  |
+| result | boolean| `bool` |  | | 结果 |  |
 
 
 

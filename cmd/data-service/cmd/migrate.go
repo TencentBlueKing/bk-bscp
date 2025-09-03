@@ -253,7 +253,7 @@ func init() {
 	migrateDownCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
 
 	migrateInitITSMCmd.Flags().StringVarP(&tenantID, "tenant", "t", "", "tenant id")
-	migrateInitITSMCmd.Flags().BoolVar(&createTemplate, "create-template", false, "Whether to create template")
+	migrateInitITSMCmd.Flags().BoolVar(&createTemplate, "create-template", false, "[itsm v4] Whether to create template")
 
 	// Add "create", "up" and "down" commands to the "migrate" command
 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateCreateCmd, migrateStatusCmd)
