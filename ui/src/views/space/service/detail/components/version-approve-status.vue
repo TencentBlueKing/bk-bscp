@@ -24,7 +24,9 @@
             {{ t('审批人') }}
             （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}） ：
           </div>
-          <div class="itsm-content">{{ approverList }}</div>
+          <div class="itsm-content">
+            <UserName :name="approverList" />
+          </div>
           <template v-if="approveStatus === 0 && publishTime">
             <div class="itsm-title">{{ $t('定时上线') }}：</div>
             <div class="itsm-content">
@@ -66,6 +68,7 @@
   import BkMessage from 'bkui-vue/lib/message';
   import { storeToRefs } from 'pinia';
   import useConfigStore from '../../../../../store/config';
+  import UserName from '../../../../../components/user-name.vue';
 
   const emits = defineEmits(['send-data', 'refresh-version']);
 

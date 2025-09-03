@@ -63,7 +63,7 @@
           <bk-table-column
             :label="t('状态')"
             :show-overflow-tooltip="false"
-            :width="locale === 'zh-cn' ? '130' : '190'"
+            :width="locale === 'zh-cn' ? '150' : '210'"
             :filter="{
               filterFn: () => true,
               list: approveStatusFilterList,
