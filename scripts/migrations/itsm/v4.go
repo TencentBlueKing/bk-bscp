@@ -49,16 +49,20 @@ func CreateSystem(ctx context.Context, createTemplate bool) error {
 		fmt.Printf("itsm list workflows failed, err: %s\n", err.Error())
 		return err
 	}
-	// 存入配置表
+	// 存入配置表，如果是多租户则以租户ID为前缀
+	prefix := ""
+	if kit.TenantID != "" {
+		prefix = fmt.Sprintf("%s-", kit.TenantID)
+	}
 	itsmConfigs := []*table.Config{
 		{
-			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateApproveItsmWorkflowID),
+			Key:   fmt.Sprintf("%s%s", prefix, constant.CreateApproveItsmWorkflowID),
 			Value: resp.CreateApproveItsmWorkflowID.Value,
 		}, {
-			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateCountSignApproveItsmStateID),
+			Key:   fmt.Sprintf("%s%s", prefix, constant.CreateCountSignApproveItsmStateID),
 			Value: workflow[constant.ItsmApproveCountSignType],
 		}, {
-			Key:   fmt.Sprintf("%s-%s", kit.TenantID, constant.CreateOrSignApproveItsmStateID),
+			Key:   fmt.Sprintf("%s%s", prefix, constant.CreateOrSignApproveItsmStateID),
 			Value: workflow[constant.ItsmApproveOrSignType],
 		},
 	}
