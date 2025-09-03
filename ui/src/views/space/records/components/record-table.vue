@@ -109,7 +109,7 @@
                         ({{ row.app.approve_type === 'or_sign' ? $t('或签') : $t('会签') }})：
                       </div>
                       <div class="itsm-content">
-                        {{ row.strategy.approver_progress }}
+                        <UserName :name="row.strategy.approver_progress" />
                       </div>
                       <template v-if="row.audit.spec.status === APPROVE_STATUS.rejected_approval">
                         <div class="itsm-title">{{ $t('审批时间') }}：</div>
