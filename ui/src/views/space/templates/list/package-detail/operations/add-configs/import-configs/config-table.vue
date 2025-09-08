@@ -4,7 +4,7 @@
       <div class="title-content" @click="expand = !expand">
         <DownShape :class="['fold-icon', { fold: !expand }]" />
         <div class="title-text">
-          {{ isExsitTable ? t('已存在配置文件') : t('新建配置文件') }} <span>({{ tableData.length }})</span>
+          {{ tableTitle }} <span>({{ tableData.length }})</span>
         </div>
       </div>
     </div>
@@ -154,9 +154,13 @@
   const props = withDefaults(
     defineProps<{
       tableData: IConfigImportItem[];
-      isExsitTable: boolean;
+      isExsitTable?: boolean;
+      isClone?: boolean; // 是否是克隆服务的配置表
     }>(),
-    {},
+    {
+      isExsitTable: false,
+      isClone: false,
+    },
   );
 
   const emits = defineEmits(['change']);
@@ -194,6 +198,13 @@
     },
     { deep: true },
   );
+
+  const tableTitle = computed(() => {
+    if (props.isClone) {
+      return t('导入配置项');
+    }
+    return props.isExsitTable ? t('已存在配置文件') : t('新建配置文件');
+  });
 
   // 将权限数字拆分成三个分组配置
   const privilegeGroupsValue = computed(() => (privilege: string) => {

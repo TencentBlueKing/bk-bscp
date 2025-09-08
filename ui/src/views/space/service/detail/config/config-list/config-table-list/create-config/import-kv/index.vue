@@ -65,30 +65,13 @@
             <span style="color: #3a84ff">{{ importConfigList.length }}</span>
             {{ t('个配置项') }}
           </div>
-          <bk-select
+          <ConfigSelector
             v-if="importType === 'historyVersion' || importType === 'otherService'"
-            ref="configSelectRef"
             class="config-select"
-            v-model="selectedConfigIds"
-            selected-style="checkbox"
-            :popover-options="{ theme: 'light bk-select-popover config-selector-popover', placement: 'bottom-end' }"
-            collapse-tags
-            filterable
-            multiple
-            show-select-all
-            @toggle="handleToggleConfigSelectShow"
-            @blur="handleCloseConfigSelect">
-            <template #trigger>
-              <div class="select-btn">{{ $t('选择配置项') }}</div>
-            </template>
-            <bk-option v-for="(item, index) in allConfigList" :id="item.key" :key="index" :label="item.key" />
-            <template #extension>
-              <div class="config-select-btns">
-                <bk-button theme="primary" @click="handleConfirmSelect">{{ $t('确定') }}</bk-button>
-                <bk-button @click="handleCloseConfigSelect">{{ $t('取消') }}</bk-button>
-              </div>
-            </template>
-          </bk-select>
+            type="kv"
+            :selected-config-ids="selectedConfigIds"
+            :kv-config-list="allConfigList"
+            @select="handleConfirmSelect" />
         </div>
         <ConfigTable
           v-if="nonExistConfigList.length"
@@ -134,8 +117,8 @@
   import ImportFormOtherService from '../import-file/import-form-other-service.vue';
   import useModalCloseConfirmation from '../../../../../../../../../utils/hooks/use-modal-close-confirmation';
   import ConfigTable from './kv-config-table.vue';
-  import { cloneDeep } from 'lodash';
   import useServiceStore from '../../../../../../../../../store/service';
+  import ConfigSelector from '../../../../../../../../../components/config-selector.vue';
 
   const serviceStore = useServiceStore();
 
@@ -163,7 +146,6 @@
   const selectedConfigIds = ref<string[]>([]);
   const allConfigList = ref<IConfigKvItem[]>([]);
   const configSelectRef = ref();
-  const lastSelectedConfigIds = ref<string[]>([]); // 上一次选中导入的配置项
 
   watch(
     () => props.show,
@@ -293,7 +275,8 @@
     allConfigList.value = [];
   };
 
-  const handleConfirmSelect = () => {
+  const handleConfirmSelect = (ids: string[]) => {
+    selectedConfigIds.value = ids;
     // 配置项添加
     selectedConfigIds.value.forEach((key) => {
       const findConfig = importConfigList.value.find((item) => item.key === key);
@@ -319,17 +302,6 @@
     });
 
     configSelectRef.value.hidePopover();
-  };
-
-  const handleCloseConfigSelect = () => {
-    configSelectRef.value.hidePopover();
-    selectedConfigIds.value = cloneDeep(lastSelectedConfigIds.value);
-  };
-
-  const handleToggleConfigSelectShow = (isShow: boolean) => {
-    if (isShow) {
-      lastSelectedConfigIds.value = cloneDeep(selectedConfigIds.value);
-    }
   };
 </script>
 

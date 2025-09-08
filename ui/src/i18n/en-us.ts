@@ -98,6 +98,7 @@ export default {
   启用: 'Enable',
   table_键值型: 'KV Type',
   服务列表: 'Service List',
+  克隆服务: 'Clone Service',
 
 
   // 导航栏

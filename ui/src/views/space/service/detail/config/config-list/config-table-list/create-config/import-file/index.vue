@@ -95,41 +95,14 @@
             {{ t('个配置项') }}, <span style="color: #3a84ff">{{ importTemplateConfigList.length }}</span>
             {{ t('个模板套餐') }}
           </div>
-          <bk-select
+          <ConfigSelector
             v-if="importType === 'historyVersion' || importType === 'otherService'"
-            ref="configSelectRef"
             class="config-select"
-            v-model="selectedConfigIds"
-            selected-style="checkbox"
-            :popover-options="{ theme: 'light bk-select-popover config-selector-popover', placement: 'bottom-end' }"
-            collapse-tags
-            filterable
-            multiple
-            show-select-all
-            @toggle="handleToggleConfigSelectShow"
-            @blur="handleCloseConfigSelect">
-            <template #trigger>
-              <div class="select-btn">{{ $t('选择配置文件') }}</div>
-            </template>
-            <bk-option-group :label="$t('配置文件')" collapsible>
-              <bk-option v-for="(item, index) in allConfigList" :id="item.id" :key="index" :label="fileAP(item)">
-              </bk-option>
-            </bk-option-group>
-            <bk-option-group :label="$t('模板套餐')" collapsible>
-              <bk-option
-                v-for="(item, index) in allTemplateConfigList"
-                :id="`${item.template_space_id} - ${item.template_set_id}`"
-                :key="index"
-                :label="`${item.template_space_name} - ${item.template_set_name}`">
-              </bk-option>
-            </bk-option-group>
-            <template #extension>
-              <div class="config-select-btns">
-                <bk-button theme="primary" @click="handleConfirmSelect">{{ $t('确定') }}</bk-button>
-                <bk-button @click="handleCloseConfigSelect">{{ $t('取消') }}</bk-button>
-              </div>
-            </template>
-          </bk-select>
+            type="file"
+            :selected-config-ids="selectedConfigIds"
+            :file-config-list="allConfigList"
+            :template-config-list="allTemplateConfigList"
+            @select="handleSelectConfig" />
         </div>
         <ConfigTable
           v-if="nonExistConfigList.length"
@@ -180,13 +153,13 @@
   import ImportFromTemplate from './import-from-templates.vue';
   import ImportFromLocalFile from './import-from-local-file.vue';
   import ImportFormOtherService from './import-form-other-service.vue';
+  import ConfigSelector from '../../../../../../../../../components/config-selector.vue';
   import ConfigTable from '../../../../../../../templates/list/package-detail/operations/add-configs/import-configs/config-table.vue';
   import useModalCloseConfirmation from '../../../../../../../../../utils/hooks/use-modal-close-confirmation';
   import useServiceStore from '../../../../../../../../../store/service';
   import useGlobalStore from '../../../../../../../../../store/global';
   import { ImportTemplateConfigItem } from '../../../../../../../../../../types/template';
   import TemplateConfigTable from './template-config-table.vue';
-  import { cloneDeep } from 'lodash';
   import { storeToRefs } from 'pinia';
 
   const { t, locale } = useI18n();
@@ -222,8 +195,6 @@
   const fileProcessing = ref(false); // 后台文件处理
   const closeLoading = ref(false);
   const selectedConfigIds = ref<(string | number)[]>([]);
-  const configSelectRef = ref();
-  const lastSelectedConfigIds = ref<(string | number)[]>([]); // 上一次选中导入的配置项
   const templateImportBtnDisabled = ref(true); // 从配置模板导入按钮是否禁用
 
   const confirmBtnDisabled = computed(() => {
@@ -289,15 +260,6 @@
       selectVerisonId.value = undefined;
     },
   );
-
-  // 配置文件名
-  const fileAP = (config: IConfigImportItem) => {
-    const { path, name } = config;
-    if (path.endsWith('/')) {
-      return `${path}${name}`;
-    }
-    return `${path}/${name}`;
-  };
 
   const handleConfirm = async () => {
     loading.value = true;
@@ -494,18 +456,8 @@
     emits('update:show', false);
   };
 
-  const handleCloseConfigSelect = () => {
-    configSelectRef.value.hidePopover();
-    selectedConfigIds.value = cloneDeep(lastSelectedConfigIds.value);
-  };
-
-  const handleToggleConfigSelectShow = (isShow: boolean) => {
-    if (isShow) {
-      lastSelectedConfigIds.value = cloneDeep(selectedConfigIds.value);
-    }
-  };
-
-  const handleConfirmSelect = () => {
+  const handleSelectConfig = (ids: (string | number)[]) => {
+    selectedConfigIds.value = ids;
     selectedConfigIds.value.forEach((id) => {
       // 配置文件被删除后重新添加
       if (typeof id === 'number') {
@@ -577,7 +529,6 @@
         }
       }
     });
-    configSelectRef.value.hidePopover();
   };
 </script>
 
@@ -648,18 +599,6 @@
         right: 0;
         top: 50%;
         transform: translateY(-50%);
-        .select-btn {
-          min-width: 102px;
-          height: 32px;
-          background: #ffffff;
-          border: 1px solid #c4c6cc;
-          border-radius: 2px;
-          font-size: 14px;
-          color: #63656e;
-          line-height: 32px;
-          text-align: center;
-          cursor: pointer;
-        }
       }
     }
   }
@@ -671,17 +610,6 @@
       align-items: center;
     }
   }
-
-  .config-select-btns {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-    justify-content: flex-end;
-    width: 100%;
-    height: 100%;
-    background: #fafbfd;
-  }
 </style>
 
 <style lang="scss">
@@ -689,13 +617,6 @@
     .bk-modal-content {
       height: calc(100% - 50px) !important;
       overflow: auto;
-    }
-  }
-
-  .config-selector-popover {
-    width: 238px !important;
-    .bk-select-option {
-      padding: 0 12px !important;
     }
   }
 </style>

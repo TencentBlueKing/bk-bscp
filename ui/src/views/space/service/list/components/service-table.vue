@@ -62,7 +62,12 @@
               <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
                 {{ $t('客户端查询') }}
               </bk-button>
-              <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
+              <MoreAction
+                :app="row"
+                :space-id="props.spaceId"
+                @edit="handleEdit(row)"
+                @delete="handleDelete(row)"
+                @clone="handleClone(row)" />
             </div>
           </template>
           <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm(row)">{{
@@ -108,7 +113,7 @@
     loading: boolean;
   }>();
 
-  const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete']);
+  const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete', 'clone']);
 
   const tableRef = ref();
 
@@ -183,6 +188,10 @@
       };
       openPermApplyDialog(query);
     }
+  };
+
+  const handleClone = (row: IAppItem) => {
+    emits('clone', row);
   };
 
   const applyViewPerm = (row: IAppItem) => {

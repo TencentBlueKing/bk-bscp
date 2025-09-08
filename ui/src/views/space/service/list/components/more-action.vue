@@ -27,7 +27,7 @@
     app: IAppItem;
     spaceId: string;
   }>();
-  const emits = defineEmits(['delete', 'edit']);
+  const emits = defineEmits(['delete', 'edit', 'clone']);
   const opPopRef = ref();
 
   const operationList = [
@@ -53,6 +53,14 @@
       name: t('操作记录'),
       perm: true,
       click: () => handleJump('records-app'),
+    },
+    {
+      name: t('克隆服务'),
+      perm: true,
+      click: () => {
+        opPopRef.value.hide();
+        emits('clone');
+      },
     },
     {
       name: t('删除'),
