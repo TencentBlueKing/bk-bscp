@@ -30,7 +30,7 @@ import (
 const (
 	migrateItsm      = "/bk-bscp/etc/itsm/system_bk_bscp.json"
 	migratePath      = "/api/v1/system/migrate/"
-	systemCreatePath = "/api/v1/system_create/"
+	systemCreatePath = "/api/v1/system/create/"
 
 	fileName = "system_bk_bscp.json"
 )
