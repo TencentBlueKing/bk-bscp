@@ -77,15 +77,11 @@
           v-if="nonExistConfigList.length"
           :table-data="nonExistConfigList"
           :is-exsit-table="false"
-          :expand="expandNonExistTable"
-          @change-expand="expandNonExistTable = !expandNonExistTable"
           @change="handleTableChange($event, true)" />
         <ConfigTable
           v-if="existConfigList.length"
-          :expand="expandExistTable"
           :table-data="existConfigList"
           :is-exsit-table="true"
-          @change-expand="expandExistTable = !expandExistTable"
           @change="handleTableChange($event, false)" />
       </div>
     </bk-loading>
@@ -140,8 +136,6 @@
   const existConfigList = ref<IConfigKvItem[]>([]);
   const nonExistConfigList = ref<IConfigKvItem[]>([]);
   const isClearDraft = ref(false);
-  const expandNonExistTable = ref(true);
-  const expandExistTable = ref(true);
   const textImport = ref();
   const selectedConfigIds = ref<string[]>([]);
   const allConfigList = ref<IConfigKvItem[]>([]);

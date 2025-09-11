@@ -15,6 +15,15 @@
             }"
             :class="['bk-bscp-icon', 'icon-variable', { 'show-var': isShowVariable }]"
             @click="emits('update:isShowVariable', !isShowVariable)"></span>
+          <copy-shape
+            v-else
+            class="action-icon"
+            v-bk-tooltips="{
+              content: $t('复制脚本内容'),
+              placement: 'top',
+              distance: 20,
+            }"
+            @click="handleCopyText" />
           <ReadFileContent
             v-if="props.uploadIcon"
             v-bk-tooltips="{
@@ -60,7 +69,8 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { FilliscreenLine, UnfullScreen } from 'bkui-vue/lib/icon';
+  import { FilliscreenLine, UnfullScreen, CopyShape } from 'bkui-vue/lib/icon';
+  import { copyToClipBoard } from '../../../../utils';
   import BkMessage from 'bkui-vue/lib/message';
   import ReadFileContent from '../../service/detail/config/components/read-file-content.vue';
   import CodeEditor from '../../../../components/code-editor/index.vue';
@@ -111,6 +121,15 @@
       isOpenFullScreen.value = false;
     }
   };
+
+  // 复制
+  const handleCopyText = () => {
+    copyToClipBoard(props.modelValue);
+    BkMessage({
+      theme: 'success',
+      message: t('脚本已复制'),
+    });
+  };
 </script>
 <style lang="scss" scoped>
   .script-editor {
@@ -146,13 +165,14 @@
     }
   }
   .editor-header {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-right: 14px;
     background: #2e2e2e;
     .head-title {
-      flex: 1;
+      max-width: 80%;
     }
     .actions {
       display: flex;

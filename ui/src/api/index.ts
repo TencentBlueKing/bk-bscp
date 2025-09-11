@@ -94,6 +94,15 @@ export const updateApp = (params: any) => {
 };
 
 /**
+ * 克隆服务
+ * @param params { id, biz_id, name?, memo?, reload_type?, reload_file_path? }
+ * @returns
+ */
+export const cloneApp = (biz_id: string, params: any) => {
+  return http.post(`config/biz/${biz_id}/clone_app`, { biz_id, ...params }).then((resp) => resp.data);
+};
+
+/**
  * 查询资源权限以及返回权限申请链接
  * @param params IPermissionQueryResourceItem 查询参数
  */

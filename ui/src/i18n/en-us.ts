@@ -99,7 +99,10 @@ export default {
   table_键值型: 'KV Type',
   服务列表: 'Service List',
   克隆服务: 'Clone Service',
-
+  填写服务信息: 'Fill in service info',
+  导入配置项: 'Import config items',
+  导入脚本: 'Import script',
+  脚本已复制: 'Script copied',
 
   // 导航栏
   服务配置中心: 'BSCP',

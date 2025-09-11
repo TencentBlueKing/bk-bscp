@@ -1,103 +1,107 @@
 <template>
-  <bk-form form-type="vertical" ref="formRef" :model="localData" :rules="rules">
-    <bk-form-item :label="t('form_服务名称')" property="name" required>
-      <bk-input
-        v-model="localData.name"
-        :placeholder="t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾')"
-        :disabled="editable"
-        @input="handleChange"
-        v-bk-tooltips="{
-          content: t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾'),
-          disabled: locale === 'zh-cn',
-        }" />
-    </bk-form-item>
-    <bk-form-item :label="t('form_服务别名')" property="alias" required>
-      <bk-input
-        v-model="localData.alias"
-        :placeholder="t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾')"
-        @input="handleChange"
-        v-bk-tooltips="{
-          content: t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾'),
-          disabled: locale === 'zh-cn',
-        }" />
-    </bk-form-item>
-    <bk-form-item :label="t('服务描述')" property="memo">
-      <bk-input
-        v-model="localData.memo"
-        :placeholder="t('服务描述限制200字符')"
-        type="textarea"
-        :autosize="true"
-        :resize="false"
-        :maxlength="200"
-        @input="handleChange" />
-    </bk-form-item>
-    <bk-form-item :label="t('配置类型')" :description="t('tips.config')">
-      <bk-radio-group v-model="localData.config_type" :disabled="editable" @change="handleConfigTypeChange">
-        <bk-radio label="file">{{ t('文件型') }}</bk-radio>
-        <bk-radio label="kv">{{ t('键值型') }}</bk-radio>
-      </bk-radio-group>
-    </bk-form-item>
-    <bk-form-item
-      v-if="localData.config_type === 'kv'"
-      :label="t('配置格式限制')"
-      property="data_type"
-      :description="t('tips.type')"
-      required>
-      <bk-select v-model="localData.data_type" class="type-select" :clearable="false" @select="handleChange">
-        <bk-option id="any" :name="t('任意格式')" />
-        <bk-option
-          v-for="kvType in CONFIG_KV_TYPE"
-          :key="kvType.id"
-          :id="kvType.id"
-          :name="kvType.name === 'secret' ? t('敏感信息') : kvType.name" />
-      </bk-select>
-    </bk-form-item>
-    <!-- 上线审批 -->
-    <bk-form-item>
-      <template #label>
-        <div class="label-wrap">
-          {{ t('上线审批') }}
-          <help
-            v-bk-tooltips="{
-              content: $t(
-                '建议在生产环境中开启审批流程，以保证系统稳定性。测试环境中可以考虑关闭审批流程以提升操作效率',
-              ),
-              placement: 'top',
-            }"
-            class="label-help" />
-          <div class="label-switch">
-            <bk-switcher v-model="localData.is_approve" theme="primary" size="small" @change="handleApproveSwitch" />
-          </div>
-        </div>
-      </template>
-      <div v-if="localData.is_approve" class="approval-content">
-        <bk-form-item :label="t('指定审批人')" property="approver" required>
-          <bk-member-selector
-            v-model="selectionsApprover"
-            :api="approverApi"
-            :is-error="selValidationError"
-            @change="changeApprover" />
-        </bk-form-item>
-        <bk-form-item property="approve_type">
-          <template #label>
-            <div class="label-wrap">
-              {{ t('审批方式') }}
-              <help
-                v-bk-tooltips="{
-                  content: $t('或签：多人同时审批，一人同意即可通过n会签：审批人依次审批，每人都需同意才能通过'),
-                  placement: 'top',
-                }"
-                class="label-help" />
+  <div>
+    <bk-form form-type="vertical" ref="formRef" :model="localData" :rules="rules">
+      <bk-form-item :label="t('form_服务名称')" property="name" required>
+        <bk-input
+          v-model="localData.name"
+          :placeholder="t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾')"
+          :disabled="editable"
+          @input="handleChange"
+          v-bk-tooltips="{
+            content: t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾'),
+            disabled: locale === 'zh-cn',
+          }" />
+      </bk-form-item>
+      <bk-form-item :label="t('form_服务别名')" property="alias" required>
+        <bk-input
+          v-model="localData.alias"
+          :placeholder="t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾')"
+          @input="handleChange"
+          v-bk-tooltips="{
+            content: t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾'),
+            disabled: locale === 'zh-cn',
+          }" />
+      </bk-form-item>
+      <bk-form-item :label="t('服务描述')" property="memo">
+        <bk-input
+          v-model="localData.memo"
+          :placeholder="t('服务描述限制200字符')"
+          type="textarea"
+          :autosize="true"
+          :resize="false"
+          :maxlength="200"
+          @input="handleChange" />
+      </bk-form-item>
+      <bk-form-item :label="t('配置类型')" :description="t('tips.config')">
+        <bk-radio-group
+          v-model="localData.config_type"
+          :disabled="editable || cloneMode"
+          @change="handleConfigTypeChange">
+          <bk-radio label="file">{{ t('文件型') }}</bk-radio>
+          <bk-radio label="kv">{{ t('键值型') }}</bk-radio>
+        </bk-radio-group>
+      </bk-form-item>
+      <bk-form-item
+        v-if="localData.config_type === 'kv'"
+        :label="t('配置格式限制')"
+        property="data_type"
+        :description="t('tips.type')"
+        required>
+        <bk-select v-model="localData.data_type" class="type-select" :clearable="false" @select="handleChange">
+          <bk-option id="any" :name="t('任意格式')" />
+          <bk-option
+            v-for="kvType in CONFIG_KV_TYPE"
+            :key="kvType.id"
+            :id="kvType.id"
+            :name="kvType.name === 'secret' ? t('敏感信息') : kvType.name" />
+        </bk-select>
+      </bk-form-item>
+      <!-- 上线审批 -->
+      <bk-form-item>
+        <template #label>
+          <div class="label-wrap">
+            {{ t('上线审批') }}
+            <help
+              v-bk-tooltips="{
+                content: $t(
+                  '建议在生产环境中开启审批流程，以保证系统稳定性。测试环境中可以考虑关闭审批流程以提升操作效率',
+                ),
+                placement: 'top',
+              }"
+              class="label-help" />
+            <div class="label-switch">
+              <bk-switcher v-model="localData.is_approve" theme="primary" size="small" @change="handleApproveSwitch" />
             </div>
-          </template>
-          <bk-radio-group v-model="localData.approve_type" @change="handleChange">
-            <bk-radio label="or_sign">{{ t('或签') }}</bk-radio>
-            <bk-radio label="count_sign">{{ t('会签') }}</bk-radio>
-          </bk-radio-group>
-        </bk-form-item>
-      </div>
-    </bk-form-item>
-    <!-- <bk-form-item property="encryptionSwtich">
+          </div>
+        </template>
+        <div v-if="localData.is_approve" class="approval-content">
+          <bk-form-item :label="t('指定审批人')" property="approver" required>
+            <bk-member-selector
+              v-model="selectionsApprover"
+              :api="approverApi"
+              :is-error="selValidationError"
+              @change="changeApprover" />
+          </bk-form-item>
+          <bk-form-item property="approve_type">
+            <template #label>
+              <div class="label-wrap">
+                {{ t('审批方式') }}
+                <help
+                  v-bk-tooltips="{
+                    content: $t('或签：多人同时审批，一人同意即可通过n会签：审批人依次审批，每人都需同意才能通过'),
+                    placement: 'top',
+                  }"
+                  class="label-help" />
+              </div>
+            </template>
+            <bk-radio-group v-model="localData.approve_type" @change="handleChange">
+              <bk-radio label="or_sign">{{ t('或签') }}</bk-radio>
+              <bk-radio label="count_sign">{{ t('会签') }}</bk-radio>
+            </bk-radio-group>
+          </bk-form-item>
+        </div>
+      </bk-form-item>
+      <!-- <bk-form-item property="encryptionSwtich">
       <template #label>
         <div class="label-key">
           数据加密公钥 <help /><bk-switcher v-model="localData.encryptionSwtich" theme="primary" size="small" />
@@ -105,37 +109,38 @@
         </div>
       </template>
     </bk-form-item> -->
-  </bk-form>
-  <bk-dialog
-    v-model:is-show="approvalDialogShow"
-    ref="dialog"
-    ext-cls="confirm-dialog"
-    footer-align="center"
-    :confirm-text="t('再想想')"
-    :cancel-text="t('仍要关闭')"
-    :close-icon="true"
-    :show-mask="true"
-    :quick-close="false"
-    :multi-instance="false"
-    @confirm="
-      localData.is_approve = true;
-      approvalDialogShow = false;
-    "
-    @cancel="
-      localData.is_approve = false;
-      approvalDialogShow = true;
-    ">
-    <template #header>
-      <div class="tip-icon__wrap">
-        <exclamation-circle-shape class="tip-icon" />
+    </bk-form>
+    <bk-dialog
+      v-model:is-show="approvalDialogShow"
+      ref="dialog"
+      ext-cls="confirm-dialog"
+      footer-align="center"
+      :confirm-text="t('再想想')"
+      :cancel-text="t('仍要关闭')"
+      :close-icon="true"
+      :show-mask="true"
+      :quick-close="false"
+      :multi-instance="false"
+      @confirm="
+        localData.is_approve = true;
+        approvalDialogShow = false;
+      "
+      @cancel="
+        localData.is_approve = false;
+        approvalDialogShow = true;
+      ">
+      <template #header>
+        <div class="tip-icon__wrap">
+          <exclamation-circle-shape class="tip-icon" />
+        </div>
+        <div class="headline">{{ t('关闭上线审批存在风险') }}</div>
+      </template>
+      <div class="content-info">
+        <div>{{ t('生产环境不建议关闭审批') }}</div>
+        <div>{{ t('审批流程可以提高配置更改的准确性和安全性') }}</div>
       </div>
-      <div class="headline">{{ t('关闭上线审批存在风险') }}</div>
-    </template>
-    <div class="content-info">
-      <div>{{ t('生产环境不建议关闭审批') }}</div>
-      <div>{{ t('审批流程可以提高配置更改的准确性和安全性') }}</div>
-    </div>
-  </bk-dialog>
+    </bk-dialog>
+  </div>
 </template>
 <script setup lang="ts">
   import { onBeforeMount, ref, watch } from 'vue';
@@ -153,6 +158,7 @@
     formData: IServiceEditForm;
     editable?: boolean;
     approverApi: string;
+    cloneMode?: boolean;
   }>();
 
   const rules = {

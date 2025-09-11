@@ -1,6 +1,6 @@
 <template>
   <div class="init-script-page">
-    <div class="script-select-area">
+    <div :class="['script-select-area', { 'clone-mode': props.cloneMode }]">
       <bk-form form-type="vertical">
         <bk-form-item :label="t('前置脚本')">
           <div class="select-wrapper">
@@ -44,7 +44,7 @@
         </bk-form-item>
       </bk-form>
       <bk-button
-        v-if="!viewMode"
+        v-if="!viewMode && !props.cloneMode"
         v-cursor="{ active: !hasEditServicePerm }"
         :class="['submit-button', { 'bk-button-with-no-perm': !hasEditServicePerm }]"
         theme="primary"
@@ -54,7 +54,10 @@
         {{ t('保存设置') }}
       </bk-button>
     </div>
-    <bk-loading v-if="previewConfig.open" class="preview-area" :loading="contentLoading">
+    <bk-loading
+      v-if="previewConfig.open"
+      :class="['preview-area', { 'clone-mode': props.cloneMode }]"
+      :loading="contentLoading">
       <ScriptEditor
         :model-value="previewConfig.content"
         :editable="false"
@@ -66,7 +69,9 @@
             <div class="close-area" @click="previewConfig.open = false">
               <AngleRight class="arrow-icon" />
             </div>
-            <div class="title">{{ `${t('脚本预览')} - ${previewConfig.name}` }}</div>
+            <div class="title">
+              <bk-overflow-title type="tips">{{ `${t('脚本预览')} - ${previewConfig.name}` }}</bk-overflow-title>
+            </div>
           </div>
         </template>
       </ScriptEditor>
@@ -106,7 +111,10 @@
 
   const props = defineProps<{
     appId: number;
+    cloneMode?: boolean;
   }>();
+
+  const emits = defineEmits(['select']);
 
   const scriptsLoading = ref(false);
   const scriptsData = ref<{ id: number; versionId: number; name: string; type: string }[]>([]);
@@ -246,6 +254,7 @@
     }
     submitButtonDisabled.value = false;
     handleOpenPreview(type);
+    emits('select', { pre_hook_id: formData.value.pre.id, post_hook_id: formData.value.post.id });
   };
 
   // 点击预览
@@ -301,10 +310,19 @@
     padding: 24px 32px 24px 24px;
     width: 528px;
     height: 100%;
+    &.clone-mode {
+      padding: 0 32px 0 0;
+      width: 440px;
+      .select-wrapper {
+        .bk-select {
+          width: 364px;
+        }
+      }
+    }
     .select-wrapper {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 16px;
       .bk-select {
         width: 426px;
       }
@@ -313,6 +331,9 @@
   .preview-area {
     width: calc(100% - 528px);
     height: 100%;
+    &.clone-mode {
+      width: calc(100% - 440px);
+    }
   }
   .script-preview-title {
     display: flex;
