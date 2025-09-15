@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -40,7 +41,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
-	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -90,7 +90,7 @@ type dataService struct {
 	sd       serviced.Service
 	daoSet   dao.Set
 	vault    vault.Set
-	esb      client.Client
+	cmdb     bkcmdb.Service
 	spaceMgr *space.Manager
 	repo     repository.Provider
 	ssd      serviced.ServiceDiscover
@@ -160,15 +160,18 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	// initialize esb client
-	settings := cc.DataService().Esb
-	esbCli, err := client.NewClient(&settings, metrics.Register())
+	esbCfg := cc.DataService().Esb
+	cmdbCfg := cc.DataService().CMDB
+
+	cmdbCli, err := bkcmdb.NewBkClient(&cmdbCfg, &esbCfg, metrics.Register())
 	if err != nil {
-		return fmt.Errorf("new esb client failed, err: %v", err)
+		return fmt.Errorf("new cmdb client failed, err: %v", err)
 	}
-	ds.esb = esbCli
+
+	ds.cmdb = cmdbCli
 
 	// initialize space manager
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdbCli)
 	if err != nil {
 		return fmt.Errorf("init space manager failed, err: %v", err)
 	}
@@ -245,7 +248,7 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.cmdb, ds.repo)
 	if err != nil {
 		return err
 	}

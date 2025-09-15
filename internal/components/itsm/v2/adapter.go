@@ -130,7 +130,7 @@ func (a *ITSMV2Adapter) GetApproveResult(ctx context.Context, req api.GetApprove
 			}
 			res.Result = pointer.Bool(false)
 			res.RejectUsers = append(res.RejectUsers, v.Operator)
-
+			res.Reasons = append(res.Reasons, approveNodeResult.ApproveRemark)
 			res.Items = append(res.Items, &api.ApproveResultDataItem{
 				Result: pointer.Bool(false),
 				Reason: approveNodeResult.ApproveRemark,

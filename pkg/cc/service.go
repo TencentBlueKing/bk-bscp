@@ -323,6 +323,7 @@ type DataServiceSetting struct {
 	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 	Gorm         Gorm         `yaml:"gorm"`
 	ITSM         ITSMConfig   `yaml:"itsm"`
+	CMDB         CMDBConfig   `yaml:"cmdb"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -379,6 +380,9 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.Gorm.validate(); err != nil {
+		return err
+	}
+	if err := s.CMDB.validate(); err != nil {
 		return err
 	}
 

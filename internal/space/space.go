@@ -25,7 +25,6 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
-	esbcli "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
@@ -66,14 +65,16 @@ type Manager struct {
 	ctx            context.Context
 	requestedCache gcache.Cache // 用于检查cmdb空间是否请求过，避免短时间内高频刷新缓存
 	spaceCache     gcache.Cache
+	client         bkcmdb.Service
 }
 
 // NewSpaceMgr Space按租户被动拉取, 注: 每个实例一个 cache
-func NewSpaceMgr(ctx context.Context, client esbcli.Client) (*Manager, error) {
+func NewSpaceMgr(ctx context.Context, client bkcmdb.Service) (*Manager, error) {
 	mgr := &Manager{
 		ctx:            ctx,
 		requestedCache: gcache.New(1000).Expiration(time.Second * 30).EvictType(gcache.TYPE_LRU).Build(),
 		spaceCache:     gcache.New(1000).Expiration(time.Minute * 10).EvictType(gcache.TYPE_LRU).Build(),
+		client:         client,
 	}
 
 	return mgr, nil
@@ -123,17 +124,17 @@ func (s *Manager) QuerySpace(ctx context.Context, spaceUidList []string) ([]*Spa
 
 // fetchAllSpace 获取全量业务列表
 func (s *Manager) fetchAllSpace(ctx context.Context) ([]*Space, error) {
-	bizList, err := bkcmdb.ListAllBusiness(ctx)
+	bizList, err := s.client.Cmdb().ListAllBusiness(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(bizList) == 0 {
+	if bizList.Count == 0 {
 		return nil, fmt.Errorf("biz list is empty")
 	}
 
-	spaceList := make([]*Space, 0, len(bizList))
-	for _, biz := range bizList {
+	spaceList := make([]*Space, 0, len(bizList.Info))
+	for _, biz := range bizList.Info {
 		bizID := strconv.FormatInt(biz.BizID, 10)
 		s := &Space{
 			SpaceId:       bizID,

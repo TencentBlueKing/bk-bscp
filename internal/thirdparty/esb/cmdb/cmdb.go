@@ -33,8 +33,8 @@ type Client interface {
 	SearchBusiness(ctx context.Context, params *SearchBizParams) (*SearchBizResp, error)
 	// ListAllBusiness 读取全部业务列表
 	ListAllBusiness(ctx context.Context) (*SearchBizResult, error)
-	// GeBusinessbyID
-	GeBusinessbyID(ctx context.Context, bizID uint32) (*Biz, error)
+	// GeBusinessByID 读取单个biz
+	GeBusinessByID(ctx context.Context, bizID uint32) (*Biz, error)
 }
 
 // NewClient initialize a new cmdb client
@@ -63,7 +63,10 @@ func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*Se
 
 	h := http.Header{}
 	h.Set(constant.RidKey, uuid.UUID())
-	h.Set(constant.BkTenantID, kit.TenantID)
+
+	if len(kit.TenantID) != 0 {
+		h.Set(constant.BkTenantID, kit.TenantID)
+	}
 
 	err := c.client.Post().
 		SubResourcef("/cc/search_business/").
@@ -94,7 +97,7 @@ func (c *cmdb) ListAllBusiness(ctx context.Context) (*SearchBizResult, error) {
 }
 
 // GeBusinessbyID 读取单个biz
-func (c *cmdb) GeBusinessbyID(ctx context.Context, bizID uint32) (*Biz, error) {
+func (c *cmdb) GeBusinessByID(ctx context.Context, bizID uint32) (*Biz, error) {
 	if cacheResult, err := c.cache.Get(bizID); err == nil {
 		return cacheResult.(*Biz), nil
 	}

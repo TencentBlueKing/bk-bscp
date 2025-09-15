@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"gorm.io/gorm"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
@@ -270,6 +269,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		if err != nil {
 			return nil, err
 		}
+
 		logs.Infof("check ticket status, operateWay: %s, kit user: %s, approved by: %v, message: %s",
 			grpcKit.OperateWay, grpcKit.User, req.ApprovedBy, message)
 	}
@@ -1012,7 +1012,11 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 		approveTypeCH = table.CountSignCH
 	}
 	fields := buildFields(bizName, app, releaseName, scope, aduitId, releaseID, approveTypeCH, memo)
-	workFlowKey, err := s.dao.Config().GetConfig(kt, fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmWorkflowID))
+	key := constant.CreateApproveItsmWorkflowID
+	if kt.TenantID != "" {
+		key = fmt.Sprintf("%s-%s", kt.TenantID, constant.CreateApproveItsmWorkflowID)
+	}
+	workFlowKey, err := s.dao.Config().GetConfig(kt, key)
 	if err != nil {
 		return nil, err
 	}
@@ -1029,7 +1033,9 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 		ActivityKey: itsmSign.Value,
 		CallbackUrl: callbackUrl,
 	}
-	if !cc.DataService().ITSM.EnableV4 {
+
+	useV2 := !cc.DataService().ITSM.EnableV4
+	if useV2 {
 		itsmService, err1 := s.dao.Config().GetConfig(kt, constant.CreateApproveItsmServiceID)
 		if err1 != nil {
 			return nil, err1
@@ -1041,16 +1047,19 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 	if err != nil {
 		return nil, err
 	}
+	if useV2 {
+		resp.StateID = itsmSign.Value
+	}
 	return resp, nil
 }
 
 // 获取业务名
 func (s *Service) getBizName(kt *kit.Kit, bizID uint32) (string, error) {
-	bizList, err := bkcmdb.ListAllBusiness(kt.Ctx)
+	bizList, err := s.cmdb.Cmdb().ListAllBusiness(kt.Ctx)
 	if err != nil {
 		return "", err
 	}
-	for _, biz := range bizList {
+	for _, biz := range bizList.Info {
 		if biz.BizID == int64(bizID) {
 			return biz.BizName, nil
 		}
