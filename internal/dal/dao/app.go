@@ -60,6 +60,8 @@ type App interface {
 	BatchUpdateLastConsumedTime(kit *kit.Kit, appIDs []uint32) error
 	// CountApps 统计服务数量
 	CountApps(kit *kit.Kit, bizList []uint32, operator, search string) (int64, int64, error)
+	// CreateWithTx one app instance with transaction.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, app *table.App) (uint32, error)
 }
 
 var _ App = new(appDao)
@@ -69,6 +71,30 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// CreateWithTx one app instance with transaction.
+func (dao *appDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, app *table.App) (uint32, error) {
+	if app == nil {
+		return 0, errf.Errorf(errf.InvalidArgument, i18n.T(kit, "app is nil"))
+	}
+
+	if err := app.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+	// generate an commit id and update to commit.
+	id, err := dao.idGen.One(kit, table.AppTable)
+
+	if err != nil {
+		return 0, err
+	}
+
+	app.ID = id
+	if err := tx.Query.App.WithContext(kit.Ctx).Create(app); err != nil {
+		return 0, err
+	}
+
+	return app.ID, nil
 }
 
 // CountApps implements App.

@@ -34,6 +34,7 @@ const (
 	Config_GetAppByName_FullMethodName                       = "/pbcs.Config/GetAppByName"
 	Config_ListAppsRest_FullMethodName                       = "/pbcs.Config/ListAppsRest"
 	Config_ListAppsBySpaceRest_FullMethodName                = "/pbcs.Config/ListAppsBySpaceRest"
+	Config_CloneApp_FullMethodName                           = "/pbcs.Config/CloneApp"
 	Config_CreateConfigItem_FullMethodName                   = "/pbcs.Config/CreateConfigItem"
 	Config_BatchUpsertConfigItems_FullMethodName             = "/pbcs.Config/BatchUpsertConfigItems"
 	Config_UpdateConfigItem_FullMethodName                   = "/pbcs.Config/UpdateConfigItem"
@@ -211,7 +212,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -225,6 +226,8 @@ type ConfigClient interface {
 	ListAppsRest(ctx context.Context, in *ListAppsRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(ctx context.Context, in *ListAppsBySpaceRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
+	// 克隆服务
+	CloneApp(ctx context.Context, in *CloneAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 创建文件配置项
 	CreateConfigItem(ctx context.Context, in *CreateConfigItemReq, opts ...grpc.CallOption) (*CreateConfigItemResp, error)
 	// 批量创建或更新文件配置项
@@ -627,6 +630,15 @@ func (c *configClient) ListAppsRest(ctx context.Context, in *ListAppsRestReq, op
 func (c *configClient) ListAppsBySpaceRest(ctx context.Context, in *ListAppsBySpaceRestReq, opts ...grpc.CallOption) (*ListAppsResp, error) {
 	out := new(ListAppsResp)
 	err := c.cc.Invoke(ctx, Config_ListAppsBySpaceRest_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CloneApp(ctx context.Context, in *CloneAppReq, opts ...grpc.CallOption) (*CreateAppResp, error) {
+	out := new(CreateAppResp)
+	err := c.cc.Invoke(ctx, Config_CloneApp_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2176,7 +2188,7 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2190,6 +2202,8 @@ type ConfigServer interface {
 	ListAppsRest(context.Context, *ListAppsRestReq) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(context.Context, *ListAppsBySpaceRestReq) (*ListAppsResp, error)
+	// 克隆服务
+	CloneApp(context.Context, *CloneAppReq) (*CreateAppResp, error)
 	// 创建文件配置项
 	CreateConfigItem(context.Context, *CreateConfigItemReq) (*CreateConfigItemResp, error)
 	// 批量创建或更新文件配置项
@@ -2551,6 +2565,9 @@ func (UnimplementedConfigServer) ListAppsRest(context.Context, *ListAppsRestReq)
 }
 func (UnimplementedConfigServer) ListAppsBySpaceRest(context.Context, *ListAppsBySpaceRestReq) (*ListAppsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAppsBySpaceRest not implemented")
+}
+func (UnimplementedConfigServer) CloneApp(context.Context, *CloneAppReq) (*CreateAppResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CloneApp not implemented")
 }
 func (UnimplementedConfigServer) CreateConfigItem(context.Context, *CreateConfigItemReq) (*CreateConfigItemResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigItem not implemented")
@@ -3199,6 +3216,24 @@ func _Config_ListAppsBySpaceRest_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServer).ListAppsBySpaceRest(ctx, req.(*ListAppsBySpaceRestReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CloneApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloneAppReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CloneApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CloneApp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CloneApp(ctx, req.(*CloneAppReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6315,6 +6350,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAppsBySpaceRest",
 			Handler:    _Config_ListAppsBySpaceRest_Handler,
+		},
+		{
+			MethodName: "CloneApp",
+			Handler:    _Config_CloneApp_Handler,
 		},
 		{
 			MethodName: "CreateConfigItem",

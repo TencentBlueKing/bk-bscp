@@ -87,6 +87,14 @@ service Config {
       get: "/api/v1/config/list/app/app/biz_id/{biz_id}"
     };
   }
+  // 克隆服务
+  rpc CloneApp(CloneAppReq) returns (CreateAppResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/clone_app"
+      body: "*"
+    };
+  }
 
   // 创建文件配置项
   rpc CreateConfigItem(CreateConfigItemReq) returns (CreateConfigItemResp) {
@@ -4307,4 +4315,72 @@ message GetLatestTemplateVersionsInSpaceResp {
     repeated pbtr.TemplateRevisionSpec template_revision = 2;
   }
   repeated TemplateSetSpec template_set = 2;
+}
+
+message CloneAppReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
+  string alias = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务别名" }];
+  string config_type = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数据格式：文件型=file, 键值型=kv" }
+  ];
+  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务描述" }];
+  bool is_approve = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否需要审批：是=true，否=false" }
+  ];
+  string approve_type = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "审批类型：会签=count_sign、或签=or_sign"
+  }];
+  string approver = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
+  message ConfigItem {
+    string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+    string path = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+    string file_type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "配置文件格式：文本文件=file, 二进制文件=binary"
+    }];
+    string file_mode = 4
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+    string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件描述" }];
+    string user = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+    string user_group = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+    string privilege = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+    string sign = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+    uint64 byte_size = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+    string md5 = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
+    string charset = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  }
+  repeated ConfigItem config_items = 9;
+  message Kv {
+    string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项名" }];
+    string kv_type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "键值类型：(any、string、number、text、json、yaml、xml、secret)"
+    }];
+    string value = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项值" }];
+    string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
+    string secret_type = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "密钥类型：(password、、certificate、secret_key、token、custom)"
+    }];
+    bool secret_hidden = 6 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }
+    ];
+    string certificate_expiration_date = 7
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+  }
+  repeated Kv kv_items = 10;
+  repeated pbtv.TemplateVariableSpec variables = 11;
+  message TemplateBinding {
+    uint32 template_space_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "模板空间ID",
+    }];
+    pbatb.TemplateBinding template_binding = 2;
+  }
+  repeated TemplateBinding bindings = 12;
+  uint32 pre_hook_id = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "前置脚本：脚本ID" }];
+  uint32 post_hook_id = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "后置脚本：脚本ID" }];
+  string data_type = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
+  }];
 }

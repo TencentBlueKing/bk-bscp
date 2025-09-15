@@ -31,6 +31,10 @@ import (
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbcommit "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/commit"
+	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
+	pbcontent "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/content"
+	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
@@ -390,4 +394,93 @@ func ListAppsAnnotation(ctx context.Context, kt *kit.Kit,
 		}
 	}
 	return &webannotation.Annotation{Perms: perms}, nil
+}
+
+// CloneApp clones an application service
+func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.CreateAppResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: req.BizId},
+	}
+	err := s.authorizer.Authorize(kt, res...)
+	if err != nil {
+		return nil, err
+	}
+
+	configItems := make([]*pbci.ConfigItem, 0)
+	for _, v := range req.GetConfigItems() {
+		configItems = append(configItems, &pbci.ConfigItem{
+			Spec: &pbci.ConfigItemSpec{
+				Name:     v.Name,
+				Path:     v.Path,
+				FileType: v.FileType,
+				FileMode: v.FileMode,
+				Memo:     v.Memo,
+				Permission: &pbci.FilePermission{
+					User:      v.User,
+					UserGroup: v.UserGroup,
+					Privilege: v.Privilege,
+				},
+				Charset: v.Charset,
+			},
+			CommitSpec: &pbcommit.CommitSpec{
+				Content: &pbcontent.ContentSpec{
+					Signature: v.Sign,
+					ByteSize:  v.ByteSize,
+					Md5:       v.Md5,
+				},
+				Memo: v.Memo,
+			},
+		})
+	}
+
+	bindings := make([]*pbds.CloneAppReq_TemplateBinding, 0)
+	for _, v := range req.GetBindings() {
+		bindings = append(bindings, &pbds.CloneAppReq_TemplateBinding{
+			TemplateSpaceId: v.TemplateSpaceId,
+			TemplateBinding: v.GetTemplateBinding(),
+		})
+	}
+
+	kvItems := make([]*pbkv.Kv, 0)
+	for _, v := range req.GetKvItems() {
+		kvItems = append(kvItems, &pbkv.Kv{
+			Spec: &pbkv.KvSpec{
+				Key:                       v.Key,
+				KvType:                    v.KvType,
+				Value:                     v.Value,
+				Memo:                      v.Memo,
+				SecretType:                v.SecretType,
+				SecretHidden:              v.SecretHidden,
+				CertificateExpirationDate: v.CertificateExpirationDate,
+			},
+		})
+	}
+
+	resp, err := s.client.DS.CloneApp(kt.RpcCtx(), &pbds.CloneAppReq{
+		BizId:       req.GetBizId(),
+		Name:        req.GetName(),
+		Alias:       req.GetAlias(),
+		ConfigType:  req.GetConfigType(),
+		Memo:        req.GetMemo(),
+		IsApprove:   req.GetIsApprove(),
+		ApproveType: req.GetApproveType(),
+		Approver:    req.GetApprover(),
+		ConfigItems: configItems,
+		KvItems:     kvItems,
+		Variables:   req.GetVariables(),
+		Bindings:    bindings,
+		PreHookId:   req.GetPreHookId(),
+		PostHookId:  req.GetPostHookId(),
+		DataType:    req.GetDataType(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.CreateAppResp{
+		Id: resp.GetId(),
+	}, nil
 }

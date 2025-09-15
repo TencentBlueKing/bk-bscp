@@ -40,6 +40,7 @@ const (
 	Data_GetAppByName_FullMethodName                      = "/pbds.Data/GetAppByName"
 	Data_ListAppsRest_FullMethodName                      = "/pbds.Data/ListAppsRest"
 	Data_ListAppsByIDs_FullMethodName                     = "/pbds.Data/ListAppsByIDs"
+	Data_CloneApp_FullMethodName                          = "/pbds.Data/CloneApp"
 	Data_CreateConfigItem_FullMethodName                  = "/pbds.Data/CreateConfigItem"
 	Data_BatchUpsertConfigItems_FullMethodName            = "/pbds.Data/BatchUpsertConfigItems"
 	Data_UpdateConfigItem_FullMethodName                  = "/pbds.Data/UpdateConfigItem"
@@ -232,6 +233,7 @@ type DataClient interface {
 	GetAppByName(ctx context.Context, in *GetAppByNameReq, opts ...grpc.CallOption) (*app.App, error)
 	ListAppsRest(ctx context.Context, in *ListAppsRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
 	ListAppsByIDs(ctx context.Context, in *ListAppsByIDsReq, opts ...grpc.CallOption) (*ListAppsByIDsResp, error)
+	CloneApp(ctx context.Context, in *CloneAppReq, opts ...grpc.CallOption) (*CreateResp, error)
 	// config item related interface.
 	CreateConfigItem(ctx context.Context, in *CreateConfigItemReq, opts ...grpc.CallOption) (*CreateResp, error)
 	BatchUpsertConfigItems(ctx context.Context, in *BatchUpsertConfigItemsReq, opts ...grpc.CallOption) (*BatchUpsertConfigItemsResp, error)
@@ -518,6 +520,15 @@ func (c *dataClient) ListAppsRest(ctx context.Context, in *ListAppsRestReq, opts
 func (c *dataClient) ListAppsByIDs(ctx context.Context, in *ListAppsByIDsReq, opts ...grpc.CallOption) (*ListAppsByIDsResp, error) {
 	out := new(ListAppsByIDsResp)
 	err := c.cc.Invoke(ctx, Data_ListAppsByIDs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) CloneApp(ctx context.Context, in *CloneAppReq, opts ...grpc.CallOption) (*CreateResp, error) {
+	out := new(CreateResp)
+	err := c.cc.Invoke(ctx, Data_CloneApp_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2130,6 +2141,7 @@ type DataServer interface {
 	GetAppByName(context.Context, *GetAppByNameReq) (*app.App, error)
 	ListAppsRest(context.Context, *ListAppsRestReq) (*ListAppsResp, error)
 	ListAppsByIDs(context.Context, *ListAppsByIDsReq) (*ListAppsByIDsResp, error)
+	CloneApp(context.Context, *CloneAppReq) (*CreateResp, error)
 	// config item related interface.
 	CreateConfigItem(context.Context, *CreateConfigItemReq) (*CreateResp, error)
 	BatchUpsertConfigItems(context.Context, *BatchUpsertConfigItemsReq) (*BatchUpsertConfigItemsResp, error)
@@ -2369,6 +2381,9 @@ func (UnimplementedDataServer) ListAppsRest(context.Context, *ListAppsRestReq) (
 }
 func (UnimplementedDataServer) ListAppsByIDs(context.Context, *ListAppsByIDsReq) (*ListAppsByIDsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAppsByIDs not implemented")
+}
+func (UnimplementedDataServer) CloneApp(context.Context, *CloneAppReq) (*CreateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CloneApp not implemented")
 }
 func (UnimplementedDataServer) CreateConfigItem(context.Context, *CreateConfigItemReq) (*CreateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigItem not implemented")
@@ -3053,6 +3068,24 @@ func _Data_ListAppsByIDs_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).ListAppsByIDs(ctx, req.(*ListAppsByIDsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_CloneApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloneAppReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CloneApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CloneApp_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CloneApp(ctx, req.(*CloneAppReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6281,6 +6314,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAppsByIDs",
 			Handler:    _Data_ListAppsByIDs_Handler,
+		},
+		{
+			MethodName: "CloneApp",
+			Handler:    _Data_CloneApp_Handler,
 		},
 		{
 			MethodName: "CreateConfigItem",

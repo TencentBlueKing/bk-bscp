@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -30,6 +31,9 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-item"
+	pbkv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/kv"
+	pbtv "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-variable"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -452,4 +456,301 @@ func (s *Service) BatchUpdateLastConsumedTime(ctx context.Context, req *pbds.Bat
 	}
 
 	return &pbds.BatchUpdateLastConsumedTimeResp{}, nil
+}
+
+// CloneApp clones an application service.
+func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.CreateResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	// 1. 创建服务相关数据
+	// 2. 导入相关配置数据
+	// 3. 如果是文件配置需导入模板和变量
+	// 4. 导入脚本
+	now := time.Now().UTC()
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+		}
+	}()
+
+	if !strings.HasPrefix(kit.User, constant.BKUserForTestPrefix) {
+		if err := s.validateBizExist(kit, req.BizId); err != nil {
+			logs.Errorf("validate biz exist failed, err: %v, rid: %s", err, kit.Rid)
+			return nil, err
+		}
+	}
+
+	if _, err := s.dao.App().GetByName(kit, req.BizId, req.GetName()); err == nil {
+		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app name %s already exists", req.GetName()))
+	}
+
+	if _, err := s.dao.App().GetByAlias(kit, req.BizId, req.GetAlias()); err == nil {
+		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app alias %s already exists", req.GetAlias()))
+	}
+
+	app := &table.App{
+		BizID: req.BizId,
+		Spec: &table.AppSpec{
+			Name:        req.GetName(),
+			ConfigType:  table.ConfigType(req.GetConfigType()),
+			Memo:        req.GetMemo(),
+			Alias:       req.GetAlias(),
+			DataType:    table.DataType(req.GetDataType()),
+			ApproveType: table.ApproveType(req.GetApproveType()),
+			IsApprove:   req.GetIsApprove(),
+			Approver:    req.GetApprover(),
+		},
+		Revision: &table.Revision{
+			Creator: kit.User,
+		},
+	}
+
+	appID, err := s.dao.App().CreateWithTx(kit, tx, app)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(req.GetConfigItems()) != 0 {
+		err := s.createConfigItems(kit, tx, req.GetBizId(), appID, req.GetPreHookId(), req.GetPostHookId(),
+			req.GetConfigItems(), req.GetVariables(), req.GetBindings(), now)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(req.GetKvItems()) != 0 {
+		err := s.createKvItems(kit, tx, req.BizId, appID, req.GetKvItems(), now)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if e := tx.Commit(); e != nil {
+		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kit.Rid)
+		return nil, e
+	}
+
+	committed = true
+
+	return &pbds.CreateResp{
+		Id: appID,
+	}, nil
+}
+
+// createConfigItems creates file configuration items
+// nolint:funlen
+func (s *Service) createConfigItems(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, preHookId, postHookId uint32,
+	configItems []*pbci.ConfigItem, variables []*pbtv.TemplateVariableSpec,
+	bindings []*pbds.CloneAppReq_TemplateBinding, now time.Time) error {
+
+	items := make([]*pbds.BatchUpsertConfigItemsReq_ConfigItem, 0)
+	for _, v := range configItems {
+		items = append(items, &pbds.BatchUpsertConfigItemsReq_ConfigItem{
+			ConfigItemAttachment: &pbci.ConfigItemAttachment{
+				BizId: bizID, AppId: appID,
+			},
+			ConfigItemSpec: v.GetSpec(), ContentSpec: v.GetCommitSpec().GetContent(),
+		})
+	}
+
+	_, err := s.doBatchCreateConfigItems(kit, tx, items, now, bizID, appID)
+	if err != nil {
+		logs.Errorf("batch create config items failed, err: %v, rid: %s", err, kit.Rid)
+		return err
+	}
+
+	// 2. 新增模板变量
+	variableMap := make([]*table.TemplateVariableSpec, 0)
+	for _, vars := range variables {
+		variableMap = append(variableMap, vars.TemplateVariableSpec())
+	}
+	appVar := &table.AppTemplateVariable{
+		Spec: &table.AppTemplateVariableSpec{
+			Variables: variableMap,
+		},
+		Attachment: &table.AppTemplateVariableAttachment{
+			BizID: bizID, AppID: appID,
+		},
+		Revision: &table.Revision{
+			Creator: kit.User, CreatedAt: now, Reviser: kit.User,
+		},
+	}
+	if appVar.Spec.Variables != nil {
+		if errT := s.dao.AppTemplateVariable().UpsertWithTx(kit, tx, appVar); errT != nil {
+			logs.Errorf("batch create template variable failed, err: %v, rid: %s", errT, kit.Rid)
+			return errT
+		}
+	}
+
+	// 3. 关联模板套餐
+	templateSpaceIDs := make([]uint32, 0, len(bindings))
+	templateSetIDs := make([]uint32, 0, len(bindings))
+	templateIDs := make([]uint32, 0)
+	latestTemplateIDs := make([]uint32, 0)
+	templateRevisionIDs := make([]uint32, 0)
+	templateRevisions := make(table.TemplateBindings, 0, len(bindings))
+	for _, v := range bindings {
+		templateSpaceIDs = append(templateSpaceIDs, v.GetTemplateSpaceId())
+		templateSetIDs = append(templateSetIDs, v.GetTemplateBinding().GetTemplateSetId())
+		tb := v.GetTemplateBinding()
+		revs := make([]*table.TemplateRevisionBinding, 0, len(tb.GetTemplateRevisions()))
+		for _, b := range tb.GetTemplateRevisions() {
+			templateIDs = append(templateIDs, b.GetTemplateId())
+			templateRevisionIDs = append(templateRevisionIDs, b.GetTemplateRevisionId())
+			if b.GetIsLatest() {
+				latestTemplateIDs = append(latestTemplateIDs, b.GetTemplateId())
+			}
+			revs = append(revs, &table.TemplateRevisionBinding{
+				TemplateID:         b.GetTemplateId(),
+				TemplateRevisionID: b.GetTemplateRevisionId(),
+				IsLatest:           b.GetIsLatest(),
+			})
+		}
+
+		templateRevisions = append(templateRevisions, &table.TemplateBinding{
+			TemplateSetID: tb.GetTemplateSetId(), TemplateRevisions: revs,
+		})
+	}
+
+	atb := &table.AppTemplateBinding{
+		Spec: &table.AppTemplateBindingSpec{
+			TemplateSpaceIDs:    templateSpaceIDs,
+			TemplateSetIDs:      templateSetIDs,
+			TemplateIDs:         templateIDs,
+			TemplateRevisionIDs: templateRevisionIDs,
+			LatestTemplateIDs:   latestTemplateIDs,
+			Bindings:            templateRevisions,
+		},
+		Attachment: &table.AppTemplateBindingAttachment{
+			BizID: bizID, AppID: appID,
+		},
+		Revision: &table.Revision{
+			Creator: kit.User, CreatedAt: now,
+		},
+	}
+
+	if len(atb.Spec.Bindings) != 0 {
+		_, err = s.dao.AppTemplateBinding().CreateWithTx(kit, tx, atb)
+		if err != nil {
+			logs.Errorf("batch create binding template failed, err: %v, rid: %s", err, kit.Rid)
+			return err
+		}
+	}
+	// 4. 引用脚本
+	if err := s.referenceHook(kit, tx, bizID, appID, preHookId, postHookId); err != nil {
+		logs.Errorf("reference hook failed, err: %v, rid: %s", err, kit.Rid)
+		return err
+	}
+
+	return nil
+}
+
+// createKvItems creates KV configuration items and stores them in vault
+func (s *Service) createKvItems(kit *kit.Kit, tx *gen.QueryTx, bizID, appID uint32,
+	kvs []*pbkv.Kv, now time.Time) error {
+
+	items := make([]*pbds.BatchUpsertKvsReq_Kv, 0)
+	toCreate := make([]*table.Kv, 0)
+	for _, v := range kvs {
+		toCreate = append(toCreate, &table.Kv{
+			KvState: table.KvStateAdd,
+			Spec:    v.GetSpec().KvSpec(),
+			Attachment: &table.KvAttachment{
+				BizID: bizID,
+				AppID: appID,
+			},
+			Revision: &table.Revision{
+				Creator:   kit.User,
+				CreatedAt: now,
+			},
+			ContentSpec: &table.ContentSpec{
+				Signature: tools.SHA256(v.Spec.Value),
+				Md5:       tools.MD5(v.Spec.Value),
+				ByteSize:  uint64(len(v.Spec.Value)),
+			},
+		})
+
+		items = append(items, &pbds.BatchUpsertKvsReq_Kv{
+			KvAttachment: v.GetAttachment(),
+			KvSpec:       v.GetSpec(),
+		})
+	}
+
+	// 1. 新增或者编辑vault中的kv
+	versionMap, err := s.doBatchUpsertVault(kit, &pbds.BatchUpsertKvsReq{
+		BizId:      bizID,
+		AppId:      appID,
+		Kvs:        items,
+		ReplaceAll: false,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, v := range toCreate {
+		version, exists := versionMap[v.Spec.Key]
+		if !exists {
+			return errors.New(i18n.T(kit, "save kv failed"))
+		}
+		v.Spec.Version = uint32(version)
+	}
+
+	// 2. 创建kv
+	if err := s.dao.Kv().BatchCreateWithTx(kit, tx, toCreate); err != nil {
+		logs.Errorf("batch create kv failed, err: %v, rid: %s", err, kit.Rid)
+		return errf.Errorf(errf.DBOpFailed, i18n.T(kit, "batch create of KV config failed, err: %v", err))
+	}
+
+	return nil
+}
+
+func (s *Service) referenceHook(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, preHookId, postHookId uint32) error {
+	preHook := &table.ReleasedHook{
+		AppID: appID,
+		BizID: bizID,
+		// ReleasedID 0 for editing release
+		ReleaseID: 0,
+		HookID:    preHookId,
+		HookType:  table.PreHook,
+	}
+	postHook := &table.ReleasedHook{
+		AppID: appID,
+		BizID: bizID,
+		// ReleasedID 0 for editing release
+		ReleaseID: 0,
+		HookID:    postHookId,
+		HookType:  table.PostHook,
+	}
+
+	if preHookId > 0 {
+		hook, err := s.getReleasedHook(kit, preHook)
+		if err != nil {
+			logs.Errorf("no released releases of the pre-hook, err: %v, rid: %s", err, kit.Rid)
+			return errors.New("no released releases of the pre-hook")
+		}
+
+		if err = s.dao.ReleasedHook().UpsertWithTx(kit, tx, hook); err != nil {
+			logs.Errorf("upsert pre-hook failed, err: %v, rid: %s", err, kit.Rid)
+			return err
+		}
+	}
+
+	if postHookId > 0 {
+		hook, err := s.getReleasedHook(kit, postHook)
+		if err != nil {
+			logs.Errorf("get post-hook failed, err: %v, rid: %s", err, kit.Rid)
+			return err
+		}
+
+		if err = s.dao.ReleasedHook().UpsertWithTx(kit, tx, hook); err != nil {
+			logs.Errorf("upsert post-hook failed, err: %v, rid: %s", err, kit.Rid)
+			return err
+		}
+	}
+
+	return nil
 }
