@@ -26,6 +26,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // Type 空间类型
@@ -89,7 +90,7 @@ func (s *Manager) AllSpaces(ctx context.Context) []*Space {
 
 	spaceList, err := s.fetchAllSpace(ctx)
 	if err != nil {
-		slog.Error("fetch all space failed", "err", err)
+		logs.Errorf("fetch all space failed, err: %v", err)
 		return []*Space{}
 	}
 
@@ -198,7 +199,7 @@ func (s *Manager) HasCMDBSpace(ctx context.Context, spaceId string) bool {
 
 		spaceList, err := s.fetchAllSpace(ctx)
 		if err != nil {
-			slog.Error("fetch all space failed", "err", err)
+			logs.Errorf("fetch all space failed, err: %v", err)
 			return false
 		}
 

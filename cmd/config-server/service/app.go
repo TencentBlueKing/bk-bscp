@@ -304,7 +304,8 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 		querySpaceReq.SpaceUid = append(querySpaceReq.SpaceUid, spaceUid)
 	}
 
-	querySpaceResp, err := s.client.AS.QuerySpace(ctx, querySpaceReq)
+	logs.V(5).Infof("query space, req: %+v, kt: %+v", querySpaceReq, kt)
+	querySpaceResp, err := s.client.AS.QuerySpace(kt.RpcCtx(), querySpaceReq)
 	if err != nil {
 		return nil, errors.Wrap(err, "QuerySpace")
 	}
