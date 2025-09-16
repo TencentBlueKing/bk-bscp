@@ -8,9 +8,9 @@
       :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
     <span class="approve-status-text" v-show="approveStatus !== 1">{{ approveText }}</span>
     <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
-      <text-file v-show="[0, 2].includes(approveStatus)" class="text-file" />
+      <text-file class="text-file" />
       <template #content>
-        <div class="popover-content">
+        <div v-if="[0, 2].includes(approveStatus)" class="popover-content">
           <template v-if="itsmData?.itsm_ticket_sn">
             <div class="itsm-title">{{ $t('审批单') }}：</div>
             <div class="itsm-content em">
@@ -38,19 +38,13 @@
             </div>
           </template>
         </div>
+        <div v-else>
+          {{ $t('撤销人: ') }}<user-name :name="reviser" /><br />
+          {{ $t('撤销时间: {n}', { n: convertTime(finalApprovalTime, 'local') }) }}<br />
+          {{ $t('撤销说明: {n}', { n: rejectionReason || '--' }) }}
+        </div>
       </template>
     </bk-popover>
-    <text-file
-      v-if="approveStatus === 3"
-      v-bk-tooltips="{
-        content: t('提示-已撤销', {
-          reviser,
-          time: convertTime(finalApprovalTime, 'local'),
-          reason: rejectionReason,
-        }),
-        placement: 'bottom',
-      }"
-      class="text-file" />
   </div>
 </template>
 
