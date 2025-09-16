@@ -22,12 +22,13 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/hashicorp/vault/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
@@ -41,6 +42,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -91,6 +93,7 @@ type dataService struct {
 	daoSet   dao.Set
 	vault    vault.Set
 	cmdb     bkcmdb.Service
+	esb      client.Client
 	spaceMgr *space.Manager
 	repo     repository.Provider
 	ssd      serviced.ServiceDiscover
@@ -161,9 +164,15 @@ func (ds *dataService) prepare(opt *options.Option) error {
 
 	// initialize esb client
 	esbCfg := cc.DataService().Esb
-	cmdbCfg := cc.DataService().CMDB
+	cmdbCfg := cc.G().CMDB
 
-	cmdbCli, err := bkcmdb.NewBkClient(&cmdbCfg, &esbCfg, metrics.Register())
+	esbClient, err := client.NewClient(&esbCfg, metrics.Register())
+	if err != nil {
+		return fmt.Errorf("new esb client failed, err: %v", err)
+	}
+	ds.esb = esbClient
+
+	cmdbCli, err := bkcmdb.New(&cmdbCfg, esbClient)
 	if err != nil {
 		return fmt.Errorf("new cmdb client failed, err: %v", err)
 	}
@@ -248,7 +257,7 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.cmdb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb)
 	if err != nil {
 		return err
 	}

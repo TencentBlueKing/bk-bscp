@@ -1055,7 +1055,7 @@ func (s *Service) submitCreateApproveTicket(kt *kit.Kit, app *table.App, release
 
 // 获取业务名
 func (s *Service) getBizName(kt *kit.Kit, bizID uint32) (string, error) {
-	bizList, err := s.cmdb.Cmdb().ListAllBusiness(kt.Ctx)
+	bizList, err := s.cmdb.ListAllBusiness(kt.Ctx)
 	if err != nil {
 		return "", err
 	}

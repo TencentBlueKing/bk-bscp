@@ -1496,16 +1496,3 @@ type CMDBConfig struct {
 	Host      string `yaml:"host"`
 	UseEsb    bool   `yaml:"useEsb"`
 }
-
-func (c CMDBConfig) validate() error {
-
-	if len(c.AppCode) == 0 {
-		return errors.New("cmdb app code is not set")
-	}
-
-	if len(c.AppSecret) == 0 {
-		return errors.New("cmdb app secret is not set")
-	}
-
-	return nil
-}

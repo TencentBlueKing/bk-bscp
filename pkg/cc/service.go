@@ -77,6 +77,7 @@ type GlobalSettings struct {
 	IAM          IAM               `yaml:"iam"`
 	Esb          Esb               `yaml:"esb"`
 	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+	CMDB         CMDBConfig        `yaml:"cmdb"`
 }
 
 // ApiServerSetting defines api server used setting options.
@@ -323,7 +324,6 @@ type DataServiceSetting struct {
 	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 	Gorm         Gorm         `yaml:"gorm"`
 	ITSM         ITSMConfig   `yaml:"itsm"`
-	CMDB         CMDBConfig   `yaml:"cmdb"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -380,9 +380,6 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.Gorm.validate(); err != nil {
-		return err
-	}
-	if err := s.CMDB.validate(); err != nil {
 		return err
 	}
 

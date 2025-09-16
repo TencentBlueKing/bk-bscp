@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"time"
 
-	bkiam "github.com/TencentBlueKing/iam-go-sdk"
-	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -34,11 +32,15 @@ import (
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
+	bkiam "github.com/TencentBlueKing/iam-go-sdk"
+	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
+
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/auth"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/iam"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/initial"
 	confsvc "github.com/TencentBlueKing/bk-bscp/cmd/config-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/apigw"
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
@@ -100,7 +102,7 @@ func NewService(sd serviced.Discover, iamSettings cc.IAM, disableAuth bool,
 		return nil, fmt.Errorf("new gateway failed, err: %v", err)
 	}
 
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), client.Esb)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), client.cmdb)
 	if err != nil {
 		return nil, errors.Wrap(err, "init space mgr")
 	}
@@ -235,6 +237,11 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 	if err != nil {
 		return nil, err
 	}
+	cmdbConfig := cc.G().CMDB
+	cmdb, err := bkcmdb.New(&cmdbConfig, esbCli)
+	if err != nil {
+		return nil, err
+	}
 
 	log := &logrus.Logger{
 		Out:          os.Stderr,
@@ -251,6 +258,7 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 		sys:  iamSys,
 		auth: authSdk,
 		Esb:  esbCli,
+		cmdb: cmdb,
 		iam: &auth.Iam{
 			SystemID:  sys.SystemIDBSCP,
 			AppCode:   iamSettings.AppCode,
@@ -270,8 +278,9 @@ type ClientSet struct {
 	// auth related operate.
 	auth pkgauth.Authorizer
 	// Esb Esb client api
-	Esb esbcli.Client
-	iam *auth.Iam
+	Esb  esbcli.Client
+	iam  *auth.Iam
+	cmdb bkcmdb.Service
 }
 
 // PullResource init auth center's auth model.

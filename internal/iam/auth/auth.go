@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/gwparser"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -134,7 +135,13 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new esb cleint failed, err: %v", err)
 	}
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	cmdbCfg := cc.G().CMDB
+	cmdb, err := bkcmdb.New(&cmdbCfg, esbCli)
+	if err != nil {
+		klog.ErrorS(err, "init cmdb client failed")
+		return nil, fmt.Errorf("init cmdb client failed, err: %v", err)
+	}
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdb)
 	if err != nil {
 		return nil, fmt.Errorf("init space manager failed, err: %v", err)
 	}

@@ -430,7 +430,7 @@ func (s *Service) validateBizExist(kt *kit.Kit, bizID uint32) error {
 			}},
 	}
 
-	bizResp, err := s.cmdb.Cmdb().SearchBusiness(kt.Ctx, searchBizParams)
+	bizResp, err := s.cmdb.SearchBusiness(kt.Ctx, searchBizParams)
 	if err != nil {
 		return errf.Errorf(errf.InvalidRequest, i18n.T(kt, "business query failed, err: %v", err))
 	}

@@ -195,25 +195,25 @@ type BKAPIGWAuth struct {
 	BkToken    string `json:"bk_token,omitempty"`    // 有用户登入态接口使用
 }
 
-// Option 定义用于设置 BKAPIGWAuth 的可选参数函数类型
-type gwAuthOption func(*BKAPIGWAuth)
+// GWAuthOption 定义用于设置 BKAPIGWAuth 的可选参数函数类型
+type GWAuthOption func(*BKAPIGWAuth)
 
 // WithBkUsername 设置 BkUsername 的 Option 函数
-func WithBkUsername(username string) gwAuthOption {
+func WithBkUsername(username string) GWAuthOption {
 	return func(a *BKAPIGWAuth) {
 		a.BkUsername = username
 	}
 }
 
 // WithBkToken 设置 BkToken 的 Option 函数
-func WithBkToken(token string) gwAuthOption {
+func WithBkToken(token string) GWAuthOption {
 	return func(a *BKAPIGWAuth) {
 		a.BkToken = token
 	}
 }
 
 // MakeBKAPIGWAuthHeader 生成蓝鲸网关鉴权头部
-func MakeBKAPIGWAuthHeader(appCode, appSecret string, opts ...gwAuthOption) string {
+func MakeBKAPIGWAuthHeader(appCode, appSecret string, opts ...GWAuthOption) string {
 	auth := &BKAPIGWAuth{
 		AppCode:   appCode,
 		AppSecret: appSecret,

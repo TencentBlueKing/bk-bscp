@@ -14,9 +14,8 @@
 package bkcmdb
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	"context"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/bklogin"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -24,15 +23,18 @@ import (
 
 // Service xxx
 type Service interface {
-	Cmdb() cmdb.Client
-	BKLogin() bklogin.Client
+	// SearchBusiness 通用查询
+	SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error)
+	// ListAllBusiness 读取全部业务列表
+	ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error)
 }
 
-// NewBkClient xxx
-func NewBkClient(cfg *cc.CMDBConfig, esbCfg *cc.Esb, reg prometheus.Registerer) (Service, error) {
+// New cmdb service
+func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
 	if cfg.UseEsb {
-		return client.NewClient(esbCfg, reg)
-	}
+		return esbClient.Cmdb(), nil
 
-	return newBkCmdbClient(cfg.AppCode, cfg.AppSecret, cfg.Host)
+	} else {
+		return &BKCMDBService{cfg}, nil
+	}
 }

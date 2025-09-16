@@ -65,16 +65,16 @@ type Manager struct {
 	ctx            context.Context
 	requestedCache gcache.Cache // 用于检查cmdb空间是否请求过，避免短时间内高频刷新缓存
 	spaceCache     gcache.Cache
-	client         bkcmdb.Service
+	cmdbService    bkcmdb.Service
 }
 
 // NewSpaceMgr Space按租户被动拉取, 注: 每个实例一个 cache
-func NewSpaceMgr(ctx context.Context, client bkcmdb.Service) (*Manager, error) {
+func NewSpaceMgr(ctx context.Context, cmdbService bkcmdb.Service) (*Manager, error) {
 	mgr := &Manager{
 		ctx:            ctx,
 		requestedCache: gcache.New(1000).Expiration(time.Second * 30).EvictType(gcache.TYPE_LRU).Build(),
 		spaceCache:     gcache.New(1000).Expiration(time.Minute * 10).EvictType(gcache.TYPE_LRU).Build(),
-		client:         client,
+		cmdbService:    cmdbService,
 	}
 
 	return mgr, nil
@@ -124,7 +124,7 @@ func (s *Manager) QuerySpace(ctx context.Context, spaceUidList []string) ([]*Spa
 
 // fetchAllSpace 获取全量业务列表
 func (s *Manager) fetchAllSpace(ctx context.Context) ([]*Space, error) {
-	bizList, err := s.client.Cmdb().ListAllBusiness(ctx)
+	bizList, err := s.cmdbService.ListAllBusiness(ctx)
 	if err != nil {
 		return nil, err
 	}

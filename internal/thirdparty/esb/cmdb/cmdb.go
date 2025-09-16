@@ -30,7 +30,7 @@ import (
 // Client is an esb client to request cmdb.
 type Client interface {
 	// SearchBusiness 通用查询
-	SearchBusiness(ctx context.Context, params *SearchBizParams) (*SearchBizResp, error)
+	SearchBusiness(ctx context.Context, params *SearchBizParams) (*SearchBizResult, error)
 	// ListAllBusiness 读取全部业务列表
 	ListAllBusiness(ctx context.Context) (*SearchBizResult, error)
 	// GeBusinessByID 读取单个biz
@@ -53,7 +53,7 @@ type cmdb struct {
 }
 
 // SearchBusiness 通用查询
-func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*SearchBizResp, error) {
+func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*SearchBizResult, error) {
 	resp := new(SearchBizResp)
 
 	req := &esbSearchBizParams{
@@ -82,7 +82,7 @@ func (c *cmdb) SearchBusiness(ctx context.Context, params *SearchBizParams) (*Se
 		return nil, fmt.Errorf("search business failed, code: %d, msg: %s, rid: %s", resp.Code, resp.Message, resp.Rid)
 	}
 
-	return resp, nil
+	return &resp.SearchBizResult, nil
 }
 
 // ListAllBusiness 读取全部业务列表
@@ -93,7 +93,7 @@ func (c *cmdb) ListAllBusiness(ctx context.Context) (*SearchBizResult, error) {
 		return nil, err
 	}
 
-	return &resp.SearchBizResult, nil
+	return resp, nil
 }
 
 // GeBusinessbyID 读取单个biz

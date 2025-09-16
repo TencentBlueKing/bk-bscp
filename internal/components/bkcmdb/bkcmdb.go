@@ -15,113 +15,91 @@ package bkcmdb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
-
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
-	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/bklogin"
-	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkuser"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-var (
-	searchBusiness = "/api/c/compapi/v2/cc/search_business/"
-)
-
-// newBkCmdbClient 返回一个 bkcmdb 的 client。
-// 由于当前实现不会出错，error 始终为 nil，函数签名仅用于兼容其他版本。
-// nolint: unparam
-func newBkCmdbClient(appCode, appSecret, host string) (client.Client, error) {
-	return &bkCli{
-		cc:         newClient(appCode, appSecret, host),
-		bkloginCli: nil,
-	}, nil
+// BKCMDBService bkcmdb client
+type BKCMDBService struct {
+	*cc.CMDBConfig
 }
 
-type bkCli struct {
-	cc         cmdb.Client
-	bkloginCli bklogin.Client
+// Biz is cmdb biz info.
+type Biz struct {
+	BizID         int64  `json:"bk_biz_id"`
+	BizName       string `json:"bk_biz_name"`
+	BizMaintainer string `json:"bk_biz_maintainer"`
 }
 
-// Cmdb NOTES
-func (e *bkCli) Cmdb() cmdb.Client {
-	return e.cc
-}
+// SearchBusiness 组件化的函数
+func (bkcmdb *BKCMDBService) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
+	// bk_supplier_account 是无效参数, 占位用
+	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", bkcmdb.Host)
 
-// BKLogin NOTES
-func (e *bkCli) BKLogin() bklogin.Client {
-	return e.bkloginCli
-}
-
-// NewClient new bk cmdb client.
-func newClient(appCode, appSecret, host string) cmdb.Client {
-	return &cmdbCli{
-		appCode:   appCode,
-		appSecret: appSecret,
-		host:      host,
-		client:    components.GetClient(),
-	}
-}
-
-type cmdbCli struct {
-	appCode   string
-	appSecret string
-	host      string
-	client    *resty.Client
-}
-
-// GeBusinessByID 读取单个biz
-func (b *cmdbCli) GeBusinessByID(ctx context.Context, bizID uint32) (*cmdb.Biz, error) {
-	return nil, fmt.Errorf("GeBusinessByID is not implemented")
-}
-
-// ListAllBusiness implements BKClient.
-func (b *cmdbCli) ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error) {
-	params := &cmdb.SearchBizParams{}
-	bizRes, err := b.SearchBusiness(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return &bizRes.SearchBizResult, nil
-}
-
-// SearchBusiness implements BKClient.
-func (b *cmdbCli) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResp, error) {
-	type searchBizParams struct {
+	// SearchBizParams is esb search cmdb business parameter.
+	type esbSearchBizParams struct {
 		*types.CommParams
 		*cmdb.SearchBizParams
 	}
 
-	req := &searchBizParams{
-		CommParams: &types.CommParams{
-			AppCode:   b.appCode,
-			AppSecret: b.appSecret,
-			UserName:  "admin",
-		},
+	kit := kit.MustGetKit(ctx)
+	req := &esbSearchBizParams{
 		SearchBizParams: params,
 	}
-	url := fmt.Sprintf("%s%s", b.host, searchBusiness)
 
-	kit := kit.FromGrpcContext(ctx)
-	requtst := b.client.R()
-	if len(kit.TenantID) != 0 {
-		requtst = requtst.SetHeader(constant.BkTenantID, kit.TenantID)
+	gwAuthOptions := []components.GWAuthOption{}
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		admin, err := bkuser.GetTenantBKAdmin(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get tenant admin failed: %w", err)
+		}
+		withBkUsername := components.WithBkUsername(admin.BkUsername)
+		gwAuthOptions = append(gwAuthOptions, withBkUsername)
 	}
-	resp, err := requtst.SetBody(req).Post(url)
+	authHeader := components.MakeBKAPIGWAuthHeader(
+		bkcmdb.AppCode,
+		bkcmdb.AppSecret,
+		gwAuthOptions...,
+	)
+
+	request := components.GetClient().R().
+		SetContext(ctx).
+		SetHeader("X-Bkapi-Authorization", authHeader).
+		SetBody(req)
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		request = request.SetHeader("X-Bk-Tenant-Id", kit.TenantID)
+	}
+	resp, err := request.Post(url)
 	if err != nil {
 		return nil, err
 	}
 
-	bizList := &cmdb.SearchBizResp{}
-	if err := json.Unmarshal(resp.Body(), bizList); err != nil {
+	bizRes := new(cmdb.SearchBizResult)
+	if err := components.UnmarshalBKResult(resp, bizRes); err != nil {
+		logs.Errorf("unmarshal bk result failed, err: %v", err)
 		return nil, err
 	}
 
-	return bizList, nil
+	return bizRes, nil
+}
+
+// ListAllBusiness 获取所有业务列表
+func (bkcmdb *BKCMDBService) ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error) {
+	params := &cmdb.SearchBizParams{}
+	bizRes, err := bkcmdb.SearchBusiness(ctx, params)
+	if err != nil {
+		logs.Errorf("search business failed, err: %v", err)
+		return nil, err
+	}
+
+	return bizRes, nil
 }
