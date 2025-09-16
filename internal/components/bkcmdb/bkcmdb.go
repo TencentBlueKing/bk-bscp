@@ -27,7 +27,7 @@ import (
 )
 
 // BKCMDBService bkcmdb client
-type BKCMDBService struct {
+type CMDBService struct {
 	*cc.CMDBConfig
 }
 
@@ -39,7 +39,7 @@ type Biz struct {
 }
 
 // SearchBusiness 组件化的函数
-func (bkcmdb *BKCMDBService) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
+func (bkcmdb *CMDBService) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
 	// bk_supplier_account 是无效参数, 占位用
 	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", bkcmdb.Host)
 
@@ -93,7 +93,7 @@ func (bkcmdb *BKCMDBService) SearchBusiness(ctx context.Context, params *cmdb.Se
 }
 
 // ListAllBusiness 获取所有业务列表
-func (bkcmdb *BKCMDBService) ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error) {
+func (bkcmdb *CMDBService) ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error) {
 	params := &cmdb.SearchBizParams{}
 	bizRes, err := bkcmdb.SearchBusiness(ctx, params)
 	if err != nil {

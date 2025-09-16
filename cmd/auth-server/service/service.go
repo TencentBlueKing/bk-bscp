@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"time"
 
+	bkiam "github.com/TencentBlueKing/iam-go-sdk"
+	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -31,9 +33,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-
-	bkiam "github.com/TencentBlueKing/iam-go-sdk"
-	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/auth"
