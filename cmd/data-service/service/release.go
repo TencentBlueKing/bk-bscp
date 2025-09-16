@@ -110,8 +110,8 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 
 	switch app.Spec.ConfigType {
 	case table.File:
-		conflictNums, _, errC := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
-			req.Attachment.AppId, []string{})
+		_, conflictNums, _, errC := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
+			req.Attachment.AppId, []string{}, 0)
 		if errC != nil {
 			return nil, errC
 		}
@@ -1069,7 +1069,7 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbds.CheckReleaseNa
 // 检测非模板配置和模板配置文件是否存在冲突
 // 生成版本的前置检测条件
 func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
-	comparisonFiles []string) (uint32, map[string]bool, error) {
+	comparisonFiles []string, totalQuantity int) (int, uint32, map[string]bool, error) {
 	var (
 		conflictNums  uint32
 		conflictPaths map[string]bool
@@ -1080,7 +1080,7 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 		details, err := s.dao.ConfigItem().ListAllByAppID(kit, appID, bizID)
 		if err != nil {
 			logs.Errorf("list editing config items failed, err: %v, rid: %s", err, kit.Rid)
-			return conflictNums, conflictPaths, err
+			return totalQuantity, conflictNums, conflictPaths, err
 		}
 
 		for _, v := range details {
@@ -1092,16 +1092,16 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 	binding, err := s.dao.AppTemplateBinding().GetAppTemplateBindingByAppID(kit, bizID, appID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get the package associated with the app failed, err: %v, rid: %s", err, kit.Rid)
-		return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+		return totalQuantity, conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
 			i18n.T(kit, "get the package associated with the app failed, err: %v"), err)
 	}
 	// 未绑定
 	if binding == nil {
-		return conflictNums, conflictPaths, nil
+		return totalQuantity, conflictNums, conflictPaths, nil
 	}
 	// 存在记录，但没有绑定模板
 	if len(binding.Spec.TemplateIDs) == 0 {
-		return conflictNums, conflictPaths, nil
+		return totalQuantity, conflictNums, conflictPaths, nil
 	}
 
 	// 套餐和套餐之间也会存在冲突
@@ -1110,11 +1110,13 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 		for _, v := range v.TemplateRevisions {
 			templateIDs = append(templateIDs, v.TemplateID)
 		}
+		// 累加数量
+		totalQuantity += len(v.TemplateRevisions)
 		// 如有绑定，根据绑定的模板ID查询模板文件
 		templates, err := s.dao.Template().ListByIDs(kit, templateIDs)
 		if err != nil {
 			logs.Errorf("get template file failed, err: %v, rid: %s", err, kit.Rid)
-			return conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
+			return totalQuantity, conflictNums, conflictPaths, errf.Newf(errf.DBOpFailed,
 				i18n.T(kit, "get template file failed, err: %v"), err)
 		}
 		// 把模板文件加入需要对比的切片中
@@ -1126,7 +1128,7 @@ func (s *Service) checkNonTmpAndTmpConflicts(kit *kit.Kit, bizID, appID uint32,
 	// 检测文件路径冲突
 	conflictNums, conflictPaths = tools.CheckExistingPathConflict(comparisonFiles)
 
-	return conflictNums, conflictPaths, nil
+	return totalQuantity, conflictNums, conflictPaths, nil
 }
 
 // 检测是否存在过期证书

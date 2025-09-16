@@ -491,6 +491,7 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbcs.ListConfigItems
 		Count:          rp.Count,
 		Details:        rp.Details,
 		ConflictNumber: rp.ConflictNumber,
+		TotalQuantity:  rp.TotalQuantity,
 	}
 	return resp, nil
 }

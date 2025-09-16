@@ -1035,7 +1035,8 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		}
 	}
 
-	conflictNums, conflictPaths, err := s.checkNonTmpAndTmpConflicts(grpcKit, req.BizId, req.AppId, existingPaths)
+	totalQuantity, conflictNums, conflictPaths, err := s.checkNonTmpAndTmpConflicts(grpcKit,
+		req.BizId, req.AppId, existingPaths, len(details))
 	if err != nil {
 		return nil, err
 	}
@@ -1119,6 +1120,7 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		Count:          uint32(len(configItems)),
 		Details:        configItems[start:end],
 		ConflictNumber: conflictNums,
+		TotalQuantity:  uint32(totalQuantity),
 	}
 	return resp, nil
 }
