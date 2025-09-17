@@ -451,6 +451,7 @@
   const selectedConfigItems = ref<IConfigItem[]>([]);
   const conflictCount = ref(0);
   const scrollerMaxHeight = ref(0); // 滚动表格最大高度
+  const allExistConfigCount = ref(0);
 
   // 是否为未命名版本
   const isUnNamedVersion = computed(() => versionData.value.id === 0);
@@ -563,11 +564,10 @@
     const currentSearchStr = props.searchStr;
     loading.value = true;
     await Promise.all([getCommonConfigList(createConfig), getBoundTemplateList()]);
-    const existConfigCount = configList.value.filter((item) => item.file_state !== 'DELETE').length;
     configStore.$patch((state) => {
       state.conflictFileCount = conflictCount.value;
       state.allConfigCount = configsCount.value + templatesCount.value;
-      state.allExistConfigCount = existConfigCount + templatesCount.value;
+      state.allExistConfigCount = allExistConfigCount.value;
       state.createVersionBtnLoading = false;
     });
     loading.value = false;
@@ -598,6 +598,7 @@
         }
         if (statusFilterChecked.value.length > 0) params.status = statusFilterChecked.value;
         res = await getConfigList(props.bkBizId, props.appId, params);
+        allExistConfigCount.value = res.total_quantity;
       } else {
         if (props.searchStr) {
           params.search_fields = 'name,path,memo,creator';
