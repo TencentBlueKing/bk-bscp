@@ -465,12 +465,10 @@ func (dao *clientDao) handleUIDSearch(q gen.IClientDo, uid string) []rawgen.Cond
 // handle Target Release Name search
 func (dao *clientDao) handleTargetReleaseSearch(kit *kit.Kit, bizID, appID uint32, q gen.IClientDo,
 	targetReleaseName string) ([]rawgen.Condition, error) {
-	m := dao.genQ.Client
-	rs := dao.genQ.Release
-	ce := dao.genQ.ClientEvent
 	conds := make([]rawgen.Condition, 0)
 
 	if targetReleaseName != "" {
+		rs := dao.genQ.Release
 		var items []struct{ ID uint32 }
 		err := rs.WithContext(kit.Ctx).
 			Select(rs.ID).
@@ -480,23 +478,21 @@ func (dao *clientDao) handleTargetReleaseSearch(kit *kit.Kit, bizID, appID uint3
 			return conds, err
 		}
 
-		var clientEventConds []rawgen.Condition
+		// 如果没有找到匹配的 release，返回空条件（不会匹配任何客户端）
+		if len(items) == 0 {
+			// 添加一个永远不会匹配的条件
+			conds = append(conds, q.Where(dao.genQ.Client.ID.Eq(0)))
+			return conds, nil
+		}
+
+		// 提取 release ID 列表
 		releaseIDs := make([]uint32, len(items))
 		for i, v := range items {
 			releaseIDs[i] = v.ID
 		}
-		clientEventConds = append(clientEventConds, q.Where(ce.TargetReleaseID.In(releaseIDs...)))
 
-		var clientEvent []struct{ ClientID uint32 }
-		if err = ce.WithContext(kit.Ctx).Select(ce.ClientID).Where(clientEventConds...).
-			Group(ce.ClientID).Scan(&clientEvent); err != nil {
-			return conds, err
-		}
-		cid := []uint32{}
-		for _, v := range clientEvent {
-			cid = append(cid, v.ClientID)
-		}
-		conds = append(conds, q.Where(m.ID.In(cid...)))
+		// 直接在 Client 表中查询 target_release_id 字段
+		conds = append(conds, q.Where(dao.genQ.Client.TargetReleaseID.In(releaseIDs...)))
 	}
 
 	return conds, nil
