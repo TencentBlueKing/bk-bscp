@@ -371,17 +371,14 @@
 
   const handleAppChange = (service: IAppItem) => {
     editingService.value = service;
-    configStore.$patch((state) => {
-      state.conflictFileCount = 0;
-      state.allConfigCount = 0;
-      state.allExistConfigCount = 0;
-    });
     let name = route.name as string;
     if (route.name === 'init-script' && service.spec.config_type === 'kv') {
       name = 'service-config';
     }
-
-    router.push({ name, params: { spaceId: service.space_id, appId: service.id } });
+    router.push({
+      name,
+      params: { spaceId: service.space_id, appId: service.id, versionId: versionData.value.id || null },
+    });
   };
 </script>
 

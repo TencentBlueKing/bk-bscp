@@ -183,7 +183,8 @@
     await formCompRef.value.validate();
     const { id, biz_id } = props.service;
     const dataType = serviceEditForm.value.data_type;
-    if (dataType !== 'any') {
+    const configType = serviceEditForm.value.config_type;
+    if (configType === 'kv' && dataType !== 'any') {
       const configList = await getKvList(String(biz_id), id as number, { all: true, start: 0 });
       const res = configList.details.some((config: IConfigKvType) => config.spec.kv_type !== dataType);
       if (res) {
