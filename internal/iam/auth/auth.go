@@ -129,14 +129,20 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		},
 	}
 
+	cmdbCfg := &cc.CMDBConfig{
+		Host:      resp.Cmdb.Host,
+		AppCode:   resp.Cmdb.AppCode,
+		AppSecret: resp.Cmdb.AppSecret,
+		UseEsb:    resp.Cmdb.UseEsb,
+	}
+
 	authLoginClient := bkpaas.NewAuthLoginClient(conf)
 	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
 	esbCli, err := esbcli.NewClient(esbSetting, metrics.Register())
 	if err != nil {
-		return nil, fmt.Errorf("new esb cleint failed, err: %v", err)
+		return nil, fmt.Errorf("new esb client failed, err: %v", err)
 	}
-	cmdbCfg := cc.G().CMDB
-	cmdb, err := bkcmdb.New(&cmdbCfg, esbCli)
+	cmdb, err := bkcmdb.New(cmdbCfg, esbCli)
 	if err != nil {
 		klog.ErrorS(err, "init cmdb client failed")
 		return nil, fmt.Errorf("init cmdb client failed, err: %v", err)

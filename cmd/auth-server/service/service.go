@@ -317,6 +317,12 @@ func (s *Service) GetAuthConf(_ context.Context,
 				Password:           cc.AuthServer().Esb.TLS.Password,
 			},
 		},
+		Cmdb: &pbas.CMDB{
+			Host:      cc.G().CMDB.Host,
+			AppCode:   cc.G().CMDB.AppCode,
+			AppSecret: cc.G().CMDB.AppSecret,
+			UseEsb:    cc.G().CMDB.UseEsb,
+		},
 	}
 	return resp, nil
 }
