@@ -346,7 +346,8 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		return nil, err
 	}
 	// [v4]补充taskID和Operator
-	if cc.DataService().ITSM.EnableV4 {
+	// message 不为空，或者单据状态已经被revoke 或者已经结束
+	if cc.DataService().ITSM.EnableV4 && message == "" {
 		taskIdUser := map[string]string{}
 		err = json.Unmarshal([]byte(strategy.Spec.ItsmTicketStateID), &taskIdUser)
 		if err != nil {
