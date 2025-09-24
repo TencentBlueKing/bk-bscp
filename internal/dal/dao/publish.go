@@ -236,6 +236,7 @@ func (dao *pubDao) upsertReleasedGroups(kit *kit.Kit, tx *gen.Query, opt *types.
 			Edited:     false,
 			BizID:      opt.BizID,
 			Reviser:    kit.User,
+			TenantID:   kit.TenantID,
 		}
 
 		m := tx.ReleasedGroup
