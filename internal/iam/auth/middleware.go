@@ -187,6 +187,7 @@ func (a authorizer) WebAuthentication(webHost string) func(http.Handler) http.Ha
 
 			switch {
 			case a.initKitWithCookie(r, k, multiErr):
+			case a.initKitWithDevEnv(r, k, multiErr):
 			default:
 				// 如果无权限, 跳转到403页面
 				for _, err := range multiErr.Errors {
