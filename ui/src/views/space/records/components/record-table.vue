@@ -171,23 +171,37 @@
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
               <div v-if="row.audit && row.audit.spec.action === 'publish'" class="action-btns">
                 <!-- 创建者且版本待上线 才展示上线按钮;审批通过的时间在定时上线的时间以前，上线按钮置灰 -->
-                <bk-button
+                <bk-popover
                   v-if="
                     row.audit.spec.status === APPROVE_STATUS.pending_publish &&
                     (!row.strategy.publish_time || isTimeout(row.strategy.publish_time))
                   "
-                  v-bk-tooltips="{
-                    content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
-                    placement: 'top',
-                    disabled: row.strategy.creator === userInfo.username,
-                  }"
-                  class="action-btn"
-                  text
-                  theme="primary"
-                  :disabled="row.strategy.creator !== userInfo.username"
-                  @click="handlePublishClick(row)">
-                  {{ t('确认上线') }}
-                </bk-button>
+                  :popover-delay="[0, 300]"
+                  placement="bottom-end"
+                  :disabled="row.strategy.creator === userInfo.username">
+                  <bk-button
+                    v-bk-tooltips="{
+                      content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
+                      placement: 'top',
+                      disabled: row.strategy.creator === userInfo.username,
+                    }"
+                    class="action-btn"
+                    text
+                    theme="primary"
+                    :disabled="row.strategy.creator !== userInfo.username"
+                    @click="handlePublishClick(row)">
+                    {{ t('确认上线') }}
+                  </bk-button>
+                  <template #content>
+                    <div>
+                      {{ $t('请联系服务上线提交人') }}
+                      <UserName :name="row.strategy.creatorr" />
+                      {{ $t('进行确认上线操作。') }}<br />
+                      {{ $t('如果无法联系到提交人，并且有紧急配置需要发布，可以执') }}<br />
+                      {{ $t('行“撤销上线”后重新提交服务上线流程') }}
+                    </div>
+                  </template>
+                </bk-popover>
                 <!-- 1.待审批状态 且 对应审批人才可显示 -->
                 <!-- 2.版本首次在分组上线的情况，显示审批，点击审批直接通过 -->
 

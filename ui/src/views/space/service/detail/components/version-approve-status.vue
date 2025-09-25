@@ -5,10 +5,10 @@
     <Spinner v-show="approveStatus === 0" class="spinner" />
     <div
       v-show="![0, 1].includes(approveStatus)"
-      :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
+      :class="['dot', { online: approveStatus === 1, offline: ([2, 3].includes(approveStatus)) }]"></div>
     <span class="approve-status-text" v-show="approveStatus !== 1">{{ approveText }}</span>
     <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
-      <text-file class="text-file" />
+      <text-file v-show="[0, 2, 3].includes(approveStatus)" class="text-file" />
       <template #content>
         <div v-if="[0, 2].includes(approveStatus)" class="popover-content">
           <template v-if="itsmData?.itsm_ticket_sn">
@@ -40,7 +40,7 @@
             </div>
           </template>
         </div>
-        <div v-else>
+        <div v-else-if="approveStatus === 3">
           {{ $t('撤销人: ') }}<user-name :name="reviser" /><br />
           {{ $t('撤销时间: {n}', { n: convertTime(finalApprovalTime, 'local') }) }}<br />
           {{ $t('撤销说明: {n}', { n: rejectionReason || '--' }) }}
