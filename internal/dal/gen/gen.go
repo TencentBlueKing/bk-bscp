@@ -38,6 +38,8 @@ var (
 	HookRevision                *hookRevision
 	IDGenerator                 *iDGenerator
 	Kv                          *kv
+	Process                     *process
+	ProcessInstance             *processInstance
 	Release                     *release
 	ReleasedAppTemplate         *releasedAppTemplate
 	ReleasedAppTemplateVariable *releasedAppTemplateVariable
@@ -47,6 +49,7 @@ var (
 	ReleasedKv                  *releasedKv
 	ResourceLock                *resourceLock
 	Strategy                    *strategy
+	Task                        *task
 	Template                    *template
 	TemplateRevision            *templateRevision
 	TemplateSet                 *templateSet
@@ -77,6 +80,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	HookRevision = &Q.HookRevision
 	IDGenerator = &Q.IDGenerator
 	Kv = &Q.Kv
+	Process = &Q.Process
+	ProcessInstance = &Q.ProcessInstance
 	Release = &Q.Release
 	ReleasedAppTemplate = &Q.ReleasedAppTemplate
 	ReleasedAppTemplateVariable = &Q.ReleasedAppTemplateVariable
@@ -86,6 +91,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	ReleasedKv = &Q.ReleasedKv
 	ResourceLock = &Q.ResourceLock
 	Strategy = &Q.Strategy
+	Task = &Q.Task
 	Template = &Q.Template
 	TemplateRevision = &Q.TemplateRevision
 	TemplateSet = &Q.TemplateSet
@@ -117,6 +123,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		HookRevision:                newHookRevision(db, opts...),
 		IDGenerator:                 newIDGenerator(db, opts...),
 		Kv:                          newKv(db, opts...),
+		Process:                     newProcess(db, opts...),
+		ProcessInstance:             newProcessInstance(db, opts...),
 		Release:                     newRelease(db, opts...),
 		ReleasedAppTemplate:         newReleasedAppTemplate(db, opts...),
 		ReleasedAppTemplateVariable: newReleasedAppTemplateVariable(db, opts...),
@@ -126,6 +134,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		ReleasedKv:                  newReleasedKv(db, opts...),
 		ResourceLock:                newResourceLock(db, opts...),
 		Strategy:                    newStrategy(db, opts...),
+		Task:                        newTask(db, opts...),
 		Template:                    newTemplate(db, opts...),
 		TemplateRevision:            newTemplateRevision(db, opts...),
 		TemplateSet:                 newTemplateSet(db, opts...),
@@ -158,6 +167,8 @@ type Query struct {
 	HookRevision                hookRevision
 	IDGenerator                 iDGenerator
 	Kv                          kv
+	Process                     process
+	ProcessInstance             processInstance
 	Release                     release
 	ReleasedAppTemplate         releasedAppTemplate
 	ReleasedAppTemplateVariable releasedAppTemplateVariable
@@ -167,6 +178,7 @@ type Query struct {
 	ReleasedKv                  releasedKv
 	ResourceLock                resourceLock
 	Strategy                    strategy
+	Task                        task
 	Template                    template
 	TemplateRevision            templateRevision
 	TemplateSet                 templateSet
@@ -200,6 +212,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.clone(db),
 		IDGenerator:                 q.IDGenerator.clone(db),
 		Kv:                          q.Kv.clone(db),
+		Process:                     q.Process.clone(db),
+		ProcessInstance:             q.ProcessInstance.clone(db),
 		Release:                     q.Release.clone(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.clone(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.clone(db),
@@ -209,6 +223,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		ReleasedKv:                  q.ReleasedKv.clone(db),
 		ResourceLock:                q.ResourceLock.clone(db),
 		Strategy:                    q.Strategy.clone(db),
+		Task:                        q.Task.clone(db),
 		Template:                    q.Template.clone(db),
 		TemplateRevision:            q.TemplateRevision.clone(db),
 		TemplateSet:                 q.TemplateSet.clone(db),
@@ -249,6 +264,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.replaceDB(db),
 		IDGenerator:                 q.IDGenerator.replaceDB(db),
 		Kv:                          q.Kv.replaceDB(db),
+		Process:                     q.Process.replaceDB(db),
+		ProcessInstance:             q.ProcessInstance.replaceDB(db),
 		Release:                     q.Release.replaceDB(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.replaceDB(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.replaceDB(db),
@@ -258,6 +275,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		ReleasedKv:                  q.ReleasedKv.replaceDB(db),
 		ResourceLock:                q.ResourceLock.replaceDB(db),
 		Strategy:                    q.Strategy.replaceDB(db),
+		Task:                        q.Task.replaceDB(db),
 		Template:                    q.Template.replaceDB(db),
 		TemplateRevision:            q.TemplateRevision.replaceDB(db),
 		TemplateSet:                 q.TemplateSet.replaceDB(db),
@@ -288,6 +306,8 @@ type queryCtx struct {
 	HookRevision                IHookRevisionDo
 	IDGenerator                 IIDGeneratorDo
 	Kv                          IKvDo
+	Process                     IProcessDo
+	ProcessInstance             IProcessInstanceDo
 	Release                     IReleaseDo
 	ReleasedAppTemplate         IReleasedAppTemplateDo
 	ReleasedAppTemplateVariable IReleasedAppTemplateVariableDo
@@ -297,6 +317,7 @@ type queryCtx struct {
 	ReleasedKv                  IReleasedKvDo
 	ResourceLock                IResourceLockDo
 	Strategy                    IStrategyDo
+	Task                        ITaskDo
 	Template                    ITemplateDo
 	TemplateRevision            ITemplateRevisionDo
 	TemplateSet                 ITemplateSetDo
@@ -327,6 +348,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		HookRevision:                q.HookRevision.WithContext(ctx),
 		IDGenerator:                 q.IDGenerator.WithContext(ctx),
 		Kv:                          q.Kv.WithContext(ctx),
+		Process:                     q.Process.WithContext(ctx),
+		ProcessInstance:             q.ProcessInstance.WithContext(ctx),
 		Release:                     q.Release.WithContext(ctx),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.WithContext(ctx),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.WithContext(ctx),
@@ -336,6 +359,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		ReleasedKv:                  q.ReleasedKv.WithContext(ctx),
 		ResourceLock:                q.ResourceLock.WithContext(ctx),
 		Strategy:                    q.Strategy.WithContext(ctx),
+		Task:                        q.Task.WithContext(ctx),
 		Template:                    q.Template.WithContext(ctx),
 		TemplateRevision:            q.TemplateRevision.WithContext(ctx),
 		TemplateSet:                 q.TemplateSet.WithContext(ctx),

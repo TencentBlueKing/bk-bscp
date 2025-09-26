@@ -39,6 +39,10 @@ const (
 	Credential AuditResourceType = "credential"
 	// Instance 客户端实例
 	Instance AuditResourceType = "instance"
+	// Process 进程管理
+	Process AuditResourceType = "process"
+	// Task 任务管理
+	Task AuditResourceType = "task"
 )
 
 // AuditAction audit action type.
