@@ -27,6 +27,53 @@ type Service interface {
 	SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error)
 	// ListAllBusiness 读取全部业务列表
 	ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error)
+	// 查询拓扑节点下的主机
+	FindHostByTopo(ctx context.Context, req HostListReq) (
+		*CMDBResponse, error)
+	// SearchBizInstTopo 查询业务实例拓扑
+	SearchBizInstTopo(ctx context.Context, req BizTopoReq) (
+		*CMDBResponse, error)
+	// GetServiceTemplate 获取服务模板
+	GetServiceTemplate(ctx context.Context, req ServiceTemplateReq) (
+		*CMDBResponse, error)
+	// ListServiceTemplate 服务模板列表查询
+	ListServiceTemplate(ctx context.Context, req ListServiceTemplateReq) (
+		*CMDBResponse, error)
+	// GetProcTemplate 获取进程模板
+	GetProcTemplate(ctx context.Context, req GetProcTemplateReq) (
+		*CMDBResponse, error)
+	// ListProcTemplate 查询进程模板列表
+	ListProcTemplate(ctx context.Context, req ListProcTemplateReq) (
+		*CMDBResponse, error)
+	// ListProcessInstance 查询进程实例列表
+	ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
+		*CMDBResponse, error)
+	// FindHostBySetTemplate 查询集群模板下的主机
+	FindHostBySetTemplate(ctx context.Context, req FindHostBySetTemplateReq) (
+		*CMDBResponse, error)
+	// ListSetTemplate 查询集群模板
+	ListSetTemplate(ctx context.Context, req ListSetTemplateReq) (
+		*CMDBResponse, error)
+	// ListProcessDetailByIds 查询某业务下进程ID对应的进程详情
+	ListProcessDetailByIds(ctx context.Context, req ProcessReq) (
+		*CMDBResponse, error)
+	// ListServiceInstanceBySetTemplate 通过集群模版查询关联的服务实例列表
+	ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceReq) (
+		*CMDBResponse, error)
+	// FindModuleBatch 批量查询某业务的模块详情
+	FindModuleBatch(ctx context.Context, req ModuleReq) (
+		*CMDBResponse, error)
+	// ListServiceInstance 查询服务实例列表
+	ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
+		*CMDBResponse, error)
+	// FindSetBatch 批量查询某业务的集群详情
+	FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error)
+	// FindHostTopoRelation 获取主机与拓扑的关系
+	FindHostTopoRelation(ctx context.Context, req HostTopoReq) (
+		*CMDBResponse, error)
+	// FindModuleWithRelation 根据条件查询业务下的模块
+	FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
+		*CMDBResponse, error)
 }
 
 // New cmdb service

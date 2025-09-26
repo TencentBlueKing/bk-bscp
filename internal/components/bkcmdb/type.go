@@ -13,6 +13,8 @@
 // Package bkcmdb provides bkcmdb client.
 package bkcmdb
 
+import "encoding/json"
+
 // Biz is cmdb biz info.
 type Biz struct {
 	BizID         int64  `json:"bk_biz_id"`
@@ -20,22 +22,27 @@ type Biz struct {
 	BizMaintainer string `json:"bk_biz_maintainer"`
 }
 
-// FindHostByTopoReq xxx
-type FindHostByTopoReq struct {
-	BkBizID  int       `json:"bk_biz_id"`  // 业务ID
-	BkObjID  string    `json:"bk_obj_id"`  // 拓扑节点模型ID，拓扑节点模型ID，如集群（set）、模块（module）或其他topo节点上的模型，不可为biz、host
-	BkInstID int       `json:"bk_inst_id"` // 拓扑节点实例ID
-	Fields   []string  `json:"fields"`     // 主机属性列表，控制返回结果的主机里有哪些字段，能够加速接口请求和减少网络流量传输
-	Page     PageParam `json:"page"`       // 分页信息
+// HostListReq 查询主机列表请求参数
+type HostListReq struct {
+	BkBizID  int       `json:"bk_biz_id"`  // 业务ID，必填
+	BkObjID  string    `json:"bk_obj_id"`  // 拓扑节点模型ID，如 set/module，不可为 biz/host，必填
+	BkInstID int       `json:"bk_inst_id"` // 拓扑节点实例ID，必填
+	Fields   []string  `json:"fields"`     // 主机属性列表，必填，用于加速接口请求和减少网络流量
+	Page     PageParam `json:"page"`       // 分页信息，必填
 }
 
-// FindHostByTopo xxx
-type FindHostByTopo struct {
+type HostListResp struct {
+	Count int        `json:"count"` // 总数
+	Info  []HostInfo `json:"info"`  // 返回结果
+}
+
+// HostInfo 主机信息
+type HostInfo struct {
 	BkHostName        string `json:"bk_host_name"`         // 主机名
-	BkHostInnerip     string `json:"bk_host_innerip"`      // 内网IP
+	BkHostInnerIP     string `json:"bk_host_innerip"`      // 内网IP
 	BkHostID          int    `json:"bk_host_id"`           // 主机ID
 	BkCloudID         int    `json:"bk_cloud_id"`          // 管控区域
-	ImportFrom        string `json:"import_from"`          // 主机导入来源,以api方式导入为3
+	ImportFrom        string `json:"import_from"`          // 主机导入来源, API方式导入为3
 	BkAssetID         string `json:"bk_asset_id"`          // 固资编号
 	BkCloudInstID     string `json:"bk_cloud_inst_id"`     // 云主机实例ID
 	BkCloudVendor     string `json:"bk_cloud_vendor"`      // 云厂商
@@ -45,81 +52,77 @@ type FindHostByTopo struct {
 	BkCPUArchitecture string `json:"bk_cpu_architecture"`  // CPU架构
 	BkCPUModule       string `json:"bk_cpu_module"`        // CPU型号
 	BkDisk            int    `json:"bk_disk"`              // 磁盘容量（GB）
-	BkHostOuterip     string `json:"bk_host_outerip"`      // 主机外网IP
-	BkHostInneripV6   string `json:"bk_host_innerip_v6"`   // 主机内网IPv6
-	BkHostOuteripV6   string `json:"bk_host_outerip_v6"`   // 主机外网IPv6
-	BkIspName         string `json:"bk_isp_name"`          // 所属运营商
-	BkMac             string `json:"bk_mac"`               // 主机内网MAC地址
+	BkHostOuterIP     string `json:"bk_host_outerip"`      // 主机外网IP
+	BkHostInnerIPV6   string `json:"bk_host_innerip_v6"`   // 主机内网IPv6
+	BkHostOuterIPV6   string `json:"bk_host_outerip_v6"`   // 主机外网IPv6
+	BkISPName         string `json:"bk_isp_name"`          // 所属运营商
+	BkMAC             string `json:"bk_mac"`               // 主机内网MAC地址
 	BkMem             int    `json:"bk_mem"`               // 主机内存容量（MB）
 	BkOSBit           string `json:"bk_os_bit"`            // 操作系统位数
 	BkOSName          string `json:"bk_os_name"`           // 操作系统名称
 	BkOSType          string `json:"bk_os_type"`           // 操作系统类型
 	BkOSVersion       string `json:"bk_os_version"`        // 操作系统版本
-	BkOuterMac        string `json:"bk_outer_mac"`         // 主机外网MAC地址
+	BkOuterMAC        string `json:"bk_outer_mac"`         // 主机外网MAC地址
 	BkProvinceName    string `json:"bk_province_name"`     // 所在省份
 	BkServiceTerm     int    `json:"bk_service_term"`      // 质保年限
-	BkSla             string `json:"bk_sla"`               // SLA级别
-	BkSn              string `json:"bk_sn"`                // 设备SN
+	BkSLA             string `json:"bk_sla"`               // SLA级别
+	BkSN              string `json:"bk_sn"`                // 设备SN
 	BkState           string `json:"bk_state"`             // 当前状态
 	BkStateName       string `json:"bk_state_name"`        // 所在国家
 	Operator          string `json:"operator"`             // 主要维护人
 	BkBakOperator     string `json:"bk_bak_operator"`      // 备份维护人
 }
 
-// Data xxx
-type Data struct {
-	Count int              `json:"count"` // 记录条数
-	Info  []FindHostByTopo `json:"info"`  // 主机实际数据
-}
-
 // CMDBResponse 通用响应结构
-type CMDBResponse[T any] struct {
-	Result     bool   `json:"result"`     // 请求成功与否
-	Code       int    `json:"code"`       // 错误编码
-	Message    string `json:"message"`    // 错误信息
-	Data       T      `json:"data"`       // 泛型，具体数据结构
-	Permission any    `json:"permission"` // 权限信息（可以根据需要定义 struct）
+type CMDBResponse struct {
+	Result     bool            `json:"result"`  // 请求成功与否
+	Code       int             `json:"code"`    // 错误编码
+	Message    string          `json:"message"` // 错误信息
+	Data       json.RawMessage `json:"data"`
+	Permission any             `json:"permission"` // 权限信息（可以根据需要定义 struct）
 }
 
-// CMDBListData 表示带数量和列表的 Data
-type CMDBListData[T any] struct {
-	Count int `json:"count"` // 记录条数
-	Info  []T `json:"info"`  // 具体数据列表
+// Decode 把 Data 部分解码到目标结构里
+func (r *CMDBResponse) Decode(v any) error {
+	if len(r.Data) == 0 {
+		return nil
+	}
+	return json.Unmarshal(r.Data, v)
 }
 
-// SearchBizInstTopoReq xxx
-type SearchBizInstTopoReq struct {
-	BkBizID int `json:"bk_biz_id"` // 业务ID
+// BizTopoReq 查询业务实例拓扑请求参数
+type BizTopoReq struct {
+	BkBizID int `json:"bk_biz_id"` // 业务ID，必填
 }
 
-// SearchBizInstTopo xxx
-type SearchBizInstTopo struct {
-	BkInstID   int                 `json:"bk_inst_id"`   // 实例ID
-	BkInstName string              `json:"bk_inst_name"` // 实例展示名
-	BkObjIcon  string              `json:"bk_obj_icon"`  // 模型图标
-	BkObjID    string              `json:"bk_obj_id"`    // 模型ID
-	BkObjName  string              `json:"bk_obj_name"`  // 模型展示名
-	Child      []SearchBizInstTopo `json:"child"`        // 子节点（递归）
-	Default    int                 `json:"default"`      // 业务类型 / 集群类型
+// BizTopoNode 业务拓扑节点信息
+type BizTopoNode struct {
+	BkInstID   int           `json:"bk_inst_id"`   // 实例ID
+	BkInstName string        `json:"bk_inst_name"` // 实例展示名
+	BkObjIcon  string        `json:"bk_obj_icon"`  // 模型图标
+	BkObjID    string        `json:"bk_obj_id"`    // 模型ID
+	BkObjName  string        `json:"bk_obj_name"`  // 模型展示名
+	Child      []BizTopoNode `json:"child"`        // 子节点（递归）
+	Default    int           `json:"default"`      // 业务类型 / 集群类型
 }
 
-// GetServiceTemplateReq xxx
-type GetServiceTemplateReq struct {
-	ServiceTemplateId int `json:"service_template_id"` // 服务模板ID
+// ServiceTemplateReq 请求参数
+type ServiceTemplateReq struct {
+	ServiceTemplateID int `json:"service_template_id"` // 服务模板ID
 }
 
 // ServiceTemplate 服务模板信息
-type GetServiceTemplate struct {
-	BkBizID           int      `json:"bk_biz_id"`           // 业务ID
-	ID                int      `json:"id"`                  // 服务模板ID
-	Name              []string `json:"name"`                // 服务模板名称（数组）
-	ServiceCategoryID int      `json:"service_category_id"` // 服务分类ID
-	Creator           string   `json:"creator"`             // 创建者
-	Modifier          string   `json:"modifier"`            // 最后修改人员
-	CreateTime        string   `json:"create_time"`         // 创建时间
-	LastTime          string   `json:"last_time"`           // 更新时间
-	BkSupplierAccount string   `json:"bk_supplier_account"` // 开发商账号
-	HostApplyEnabled  bool     `json:"host_apply_enabled"`  // 是否启用主机属性自动应用
+type ServiceTemplate struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	ID                int    `json:"id"`                  // 服务模板ID
+	Name              string `json:"name"`                // 服务模板名称
+	ServiceCategoryID int    `json:"service_category_id"` // 服务分类ID
+	Creator           string `json:"creator"`             // 创建者
+	Modifier          string `json:"modifier"`            // 最后修改人员
+	CreateTime        string `json:"create_time"`         // 创建时间
+	LastTime          string `json:"last_time"`           // 更新时间
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+	HostApplyEnabled  bool   `json:"host_apply_enabled"`  // 是否启用主机属性自动应用
 }
 
 // PageParam 公共分页参数
@@ -139,18 +142,10 @@ type ListServiceTemplateReq struct {
 	Page               PageParam `json:"page"`                           // 分页参数（必选）
 }
 
-// ListServiceTemplate xxx
-type ListServiceTemplate struct {
-	BkBizID           int      `json:"bk_biz_id"`
-	ID                int      `json:"id"`
-	Name              []string `json:"name"` // name 是 array
-	ServiceCategoryID int      `json:"service_category_id"`
-	Creator           string   `json:"creator"`
-	Modifier          string   `json:"modifier"`
-	CreateTime        string   `json:"create_time"`
-	LastTime          string   `json:"last_time"`
-	BkSupplierAccount string   `json:"bk_supplier_account"`
-	HostApplyEnabled  bool     `json:"host_apply_enabled"`
+// ServiceTemplateListResp 响应结果
+type ServiceTemplateListResp struct {
+	Count int               `json:"count"` // 总数
+	Info  []ServiceTemplate `json:"info"`  // 返回结果
 }
 
 // GetProcTemplateReq xxx
@@ -159,52 +154,36 @@ type GetProcTemplateReq struct {
 	ProcessTemplateID int `json:"process_template_id"`
 }
 
-// ProcTemplate xxx
+// ProcTemplate 进程模板数据
 type ProcTemplate struct {
-	ID                int      `json:"id"`
-	BkProcessName     string   `json:"bk_process_name"`
-	BkBizID           int      `json:"bk_biz_id"`
-	ServiceTemplateID int      `json:"service_template_id"`
-	Property          Property `json:"property"`
-	Creator           string   `json:"creator"`
-	Modifier          string   `json:"modifier"`
-	CreateTime        string   `json:"create_time"`
-	LastTime          string   `json:"last_time"`
-	BkSupplierAccount string   `json:"bk_supplier_account"`
+	ID                int                      `json:"id"`
+	BkProcessName     string                   `json:"bk_process_name"`
+	BkBizID           int                      `json:"bk_biz_id"`
+	ServiceTemplateID int                      `json:"service_template_id"`
+	Property          map[string]PropertyField `json:"property"`
+	Creator           string                   `json:"creator"`
+	Modifier          string                   `json:"modifier"`
+	CreateTime        string                   `json:"create_time"`
+	LastTime          string                   `json:"last_time"`
+	BkSupplierAccount string                   `json:"bk_supplier_account"`
 }
 
-// Property xxx
-type Property struct {
-	AutoStart         bool     `json:"auto_start"`
-	BkBizID           int      `json:"bk_biz_id"`
-	BkFuncID          string   `json:"bk_func_id"`
-	BkFuncName        string   `json:"bk_func_name"`
-	BkProcessID       int      `json:"bk_process_id"`
-	BkProcessName     string   `json:"bk_process_name"`
-	BkStartParamRegex string   `json:"bk_start_param_regex"`
-	BkSupplierAccount string   `json:"bk_supplier_account"`
-	CreateTime        string   `json:"create_time"`
-	Description       string   `json:"description"`
-	FaceStopCmd       string   `json:"face_stop_cmd"`
-	LastTime          string   `json:"last_time"`
-	PidFile           string   `json:"pid_file"`
-	Priority          int      `json:"priority"`
-	ProcNum           int      `json:"proc_num"`
-	ReloadCmd         string   `json:"reload_cmd"`
-	RestartCmd        string   `json:"restart_cmd"`
-	StartCmd          string   `json:"start_cmd"`
-	StopCmd           string   `json:"stop_cmd"`
-	Timeout           int      `json:"timeout"`
-	User              string   `json:"user"`
-	WorkPath          string   `json:"work_path"`
-	BindInfo          BindInfo `json:"bind_info"`
+// PropertyField 通用属性字段
+type PropertyField struct {
+	Value          any  `json:"value"`
+	AsDefaultValue bool `json:"as_default_value"`
 }
 
 // ListProcTemplateReq xxx
 type ListProcTemplateReq struct {
 	BkBizID           int `json:"bk_biz_id"`           // 业务ID
-	ServiceTemplateID int `json:"service_template_id"` // 服务实例ID
-	ProcessTemplateID int `json:"process_template_id"`
+	ServiceTemplateID int `json:"service_template_id"` // 服务模板ID，service_template_id和process_template_ids至少传一个
+	ProcessTemplateID int `json:"process_template_id"` // 进程模板ID数组，最多200个，service_template_id和process_template_ids至少传一个
+}
+
+type ListProcTemplateResp struct {
+	Count int            `json:"count"` // 总数
+	Info  []ProcTemplate `json:"info"`  // 返回结果
 }
 
 // ListProcessInstanceReq xxx
@@ -248,41 +227,9 @@ type FindHostBySetTemplateReq struct {
 	Page                 PageParam `json:"page"`                    // 分页信息，必填
 }
 
-// HostInfo 主机信息
-type HostInfo struct {
-	BkHostName        string `json:"bk_host_name"`         // 主机名
-	BkHostInnerIP     string `json:"bk_host_innerip"`      // 内网IP
-	BkHostID          int    `json:"bk_host_id"`           // 主机ID
-	BkCloudID         int    `json:"bk_cloud_id"`          // 管控区域
-	ImportFrom        string `json:"import_from"`          // 主机导入来源,以api方式导入为3
-	BkAssetID         string `json:"bk_asset_id"`          // 固资编号
-	BkCloudInstID     string `json:"bk_cloud_inst_id"`     // 云主机实例ID
-	BkCloudVendor     string `json:"bk_cloud_vendor"`      // 云厂商
-	BkCloudHostStatus string `json:"bk_cloud_host_status"` // 云主机状态
-	BkComment         string `json:"bk_comment"`           // 备注
-	BkCPU             int    `json:"bk_cpu"`               // CPU逻辑核心数
-	BkCPUArchitecture string `json:"bk_cpu_architecture"`  // CPU架构
-	BkCPUModule       string `json:"bk_cpu_module"`        // CPU型号
-	BkDisk            int    `json:"bk_disk"`              // 磁盘容量（GB）
-	BkHostOuterIP     string `json:"bk_host_outerip"`      // 主机外网IP
-	BkHostInnerIPV6   string `json:"bk_host_innerip_v6"`   // 主机内网IPv6
-	BkHostOuterIPV6   string `json:"bk_host_outerip_v6"`   // 主机外网IPv6
-	BkISPName         string `json:"bk_isp_name"`          // 所属运营商
-	BkMAC             string `json:"bk_mac"`               // 主机内网MAC地址
-	BkMem             int    `json:"bk_mem"`               // 主机内存容量（MB）
-	BkOSBit           string `json:"bk_os_bit"`            // 操作系统位数
-	BkOSName          string `json:"bk_os_name"`           // 操作系统名称
-	BkOSType          string `json:"bk_os_type"`           // 操作系统类型
-	BkOSVersion       string `json:"bk_os_version"`        // 操作系统版本
-	BkOuterMAC        string `json:"bk_outer_mac"`         // 主机外网MAC地址
-	BkProvinceName    string `json:"bk_province_name"`     // 所在省份
-	BkServiceTerm     int    `json:"bk_service_term"`      // 质保年限
-	BkSLA             string `json:"bk_sla"`               // SLA级别
-	BkSN              string `json:"bk_sn"`                // 设备SN
-	BkState           string `json:"bk_state"`             // 当前状态
-	BkStateName       string `json:"bk_state_name"`        // 所在国家
-	Operator          string `json:"operator"`             // 主要维护人
-	BkBakOperator     string `json:"bk_bak_operator"`      // 备份维护人
+type FindHostBySetTemplateResp struct {
+	Count int        `json:"count"` // 总数
+	Info  []HostInfo `json:"info"`  // 返回结果
 }
 
 // ListSetTemplateReq xxx
@@ -290,6 +237,11 @@ type ListSetTemplateReq struct {
 	BkBizID        int       `json:"bk_biz_id"`                  // 业务ID，必填
 	SetTemplateIDs []int     `json:"set_template_ids,omitempty"` // 集群模板ID数组，可选
 	Page           PageParam `json:"page,omitempty"`             // 分页信息，可选
+}
+
+type ListSetTemplateResp struct {
+	Count int                   `json:"count"` // 总数
+	Info  []ClusterTemplateInfo `json:"info"`  // 返回结果
 }
 
 // ClusterTemplateInfo 集群模板信息
@@ -305,7 +257,7 @@ type ClusterTemplateInfo struct {
 }
 
 // ProcessRequest 查询进程请求参数
-type ProcessRequest struct {
+type ProcessReq struct {
 	BkBizID      int      `json:"bk_biz_id"`        // 进程所在的业务ID，必填
 	BkProcessIDs []int    `json:"bk_process_ids"`   // 进程ID列表，最多传500个，必填
 	Fields       []string `json:"fields,omitempty"` // 进程属性列表，可选，控制返回结果字段，加速请求
@@ -326,11 +278,11 @@ type ProcessInfo struct {
 	LastTime          string     `json:"last_time"`            // 更新时间
 	PidFile           string     `json:"pid_file"`             // PID文件路径
 	Priority          int        `json:"priority"`             // 启动优先级
-	ProcNum           int        `json:"proc_num"`             // 启动数量
-	ReloadCmd         string     `json:"reload_cmd"`           // 进程重载命令
-	RestartCmd        string     `json:"restart_cmd"`          // 重启命令
-	StartCmd          string     `json:"start_cmd"`            // 启动命令
-	StopCmd           string     `json:"stop_cmd"`             // 停止命令
+	ProcNum           any        `json:"proc_num"`             // 启动数量
+	ReloadCmd         any        `json:"reload_cmd"`           // 进程重载命令
+	RestartCmd        any        `json:"restart_cmd"`          // 重启命令
+	StartCmd          any        `json:"start_cmd"`            // 启动命令
+	StopCmd           any        `json:"stop_cmd"`             // 停止命令
 	Timeout           int        `json:"timeout"`              // 操作超时时长
 	User              string     `json:"user"`                 // 启动用户
 	WorkPath          string     `json:"work_path"`            // 工作路径
@@ -342,10 +294,15 @@ type ProcessInfo struct {
 }
 
 // ServiceInstanceRequest 查询服务实例请求参数
-type ServiceInstanceRequest struct {
+type ServiceInstanceReq struct {
 	BkBizID       int       `json:"bk_biz_id"`       // 业务id，必填
 	SetTemplateID int       `json:"set_template_id"` // 集群模版ID，必填
 	Page          PageParam `json:"page"`            // 分页参数，必填
+}
+
+type ServiceInstanceResp struct {
+	Count int                   `json:"count"` // 总数
+	Info  []ServiceInstanceInfo `json:"info"`  // 返回结果
 }
 
 // ServiceInstanceInfo 服务实例信息
@@ -365,7 +322,7 @@ type ServiceInstanceInfo struct {
 }
 
 // ModuleRequest 查询模块信息请求
-type ModuleRequest struct {
+type ModuleReq struct {
 	BkBizID int      `json:"bk_biz_id"` // 业务ID (必选)
 	BkIDs   []int    `json:"bk_ids"`    // 模块实例ID列表 (必选, 最多500个)
 	Fields  []string `json:"fields"`    // 模块属性列表 (必选)
@@ -392,4 +349,87 @@ type ModuleInfo struct {
 	BkCreatedAt       string `json:"bk_created_at"`       // 创建时间
 	BkUpdatedAt       string `json:"bk_updated_at"`       // 更新时间
 	BkCreatedBy       string `json:"bk_created_by"`       // 创建人
+}
+
+// ServiceInstanceListReq 查询服务实例请求参数
+type ServiceInstanceListReq struct {
+	BkBizID    int        `json:"bk_biz_id"`              // 业务id，必填
+	BkModuleID int        `json:"bk_module_id,omitempty"` // 模块ID，可选
+	BkHostIDs  []int      `json:"bk_host_ids,omitempty"`  // 主机id列表，最多支持1000个，可选
+	Selectors  []Selector `json:"selectors,omitempty"`    // label过滤功能，可选
+	Page       PageParam  `json:"page,omitempty"`         // 分页参数，可选
+	SearchKey  string     `json:"search_key,omitempty"`   // 名字过滤参数（模糊搜索），可选
+}
+
+// Selector 标签过滤条件
+type Selector struct {
+	Key      string   `json:"key"`              // 标签键
+	Operator string   `json:"operator"`         // 操作符 (=, !=, exists, !, in, notin)
+	Values   []string `json:"values,omitempty"` // 值列表（适用于 in, notin）
+}
+
+// SetListReq 查询集群实例请求参数
+type SetListReq struct {
+	BkBizID int      `json:"bk_biz_id"` // 业务ID，必填
+	BkIDs   []int    `json:"bk_ids"`    // 集群实例ID列表 (bk_set_id)，最多500个，必填
+	Fields  []string `json:"fields"`    // 集群属性字段列表，必填
+}
+
+// SetInfo 集群信息
+type SetInfo struct {
+	BkSetName          string   `json:"bk_set_name"`          // 集群名称
+	Default            int      `json:"default"`              // 0-普通集群，1-内置模块集合
+	BkBizID            int      `json:"bk_biz_id"`            // 业务ID
+	BkCapacity         int      `json:"bk_capacity"`          // 设计容量
+	BkParentID         int      `json:"bk_parent_id"`         // 父节点ID
+	BkSetID            int      `json:"bk_set_id"`            // 集群ID
+	BkServiceStatus    string   `json:"bk_service_status"`    // 服务状态: 1-开放, 2-关闭
+	BkSetDesc          string   `json:"bk_set_desc"`          // 集群描述
+	BkSetEnv           string   `json:"bk_set_env"`           // 环境类型: 1-测试, 2-体验, 3-正式
+	CreateTime         string   `json:"create_time"`          // 创建时间
+	LastTime           string   `json:"last_time"`            // 更新时间
+	BkSupplierAccount  string   `json:"bk_supplier_account"`  // 开发商账号
+	Description        string   `json:"description"`          // 数据描述信息
+	SetTemplateVersion []string `json:"set_template_version"` // 集群模板的当前版本
+	SetTemplateID      int      `json:"set_template_id"`      // 集群模板ID
+	BkCreatedAt        string   `json:"bk_created_at"`        // 创建时间
+	BkUpdatedAt        string   `json:"bk_updated_at"`        // 更新时间
+}
+
+// HostTopoReq 查询业务下主机与集群/模块绑定关系请求参数
+type HostTopoReq struct {
+	BkBizID     int       `json:"bk_biz_id"`               // 业务ID，必填
+	BkSetIDs    []int     `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多200条
+	BkModuleIDs []int     `json:"bk_module_ids,omitempty"` // 模块ID列表，最多500条
+	BkHostIDs   []int     `json:"bk_host_ids,omitempty"`   // 主机ID列表，最多500条
+	Page        PageParam `json:"page"`                    // 分页信息，必填
+}
+
+type HostTopoInfoResp struct {
+	Count int            `json:"count"` // 总数
+	Data  []HostTopoInfo `json:"data"`  // 返回结果
+}
+
+// HostTopoInfo 主机与拓扑绑定信息
+type HostTopoInfo struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	BkSetID           int    `json:"bk_set_id"`           // 集群ID
+	BkModuleID        int    `json:"bk_module_id"`        // 模块ID
+	BkHostID          int    `json:"bk_host_id"`          // 主机ID
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+}
+
+// ModuleListReq 查询模块请求参数
+type ModuleListReq struct {
+	BkBizID              int       `json:"bk_biz_id"`                         // 业务ID，必填
+	BkSetIDs             []int     `json:"bk_set_ids,omitempty"`              // 集群ID列表，可选，最多200个
+	BkServiceTemplateIDs []int     `json:"bk_service_template_ids,omitempty"` // 服务模板ID列表，可选
+	Fields               []string  `json:"fields"`                            // 模块属性列表，必填
+	Page                 PageParam `json:"page"`                              // 分页信息，必填
+}
+
+// ModuleListResp 查询模块响应参数
+type ModuleListResp struct {
+	Count int          `json:"count"` // 总数
+	Info  []ModuleInfo `json:"info"`  // 模块信息列表
 }
