@@ -371,13 +371,14 @@
 
   const handleAppChange = (service: IAppItem) => {
     editingService.value = service;
+    if (service.id === props.appId) return;
     let name = route.name as string;
     if (route.name === 'init-script' && service.spec.config_type === 'kv') {
       name = 'service-config';
     }
     router.push({
       name,
-      params: { spaceId: service.space_id, appId: service.id, versionId: versionData.value.id || null },
+      params: { spaceId: service.space_id, appId: service.id },
     });
   };
 </script>
