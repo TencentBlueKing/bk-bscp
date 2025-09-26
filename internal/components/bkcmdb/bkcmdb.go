@@ -15,6 +15,7 @@ package bkcmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
@@ -26,7 +27,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-// nolint: unused
 var (
 	searchBusiness                   = "%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account"
 	findHostByTopo                   = "%s/api/bk-cmdb/prod/api/v3/findmany/hosts/by_topo/biz/%d"
@@ -41,13 +41,11 @@ var (
 	listProcessDetailByIds           = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/process_instance/detail/biz/%d"
 	listServiceInstanceBySetTemplate = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service/" +
 		"set_template/list_service_instance/biz/%d"
-	findModuleBatch     = "%s/api/bk-cmdb/prod/api/v3/findmany/module/bk_biz_id/%d"
-	listServiceInstance = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_instance"
-
-	findSetBatch         = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
-	searchSet            = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
-	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
-	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
+	findModuleBatch        = "%s/api/bk-cmdb/prod/api/v3/findmany/module/bk_biz_id/%d"
+	listServiceInstance    = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_instance"
+	findSetBatch           = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
+	findHostTopoRelation   = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
+	findModuleWithRelation = "%s/api/bk-cmdb/prod/api/v3/findmany/module/with_relation/biz/%d"
 )
 
 type HTTPMethod string
@@ -64,8 +62,8 @@ type CMDBService struct {
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
 
-	// 组装网关认证信息
 	gwAuthOptions := []components.GWAuthOption{}
+	gwAuthOptions = append(gwAuthOptions, components.WithBkUsername("admin"))
 
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
@@ -96,11 +94,11 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 		return err
 	}
 
-	// 统一反序列化结果
-	if err := components.UnmarshalBKResult(resp, result); err != nil {
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		logs.Errorf("unmarshal bk result failed, err: %v", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -137,12 +135,17 @@ func (bkcmdb *CMDBService) ListAllBusiness(ctx context.Context) (*cmdb.SearchBiz
 }
 
 // FindHostByTopo 查询拓扑节点下的主机
-func (bkcmdb *CMDBService) FindHostByTopo(ctx context.Context, req FindHostByTopoReq) (
-	*CMDBResponse[CMDBListData[FindHostByTopo]], error) {
+func (bkcmdb *CMDBService) FindHostByTopo(ctx context.Context, req HostListReq) (
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(findHostByTopo, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[CMDBListData[FindHostByTopo]])
-	if err := bkcmdb.doRequest(ctx, GET, url, req, resp); err != nil {
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var hostListResp HostListResp
+	if err := resp.Decode(&hostListResp); err != nil {
 		return nil, err
 	}
 
@@ -150,12 +153,17 @@ func (bkcmdb *CMDBService) FindHostByTopo(ctx context.Context, req FindHostByTop
 }
 
 // SearchBizInstTopo 查询业务实例拓扑
-func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req SearchBizInstTopoReq) (
-	*CMDBResponse[SearchBizInstTopo], error) {
+func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req BizTopoReq) (
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(searchBizInstTopo, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[SearchBizInstTopo])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var nodes []BizTopoNode
+	if err := resp.Decode(&nodes); err != nil {
 		return nil, err
 	}
 
@@ -163,11 +171,17 @@ func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req SearchBizI
 }
 
 // GetServiceTemplate 获取服务模板
-func (bkcmdb *CMDBService) GetServiceTemplate(ctx context.Context, req GetServiceTemplateReq) (
-	*CMDBResponse[GetServiceTemplate], error) {
-	url := fmt.Sprintf(getServiceTemplate, bkcmdb.Host, req.ServiceTemplateId)
-	resp := new(CMDBResponse[GetServiceTemplate])
+func (bkcmdb *CMDBService) GetServiceTemplate(ctx context.Context, req ServiceTemplateReq) (
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(getServiceTemplate, bkcmdb.Host, req.ServiceTemplateID)
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, GET, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var serviceTemplate ServiceTemplate
+
+	if err := resp.Decode(&serviceTemplate); err != nil {
 		return nil, err
 	}
 
@@ -176,10 +190,15 @@ func (bkcmdb *CMDBService) GetServiceTemplate(ctx context.Context, req GetServic
 
 // ListServiceTemplate 服务模板列表查询
 func (bkcmdb *CMDBService) ListServiceTemplate(ctx context.Context, req ListServiceTemplateReq) (
-	*CMDBResponse[CMDBListData[ListServiceTemplate]], error) {
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listServiceTemplate, bkcmdb.Host)
-	resp := new(CMDBResponse[CMDBListData[ListServiceTemplate]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var serviceTemplateListResp ServiceTemplateListResp
+	if err := resp.Decode(&serviceTemplateListResp); err != nil {
 		return nil, err
 	}
 
@@ -188,10 +207,15 @@ func (bkcmdb *CMDBService) ListServiceTemplate(ctx context.Context, req ListServ
 
 // GetProcTemplate 获取进程模板
 func (bkcmdb *CMDBService) GetProcTemplate(ctx context.Context, req GetProcTemplateReq) (
-	*CMDBResponse[ProcTemplate], error) {
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(getProcTemplate, bkcmdb.Host, req.ProcessTemplateID)
-	resp := new(CMDBResponse[ProcTemplate])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var procTemplate ProcTemplate
+	if err := resp.Decode(&procTemplate); err != nil {
 		return nil, err
 	}
 
@@ -200,11 +224,16 @@ func (bkcmdb *CMDBService) GetProcTemplate(ctx context.Context, req GetProcTempl
 
 // ListProcTemplate 查询进程模板列表
 func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req ListProcTemplateReq) (
-	*CMDBResponse[CMDBListData[ProcTemplate]], error) {
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listProcTemplate, bkcmdb.Host)
 
-	resp := new(CMDBResponse[CMDBListData[ProcTemplate]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var listProcTemplateResp ListProcTemplateResp
+	if err := resp.Decode(&listProcTemplateResp); err != nil {
 		return nil, err
 	}
 
@@ -213,11 +242,16 @@ func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req ListProcTem
 
 // ListProcessInstance 查询进程实例列表
 func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
-	*CMDBResponse[CMDBListData[ListProcessInstance]], error) {
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listProcessInstance, bkcmdb.Host)
 
-	resp := new(CMDBResponse[CMDBListData[ListProcessInstance]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var listProcessInstance []ListProcessInstance
+	if err := resp.Decode(&listProcessInstance); err != nil {
 		return nil, err
 	}
 
@@ -226,11 +260,16 @@ func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProc
 
 // FindHostBySetTemplate 查询集群模板下的主机
 func (bkcmdb *CMDBService) FindHostBySetTemplate(ctx context.Context, req FindHostBySetTemplateReq) (
-	*CMDBResponse[CMDBListData[HostInfo]], error) {
-	url := fmt.Sprintf(findHostBySetTemplate, bkcmdb.Host)
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(findHostBySetTemplate, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[CMDBListData[HostInfo]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var findHostBySetTemplateResp []FindHostBySetTemplateResp
+	if err := resp.Decode(&findHostBySetTemplateResp); err != nil {
 		return nil, err
 	}
 
@@ -239,11 +278,16 @@ func (bkcmdb *CMDBService) FindHostBySetTemplate(ctx context.Context, req FindHo
 
 // ListSetTemplate 查询集群模板
 func (bkcmdb *CMDBService) ListSetTemplate(ctx context.Context, req ListSetTemplateReq) (
-	*CMDBResponse[CMDBListData[ClusterTemplateInfo]], error) {
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listSetTemplate, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[CMDBListData[ClusterTemplateInfo]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var listSetTemplateResp ListSetTemplateResp
+	if err := resp.Decode(&listSetTemplateResp); err != nil {
 		return nil, err
 	}
 
@@ -251,12 +295,17 @@ func (bkcmdb *CMDBService) ListSetTemplate(ctx context.Context, req ListSetTempl
 }
 
 // ListProcessDetailByIds 查询某业务下进程ID对应的进程详情
-func (bkcmdb *CMDBService) ListProcessDetailByIds(ctx context.Context, req ProcessRequest) (
-	*CMDBResponse[CMDBListData[ProcessInfo]], error) {
+func (bkcmdb *CMDBService) ListProcessDetailByIds(ctx context.Context, req ProcessReq) (
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listProcessDetailByIds, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[CMDBListData[ProcessInfo]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var processInfo []ProcessInfo
+	if err := resp.Decode(&processInfo); err != nil {
 		return nil, err
 	}
 
@@ -264,12 +313,17 @@ func (bkcmdb *CMDBService) ListProcessDetailByIds(ctx context.Context, req Proce
 }
 
 // ListServiceInstanceBySetTemplate 通过集群模版查询关联的服务实例列表
-func (bkcmdb *CMDBService) ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceRequest) (
-	*CMDBResponse[CMDBListData[ServiceInstanceInfo]], error) {
+func (bkcmdb *CMDBService) ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceReq) (
+	*CMDBResponse, error) {
 	url := fmt.Sprintf(listServiceInstanceBySetTemplate, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[CMDBListData[ServiceInstanceInfo]])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var serviceInstanceResp []ServiceInstanceResp
+	if err := resp.Decode(&serviceInstanceResp); err != nil {
 		return nil, err
 	}
 
@@ -277,39 +331,90 @@ func (bkcmdb *CMDBService) ListServiceInstanceBySetTemplate(ctx context.Context,
 }
 
 // FindModuleBatch 批量查询某业务的模块详情
-func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req ServiceInstanceRequest) (
-	*CMDBResponse[[]ModuleInfo], error) {
-	url := fmt.Sprintf(listServiceInstanceBySetTemplate, bkcmdb.Host, req.BkBizID)
+func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req ModuleReq) (
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(findModuleBatch, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse[[]ModuleInfo])
+	resp := new(CMDBResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var moduleInfo []ModuleInfo
+	if err := resp.Decode(&moduleInfo); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+// ListServiceInstance 查询服务实例列表
+func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(listServiceInstance, bkcmdb.Host)
+
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var serviceInstanceResp ServiceInstanceResp
+	if err := resp.Decode(&serviceInstanceResp); err != nil {
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-// ListServiceInstance 查询服务实例列表
-func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context) {
-
-}
-
 // FindSetBatch 批量查询某业务的集群详情
-func (bkcmdb *CMDBService) FindSetBatch(ctx context.Context) {
+func (bkcmdb *CMDBService) FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error) {
+	url := fmt.Sprintf(findSetBatch, bkcmdb.Host, req.BkBizID)
 
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var setInfo []SetInfo
+	if err := resp.Decode(&setInfo); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
-// SearchSet 查询集群
-func (bkcmdb *CMDBService) SearchSet(ctx context.Context) {
+// FindHostTopoRelation 获取主机与拓扑的关系
+func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context, req HostTopoReq) (
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(findHostTopoRelation, bkcmdb.Host)
 
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var hostTopoInfoResp HostTopoInfoResp
+	if err := resp.Decode(&hostTopoInfoResp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
-// SearchModule 查询模块
-func (bkcmdb *CMDBService) SearchModule(ctx context.Context) {
+// FindModuleWithRelation 根据条件查询业务下的模块
+func (bkcmdb *CMDBService) FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
+	*CMDBResponse, error) {
+	url := fmt.Sprintf(findModuleWithRelation, bkcmdb.Host, req.BkBizID)
 
-}
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
 
-// FindHostTopoRelation  获取主机与拓扑的关系
-func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context) {
+	var moduleListResp ModuleListResp
+	if err := resp.Decode(&moduleListResp); err != nil {
+		return nil, err
+	}
 
+	return resp, nil
 }
