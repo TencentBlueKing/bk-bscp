@@ -345,20 +345,24 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 	if err != nil {
 		return nil, err
 	}
-	// [v4]补充taskID和Operator
+	// [v4]补充taskID、Operator、systemID
+	// message 不为空，或者单据状态已经被revoke 或者已经结束
 	if cc.DataService().ITSM.EnableV4 {
-		taskIdUser := map[string]string{}
-		err = json.Unmarshal([]byte(strategy.Spec.ItsmTicketStateID), &taskIdUser)
-		if err != nil {
-			logs.Errorf("unmarshal itsm ticket state id failed, err: %v, rid: %s", err, grpcKit.Rid)
-			return nil, err
+		// 只有当需要审批并且同意的时候才需要TaskID，否则就是直接终止单据
+		if req.PublishStatus != string(table.RevokedPublish) {
+			taskIdUser := map[string]string{}
+			err = json.Unmarshal([]byte(strategy.Spec.ItsmTicketStateID), &taskIdUser)
+			if err != nil {
+				logs.Errorf("unmarshal itsm ticket state id failed, err: %v, rid: %s", err, grpcKit.Rid)
+				return nil, err
+			}
+			if taskIdUser[grpcKit.User] == "" {
+				// 没有该人的审批任务或者当前登录用户没有权限
+				logs.Errorf("no permission to approve this ticket, user: %s", grpcKit.User)
+				return nil, errors.New(i18n.T(grpcKit, "no permission to approve this ticket"))
+			}
+			itsmUpdata.TaskID = taskIdUser[grpcKit.User]
 		}
-		if taskIdUser[grpcKit.User] == "" {
-			// 没有该人的审批任务或者当前登录用户没有权限
-			logs.Errorf("no permission to approve this ticket, user: %s", grpcKit.User)
-			return nil, errors.New(i18n.T(grpcKit, "no permission to approve this ticket"))
-		}
-		itsmUpdata.TaskID = taskIdUser[grpcKit.User]
 		itsmUpdata.Operator = grpcKit.User
 		itsmUpdata.SystemID = cc.DataService().ITSM.SystemId
 	}
