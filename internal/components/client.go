@@ -246,3 +246,44 @@ func refineCode(code interface{}) (int, error) {
 	}
 	return resultCode, nil
 }
+
+// BKAuth 蓝鲸鉴权信息
+type BKAPIGWAuth struct {
+	AppCode    string `json:"bk_app_code"`
+	AppSecret  string `json:"bk_app_secret"`
+	BkUsername string `json:"bk_username,omitempty"` // 没有用户态接口需要, 后台固定权限使用
+	BkToken    string `json:"bk_token,omitempty"`    // 有用户登入态接口使用
+}
+
+// GWAuthOption 定义用于设置 BKAPIGWAuth 的可选参数函数类型
+type GWAuthOption func(*BKAPIGWAuth)
+
+// WithBkUsername 设置 BkUsername 的 Option 函数
+func WithBkUsername(username string) GWAuthOption {
+	return func(a *BKAPIGWAuth) {
+		a.BkUsername = username
+	}
+}
+
+// WithBkToken 设置 BkToken 的 Option 函数
+func WithBkToken(token string) GWAuthOption {
+	return func(a *BKAPIGWAuth) {
+		a.BkToken = token
+	}
+}
+
+// MakeBKAPIGWAuthHeader 生成蓝鲸网关鉴权头部
+func MakeBKAPIGWAuthHeader(appCode, appSecret string, opts ...GWAuthOption) string {
+	auth := &BKAPIGWAuth{
+		AppCode:   appCode,
+		AppSecret: appSecret,
+	}
+
+	// 应用所有 Option 函数
+	for _, opt := range opts {
+		opt(auth)
+	}
+
+	authBytes, _ := json.Marshal(auth)
+	return string(authBytes)
+}
