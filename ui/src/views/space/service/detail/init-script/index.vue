@@ -199,6 +199,7 @@
         versionId: scriptCiteData.value.post_hook.hook_revision_id,
       },
     };
+    emits('select', { pre_hook_id: formData.value.pre.id, post_hook_id: formData.value.post.id });
   };
 
   // 获取脚本预览内容
