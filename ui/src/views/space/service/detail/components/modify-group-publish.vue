@@ -27,9 +27,12 @@
       <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
       {{ t('等待定时上线') }}
     </bk-button>
-    <bk-popover :popover-delay="[0, 300]" placement="bottom-end" :disabled="props.creator === userInfo.username">
+    <bk-popover
+      v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.manually"
+      :popover-delay="[0, 300]"
+      placement="bottom-end"
+      :disabled="props.creator === userInfo.username">
       <bk-button
-        v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.manually"
         v-cursor="{ active: !props.hasPerm }"
         theme="primary"
         :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"

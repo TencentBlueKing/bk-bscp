@@ -874,10 +874,8 @@
     }
   }
   .action-btns {
-    position: relative;
-    .action-btn + .action-btn {
-      margin-left: 14px;
-    }
+    display: flex;
+    gap: 14px;
   }
   .table-list-pagination {
     padding: 12px;
