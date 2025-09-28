@@ -68,19 +68,20 @@ func (c *SyncBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
+				// todo: 暂时不考虑主从问题
 				if !c.state.IsMaster() {
 					logs.Infof("current service instance is slave, skip sync biz host")
 					continue
 				}
 				logs.Infof("starts to synchronize the biz host")
-				c.syncBizHost(kt)
+				c.SyncBizHost(kt)
 			}
 		}
 	}()
 }
 
 // syncBizHost sync business host relationship
-func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
+func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 	c.mutex.Lock()
 	defer func() {
 		c.mutex.Unlock()
@@ -92,6 +93,8 @@ func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
+	fmt.Println("bizList", bizList)
+	return
 
 	// Query host information by business ID
 	for _, biz := range bizList {
