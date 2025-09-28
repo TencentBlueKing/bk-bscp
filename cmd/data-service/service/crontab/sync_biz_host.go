@@ -22,14 +22,14 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
-	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 const (
-	defaultSyncBizHostInterval = 7 * 24 * time.Hour // 一周一次全量数据同步
+	// sync data once a week
+	defaultSyncBizHostInterval = 7 * 24 * time.Hour
 )
 
 // NewSyncBizHost init sync biz host
@@ -86,21 +86,18 @@ func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
 		c.mutex.Unlock()
 	}()
 
-	// 查询BSCP的业务
-	// todo：当前接口返回的是全量业务，后续需要调整为仅查询使用BSCP的业务
+	// Query BSCP businesses
 	bizList, err := c.queryBSCPBusiness(kt)
 	if err != nil {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
 
-	logs.Infof("found %d BSCP businesses", len(bizList))
-
-	// 根据业务ID查询主机信息
+	// Query host information by business ID
 	for _, biz := range bizList {
 		if err := c.syncBusinessHosts(kt, biz); err != nil {
-			logs.Errorf("sync business %d hosts failed, err: %v", biz.BizID, err)
-			// todo： 确定同步失败后的处理方式
+			logs.Errorf("sync business %d hosts failed, err: %v", biz, err)
+			// if sync failed, continue to sync next business
 			continue
 		}
 	}
@@ -108,34 +105,35 @@ func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
 	logs.Infof("sync biz host completed")
 }
 
-// queryBSCPBusiness 查询BSCP的业务
-func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]*cmdb.Biz, error) {
-	// 使用CMDB服务查询所有业务
-	bizResult, err := c.cmdbService.ListAllBusiness(kt.Ctx)
+// queryBSCPBusiness query BSCP businesses
+func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
+	m := c.set.GenQuery().App
+	bizIDs, err := c.set.GenQuery().App.WithContext(kt.Ctx).
+		Select(m.BizID.Distinct()).
+		Find()
 	if err != nil {
-		return nil, fmt.Errorf("list all business failed: %w", err)
+		return nil, fmt.Errorf("query biz IDs failed: %w", err)
 	}
 
-	// 转换为指针切片
-	var bizList []*cmdb.Biz
-	for i := range bizResult.Info {
-		bizList = append(bizList, &bizResult.Info[i])
+	var bizList []int
+	for _, app := range bizIDs {
+		bizList = append(bizList, int(app.BizID))
 	}
 
 	return bizList, nil
 }
 
-// syncBusinessHosts 同步单个业务的主机信息
-func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, biz *cmdb.Biz) error {
-	// 查询业务下的主机
-	// todo: 部分主机的agentid为空，可能需要过滤
-	// todo：查询数量支持配置
+// syncBusinessHosts sync host information for a single business
+func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
+	// Query hosts under the business
+	// TODO: Some hosts may have empty agentid, may need filtering
+	// TODO: Support configuration for query count
 	start := 0
 	limit := 1000
 	totalSynced := 0
 	for {
 		req := &bkcmdb.ListBizHostsRequest{
-			BkBizID: int(biz.BizID),
+			BkBizID: bizID,
 			Page: bkcmdb.PageParam{
 				Start: start,
 				Limit: limit,
@@ -152,7 +150,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, biz *cmdb.Biz) error {
 			return fmt.Errorf("list biz hosts failed: %s", hostResult.Message)
 		}
 
-		// 如果当前页没有数据，说明已经查询完毕
+		// If current page has no data, query is complete
 		if len(hostResult.Data.Info) == 0 {
 			break
 		}
@@ -160,7 +158,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, biz *cmdb.Biz) error {
 		var batchBizHosts []*table.BizHost
 		for _, host := range hostResult.Data.Info {
 			bizHost := &table.BizHost{
-				BizID:   int(biz.BizID),
+				BizID:   bizID,
 				HostID:  host.BkHostID,
 				AgentID: host.BkAgentID,
 			}
@@ -171,18 +169,17 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, biz *cmdb.Biz) error {
 				return fmt.Errorf("batch upsert biz hosts failed: %w", err)
 			}
 			totalSynced += len(batchBizHosts)
-			logs.Infof("synced batch %d hosts for business %d (total: %d)", len(batchBizHosts), biz.BizID, totalSynced)
 		}
 
-		// 如果返回的数据少于limit，说明已经是最后一页
+		// If returned data is less than limit, it's the last page
 		if len(hostResult.Data.Info) < limit {
 			break
 		}
 
-		// 准备查询下一页
+		// Prepare to query next page
 		start += limit
 	}
 
-	logs.Infof("completed sync for business %d, total hosts: %d", biz.BizID, totalSynced)
+	logs.Infof("completed sync for business %d, total hosts: %d", bizID, totalSynced)
 	return nil
 }
