@@ -180,11 +180,6 @@
                   placement="bottom-end"
                   :disabled="row.strategy.creator === userInfo.username">
                   <bk-button
-                    v-bk-tooltips="{
-                      content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
-                      placement: 'top',
-                      disabled: row.strategy.creator === userInfo.username,
-                    }"
                     class="action-btn"
                     text
                     theme="primary"
@@ -195,7 +190,7 @@
                   <template #content>
                     <div>
                       {{ $t('请联系服务上线提交人') }}
-                      <UserName :name="row.strategy.creatorr" />
+                      <UserName :name="row.strategy.creator" />
                       {{ $t('进行确认上线操作。') }}<br />
                       {{ $t('如果无法联系到提交人，并且有紧急配置需要发布，可以执') }}<br />
                       {{ $t('行“撤销上线”后重新提交服务上线流程') }}
