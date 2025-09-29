@@ -480,12 +480,6 @@ func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 	case int:
 		// int类型
 		percent = float64(v)
-	case float64:
-		// 浮点类型：直接使用
-		percent = v
-	case float32:
-		// 32位浮点类型
-		percent = float64(v)
 	default:
 		// 不支持的类型
 		logs.Warnf("unsupported gray_percent value type: %T", value)
