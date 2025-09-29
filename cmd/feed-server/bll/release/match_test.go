@@ -578,11 +578,11 @@ func TestMultipleGrayGroupsRealWorld(t *testing.T) {
 // TestHashSeedConsistency 测试hash seed的一致性（修复后的验证）
 func TestHashSeedConsistency(t *testing.T) {
 	rs := &ReleasedService{}
-	
+
 	// 使用相同的ReleaseID，不同的GroupID
 	sameReleaseID := uint32(300)
 	testUID := "test-consistency-uid-123456789"
-	
+
 	// 创建不同GroupID但相同ReleaseID的分组
 	group1 := &ptypes.ReleasedGroupCache{
 		GroupID:   1,
@@ -597,9 +597,9 @@ func TestHashSeedConsistency(t *testing.T) {
 			},
 		},
 	}
-	
+
 	group2 := &ptypes.ReleasedGroupCache{
-		GroupID:   2, // 不同的GroupID
+		GroupID:   2,             // 不同的GroupID
 		ReleaseID: sameReleaseID, // 相同的ReleaseID
 		Selector: &selector.Selector{
 			LabelsAnd: []selector.Element{
@@ -611,29 +611,29 @@ func TestHashSeedConsistency(t *testing.T) {
 			},
 		},
 	}
-	
+
 	meta := &types.AppInstanceMeta{
 		Uid: testUID,
 		Labels: map[string]string{
 			"env": "prod",
 		},
 	}
-	
+
 	// 测试两个分组的匹配结果
 	matched1, err1 := rs.matchReleasedGrayClients(group1, meta)
 	if err1 != nil {
 		t.Fatalf("group1 matchReleasedGrayClients failed: %v", err1)
 	}
-	
+
 	matched2, err2 := rs.matchReleasedGrayClients(group2, meta)
 	if err2 != nil {
 		t.Fatalf("group2 matchReleasedGrayClients failed: %v", err2)
 	}
-	
+
 	t.Logf("使用相同ReleaseID(%d)测试结果:", sameReleaseID)
 	t.Logf("GroupID=1, 30%%灰度: %v", matched1)
 	t.Logf("GroupID=2, 60%%灰度: %v", matched2)
-	
+
 	// 验证一致性：如果在30%时被选中，那么在60%时也应该被选中
 	if matched1 && !matched2 {
 		t.Error("❌ 一致性检查失败：30%时被选中，60%时未被选中")
@@ -651,7 +651,7 @@ func TestHashSeedConsistency(t *testing.T) {
 func TestGrayScalingConsistency(t *testing.T) {
 	rs := &ReleasedService{}
 	sameReleaseID := uint32(400)
-	
+
 	// 创建20%和50%的灰度分组
 	group20 := &ptypes.ReleasedGroupCache{
 		GroupID:   10,
@@ -666,9 +666,9 @@ func TestGrayScalingConsistency(t *testing.T) {
 			},
 		},
 	}
-	
+
 	group50 := &ptypes.ReleasedGroupCache{
-		GroupID:   20, // 不同的GroupID
+		GroupID:   20,            // 不同的GroupID
 		ReleaseID: sameReleaseID, // 相同的ReleaseID
 		Selector: &selector.Selector{
 			LabelsAnd: []selector.Element{
@@ -680,58 +680,58 @@ func TestGrayScalingConsistency(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// 测试100个不同的UID
 	testUIDs := make([]string, 100)
 	for i := 0; i < 100; i++ {
 		testUIDs[i] = fmt.Sprintf("test-scaling-uid-%03d", i)
 	}
-	
+
 	var selectedIn20 []string
 	var selectedIn50 []string
 	var violationCount int
-	
+
 	for _, uid := range testUIDs {
 		meta := &types.AppInstanceMeta{
 			Uid:    uid,
 			Labels: map[string]string{"env": "prod"},
 		}
-		
+
 		matched20, err := rs.matchReleasedGrayClients(group20, meta)
 		if err != nil {
 			t.Fatalf("匹配20%%灰度失败: %v", err)
 		}
-		
+
 		matched50, err := rs.matchReleasedGrayClients(group50, meta)
 		if err != nil {
 			t.Fatalf("匹配50%%灰度失败: %v", err)
 		}
-		
+
 		if matched20 {
 			selectedIn20 = append(selectedIn20, uid)
 		}
 		if matched50 {
 			selectedIn50 = append(selectedIn50, uid)
 		}
-		
+
 		// 检查一致性违例：在20%被选中但在50%未被选中的情况
 		if matched20 && !matched50 {
 			t.Logf("❌ 一致性违例: UID %s 在20%%被选中但50%%未被选中", uid)
 			violationCount++
 		}
 	}
-	
+
 	t.Logf("📊 灰度扩展一致性测试结果:")
 	t.Logf("20%%灰度选中: %d/%d (%.1f%%)", len(selectedIn20), len(testUIDs), float64(len(selectedIn20))*100/float64(len(testUIDs)))
 	t.Logf("50%%灰度选中: %d/%d (%.1f%%)", len(selectedIn50), len(testUIDs), float64(len(selectedIn50))*100/float64(len(testUIDs)))
 	t.Logf("一致性违例: %d/%d", violationCount, len(testUIDs))
-	
+
 	if violationCount > 0 {
 		t.Errorf("❌ 发现%d个一致性违例，hash seed可能仍在使用GroupID", violationCount)
 	} else {
 		t.Log("✅ 所有客户端在灰度扩展时都保持一致性")
 	}
-	
+
 	// 验证覆盖关系：50%的选中应该包含20%的所有选中
 	for _, uid := range selectedIn20 {
 		found := false
@@ -745,6 +745,6 @@ func TestGrayScalingConsistency(t *testing.T) {
 			t.Errorf("❌ UID %s 在20%%被选中但在50%%未找到", uid)
 		}
 	}
-	
+
 	t.Log("✅ 灰度扩展一致性测试完成")
 }
