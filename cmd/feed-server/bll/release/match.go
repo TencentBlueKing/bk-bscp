@@ -106,48 +106,9 @@ func (rs *ReleasedService) matchReleasedGroupWithLabels(
 				})
 			}
 		case table.GroupModeCustom:
-			if group.Selector == nil {
-				return nil, errf.New(errf.InvalidParameter, "custom group must have selector")
-			}
-			hasGrayPercent := false
-			var grayPercent float64
-
-			// 检查是否有灰度标签并解析比例
-			for _, v := range group.Selector.LabelsAnd {
-				if v.Key == table.GrayPercentKey {
-					hasGrayPercent = true
-					grayPercent = rs.parseGrayPercent(v.Value)
-					break
-				}
-			}
-
-			var matched bool
-			var err error
-
-			if hasGrayPercent {
-				// 灰度策略：先匹配其他标签，再进行灰度匹配
-				logs.Infof("Gray strategy detected, uid: %s, grayPercent: %.2f%%, selector: %v",
-					meta.Uid, grayPercent*100, group.Selector)
-
-				// 1. 先匹配除了gray_percent之外的其他标签
-				nonGrayMatched, err := rs.matchNonGrayLabels(group.Selector, meta.Labels)
-				if err != nil {
-					return nil, err
-				}
-
-				if nonGrayMatched {
-					// 2. 其他标签匹配成功，再进行灰度匹配
-					matched, err = rs.matchReleasedGrayClients(group, meta)
-					if err != nil {
-						return nil, err
-					}
-				}
-			} else {
-				// 普通标签匹配
-				matched, err = group.Selector.MatchLabels(meta.Labels)
-				if err != nil {
-					return nil, err
-				}
+			matched, grayPercent, err := rs.matchCustomGroupWithGrayStrategy(group, meta)
+			if err != nil {
+				return nil, err
 			}
 
 			if matched {
@@ -187,10 +148,63 @@ func (rs *ReleasedService) matchReleasedGroupWithLabels(
 	return selected, nil
 }
 
+// matchCustomGroupWithGrayStrategy 处理自定义分组的灰度匹配逻辑
+func (rs *ReleasedService) matchCustomGroupWithGrayStrategy(
+	group *ptypes.ReleasedGroupCache,
+	meta *types.AppInstanceMeta,
+) (matched bool, grayPercent float64, err error) {
+	if group.Selector == nil {
+		return false, 0, errf.New(errf.InvalidParameter, "custom group must have selector")
+	}
+
+	hasGrayPercent := false
+	// 检查是否有灰度标签并解析比例
+	for _, v := range group.Selector.LabelsAnd {
+		if v.Key == table.GrayPercentKey {
+			hasGrayPercent = true
+			grayPercent = rs.parseGrayPercent(v.Value)
+			break
+		}
+	}
+
+	if hasGrayPercent {
+		nonGrayMatched := false
+		// 灰度策略：先匹配其他标签，再进行灰度匹配
+		logs.Infof("Gray strategy detected, uid: %s, grayPercent: %.2f%%, selector: %v",
+			meta.Uid, grayPercent*100, group.Selector)
+
+		// 1. 先匹配除了gray_percent之外的其他标签
+		nonGrayMatched, err = rs.matchNonGrayLabels(group.Selector, meta.Labels)
+		if err != nil {
+			return false, 0, err
+		}
+
+		if nonGrayMatched {
+			// 2. 其他标签匹配成功，再进行灰度匹配
+			matched, err = rs.matchReleasedGrayClients(group, meta)
+			if err != nil {
+				return false, 0, err
+			}
+		}
+	} else {
+		// 普通标签匹配
+		matched, err = group.Selector.MatchLabels(meta.Labels)
+		if err != nil {
+			return false, 0, err
+		}
+	}
+
+	return matched, grayPercent, nil
+}
+
 // matchReleasedGrayClients 匹配灰度客户端
-func (rs *ReleasedService) matchReleasedGrayClients(group *ptypes.ReleasedGroupCache, meta *types.AppInstanceMeta) (matched bool, err error) {
+// nolint: unparam
+func (rs *ReleasedService) matchReleasedGrayClients(
+	group *ptypes.ReleasedGroupCache,
+	meta *types.AppInstanceMeta,
+) (matched bool, err error) {
 	// 1. 解析灰度百分比
-	var grayPercent float64 = 0
+	var grayPercent float64
 	for _, label := range group.Selector.LabelsAnd {
 		if label.Key == table.GrayPercentKey {
 			// 处理不同类型的 value
@@ -236,6 +250,7 @@ func (rs *ReleasedService) matchReleasedGrayClients(group *ptypes.ReleasedGroupC
 	// 这样设计确保：如果在20%时选中，在50%时一定还会选中
 	matched = hashPercent < grayPercent
 
+	// nolint:lll
 	logs.Infof("Gray client matching - UID: %s, ReleaseID: %d, Hash: %d, HashPercent: %.6f%%, GrayPercent: %.2f%%, Matched: %v",
 		meta.Uid, group.ReleaseID, hash, hashPercent*100, grayPercent*100, matched)
 
