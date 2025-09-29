@@ -1469,3 +1469,11 @@ type ITSMConfig struct {
 	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
 	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
 }
+
+// CMDBConfig cmdb相关的配置
+type CMDBConfig struct {
+	AppCode   string `yaml:"appCode"`
+	AppSecret string `yaml:"appSecret"`
+	Host      string `yaml:"host"`
+	UseEsb    bool   `yaml:"useEsb"`
+}

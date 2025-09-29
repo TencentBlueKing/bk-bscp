@@ -143,7 +143,7 @@
         rejectionReason.value = reject_reason || '--';
         publishTime.value = publish_time;
         finalApprovalTime.value = final_approval_time;
-        reviser.value = revision.reviser;
+        reviser.value = revision?.reviser || '';
         // itsm信息
         itsmData.value = { itsm_ticket_sn, itsm_ticket_url };
         sendData(resp.data);
