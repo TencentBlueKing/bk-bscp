@@ -29,7 +29,7 @@ import (
 
 const (
 	// 每天执行一次清理任务
-	defaultCleanupBizHostInterval = 24 * time.Hour
+	defaultCleanupBizHostInterval = 1 * time.Minute
 	// 每次处理的记录数
 	defaultCleanupBatchSize = 1000
 	// CMDB 请求限流

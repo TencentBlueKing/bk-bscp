@@ -1,0 +1,137 @@
+# Sync Service 配置文件 - 仅包含测试 SyncBizHost 所需的必要参数
+
+# 数据库分片配置 - 必需
+sharding:
+  # 管理数据库配置
+  adminDatabase:
+    # 数据库连接地址
+    endpoints:
+      - 127.0.0.1:3306
+    # 数据库名称
+    database: xxx
+    # 数据库用户名
+    user: xxx
+    # 数据库密码
+    password: xxx
+    # 连接超时时间（秒）
+    dialTimeoutSec: 15
+    # 读取超时时间（秒）
+    readTimeoutSec: 5
+    # 写入超时时间（秒）
+    writeTimeoutSec: 10
+    # 最大空闲连接数
+    maxOpenConn: 100
+    # 最大空闲连接数
+    maxIdleConn: 5
+    # 连接最大空闲时间（分钟）
+    maxIdleTimeoutMin: 3
+  # 慢查询日志阈值（毫秒）
+  maxSlowLogLatencyMS: 200
+  # 限流器配置
+  limiter:
+    qps: 500
+    burst: 500
+
+# 凭证配置 - 必需（用于加密存储的凭证信息）
+credential:
+  # 主密钥（用于加密/解密凭证）
+  master_key: "xxx"
+
+# GORM 配置 - 必需
+gorm:
+  # 日志级别 (silent, error, warn, info)
+  logLevel: error
+
+# 日志配置 - 必需
+log:
+  # 日志存储目录
+  logDir: ./logs
+  # 每个文件最大大小（MB）
+  maxPerFileSizeMB: 1024
+  # 每行最大大小（KB）
+  maxPerLineSizeKB: 2
+  # 日志文件最大数量
+  maxFileNum: 5
+  # 是否追加到最新日志文件
+  logAppend: false
+  # 是否只输出到标准错误
+  toStdErr: true
+  # 是否同时输出到文件和标准错误
+  alsoToStdErr: false
+  # 日志级别
+  verbosity: 2
+
+# 网络配置 - 必需（但不会被使用）
+network:
+  bindIP: 127.0.0.1
+  rpcPort: 9511
+  httpPort: 9611
+
+# 服务配置 - 必需（但不会被使用）
+service:
+  etcd:
+    endpoints:
+      - 127.0.0.1:2379
+
+# ESB 配置 - 必需（但不会被使用）
+esb:
+  endpoints:
+    - xxx
+  appCode: xxx
+  appSecret: xxx
+  bkUsername: xx
+  user: xxx
+
+# 仓库配置 - 必需（但不会被使用）
+repository:
+  storageType: BKREPO
+  bkRepo:
+    endpoints:
+      - http://xxx
+    project: xxxx
+    username: xxx
+    password: xxxxx
+  redisCluster:
+    endpoints:
+      - 127.0.0.1:6379
+
+# Vault 配置 - 必需（但不会被使用）
+vault:
+  address: http://127.0.0.1:8200
+  token: xxx
+
+# 特性标志配置 - 必需（但不会被使用）
+featureFlags:
+  BIZ_VIEW:
+    default: true
+  RESOURCE_LIMIT:
+    default:
+      maxFileSize: 100
+      appConfigCnt: 2000
+      tmplSetTmplCnt: 2000
+
+# Redis 集群配置 - 用于 cursor 缓存
+redisCluster:
+  # Redis 服务器地址列表
+  endpoints:
+    - 127.0.0.1:6379
+  # 用户名（可选）
+  username: ""
+  # 密码（可选）
+  password: ""
+  # 连接超时时间（毫秒）
+  dialTimeoutMS: 1000
+  # 读取超时时间（毫秒）
+  readTimeoutMS: 1000
+  # 写入超时时间（毫秒）
+  writeTimeoutMS: 1000
+  # 最小空闲连接数
+  minIdleConn: 5
+  # 数据库索引
+  db: 0
+  # 模式：standalone（单机）或 cluster（集群）
+  mode: standalone
+  # 连接池大小
+  poolSize: 10
+  # 慢查询日志阈值（毫秒）
+  maxSlowLogLatencyMS: 100

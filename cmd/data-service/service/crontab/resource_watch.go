@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	defaultWatchBizHostInterval = 3 * time.Minute  // Check events every 1 minute
+	defaultWatchBizHostInterval = 1 * time.Minute  // Check events every 1 minute
 	defaultWatchHostInterval    = 30 * time.Second // Check host update events every 30 seconds
 )
 
@@ -137,10 +137,9 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 	// 获取同步锁，阻塞等待直到获得锁
 	w.acquireEventWatchLock()
 	defer func() {
-		// 在释放锁前更新缓存cursor
+		// 在释放锁前更新Redis缓存cursor
 		if w.bizHostEventCursor != "" {
-			w.syncBizHost.cursorCache["biz_host_cursor"] = w.bizHostEventCursor
-			logs.Infof("updated cached cursor for biz_host_cursor: %s", w.bizHostEventCursor)
+			w.syncBizHost.UpdateCachedCursor(kt, "biz_host_cursor", w.bizHostEventCursor)
 		}
 		w.releaseEventWatchLock()
 	}()
@@ -152,8 +151,8 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		BkEventTypes: []string{createEvent, updateEvent},
 		BkFields:     []string{"bk_biz_id", "bk_host_id"},
 	}
-	// 先从缓存获取cursor，没有则使用时间戳获取事件
-	cachedCursor := w.syncBizHost.cursorCache["biz_host_cursor"]
+	// 先从Redis缓存获取cursor，没有则使用时间戳获取事件
+	cachedCursor := w.syncBizHost.GetCachedCursor(kt, "biz_host_cursor")
 	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
 		req.BkCursor = cachedCursor
@@ -246,10 +245,9 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		return
 	}
 	defer func() {
-		// 在释放锁前更新缓存cursor
+		// 在释放锁前更新Redis缓存cursor
 		if w.hostDetailEventCursor != "" {
-			w.syncBizHost.cursorCache["host_detail_cursor"] = w.hostDetailEventCursor
-			logs.Infof("updated cached cursor for host_detail_cursor: %s", w.hostDetailEventCursor)
+			w.syncBizHost.UpdateCachedCursor(kt, "host_detail_cursor", w.hostDetailEventCursor)
 		}
 		w.releaseEventWatchLock()
 	}()
@@ -263,7 +261,7 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		BkEventTypes: []string{updateEvent}, // Only care about update events
 		BkFields:     []string{"bk_host_id", "bk_agent_id"},
 	}
-	cachedCursor := w.syncBizHost.cursorCache["host_detail_cursor"]
+	cachedCursor := w.syncBizHost.GetCachedCursor(kt, "host_detail_cursor")
 	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
 		req.BkCursor = cachedCursor

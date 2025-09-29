@@ -20,6 +20,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -73,11 +74,18 @@ func main() {
 		log.Fatalf("初始化 CMDB 服务失败: %v", err)
 	}
 
+	// 创建 Redis 客户端 - 从配置文件加载
+	redisClient, err := bedis.NewRedisCache(cc.DataService().RedisCluster)
+	if err != nil {
+		log.Fatalf("初始化 Redis 客户端失败: %v", err)
+	}
+	logs.Infof("Redis 客户端初始化成功，连接地址: %v", cc.DataService().RedisCluster.Endpoints)
+
 	logs.Infof("===================== 启动定时任务 =====================")
 
 	// 启动业务主机关系同步定时任务
 	logs.Infof("启动业务主机关系同步定时任务...")
-	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, 500, 50.0)
+	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, redisClient, 500, 50.0)
 	syncBizHost.Run()
 
 	// 启动业务主机事件监听定时任务

@@ -314,6 +314,7 @@ type DataServiceSetting struct {
 	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 	Gorm         Gorm         `yaml:"gorm"`
 	ITSM         ITSMConfig   `yaml:"itsm"`
+	RedisCluster RedisCluster `yaml:"redisCluster"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -336,6 +337,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.Vault.getConfigFromEnv()
 	s.FeatureFlags.trySetDefault()
 	s.Gorm.trySetDefault()
+	s.RedisCluster.trySetDefault()
 }
 
 // Validate DataServiceSetting option.
@@ -370,6 +372,10 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.Gorm.validate(); err != nil {
+		return err
+	}
+
+	if err := s.RedisCluster.validate(); err != nil {
 		return err
 	}
 

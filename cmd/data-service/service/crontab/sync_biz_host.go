@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -30,7 +31,7 @@ import (
 
 const (
 	// sync data once a week
-	defaultSyncBizHostInterval = 7 * 24 * time.Hour
+	defaultSyncBizHostInterval = 1 * time.Minute
 	// Default QPS limit for CMDB requests
 	defaultQpsLimit = 50.0
 	// Default page size for list host requests
@@ -45,6 +46,7 @@ func NewSyncBizHost(
 	set dao.Set,
 	sd serviced.Service,
 	cmdbService bkcmdb.Service,
+	redisClient bedis.Client,
 	pageSize int,
 	qpsLimit float64,
 ) SyncBizHost {
@@ -63,10 +65,10 @@ func NewSyncBizHost(
 		set:         set,
 		state:       sd,
 		cmdbService: cmdbService,
+		redisClient: redisClient,
 		rateLimiter: rateLimiter,
 		pageSize:    pageSize,
 		qpsLimit:    qpsLimit,
-		cursorCache: make(map[string]string),
 	}
 }
 
@@ -75,6 +77,7 @@ type SyncBizHost struct {
 	set         dao.Set
 	state       serviced.Service
 	cmdbService bkcmdb.Service
+	redisClient bedis.Client
 	// rate limiter for CMDB requests
 	rateLimiter *rate.Limiter
 	// page size for list host requests
@@ -83,8 +86,6 @@ type SyncBizHost struct {
 	qpsLimit float64
 	// sync lock for coordination with event watch
 	syncLock sync.Mutex
-	// cursor cache for event coordination
-	cursorCache map[string]string
 }
 
 // Run the sync biz host task
@@ -244,7 +245,7 @@ func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
 	return bizList, nil
 }
 
-// cacheEventCursors 缓存事件cursor
+// cacheEventCursors 缓存事件cursor到Redis
 func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	// 获取3分钟前的时间戳
 	threeMinutesAgo := time.Now().Add(-3 * time.Minute).Unix()
@@ -253,18 +254,24 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get biz host cursor failed, err: %v", err)
-	} else {
-		c.cursorCache[bizHostCursorKey] = bizHostCursor
-		logs.Infof("cached biz host cursor: %s", bizHostCursor)
+	} else if bizHostCursor != "" {
+		if err := c.redisClient.Set(kt.Ctx, bizHostCursorKey, bizHostCursor, 7*24*3600); err != nil {
+			logs.Errorf("cache biz host cursor to redis failed, err: %v", err)
+		} else {
+			logs.Infof("cached biz host cursor to redis: %s", bizHostCursor)
+		}
 	}
 
 	// 获取主机详情更新事件的cursor
 	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get host detail cursor failed, err: %v", err)
-	} else {
-		c.cursorCache[hostDetailCursorKey] = hostDetailCursor
-		logs.Infof("cached host detail cursor: %s", hostDetailCursor)
+	} else if hostDetailCursor != "" {
+		if err := c.redisClient.Set(kt.Ctx, hostDetailCursorKey, hostDetailCursor, 7*24*3600); err != nil {
+			logs.Errorf("cache host detail cursor to redis failed, err: %v", err)
+		} else {
+			logs.Infof("cached host detail cursor to redis: %s", hostDetailCursor)
+		}
 	}
 
 	return nil
@@ -314,17 +321,21 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 	return "", nil
 }
 
-// GetCachedCursor 获取缓存的cursor
-func (c *SyncBizHost) GetCachedCursor(key string) string {
-	c.syncLock.Lock()
-	defer c.syncLock.Unlock()
-	return c.cursorCache[key]
+// GetCachedCursor 从Redis获取缓存的cursor
+func (c *SyncBizHost) GetCachedCursor(kt *kit.Kit, key string) string {
+	cursor, err := c.redisClient.Get(kt.Ctx, key)
+	if err != nil {
+		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", key, err)
+		return ""
+	}
+	return cursor
 }
 
-// UpdateCachedCursor 更新缓存的cursor
-func (c *SyncBizHost) UpdateCachedCursor(key, cursor string) {
-	c.syncLock.Lock()
-	defer c.syncLock.Unlock()
-	c.cursorCache[key] = cursor
-	logs.Infof("updated cached cursor for %s: %s", key, cursor)
+// UpdateCachedCursor 更新Redis中缓存的cursor
+func (c *SyncBizHost) UpdateCachedCursor(kt *kit.Kit, key, cursor string) {
+	if err := c.redisClient.Set(kt.Ctx, key, cursor, 7*24*3600); err != nil {
+		logs.Errorf("update cached cursor to redis failed, key: %s, cursor: %s, err: %v", key, cursor, err)
+	} else {
+		logs.Infof("updated cached cursor to redis for %s: %s", key, cursor)
+	}
 }
