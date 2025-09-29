@@ -1472,8 +1472,9 @@ type ITSMConfig struct {
 
 // CMDBConfig cmdb相关的配置
 type CMDBConfig struct {
-	AppCode   string `yaml:"appCode"`
-	AppSecret string `yaml:"appSecret"`
-	Host      string `yaml:"host"`
-	UseEsb    bool   `yaml:"useEsb"`
+	AppCode    string `yaml:"appCode"`
+	AppSecret  string `yaml:"appSecret"`
+	Host       string `yaml:"host"`
+	UseEsb     bool   `yaml:"useEsb"`
+	BkUserName string `yaml:"bkUserName"`
 }

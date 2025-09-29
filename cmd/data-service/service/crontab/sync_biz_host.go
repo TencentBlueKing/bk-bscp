@@ -34,7 +34,10 @@ const (
 	// Default QPS limit for CMDB requests
 	defaultQpsLimit = 50.0
 	// Default page size for list host requests
-	defaultPageSize = 1000
+	defaultPageSize = 500
+	// Cursor cache keys
+	bizHostCursorKey    = "biz_host_cursor"
+	hostDetailCursorKey = "host_detail_cursor"
 )
 
 // NewSyncBizHost init sync biz host with configurable settings
@@ -46,7 +49,7 @@ func NewSyncBizHost(
 	qpsLimit float64,
 ) SyncBizHost {
 	// Validate and set default values
-	if pageSize <= 0 {
+	if pageSize <= 0 || pageSize > defaultPageSize {
 		pageSize = defaultPageSize
 	}
 	if qpsLimit <= 0 {
@@ -63,6 +66,7 @@ func NewSyncBizHost(
 		rateLimiter: rateLimiter,
 		pageSize:    pageSize,
 		qpsLimit:    qpsLimit,
+		cursorCache: make(map[string]string),
 	}
 }
 
@@ -71,13 +75,16 @@ type SyncBizHost struct {
 	set         dao.Set
 	state       serviced.Service
 	cmdbService bkcmdb.Service
-	mutex       sync.Mutex
 	// rate limiter for CMDB requests
 	rateLimiter *rate.Limiter
 	// page size for list host requests
 	pageSize int
 	// qps limit for CMDB requests
 	qpsLimit float64
+	// sync lock for coordination with event watch
+	syncLock sync.RWMutex
+	// cursor cache for event coordination
+	cursorCache map[string]string
 }
 
 // Run the sync biz host task
@@ -85,6 +92,15 @@ func (c *SyncBizHost) Run() {
 	logs.Infof("start sync biz host task")
 	notifier := shutdown.AddNotifier()
 	go func() {
+		// 首次启动时立即执行一次全量同步
+		logs.Infof("performing initial full sync on service startup")
+		kt := kit.New()
+		ctx, cancel := context.WithCancel(kt.Ctx)
+		kt.Ctx = ctx
+		c.syncBizHost(kt)
+		cancel()
+
+		// 启动定时器，按间隔执行
 		ticker := time.NewTicker(defaultSyncBizHostInterval)
 		defer ticker.Stop()
 		for {
@@ -99,35 +115,44 @@ func (c *SyncBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
-				if !c.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip sync biz host")
-					continue
-				}
+				// if !c.state.IsMaster() {
+				// 	logs.Infof("current service instance is slave, skip sync biz host")
+				// 	continue
+				// }
 				logs.Infof("starts to synchronize the biz host")
-				c.SyncBizHost(kt)
+				c.syncBizHost(kt)
 			}
 		}
 	}()
 }
 
 // SyncBizHost sync business host relationship
-func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
-	c.mutex.Lock()
-	defer func() {
-		c.mutex.Unlock()
-	}()
+func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
+	// 获取同步锁，确保全量同步优先执行
+	c.syncLock.Lock()
+	defer c.syncLock.Unlock()
+	logs.Infof("acquired sync lock for full sync")
+
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
 		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
+	// 获取10分钟前的事件cursor并缓存
+	if err := c.cacheEventCursors(kt); err != nil {
+		logs.Errorf("cache event cursors failed, err: %v", err)
+		// 继续执行全量同步，不因cursor获取失败而中断
+	}
+
+	// 执行全量同步
 	// Query BSCP businesses
 	bizList, err := c.queryBSCPBusiness(kt)
 	if err != nil {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
+	logs.Infof("query BSCP business success, total businesses: %d", len(bizList))
 
 	// Query host information by business ID
 	for _, biz := range bizList {
@@ -218,4 +243,89 @@ func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
 	}
 
 	return bizList, nil
+}
+
+// cacheEventCursors 缓存事件cursor
+func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
+	// 获取10分钟前的时间戳
+	tenMinutesAgo := time.Now().Add(-10 * time.Minute).Unix()
+
+	// 获取业务主机关系事件的cursor
+	bizHostCursor, err := c.getEventCursor(kt, hostRelation, tenMinutesAgo)
+	if err != nil {
+		logs.Errorf("get biz host cursor failed, err: %v", err)
+	} else {
+		c.cursorCache[bizHostCursorKey] = bizHostCursor
+		logs.Infof("cached biz host cursor: %s", bizHostCursor)
+	}
+
+	// 获取主机详情更新事件的cursor
+	hostDetailCursor, err := c.getEventCursor(kt, "host", tenMinutesAgo)
+	if err != nil {
+		logs.Errorf("get host detail cursor failed, err: %v", err)
+	} else {
+		c.cursorCache[hostDetailCursorKey] = hostDetailCursor
+		logs.Infof("cached host detail cursor: %s", hostDetailCursor)
+	}
+
+	return nil
+}
+
+// getEventCursor 获取指定时间点的事件cursor
+func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime int64) (string, error) {
+	req := &bkcmdb.WatchResourceRequest{
+		BkResource:   resourceType,
+		BkEventTypes: []string{"create", "update"},
+		BkFields:     []string{"bk_biz_id", "bk_host_id"},
+		BkStartFrom:  &startTime,
+	}
+
+	switch resourceType {
+	case hostRelation:
+		watchResult, err := c.cmdbService.WatchHostRelationResource(kt.Ctx, req)
+		if err != nil {
+			return "", err
+		}
+		if !watchResult.Result {
+			return "", fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
+		}
+		// 从响应中提取最后一个事件的cursor
+		if len(watchResult.Data.BkEvents) > 0 {
+			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+			return lastEvent.BkCursor, nil
+		}
+	case host:
+		watchResult, err := c.cmdbService.WatchHostResource(kt.Ctx, req)
+		if err != nil {
+			return "", err
+		}
+		if !watchResult.Result {
+			return "", fmt.Errorf("watch host resource failed: %s", watchResult.Message)
+		}
+		// 从响应中提取最后一个事件的cursor
+		if len(watchResult.Data.BkEvents) > 0 {
+			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+			return lastEvent.BkCursor, nil
+		}
+	default:
+		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
+	}
+
+	// 未监听到事件，返回空字符串
+	return "", nil
+}
+
+// GetCachedCursor 获取缓存的cursor
+func (c *SyncBizHost) GetCachedCursor(key string) string {
+	c.syncLock.RLock()
+	defer c.syncLock.RUnlock()
+	return c.cursorCache[key]
+}
+
+// UpdateCachedCursor 更新缓存的cursor
+func (c *SyncBizHost) UpdateCachedCursor(key, cursor string) {
+	c.syncLock.Lock()
+	defer c.syncLock.Unlock()
+	c.cursorCache[key] = cursor
+	logs.Infof("updated cached cursor for %s: %s", key, cursor)
 }

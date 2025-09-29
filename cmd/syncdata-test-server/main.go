@@ -15,12 +15,13 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -29,7 +30,7 @@ func main() {
 	cc.InitService(cc.DataServiceName)
 
 	// 设置默认配置文件路径
-	defaultConfigFile := "config.yaml"
+	defaultConfigFile := "/root/config.yaml"
 
 	// 获取配置文件路径
 	var configFile string
@@ -58,26 +59,37 @@ func main() {
 		log.Fatalf("初始化 DAO set 失败: %v", err)
 	}
 
-	logs.Infof("DAO set 初始化成功，开始测试 SyncBizHost 定时任务")
+	logs.Infof("DAO set 初始化成功")
 	logs.Infof("配置文件: %s", configFile)
 
-	// 创建 SyncBizHost 实例
+	// 创建 CMDB 服务
 	cmdbService, err := bkcmdb.New(&cc.CMDBConfig{
-		AppCode:   cc.DataService().Esb.AppCode,
-		AppSecret: cc.DataService().Esb.AppSecret,
-		Host:      cc.DataService().Esb.Endpoints[0],
+		AppCode:    cc.DataService().Esb.AppCode,
+		AppSecret:  cc.DataService().Esb.AppSecret,
+		Host:       cc.DataService().Esb.Endpoints[0],
+		BkUserName: cc.DataService().Esb.User,
 	}, nil)
 	if err != nil {
 		log.Fatalf("初始化 CMDB 服务失败: %v", err)
 	}
-	// todo：从配置文件中读取page size
-	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, 500, 50.0)
-	kt := kit.New()
-	// 调用同步业务主机关系的方法
-	logs.Infof("开始执行同步业务主机关系...")
-	syncBizHost.SyncBizHost(kt)
-	logs.Infof("同步业务主机关系完成")
 
-	// 强制刷新日志
+	logs.Infof("===================== 启动定时任务 =====================")
+
+	// 启动业务主机关系同步定时任务
+	logs.Infof("启动业务主机关系同步定时任务...")
+	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, 500, 50.0)
+	syncBizHost.Run()
+
+	// 启动业务主机事件监听定时任务
+	logs.Infof("启动业务主机事件监听定时任务...")
+	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, &syncBizHost)
+	watchBizHost.Run()
+
+	// 等待关闭信号，让定时任务持续运行
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	logs.Infof("收到关闭信号，正在停止服务...")
 	logs.CloseLogs()
 }

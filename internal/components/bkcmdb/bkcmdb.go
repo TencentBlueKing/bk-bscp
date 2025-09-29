@@ -15,6 +15,7 @@ package bkcmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
@@ -48,8 +49,8 @@ var (
 	searchSet            = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
 	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
-	listBizHosts         = "%s/api/bk-cmdb/prod/api/v3/hosts/app/%d/list_hosts"
-	watchResource        = "%s/api/bk-cmdb/prod/api/v3/event/watch/resource/%s"
+	listBizHosts         = "%s/prod/api/v3/hosts/app/%d/list_hosts"
+	watchResource        = "%s/prod/api/v3/event/watch/resource/%s"
 )
 
 type HTTPMethod string
@@ -65,14 +66,10 @@ type CMDBService struct {
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
-
-	// 组装网关认证信息
-	gwAuthOptions := []components.GWAuthOption{}
-
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
 		bkcmdb.AppSecret,
-		gwAuthOptions...,
+		components.WithBkUsername(bkcmdb.BkUserName),
 	)
 
 	// 构造请求
@@ -97,10 +94,15 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 	if err != nil {
 		return err
 	}
+	logs.Infof("===================== do request success, resp: %+v =====================", resp)
 
 	// 统一反序列化结果
-	if err := components.UnmarshalBKResult(resp, result); err != nil {
-		logs.Errorf("unmarshal bk result failed, err: %v", err)
+	// if err := components.UnmarshalBKResult(resp, result); err != nil {
+	// 	logs.Errorf("unmarshal bk result failed, err: %v", err)
+	// 	return err
+	// }
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
+		logs.Errorf("unmarshal cmdb response failed, err: %v", err)
 		return err
 	}
 	return nil
@@ -359,6 +361,7 @@ func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchReso
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
+	logs.Infof("===================== watch host resource success, resp: %+v =====================", resp)
 
 	return resp, nil
 }
