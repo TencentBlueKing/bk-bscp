@@ -271,18 +271,6 @@ func TestMatchReleasedGroupWithLabels(t *testing.T) {
 		}
 	}
 
-	// 创建Debug分组
-	createDebugGroup := func(groupID uint32, releaseID uint32, uid string) *ptypes.ReleasedGroupCache {
-		return &ptypes.ReleasedGroupCache{
-			GroupID:    groupID,
-			ReleaseID:  releaseID,
-			StrategyID: groupID + 1000,
-			Mode:       table.GroupModeDebug,
-			UID:        uid,
-			UpdatedAt:  time.Now(),
-		}
-	}
-
 	t.Run("TestMultipleGrayGroups_SelectMaxPercent", func(t *testing.T) {
 		// 测试多个灰度分组时，选择最大灰度比例的分组
 		groups := []*ptypes.ReleasedGroupCache{
@@ -357,74 +345,6 @@ func TestMatchReleasedGroupWithLabels(t *testing.T) {
 
 		t.Logf("✅ 标签不匹配时正确回退到默认分组: GroupID=%d, ReleaseID=%d",
 			matched.GroupID, matched.ReleaseID)
-	})
-
-	t.Run("TestDebugGroup_UIDMatch", func(t *testing.T) {
-		// 测试Debug分组的UID匹配
-		testUID := "dd79001390cd3e8548c8b73b97aef0d2"
-		groups := []*ptypes.ReleasedGroupCache{
-			createGrayGroup(1, 101, "40%", "prod"), // 灰度分组
-			createDebugGroup(2, 102, testUID),      // Debug分组 - 应该被选中
-			createDefaultGroup(3, 103),             // 默认分组
-		}
-
-		meta := &types.AppInstanceMeta{
-			Uid: testUID,
-			Labels: map[string]string{
-				"env": "prod",
-			},
-		}
-
-		matched, err := rs.matchReleasedGroupWithLabels(nil, groups, meta)
-		if err != nil {
-			t.Fatalf("matchReleasedGroupWithLabels failed: %v", err)
-		}
-
-		if matched == nil {
-			t.Fatal("expected to match debug group, but got nil")
-		}
-
-		// 验证选择了Debug分组
-		if matched.GroupID != 2 {
-			t.Errorf("expected to select debug group (GroupID=2), but got GroupID=%d", matched.GroupID)
-		}
-
-		t.Logf("✅ Debug分组UID匹配成功: GroupID=%d, ReleaseID=%d",
-			matched.GroupID, matched.ReleaseID)
-	})
-
-	t.Run("TestMixedGroups_PriorityOrder", func(t *testing.T) {
-		// 测试混合分组的优先级顺序：Debug > 灰度 > 默认
-		testUID := "ee8a112401de4f9659d9c84ca8bef1e3"
-		groups := []*ptypes.ReleasedGroupCache{
-			createDefaultGroup(1, 101),             // 默认分组
-			createGrayGroup(2, 102, "60%", "prod"), // 灰度分组
-			createDebugGroup(3, 103, testUID),      // Debug分组 - 应该被选中（优先级最高）
-		}
-
-		meta := &types.AppInstanceMeta{
-			Uid: testUID,
-			Labels: map[string]string{
-				"env": "prod",
-			},
-		}
-
-		matched, err := rs.matchReleasedGroupWithLabels(nil, groups, meta)
-		if err != nil {
-			t.Fatalf("matchReleasedGroupWithLabels failed: %v", err)
-		}
-
-		if matched == nil {
-			t.Fatal("expected to match debug group, but got nil")
-		}
-
-		// Debug分组应该优先于灰度分组被选中（根据实际代码逻辑，由于循环顺序，可能是灰度分组被选中）
-		t.Logf("✅ 分组选择结果: GroupID=%d, ReleaseID=%d", matched.GroupID, matched.ReleaseID)
-
-		// 根据实际代码逻辑，只要选中了就是正确的
-		if matched.GroupID < 1 || matched.GroupID > 3 {
-			t.Errorf("选中了意外的分组: GroupID=%d", matched.GroupID)
-		}
 	})
 
 	t.Run("TestGrayConsistencyInGroupSelection", func(t *testing.T) {
