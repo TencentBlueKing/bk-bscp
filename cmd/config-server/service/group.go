@@ -14,6 +14,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -470,6 +471,7 @@ func (s *Service) validateGrayPercentKey(grpcKit *kit.Kit, pbSelector *structpb.
 // 支持的格式：整数(1-99)、浮点数(20.0)
 func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 	var percent float64
+	var err error
 	switch v := value.(type) {
 	case int64:
 		// 整数类型：直接使用
@@ -480,6 +482,12 @@ func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 	case int:
 		// int类型
 		percent = float64(v)
+	case string:
+		percent, err = strconv.ParseFloat(v, 64)
+		if err != nil {
+			logs.Warnf("invalid gray_percent value type: %T, value: %v", value, v)
+			return false
+		}
 	default:
 		// 不支持的类型
 		logs.Warnf("unsupported gray_percent value type: %T", value)
