@@ -33,6 +33,8 @@ type Service interface {
 	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse[WatchResourceData[HostDetail]], error)
 	// WatchHostRelationResource 监听主机关系资源变化
 	WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse[WatchResourceData[HostRelationDetail]], error)
+	// FindHostBizRelations 查询主机业务关系信息
+	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (*FindHostBizRelationsResponse, error)
 }
 
 // New cmdb service

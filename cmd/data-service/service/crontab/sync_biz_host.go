@@ -82,7 +82,7 @@ type SyncBizHost struct {
 	// qps limit for CMDB requests
 	qpsLimit float64
 	// sync lock for coordination with event watch
-	syncLock sync.RWMutex
+	syncLock sync.Mutex
 	// cursor cache for event coordination
 	cursorCache map[string]string
 }
@@ -139,13 +139,12 @@ func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
 		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
-	// 获取10分钟前的事件cursor并缓存
+	// 获取3分钟前的事件cursor并缓存
 	if err := c.cacheEventCursors(kt); err != nil {
 		logs.Errorf("cache event cursors failed, err: %v", err)
 		// 继续执行全量同步，不因cursor获取失败而中断
 	}
 
-	// 执行全量同步
 	// Query BSCP businesses
 	bizList, err := c.queryBSCPBusiness(kt)
 	if err != nil {
@@ -247,11 +246,11 @@ func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
 
 // cacheEventCursors 缓存事件cursor
 func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
-	// 获取10分钟前的时间戳
-	tenMinutesAgo := time.Now().Add(-10 * time.Minute).Unix()
+	// 获取3分钟前的时间戳
+	threeMinutesAgo := time.Now().Add(-3 * time.Minute).Unix()
 
 	// 获取业务主机关系事件的cursor
-	bizHostCursor, err := c.getEventCursor(kt, hostRelation, tenMinutesAgo)
+	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get biz host cursor failed, err: %v", err)
 	} else {
@@ -260,7 +259,7 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	}
 
 	// 获取主机详情更新事件的cursor
-	hostDetailCursor, err := c.getEventCursor(kt, "host", tenMinutesAgo)
+	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get host detail cursor failed, err: %v", err)
 	} else {
@@ -317,8 +316,8 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 
 // GetCachedCursor 获取缓存的cursor
 func (c *SyncBizHost) GetCachedCursor(key string) string {
-	c.syncLock.RLock()
-	defer c.syncLock.RUnlock()
+	c.syncLock.Lock()
+	defer c.syncLock.Unlock()
 	return c.cursorCache[key]
 }
 

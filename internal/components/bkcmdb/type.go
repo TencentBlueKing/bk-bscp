@@ -456,3 +456,21 @@ type HostRelationDetail struct {
 
 // HostRelationEvent 主机关系事件
 type HostRelationEvent = Event[HostRelationDetail]
+
+// FindHostBizRelationsRequest 查询主机业务关系请求参数
+type FindHostBizRelationsRequest struct {
+	BkBizID  int   `json:"bk_biz_id"`  // 业务ID
+	BkHostID []int `json:"bk_host_id"` // 主机ID列表
+}
+
+// HostBizRelation 主机业务关系信息
+type HostBizRelation struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	BkHostID          int    `json:"bk_host_id"`          // 主机ID
+	BkModuleID        int    `json:"bk_module_id"`        // 模块ID
+	BkSetID           int    `json:"bk_set_id"`           // 集群ID
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+}
+
+// FindHostBizRelationsResponse 查询主机业务关系响应
+type FindHostBizRelationsResponse = CMDBResponse[[]HostBizRelation]

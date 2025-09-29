@@ -85,6 +85,11 @@ func main() {
 	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, &syncBizHost)
 	watchBizHost.Run()
 
+	// 启动业务主机关系清理定时任务
+	logs.Infof("启动业务主机关系清理定时任务...")
+	cleanupBizHost := crontab.NewCleanupBizHost(daoSet, nil, cmdbService, &syncBizHost)
+	cleanupBizHost.Run()
+
 	// 等待关闭信号，让定时任务持续运行
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

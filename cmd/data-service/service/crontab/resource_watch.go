@@ -28,12 +28,17 @@ import (
 )
 
 const (
-	defaultWatchBizHostInterval = 1 * time.Minute  // Check events every 1 minute
-	defaultWatchHostInterval    = 10 * time.Second // Check host update events every 30 seconds
+	defaultWatchBizHostInterval = 3 * time.Minute  // Check events every 1 minute
+	defaultWatchHostInterval    = 30 * time.Second // Check host update events every 30 seconds
 )
 
 // NewWatchBizHost init watch biz host
-func NewWatchBizHost(set dao.Set, sd serviced.Service, cmdbService bkcmdb.Service, syncBizHost *SyncBizHost) WatchBizHost {
+func NewWatchBizHost(
+	set dao.Set,
+	sd serviced.Service,
+	cmdbService bkcmdb.Service,
+	syncBizHost *SyncBizHost,
+) WatchBizHost {
 	// 当失去游标时，从30分钟前开始监听
 	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
 	return WatchBizHost{
@@ -129,19 +134,17 @@ const (
 
 // watchBizHost watch business host relationship changes
 func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
-	// 检查同步锁，如果全量同步正在进行，则暂停事件监听
-	if !w.acquireEventWatchLock() {
-		logs.Infof("sync lock is held by full sync, skip event watch")
-		return
-	}
-	defer w.releaseEventWatchLock()
-
-	// 优先从缓存获取cursor，如果没有则使用本地cursor
-	cachedCursor := w.syncBizHost.GetCachedCursor("biz_host_cursor")
-	if cachedCursor != "" {
-		w.bizHostEventCursor = cachedCursor
-		logs.Infof("using cached biz host cursor: %s", cachedCursor)
-	}
+	// 获取同步锁，阻塞等待直到获得锁
+	w.acquireEventWatchLock()
+	defer func() {
+		// 在释放锁前更新缓存cursor
+		if w.bizHostEventCursor != "" {
+			w.syncBizHost.cursorCache["biz_host_cursor"] = w.bizHostEventCursor
+			logs.Infof("updated cached cursor for biz_host_cursor: %s", w.bizHostEventCursor)
+		}
+		w.releaseEventWatchLock()
+	}()
+	logs.Infof("acquired sync lock, starting host relation watch")
 
 	// Listen to host relationship change events
 	req := &bkcmdb.WatchResourceRequest{
@@ -149,9 +152,11 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		BkEventTypes: []string{createEvent, updateEvent},
 		BkFields:     []string{"bk_biz_id", "bk_host_id"},
 	}
-	if w.bizHostEventCursor != "" {
+	// 先从缓存获取cursor，没有则使用时间戳获取事件
+	cachedCursor := w.syncBizHost.cursorCache["biz_host_cursor"]
+	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
-		req.BkCursor = w.bizHostEventCursor
+		req.BkCursor = cachedCursor
 	} else {
 		// For first listening, get events from the last 30 minutes
 		req.BkStartFrom = &w.startTime
@@ -172,6 +177,7 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		logs.Infof("no host relation events found")
 		return
 	}
+	logs.Infof("watch host relation resource success, total events: %d", len(watchResult.Data.BkEvents))
 
 	// Process events (no type conversion needed - type alias)
 	if len(watchResult.Data.BkEvents) > 0 {
@@ -182,8 +188,6 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		// Update cursor to the last event's cursor
 		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
 		w.bizHostEventCursor = lastEvent.BkCursor
-		// 同时更新缓存中的cursor
-		w.syncBizHost.UpdateCachedCursor("biz_host_cursor", lastEvent.BkCursor)
 	}
 }
 
@@ -236,19 +240,22 @@ func (w *WatchBizHost) handleHostRelationEvent(kt *kit.Kit, event bkcmdb.HostRel
 
 // watchHostUpdates watch host update events
 func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
-	// 检查同步锁，如果全量同步正在进行，则暂停事件监听
-	if !w.acquireEventWatchLock() {
-		logs.Infof("sync lock is held by full sync, skip host update watch")
+	// 尝试获取同步锁，如果失败则暂时放弃
+	if !w.tryAcquireEventWatchLock() {
+		logs.Infof("sync lock is held by other task, skip host update watch")
 		return
 	}
-	defer w.releaseEventWatchLock()
+	defer func() {
+		// 在释放锁前更新缓存cursor
+		if w.hostDetailEventCursor != "" {
+			w.syncBizHost.cursorCache["host_detail_cursor"] = w.hostDetailEventCursor
+			logs.Infof("updated cached cursor for host_detail_cursor: %s", w.hostDetailEventCursor)
+		}
+		w.releaseEventWatchLock()
+	}()
+	logs.Infof("acquired sync lock, starting host update watch")
 
 	// 优先从缓存获取cursor，如果没有则使用本地cursor
-	cachedCursor := w.syncBizHost.GetCachedCursor("host_detail_cursor")
-	if cachedCursor != "" {
-		w.hostDetailEventCursor = cachedCursor
-		logs.Infof("using cached host detail cursor: %s", cachedCursor)
-	}
 
 	// Listen to host update events
 	req := &bkcmdb.WatchResourceRequest{
@@ -256,10 +263,10 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		BkEventTypes: []string{updateEvent}, // Only care about update events
 		BkFields:     []string{"bk_host_id", "bk_agent_id"},
 	}
-
-	if w.hostDetailEventCursor != "" {
+	cachedCursor := w.syncBizHost.cursorCache["host_detail_cursor"]
+	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
-		req.BkCursor = w.hostDetailEventCursor
+		req.BkCursor = cachedCursor
 	} else {
 		// For first listening, get events from the last 30 minutes
 		req.BkStartFrom = &w.startTime
@@ -270,7 +277,6 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		logs.Errorf("watch host resource failed, err: %v", err)
 		return
 	}
-	logs.Infof("===================== watch host resource success, resp: %+v =====================", watchResult)
 
 	if !watchResult.Result {
 		logs.Errorf("watch host resource failed: %s", watchResult.Message)
@@ -281,34 +287,31 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		logs.Infof("no host update events found")
 		return
 	}
-	logs.Infof("watch host resource success, total events: %d", len(watchResult.Data.BkEvents))
+	logs.Infof("watch host detail resource success, total events: %d", len(watchResult.Data.BkEvents))
 
 	// Process host update events (no type conversion needed - type alias)
 	if len(watchResult.Data.BkEvents) > 0 {
 		w.processHostEvents(kt, watchResult.Data.BkEvents)
 		// Update host cursor to the last event's cursor
 		w.hostDetailEventCursor = watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
-		// 同时更新缓存中的cursor
-		w.syncBizHost.UpdateCachedCursor("host_detail_cursor", w.hostDetailEventCursor)
 	}
 }
 
 // processHostEvents process host event list
 func (w *WatchBizHost) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEvent) {
 	successCount := 0
-	failureCount := 0
+	skipCount := 0
 	for _, event := range events {
 		if err := w.processHostEvent(kt, event); err != nil {
-			// 记录失败游标
 			logs.Errorf("process host event failed, event: %s, err: %v", event.BkCursor, err)
 			// Skip failed events, rely on full data sync and other fallback measures
-			failureCount++
+			skipCount++
 			continue
 		}
 		successCount++
 	}
 	logs.Infof("successfully processed %d/%d host events", successCount, len(events))
-	logs.Infof("failed to process %d/%d host events", failureCount, len(events))
+	logs.Infof("skip %d/%d host events", skipCount, len(events))
 }
 
 // processHostEvent process single host event
@@ -370,13 +373,19 @@ func (w *WatchBizHost) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent
 	return nil
 }
 
-// acquireEventWatchLock 获取事件监听锁
-func (w *WatchBizHost) acquireEventWatchLock() bool {
-	// 尝试获取读锁，如果全量同步正在进行（写锁），则返回false
-	return w.syncBizHost.syncLock.TryRLock()
+// acquireEventWatchLock 获取事件监听锁（阻塞等待）
+func (w *WatchBizHost) acquireEventWatchLock() {
+	// 阻塞等待获取锁，确保不被其他任务抢占
+	w.syncBizHost.syncLock.Lock()
+}
+
+// tryAcquireEventWatchLock 尝试获取事件监听锁（非阻塞）
+func (w *WatchBizHost) tryAcquireEventWatchLock() bool {
+	// 尝试获取锁，如果失败则返回false
+	return w.syncBizHost.syncLock.TryLock()
 }
 
 // releaseEventWatchLock 释放事件监听锁
 func (w *WatchBizHost) releaseEventWatchLock() {
-	w.syncBizHost.syncLock.RUnlock()
+	w.syncBizHost.syncLock.Unlock()
 }

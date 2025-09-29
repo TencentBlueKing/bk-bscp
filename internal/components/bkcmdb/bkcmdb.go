@@ -51,6 +51,7 @@ var (
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
 	listBizHosts         = "%s/prod/api/v3/hosts/app/%d/list_hosts"
 	watchResource        = "%s/prod/api/v3/event/watch/resource/%s"
+	findHostBizRelations = "%s/prod/api/v3/host/relation/read"
 )
 
 type HTTPMethod string
@@ -94,7 +95,6 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 	if err != nil {
 		return err
 	}
-	logs.Infof("===================== do request success, resp: %+v =====================", resp)
 
 	// 统一反序列化结果
 	// if err := components.UnmarshalBKResult(resp, result); err != nil {
@@ -361,7 +361,6 @@ func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchReso
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
-	logs.Infof("===================== watch host resource success, resp: %+v =====================", resp)
 
 	return resp, nil
 }
@@ -376,6 +375,26 @@ func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *W
 	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
 
 	resp := new(HostRelationWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// FindHostBizRelations 查询主机业务关系信息
+func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
+	*FindHostBizRelationsResponse, error) {
+	if req.BkBizID == 0 {
+		return nil, fmt.Errorf("bk_biz_id is required")
+	}
+	if len(req.BkHostID) == 0 {
+		return nil, fmt.Errorf("bk_host_id list is required")
+	}
+
+	url := fmt.Sprintf(findHostBizRelations, bkcmdb.Host)
+
+	resp := new(FindHostBizRelationsResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
