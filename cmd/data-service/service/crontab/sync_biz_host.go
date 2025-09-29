@@ -25,19 +25,44 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"golang.org/x/time/rate"
 )
 
 const (
 	// sync data once a week
 	defaultSyncBizHostInterval = 7 * 24 * time.Hour
+	// Default QPS limit for CMDB requests
+	defaultQpsLimit = 50.0
+	// Default page size for list host requests
+	defaultPageSize = 1000
 )
 
-// NewSyncBizHost init sync biz host
-func NewSyncBizHost(set dao.Set, sd serviced.Service, cmdbService bkcmdb.Service) SyncBizHost {
+// NewSyncBizHost init sync biz host with configurable settings
+func NewSyncBizHost(
+	set dao.Set,
+	sd serviced.Service,
+	cmdbService bkcmdb.Service,
+	pageSize int,
+	qpsLimit float64,
+) SyncBizHost {
+	// Validate and set default values
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+	if qpsLimit <= 0 {
+		qpsLimit = defaultQpsLimit
+	}
+
+	// Create rate limiter with configurable QPS
+	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
+
 	return SyncBizHost{
 		set:         set,
 		state:       sd,
 		cmdbService: cmdbService,
+		rateLimiter: rateLimiter,
+		pageSize:    pageSize,
+		qpsLimit:    qpsLimit,
 	}
 }
 
@@ -47,6 +72,12 @@ type SyncBizHost struct {
 	state       serviced.Service
 	cmdbService bkcmdb.Service
 	mutex       sync.Mutex
+	// rate limiter for CMDB requests
+	rateLimiter *rate.Limiter
+	// page size for list host requests
+	pageSize int
+	// qps limit for CMDB requests
+	qpsLimit float64
 }
 
 // Run the sync biz host task
@@ -68,7 +99,6 @@ func (c *SyncBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
-				// todo: 暂时不考虑主从问题
 				if !c.state.IsMaster() {
 					logs.Infof("current service instance is slave, skip sync biz host")
 					continue
@@ -80,11 +110,16 @@ func (c *SyncBizHost) Run() {
 	}()
 }
 
-// syncBizHost sync business host relationship
+// SyncBizHost sync business host relationship
 func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 	c.mutex.Lock()
 	defer func() {
 		c.mutex.Unlock()
+	}()
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
 	// Query BSCP businesses
@@ -93,8 +128,6 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
-	fmt.Println("bizList", bizList)
-	return
 
 	// Query host information by business ID
 	for _, biz := range bizList {
@@ -104,35 +137,12 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 			continue
 		}
 	}
-
-	logs.Infof("sync biz host completed")
-}
-
-// queryBSCPBusiness query BSCP businesses
-func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
-	m := c.set.GenQuery().App
-	bizIDs, err := c.set.GenQuery().App.WithContext(kt.Ctx).
-		Select(m.BizID.Distinct()).
-		Find()
-	if err != nil {
-		return nil, fmt.Errorf("query biz IDs failed: %w", err)
-	}
-
-	var bizList []int
-	for _, app := range bizIDs {
-		bizList = append(bizList, int(app.BizID))
-	}
-
-	return bizList, nil
 }
 
 // syncBusinessHosts sync host information for a single business
 func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
-	// Query hosts under the business
-	// TODO: Some hosts may have empty agentid, may need filtering
-	// TODO: Support configuration for query count
 	start := 0
-	limit := 1000
+	limit := c.pageSize
 	totalSynced := 0
 	for {
 		req := &bkcmdb.ListBizHostsRequest{
@@ -142,6 +152,11 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 				Limit: limit,
 			},
 			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id"},
+		}
+
+		// Apply rate limiting before each request
+		if err := c.rateLimiter.Wait(kt.Ctx); err != nil {
+			return fmt.Errorf("rate limiter wait failed: %w", err)
 		}
 
 		hostResult, err := c.cmdbService.ListBizHosts(kt.Ctx, req)
@@ -185,4 +200,22 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 
 	logs.Infof("completed sync for business %d, total hosts: %d", bizID, totalSynced)
 	return nil
+}
+
+// queryBSCPBusiness query BSCP businesses
+func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
+	m := c.set.GenQuery().App
+	bizIDs, err := c.set.GenQuery().App.WithContext(kt.Ctx).
+		Select(m.BizID.Distinct()).
+		Find()
+	if err != nil {
+		return nil, fmt.Errorf("query biz IDs failed: %w", err)
+	}
+
+	var bizList []int
+	for _, app := range bizIDs {
+		bizList = append(bizList, int(app.BizID))
+	}
+
+	return bizList, nil
 }

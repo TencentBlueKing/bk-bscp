@@ -28,6 +28,10 @@ type BizHost interface {
 	BatchUpsert(kit *kit.Kit, bizHosts []*table.BizHost) error
 	// List list biz host relationships
 	List(kit *kit.Kit, bizID int) ([]*table.BizHost, error)
+	// ListAllByHostID list all biz host relationships by hostID
+	ListAllByHostID(kit *kit.Kit, hostID int) ([]*table.BizHost, error)
+	// UpdateByBizHost update biz host by bizID and hostID (only if exists)
+	UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) error
 	// Delete delete biz host relationship
 	Delete(kit *kit.Kit, bizID, hostID int) error
 }
@@ -69,12 +73,34 @@ func (dao *bizHostDao) List(kit *kit.Kit, bizID int) ([]*table.BizHost, error) {
 		Find()
 }
 
+// ListAllByHostID list all biz host relationships by hostID
+func (dao *bizHostDao) ListAllByHostID(kit *kit.Kit, hostID int) ([]*table.BizHost, error) {
+	m := dao.genQ.BizHost
+	return dao.genQ.BizHost.WithContext(kit.Ctx).
+		Where(m.HostID.Eq(hostID)).
+		Find()
+}
+
 // Delete delete biz host relationship
 func (dao *bizHostDao) Delete(kit *kit.Kit, bizID, hostID int) error {
 	m := dao.genQ.BizHost
 	_, err := dao.genQ.BizHost.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(bizID), m.HostID.Eq(hostID)).
 		Delete(&table.BizHost{})
+
+	return err
+}
+
+// UpdateByBizHost update biz host by bizID and hostID (only if exists)
+func (dao *bizHostDao) UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) error {
+	if bizHost == nil {
+		return errors.New("biz host is nil")
+	}
+
+	m := dao.genQ.BizHost
+	_, err := dao.genQ.BizHost.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizHost.BizID), m.HostID.Eq(bizHost.HostID)).
+		Update(m.AgentID, bizHost.AgentID)
 
 	return err
 }

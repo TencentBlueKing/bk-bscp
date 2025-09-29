@@ -70,11 +70,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("初始化 CMDB 服务失败: %v", err)
 	}
-	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService)
-
-	// 创建 kit 上下文
+	// todo：从配置文件中读取page size
+	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, 500, 50.0)
 	kt := kit.New()
-
 	// 调用同步业务主机关系的方法
 	logs.Infof("开始执行同步业务主机关系...")
 	syncBizHost.SyncBizHost(kt)

@@ -345,3 +345,37 @@ func (bkcmdb *CMDBService) WatchResource(ctx context.Context, req *WatchResource
 
 	return resp, nil
 }
+
+// WatchHostResource 监听主机资源变化（类型安全的便捷方法）
+func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// WatchHostRelationResource 监听主机关系资源变化（类型安全的便捷方法）
+func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostRelationWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostRelationWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}

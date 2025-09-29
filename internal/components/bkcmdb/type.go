@@ -84,6 +84,21 @@ type CMDBResponse[T any] struct {
 // HostRelationWatchResponse 主机关系监听响应
 type HostRelationWatchResponse = CMDBResponse[HostRelationWatchData]
 
+// HostWatchData 主机监听数据
+type HostWatchData = WatchResourceData[HostDetail]
+
+// HostDetail 主机事件详情
+type HostDetail struct {
+	BkHostID  *int    `json:"bk_host_id"`  // 主机ID
+	BkAgentID *string `json:"bk_agent_id"` // Agent ID
+}
+
+// HostWatchResponse 主机监听响应
+type HostWatchResponse = CMDBResponse[HostWatchData]
+
+// HostEvent 主机事件
+type HostEvent = Event[HostDetail]
+
 // CMDBListData 表示带数量和列表的 Data
 type CMDBListData[T any] struct {
 	Count int `json:"count"` // 记录条数
