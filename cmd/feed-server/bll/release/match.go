@@ -222,10 +222,10 @@ func (rs *ReleasedService) matchReleasedGrayClients(group *ptypes.ReleasedGroupC
 	}
 
 	// 2. 生成稳定的客户端哈希值
-	// 关键设计：只使用 UID + GroupID
-	// 原因：灰度是针对同一个Release的不同比例分发，ReleaseID在整个灰度过程中保持不变
+	// 关键设计：使用 UID + ReleaseID 确保同一版本下不同灰度分组的一致性
+	// 原因：递进式灰度中，不同分组的GroupID不同，但ReleaseID相同
 	// 这样确保20%选中的客户端在扩展到50%时依然被选中
-	hashSeed := fmt.Sprintf("%s:%d", meta.Uid, group.GroupID)
+	hashSeed := fmt.Sprintf("%s:%d", meta.Uid, group.ReleaseID)
 	hash := crc32.ChecksumIEEE([]byte(hashSeed))
 
 	// 3. 映射到 [0, 1) 区间，使用高精度计算
@@ -236,8 +236,8 @@ func (rs *ReleasedService) matchReleasedGrayClients(group *ptypes.ReleasedGroupC
 	// 这样设计确保：如果在20%时选中，在50%时一定还会选中
 	matched = hashPercent < grayPercent
 
-	logs.Infof("Gray client matching - UID: %s, GroupID: %d, Hash: %d, HashPercent: %.6f, GrayPercent: %.2f%%, Matched: %v",
-		meta.Uid, group.GroupID, hash, hashPercent, grayPercent*100, matched)
+	logs.Infof("Gray client matching - UID: %s, ReleaseID: %d, Hash: %d, HashPercent: %.6f%%, GrayPercent: %.2f%%, Matched: %v",
+		meta.Uid, group.ReleaseID, hash, hashPercent*100, grayPercent*100, matched)
 
 	return matched, nil
 }
