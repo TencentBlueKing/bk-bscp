@@ -132,6 +132,11 @@ func (wh *watchHandler) eventReceiver(event *eventc.Event, sn uint64) bool {
 		Type:       uint32(releasePayload.MessageType()),
 		Payload:    payload,
 	}
+	// send the release message to sidecar.
+	if releasePayload.ReleaseMeta != nil {
+		logs.Infof("send release message to sidecar, fingerprint: %s, sn: %d, rid: %s, appID: %d, releaseID: %d",
+			wh.im.Meta.Fingerprint, sn, rid, releasePayload.ReleaseMeta.AppID, releasePayload.ReleaseMeta.ReleaseID)
+	}
 	if err := wh.stream.Send(wm); err != nil {
 		logs.Errorf("send release message to sidecar failed, fingerprint: %s, sn: %d, err: %v, rid: %s",
 			wh.im.Meta.Fingerprint, sn, err, rid)

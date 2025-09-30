@@ -181,6 +181,9 @@ const (
 	// GroupModeBuiltIn define bscp built-in group,eg. ClusterID, Namespace, CMDBModuleID...
 	// Note: GroupModeBuiltIn define bscp built-in group,eg. ClusterID, Namespace, CMDBModuleID...
 	GroupModeBuiltIn GroupMode = "builtin"
+	// GrayPercentKey is the key of gray percent.
+	// 用于设置针对客户端的灰度比例
+	GrayPercentKey = "gray_percent"
 )
 
 // GroupMode is the mode of an group works in

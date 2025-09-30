@@ -15,13 +15,16 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
 
 // Publish publish a strategy
@@ -79,6 +82,10 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 	if err != nil {
 		return nil, err
 	}
+	if err = s.validateGrayPercentGroups(grpcKit, req.Groups); err != nil {
+		logs.Errorf("validate gray percent groups failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
 
 	r := &pbds.SubmitPublishApproveReq{
 		BizId:           req.BizId,
@@ -107,6 +114,107 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 		HavePull:        rp.HavePull,
 	}
 	return resp, nil
+}
+
+// validateGrayPercentGroups 校验灰度比例分组
+// nolint:funlen
+func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, groups []uint32) error {
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// 过滤ID为0（默认分组）的group
+	validGroupIDs := make([]uint32, 0)
+	for _, groupID := range groups {
+		if groupID != 0 {
+			validGroupIDs = append(validGroupIDs, groupID)
+		}
+	}
+
+	// 如果过滤后没有有效的group，直接返回
+	if len(validGroupIDs) == 0 {
+		return nil
+	}
+
+	// 获取所有分组的详细信息
+	groupDetails := make([]*table.Group, 0)
+	for _, groupID := range validGroupIDs {
+		r := &pbds.GetGroupByIDReq{
+			BizId:   grpcKit.BizID,
+			GroupId: groupID,
+		}
+		group, err := s.client.DS.GetGroupByID(grpcKit.RpcCtx(), r)
+		if err != nil {
+			logs.Errorf("get group by id %d failed, err: %v, rid: %s", groupID, err, grpcKit.Rid)
+			return err
+		}
+
+		// 将pb格式转换为table格式
+		tableGroup, err := group.Group()
+		if err != nil {
+			return fmt.Errorf("convert group pb to table failed, err: %v", err)
+		}
+		groupDetails = append(groupDetails, tableGroup)
+	}
+
+	// 检查是否存在gray_percent分组
+	var hasGrayPercentGroup bool
+	var grayPercentGroups []*table.Group
+	var nonGrayPercentGroups []*table.Group
+
+	for _, group := range groupDetails {
+		if group.Spec == nil || group.Spec.Selector == nil {
+			nonGrayPercentGroups = append(nonGrayPercentGroups, group)
+			continue
+		}
+
+		// 检查LabelsAnd中是否包含gray_percent
+		hasGrayPercent := false
+		for _, element := range group.Spec.Selector.LabelsAnd {
+			if element.Key == table.GrayPercentKey {
+				hasGrayPercent = true
+				break
+			}
+		}
+
+		// 检查LabelsOr中是否包含gray_percent
+		if !hasGrayPercent {
+			for _, element := range group.Spec.Selector.LabelsOr {
+				if element.Key == table.GrayPercentKey {
+					hasGrayPercent = true
+					break
+				}
+			}
+		}
+
+		if hasGrayPercent {
+			hasGrayPercentGroup = true
+			grayPercentGroups = append(grayPercentGroups, group)
+		} else {
+			nonGrayPercentGroups = append(nonGrayPercentGroups, group)
+		}
+	}
+
+	// 如果存在gray_percent分组，则所有分组都必须包含gray_percent
+	if hasGrayPercentGroup && len(nonGrayPercentGroups) > 0 {
+		return errors.New(i18n.T(grpcKit, "if gray_percent groups exist, all groups must contain gray_percent label"))
+	}
+
+	// 如果存在gray_percent分组，验证非gray_percent标签的一致性
+	if hasGrayPercentGroup && len(grayPercentGroups) > 1 {
+		// 获取第一个分组的非gray_percent标签作为基准
+		baseNonGrayLabels := s.extractNonGrayPercentLabels(grayPercentGroups[0])
+
+		// 验证其他分组的非gray_percent标签与基准一致
+		for i := 1; i < len(grayPercentGroups); i++ {
+			currentNonGrayLabels := s.extractNonGrayPercentLabels(grayPercentGroups[i])
+			if !s.compareLabels(baseNonGrayLabels, currentNonGrayLabels) {
+				return errors.New(i18n.T(grpcKit, "non-gray_percent labels must be consistent across all gray_percent groups"))
+			}
+		}
+	}
+
+	return nil
 }
 
 // Approve publish approve
@@ -201,4 +309,52 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbcs.Gener
 		Id: rp.PublishedStrategyHistoryId,
 	}
 	return resp, nil
+}
+
+// extractNonGrayPercentLabels 提取分组中除gray_percent之外的标签
+func (s *Service) extractNonGrayPercentLabels(group *table.Group) []selector.Element {
+	var nonGrayLabels []selector.Element
+
+	if group.Spec == nil || group.Spec.Selector == nil {
+		return nonGrayLabels
+	}
+
+	// 处理LabelsAnd中的非gray_percent标签
+	for _, element := range group.Spec.Selector.LabelsAnd {
+		if element.Key != table.GrayPercentKey {
+			nonGrayLabels = append(nonGrayLabels, element)
+		}
+	}
+
+	// 处理LabelsOr中的非gray_percent标签
+	for _, element := range group.Spec.Selector.LabelsOr {
+		if element.Key != table.GrayPercentKey {
+			nonGrayLabels = append(nonGrayLabels, element)
+		}
+	}
+
+	return nonGrayLabels
+}
+
+// compareLabels 比较两个标签列表是否一致（忽略顺序）
+func (s *Service) compareLabels(labels1, labels2 []selector.Element) bool {
+	if len(labels1) != len(labels2) {
+		return false
+	}
+
+	// 为每个labels1中的元素在labels2中寻找匹配项
+	for _, elem1 := range labels1 {
+		found := false
+		for _, elem2 := range labels2 {
+			if elem1.Equal(&elem2) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }

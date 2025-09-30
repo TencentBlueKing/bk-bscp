@@ -211,6 +211,7 @@ service Data {
   rpc ListAllGroups(ListAllGroupsReq) returns (ListAllGroupsResp) {}
   rpc ListAppGroups(ListAppGroupsReq) returns (ListAppGroupsResp) {}
   rpc GetGroupByName(GetGroupByNameReq) returns (pbgroup.Group) {}
+  rpc GetGroupByID(GetGroupByIDReq) returns (pbgroup.Group) {}
   rpc UpdateGroup(UpdateGroupReq) returns (pbbase.EmptyResp) {}
   rpc DeleteGroup(DeleteGroupReq) returns (pbbase.EmptyResp) {}
   rpc ListGroupSelector(ListGroupSelectorReq) returns (ListGroupSelectorResp) {}
@@ -1733,6 +1734,11 @@ message ListAppGroupsResp {
 message GetGroupByNameReq {
   uint32 biz_id = 1;
   string group_name = 2;
+}
+
+message GetGroupByIDReq {
+  uint32 biz_id = 1;
+  uint32 group_id = 2;
 }
 
 message UpdateGroupReq {

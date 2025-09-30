@@ -247,6 +247,19 @@ func (s *Service) GetGroupByName(ctx context.Context, req *pbds.GetGroupByNameRe
 	return pbgroup.PbGroup(group)
 }
 
+// GetGroupByID get group by group id.
+func (s *Service) GetGroupByID(ctx context.Context, req *pbds.GetGroupByIDReq) (*pbgroup.Group, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	group, err := s.dao.Group().Get(grpcKit, req.GetGroupId(), req.GetBizId())
+	if err != nil {
+		logs.Errorf("get group by id failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, fmt.Errorf("query group by id %d failed", req.GetGroupId())
+	}
+
+	return pbgroup.PbGroup(group)
+}
+
 // UpdateGroup update group.
 // nolint: funlen
 func (s *Service) UpdateGroup(ctx context.Context, req *pbds.UpdateGroupReq) (*pbbase.EmptyResp, error) {

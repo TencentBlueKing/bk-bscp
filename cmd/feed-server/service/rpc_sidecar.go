@@ -834,8 +834,11 @@ func (s *Service) AsyncDownloadStatus(ctx context.Context, req *pbfs.AsyncDownlo
 
 	taskStatus, err := s.bll.AsyncDownload().GetAsyncDownloadTaskStatus(kit, req.BizId, req.TaskId)
 	if err != nil {
+		logs.Errorf("failed get async download task status, %s, biz_id: %d, task_id: %s", err.Error(), req.BizId, req.TaskId)
 		return nil, err
 	}
+
+	logs.Infof("get async download task status, biz_id: %d, task_id: %s, status: %s", req.BizId, req.TaskId, taskStatus)
 
 	var status pbfs.AsyncDownloadStatus
 

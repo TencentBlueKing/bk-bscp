@@ -245,6 +245,16 @@
             "translation": "批量删除群组失败"
         },
         {
+            "id": "gray_percent key must be equal",
+            "message": "gray_percent key must be equal",
+            "translation": "灰度百分比 key 必须是等于"
+        },
+        {
+            "id": "gray_percent value must be a valid percentage (1-99)",
+            "message": "gray_percent value must be a valid percentage (1-99)",
+            "translation": "灰度百分比 value 必须是有效的百分比 (1-99)"
+        },
+        {
             "id": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "message": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "translation": "脚本id列表的长度为{IdsLen}, 长度范围必须为[1,{ArrayInputLenLimit}]",
@@ -511,6 +521,16 @@
             "translation": "批量恢复 kv 失败"
         },
         {
+            "id": "if gray_percent groups exist, all groups must contain gray_percent label",
+            "message": "if gray_percent groups exist, all groups must contain gray_percent label",
+            "translation": "如果存在灰度百分比分组，则所有分组必须包含灰度百分比标签"
+        },
+        {
+            "id": "non-gray_percent labels must be consistent across all gray_percent groups",
+            "message": "non-gray_percent labels must be consistent across all gray_percent groups",
+            "translation": "非灰度百分比标签在所有分组标签中必须一致"
+        },
+        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "从模板集中删除模板失败"
@@ -705,6 +725,26 @@
                     "underlyingType": "uint32",
                     "argNum": 1,
                     "expr": "bizID"
+                }
+            ]
+        },
+        {
+            "id": "save kv failed",
+            "message": "save kv failed",
+            "translation": "kv保持失败"
+        },
+        {
+            "id": "batch create of KV config failed, err: {Err}",
+            "message": "batch create of KV config failed, err: {Err}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
                 }
             ]
         },
@@ -1408,11 +1448,6 @@
                     "expr": "kv.KvSpec.Key"
                 }
             ]
-        },
-        {
-            "id": "save kv failed",
-            "message": "save kv failed",
-            "translation": "kv保持失败"
         },
         {
             "id": "get excluded kv failed, err: {Err}",
