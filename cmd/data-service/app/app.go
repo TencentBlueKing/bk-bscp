@@ -419,20 +419,16 @@ func (ds *dataService) register() error {
 // startCronTasks starts all cron tasks for data service
 func (ds *dataService) startCronTasks(svc *service.Service) {
 	// 同步客户端在线状态
-	logs.Infof("启动客户端在线状态同步定时任务...")
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
-	// 同步业务主机关系
-	logs.Infof("启动业务主机关系同步定时任务...")
-	bizHost := crontab.NewSyncBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, 50.0)
 	// 首次启动时立即执行一次全量同步
-	logs.Infof("performing initial full sync on service startup")
+	bizHost := crontab.NewSyncBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, 50.0)
 	kt := kit.New()
 	ctx, cancel := context.WithCancel(kt.Ctx)
 	kt.Ctx = ctx
 
-	// 执行全量同步，如果失败则记录错误但不影响服务启动
+	// 执行全量同步
 	if err := func() (err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -446,19 +442,15 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 	} else {
 		logs.Infof("initial full sync completed successfully")
 	}
-
 	cancel()
-
 	// 启动定时同步任务
 	bizHost.Run()
 
 	// 监听业务主机关系
-	logs.Infof("启动业务主机事件监听定时任务...")
 	watchBizHost := crontab.NewWatchBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 80.0)
 	watchBizHost.Run()
 
 	// 清理业务主机关系
-	logs.Infof("启动业务主机关系清理定时任务...")
 	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, 50.0)
 	cleanupBizHost.Run()
 }
