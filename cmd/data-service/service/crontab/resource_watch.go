@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
@@ -27,7 +29,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"golang.org/x/time/rate"
 )
 
 const (
@@ -299,7 +300,8 @@ func (w *WatchBizHost) handleHostRelationDeleteEvent(kt *kit.Kit, event bkcmdb.H
 	}
 
 	if !relationExists {
-		logs.Infof("host biz relation does not exist in CMDB, biz: %d, host: %d, skipping deletion", *detail.BkBizID, *detail.BkHostID)
+		logs.Infof("host biz relation does not exist in CMDB, biz: %d, host: %d, skipping deletion",
+			*detail.BkBizID, *detail.BkHostID)
 		return nil
 	}
 

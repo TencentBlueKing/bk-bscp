@@ -61,7 +61,7 @@ const (
 	POST HTTPMethod = "POST"
 )
 
-// BKCMDBService bkcmdb client
+// CMDBService bkcmdb client
 type CMDBService struct {
 	*cc.CMDBConfig
 }
