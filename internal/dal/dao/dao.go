@@ -79,6 +79,7 @@ type Set interface {
 	ClientEvent() ClientEvent
 	ClientQuery() ClientQuery
 	Config() Config
+	BizHost() BizHost
 }
 
 // NewDaoSet create the DAO set instance.
@@ -535,5 +536,12 @@ func (s *set) Config() Config {
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,
+	}
+}
+
+// BizHost returns the BizHost scope's DAO
+func (s *set) BizHost() BizHost {
+	return &bizHostDao{
+		genQ: s.genQ,
 	}
 }

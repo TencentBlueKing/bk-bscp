@@ -32,6 +32,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -43,6 +45,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -84,16 +87,18 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve    *grpc.Server
-	gwServe  *http.Server
-	service  *service.Service
-	sd       serviced.Service
-	daoSet   dao.Set
-	vault    vault.Set
-	esb      client.Client
-	spaceMgr *space.Manager
-	repo     repository.Provider
-	ssd      serviced.ServiceDiscover
+	serve       *grpc.Server
+	gwServe     *http.Server
+	service     *service.Service
+	sd          serviced.Service
+	daoSet      dao.Set
+	vault       vault.Set
+	esb         client.Client
+	spaceMgr    *space.Manager
+	repo        repository.Provider
+	ssd         serviced.ServiceDiscover
+	cmdbService bkcmdb.Service
+	redisClient bedis.Client
 }
 
 // prepare do prepare jobs before run data service.
@@ -149,6 +154,25 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	ds.daoSet = set
+
+	// initial cmdb service
+	cmdbService, err := bkcmdb.New(&cc.CMDBConfig{
+		AppCode:    cc.DataService().Esb.AppCode,
+		AppSecret:  cc.DataService().Esb.AppSecret,
+		Host:       cc.DataService().Esb.Endpoints[0],
+		BkUserName: cc.DataService().Esb.User,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("initial cmdb service failed, err: %v", err)
+	}
+	ds.cmdbService = cmdbService
+
+	// initial redis client
+	redisClient, err := bedis.NewRedisCache(cc.DataService().RedisCluster)
+	if err != nil {
+		return fmt.Errorf("initial redis client failed, err: %v", err)
+	}
+	ds.redisClient = redisClient
 
 	// 同步客户端在线状态
 	state := crontab.NewSyncClientOnlineState(ds.daoSet, ds.sd)
@@ -250,9 +274,8 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 同步客户端在线状态
-	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
-	status.Run()
+	// 启动定时任务
+	ds.startCronTasks(svc)
 
 	pbds.RegisterDataServer(serve, svc)
 
@@ -391,4 +414,43 @@ func (ds *dataService) register() error {
 
 	logs.Infof("register data service to etcd success.")
 	return nil
+}
+
+// startCronTasks starts all cron tasks for data service
+func (ds *dataService) startCronTasks(svc *service.Service) {
+	// 同步客户端在线状态
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
+	status.Run()
+
+	// 首次启动时立即执行一次全量同步
+	bizHost := crontab.NewSyncBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, 50.0)
+	kt := kit.New()
+	ctx, cancel := context.WithCancel(kt.Ctx)
+	kt.Ctx = ctx
+
+	// 执行全量同步
+	if err := func() (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("initial sync panic: %v", r)
+			}
+		}()
+		bizHost.SyncBizHost(kt)
+		return nil
+	}(); err != nil {
+		logs.Errorf("initial full sync failed, but service will continue: %v", err)
+	} else {
+		logs.Infof("initial full sync completed successfully")
+	}
+	cancel()
+	// 启动定时同步任务
+	bizHost.Run()
+
+	// 监听业务主机关系
+	watchBizHost := crontab.NewWatchBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 80.0)
+	watchBizHost.Run()
+
+	// 清理业务主机关系
+	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, 50.0)
+	cleanupBizHost.Run()
 }

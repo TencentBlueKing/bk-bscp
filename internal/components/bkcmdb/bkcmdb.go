@@ -15,6 +15,7 @@ package bkcmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
@@ -48,6 +49,9 @@ var (
 	searchSet            = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
 	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
+	listBizHosts         = "%s/prod/api/v3/hosts/app/%d/list_hosts"
+	watchResource        = "%s/prod/api/v3/event/watch/resource/%s"
+	findHostBizRelations = "%s/prod/api/v3/hosts/modules/read"
 )
 
 type HTTPMethod string
@@ -57,20 +61,16 @@ const (
 	POST HTTPMethod = "POST"
 )
 
-// BKCMDBService bkcmdb client
+// CMDBService bkcmdb client
 type CMDBService struct {
 	*cc.CMDBConfig
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
-
-	// 组装网关认证信息
-	gwAuthOptions := []components.GWAuthOption{}
-
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
 		bkcmdb.AppSecret,
-		gwAuthOptions...,
+		components.WithBkUsername(bkcmdb.BkUserName),
 	)
 
 	// 构造请求
@@ -97,8 +97,12 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 	}
 
 	// 统一反序列化结果
-	if err := components.UnmarshalBKResult(resp, result); err != nil {
-		logs.Errorf("unmarshal bk result failed, err: %v", err)
+	// if err := components.UnmarshalBKResult(resp, result); err != nil {
+	// 	logs.Errorf("unmarshal bk result failed, err: %v", err)
+	// 	return err
+	// }
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
+		logs.Errorf("unmarshal cmdb response failed, err: %v", err)
 		return err
 	}
 	return nil
@@ -312,4 +316,71 @@ func (bkcmdb *CMDBService) SearchModule(ctx context.Context) {
 // FindHostTopoRelation  获取主机与拓扑的关系
 func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context) {
 
+}
+
+// ListBizHosts query hosts under biz
+func (bkcmdb *CMDBService) ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (
+	*CMDBResponse[CMDBListData[HostInfo]], error) {
+	url := fmt.Sprintf(listBizHosts, bkcmdb.Host, req.BkBizID)
+
+	resp := new(CMDBResponse[CMDBListData[HostInfo]])
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// WatchHostResource watch host resource change
+func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// WatchHostRelationResource watch host relation resource change
+func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostRelationWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostRelationWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// FindHostBizRelations query host biz relation information
+func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
+	*FindHostBizRelationsResponse, error) {
+	if req.BkBizID == 0 {
+		return nil, fmt.Errorf("bk_biz_id is required")
+	}
+	if len(req.BkHostID) == 0 {
+		return nil, fmt.Errorf("bk_host_id list is required")
+	}
+
+	url := fmt.Sprintf(findHostBizRelations, bkcmdb.Host)
+
+	resp := new(FindHostBizRelationsResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

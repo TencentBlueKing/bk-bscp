@@ -253,6 +253,8 @@ const (
 	ClientEventTable Name = "client_events"
 	// ConfigTable is configs table's name
 	ConfigTable Name = "configs"
+	// BizHostTable is biz_host table's name
+	BizHostTable Name = "biz_hosts"
 )
 
 // RevisionColumns defines all the Revision table's columns.
