@@ -33,7 +33,7 @@ const (
 	// sync data once a week
 	defaultSyncBizHostInterval = 7 * 24 * time.Hour
 	// Default QPS limit for CMDB requests
-	defaultQpsLimit = 50.0
+	defaultQpsLimit = 80.0
 	// Default page size for list host requests
 	defaultPageSize = 500
 	// Cursor cache keys
@@ -93,7 +93,6 @@ func (c *SyncBizHost) Run() {
 	logs.Infof("start sync biz host task")
 	notifier := shutdown.AddNotifier()
 	go func() {
-		// 启动定时器，按间隔执行
 		ticker := time.NewTicker(defaultSyncBizHostInterval)
 		defer ticker.Stop()
 		for {
@@ -129,10 +128,10 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
-	// 获取3分钟前的事件cursor并缓存
+	// get 3 minutes ago event cursor and cache to redis
 	if err := c.cacheEventCursors(kt); err != nil {
 		logs.Errorf("cache event cursors failed, err: %v", err)
-		// 继续执行全量同步，不因cursor获取失败而中断
+		return
 	}
 
 	// Query BSCP businesses
@@ -141,28 +140,14 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
-	logs.Infof("query BSCP business success, total businesses: %d", len(bizList))
 
 	// Query host information by business ID
-	successBizList := make([]int, 0)
-	failedBizList := make(map[int]string)
 	for _, biz := range bizList {
 		if err := c.syncBusinessHosts(kt, biz); err != nil {
 			logs.Errorf("sync business %d hosts failed, err: %v", biz, err)
-			failedBizList[biz] = err.Error()
 			// if sync failed, continue to sync next business
 			continue
 		}
-		successBizList = append(successBizList, biz)
-	}
-
-	// Log summary of sync results
-	logs.Infof("sync biz host summary: total businesses=%d, success=%d, failed=%d",
-		len(bizList), len(successBizList), len(failedBizList))
-
-	// Log businesses that failed to sync (no hosts found or sync failed)
-	if len(failedBizList) > 0 {
-		logs.Warnf("businesses with no hosts or sync failed: %v", failedBizList)
 	}
 }
 
@@ -170,7 +155,6 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 	start := 0
 	limit := c.pageSize
-	totalSynced := 0
 	for {
 		req := &bkcmdb.ListBizHostsRequest{
 			BkBizID: bizID,
@@ -178,7 +162,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 				Start: start,
 				Limit: limit,
 			},
-			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id"},
+			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id", "bk_host_innerip"},
 		}
 
 		// Apply rate limiting before each request
@@ -203,9 +187,10 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 		var batchBizHosts []*table.BizHost
 		for _, host := range hostResult.Data.Info {
 			bizHost := &table.BizHost{
-				BizID:   bizID,
-				HostID:  host.BkHostID,
-				AgentID: host.BkAgentID,
+				BizID:         bizID,
+				HostID:        host.BkHostID,
+				AgentID:       host.BkAgentID,
+				BKHostInnerIP: host.BkHostInnerIP,
 			}
 			batchBizHosts = append(batchBizHosts, bizHost)
 		}
@@ -213,7 +198,6 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 			if err := c.set.BizHost().BatchUpsert(kt, batchBizHosts); err != nil {
 				return fmt.Errorf("batch upsert biz hosts failed: %w", err)
 			}
-			totalSynced += len(batchBizHosts)
 		}
 
 		// If returned data is less than limit, it's the last page
@@ -225,7 +209,6 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 		start += limit
 	}
 
-	logs.Infof("completed sync for business %d, total hosts: %d", bizID, totalSynced)
 	return nil
 }
 
@@ -247,12 +230,12 @@ func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
 	return bizList, nil
 }
 
-// cacheEventCursors 缓存事件cursor到Redis
+// cacheEventCursors cache event cursor to Redis
 func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
-	// 获取3分钟前的时间戳
+	// get 3 minutes ago timestamp
 	threeMinutesAgo := time.Now().Add(-3 * time.Minute).Unix()
 
-	// 获取业务主机关系事件的cursor
+	// get biz host relation event cursor
 	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get biz host cursor failed, err: %v", err)
@@ -264,7 +247,7 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 		}
 	}
 
-	// 获取主机详情更新事件的cursor
+	// get host detail update event cursor
 	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get host detail cursor failed, err: %v", err)
@@ -279,7 +262,7 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	return nil
 }
 
-// getEventCursor 获取指定时间点的事件cursor
+// getEventCursor get event cursor at specified time
 func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime int64) (string, error) {
 	req := &bkcmdb.WatchResourceRequest{
 		BkResource:   resourceType,
@@ -297,7 +280,7 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		if !watchResult.Result {
 			return "", fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
 		}
-		// 从响应中提取最后一个事件的cursor
+		// extract last event cursor from response
 		if len(watchResult.Data.BkEvents) > 0 {
 			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
 			return lastEvent.BkCursor, nil
@@ -310,7 +293,7 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		if !watchResult.Result {
 			return "", fmt.Errorf("watch host resource failed: %s", watchResult.Message)
 		}
-		// 从响应中提取最后一个事件的cursor
+		// extract last event cursor from response
 		if len(watchResult.Data.BkEvents) > 0 {
 			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
 			return lastEvent.BkCursor, nil
@@ -319,11 +302,12 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
 
-	// 未监听到事件，返回空字符串
+	// no event listened, return empty string
+	// actually no event will also return a cursor, but no event detail
 	return "", nil
 }
 
-// GetCachedCursor 从Redis获取缓存的cursor
+// GetCachedCursor get cached cursor from Redis
 func (c *SyncBizHost) GetCachedCursor(kt *kit.Kit, key string) string {
 	cursor, err := c.redisClient.Get(kt.Ctx, key)
 	if err != nil {
@@ -333,7 +317,7 @@ func (c *SyncBizHost) GetCachedCursor(kt *kit.Kit, key string) string {
 	return cursor
 }
 
-// UpdateCachedCursor 更新Redis中缓存的cursor
+// UpdateCachedCursor update cached cursor to Redis
 func (c *SyncBizHost) UpdateCachedCursor(kt *kit.Kit, key, cursor string) {
 	if err := c.redisClient.Set(kt.Ctx, key, cursor, 7*24*3600); err != nil {
 		logs.Errorf("update cached cursor to redis failed, key: %s, cursor: %s, err: %v", key, cursor, err)

@@ -29,13 +29,13 @@ import (
 )
 
 const (
-	// 每天执行一次清理任务
+	// biz host cleanup task interval
 	defaultCleanupBizHostInterval = 6 * time.Hour
-	// 每次处理的记录数
+	// number of records to process each time
 	defaultCleanupBatchSize = 1000
-	// CMDB 请求限流
+	// CMDB request rate limit
 	defaultCleanupQpsLimit = 50.0
-	// 重复主机清理间隔
+	// duplicate host cleanup interval
 	defaultCleanupDuplicateHostInterval = 3 * time.Minute
 )
 
@@ -49,7 +49,6 @@ func NewCleanupBizHost(
 	if qpsLimit <= 0 || qpsLimit > defaultCleanupQpsLimit {
 		qpsLimit = defaultCleanupQpsLimit
 	}
-	// 创建限流器
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
 	return CleanupBizHost{
@@ -60,7 +59,7 @@ func NewCleanupBizHost(
 	}
 }
 
-// CleanupBizHost 清理失效的业务主机关系
+// CleanupBizHost cleanup invalid biz host relationships
 type CleanupBizHost struct {
 	set         dao.Set
 	state       serviced.Service
@@ -69,12 +68,12 @@ type CleanupBizHost struct {
 	mutex       sync.Mutex
 }
 
-// Run 启动清理任务
+// Run start cleanup task
 func (c *CleanupBizHost) Run() {
 	logs.Infof("start cleanup biz host task")
 	notifier := shutdown.AddNotifier()
 
-	// 任务1：清理失效的业务主机关系
+	// task1: cleanup invalid biz host relationships
 	go func() {
 		ticker := time.NewTicker(defaultCleanupBizHostInterval)
 		defer ticker.Stop()
@@ -90,43 +89,43 @@ func (c *CleanupBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
-				// if !c.state.IsMaster() {
-				// 	logs.Infof("current service instance is slave, skip cleanup biz host")
-				// 	continue
-				// }
+				if !c.state.IsMaster() {
+					logs.Infof("current service instance is slave, skip cleanup biz host")
+					continue
+				}
 				logs.Infof("starts to cleanup invalid biz host relationships")
 				c.cleanupBizHost(kt)
 			}
 		}
 	}()
 
-	// 任务2：清理重复主机关联
-	go func() {
-		ticker := time.NewTicker(defaultCleanupDuplicateHostInterval)
-		defer ticker.Stop()
-		for {
-			kt := kit.New()
-			ctx, cancel := context.WithCancel(kt.Ctx)
-			kt.Ctx = ctx
+	// task2: cleanup duplicate host relationships
+	// go func() {
+	// 	ticker := time.NewTicker(defaultCleanupDuplicateHostInterval)
+	// 	defer ticker.Stop()
+	// 	for {
+	// 		kt := kit.New()
+	// 		ctx, cancel := context.WithCancel(kt.Ctx)
+	// 		kt.Ctx = ctx
 
-			select {
-			case <-notifier.Signal:
-				logs.Infof("stop cleanup duplicate host success")
-				cancel()
-				return
-			case <-ticker.C:
-				// if !c.state.IsMaster() {
-				// 	logs.Infof("current service instance is slave, skip cleanup duplicate host")
-				// 	continue
-				// }
-				logs.Infof("starts to cleanup duplicate host relationships")
-				c.cleanupDuplicateHosts(kt)
-			}
-		}
-	}()
+	// 		select {
+	// 		case <-notifier.Signal:
+	// 			logs.Infof("stop cleanup duplicate host success")
+	// 			cancel()
+	// 			return
+	// 		case <-ticker.C:
+	// 			if !c.state.IsMaster() {
+	// 			   logs.Infof("current service instance is slave, skip cleanup duplicate host")
+	// 			   continue
+	// 			}
+	// 			logs.Infof("starts to cleanup duplicate host relationships")
+	// 			c.cleanupDuplicateHosts(kt)
+	// 		}
+	// 	}
+	// }()
 }
 
-// cleanupBizHost 清理失效的业务主机关系
+// cleanupBizHost cleanup invalid biz host relationships
 func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -137,7 +136,7 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 		logs.Infof("cleanup biz host completed in %v", duration)
 	}()
 
-	// 查询最久未更新的业务主机关系记录
+	// query oldest biz host relationships
 	oldestRecords, err := c.queryOldestBizHosts(kt)
 	if err != nil {
 		logs.Errorf("query oldest biz host records failed, err: %v", err)
@@ -151,11 +150,11 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 
 	logs.Infof("found %d oldest biz host records to validate", len(oldestRecords))
 
-	// 按业务ID分组
+	// group by biz ID
 	bizGroups := c.groupByBizID(oldestRecords)
 	logs.Infof("grouped into %d businesses", len(bizGroups))
 
-	// 验证每个业务的主机关系
+	// validate each biz host relationships
 	totalDeleted := 0
 	for bizID, records := range bizGroups {
 		deleted, err := c.validateAndCleanupBizHosts(kt, bizID, records)
@@ -170,11 +169,11 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 	logs.Infof("cleanup completed, total deleted: %d records", totalDeleted)
 }
 
-// queryOldestBizHosts 查询最久未更新的业务主机关系记录
+// queryOldestBizHosts query oldest biz host relationships
 func (c *CleanupBizHost) queryOldestBizHosts(kt *kit.Kit) ([]*table.BizHost, error) {
 	m := c.set.GenQuery().BizHost
 	records, err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
-		Order(m.LastUpdated). // 按最后更新时间升序排列
+		Order(m.LastUpdated). // order by last updated time
 		Limit(defaultCleanupBatchSize).
 		Find()
 
@@ -185,7 +184,7 @@ func (c *CleanupBizHost) queryOldestBizHosts(kt *kit.Kit) ([]*table.BizHost, err
 	return records, nil
 }
 
-// groupByBizID 按业务ID分组
+// groupByBizID group by biz ID
 func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table.BizHost {
 	groups := make(map[int][]*table.BizHost)
 	for _, record := range records {
@@ -194,13 +193,13 @@ func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table
 	return groups
 }
 
-// validateAndCleanupBizHosts 验证并清理指定业务的主机关系
+// validateAndCleanupBizHosts validate and cleanup specified biz host relationships
 func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) (int, error) {
 	if len(records) == 0 {
 		return 0, nil
 	}
 
-	// 分批处理主机ID，每批最多500个
+	// batch process host IDs
 	totalDeleted := 0
 	batchSize := 500
 	for i := 0; i < len(records); i += batchSize {
@@ -222,20 +221,20 @@ func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, reco
 	return totalDeleted, nil
 }
 
-// validateAndCleanupBatch 验证并清理一批主机关系
+// validateAndCleanupBatch validate and cleanup a batch of host relationships
 func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records []*table.BizHost) (int, error) {
-	// 应用限流
+	// apply rate limiter
 	if err := c.rateLimiter.Wait(kt.Ctx); err != nil {
 		return 0, fmt.Errorf("rate limiter wait failed: %w", err)
 	}
 
-	// 提取主机ID列表
+	// extract host IDs
 	hostIDs := make([]int, 0, len(records))
 	for _, record := range records {
 		hostIDs = append(hostIDs, record.HostID)
 	}
 
-	// 调用新的 CMDB API 获取有效的主机业务关系
+	// call new CMDB API to get valid host biz relationships
 	req := &bkcmdb.FindHostBizRelationsRequest{
 		BkBizID:  bizID,
 		BkHostID: hostIDs,
@@ -250,17 +249,17 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 		return 0, fmt.Errorf("find host biz relations failed: %s", relationResult.Message)
 	}
 
-	// 构建有效的主机ID集合（只包含还存在绑定关系的主机）
+	// build valid host IDs set (only include hosts with binding relations)
 	validHostIDs := make(map[int]bool)
 	for _, relation := range relationResult.Data {
 		validHostIDs[relation.BkHostID] = true
 	}
 
-	// 检查并删除失效的记录
+	// check and delete invalid records
 	deletedCount := 0
 	for _, record := range records {
 		if !validHostIDs[record.HostID] {
-			// 主机不再与该业务绑定，删除记录
+			// host is no longer bound to this biz, delete record
 			if err := c.set.BizHost().Delete(kt, record.BizID, record.HostID); err != nil {
 				logs.Errorf("delete invalid biz host record failed, bizID: %d, hostID: %d, err: %v",
 					record.BizID, record.HostID, err)
@@ -274,7 +273,7 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	return deletedCount, nil
 }
 
-// cleanupDuplicateHosts 清理重复主机关联
+// cleanupDuplicateHosts cleanup duplicate host relationships
 func (c *CleanupBizHost) cleanupDuplicateHosts(kt *kit.Kit) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -285,7 +284,7 @@ func (c *CleanupBizHost) cleanupDuplicateHosts(kt *kit.Kit) {
 		logs.Infof("cleanup duplicate hosts completed in %v", duration)
 	}()
 
-	// 查询重复的主机ID
+	// query duplicate host IDs
 	duplicateHosts, err := c.queryDuplicateHosts(kt)
 	if err != nil {
 		logs.Errorf("query duplicate hosts failed, err: %v", err)
@@ -313,13 +312,13 @@ func (c *CleanupBizHost) cleanupDuplicateHosts(kt *kit.Kit) {
 	logs.Infof("duplicate host cleanup completed, total deleted: %d records", totalCleaned)
 }
 
-// queryDuplicateHosts 查询重复的主机ID并按业务分组
+// queryDuplicateHosts query duplicate host IDs and group by biz ID
 func (c *CleanupBizHost) queryDuplicateHosts(kt *kit.Kit) ([]*table.BizHost, error) {
-	// 使用子查询找出重复的主机ID
+	// use subquery to find duplicate host IDs
 	m := c.set.GenQuery().BizHost
 	var duplicateHostIDs []int
 
-	// 查询出现次数大于1的主机ID
+	// query host IDs that appear more than once
 	err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
 		Select(m.HostID).
 		Group(m.HostID).
@@ -334,7 +333,7 @@ func (c *CleanupBizHost) queryDuplicateHosts(kt *kit.Kit) ([]*table.BizHost, err
 		return nil, nil
 	}
 
-	// 查询这些重复主机的所有记录
+	// query all records of these duplicate hosts
 	records, err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
 		Where(m.HostID.In(duplicateHostIDs...)).
 		Find()

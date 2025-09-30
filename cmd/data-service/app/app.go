@@ -32,6 +32,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -84,16 +86,18 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve    *grpc.Server
-	gwServe  *http.Server
-	service  *service.Service
-	sd       serviced.Service
-	daoSet   dao.Set
-	vault    vault.Set
-	esb      client.Client
-	spaceMgr *space.Manager
-	repo     repository.Provider
-	ssd      serviced.ServiceDiscover
+	serve       *grpc.Server
+	gwServe     *http.Server
+	service     *service.Service
+	sd          serviced.Service
+	daoSet      dao.Set
+	vault       vault.Set
+	esb         client.Client
+	spaceMgr    *space.Manager
+	repo        repository.Provider
+	ssd         serviced.ServiceDiscover
+	cmdbService bkcmdb.Service
+	redisClient bedis.Client
 }
 
 // prepare do prepare jobs before run data service.
@@ -149,6 +153,25 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	ds.daoSet = set
+
+	// initial cmdb service
+	cmdbService, err := bkcmdb.New(&cc.CMDBConfig{
+		AppCode:    cc.DataService().Esb.AppCode,
+		AppSecret:  cc.DataService().Esb.AppSecret,
+		Host:       cc.DataService().Esb.Endpoints[0],
+		BkUserName: cc.DataService().Esb.User,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("initial cmdb service failed, err: %v", err)
+	}
+	ds.cmdbService = cmdbService
+
+	// initial redis client
+	redisClient, err := bedis.NewRedisCache(cc.DataService().RedisCluster)
+	if err != nil {
+		return fmt.Errorf("initial redis client failed, err: %v", err)
+	}
+	ds.redisClient = redisClient
 
 	// 同步客户端在线状态
 	state := crontab.NewSyncClientOnlineState(ds.daoSet, ds.sd)
@@ -253,6 +276,15 @@ func (ds *dataService) listenAndServe() error {
 	// 同步客户端在线状态
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
+	// 同步业务主机关系
+	bizHost := crontab.NewSyncBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, 50.0)
+	bizHost.Run()
+	// 监听业务主机关系
+	watchBizHost := crontab.NewWatchBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 80.0)
+	watchBizHost.Run()
+	// 清理业务主机关系
+	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, 50.0)
+	cleanupBizHost.Run()
 
 	pbds.RegisterDataServer(serve, svc)
 

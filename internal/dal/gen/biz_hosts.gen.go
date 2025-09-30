@@ -30,6 +30,7 @@ func newBizHost(db *gorm.DB, opts ...gen.DOOption) bizHost {
 	_bizHost.BizID = field.NewInt(tableName, "biz_id")
 	_bizHost.HostID = field.NewInt(tableName, "host_id")
 	_bizHost.AgentID = field.NewString(tableName, "agent_id")
+	_bizHost.BKHostInnerIP = field.NewString(tableName, "bk_host_innerip")
 	_bizHost.LastUpdated = field.NewTime(tableName, "last_updated")
 
 	_bizHost.fillFieldMap()
@@ -40,11 +41,12 @@ func newBizHost(db *gorm.DB, opts ...gen.DOOption) bizHost {
 type bizHost struct {
 	bizHostDo bizHostDo
 
-	ALL         field.Asterisk
-	BizID       field.Int
-	HostID      field.Int
-	AgentID     field.String
-	LastUpdated field.Time
+	ALL           field.Asterisk
+	BizID         field.Int
+	HostID        field.Int
+	AgentID       field.String
+	BKHostInnerIP field.String
+	LastUpdated   field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -64,6 +66,7 @@ func (b *bizHost) updateTableName(table string) *bizHost {
 	b.BizID = field.NewInt(table, "biz_id")
 	b.HostID = field.NewInt(table, "host_id")
 	b.AgentID = field.NewString(table, "agent_id")
+	b.BKHostInnerIP = field.NewString(table, "bk_host_innerip")
 	b.LastUpdated = field.NewTime(table, "last_updated")
 
 	b.fillFieldMap()
@@ -89,10 +92,11 @@ func (b *bizHost) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (b *bizHost) fillFieldMap() {
-	b.fieldMap = make(map[string]field.Expr, 4)
+	b.fieldMap = make(map[string]field.Expr, 5)
 	b.fieldMap["biz_id"] = b.BizID
 	b.fieldMap["host_id"] = b.HostID
 	b.fieldMap["agent_id"] = b.AgentID
+	b.fieldMap["bk_host_innerip"] = b.BKHostInnerIP
 	b.fieldMap["last_updated"] = b.LastUpdated
 }
 

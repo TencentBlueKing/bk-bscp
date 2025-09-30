@@ -51,7 +51,7 @@ var (
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
 	listBizHosts         = "%s/prod/api/v3/hosts/app/%d/list_hosts"
 	watchResource        = "%s/prod/api/v3/event/watch/resource/%s"
-	findHostBizRelations = "%s/prod/api/v3/host/relation/read"
+	findHostBizRelations = "%s/prod/api/v3/hosts/modules/read"
 )
 
 type HTTPMethod string
@@ -318,7 +318,7 @@ func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context) {
 
 }
 
-// ListBizHosts 查询业务下的主机
+// ListBizHosts query hosts under biz
 func (bkcmdb *CMDBService) ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (
 	*CMDBResponse[CMDBListData[HostInfo]], error) {
 	url := fmt.Sprintf(listBizHosts, bkcmdb.Host, req.BkBizID)
@@ -331,24 +331,7 @@ func (bkcmdb *CMDBService) ListBizHosts(ctx context.Context, req *ListBizHostsRe
 	return resp, nil
 }
 
-// WatchResource 监听资源变化
-func (bkcmdb *CMDBService) WatchResource(ctx context.Context, req *WatchResourceRequest) (
-	*HostRelationWatchResponse, error) {
-	if req.BkResource == "" {
-		return nil, fmt.Errorf("resource type is required")
-	}
-
-	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
-
-	resp := new(HostRelationWatchResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-// WatchHostResource 监听主机资源变化（类型安全的便捷方法）
+// WatchHostResource watch host resource change
 func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
 	*HostWatchResponse, error) {
 	if req.BkResource == "" {
@@ -365,7 +348,7 @@ func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchReso
 	return resp, nil
 }
 
-// WatchHostRelationResource 监听主机关系资源变化（类型安全的便捷方法）
+// WatchHostRelationResource watch host relation resource change
 func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
 	*HostRelationWatchResponse, error) {
 	if req.BkResource == "" {
@@ -382,7 +365,7 @@ func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *W
 	return resp, nil
 }
 
-// FindHostBizRelations 查询主机业务关系信息
+// FindHostBizRelations query host biz relation information
 func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
 	*FindHostBizRelationsResponse, error) {
 	if req.BkBizID == 0 {

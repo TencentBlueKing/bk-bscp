@@ -29,7 +29,7 @@ import (
 )
 
 func main() {
-	// 初始化服务名称为 data-service（因为我们需要使用 DataServiceSetting）
+	// 初始化服务名称为 data-service
 	cc.InitService(cc.DataServiceName)
 
 	// 设置默认配置文件路径
@@ -99,7 +99,7 @@ func main() {
 
 	// 启动业务主机事件监听定时任务
 	logs.Infof("启动业务主机事件监听定时任务...")
-	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, redisClient)
+	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, redisClient, 80.0)
 	watchBizHost.Run()
 
 	// 启动业务主机关系清理定时任务
