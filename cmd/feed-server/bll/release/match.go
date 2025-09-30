@@ -237,8 +237,6 @@ func (rs *ReleasedService) matchReleasedGrayClients(
 
 	// 2. 生成稳定的客户端哈希值
 	// 关键设计：使用 UID + ReleaseID 确保同一版本下不同灰度分组的一致性
-	// 原因：递进式灰度中，不同分组的GroupID不同，但ReleaseID相同
-	// 这样确保20%选中的客户端在扩展到50%时依然被选中
 	hashSeed := fmt.Sprintf("%s:%d", meta.Uid, group.ReleaseID)
 	hash := crc32.ChecksumIEEE([]byte(hashSeed))
 
