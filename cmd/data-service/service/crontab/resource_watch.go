@@ -191,10 +191,7 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 	logs.Infof("watch host relation resource success, total events: %d", len(watchResult.Data.BkEvents))
 
 	if len(watchResult.Data.BkEvents) > 0 {
-		if err := w.processEvents(kt, watchResult.Data.BkEvents); err != nil {
-			logs.Errorf("process events failed, err: %v", err)
-			return
-		}
+		w.processEvents(kt, watchResult.Data.BkEvents)
 		// Update cursor to the last event's cursor
 		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
 		w.bizHostEventCursor = lastEvent.BkCursor
@@ -208,7 +205,7 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 }
 
 // processEvents process event list
-func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) {
 	for _, event := range events {
 		if err := w.processEvent(kt, event); err != nil {
 			logs.Errorf("process event failed, event: %+v, err: %v", event, err)
@@ -216,7 +213,6 @@ func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEv
 			continue
 		}
 	}
-	return nil
 }
 
 // processEvent process single event

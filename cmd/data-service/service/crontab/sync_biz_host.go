@@ -240,9 +240,11 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get biz host cursor failed, err: %v", err)
+		return fmt.Errorf("get biz host cursor failed: %w", err)
 	} else if bizHostCursor != "" {
-		if err := c.redisClient.Set(kt.Ctx, bizHostCursorKey, bizHostCursor, 7*24*3600); err != nil {
+		if err = c.redisClient.Set(kt.Ctx, bizHostCursorKey, bizHostCursor, 7*24*3600); err != nil {
 			logs.Errorf("cache biz host cursor to redis failed, err: %v", err)
+			return fmt.Errorf("cache biz host cursor to redis failed: %w", err)
 		} else {
 			logs.Infof("cached biz host cursor to redis: %s", bizHostCursor)
 		}
@@ -252,9 +254,11 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
 	if err != nil {
 		logs.Errorf("get host detail cursor failed, err: %v", err)
+		return fmt.Errorf("get host detail cursor failed: %w", err)
 	} else if hostDetailCursor != "" {
 		if err := c.redisClient.Set(kt.Ctx, hostDetailCursorKey, hostDetailCursor, 7*24*3600); err != nil {
 			logs.Errorf("cache host detail cursor to redis failed, err: %v", err)
+			return fmt.Errorf("cache host detail cursor to redis failed: %w", err)
 		} else {
 			logs.Infof("cached host detail cursor to redis: %s", hostDetailCursor)
 		}

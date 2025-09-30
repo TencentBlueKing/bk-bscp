@@ -36,8 +36,6 @@ const (
 	defaultCleanupBatchSize = 1000
 	// CMDB request rate limit
 	defaultCleanupQpsLimit = 50.0
-	// duplicate host cleanup interval
-	defaultCleanupDuplicateHostInterval = 3 * time.Minute
 )
 
 // NewCleanupBizHost init cleanup biz host task
@@ -99,31 +97,6 @@ func (c *CleanupBizHost) Run() {
 			}
 		}
 	}()
-
-	// task2: cleanup duplicate host relationships
-	// go func() {
-	// 	ticker := time.NewTicker(defaultCleanupDuplicateHostInterval)
-	// 	defer ticker.Stop()
-	// 	for {
-	// 		kt := kit.New()
-	// 		ctx, cancel := context.WithCancel(kt.Ctx)
-	// 		kt.Ctx = ctx
-
-	// 		select {
-	// 		case <-notifier.Signal:
-	// 			logs.Infof("stop cleanup duplicate host success")
-	// 			cancel()
-	// 			return
-	// 		case <-ticker.C:
-	// 			if !c.state.IsMaster() {
-	// 			   logs.Infof("current service instance is slave, skip cleanup duplicate host")
-	// 			   continue
-	// 			}
-	// 			logs.Infof("starts to cleanup duplicate host relationships")
-	// 			c.cleanupDuplicateHosts(kt)
-	// 		}
-	// 	}
-	// }()
 }
 
 // cleanupBizHost cleanup invalid biz host relationships
@@ -158,11 +131,7 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 	// validate each biz host relationships
 	totalDeleted := 0
 	for bizID, records := range bizGroups {
-		deleted, err := c.validateAndCleanupBizHosts(kt, bizID, records)
-		if err != nil {
-			logs.Errorf("validate and cleanup biz %d hosts failed, err: %v", bizID, err)
-			continue
-		}
+		deleted := c.validateAndCleanupBizHosts(kt, bizID, records)
 		totalDeleted += deleted
 		logs.Infof("cleaned up %d invalid records for biz %d", deleted, bizID)
 	}
@@ -195,9 +164,9 @@ func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table
 }
 
 // validateAndCleanupBizHosts validate and cleanup specified biz host relationships
-func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) (int, error) {
+func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) int {
 	if len(records) == 0 {
-		return 0, nil
+		return 0
 	}
 
 	// batch process host IDs
@@ -219,7 +188,7 @@ func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, reco
 		totalDeleted += deleted
 	}
 
-	return totalDeleted, nil
+	return totalDeleted
 }
 
 // validateAndCleanupBatch validate and cleanup a batch of host relationships
@@ -272,76 +241,4 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	}
 
 	return deletedCount, nil
-}
-
-// cleanupDuplicateHosts cleanup duplicate host relationships
-func (c *CleanupBizHost) cleanupDuplicateHosts(kt *kit.Kit) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	startTime := time.Now()
-	defer func() {
-		duration := time.Since(startTime)
-		logs.Infof("cleanup duplicate hosts completed in %v", duration)
-	}()
-
-	// query duplicate host IDs
-	duplicateHosts, err := c.queryDuplicateHosts(kt)
-	if err != nil {
-		logs.Errorf("query duplicate hosts failed, err: %v", err)
-		return
-	}
-
-	if len(duplicateHosts) == 0 {
-		logs.Infof("no duplicate hosts found")
-		return
-	}
-
-	logs.Infof("found %d duplicate hosts to validate", len(duplicateHosts))
-
-	bizGroups := c.groupByBizID(duplicateHosts)
-	totalCleaned := 0
-	for bizID, records := range bizGroups {
-		cleanedCount, err := c.validateAndCleanupBizHosts(kt, bizID, records)
-		if err != nil {
-			logs.Errorf("cleanup duplicate host %d failed, err: %v", bizID, err)
-			continue
-		}
-		totalCleaned += cleanedCount
-	}
-
-	logs.Infof("duplicate host cleanup completed, total deleted: %d records", totalCleaned)
-}
-
-// queryDuplicateHosts query duplicate host IDs and group by biz ID
-func (c *CleanupBizHost) queryDuplicateHosts(kt *kit.Kit) ([]*table.BizHost, error) {
-	// use subquery to find duplicate host IDs
-	m := c.set.GenQuery().BizHost
-	var duplicateHostIDs []int
-
-	// query host IDs that appear more than once
-	err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
-		Select(m.HostID).
-		Group(m.HostID).
-		Having(m.HostID.Count().Gt(1)).
-		Scan(&duplicateHostIDs)
-
-	if err != nil {
-		return nil, fmt.Errorf("query duplicate host IDs failed: %w", err)
-	}
-
-	if len(duplicateHostIDs) == 0 {
-		return nil, nil
-	}
-
-	// query all records of these duplicate hosts
-	records, err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
-		Where(m.HostID.In(duplicateHostIDs...)).
-		Find()
-
-	if err != nil {
-		return nil, fmt.Errorf("query duplicate host records failed: %w", err)
-	}
-
-	return records, nil
 }
