@@ -16,9 +16,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -37,7 +39,7 @@ func NewWatchBizHost(
 	set dao.Set,
 	sd serviced.Service,
 	cmdbService bkcmdb.Service,
-	syncBizHost *SyncBizHost,
+	redisClient bedis.Client,
 ) WatchBizHost {
 	// 当失去游标时，从30分钟前开始监听
 	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
@@ -48,7 +50,7 @@ func NewWatchBizHost(
 		startTime:             timeAgo,
 		bizHostEventCursor:    "", // Initial cursor is empty
 		hostDetailEventCursor: "", // Initial cursor is empty
-		syncBizHost:           syncBizHost,
+		redisClient:           redisClient,
 	}
 }
 
@@ -60,8 +62,8 @@ type WatchBizHost struct {
 	startTime             int64  // Start time for listening events
 	bizHostEventCursor    string // Event cursor for host relation events
 	hostDetailEventCursor string // Event cursor for host events
-	// 引用同步锁和cursor缓存
-	syncBizHost *SyncBizHost
+	redisClient           bedis.Client
+	mutex                 sync.Mutex
 }
 
 // Run starts two independent watch tasks for host relations and host updates
@@ -134,17 +136,8 @@ const (
 
 // watchBizHost watch business host relationship changes
 func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
-	// 获取同步锁，阻塞等待直到获得锁
-	w.acquireEventWatchLock()
-	defer func() {
-		// 在释放锁前更新Redis缓存cursor
-		if w.bizHostEventCursor != "" {
-			w.syncBizHost.UpdateCachedCursor(kt, "biz_host_cursor", w.bizHostEventCursor)
-		}
-		w.releaseEventWatchLock()
-	}()
-	logs.Infof("acquired sync lock, starting host relation watch")
-
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	// Listen to host relationship change events
 	req := &bkcmdb.WatchResourceRequest{
 		BkResource:   hostRelation, // Listen to host relationships
@@ -152,7 +145,11 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		BkFields:     []string{"bk_biz_id", "bk_host_id"},
 	}
 	// 先从Redis缓存获取cursor，没有则使用时间戳获取事件
-	cachedCursor := w.syncBizHost.GetCachedCursor(kt, "biz_host_cursor")
+	cachedCursor, err := w.redisClient.Get(kt.Ctx, bizHostCursorKey)
+	if err != nil {
+		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", bizHostCursorKey, err)
+		return
+	}
 	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
 		req.BkCursor = cachedCursor
@@ -187,6 +184,12 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 		// Update cursor to the last event's cursor
 		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
 		w.bizHostEventCursor = lastEvent.BkCursor
+
+		// 更新Redis缓存中的cursor
+		err := w.redisClient.Set(kt.Ctx, bizHostCursorKey, w.bizHostEventCursor, 7*24*3600)
+		if err != nil {
+			logs.Errorf("update biz host cursor to redis failed, err: %v", err)
+		}
 	}
 }
 
@@ -239,29 +242,19 @@ func (w *WatchBizHost) handleHostRelationEvent(kt *kit.Kit, event bkcmdb.HostRel
 
 // watchHostUpdates watch host update events
 func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
-	// 尝试获取同步锁，如果失败则暂时放弃
-	if !w.tryAcquireEventWatchLock() {
-		logs.Infof("sync lock is held by other task, skip host update watch")
-		return
-	}
-	defer func() {
-		// 在释放锁前更新Redis缓存cursor
-		if w.hostDetailEventCursor != "" {
-			w.syncBizHost.UpdateCachedCursor(kt, "host_detail_cursor", w.hostDetailEventCursor)
-		}
-		w.releaseEventWatchLock()
-	}()
-	logs.Infof("acquired sync lock, starting host update watch")
-
-	// 优先从缓存获取cursor，如果没有则使用本地cursor
-
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	// Listen to host update events
 	req := &bkcmdb.WatchResourceRequest{
 		BkResource:   host,                  // Listen to host resource
 		BkEventTypes: []string{updateEvent}, // Only care about update events
 		BkFields:     []string{"bk_host_id", "bk_agent_id"},
 	}
-	cachedCursor := w.syncBizHost.GetCachedCursor(kt, "host_detail_cursor")
+	cachedCursor, err := w.redisClient.Get(kt.Ctx, hostDetailCursorKey)
+	if err != nil {
+		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", hostDetailCursorKey, err)
+		return
+	}
 	if cachedCursor != "" {
 		// For non-first listening, use the previous cursor
 		req.BkCursor = cachedCursor
@@ -292,6 +285,12 @@ func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
 		w.processHostEvents(kt, watchResult.Data.BkEvents)
 		// Update host cursor to the last event's cursor
 		w.hostDetailEventCursor = watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
+
+		// 更新Redis缓存中的cursor
+		err := w.redisClient.Set(kt.Ctx, hostDetailCursorKey, w.hostDetailEventCursor, 7*24*3600)
+		if err != nil {
+			logs.Errorf("update host detail cursor to redis failed, err: %v", err)
+		}
 	}
 }
 
@@ -301,7 +300,7 @@ func (w *WatchBizHost) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEvent)
 	skipCount := 0
 	for _, event := range events {
 		if err := w.processHostEvent(kt, event); err != nil {
-			logs.Errorf("process host event failed, event: %s, err: %v", event.BkCursor, err)
+			logs.Warnf("process host event failed, event: %s, err: %v", event.BkCursor, err)
 			// Skip failed events, rely on full data sync and other fallback measures
 			skipCount++
 			continue
@@ -347,14 +346,11 @@ func (w *WatchBizHost) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent
 	}
 
 	if len(existingBizHosts) == 0 {
-		// 1、主机详情事件为全量事件，存在较多主机不存在于biz_host表中
-		// 2、部分业务和主机关系同步存在延迟
 		return nil
 	}
 	if len(existingBizHosts) > 1 {
 		// 主机应该只属于一个业务，存在多个业务关系则认为存在异常
 		logs.Warnf("found multiple business relationships for host %d", hostID)
-		// PASS
 	}
 
 	// Update agentID for all business relationships of this host
@@ -369,21 +365,4 @@ func (w *WatchBizHost) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent
 	}
 
 	return nil
-}
-
-// acquireEventWatchLock 获取事件监听锁（阻塞等待）
-func (w *WatchBizHost) acquireEventWatchLock() {
-	// 阻塞等待获取锁，确保不被其他任务抢占
-	w.syncBizHost.syncLock.Lock()
-}
-
-// tryAcquireEventWatchLock 尝试获取事件监听锁（非阻塞）
-func (w *WatchBizHost) tryAcquireEventWatchLock() bool {
-	// 尝试获取锁，如果失败则返回false
-	return w.syncBizHost.syncLock.TryLock()
-}
-
-// releaseEventWatchLock 释放事件监听锁
-func (w *WatchBizHost) releaseEventWatchLock() {
-	w.syncBizHost.syncLock.Unlock()
 }

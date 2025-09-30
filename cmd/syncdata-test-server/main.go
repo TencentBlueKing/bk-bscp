@@ -13,6 +13,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -23,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -86,16 +88,23 @@ func main() {
 	// 启动业务主机关系同步定时任务
 	logs.Infof("启动业务主机关系同步定时任务...")
 	syncBizHost := crontab.NewSyncBizHost(daoSet, nil, cmdbService, redisClient, 500, 50.0)
+	// 首次启动时立即执行一次全量同步
+	logs.Infof("performing initial full sync on service startup")
+	kt := kit.New()
+	ctx, cancel := context.WithCancel(kt.Ctx)
+	kt.Ctx = ctx
+	syncBizHost.SyncBizHost(kt)
+	cancel()
 	syncBizHost.Run()
 
 	// 启动业务主机事件监听定时任务
 	logs.Infof("启动业务主机事件监听定时任务...")
-	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, &syncBizHost)
+	watchBizHost := crontab.NewWatchBizHost(daoSet, nil, cmdbService, redisClient)
 	watchBizHost.Run()
 
 	// 启动业务主机关系清理定时任务
 	logs.Infof("启动业务主机关系清理定时任务...")
-	cleanupBizHost := crontab.NewCleanupBizHost(daoSet, nil, cmdbService, &syncBizHost)
+	cleanupBizHost := crontab.NewCleanupBizHost(daoSet, nil, cmdbService, 50.0)
 	cleanupBizHost.Run()
 
 	// 等待关闭信号，让定时任务持续运行

@@ -31,7 +31,7 @@ import (
 
 const (
 	// sync data once a week
-	defaultSyncBizHostInterval = 1 * time.Minute
+	defaultSyncBizHostInterval = 7 * 24 * time.Hour
 	// Default QPS limit for CMDB requests
 	defaultQpsLimit = 50.0
 	// Default page size for list host requests
@@ -84,8 +84,8 @@ type SyncBizHost struct {
 	pageSize int
 	// qps limit for CMDB requests
 	qpsLimit float64
-	// sync lock for coordination with event watch
-	syncLock sync.Mutex
+	// mutex for sync biz host
+	mutex sync.Mutex
 }
 
 // Run the sync biz host task
@@ -93,14 +93,6 @@ func (c *SyncBizHost) Run() {
 	logs.Infof("start sync biz host task")
 	notifier := shutdown.AddNotifier()
 	go func() {
-		// 首次启动时立即执行一次全量同步
-		logs.Infof("performing initial full sync on service startup")
-		kt := kit.New()
-		ctx, cancel := context.WithCancel(kt.Ctx)
-		kt.Ctx = ctx
-		c.syncBizHost(kt)
-		cancel()
-
 		// 启动定时器，按间隔执行
 		ticker := time.NewTicker(defaultSyncBizHostInterval)
 		defer ticker.Stop()
@@ -121,19 +113,16 @@ func (c *SyncBizHost) Run() {
 				// 	continue
 				// }
 				logs.Infof("starts to synchronize the biz host")
-				c.syncBizHost(kt)
+				c.SyncBizHost(kt)
 			}
 		}
 	}()
 }
 
 // SyncBizHost sync business host relationship
-func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
-	// 获取同步锁，确保全量同步优先执行
-	c.syncLock.Lock()
-	defer c.syncLock.Unlock()
-	logs.Infof("acquired sync lock for full sync")
-
+func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
@@ -155,12 +144,25 @@ func (c *SyncBizHost) syncBizHost(kt *kit.Kit) {
 	logs.Infof("query BSCP business success, total businesses: %d", len(bizList))
 
 	// Query host information by business ID
+	successBizList := make([]int, 0)
+	failedBizList := make(map[int]string)
 	for _, biz := range bizList {
 		if err := c.syncBusinessHosts(kt, biz); err != nil {
 			logs.Errorf("sync business %d hosts failed, err: %v", biz, err)
+			failedBizList[biz] = err.Error()
 			// if sync failed, continue to sync next business
 			continue
 		}
+		successBizList = append(successBizList, biz)
+	}
+
+	// Log summary of sync results
+	logs.Infof("sync biz host summary: total businesses=%d, success=%d, failed=%d",
+		len(bizList), len(successBizList), len(failedBizList))
+
+	// Log businesses that failed to sync (no hosts found or sync failed)
+	if len(failedBizList) > 0 {
+		logs.Warnf("businesses with no hosts or sync failed: %v", failedBizList)
 	}
 }
 
@@ -195,7 +197,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 
 		// If current page has no data, query is complete
 		if len(hostResult.Data.Info) == 0 {
-			break
+			return fmt.Errorf("biz %d has no hosts associated", bizID)
 		}
 
 		var batchBizHosts []*table.BizHost

@@ -15,6 +15,7 @@ package crontab
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
@@ -29,25 +30,33 @@ import (
 
 const (
 	// 每天执行一次清理任务
-	defaultCleanupBizHostInterval = 1 * time.Minute
+	defaultCleanupBizHostInterval = 6 * time.Hour
 	// 每次处理的记录数
 	defaultCleanupBatchSize = 1000
 	// CMDB 请求限流
-	defaultCleanupQpsLimit = 10.0
+	defaultCleanupQpsLimit = 50.0
+	// 重复主机清理间隔
+	defaultCleanupDuplicateHostInterval = 3 * time.Minute
 )
 
 // NewCleanupBizHost init cleanup biz host task
 func NewCleanupBizHost(
-	set dao.Set, sd serviced.Service, cmdbService bkcmdb.Service, syncBizHost *SyncBizHost) CleanupBizHost {
+	set dao.Set,
+	sd serviced.Service,
+	cmdbService bkcmdb.Service,
+	qpsLimit float64,
+) CleanupBizHost {
+	if qpsLimit <= 0 || qpsLimit > defaultCleanupQpsLimit {
+		qpsLimit = defaultCleanupQpsLimit
+	}
 	// 创建限流器
-	rateLimiter := rate.NewLimiter(rate.Limit(defaultCleanupQpsLimit), 1)
+	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
 	return CleanupBizHost{
 		set:         set,
 		state:       sd,
 		cmdbService: cmdbService,
 		rateLimiter: rateLimiter,
-		syncBizHost: syncBizHost,
 	}
 }
 
@@ -57,16 +66,16 @@ type CleanupBizHost struct {
 	state       serviced.Service
 	cmdbService bkcmdb.Service
 	rateLimiter *rate.Limiter
-	// 引用同步锁和cursor缓存
-	syncBizHost *SyncBizHost
+	mutex       sync.Mutex
 }
 
 // Run 启动清理任务
 func (c *CleanupBizHost) Run() {
 	logs.Infof("start cleanup biz host task")
 	notifier := shutdown.AddNotifier()
+
+	// 任务1：清理失效的业务主机关系
 	go func() {
-		// 启动定时器，按间隔执行
 		ticker := time.NewTicker(defaultCleanupBizHostInterval)
 		defer ticker.Stop()
 		for {
@@ -90,15 +99,37 @@ func (c *CleanupBizHost) Run() {
 			}
 		}
 	}()
+
+	// 任务2：清理重复主机关联
+	go func() {
+		ticker := time.NewTicker(defaultCleanupDuplicateHostInterval)
+		defer ticker.Stop()
+		for {
+			kt := kit.New()
+			ctx, cancel := context.WithCancel(kt.Ctx)
+			kt.Ctx = ctx
+
+			select {
+			case <-notifier.Signal:
+				logs.Infof("stop cleanup duplicate host success")
+				cancel()
+				return
+			case <-ticker.C:
+				// if !c.state.IsMaster() {
+				// 	logs.Infof("current service instance is slave, skip cleanup duplicate host")
+				// 	continue
+				// }
+				logs.Infof("starts to cleanup duplicate host relationships")
+				c.cleanupDuplicateHosts(kt)
+			}
+		}
+	}()
 }
 
 // cleanupBizHost 清理失效的业务主机关系
 func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
-	// 获取同步锁，阻塞等待直到获得锁
-	logs.Infof("waiting for sync lock to start cleanup")
-	c.acquireCleanupLock()
-	defer c.releaseCleanupLock()
-	logs.Infof("acquired sync lock, starting cleanup")
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	startTime := time.Now()
 	defer func() {
@@ -243,12 +274,74 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	return deletedCount, nil
 }
 
-// acquireCleanupLock 获取清理锁（阻塞等待）
-func (c *CleanupBizHost) acquireCleanupLock() {
-	c.syncBizHost.syncLock.Lock()
+// cleanupDuplicateHosts 清理重复主机关联
+func (c *CleanupBizHost) cleanupDuplicateHosts(kt *kit.Kit) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		logs.Infof("cleanup duplicate hosts completed in %v", duration)
+	}()
+
+	// 查询重复的主机ID
+	duplicateHosts, err := c.queryDuplicateHosts(kt)
+	if err != nil {
+		logs.Errorf("query duplicate hosts failed, err: %v", err)
+		return
+	}
+
+	if len(duplicateHosts) == 0 {
+		logs.Infof("no duplicate hosts found")
+		return
+	}
+
+	logs.Infof("found %d duplicate hosts to validate", len(duplicateHosts))
+
+	bizGroups := c.groupByBizID(duplicateHosts)
+	totalCleaned := 0
+	for bizID, records := range bizGroups {
+		cleanedCount, err := c.validateAndCleanupBizHosts(kt, bizID, records)
+		if err != nil {
+			logs.Errorf("cleanup duplicate host %d failed, err: %v", bizID, err)
+			continue
+		}
+		totalCleaned += cleanedCount
+	}
+
+	logs.Infof("duplicate host cleanup completed, total deleted: %d records", totalCleaned)
 }
 
-// releaseCleanupLock 释放清理锁
-func (c *CleanupBizHost) releaseCleanupLock() {
-	c.syncBizHost.syncLock.Unlock()
+// queryDuplicateHosts 查询重复的主机ID并按业务分组
+func (c *CleanupBizHost) queryDuplicateHosts(kt *kit.Kit) ([]*table.BizHost, error) {
+	// 使用子查询找出重复的主机ID
+	m := c.set.GenQuery().BizHost
+	var duplicateHostIDs []int
+
+	// 查询出现次数大于1的主机ID
+	err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
+		Select(m.HostID).
+		Group(m.HostID).
+		Having(m.HostID.Count().Gt(1)).
+		Scan(&duplicateHostIDs)
+
+	if err != nil {
+		return nil, fmt.Errorf("query duplicate host IDs failed: %w", err)
+	}
+
+	if len(duplicateHostIDs) == 0 {
+		return nil, nil
+	}
+
+	// 查询这些重复主机的所有记录
+	records, err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
+		Where(m.HostID.In(duplicateHostIDs...)).
+		Find()
+
+	if err != nil {
+		return nil, fmt.Errorf("query duplicate host records failed: %w", err)
+	}
+
+	return records, nil
 }
