@@ -22,12 +22,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"k8s.io/klog/v2"
-
-	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 
 	bscp "github.com/TencentBlueKing/bk-bscp"
 	"github.com/TencentBlueKing/bk-bscp/docs"
