@@ -53,7 +53,7 @@
           :list="[]"
           placeholder="value"
           @click="isShowValuePopover = true"
-          @change="validateValue">
+          @change="handleValueChange">
           <template #suffix>
             <angle-down :class="['suffix-icon', { 'show-popover': isShowValuePopover && valueList.length > 0 }]" />
           </template>
@@ -66,7 +66,7 @@
           :class="{ 'is-error': showValueError }"
           :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) ? 'number' : 'text'"
           @click="isShowValuePopover = true"
-          @change="validateValue">
+          @change="handleValueChange">
           <template #suffix>
             <angle-down :class="['suffix-icon', { 'show-popover': isShowValuePopover && valueList.length > 0 }]" />
           </template>
@@ -134,6 +134,11 @@
     isShowKeyPopover.value = false;
     validateKey();
     await getValueList();
+    handleRuleChange();
+  };
+
+  const handleValueChange = () => {
+    validateValue();
     handleRuleChange();
   };
 
