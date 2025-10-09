@@ -31,7 +31,7 @@ import (
 
 const (
 	// biz host cleanup task interval
-	defaultCleanupBizHostInterval = 6 * time.Hour
+	defaultCleanupBizHostInterval = 1 * time.Hour
 	// number of records to process each time
 	defaultCleanupBatchSize = 1000
 	// CMDB request rate limit

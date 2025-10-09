@@ -212,7 +212,7 @@ func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEv
 func (w *WatchBizHost) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
 	switch event.BkEventType {
 	case createEvent:
-		return w.handleHostCreateRelationEvent(kt, event)
+		return w.handleHostRelationCreateEvent(kt, event)
 	case deleteEvent:
 		return w.handleHostRelationDeleteEvent(kt, event)
 	default:
@@ -222,7 +222,7 @@ func (w *WatchBizHost) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent)
 }
 
 // handleHostRelationEvent handle host relation event
-func (w *WatchBizHost) handleHostCreateRelationEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHost) handleHostRelationCreateEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
 	if event.BkDetail == nil {
 		logs.Warnf("host relation event has nil detail, skipping")
 		return nil
@@ -248,6 +248,34 @@ func (w *WatchBizHost) handleHostCreateRelationEvent(kt *kit.Kit, event bkcmdb.H
 		BizID:  *detail.BkBizID,
 		HostID: *detail.BkHostID,
 	}
+	// query host detail
+	hostResult, err := w.cmdbService.ListBizHosts(kt.Ctx, &bkcmdb.ListBizHostsRequest{
+		BkBizID: *detail.BkBizID,
+		Page: bkcmdb.PageParam{
+			Start: 0,
+			Limit: 1,
+		},
+		Fields: []string{"bk_host_id", "bk_agent_id", "bk_host_innerip"},
+		HostPropertyFilter: bkcmdb.HostPropertyFilter{
+			Condition: bkcmdb.HostPropertyConditionAnd,
+			Rules: []bkcmdb.HostPropertyRule{
+				{Field: "bk_host_id", Operator: bkcmdb.HostPropertyOperatorEqual, Value: *detail.BkHostID},
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("list biz hosts failed: %w", err)
+	}
+	if !hostResult.Result {
+		return fmt.Errorf("list biz hosts failed: %s", hostResult.Message)
+	}
+
+	if len(hostResult.Data.Info) == 0 {
+		return nil
+	}
+	host := hostResult.Data.Info[0]
+	bizHost.AgentID = host.BkAgentID
+	bizHost.BKHostInnerIP = host.BkHostInnerIP
 
 	if err := w.set.BizHost().Upsert(kt, bizHost); err != nil {
 		return fmt.Errorf("upsert biz[%d] host[%d] failed: %w", detail.BkBizID, detail.BkHostID, err)
