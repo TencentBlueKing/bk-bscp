@@ -182,7 +182,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 
 		// If current page has no data, query is complete
 		if len(hostResult.Data.Info) == 0 {
-			return fmt.Errorf("biz %d has no hosts associated", bizID)
+			break
 		}
 
 		var batchBizHosts []*table.BizHost
@@ -301,24 +301,5 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		return lastEvent.BkCursor, nil
 	default:
 		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
-	}
-}
-
-// GetCachedCursor get cached cursor from Redis
-func (c *SyncBizHost) GetCachedCursor(kt *kit.Kit, key string) string {
-	cursor, err := c.redisClient.Get(kt.Ctx, key)
-	if err != nil {
-		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", key, err)
-		return ""
-	}
-	return cursor
-}
-
-// UpdateCachedCursor update cached cursor to Redis
-func (c *SyncBizHost) UpdateCachedCursor(kt *kit.Kit, key, cursor string) {
-	if err := c.redisClient.Set(kt.Ctx, key, cursor, 7*24*3600); err != nil {
-		logs.Errorf("update cached cursor to redis failed, key: %s, cursor: %s, err: %v", key, cursor, err)
-	} else {
-		logs.Infof("updated cached cursor to redis for %s: %s", key, cursor)
 	}
 }

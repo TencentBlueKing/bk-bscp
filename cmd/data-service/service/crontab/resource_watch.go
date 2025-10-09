@@ -430,7 +430,7 @@ func (w *WatchBizHost) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent
 	// Check if this host exists in biz_host table
 	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, hostID)
 	if err != nil {
-		return errors.New("query biz hosts for hostID failed")
+		return fmt.Errorf("query biz hosts for hostID %d failed: %w", hostID, err)
 	}
 
 	if len(existingBizHosts) == 0 {
