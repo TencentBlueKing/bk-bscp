@@ -1,7 +1,7 @@
 <template>
   <section class="client-search-page">
     <div class="header">
-      <ClientHeader :title="t('客户端查询')" @search="loadList" />
+      <ClientHeader :title="t('客户端查询')" :app-id="appId" @search="loadList" />
     </div>
     <div v-if="appId" class="content">
       <div class="operation-btns">

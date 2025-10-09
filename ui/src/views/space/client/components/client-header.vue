@@ -3,7 +3,7 @@
     <div class="head-left">
       <span class="title">{{ title }}</span>
       <div class="line"></div>
-      <ServiceSelector @change="handleAppChange">
+      <ServiceSelector :value="appId" @change="handleAppChange">
         <template #trigger>
           <div class="selector-trigger">
             <bk-overflow-title v-if="localApp.name" class="app-name" type="tips">
@@ -49,6 +49,7 @@
   const { searchQuery } = storeToRefs(useClientStore());
   defineProps<{
     title: string;
+    appId: number;
   }>();
 
   const emits = defineEmits(['search']);
@@ -90,6 +91,7 @@
       id: service.id!,
     };
     setLastAccessedService(service.id!);
+    if (service.id === localApp.value.id) return;
     await router.push({ name: route.name!, params: { spaceId: bizId.value, appId: service.id } });
     heartbeatTime.value = 1;
     handleHeartbeatTimeChange(1);
