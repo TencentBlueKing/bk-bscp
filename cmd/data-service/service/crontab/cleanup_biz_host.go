@@ -118,25 +118,14 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 	}
 
 	if len(oldestRecords) == 0 {
-		logs.Infof("no biz host records to cleanup")
 		return
 	}
-
-	logs.Infof("found %d oldest biz host records to validate", len(oldestRecords))
-
 	// group by biz ID
 	bizGroups := c.groupByBizID(oldestRecords)
-	logs.Infof("grouped into %d businesses", len(bizGroups))
-
 	// validate each biz host relationships
-	totalDeleted := 0
 	for bizID, records := range bizGroups {
-		deleted := c.validateAndCleanupBizHosts(kt, bizID, records)
-		totalDeleted += deleted
-		logs.Infof("cleaned up %d invalid records for biz %d", deleted, bizID)
+		c.validateAndCleanupBizHosts(kt, bizID, records)
 	}
-
-	logs.Infof("cleanup completed, total deleted: %d records", totalDeleted)
 }
 
 // queryOldestBizHosts query oldest biz host relationships
@@ -164,13 +153,12 @@ func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table
 }
 
 // validateAndCleanupBizHosts validate and cleanup specified biz host relationships
-func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) int {
+func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) {
 	if len(records) == 0 {
-		return 0
+		return
 	}
 
 	// batch process host IDs
-	totalDeleted := 0
 	batchSize := 500
 	for i := 0; i < len(records); i += batchSize {
 		end := i + batchSize
@@ -179,23 +167,20 @@ func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, reco
 		}
 
 		batch := records[i:end]
-		deleted, err := c.validateAndCleanupBatch(kt, bizID, batch)
+		err := c.validateAndCleanupBatch(kt, bizID, batch)
 		if err != nil {
 			logs.Errorf("validate and cleanup batch failed, bizID: %d, batch: %d-%d, err: %v",
 				bizID, i, end-1, err)
 			continue
 		}
-		totalDeleted += deleted
 	}
-
-	return totalDeleted
 }
 
 // validateAndCleanupBatch validate and cleanup a batch of host relationships
-func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records []*table.BizHost) (int, error) {
+func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records []*table.BizHost) error {
 	// apply rate limiter
 	if err := c.rateLimiter.Wait(kt.Ctx); err != nil {
-		return 0, fmt.Errorf("rate limiter wait failed: %w", err)
+		return fmt.Errorf("rate limiter wait failed: %w", err)
 	}
 
 	// extract host IDs
@@ -212,11 +197,11 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 
 	relationResult, err := c.cmdbService.FindHostBizRelations(kt.Ctx, req)
 	if err != nil {
-		return 0, fmt.Errorf("find host biz relations failed: %w", err)
+		return fmt.Errorf("find host biz relations failed: %w", err)
 	}
 
 	if !relationResult.Result {
-		return 0, fmt.Errorf("find host biz relations failed: %s", relationResult.Message)
+		return fmt.Errorf("find host biz relations failed: %s", relationResult.Message)
 	}
 
 	// build valid host IDs set (only include hosts with binding relations)
@@ -226,7 +211,6 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	}
 
 	// check and delete invalid records
-	deletedCount := 0
 	for _, record := range records {
 		if !validHostIDs[record.HostID] {
 			// host is no longer bound to this biz, delete record
@@ -235,10 +219,8 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 					record.BizID, record.HostID, err)
 				continue
 			}
-			deletedCount++
-			logs.Infof("deleted invalid biz host record: bizID=%d, hostID=%d", record.BizID, record.HostID)
 		}
 	}
 
-	return deletedCount, nil
+	return nil
 }

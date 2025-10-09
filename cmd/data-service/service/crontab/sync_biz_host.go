@@ -239,29 +239,23 @@ func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
 	// get biz host relation event cursor
 	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
 	if err != nil {
-		logs.Errorf("get biz host cursor failed, err: %v", err)
 		return fmt.Errorf("get biz host cursor failed: %w", err)
 	}
 	if bizHostCursor != "" {
 		if err = c.redisClient.Set(kt.Ctx, bizHostCursorKey, bizHostCursor, 7*24*3600); err != nil {
-			logs.Errorf("cache biz host cursor to redis failed, err: %v", err)
 			return fmt.Errorf("cache biz host cursor to redis failed: %w", err)
 		}
-		logs.Infof("cached biz host cursor to redis: %s", bizHostCursor)
 	}
 
 	// get host detail update event cursor
 	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
 	if err != nil {
-		logs.Errorf("get host detail cursor failed, err: %v", err)
 		return fmt.Errorf("get host detail cursor failed: %w", err)
 	}
 	if hostDetailCursor != "" {
 		if err := c.redisClient.Set(kt.Ctx, hostDetailCursorKey, hostDetailCursor, 7*24*3600); err != nil {
-			logs.Errorf("cache host detail cursor to redis failed, err: %v", err)
 			return fmt.Errorf("cache host detail cursor to redis failed: %w", err)
 		}
-		logs.Infof("cached host detail cursor to redis: %s", hostDetailCursor)
 	}
 
 	return nil
@@ -285,11 +279,12 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		if !watchResult.Result {
 			return "", fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
 		}
-		// extract last event cursor from response
-		if len(watchResult.Data.BkEvents) > 0 {
-			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-			return lastEvent.BkCursor, nil
+		if len(watchResult.Data.BkEvents) == 0 {
+			return "", nil
 		}
+		// extract last event cursor from response
+		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+		return lastEvent.BkCursor, nil
 	case host:
 		watchResult, err := c.cmdbService.WatchHostResource(kt.Ctx, req)
 		if err != nil {
@@ -298,18 +293,15 @@ func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime
 		if !watchResult.Result {
 			return "", fmt.Errorf("watch host resource failed: %s", watchResult.Message)
 		}
-		// extract last event cursor from response
-		if len(watchResult.Data.BkEvents) > 0 {
-			lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-			return lastEvent.BkCursor, nil
+		if len(watchResult.Data.BkEvents) == 0 {
+			return "", nil
 		}
+		// extract last event cursor from response
+		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+		return lastEvent.BkCursor, nil
 	default:
 		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
-
-	// no event listened, return empty string
-	// actually no event will also return a cursor, but no event detail
-	return "", nil
 }
 
 // GetCachedCursor get cached cursor from Redis
