@@ -34,6 +34,7 @@ func newHookRevision(db *gorm.DB, opts ...gen.DOOption) hookRevision {
 	_hookRevision.Memo = field.NewString(tableName, "memo")
 	_hookRevision.BizID = field.NewUint32(tableName, "biz_id")
 	_hookRevision.HookID = field.NewUint32(tableName, "hook_id")
+	_hookRevision.TenantID = field.NewString(tableName, "tenant_id")
 	_hookRevision.Creator = field.NewString(tableName, "creator")
 	_hookRevision.Reviser = field.NewString(tableName, "reviser")
 	_hookRevision.CreatedAt = field.NewTime(tableName, "created_at")
@@ -55,6 +56,7 @@ type hookRevision struct {
 	Memo      field.String
 	BizID     field.Uint32
 	HookID    field.Uint32
+	TenantID  field.String
 	Creator   field.String
 	Reviser   field.String
 	CreatedAt field.Time
@@ -82,6 +84,7 @@ func (h *hookRevision) updateTableName(table string) *hookRevision {
 	h.Memo = field.NewString(table, "memo")
 	h.BizID = field.NewUint32(table, "biz_id")
 	h.HookID = field.NewUint32(table, "hook_id")
+	h.TenantID = field.NewString(table, "tenant_id")
 	h.Creator = field.NewString(table, "creator")
 	h.Reviser = field.NewString(table, "reviser")
 	h.CreatedAt = field.NewTime(table, "created_at")
@@ -114,7 +117,7 @@ func (h *hookRevision) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (h *hookRevision) fillFieldMap() {
-	h.fieldMap = make(map[string]field.Expr, 11)
+	h.fieldMap = make(map[string]field.Expr, 12)
 	h.fieldMap["id"] = h.ID
 	h.fieldMap["name"] = h.Name
 	h.fieldMap["state"] = h.State
@@ -122,6 +125,7 @@ func (h *hookRevision) fillFieldMap() {
 	h.fieldMap["memo"] = h.Memo
 	h.fieldMap["biz_id"] = h.BizID
 	h.fieldMap["hook_id"] = h.HookID
+	h.fieldMap["tenant_id"] = h.TenantID
 	h.fieldMap["creator"] = h.Creator
 	h.fieldMap["reviser"] = h.Reviser
 	h.fieldMap["created_at"] = h.CreatedAt

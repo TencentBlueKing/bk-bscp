@@ -21,6 +21,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // Project 项目信息
@@ -53,8 +55,10 @@ func (p *Project) CreateTime() (time.Time, error) {
 // ListAuthorizedProjects 通过 用户 获取项目信息
 func ListAuthorizedProjects(ctx context.Context, username string) ([]*Project, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/bcsproject/v1/authorized_projects", "")
+	kit := kit.FromGrpcContext(ctx)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bcs-Username", username).
 		SetAuthToken("").
 		Get(url)
@@ -74,8 +78,10 @@ func ListAuthorizedProjects(ctx context.Context, username string) ([]*Project, e
 // ListProjects 按项目 Code 查询
 func ListProjects(ctx context.Context, projectCodeList []string) ([]*Project, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/bcsproject/v1/projects", "")
+	kit := kit.FromGrpcContext(ctx)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bcs-Username", "").
 		SetQueryParam("projectCode", strings.Join(projectCodeList, ",")).
 		SetAuthToken("").

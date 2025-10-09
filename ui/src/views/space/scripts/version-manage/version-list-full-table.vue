@@ -27,7 +27,11 @@
         <span v-else>0</span>
       </template>
     </bk-table-column>
-    <bk-table-column :label="t('更新人')" prop="hook_revision.revision.reviser"></bk-table-column>
+    <bk-table-column :label="t('更新人')" prop="hook_revision.revision.reviser">
+      <template #default="{ row }">
+        <user-name v-if="row.hook_revision" :name="row.hook_revision.revision.reviser"/>
+      </template>
+    </bk-table-column>
     <bk-table-column :label="t('更新时间')" width="220">
       <template #default="{ row }">
         <span v-if="row.hook_revision">{{ datetimeFormat(row.hook_revision.revision.update_at) }}</span>
@@ -59,7 +63,8 @@
   import { IPagination } from '../../../../../types/index';
   import { datetimeFormat } from '../../../../utils/index';
   import ScriptCited from '../list/script-cited.vue';
-  import tableEmpty from '../../../../components/table/table-empty.vue';
+  import TableEmpty from '../../../../components/table/table-empty.vue';
+  import UserName from '../../../../components/user-name.vue';
 
   const { t, locale } = useI18n();
 

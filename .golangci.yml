@@ -59,9 +59,9 @@ linters-settings:
       - fmt.Fprintf
       - fmt.Fprintln
   lll:
-    line-length: 120
+    line-length: 160
   funlen:
-    lines: 90
+    lines: 120
     statements: -1
   gocyclo:
     min-complexity: 30

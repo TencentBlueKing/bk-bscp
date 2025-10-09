@@ -12,11 +12,13 @@
         <Plus class="button-icon" />
         {{ t('新建版本') }}
       </bk-button>
-      <SearchInput
-        v-model="searchStr"
+      <SearchSelector
+        ref="searchSelectorRef"
+        class="search-input"
+        :search-filed="searchFiled"
+        :user-filed="['reviser']"
         :placeholder="t('版本号/版本说明/更新人')"
-        :width="320"
-        @search="refreshList()" />
+        @search="handleSearch" />
     </div>
     <div class="version-content-area">
       <VersionFullTable
@@ -80,9 +82,9 @@
     getTemplateVersionList,
     getCountsByTemplateVersionIds,
   } from '../../../../api/template';
-  import SearchInput from '../../../../components/search-input.vue';
   import VersionFullTable from './version-full-table.vue';
   import VersionDetailTable from './version-detail/version-detail-table.vue';
+  import SearchSelector from '../../../../components/search-selector.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
@@ -106,7 +108,6 @@
   const allVersionList = ref<{ id: number; name: string }[]>([]); // 全量版本列表，选择载入版本使用
   const boundByAppsCountLoading = ref(false);
   const boundByAppsCountList = ref([]);
-  const searchStr = ref('');
   const selectVersionFormRef = ref();
   const selectVersionDialog = ref<{ open: boolean; id: number | string }>({
     open: false,
@@ -117,6 +118,13 @@
     type: 'create',
     id: 0,
   });
+  const searchQuery = ref<{ [key: string]: string }>({});
+  const searchSelectorRef = ref();
+  const searchFiled = [
+    { field: 'revision_name', label: t('版本号') },
+    { field: 'revision_memo', label: t('版本说明') },
+    { field: 'reviser', label: t('更新人') },
+  ];
 
   const templateSpaceId = computed(() => getRouteId(route.params.templateSpaceId as string));
   const packageId = computed(() => route.params.packageId);
@@ -150,10 +158,7 @@
       start: (pagination.value.current - 1) * pagination.value.limit,
       limit: pagination.value.limit,
     };
-    if (searchStr.value) {
-      params.search_value = searchStr.value;
-      params.search_fields = 'revision_name,revision_memo,creator';
-    }
+    params.search = searchQuery.value;
     const res = await getTemplateVersionList(spaceId.value, templateSpaceId.value, templateId.value, params);
     versionList.value = res.details;
     pagination.value.count = res.count;
@@ -240,6 +245,11 @@
 
   const handlePageLimitChange = (val: number) => {
     updatePagination('limit', val);
+    refreshList();
+  };
+
+  const handleSearch = (list: { [key: string]: string }) => {
+    searchQuery.value = list;
     refreshList();
   };
 

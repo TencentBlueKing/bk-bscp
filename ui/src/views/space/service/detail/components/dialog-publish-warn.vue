@@ -60,7 +60,7 @@
             </div>
             <div class="table-td">{{ item.name || '--' }}</div>
             <div class="table-td">{{ item.fully_released ? '全部实例' : versionScope(item.scope.groups) }}</div>
-            <div class="table-td">{{ item.creator || '--' }}</div>
+            <div class="table-td"><user-name :name="item.creator" /></div>
           </div>
         </div>
       </div>
@@ -76,6 +76,7 @@
   import { convertTime } from '../../../../../utils';
   import { APPROVE_STATUS } from '../../../../../constants/record';
   import { useI18n } from 'vue-i18n';
+  import UserName from '../../../../../components/user-name.vue';
 
   const emits = defineEmits(['update:show', 'confirm']);
 

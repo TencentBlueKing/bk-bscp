@@ -97,7 +97,6 @@ type ListRKvOption struct {
 	AppID     uint32    `json:"app_id"`
 	Key       []string  `json:"key"`
 	ReleaseID uint32    `json:"release_id"`
-	SearchKey string    `json:"search_key"`
 	All       bool      `json:"all"`
 	Page      *BasePage `json:"page"`
 	KvType    []string  `json:"kv_type"`

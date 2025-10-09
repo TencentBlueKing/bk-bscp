@@ -757,4 +757,9 @@ var auditGrpcMap = map[string]func() (audit.Resource, audit.Action){
 		return audit.Resource{ResourceType: audit.ResourceType(sys.Application)},
 			audit.Action{ActionID: "undelete_kv"}
 	},
+	"/pbcs.Config/SubmitPublishApprove": func() (audit.Resource, audit.Action) {
+		// return the resource to be recorded.
+		return audit.Resource{ResourceType: audit.ResourceType(sys.Application)},
+			audit.Action{ActionID: "submit_publish_approve"}
+	},
 }

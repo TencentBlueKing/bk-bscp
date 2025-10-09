@@ -32,6 +32,7 @@ func newReleasedAppTemplateVariable(db *gorm.DB, opts ...gen.DOOption) releasedA
 	_releasedAppTemplateVariable.Variables = field.NewField(tableName, "variables")
 	_releasedAppTemplateVariable.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedAppTemplateVariable.AppID = field.NewUint32(tableName, "app_id")
+	_releasedAppTemplateVariable.TenantID = field.NewString(tableName, "tenant_id")
 	_releasedAppTemplateVariable.Creator = field.NewString(tableName, "creator")
 	_releasedAppTemplateVariable.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -49,6 +50,7 @@ type releasedAppTemplateVariable struct {
 	Variables field.Field
 	BizID     field.Uint32
 	AppID     field.Uint32
+	TenantID  field.String
 	Creator   field.String
 	CreatedAt field.Time
 
@@ -72,6 +74,7 @@ func (r *releasedAppTemplateVariable) updateTableName(table string) *releasedApp
 	r.Variables = field.NewField(table, "variables")
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.AppID = field.NewUint32(table, "app_id")
+	r.TenantID = field.NewString(table, "tenant_id")
 	r.Creator = field.NewString(table, "creator")
 	r.CreatedAt = field.NewTime(table, "created_at")
 
@@ -104,12 +107,13 @@ func (r *releasedAppTemplateVariable) GetFieldByName(fieldName string) (field.Or
 }
 
 func (r *releasedAppTemplateVariable) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 7)
+	r.fieldMap = make(map[string]field.Expr, 8)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["release_id"] = r.ReleaseID
 	r.fieldMap["variables"] = r.Variables
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["app_id"] = r.AppID
+	r.fieldMap["tenant_id"] = r.TenantID
 	r.fieldMap["creator"] = r.Creator
 	r.fieldMap["created_at"] = r.CreatedAt
 }

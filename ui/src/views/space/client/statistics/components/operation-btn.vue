@@ -114,7 +114,7 @@
   // 打开全屏
   const handleOpenFullScreen = () => {
     emits('toggleFullScreen');
-    window.addEventListener('keydown', handleEscClose, { once: true });
+    window.addEventListener('keydown', handleEscClose);
     BkMessage({
       theme: 'primary',
       message: t('按 Esc 即可退出全屏模式'),
@@ -129,7 +129,7 @@
   // Esc按键事件处理
   const handleEscClose = (event: KeyboardEvent) => {
     if (event.code === 'Escape') {
-      emits('toggleFullScreen');
+      handleCloseFullScreen();
     }
   };
 

@@ -84,7 +84,8 @@ service Config {
   rpc ListAppsBySpaceRest(ListAppsBySpaceRestReq) returns (ListAppsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/list/app/app/biz_id/{biz_id}"
+      post: "/api/v1/config/list/app/app/biz_id/{biz_id}"
+      body: "*"
     };
   }
   // 克隆服务
@@ -191,8 +192,9 @@ service Config {
   rpc ListReleasedConfigItems(ListReleasedConfigItemsReq) returns (ListReleasedConfigItemsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "config_items"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
+            "config_items"
+      body: "*"
     };
   }
   // 获取文件型服务配置数量列表
@@ -223,8 +225,9 @@ service Config {
   rpc ListReleasedKvs(ListReleasedKvsReq) returns (ListReleasedKvsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "kvs"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
+            "kvs"
+      body: "*"
     };
   }
   // 列出所有已发布的配置项
@@ -368,7 +371,8 @@ service Config {
   rpc ListHookRevisions(ListHookRevisionsReq) returns (ListHookRevisionsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions"
+      post: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/list"
+      body: "*"
     };
   }
   // 删除脚本版本
@@ -568,8 +572,9 @@ service Config {
   rpc ListTemplatesNotBound(ListTemplatesNotBoundReq) returns (ListTemplatesNotBoundResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
-           "templates/list_not_bound"
+      post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
+            "templates/list_not_bound"
+      body: "*"
     };
   }
   // 按模板绝对路径获取模板列表
@@ -619,8 +624,9 @@ service Config {
   rpc ListTemplateRevisions(ListTemplateRevisionsReq) returns (ListTemplateRevisionsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
-           "templates/{template_id}/template_revisions"
+      post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
+            "templates/{template_id}/template_revisions/list"
+      body: "*"
     };
   }
   // 获取模板版本
@@ -758,7 +764,8 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   rpc ListAppBoundTmplRevisions(ListAppBoundTmplRevisionsReq) returns (ListAppBoundTmplRevisionsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_revisions"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_revisions"
+      body: "*"
     };
   }
   // 按已发布版本服务获取绑定的模板版本列表
@@ -766,8 +773,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       returns (ListReleasedAppBoundTmplRevisionsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "template_revisions"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
+            "template_revisions"
+      body: "*"
     };
   }
   // 查看已发布版本服务的模板版本详情
@@ -1136,11 +1144,62 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
+  // 审批同步，其中v2版本中itsm也是复用这个接口进行回调
   rpc Approve(ApproveReq) returns (ApproveResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
       body: "*"
+    };
+  }
+
+  // itsm v4 回调接口
+  rpc ApprovalCallback(ApprovalCallbackReq) returns (ApprovalCallbackResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approval_callback"
+      body: "*"
+    };
+    // 在这里添加自定义 swagger 字段
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-bk-apigateway-resource",
+        value: {
+          struct_value: {
+            // 定义第一层字段
+            fields: {
+              key: "isPublic",
+              value: { bool_value: true }
+            },
+            fields: {
+              key: "allowApplyPermission",
+              value: { bool_value: true }
+            },
+            // 定义 authConfig 嵌套对象
+            fields: {
+              key: "authConfig",
+              value: {
+                struct_value: {
+                  // 定义第二层字段
+                  fields: {
+                    key: "appVerifiedRequired",
+                    value: { bool_value: true }
+                  },
+                  // 回调结构不校验用户权限
+                  fields: {
+                    key: "userVerifiedRequired",
+                    value: { bool_value: false }
+                  },
+                  fields: {
+                    key: "resourcePermissionRequired",
+                    value: { bool_value: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     };
   }
 
@@ -1660,7 +1719,8 @@ message ListAppsRestReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 start = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  string search = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
+  google.protobuf.Struct search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
   string operator = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
 }
 
@@ -1674,8 +1734,8 @@ message ListAppsBySpaceRestReq {
   string config_type = 6 [
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务类型：文件型=file, 键值型=kv" }
   ];
-  string search = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
-  string operator = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
+  google.protobuf.Struct search = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
 }
 
 message ListAppsResp {
@@ -1856,19 +1916,17 @@ message GetReleasedConfigItemResp {
 message ListConfigItemsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
-  string search_fields = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段",
-    default: "name,path,memo,creator,revise"
-  }];
-  string search_value = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  repeated uint32 ids = 7;
-  bool all = 8
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  repeated uint32 ids = 6;
+  bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
-  bool with_status = 9;
-  // ADD、REVISE、DELETE、UNCHANGE
-  repeated string status = 10;
+  bool with_status = 8;
+  repeated string status = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
+  }];
 }
 
 message ListConfigItemsResp {
@@ -1882,11 +1940,11 @@ message ListReleasedConfigItemsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
-  string search_fields = 4;
-  string search_value = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  bool all = 8
+  google.protobuf.Struct search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
@@ -1933,12 +1991,11 @@ message ListReleasedKvsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
-  ;
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
-  string search_key = 7;
+  google.protobuf.Struct search = 7;
   repeated string key = 8;
   repeated string kv_type = 9;
   string sort = 10;
@@ -2157,7 +2214,8 @@ message CreateHookRevisionResp {
 message ListHookRevisionsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 hook_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
-  string search_key = 3;
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   bool all = 6
@@ -2477,15 +2535,12 @@ message ListTemplatesReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 template_space_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
-  string search_fields = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段",
-    default: "name,path,memo,creator,reviser"
-  }];
-  string search_value = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  repeated uint32 ids = 7;
-  bool all = 8
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  repeated uint32 ids = 6;
+  bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
@@ -2626,14 +2681,11 @@ message ListTemplatesNotBoundReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 template_space_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
-  string search_fields = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段",
-    default: "name,path,memo,creator,reviser"
-  }];
-  string search_value = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  bool all = 7
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
@@ -2667,12 +2719,12 @@ message ListTmplsOfTmplSetReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
   uint32 template_set_id = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
-  string search_fields = 4;
-  string search_value = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  repeated uint32 ids = 8;
-  bool all = 9
+  google.protobuf.Struct search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  repeated uint32 ids = 7;
+  bool all = 8
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
@@ -2802,11 +2854,11 @@ message ListTemplateRevisionsReq {
   uint32 template_space_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间ID" }];
   uint32 template_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件ID" }];
-  string search_fields = 4;
-  string search_value = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  uint32 start = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  bool all = 8
+  google.protobuf.Struct search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
@@ -3037,16 +3089,13 @@ message ListAppTemplateBindingsResp {
 message ListAppBoundTmplRevisionsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
-  string search_fields = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段",
-    default: "revision_name,revision_memo,name,path,creator"
-  }];
-  string search_value = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  bool with_status = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  bool with_status = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "为模板配置项设置文件状态：是=true，否=false",
     default: "false"
   }];
-  repeated string status = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  repeated string status = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "模板状态：(ADD、REVISE、DELETE、UNCHANGE)"
   }];
 }
@@ -3059,11 +3108,8 @@ message ListReleasedAppBoundTmplRevisionsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
-  string search_fields = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段",
-    default: "revision_name,revision_memo,name,path,creator"
-  }];
-  string search_value = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  google.protobuf.Struct search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
 }
 
 message ListReleasedAppBoundTmplRevisionsResp {
@@ -3888,26 +3934,22 @@ message ListKvsReq {
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   bool all = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
-  string search_key = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  repeated string key = 5
+  repeated string key = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "查询特定的配置项名" }];
-  uint32 start = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
-  uint32 limit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
-  bool with_status = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "暂时未用到" }];
-  string search_fields = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "支持搜索的字段：key,revister,creator",
-    default: "key,revister,creator"
-  }];
-  string search_value = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
-  repeated string kv_type = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool with_status = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "暂时未用到" }];
+  google.protobuf.Struct search = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  repeated string kv_type = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值类型：(any、string、number、text、json、yaml、xml、secret)"
   }];
-  string sort = 12
+  string sort = 10
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序的值，例如：key" }];
-  string order = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序类型：desc" }];
-  repeated uint32 top_ids = 14
+  string order = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序类型：desc" }];
+  repeated uint32 top_ids = 12
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "需要置顶ID" }];
-  repeated string status = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  repeated string status = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
   }];
 }
@@ -4316,6 +4358,23 @@ message GetLatestTemplateVersionsInSpaceResp {
     repeated pbtr.TemplateRevisionSpec template_revision = 2;
   }
   repeated TemplateSetSpec template_set = 2;
+}
+
+// ApprovalCallbackReq itsm v4回调请求
+message ApprovalCallbackReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  string callback_token = 4;
+  pbrelease.Ticket ticket = 5;
+}
+
+// itsm v4回调请求 返回
+message ApprovalCallbackResp {
+  bool result = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "bool", description: "结果" }];
+  string message = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { title: "message", description: "消息" }];
 }
 
 message CloneAppReq {

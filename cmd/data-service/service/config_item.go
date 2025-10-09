@@ -25,7 +25,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -1048,29 +1047,44 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		}
 	}
 
-	// search by logic
-	if req.SearchValue != "" {
-		var searcher search.Searcher
-		searcher, err = search.NewSearcher(req.SearchFields, req.SearchValue, search.ConfigItem)
-		if err != nil {
-			return nil, err
-		}
-		fields := searcher.SearchFields()
-		fieldsMap := make(map[string]bool)
-		for _, f := range fields {
-			fieldsMap[f] = true
-		}
-		fieldsMap["combinedPathName"] = true
+	if len(req.GetSearch().AsMap()) != 0 {
 		cis := make([]*pbci.ConfigItem, 0)
+
 		for _, ci := range configItems {
-			combinedPathName := path.Join(ci.Spec.Path, ci.Spec.Name)
-			if (fieldsMap["combinedPathName"] && strings.Contains(combinedPathName, req.SearchValue)) ||
-				(fieldsMap["memo"] && strings.Contains(ci.Spec.Memo, req.SearchValue)) ||
-				(fieldsMap["creator"] && strings.Contains(ci.Revision.Creator, req.SearchValue)) ||
-				(fieldsMap["reviser"] && strings.Contains(ci.Revision.Reviser, req.SearchValue)) {
-				cis = append(cis, ci)
+			// 构建 path_name 字段
+			pathName := path.Join(ci.Spec.Path, ci.Spec.Name)
+
+			for key, val := range req.GetSearch().AsMap() {
+				strVal, ok := val.(string)
+				if !ok || strVal == "" {
+					continue
+				}
+
+				switch key {
+				case "path_name":
+					if strings.Contains(pathName, strVal) {
+						cis = append(cis, ci)
+						break
+					}
+				case "memo":
+					if strings.Contains(ci.Spec.Memo, strVal) {
+						cis = append(cis, ci)
+						break
+					}
+				case "creator":
+					if strings.Contains(ci.Revision.Creator, strVal) {
+						cis = append(cis, ci)
+						break
+					}
+				case "reviser":
+					if strings.Contains(ci.Revision.Reviser, strVal) {
+						cis = append(cis, ci)
+						break
+					}
+				}
 			}
 		}
+
 		configItems = cis
 	}
 
@@ -1489,9 +1503,9 @@ func (s *Service) handleNonTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherA
 	}
 
 	// 获取已发布版本的配置文件
-	rci, count, err := s.dao.ReleasedCI().List(grpcKit, bizID, otherAppId, releaseId, nil, &types.BasePage{
+	rci, count, err := s.dao.ReleasedCI().List(grpcKit, bizID, otherAppId, releaseId, &types.BasePage{
 		All: true,
-	}, "")
+	})
 	if err != nil {
 		logs.Errorf("list released config items failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -1544,9 +1558,9 @@ func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherAppI
 	templateConfigs := make([]*pbds.CompareConfigItemConflictsResp_TemplateConfig, 0)
 
 	// 获取已发布版本的空间、套餐、配置文件
-	rp, count, err := s.dao.ReleasedAppTemplate().List(grpcKit, bizID, otherAppId, releaseId, nil, &types.BasePage{
+	rp, count, err := s.dao.ReleasedAppTemplate().List(grpcKit, bizID, otherAppId, releaseId, &types.BasePage{
 		All: true,
-	}, "")
+	})
 	if err != nil {
 		logs.Errorf("list released app template revisions failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -1737,7 +1751,7 @@ func (s *Service) getReleasedTemplateConfigVariables(grpcKit *kit.Kit, bizID, ot
 	varsMap := make(map[string][]*pbtv.TemplateVariableSpec, 0)
 
 	releasedTmpls, count, err := s.dao.ReleasedAppTemplate().List(grpcKit, bizID, otherAppId, releaseId,
-		nil, &types.BasePage{All: true}, "")
+		&types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list released app templates failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -1798,8 +1812,8 @@ func (s *Service) getReleasedNonTemplateConfigVariables(grpcKit *kit.Kit, bizID,
 	map[string][]*pbtv.TemplateVariableSpec, error) {
 	varsMap := make(map[string][]*pbtv.TemplateVariableSpec, 0)
 
-	releasedCIs, _, err := s.dao.ReleasedCI().List(grpcKit, bizID, otherAppId, releaseId, nil,
-		&types.BasePage{All: true}, "")
+	releasedCIs, _, err := s.dao.ReleasedCI().List(grpcKit, bizID, otherAppId, releaseId,
+		&types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list released config items failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err

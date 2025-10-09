@@ -145,7 +145,11 @@
               <span v-else>0</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新人')" prop="hook.revision.reviser" width="140"></bk-table-column>
+          <bk-table-column :label="t('更新人')" prop="hook.revision.reviser" width="140">
+            <template #default="{ row }">
+              <user-name v-if="row.hook" :name="row.hook.revision.reviser"/>
+            </template>
+          </bk-table-column>
           <bk-table-column :label="t('更新时间')" width="180">
             <template #default="{ row }">
               <span v-if="row.hook">{{ datetimeFormat(row.hook.revision.update_at) }}</span>
@@ -236,6 +240,7 @@
   import useTableAcrossCheck from '../../../../utils/hooks/use-table-acrosscheck';
   import acrossCheckBox from '../../../../components/across-checkbox.vue';
   import CheckType from '../../../../../types/across-checked';
+  import UserName from '../../../../components/user-name.vue';
   import { debounce } from 'lodash';
 
   const { spaceId } = storeToRefs(useGlobalStore());

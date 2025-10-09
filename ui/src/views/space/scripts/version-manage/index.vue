@@ -9,18 +9,13 @@
             :creatable="!unPublishVersion"
             @create="handleCreateVersionClick"
             @edit="handleEditVersionClick" />
-          <bk-input
-            v-model.trim="searchStr"
+          <SearchSelector
+            ref="searchSelectorRef"
             class="search-input"
+            :search-filed="searchFiled"
+            :user-filed="['reviser']"
             :placeholder="t('版本号/版本说明/更新人')"
-            :clearable="true"
-            @enter="refreshList"
-            @clear="refreshList"
-            @change="handleSearchInputChange">
-            <template #suffix>
-              <Search class="search-input-icon" />
-            </template>
-          </bk-input>
+            @search="handleSearch" />
         </div>
         <div :class="['version-data-container', { 'script-panel-open': versionEditData.panelOpen }]">
           <div class="table-data-area">
@@ -33,7 +28,7 @@
               @view="handleViewVersionClick"
               @page-change="refreshList"
               @page-limit-change="handlePageLimitChange"
-              @clear-str="clearStr">
+              @clear-str="clearSearchQuery">
               <template #operations="{ data }">
                 <div v-if="data.hook_revision" class="action-btns">
                   <bk-button
@@ -131,7 +126,7 @@
   import { useI18n } from 'vue-i18n';
   import { useRouter, useRoute } from 'vue-router';
   import { InfoBox, Message } from 'bkui-vue';
-  import { Search, AngleDoubleRightLine } from 'bkui-vue/lib/icon';
+  import { AngleDoubleRightLine } from 'bkui-vue/lib/icon';
   import { storeToRefs } from 'pinia';
   import dayjs from 'dayjs';
   import useGlobalStore from '../../../../store/global';
@@ -152,6 +147,7 @@
   import VersionEdit from './version-edit.vue';
   import ScriptVersionDiff from './script-version-diff.vue';
   import DeleteConfirmDialog from '../../../../components/delete-confirm-dialog.vue';
+  import SearchSelector from '../../../../components/search-selector.vue';
 
   const { spaceId } = storeToRefs(useGlobalStore());
   const { versionListPageShouldOpenEdit, versionListPageShouldOpenView } = storeToRefs(useScriptStore());
@@ -190,7 +186,13 @@
       content: '',
     },
   });
-  const searchStr = ref('');
+  const searchQuery = ref<{ [key: string]: string }>({});
+  const searchSelectorRef = ref();
+  const searchFiled = [
+    { field: 'name', label: t('版本号') },
+    { field: 'memo', label: t('版本说明') },
+    { field: 'reviser', label: t('更新人') },
+  ];
 
   onMounted(async () => {
     initLoading.value = true;
@@ -230,13 +232,11 @@
   // 获取版本列表
   const getVersionList = async () => {
     versionLoading.value = true;
-    const params: { start: number; limit: number; searchKey?: string } = {
+    const params: { start: number; limit: number; search?: { [key: string]: string } } = {
       start: (pagination.value.current - 1) * pagination.value.limit,
       limit: pagination.value.limit,
     };
-    if (searchStr.value) {
-      params.searchKey = searchStr.value;
-    }
+    params.search = searchQuery.value;
     const res = await getScriptVersionList(spaceId.value, scriptId.value, params);
     versionList.value = res.details;
     pagination.value.count = res.count;
@@ -369,14 +369,14 @@
     showVersionDiff.value = true;
   };
 
-  const handleSearchInputChange = (val: string) => {
-    if (!val) {
-      refreshList();
-    }
+  const handleSearch = (list: { [key: string]: string }) => {
+    searchQuery.value = list;
+    isSearchEmpty.value = true;
+    refreshList();
   };
 
   const refreshList = () => {
-    isSearchEmpty.value = searchStr.value !== '';
+    isSearchEmpty.value = Object.keys(searchQuery.value).length > 0;
     pagination.value.current = 1;
     getVersionList();
   };
@@ -390,8 +390,10 @@
     router.push({ name: 'script-list', params: { spaceId: spaceId.value } });
   };
 
-  const clearStr = () => {
-    searchStr.value = '';
+  const clearSearchQuery = () => {
+    searchQuery.value = {};
+    searchSelectorRef.value.clear();
+    isSearchEmpty.value = false;
     refreshList();
   };
 </script>

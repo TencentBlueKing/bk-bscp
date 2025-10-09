@@ -12,6 +12,8 @@
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
+| POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback | [Config_ApprovalCallback](#config-approval-callback) | itsm v4 回调接口 |
+| POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
@@ -25,7 +27,7 @@
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /healthz | [GetHealthz](#get-healthz) | Healthz 接口 |
+| GET | /healthz | [Healthz](#healthz) | Healthz 接口 |
 
 ### 文件相关
 
@@ -36,6 +38,113 @@
 | PUT | /api/v1/biz/{biz_id}/content/upload | [upload_content](#upload-content) | 上传文件内容 |
 
 ## 接口详情
+
+### <span id="config-approval-callback"></span> itsm v4 回调接口 (*Config_ApprovalCallback*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| callbackToken | string |  |  |
+| ticket | [PbreleaseTicket](#pbrelease-ticket) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback HTTP/1.1
+Content-Type: application/json
+
+{
+  "callbackToken": "",
+  "ticket": {
+    "approveResult": false,
+    "callbackResult": {},
+    "createdAt": "",
+    "currentProcessors": [
+      {}
+    ],
+    "currentSteps": [
+      {
+        "activityKey": "",
+        "name": "",
+        "ticketId": ""
+      }
+    ],
+    "endAt": "",
+    "formData": {
+      "ticketTitle": ""
+    },
+    "frontendUrl": "",
+    "id": "",
+    "portalId": "",
+    "serviceId": "",
+    "sn": "",
+    "status": "",
+    "statusDisplay": "",
+    "systemId": "",
+    "title": "",
+    "updatedAt": "",
+    "workflowId": ""
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-approve"></span> 审批同步，其中v2版本中itsm也是复用这个接口进行回调 (*Config_Approve*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ |  |
+| bizId | int64 (formatted integer) | ✓ |  |
+| releaseId | int64 (formatted integer) | ✓ |  |
+| publishStatus | string |  |  |
+| reason | string |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve HTTP/1.1
+Content-Type: application/json
+
+{
+  "publishStatus": "",
+  "reason": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
 
 ### <span id="config-batch-upsert-config-items"></span> 批量创建或更新文件配置项 (*Config_BatchUpsertConfigItems*)
 
@@ -322,9 +431,7 @@ POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list
 | kvType | []string |  | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
 | limit | int64 (formatted integer) |  | 每页条数 |
 | order | string |  | 排序类型：desc |
-| searchFields | string |  | 支持搜索的字段：key,revister,creator |
-| searchKey | string |  | 搜索的值 |
-| searchValue | string |  | 搜索的值 |
+| search | [interface{}](#interface) |  | 搜索的值 |
 | sort | string |  | 排序的值，例如：key |
 | start | int64 (formatted integer) |  | 当前页码 |
 | status | []string |  | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
@@ -352,9 +459,7 @@ Content-Type: application/json
   ],
   "limit": 0,
   "order": "",
-  "searchFields": "",
-  "searchKey": "",
-  "searchValue": "",
+  "search": {},
   "sort": "",
   "start": 0,
   "status": [
@@ -469,7 +574,7 @@ Content-Type: application/json
 {}
 ```
 
-### <span id="get-healthz"></span> Healthz 接口 (*GetHealthz*)
+### <span id="healthz"></span> Healthz 接口 (*Healthz*)
 
 ```
 GET /healthz
@@ -649,6 +754,38 @@ Content-Type: application/json
 
 ## Models
 
+### <span id="config-approval-callback-body"></span> ConfigApprovalCallbackBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| callbackToken | string| `string` |  | |  |  |
+| ticket | [PbreleaseTicket](#pbrelease-ticket)| `PbreleaseTicket` |  | |  |  |
+
+
+
+### <span id="config-approve-body"></span> ConfigApproveBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| publishStatus | string| `string` |  | |  |  |
+| reason | string| `string` |  | |  |  |
+
+
+
 ### <span id="config-batch-upsert-config-items-body"></span> ConfigBatchUpsertConfigItemsBody
 
 
@@ -746,9 +883,7 @@ Content-Type: application/json
 | kvType | []string| `[]string` |  | | 键值类型：(any、string、number、text、json、yaml、xml、secret) |  |
 | limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
 | order | string| `string` |  | | 排序类型：desc |  |
-| searchFields | string| `string` |  | `"key,revister,creator"`| 支持搜索的字段：key,revister,creator |  |
-| searchKey | string| `string` |  | | 搜索的值 |  |
-| searchValue | string| `string` |  | | 搜索的值 |  |
+| search | [interface{}](#interface)| `interface{}` |  | | 搜索的值 |  |
 | sort | string| `string` |  | | 排序的值，例如：key |  |
 | start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
 | status | []string| `[]string` |  | | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |  |
@@ -864,6 +999,40 @@ Content-Type: application/json
 | byteSize | uint64 (formatted string)| `string` |  | | 文件大小 |  |
 | md5 | string| `string` |  | | 文件md5 |  |
 | signature | string| `string` |  | | 文件sha256 |  |
+
+
+
+### <span id="pbcs-approval-callback-resp"></span> pbcsApprovalCallbackResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| message | string| `string` |  | | 消息 |  |
+| result | boolean| `bool` |  | | 结果 |  |
+
+
+
+### <span id="pbcs-approve-resp"></span> pbcsApproveResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| code | int32 (formatted integer)| `int32` |  | |  |  |
+| haveCredentials | boolean| `bool` |  | |  |  |
+| havePull | boolean| `bool` |  | |  |  |
+| message | string| `string` |  | |  |  |
 
 
 
@@ -1057,6 +1226,77 @@ Content-Type: application/json
 | secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
 | secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom) |  |
 | value | string| `string` |  | | 配置项值 |  |
+
+
+
+### <span id="pbrelease-callback-result"></span> pbreleaseCallbackResult
+
+
+  
+
+[interface{}](#interface)
+
+### <span id="pbrelease-current-steps"></span> pbreleaseCurrentSteps
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| activityKey | string| `string` |  | |  |  |
+| name | string| `string` |  | |  |  |
+| ticketId | string| `string` |  | |  |  |
+
+
+
+### <span id="pbrelease-form-data"></span> pbreleaseFormData
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ticketTitle | string| `string` |  | |  |  |
+
+
+
+### <span id="pbrelease-ticket"></span> pbreleaseTicket
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| approveResult | boolean| `bool` |  | |  |  |
+| callbackResult | [PbreleaseCallbackResult](#pbrelease-callback-result)| `PbreleaseCallbackResult` |  | |  |  |
+| createdAt | string| `string` |  | |  |  |
+| currentProcessors | \[\][interface{}](#interface)| `[]interface{}` |  | |  |  |
+| currentSteps | \[\][PbreleaseCurrentSteps](#pbrelease-current-steps)| `[]*PbreleaseCurrentSteps` |  | |  |  |
+| endAt | string| `string` |  | |  |  |
+| formData | [PbreleaseFormData](#pbrelease-form-data)| `PbreleaseFormData` |  | |  |  |
+| frontendUrl | string| `string` |  | |  |  |
+| id | string| `string` |  | |  |  |
+| portalId | string| `string` |  | |  |  |
+| serviceId | string| `string` |  | |  |  |
+| sn | string| `string` |  | |  |  |
+| status | string| `string` |  | |  |  |
+| statusDisplay | string| `string` |  | |  |  |
+| systemId | string| `string` |  | |  |  |
+| title | string| `string` |  | |  |  |
+| updatedAt | string| `string` |  | |  |  |
+| workflowId | string| `string` |  | |  |  |
 
 
 

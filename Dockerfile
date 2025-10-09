@@ -12,5 +12,7 @@ COPY build/bk-bscp/bk-bscp-vaultserver/bk-bscp-vaultserver /bk-bscp/
 COPY build/bk-bscp/bk-bscp-vaultserver/vault /bk-bscp/
 COPY build/bk-bscp/bk-bscp-vaultserver/vault-sidecar /bk-bscp/
 COPY build/bk-bscp/bk-bscp-vaultserver/vault-plugins/bk-bscp-secret /etc/vault/vault-plugins/
+# 把 system_bk_bscp.json 放到容器内 /bk-bscp/etc/itsm/
+COPY scripts/itsm-templates/system_bk_bscp.json /bk-bscp/etc/itsm/system_bk_bscp.json
 ENTRYPOINT ["/bk-bscp/bk-bscp-ui"]
 CMD []

@@ -27,21 +27,30 @@
       <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
       {{ t('等待定时上线') }}
     </bk-button>
-    <bk-button
+    <bk-popover
       v-if="approveData?.status === APPROVE_STATUS.pending_publish && approveData.type === ONLINE_TYPE.manually"
-      v-cursor="{ active: !props.hasPerm }"
-      v-bk-tooltips="{
-        disabled: props.creator === userInfo.username,
-        content: $t('无确认上线权限文案', { creator: props.creator }),
-        placement: 'bottom-end',
-      }"
-      theme="primary"
-      :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
-      :disabled="props.creator !== userInfo.username"
-      @click="handlePublishClick">
-      <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
-      {{ t('确认上线') }}
-    </bk-button>
+      :popover-delay="[0, 300]"
+      placement="bottom-end"
+      :disabled="props.creator === userInfo.username">
+      <bk-button
+        v-cursor="{ active: !props.hasPerm }"
+        theme="primary"
+        :class="['trigger-button', { 'bk-button-with-no-perm': !props.hasPerm }]"
+        :disabled="props.creator !== userInfo.username"
+        @click="handlePublishClick">
+        <!-- 审批通过时间在定时上线时间之后，后端自动转为手动上线 -->
+        {{ t('确认上线') }}
+      </bk-button>
+      <template #content>
+        <div>
+          {{ $t('请联系服务上线提交人') }}
+          <UserName :name="props.creator" />
+          {{ $t('进行确认上线操作。') }}<br />
+          {{ $t('如果无法联系到提交人，并且有紧急配置需要发布，可以执') }}<br />
+          {{ $t('行“撤销上线”后重新提交服务上线流程') }}
+        </div>
+      </template>
+    </bk-popover>
     <Teleport to="body">
       <VersionLayout v-if="isSelectGroupPanelOpen">
         <template #header>
@@ -129,6 +138,7 @@
   import { convertTime } from '../../../../../../utils';
   import dayjs from 'dayjs';
   import BkMessage from 'bkui-vue/lib/message';
+  import UserName from '../../../../../../components/user-name.vue';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const serviceStore = useServiceStore();

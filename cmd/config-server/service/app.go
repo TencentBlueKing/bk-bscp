@@ -234,11 +234,10 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 	}
 
 	r := &pbds.ListAppsRestReq{
-		BizId:    strings.Join(spaceIdList, ","),
-		Start:    req.Start,
-		Limit:    req.Limit,
-		Search:   req.Search,
-		Operator: req.Operator,
+		BizId:  strings.Join(spaceIdList, ","),
+		Start:  req.Start,
+		Limit:  req.Limit,
+		Search: req.Search,
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -291,7 +290,6 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 		TopIds:     req.TopIds,
 		ConfigType: req.ConfigType,
 		Search:     req.Search,
-		Operator:   req.Operator,
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -310,7 +308,8 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 		querySpaceReq.SpaceUid = append(querySpaceReq.SpaceUid, spaceUid)
 	}
 
-	querySpaceResp, err := s.client.AS.QuerySpace(ctx, querySpaceReq)
+	logs.V(5).Infof("query space, req: %+v, kt: %+v", querySpaceReq, kt)
+	querySpaceResp, err := s.client.AS.QuerySpace(kt.RpcCtx(), querySpaceReq)
 	if err != nil {
 		return nil, errors.Wrap(err, "QuerySpace")
 	}

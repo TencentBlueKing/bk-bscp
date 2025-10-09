@@ -191,6 +191,7 @@ func (dao *pubDao) upsertReleasedGroups(kit *kit.Kit, tx *gen.Query, opt *types.
 			Edited:     false,
 			BizID:      opt.BizID,
 			Reviser:    kit.User,
+			TenantID:   kit.TenantID,
 		}
 		if err := tx.ReleasedGroup.WithContext(kit.Ctx).Create(rg); err != nil {
 			logs.Errorf("insert default released group failed, err: %v, rid: %s", err, kit.Rid)
@@ -235,6 +236,7 @@ func (dao *pubDao) upsertReleasedGroups(kit *kit.Kit, tx *gen.Query, opt *types.
 			Edited:     false,
 			BizID:      opt.BizID,
 			Reviser:    kit.User,
+			TenantID:   kit.TenantID,
 		}
 
 		m := tx.ReleasedGroup

@@ -110,6 +110,18 @@ type BkRepoBaseResp struct {
 	TraceID string `json:"traceId"`
 }
 
+type ProjectExistResp struct {
+	BkRepoBaseResp
+	Data bool `json:"data"` // 是否存在, true存在, false不存在
+}
+
+// CreateProjectReq 创建项目接口
+type CreateProjectReq struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+}
+
 // CreateRepoReq is repo create repo request struct.
 type CreateRepoReq struct {
 	// ProjectID is bscp project name in repo.

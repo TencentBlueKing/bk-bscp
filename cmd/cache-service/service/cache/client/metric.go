@@ -76,4 +76,5 @@ const (
 	strategyRes        = "strategy"
 	credentialRes      = "credential"
 	releasedGroupRes   = "released-group"
+	tenantID           = "tenant-id"
 )

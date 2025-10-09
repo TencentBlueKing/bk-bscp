@@ -20,11 +20,10 @@ import (
 
 // ListHookRevisionsOption defines the response details of requested ListHookRevisionsOption.
 type ListHookRevisionsOption struct {
-	BizID     uint32                   `json:"biz_id"`
-	HookID    uint32                   `json:"hook_id"`
-	Page      *BasePage                `json:"page"`
-	SearchKey string                   `json:"search_key"`
-	State     table.HookRevisionStatus `json:"state"`
+	BizID  uint32                   `json:"biz_id"`
+	HookID uint32                   `json:"hook_id"`
+	Page   *BasePage                `json:"page"`
+	State  table.HookRevisionStatus `json:"state"`
 }
 
 // ListHookRevisionDetails defines the response details of requested ListHookRevisionsReleaseOption.

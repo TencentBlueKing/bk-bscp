@@ -56,7 +56,8 @@ func (s *Service) Handshake(ctx context.Context, hm *pbfs.HandshakeMessage) (*pb
 		return nil, status.Error(codes.InvalidArgument, "invalid handshake message, "+err.Error())
 	}
 
-	if !s.authorizer.HasBiz(hm.Spec.BizId) {
+	// 验证业务是否存在
+	if !s.bll.AppCache().HasBiz(im.Kit, hm.Spec.BizId) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid handshake message, "+
 			"biz id %d does not exist", hm.Spec.BizId))
 	}
@@ -514,6 +515,8 @@ func (s *Service) GetDownloadURL(ctx context.Context, req *pbfs.GetDownloadURLRe
 
 	// 生成下载链接
 	im.Kit.BizID = req.BizId
+	// 带上租户ID
+	im.Kit.TenantID = app.TenantID
 	downloadLink, err := s.provider.DownloadLink(im.Kit, req.FileMeta.CommitSpec.Content.Signature, fetchLimit)
 	if err != nil {
 		return nil, status.Errorf(codes.Aborted, "generate temp download url failed, %s", err.Error())

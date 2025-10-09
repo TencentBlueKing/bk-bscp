@@ -39,6 +39,7 @@ func newReleasedGroup(db *gorm.DB, opts ...gen.DOOption) releasedGroup {
 	_releasedGroup.BizID = field.NewUint32(tableName, "biz_id")
 	_releasedGroup.Reviser = field.NewString(tableName, "reviser")
 	_releasedGroup.UpdatedAt = field.NewTime(tableName, "updated_at")
+	_releasedGroup.TenantID = field.NewString(tableName, "tenant_id")
 
 	_releasedGroup.fillFieldMap()
 
@@ -61,6 +62,7 @@ type releasedGroup struct {
 	BizID      field.Uint32
 	Reviser    field.String
 	UpdatedAt  field.Time
+	TenantID   field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -89,6 +91,7 @@ func (r *releasedGroup) updateTableName(table string) *releasedGroup {
 	r.BizID = field.NewUint32(table, "biz_id")
 	r.Reviser = field.NewString(table, "reviser")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
+	r.TenantID = field.NewString(table, "tenant_id")
 
 	r.fillFieldMap()
 
@@ -117,7 +120,7 @@ func (r *releasedGroup) GetFieldByName(fieldName string) (field.OrderExpr, bool)
 }
 
 func (r *releasedGroup) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 12)
+	r.fieldMap = make(map[string]field.Expr, 13)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["group_id"] = r.GroupID
 	r.fieldMap["app_id"] = r.AppID
@@ -130,6 +133,7 @@ func (r *releasedGroup) fillFieldMap() {
 	r.fieldMap["biz_id"] = r.BizID
 	r.fieldMap["reviser"] = r.Reviser
 	r.fieldMap["updated_at"] = r.UpdatedAt
+	r.fieldMap["tenant_id"] = r.TenantID
 }
 
 func (r releasedGroup) clone(db *gorm.DB) releasedGroup {

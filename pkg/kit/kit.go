@@ -26,6 +26,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // New initial a kit with rid and context.
@@ -41,6 +42,8 @@ var (
 	lowRidKey         = strings.ToLower(constant.RidKey)
 	lowLangKey        = strings.ToLower(constant.LangKey)
 	lowUserKey        = strings.ToLower(constant.UserKey)
+	lowTenantKey      = strings.ToLower(constant.BkTenantID)
+	lowbkTokenKey     = strings.ToLower(constant.BkToken)
 	lowACKey          = strings.ToLower(constant.AppCodeKey)
 	lowSpaceIDKey     = strings.ToLower(constant.SpaceIDKey)
 	lowSpaceTypeIDKey = strings.ToLower(constant.SpaceTypeIDKey)
@@ -55,7 +58,11 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		Ctx: ctx,
 	}
 
-	md, _ := metadata.FromIncomingContext(ctx)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		klog.Errorf("get rpc ctx failed, will ignore")
+	}
+
 	rid := md[lowRidKey]
 	if len(rid) != 0 {
 		kit.Rid = rid[0]
@@ -73,6 +80,16 @@ func FromGrpcContext(ctx context.Context) *Kit {
 	user := md[lowUserKey]
 	if len(user) != 0 {
 		kit.User = user[0]
+	}
+
+	tenantID := md[lowTenantKey]
+	if len(tenantID) != 0 {
+		kit.TenantID = tenantID[0]
+	}
+
+	bkToken := md[lowbkTokenKey]
+	if len(bkToken) != 0 {
+		kit.BkToken = bkToken[0]
 	}
 
 	appCode := md[lowACKey]
@@ -99,7 +116,6 @@ func FromGrpcContext(ctx context.Context) *Kit {
 			kit.BizID = uint32(bizID)
 		}
 	}
-
 	appIDs := md[lowAppIDKey]
 	if len(appIDs) != 0 {
 		appID, err := strconv.ParseUint(appIDs[0], 10, 64)
@@ -131,6 +147,7 @@ func FromGrpcContext(ctx context.Context) *Kit {
 type User struct {
 	Username  string `json:"username"`
 	AvatarUrl string `json:"avatar_url"`
+	TenantID  string `json:"tenant_id"`
 }
 
 // Kit defines the basic metadata info within a task.
@@ -140,6 +157,12 @@ type Kit struct {
 
 	// User's name.
 	User string
+
+	// TenantID is user's tenant id.
+	TenantID string
+
+	// BkToken is user's token.
+	BkToken string
 
 	// Rid is request id.
 	Rid string
@@ -165,6 +188,8 @@ func (c *Kit) Clone() *Kit {
 	return &Kit{
 		Ctx:         c.Ctx,
 		User:        c.User,
+		TenantID:    c.TenantID,
+		BkToken:     c.BkToken,
 		Rid:         c.Rid,
 		Lang:        c.Lang,
 		AppCode:     c.AppCode,
@@ -202,6 +227,8 @@ func (c *Kit) RPCMetaData() metadata.MD {
 		constant.RidKey:         c.Rid,
 		constant.LangKey:        c.Lang,
 		constant.UserKey:        c.User,
+		constant.BkTenantID:     c.TenantID,
+		constant.BkToken:        c.BkToken,
 		constant.AppCodeKey:     c.AppCode,
 		constant.SpaceIDKey:     c.SpaceID,
 		constant.SpaceTypeIDKey: c.SpaceTypeID,
@@ -219,6 +246,11 @@ func (c *Kit) RpcCtx() context.Context {
 	return metadata.NewOutgoingContext(c.Ctx, c.RPCMetaData())
 }
 
+// InternalRpcCtx 同一进程内,仅传递values值使用,对应FromGrpcContext的值
+func (c *Kit) InternalRpcCtx() context.Context {
+	return metadata.NewIncomingContext(c.Ctx, c.RPCMetaData())
+}
+
 // CtxWithTimeoutMS create a new context with basic info and timout configuration.
 func (c *Kit) CtxWithTimeoutMS(timeoutMS int) context.CancelFunc {
 	ctx := context.WithValue(context.TODO(), constant.RidKey, c.Rid) //nolint
@@ -228,13 +260,15 @@ func (c *Kit) CtxWithTimeoutMS(timeoutMS int) context.CancelFunc {
 }
 
 // Validate context kit.
-func (c *Kit) Validate() error {
+func (c *Kit) Validate(validateUser bool) error {
 	if c.Ctx == nil {
 		return errors.New("context is required")
 	}
-
-	if len(c.User) == 0 {
-		return errors.New("user is required")
+	if validateUser {
+		if len(c.User) == 0 {
+			logs.Errorf("user is required")
+			return errors.New("user is required")
+		}
 	}
 
 	ridLen := len(c.Rid)
@@ -291,8 +325,15 @@ func WithKit(ctx context.Context, kit *Kit) context.Context {
 // MustGetKit 从 context 获取 kit, 注意: 如果没有, 会panic, 一般在中间件中使用
 func MustGetKit(ctx context.Context) *Kit {
 	k, ok := ctx.Value(constant.KitKey).(*Kit)
-	if !ok {
-		panic(fmt.Errorf("ctx not found kit value"))
+	if ok {
+		return k
 	}
-	return k
+
+	// fallback to grpc context
+	k = FromGrpcContext(ctx)
+	if k.Rid != "" {
+		return k
+	}
+
+	panic(fmt.Errorf("ctx not found kit value"))
 }

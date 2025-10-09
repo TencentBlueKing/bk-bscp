@@ -162,6 +162,7 @@ type TemplateRevisionAttachment struct {
 	BizID           uint32 `json:"biz_id" gorm:"column:biz_id"`
 	TemplateSpaceID uint32 `json:"template_space_id" gorm:"column:template_space_id"`
 	TemplateID      uint32 `json:"template_id" gorm:"column:template_id"`
+	TenantID        string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate whether template revision attachment is valid or not.

@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@antv/g2plot": "^2.4.31",
+    "@blueking/bk-user-display-name": "^1.0.2",
+    "@blueking/bk-user-selector": "^0.0.28",
     "@blueking/login-modal": "^1.0.1",
     "@blueking/notice-component": "^2.0.1",
     "@blueking/platform-config": "^1.0.3",

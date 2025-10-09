@@ -71,6 +71,15 @@ type Setting interface {
 	Validate() error
 }
 
+// GlobalSettings 全局配置, 配置所有模块可访问
+type GlobalSettings struct {
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+	CMDB         CMDBConfig        `yaml:"cmdb"`
+}
+
 // ApiServerSetting defines api server used setting options.
 type ApiServerSetting struct {
 	Network      Network      `yaml:"network"`
@@ -126,13 +135,14 @@ func (s ApiServerSetting) Validate() error {
 
 // AuthServerSetting defines auth server used setting options.
 type AuthServerSetting struct {
-	Network    Network           `yaml:"network"`
-	Service    Service           `yaml:"service"`
-	Log        LogOption         `yaml:"log"`
-	LoginAuth  LoginAuthSettings `yaml:"loginAuth"`
-	IAM        IAM               `yaml:"iam"`
-	Esb        Esb               `yaml:"esb"`
-	ApiGateway ApiGateway        `yaml:"apiGateway"`
+	Network      Network           `yaml:"network"`
+	Service      Service           `yaml:"service"`
+	Log          LogOption         `yaml:"log"`
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	ApiGateway   ApiGateway        `yaml:"apiGateway"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
 }
 
 // LoginAuthSettings login conf

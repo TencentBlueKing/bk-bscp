@@ -27,7 +27,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-resty/resty/v2"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/klog/v2"
 )
@@ -188,65 +187,6 @@ func GetClient() *resty.Client {
 	return globalClient
 }
 
-// BKResult 蓝鲸返回规范的结构体
-type BKResult struct {
-	Code    interface{} `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-// UnmarshalBKResult 反序列化为蓝鲸返回规范
-func UnmarshalBKResult(resp *resty.Response, data interface{}) error {
-	if resp.StatusCode() != http.StatusOK {
-		return errors.Errorf("http code %d != 200", resp.StatusCode())
-	}
-
-	// 部分接口，如 usermanager 返回的content-type不是json, 需要手动Unmarshal
-	bkResult := &BKResult{Data: data}
-	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
-		return err
-	}
-
-	if err := bkResult.ValidateCode(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ValidateCode 返回结果是否OK
-func (r *BKResult) ValidateCode() error {
-	code, err := refineCode(r.Code)
-	if err != nil {
-		return err
-	}
-	if code != 0 {
-		return errors.Errorf("resp code %d != 0, %s", code, r.Message)
-	}
-	return nil
-}
-
-// refineCode 多种返回Code统一处理
-// 支持 "00", 0, "0"
-func refineCode(code interface{}) (int, error) {
-	var resultCode int
-	switch code := code.(type) {
-	case int:
-		resultCode = code
-	case float64:
-		resultCode = int(code)
-	case string:
-		c, err := strconv.Atoi(code)
-		if err != nil {
-			return -1, err
-		}
-		resultCode = c
-	default:
-		return -1, errors.Errorf("conversion to int from %T not supported", code)
-	}
-	return resultCode, nil
-}
-
 // BKAuth 蓝鲸鉴权信息
 type BKAPIGWAuth struct {
 	AppCode    string `json:"bk_app_code"`
@@ -286,4 +226,63 @@ func MakeBKAPIGWAuthHeader(appCode, appSecret string, opts ...GWAuthOption) stri
 
 	authBytes, _ := json.Marshal(auth)
 	return string(authBytes)
+}
+
+// BKResult 蓝鲸返回规范的结构体
+type BKResult struct {
+	Code    interface{} `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+// UnmarshalBKResult 反序列化为蓝鲸返回规范
+func UnmarshalBKResult(resp *resty.Response, data interface{}) error {
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("http code %d != 200", resp.StatusCode())
+	}
+
+	// 部分接口，如 usermanager 返回的content-type不是json, 需要手动Unmarshal
+	bkResult := &BKResult{Data: data}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
+		return err
+	}
+
+	if err := bkResult.ValidateCode(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ValidateCode 返回结果是否OK
+func (r *BKResult) ValidateCode() error {
+	code, err := refineCode(r.Code)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("resp code %d != 0, %s", code, r.Message)
+	}
+	return nil
+}
+
+// refineCode 多种返回Code统一处理
+// 支持 "00", 0, "0"
+func refineCode(code interface{}) (int, error) {
+	var resultCode int
+	switch code := code.(type) {
+	case int:
+		resultCode = code
+	case float64:
+		resultCode = int(code)
+	case string:
+		c, err := strconv.Atoi(code)
+		if err != nil {
+			return -1, err
+		}
+		resultCode = c
+	default:
+		return -1, fmt.Errorf("conversion to int from %T not supported", code)
+	}
+	return resultCode, nil
 }

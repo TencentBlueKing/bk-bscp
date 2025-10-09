@@ -50,6 +50,7 @@ type ClientEventAttachment struct {
 	BizID      uint32     `db:"biz_id" gorm:"column:biz_id"`
 	AppID      uint32     `db:"app_id" gorm:"column:app_id"`
 	ClientMode ClientMode `gorm:"column:client_mode" json:"client_mode"`
+	TenantID   string     `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // ClientMode define the client mode structure

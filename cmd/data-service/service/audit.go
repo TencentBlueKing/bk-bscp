@@ -101,7 +101,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 				ItsmTicketUrl:     value.Strategy.ItsmTicketUrl,
 				ItsmTicketSn:      value.Strategy.ItsmTicketSn,
 				ItsmTicketStatus:  value.Strategy.ItsmTicketStatus,
-				ItsmTicketStateId: int32(value.Strategy.ItsmTicketStateID),
+				ItsmTicketStateId: value.Strategy.ItsmTicketStateID,
 				Memo:              value.Strategy.Memo,
 			},
 			App: &pbapp.AuditApp{

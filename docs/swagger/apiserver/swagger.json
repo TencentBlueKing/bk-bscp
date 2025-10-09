@@ -196,6 +196,7 @@
                     "Healthz"
                 ],
                 "summary": "Healthz 接口",
+                "operationId": "Healthz",
                 "responses": {
                     "200": {
                         "description": "OK",

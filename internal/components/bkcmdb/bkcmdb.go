@@ -20,6 +20,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkuser"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -67,6 +68,15 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 	// 组装网关认证信息
 	gwAuthOptions := []components.GWAuthOption{}
 
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		admin, err := bkuser.GetTenantBKAdmin(ctx)
+		if err != nil {
+			return fmt.Errorf("get tenant admin failed: %w", err)
+		}
+		withBkUsername := components.WithBkUsername(admin.BkUsername)
+		gwAuthOptions = append(gwAuthOptions, withBkUsername)
+	}
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
 		bkcmdb.AppSecret,

@@ -9,7 +9,6 @@
       <SearviceForm
         ref="formCompRef"
         :form-data="serviceData"
-        :approver-api="getApproverListApi()"
         @change="handleChange" />
     </div>
     <div class="create-app-footer">
@@ -30,7 +29,7 @@
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
-  import { createApp, getApproverListApi } from '../../../../../api';
+  import { createApp } from '../../../../../api';
   import { IServiceEditForm } from '../../../../../../types/service';
   import useModalCloseConfirmation from '../../../../../utils/hooks/use-modal-close-confirmation';
   import SearviceForm from './service-form.vue';

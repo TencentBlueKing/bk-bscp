@@ -15,6 +15,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ var migrateInitApigatewayCmd = &cobra.Command{
 		logs.InitLogger(cc.ApiServer().Log.Logs())
 
 		if err := apigw.ReleaseSwagger(cc.ApiServer().Esb, cc.ApiServer().ApiGateway, "zh",
-			fmt.Sprintf("%s+%s", version.GITTAG, time.Now().Format("20060102150405"))); err != nil {
+			fmt.Sprintf("%s+%s", strings.TrimPrefix(version.GITTAG, "v"), time.Now().Format("20060102150405"))); err != nil {
 			fmt.Println(err)
 			return
 		}

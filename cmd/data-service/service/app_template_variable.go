@@ -84,8 +84,8 @@ func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context,
 	*pbds.GetReleasedAppTmplVariableRefsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	releasedTmpls, _, err := s.dao.ReleasedAppTemplate().List(kt, req.BizId, req.AppId, req.ReleaseId, nil,
-		&types.BasePage{All: true}, "")
+	releasedTmpls, _, err := s.dao.ReleasedAppTemplate().List(kt, req.BizId, req.AppId, req.ReleaseId,
+		&types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list released app templates failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -93,8 +93,8 @@ func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context,
 	tmplRevisions := getTmplRevisionsFromReleased(releasedTmpls)
 	tmplRevisions = filterSizeForTmplRevisions(tmplRevisions)
 
-	releasedCIs, _, err := s.dao.ReleasedCI().List(kt, req.BizId, req.AppId, req.ReleaseId, nil,
-		&types.BasePage{All: true}, "")
+	releasedCIs, _, err := s.dao.ReleasedCI().List(kt, req.BizId, req.AppId, req.ReleaseId,
+		&types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list released config items failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

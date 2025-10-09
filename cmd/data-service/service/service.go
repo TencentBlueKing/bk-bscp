@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -39,19 +41,20 @@ import (
 
 // Service do all the data service's work
 type Service struct {
-	dao     dao.Set
-	cs      pbcs.CacheClient
-	vault   vault.Set
-	gateway *gateway
-	// esb esb api client.
-	esb      client.Client
+	dao      dao.Set
+	cs       pbcs.CacheClient
+	vault    vault.Set
+	gateway  *gateway
 	repo     repository.Provider
 	tmplProc tmplprocess.TmplProcessor
+	itsm     itsm.Service
+	cmdb     bkcmdb.Service
+	esbCli   client.Client
 }
 
 // NewService create a service instance.
 func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set,
-	esb client.Client, repo repository.Provider) (*Service, error) {
+	esbCli client.Client, repo repository.Provider, cmdb bkcmdb.Service) (*Service, error) {
 	state, ok := sd.(serviced.State)
 	if !ok {
 		return nil, errors.New("discover convert state failed")
@@ -94,10 +97,12 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 		dao:      daoSet,
 		vault:    vaultSet,
 		gateway:  gateway,
-		esb:      esb,
+		cmdb:     cmdb,
+		esbCli:   esbCli,
 		repo:     repo,
 		tmplProc: tmplprocess.NewTmplProcessor(),
 		cs:       pbcs.NewCacheClient(csConn),
+		itsm:     itsm.NewITSMService(),
 	}
 
 	return svc, nil

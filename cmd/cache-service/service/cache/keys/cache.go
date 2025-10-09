@@ -51,6 +51,7 @@ const (
 	clientMetric        namespace = "client-metric"
 	publish             namespace = "publish"
 	appLastConsumedTime namespace = "app-last-consumed-time"
+	tenantID            namespace = "tenant-id"
 )
 
 type keyGenerator struct {
@@ -63,6 +64,15 @@ type keyGenerator struct {
 	releasedHookTTLRange        [2]int
 	appMetaTTLRange             [2]int
 	appHasRITTLRange            [2]int
+}
+
+// TenantIDKey generate the tenant id cache key.
+func (k keyGenerator) TenantIDKey(bizID uint32) string {
+	return element{
+		biz: bizID,
+		ns:  tenantID,
+		key: "tenant-id",
+	}.String()
 }
 
 // ClientMetricKey generate the client metric cache key.

@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
@@ -25,7 +26,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -43,8 +43,7 @@ type Template interface {
 	// UpdateWithTx Update one template instance with transaction.
 	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.Template) error
 	// List templates with options.
-	List(kit *kit.Kit, bizID, templateSpaceID uint32, s search.Searcher,
-		opt *types.BasePage, topIds []uint32, searchValue string) ([]*table.Template, int64, error)
+	List(kit *kit.Kit, bizID, templateSpaceID uint32, opt *types.BasePage) ([]*table.Template, int64, error)
 	// Delete one template instance.
 	Delete(kit *kit.Kit, template *table.Template) error
 	// DeleteWithTx delete one template instance with transaction.
@@ -67,6 +66,8 @@ type Template interface {
 	ListTemplateByTuple(kit *kit.Kit, data [][]interface{}) ([]*table.Template, error)
 	// ListByExclusionIDs list templates by template exclusion ids.
 	ListByExclusionIDs(kit *kit.Kit, ids []uint32) ([]*table.Template, error)
+	// BatchUpdateTimeTx batch update template time instances with transaction.
+	BatchUpdateTimeTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error
 }
 
 var _ Template = new(templateDao)
@@ -75,6 +76,18 @@ type templateDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// BatchUpdateTimeTx batch update template time instances with transaction.
+func (dao *templateDao) BatchUpdateTimeTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error {
+	m := tx.Template
+	q := tx.Template.WithContext(kit.Ctx)
+
+	if _, err := q.Where(m.ID.In(ids...)).Update(m.UpdatedAt, time.Now().UTC()); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // UpdateWithTx Update one template instance with transaction.
@@ -341,35 +354,19 @@ func (dao *templateDao) Update(kit *kit.Kit, g *table.Template) error {
 }
 
 // List templates with options.
-func (dao *templateDao) List(kit *kit.Kit, bizID, templateSpaceID uint32, s search.Searcher,
-	opt *types.BasePage, topIds []uint32, searchValue string) ([]*table.Template, int64, error) {
+func (dao *templateDao) List(kit *kit.Kit, bizID, templateSpaceID uint32, opt *types.BasePage) (
+	[]*table.Template, int64, error) {
 	m := dao.genQ.Template
 	q := dao.genQ.Template.WithContext(kit.Ctx)
 
 	var conds []rawgen.Condition
-	// add search condition
-	if s != nil {
-		exprs := s.SearchExprs(dao.genQ)
-		if len(exprs) > 0 {
-			var do gen.ITemplateDo
-			for i := range exprs {
-				if i == 0 {
-					do = q.Where(exprs[i])
-				}
-				do = do.Or(exprs[i])
-			}
-
-			do = do.Or(utils.RawCond(`CASE WHEN RIGHT(path, 1) = '/' THEN CONCAT(path,name)
-			 ELSE CONCAT_WS('/', path, name) END LIKE ?`, "%"+searchValue+"%"))
-			conds = append(conds, do)
-		}
-	}
+	conds = dao.handleSearch(conds, opt.Search.AsMap())
 
 	d := q.Where(m.BizID.Eq(bizID), m.TemplateSpaceID.Eq(templateSpaceID)).Where(conds...)
-	if len(topIds) != 0 {
+	if len(opt.TopIds) != 0 {
 		d = d.Order(utils.NewCustomExpr("CASE WHEN id IN (?) THEN 0 ELSE 1 END,"+
 			"CASE WHEN RIGHT(path, 1) = '/' THEN CONCAT(path,`name`) ELSE CONCAT_WS('/', path, `name`) END",
-			[]interface{}{topIds}))
+			[]interface{}{opt.TopIds}))
 	} else {
 		d = d.Order(utils.NewCustomExpr("CASE WHEN RIGHT(path, 1) = '/' THEN CONCAT(path,`name`) ELSE "+
 			"CONCAT_WS('/', path, `name`) END", nil))
@@ -384,6 +381,37 @@ func (dao *templateDao) List(kit *kit.Kit, bizID, templateSpaceID uint32, s sear
 	}
 
 	return d.FindByPage(opt.Offset(), opt.LimitInt())
+}
+
+// 支持配置文件名、描述、更新人、创建人搜索
+func (dao *templateDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.Template
+
+	if search["path_name"] != nil {
+		pathName, _ := search["path_name"].(string)
+		conds = append(conds, utils.RawCond(`CASE WHEN RIGHT(path, 1) = '/' THEN CONCAT(path,name)
+			 ELSE CONCAT_WS('/', path, name) END LIKE ?`, "%"+pathName+"%"))
+	}
+
+	if search["memo"] != nil {
+		memo, _ := search["memo"].(string)
+		conds = append(conds, m.Memo.Like("%"+memo+"%"))
+	}
+
+	if search["creator"] != nil {
+		creator, _ := search["creator"].(string)
+		conds = append(conds, m.Creator.Like("%"+creator+"%"))
+	}
+
+	if search["reviser"] != nil {
+		reviser, _ := search["reviser"].(string)
+		conds = append(conds, m.Reviser.Like("%"+reviser+"%"))
+	}
+
+	return conds
 }
 
 // Delete one template instance.

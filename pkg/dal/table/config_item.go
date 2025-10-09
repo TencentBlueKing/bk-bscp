@@ -349,8 +349,9 @@ var CIAttachmentColumnDescriptor = ColumnDescriptors{
 
 // ConfigItemAttachment is a configuration item attachment
 type ConfigItemAttachment struct {
-	BizID uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
-	AppID uint32 `db:"app_id" json:"app_id" gorm:"column:app_id"`
+	BizID    uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
+	AppID    uint32 `db:"app_id" json:"app_id" gorm:"column:app_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate config item attachment.

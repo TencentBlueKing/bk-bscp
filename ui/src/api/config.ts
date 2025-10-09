@@ -40,7 +40,7 @@ export const getConfigList = (biz_id: string, app_id: number, query: ICommonQuer
  * @returns
  */
 export const getReleasedConfigList = (biz_id: string, app_id: number, release_id: number, params: ICommonQuery) =>
-  http.get(`/config/biz/${biz_id}/apps/${app_id}/releases/${release_id}/config_items`, { params }).then((res) => {
+  http.post(`/config/biz/${biz_id}/apps/${app_id}/releases/${release_id}/config_items`, params).then((res) => {
     res.data.details.forEach((item: any) => {
       // 接口返回的config_item_id为实际的配置文件id，id字段没有到，统一替换
       item.id = item.config_item_id;
@@ -396,7 +396,7 @@ export const updateTemplateConfigPkgs = (
  */
 export const getBoundTemplates = (bizId: string, appId: number, query: ICommonQuery) =>
   http
-    .get(`/config/biz/${bizId}/apps/${appId}/template_revisions`, { params: { ...query, with_status: true } })
+    .post(`/config/biz/${bizId}/apps/${appId}/template_revisions`, { ...query, with_status: true })
     .then((res) => res.data);
 
 /**
@@ -406,9 +406,9 @@ export const getBoundTemplates = (bizId: string, appId: number, query: ICommonQu
  * @param releaseId
  * @returns
  */
-export const getBoundTemplatesByAppVersion = (bizId: string, appId: number, releaseId: number, params: ICommonQuery) =>
+export const getBoundTemplatesByAppVersion = (bizId: string, appId: number, releaseId: number, query: ICommonQuery) =>
   http
-    .get(`/config/biz/${bizId}/apps/${appId}/releases/${releaseId}/template_revisions`, { params })
+    .post(`/config/biz/${bizId}/apps/${appId}/releases/${releaseId}/template_revisions`, query)
     .then((res) => res.data);
 
 /**
@@ -559,7 +559,7 @@ export const getReleaseKv = (bizId: string, appId: number, releaseId: number, ke
  * @returns
  */
 export const getReleaseKvList = (bizId: string, appId: number, releaseId: number, query: ICommonQuery) =>
-  http.get(`/config/biz/${bizId}/apps/${appId}/releases/${releaseId}/kvs`, { params: query }).then((res) => res.data);
+  http.post(`/config/biz/${bizId}/apps/${appId}/releases/${releaseId}/kvs`, query).then((res) => res.data);
 
 /**
  * 撤销删除kv

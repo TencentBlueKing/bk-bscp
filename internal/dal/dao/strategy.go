@@ -13,8 +13,8 @@
 package dao
 
 import (
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -67,8 +67,9 @@ func (dao *strategyDao) GetStrategyByIDs(kit *kit.Kit, strategyIDs []uint32) ([]
 // GetStrategyByIDs Get strategy by ids.
 func (dao *strategyDao) ListStrategyByItsm(kit *kit.Kit) ([]*table.Strategy, error) {
 	m := dao.genQ.Strategy
-	return m.WithContext(kit.Ctx).Where(m.ItsmTicketStatus.Eq(constant.ItsmTicketStatusCreated),
-		m.ItsmTicketStateID.Neq(0), m.ItsmTicketSn.Neq(""),
+	return m.WithContext(kit.Ctx).Where(m.ItsmTicketStatus.In(
+		constant.ItsmTicketStatusCreated),
+		m.ItsmTicketStateID.Neq(""), m.ItsmTicketSn.Neq(""),
 		m.PublishStatus.In(string(table.PendingApproval), string(table.PendingPublish))).Find()
 }
 

@@ -28,6 +28,7 @@ import (
 // AppCacheMeta defines app's basic meta info
 type AppCacheMeta struct {
 	Name       string           `json:"name"`
+	TenantID   string           `json:"tenantID"` // 多租户ID
 	ConfigType table.ConfigType `json:"cft"`
 }
 

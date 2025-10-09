@@ -11,7 +11,7 @@
  */
 
 // Package itsm xxx
-package itsm
+package v2
 
 import (
 	"context"
@@ -31,7 +31,6 @@ func GetAuthHeader() string {
 // ItsmRequest itsm request
 // nolint revive
 func ItsmRequest(ctx context.Context, method, reqURL string, data interface{}) ([]byte, error) {
-
 	client := components.GetClient().R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").

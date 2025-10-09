@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -90,6 +91,7 @@ type dataService struct {
 	sd       serviced.Service
 	daoSet   dao.Set
 	vault    vault.Set
+	cmdb     bkcmdb.Service
 	esb      client.Client
 	spaceMgr *space.Manager
 	repo     repository.Provider
@@ -160,15 +162,24 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	// initialize esb client
-	settings := cc.DataService().Esb
-	esbCli, err := client.NewClient(&settings, metrics.Register())
+	esbCfg := cc.DataService().Esb
+	cmdbCfg := cc.G().CMDB
+
+	esbClient, err := client.NewClient(&esbCfg, metrics.Register())
 	if err != nil {
 		return fmt.Errorf("new esb client failed, err: %v", err)
 	}
-	ds.esb = esbCli
+	ds.esb = esbClient
+
+	cmdbCli, err := bkcmdb.New(&cmdbCfg, esbClient)
+	if err != nil {
+		return fmt.Errorf("new cmdb client failed, err: %v", err)
+	}
+
+	ds.cmdb = cmdbCli
 
 	// initialize space manager
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdbCli)
 	if err != nil {
 		return fmt.Errorf("init space manager failed, err: %v", err)
 	}
@@ -245,14 +256,20 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb)
 	if err != nil {
 		return err
 	}
 
-	// 同步客户端在线状态
+	// 同步itsm 单据状态：避免单据没回被正确回调感知
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
+
+	// 初始化ITSM模板[只有v4版本才需要]
+	if cc.DataService().ITSM.EnableV4 {
+		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
+		registerItsmV4Templates.Run()
+	}
 
 	pbds.RegisterDataServer(serve, svc)
 

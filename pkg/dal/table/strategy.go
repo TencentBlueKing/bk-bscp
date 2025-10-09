@@ -238,7 +238,7 @@ type StrategySpec struct {
 	ItsmTicketUrl     string        `db:"itsm_ticket_url" json:"itsm_ticket_url" gorm:"column:itsm_ticket_url"`
 	ItsmTicketSn      string        `db:"itsm_ticket_sn" json:"itsm_ticket_sn" gorm:"column:itsm_ticket_sn"`
 	ItsmTicketStatus  string        `db:"itsm_ticket_status" json:"itsm_ticket_status" gorm:"column:itsm_ticket_status"`
-	ItsmTicketStateID int           `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
+	ItsmTicketStateID string        `db:"itsm_ticket_state_id" json:"itsm_ticket_state_id" gorm:"column:itsm_ticket_state_id"` // nolint
 }
 
 // ValidateCreate validate strategy spec when it is created.
@@ -377,6 +377,7 @@ type StrategyAttachment struct {
 	BizID         uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
 	AppID         uint32 `db:"app_id" json:"app_id" gorm:"column:app_id"`
 	StrategySetID uint32 `db:"strategy_set_id" json:"strategy_set_id" gorm:"column:strategy_set_id"`
+	TenantID      string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // IsEmpty test whether strategy attachment is empty or not.

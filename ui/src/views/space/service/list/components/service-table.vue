@@ -46,8 +46,16 @@
           </bk-tag>
         </template>
       </vxe-column>
-      <vxe-column field="revision.creator" :title="$t('创建人')" width="123" />
-      <vxe-column field="revision.reviser" :title="$t('更新人')" width="123" />
+      <vxe-column field="revision.creator" :title="$t('创建人')" width="123" >
+        <template #default="{ row }">
+          <user-name :name="row.revision.creator"/>
+        </template>
+      </vxe-column>
+      <vxe-column field="revision.reviser" :title="$t('更新人')" width="123">
+        <template #default="{ row }">
+          <user-name :name="row.revision.reviser"/>
+        </template>
+      </vxe-column>
       <vxe-column :title="$t('更新时间')" width="200">
         <template #default="{ row }">
           <span>{{ datetimeFormat(row.revision.update_at) }}</span>
@@ -63,12 +71,16 @@
               <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
                 {{ $t('客户端查询') }}
               </bk-button>
+<<<<<<< HEAD
+              <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
+=======
               <MoreAction
                 :app="row"
                 :space-id="props.spaceId"
                 @edit="handleEdit(row)"
                 @delete="handleDelete(row)"
                 @clone="handleClone(row)" />
+>>>>>>> github/master
             </div>
           </template>
           <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm(row)">{{
@@ -102,6 +114,7 @@
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
   import MoreAction from './more-action.vue';
+  import UserName from '../../../../../components/user-name.vue';
 
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -191,10 +204,13 @@
     }
   };
 
+<<<<<<< HEAD
+=======
   const handleClone = (row: IAppItem) => {
     emits('clone', row);
   };
 
+>>>>>>> github/master
   const applyViewPerm = (row: IAppItem) => {
     const query = {
       resources: [

@@ -184,21 +184,21 @@ func (s *Service) ListKvs(ctx context.Context, req *pbds.ListKvsReq) (*pbds.List
 		req.Sort = "key"
 	}
 	page := &types.BasePage{
-		Start: req.Start,
-		Limit: uint(req.Limit),
-		Sort:  req.Sort,
-		Order: types.Order(req.Order),
+		Start:  req.Start,
+		Limit:  uint(req.Limit),
+		Sort:   req.Sort,
+		Order:  types.Order(req.Order),
+		Search: req.GetSearch(),
 	}
 	opt := &types.ListKvOption{
-		BizID:     req.BizId,
-		AppID:     req.AppId,
-		Key:       req.Key,
-		SearchKey: req.SearchKey,
-		All:       req.All,
-		Page:      page,
-		KvType:    req.KvType,
-		TopIDs:    req.TopIds,
-		Status:    req.Status,
+		BizID:  req.BizId,
+		AppID:  req.AppId,
+		Key:    req.Key,
+		All:    req.All,
+		Page:   page,
+		KvType: req.KvType,
+		TopIDs: req.TopIds,
+		Status: req.Status,
 	}
 
 	// 该方法被生成版本接口调用。移至到查询列表前面提前返回判断

@@ -497,6 +497,126 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "itsm v4 回调接口",
+        "operationId": "Config_ApprovalCallback",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务版本ID",
+            "name": "releaseId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigApprovalCallbackBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsApprovalCallbackResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "resourcePermissionRequired": true,
+            "userVerifiedRequired": false
+          },
+          "isPublic": true
+        }
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "审批同步，其中v2版本中itsm也是复用这个接口进行回调",
+        "operationId": "Config_Approve",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "releaseId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigApproveBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsApproveResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId}": {
       "post": {
         "tags": [
@@ -609,6 +729,7 @@
           "Healthz"
         ],
         "summary": "Healthz 接口",
+        "operationId": "Healthz",
         "responses": {
           "200": {
             "description": "OK",
@@ -621,6 +742,29 @@
     }
   },
   "definitions": {
+    "ConfigApprovalCallbackBody": {
+      "type": "object",
+      "title": "ApprovalCallbackReq itsm v4回调请求",
+      "properties": {
+        "callbackToken": {
+          "type": "string"
+        },
+        "ticket": {
+          "$ref": "#/definitions/pbreleaseTicket"
+        }
+      }
+    },
+    "ConfigApproveBody": {
+      "type": "object",
+      "properties": {
+        "publishStatus": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
     "ConfigBatchUpsertConfigItemsBody": {
       "type": "object",
       "properties": {
@@ -788,18 +932,9 @@
           "description": "排序类型：desc",
           "type": "string"
         },
-        "searchFields": {
-          "description": "支持搜索的字段：key,revister,creator",
-          "type": "string",
-          "default": "key,revister,creator"
-        },
-        "searchKey": {
+        "search": {
           "description": "搜索的值",
-          "type": "string"
-        },
-        "searchValue": {
-          "description": "搜索的值",
-          "type": "string"
+          "type": "object"
         },
         "sort": {
           "description": "排序的值，例如：key",
@@ -969,6 +1104,41 @@
         },
         "signature": {
           "description": "文件sha256",
+          "type": "string"
+        }
+      }
+    },
+    "pbcsApprovalCallbackResp": {
+      "type": "object",
+      "title": "itsm v4回调请求 返回",
+      "properties": {
+        "message": {
+          "description": "消息",
+          "type": "string",
+          "title": "message"
+        },
+        "result": {
+          "description": "结果",
+          "type": "boolean",
+          "title": "bool"
+        }
+      }
+    },
+    "pbcsApproveResp": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "title": "itsm回调"
+        },
+        "haveCredentials": {
+          "type": "boolean"
+        },
+        "havePull": {
+          "type": "boolean"
+        },
+        "message": {
           "type": "string"
         }
       }
@@ -1197,6 +1367,99 @@
         },
         "value": {
           "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "pbreleaseCallbackResult": {
+      "type": "object",
+      "title": "CallbackResult 回调结果（目前空）"
+    },
+    "pbreleaseCurrentSteps": {
+      "type": "object",
+      "title": "CurrentSteps 当前审批步骤",
+      "properties": {
+        "activityKey": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ticketId": {
+          "type": "string"
+        }
+      }
+    },
+    "pbreleaseFormData": {
+      "type": "object",
+      "title": "FormData 表单数据",
+      "properties": {
+        "ticketTitle": {
+          "type": "string"
+        }
+      }
+    },
+    "pbreleaseTicket": {
+      "type": "object",
+      "title": "Ticket 工单",
+      "properties": {
+        "approveResult": {
+          "type": "boolean"
+        },
+        "callbackResult": {
+          "$ref": "#/definitions/pbreleaseCallbackResult"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "currentProcessors": {
+          "type": "array",
+          "items": {}
+        },
+        "currentSteps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbreleaseCurrentSteps"
+          }
+        },
+        "endAt": {
+          "type": "string"
+        },
+        "formData": {
+          "$ref": "#/definitions/pbreleaseFormData"
+        },
+        "frontendUrl": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "portalId": {
+          "type": "string"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "sn": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "statusDisplay": {
+          "type": "string"
+        },
+        "systemId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "workflowId": {
           "type": "string"
         }
       }

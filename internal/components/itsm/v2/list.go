@@ -11,7 +11,7 @@
  */
 
 // Package itsm xxx
-package itsm
+package v2
 
 import (
 	"context"
@@ -19,10 +19,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm/api"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -31,23 +30,29 @@ var (
 	getTicketStatusPath      = "/itsm/get_ticket_status/"
 	getApproveNodeResultPath = "/itsm/get_approve_node_result/"
 	getTicketLogsPath        = "/itsm/get_ticket_logs/"
-	limit                    = 100
 )
+
+// ListTicketsReq xxx
+type ListTicketsReq struct {
+	Sns      []string `json:"sns"`
+	Page     int      `json:"page"`
+	PageSize int      `json:"page_size"`
+}
 
 // ListTicketsResp itsm list tickets resp
 type ListTicketsResp struct {
 	CommonResp
-	Data ListTicketsData `json:"data"`
+	Data *ListTicketsData `json:"data"`
 }
 
 // ListTicketsData list tickets data
 type ListTicketsData struct {
-	Page      int           `json:"page"`
-	TotalPage int           `json:"total_page"`
-	Count     int           `json:"count"`
-	Next      string        `json:"next"`
-	Previous  string        `json:"previous"`
-	Items     []TicketsItem `json:"items"`
+	Page      int            `json:"page"`
+	TotalPage int            `json:"total_page"`
+	Count     int            `json:"count"`
+	Next      string         `json:"next"`
+	Previous  string         `json:"previous"`
+	Items     []*TicketsItem `json:"items"`
 }
 
 // TicketsItem ITSM list tickets item
@@ -72,60 +77,47 @@ type TicketsItem struct {
 }
 
 // ListTickets list itsm tickets by sn list
-func ListTickets(ctx context.Context, snList []string) ([]TicketsItem, error) {
+func ListTickets(ctx context.Context, req ListTicketsReq) (*ListTicketsData, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
 	if itsmConf.External {
 		host = itsmConf.Host
 	}
-	tickets := []TicketsItem{}
-	var page = 1
-	for {
-		reqURL := fmt.Sprintf("%s%s?page=%d&page_size=%d", host, listTicketsPath, page, limit)
 
-		reqData := map[string]interface{}{
-			"sns": snList,
-		}
+	reqURL := fmt.Sprintf("%s%s?page=%d&page_size=%d", host, listTicketsPath, req.Page, req.PageSize)
 
-		body, err := ItsmRequest(ctx, http.MethodPost, reqURL, reqData)
-		if err != nil {
-			logs.Errorf("request list itsm tickets %v failed, %s", snList, err.Error())
-			return nil, fmt.Errorf("request list itsm tickets %v failed, %s", snList, err.Error())
-		}
-		// 解析返回的body
-		resp := &ListTicketsResp{}
-		if err := json.Unmarshal(body, resp); err != nil {
-			logs.Errorf("parse itsm body error, body: %v", body)
-			return nil, err
-		}
-		if resp.Code != 0 {
-			logs.Errorf("list itsm tickets %v failed, msg: %s", snList, resp.Message)
-			return nil, errors.New(resp.Message)
-		}
-		tickets = append(tickets, resp.Data.Items...)
-		if page >= resp.Data.TotalPage {
-			break
-		}
-		page++
+	reqData := map[string]any{
+		"sns": req.Sns,
 	}
-	return tickets, nil
+
+	body, err := ItsmRequest(ctx, http.MethodPost, reqURL, reqData)
+	if err != nil {
+		logs.Errorf("request list itsm tickets %v failed, %s", req.Sns, err.Error())
+		return nil, fmt.Errorf("request list itsm tickets %v failed, %s", req.Sns, err.Error())
+	}
+	// 解析返回的body
+	resp := &ListTicketsResp{}
+	if err := json.Unmarshal(body, resp); err != nil {
+		logs.Errorf("parse itsm body error, body: %v", body)
+		return nil, err
+	}
+	if resp.Code != 0 {
+		logs.Errorf("list itsm tickets %v failed, msg: %s", req.Sns, resp.Message)
+		return nil, errors.New(resp.Message)
+	}
+
+	return resp.Data, nil
 }
 
 // GetTicketStatusData get ticket status
 type GetTicketStatusData struct {
 	CommonResp
-	Data GetTicketStatusDetail `json:"data"`
-}
-
-// GetTicketStatusDetail ticket status detail
-type GetTicketStatusDetail struct {
-	CurrentStatus string                   `json:"current_status"`
-	CurrentSteps  []map[string]interface{} `json:"current_steps"`
+	Data *api.GetTicketStatusDetail `json:"data"`
 }
 
 // GetTicketStatus get itsm ticket status by sn
-func GetTicketStatus(ctx context.Context, sn string) (GetTicketStatusData, error) {
+func GetTicketStatus(ctx context.Context, sn string) (*api.GetTicketStatusDetail, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
@@ -134,42 +126,33 @@ func GetTicketStatus(ctx context.Context, sn string) (GetTicketStatusData, error
 	}
 	reqURL := fmt.Sprintf("%s%s?sn=%s", host, getTicketStatusPath, sn)
 
-	// 解析返回的body
-	resp := GetTicketStatusData{}
 	body, err := ItsmRequest(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		logs.Errorf("request get itsm ticket status %v failed, %s", sn, err.Error())
-		return resp, fmt.Errorf("request get itsm ticket status %v failed, %s", sn, err.Error())
+		return nil, fmt.Errorf("request get itsm ticket status %v failed, %s", sn, err.Error())
 	}
-
+	// 解析返回的body
+	resp := GetTicketStatusData{}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		logs.Errorf("parse itsm body error, body: %v", body)
-		return resp, err
+		return nil, err
 	}
 	if resp.Code != 0 {
 		logs.Errorf("get itsm ticket status %v failed, msg: %s", sn, resp.Message)
-		return resp, errors.New(resp.Message)
+		return nil, errors.New(resp.Message)
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
 
 // GetApproveNodeResultData get ticket approve node result
 type GetApproveNodeResultData struct {
 	CommonResp
-	Data GetApproveNodeResultDetail `json:"data"`
-}
-
-// GetApproveNodeResultDetail get ticket approve node result
-type GetApproveNodeResultDetail struct {
-	Name          string `json:"name"`
-	Processeduser string `json:"processed_user"`
-	ApproveResult bool   `json:"approve_result"`
-	ApproveRemark string `json:"approve_remark"`
+	Data *api.GetApproveNodeResultDetail `json:"data"`
 }
 
 // GetApproveNodeResult get itsm ticket approve node by sn
-func GetApproveNodeResult(ctx context.Context, sn string, stateID int) (GetApproveNodeResultData, error) {
+func GetApproveNodeResult(ctx context.Context, sn string, stateID int) (*api.GetApproveNodeResultDetail, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
@@ -178,35 +161,34 @@ func GetApproveNodeResult(ctx context.Context, sn string, stateID int) (GetAppro
 	}
 	reqURL := fmt.Sprintf("%s%s?sn=%s&state_id=%d", host, getApproveNodeResultPath, sn, stateID)
 
-	// 解析返回的body
-	resp := GetApproveNodeResultData{}
 	body, err := ItsmRequest(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		logs.Errorf("request get approve node result %v failed, %s", sn, err.Error())
-		return resp, fmt.Errorf("request get approve node result %v failed, %s", sn, err.Error())
+		return nil, fmt.Errorf("request get approve node result %v failed, %s", sn, err.Error())
 	}
-
+	// 解析返回的body
+	resp := GetApproveNodeResultData{}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		logs.Errorf("parse itsm body error, body: %v", body)
-		return resp, err
+		return nil, err
 	}
 	if resp.Code != 0 {
 		logs.Errorf("get approve node result %v failed, msg: %s", sn, resp.Message)
-		return resp, errors.New(resp.Message)
+		return nil, errors.New(resp.Message)
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
 
 // GetTicketLogsData get ticket logs result
 type GetTicketLogsData struct {
 	CommonResp
-	Data GetTicketLogsDetail `json:"data"`
+	Data *GetTicketLogsDetail `json:"data"`
 }
 
 // GetTicketLogsDetail get ticket logs
 type GetTicketLogsDetail struct {
-	Logs []TicketLogs `json:"logs"`
+	Logs []*TicketLogs `json:"logs"`
 }
 
 // TicketLogs ticket log
@@ -216,7 +198,7 @@ type TicketLogs struct {
 }
 
 // GetTicketLogs get itsm ticket logs by sn
-func GetTicketLogs(ctx context.Context, sn string) (map[string][]string, error) {
+func GetTicketLogs(ctx context.Context, sn string) (*GetTicketLogsDetail, error) {
 	itsmConf := cc.DataService().ITSM
 	// 默认使用网关访问，如果为外部版，则使用ESB访问
 	host := itsmConf.GatewayHost
@@ -225,34 +207,21 @@ func GetTicketLogs(ctx context.Context, sn string) (map[string][]string, error) 
 	}
 	reqURL := fmt.Sprintf("%s%s?sn=%s", host, getTicketLogsPath, sn)
 
-	resp := make(map[string][]string, 0)
-	// 解析返回的body
-	result := GetTicketLogsData{}
 	body, err := ItsmRequest(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		logs.Errorf("request get ticket logs by pass %v failed, %s", sn, err.Error())
-		return resp, fmt.Errorf("request get ticket logs by pass %v failed, %s", sn, err.Error())
+		return nil, fmt.Errorf("request get ticket logs by pass %v failed, %s", sn, err.Error())
 	}
-
-	if err := json.Unmarshal(body, &result); err != nil {
+	// 解析返回的body
+	resp := &GetTicketLogsData{}
+	if err := json.Unmarshal(body, &resp); err != nil {
 		logs.Errorf("parse itsm body error, body: %v", body)
-		return resp, err
+		return nil, err
 	}
-	if result.Code != 0 {
-		logs.Errorf("get approve node result %v failed, msg: %s", sn, result.Message)
-		return resp, errors.New(result.Message)
-	}
-
-	for _, v := range result.Data.Logs {
-		if strings.Contains(v.Message, constant.ItsmRejectedApproveResult) {
-			resp[constant.ItsmRejectedApproveResult] = []string{v.Operator}
-			return resp, nil
-		}
-
-		if strings.Contains(v.Message, constant.ItsmPassedApproveResult) {
-			resp[constant.ItsmPassedApproveResult] = append(resp[constant.ItsmPassedApproveResult], v.Operator)
-		}
+	if resp.Code != 0 {
+		logs.Errorf("get ticket logs %v failed, msg: %s", sn, resp.Message)
+		return nil, errors.New(resp.Message)
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
