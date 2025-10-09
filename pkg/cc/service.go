@@ -404,6 +404,8 @@ type FeedServerSetting struct {
 	MRLimiter    MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
 	RateLimiter  RateLimiter         `yaml:"rateLimiter"`
 	Metric       Metric              `yaml:"metrics"`
+	// CrossBizWhitelist defines apps that can download across different businesses
+	CrossBizWhitelist CrossBizWhitelist `yaml:"crossBizWhitelist"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -428,6 +430,7 @@ func (s *FeedServerSetting) trySetDefault() {
 	s.RedisCluster.trySetDefault()
 	s.MRLimiter.trySetDefault()
 	s.RateLimiter.trySetDefault()
+	s.CrossBizWhitelist.trySetDefault()
 }
 
 // Validate FeedServerSetting option.

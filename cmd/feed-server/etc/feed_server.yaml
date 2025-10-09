@@ -173,3 +173,10 @@ log:
   alsoToStdErr: false
   # log level.
   verbosity: 0
+
+# cross-business download whitelist settings
+crossBizWhitelist:
+  # 是否启用跨业务下载白名单
+  enabled: false
+  # 允许跨业务下载的应用ID列表
+  appIds: []

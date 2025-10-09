@@ -30,6 +30,8 @@ type BizHost interface {
 	List(kit *kit.Kit, bizID int) ([]*table.BizHost, error)
 	// ListAllByHostID list all biz host relationships by hostID
 	ListAllByHostID(kit *kit.Kit, hostID int) ([]*table.BizHost, error)
+	// GetByAgentID get biz host relationship by agentID
+	GetByAgentID(kit *kit.Kit, agentID string) (*table.BizHost, error)
 	// UpdateByBizHost update biz host by bizID and hostID (only if exists)
 	UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) error
 	// Delete delete biz host relationship
@@ -103,4 +105,21 @@ func (dao *bizHostDao) UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) err
 		Update(m.AgentID, bizHost.AgentID)
 
 	return err
+}
+
+// GetByAgentID get biz host relationship by agentID
+func (dao *bizHostDao) GetByAgentID(kit *kit.Kit, agentID string) (*table.BizHost, error) {
+	if agentID == "" {
+		return nil, errors.New("agent id is required")
+	}
+
+	m := dao.genQ.BizHost
+	bizHost, err := dao.genQ.BizHost.WithContext(kit.Ctx).
+		Where(m.AgentID.Eq(agentID)).
+		First()
+	if err != nil {
+		return nil, err
+	}
+
+	return bizHost, nil
 }

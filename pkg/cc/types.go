@@ -1568,3 +1568,35 @@ type CMDBConfig struct {
 	UseEsb     bool   `yaml:"useEsb"`
 	BkUserName string `yaml:"bkUserName"`
 }
+
+// CrossBizWhitelist defines apps that can download across different businesses
+type CrossBizWhitelist struct {
+	// Enabled enables cross-business download whitelist
+	Enabled bool `yaml:"enabled"`
+	// AppIds is a list of app IDs that are allowed to download across businesses
+	AppIds []uint32 `yaml:"appIds"`
+}
+
+// IsAppAllowed checks if an app is allowed to download across businesses
+func (c CrossBizWhitelist) IsAppAllowed(appId uint32) bool {
+	if !c.Enabled {
+		return false
+	}
+
+	for _, allowedAppId := range c.AppIds {
+		if allowedAppId == appId {
+			return true
+		}
+	}
+	return false
+}
+
+// trySetDefault set the CrossBizWhitelist default value if user not configured.
+func (c *CrossBizWhitelist) trySetDefault() {
+	if !c.Enabled {
+		c.Enabled = false
+	}
+	if c.AppIds == nil {
+		c.AppIds = []uint32{}
+	}
+}

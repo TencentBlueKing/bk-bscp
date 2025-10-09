@@ -722,7 +722,7 @@ func (s *Service) ListApps(ctx context.Context, req *pbfs.ListAppsReq) (*pbfs.Li
 func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq) (*pbfs.AsyncDownloadResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	// 1. 鉴权
+	// 鉴权
 	credential := getCredential(ctx)
 	app, err := s.bll.AppCache().GetMeta(kit, req.BizId, req.FileMeta.ConfigItemAttachment.AppId)
 	if err != nil {
@@ -744,13 +744,39 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 		return nil, status.Error(codes.FailedPrecondition, "p2p download is disabled in server")
 	}
 
-	// 2. 获取客户端信息，check 是否支持 p2p 下载
+	// 获取客户端信息，check 是否支持 p2p 下载
 	clientAgentID, clientContainerID, err := s.getAsyncDownloadAgentInfo(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. 创建下载任务
+	// 验证agentID是否属于指定的业务
+	if clientAgentID != "" {
+		// 检查app是否在白名单中
+		crossBizWhitelist := cc.FeedServer().CrossBizWhitelist
+		isInWhitelist := crossBizWhitelist.IsAppAllowed(req.FileMeta.ConfigItemAttachment.AppId)
+
+		// 如果app不在白名单中，需要验证agentID是否属于当前业务
+		if !isInWhitelist {
+			getAgentBizReq := &pbcs.GetAgentBizReq{
+				AgentId: clientAgentID,
+			}
+			getAgentBizResp, err := s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "get agent biz failed, %s", err.Error())
+			}
+			if !getAgentBizResp.Found {
+				return nil, status.Errorf(codes.PermissionDenied, "agent %s not found", clientAgentID)
+			}
+			if getAgentBizResp.BizId != req.BizId {
+				return nil, status.Errorf(codes.PermissionDenied,
+					"agent %s belongs to business %d, not %d, and app %s is not in cross-business whitelist",
+					clientAgentID, getAgentBizResp.BizId, req.BizId, app.Name)
+			}
+		}
+	}
+
+	// 创建下载任务
 	taskID, err := s.bll.AsyncDownload().CreateAsyncDownloadTask(kit, req.BizId,
 		req.FileMeta.ConfigItemAttachment.AppId, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name,
 		clientAgentID, clientContainerID, req.FileMeta.ConfigItemSpec.Permission.User, req.FileDir,
