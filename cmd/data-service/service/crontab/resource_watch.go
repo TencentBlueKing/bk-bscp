@@ -97,10 +97,10 @@ func (w *WatchBizHost) Run() {
 				cancel()
 				return
 			case <-ticker.C:
-				// if !w.state.IsMaster() {
-				// 	logs.Infof("current service instance is slave, skip host relation watch")
-				// 	continue
-				// }
+				if !w.state.IsMaster() {
+					logs.Infof("current service instance is slave, skip host relation watch")
+					continue
+				}
 				logs.Infof("host relation watch triggered")
 				w.watchBizHost(kt)
 			}
@@ -122,10 +122,10 @@ func (w *WatchBizHost) Run() {
 				cancel()
 				return
 			case <-ticker.C:
-				// if !w.state.IsMaster() {
-				// 	logs.Infof("current service instance is slave, skip host update watch")
-				// 	continue
-				// }
+				if !w.state.IsMaster() {
+					logs.Infof("current service instance is slave, skip host update watch")
+					continue
+				}
 				logs.Infof("host update watch triggered")
 				w.watchHostUpdates(kt)
 			}

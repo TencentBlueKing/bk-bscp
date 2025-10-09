@@ -108,10 +108,10 @@ func (c *SyncBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
-				// if !c.state.IsMaster() {
-				// 	logs.Infof("current service instance is slave, skip sync biz host")
-				// 	continue
-				// }
+				if !c.state.IsMaster() {
+					logs.Infof("current service instance is slave, skip sync biz host")
+					continue
+				}
 				logs.Infof("starts to synchronize the biz host")
 				c.SyncBizHost(kt)
 			}
