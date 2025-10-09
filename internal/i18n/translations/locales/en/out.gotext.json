@@ -287,6 +287,20 @@
             "fuzzy": true
         },
         {
+            "id": "gray_percent key must be equal",
+            "message": "gray_percent key must be equal",
+            "translation": "gray_percent key must be equal",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "gray_percent value must be a valid percentage (1-99)",
+            "message": "gray_percent value must be a valid percentage (1-99)",
+            "translation": "gray_percent value must be a valid percentage (1-99)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "message": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
             "translation": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
@@ -593,6 +607,20 @@
             "fuzzy": true
         },
         {
+            "id": "if gray_percent groups exist, all groups must contain gray_percent label",
+            "message": "if gray_percent groups exist, all groups must contain gray_percent label",
+            "translation": "if gray_percent groups exist, all groups must contain gray_percent label",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "non-gray_percent labels must be consistent across all gray_percent groups",
+            "message": "non-gray_percent labels must be consistent across all gray_percent groups",
+            "translation": "non-gray_percent labels must be consistent across all gray_percent groups",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "delete template from template sets failed",
@@ -814,6 +842,30 @@
                     "underlyingType": "uint32",
                     "argNum": 1,
                     "expr": "bizID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "save kv failed",
+            "message": "save kv failed",
+            "translation": "save kv failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "batch create of KV config failed, err: {Err}",
+            "message": "batch create of KV config failed, err: {Err}",
+            "translation": "batch create of KV config failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
                 }
             ],
             "fuzzy": true
@@ -1611,13 +1663,6 @@
                     "expr": "kv.KvSpec.Key"
                 }
             ],
-            "fuzzy": true
-        },
-        {
-            "id": "save kv failed",
-            "message": "save kv failed",
-            "translation": "save kv failed",
-            "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
