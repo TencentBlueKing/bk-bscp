@@ -451,7 +451,8 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 					result.Content
 			} else {
 				logs.Errorf("download failed, jobID: %s, file: %s, agentID: %s, containerID: %s, errorCode: %d",
-					job.JobID, result.Content.DestFileName, result.Content.DestAgentID, result.Content.DestContainerID, result.ErrorCode)
+					job.JobID, result.Content.DestFileName, result.Content.DestAgentID,
+					result.Content.DestContainerID, result.ErrorCode)
 				// other error code means failed
 				job.FailedTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content

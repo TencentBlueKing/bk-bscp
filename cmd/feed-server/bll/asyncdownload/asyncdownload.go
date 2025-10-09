@@ -290,6 +290,7 @@ func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,
 	if err != nil {
 		return err
 	}
-	logs.Infof("upsert async download task %s, biz:%d, app:%d, file:%s, status:%s", taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
+	logs.Infof("upsert async download task %s, biz:%d, app:%d, file:%s, status:%s",
+		taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
 	return ad.cs.Redis().Set(ctx, taskID, string(js), 30*60)
 }
