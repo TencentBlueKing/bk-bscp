@@ -1147,6 +1147,96 @@ func (lm *MatchReleaseLimiter) trySetDefault() {
 	}
 }
 
+// CrontabConfig defines crontab task configuration options.
+type CrontabConfig struct {
+	// SyncBizHostInterval defines the interval for syncing business host relationships
+	SyncBizHostInterval string `yaml:"syncBizHostInterval"`
+	// CleanupBizHostInterval defines the interval for cleaning up invalid business host relationships
+	CleanupBizHostInterval string `yaml:"cleanupBizHostInterval"`
+	// WatchBizHostInterval defines the interval for watching business host relationship changes
+	WatchBizHostInterval string `yaml:"watchBizHostInterval"`
+	// WatchHostInterval defines the interval for watching host update events
+	WatchHostInterval string `yaml:"watchHostInterval"`
+	// SyncBizHostQpsLimit defines the QPS limit for sync biz host CMDB requests
+	SyncBizHostQpsLimit float64 `yaml:"syncBizHostQpsLimit"`
+	// CleanupBizHostQpsLimit defines the QPS limit for cleanup biz host CMDB requests
+	CleanupBizHostQpsLimit float64 `yaml:"cleanupBizHostQpsLimit"`
+	// WatchBizHostQpsLimit defines the QPS limit for watch biz host CMDB requests
+	WatchBizHostQpsLimit float64 `yaml:"watchBizHostQpsLimit"`
+}
+
+// validate if the crontab config is valid or not.
+func (c CrontabConfig) validate() error {
+	if c.SyncBizHostInterval != "" {
+		if _, err := time.ParseDuration(c.SyncBizHostInterval); err != nil {
+			return fmt.Errorf("invalid syncBizHostInterval duration: %s", c.SyncBizHostInterval)
+		}
+	}
+
+	if c.CleanupBizHostInterval != "" {
+		if _, err := time.ParseDuration(c.CleanupBizHostInterval); err != nil {
+			return fmt.Errorf("invalid cleanupBizHostInterval duration: %s", c.CleanupBizHostInterval)
+		}
+	}
+
+	if c.WatchBizHostInterval != "" {
+		if _, err := time.ParseDuration(c.WatchBizHostInterval); err != nil {
+			return fmt.Errorf("invalid watchBizHostInterval duration: %s", c.WatchBizHostInterval)
+		}
+	}
+
+	if c.WatchHostInterval != "" {
+		if _, err := time.ParseDuration(c.WatchHostInterval); err != nil {
+			return fmt.Errorf("invalid watchHostInterval duration: %s", c.WatchHostInterval)
+		}
+	}
+
+	if c.SyncBizHostQpsLimit < 0 {
+		return fmt.Errorf("invalid syncBizHostQpsLimit value: %f, should >= 0", c.SyncBizHostQpsLimit)
+	}
+
+	if c.CleanupBizHostQpsLimit < 0 {
+		return fmt.Errorf("invalid cleanupBizHostQpsLimit value: %f, should >= 0", c.CleanupBizHostQpsLimit)
+	}
+
+	if c.WatchBizHostQpsLimit < 0 {
+		return fmt.Errorf("invalid watchBizHostQpsLimit value: %f, should >= 0", c.WatchBizHostQpsLimit)
+	}
+
+	return nil
+}
+
+// trySetDefault try set the default value of crontab config
+func (c *CrontabConfig) trySetDefault() {
+	if c.SyncBizHostInterval == "" {
+		c.SyncBizHostInterval = "168h" // 7 days
+	}
+
+	if c.CleanupBizHostInterval == "" {
+		c.CleanupBizHostInterval = "1h" // 1 hour
+	}
+
+	if c.WatchBizHostInterval == "" {
+		c.WatchBizHostInterval = "1m" // 1 minute
+	}
+
+	if c.WatchHostInterval == "" {
+		c.WatchHostInterval = "30s" // 30 seconds
+	}
+
+	if c.SyncBizHostQpsLimit == 0 {
+		c.SyncBizHostQpsLimit = 50.0 // 50 QPS
+	}
+
+	if c.CleanupBizHostQpsLimit == 0 {
+		c.CleanupBizHostQpsLimit = 50.0 // 50 QPS
+	}
+
+	if c.WatchBizHostQpsLimit == 0 {
+		c.WatchBizHostQpsLimit = 80.0 // 80 QPS
+	}
+}
+
 // RateLimiter defines the rate limiter options for traffic control.
 // requires bscp-go init/sidecar mode and v1.3.1 or above
 type RateLimiter struct {

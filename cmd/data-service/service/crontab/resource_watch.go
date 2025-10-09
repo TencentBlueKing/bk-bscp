@@ -32,10 +32,6 @@ import (
 )
 
 const (
-	// Check biz host relation events every 1 minute
-	defaultWatchBizHostInterval = 1 * time.Minute
-	// Check host update events every 30 seconds
-	defaultWatchHostInterval = 30 * time.Second
 	// Default QPS limit for CMDB API requests in watch mode
 	defaultWatchQpsLimit = 80.0
 )
@@ -47,6 +43,8 @@ func NewWatchBizHost(
 	cmdbService bkcmdb.Service,
 	redisClient bedis.Client,
 	qpsLimit float64,
+	watchBizHostInterval time.Duration,
+	watchHostInterval time.Duration,
 ) WatchBizHost {
 	// when the cursor is lost, listen from 30 minutes ago
 	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
@@ -57,24 +55,28 @@ func NewWatchBizHost(
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
 	return WatchBizHost{
-		set:         set,
-		state:       sd,
-		cmdbService: cmdbService,
-		timeAgo:     timeAgo,
-		redisClient: redisClient,
-		rateLimiter: rateLimiter,
+		set:                  set,
+		state:                sd,
+		cmdbService:          cmdbService,
+		timeAgo:              timeAgo,
+		redisClient:          redisClient,
+		rateLimiter:          rateLimiter,
+		watchBizHostInterval: watchBizHostInterval,
+		watchHostInterval:    watchHostInterval,
 	}
 }
 
 // WatchBizHost watch business host relationship changes
 type WatchBizHost struct {
-	set         dao.Set
-	state       serviced.Service
-	cmdbService bkcmdb.Service
-	timeAgo     int64
-	redisClient bedis.Client
-	mutex       sync.Mutex
-	rateLimiter *rate.Limiter // Rate limiter for CMDB API calls
+	set                  dao.Set
+	state                serviced.Service
+	cmdbService          bkcmdb.Service
+	timeAgo              int64
+	redisClient          bedis.Client
+	watchBizHostInterval time.Duration
+	watchHostInterval    time.Duration
+	mutex                sync.Mutex
+	rateLimiter          *rate.Limiter // Rate limiter for CMDB API calls
 }
 
 // Run starts two independent watch tasks for host relations and host updates
@@ -84,7 +86,7 @@ func (w *WatchBizHost) Run() {
 
 	// Task 1: Host relation watch task (business-host relationships)
 	go func() {
-		ticker := time.NewTicker(defaultWatchBizHostInterval)
+		ticker := time.NewTicker(w.watchBizHostInterval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()
@@ -109,7 +111,7 @@ func (w *WatchBizHost) Run() {
 
 	// Task 2: Host update watch task (host agent_id updates)
 	go func() {
-		ticker := time.NewTicker(defaultWatchHostInterval)
+		ticker := time.NewTicker(w.watchHostInterval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()

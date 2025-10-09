@@ -30,8 +30,6 @@ import (
 )
 
 const (
-	// biz host cleanup task interval
-	defaultCleanupBizHostInterval = 1 * time.Hour
 	// number of records to process each time
 	defaultCleanupBatchSize = 1000
 	// CMDB request rate limit
@@ -44,6 +42,7 @@ func NewCleanupBizHost(
 	sd serviced.Service,
 	cmdbService bkcmdb.Service,
 	qpsLimit float64,
+	cleanupInterval time.Duration,
 ) CleanupBizHost {
 	if qpsLimit <= 0 || qpsLimit > defaultCleanupQpsLimit {
 		qpsLimit = defaultCleanupQpsLimit
@@ -51,20 +50,22 @@ func NewCleanupBizHost(
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
 	return CleanupBizHost{
-		set:         set,
-		state:       sd,
-		cmdbService: cmdbService,
-		rateLimiter: rateLimiter,
+		set:             set,
+		state:           sd,
+		cmdbService:     cmdbService,
+		rateLimiter:     rateLimiter,
+		cleanupInterval: cleanupInterval,
 	}
 }
 
 // CleanupBizHost cleanup invalid biz host relationships
 type CleanupBizHost struct {
-	set         dao.Set
-	state       serviced.Service
-	cmdbService bkcmdb.Service
-	rateLimiter *rate.Limiter
-	mutex       sync.Mutex
+	set             dao.Set
+	state           serviced.Service
+	cmdbService     bkcmdb.Service
+	rateLimiter     *rate.Limiter
+	cleanupInterval time.Duration
+	mutex           sync.Mutex
 }
 
 // Run start cleanup task
@@ -74,7 +75,7 @@ func (c *CleanupBizHost) Run() {
 
 	// task1: cleanup invalid biz host relationships
 	go func() {
-		ticker := time.NewTicker(defaultCleanupBizHostInterval)
+		ticker := time.NewTicker(c.cleanupInterval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()

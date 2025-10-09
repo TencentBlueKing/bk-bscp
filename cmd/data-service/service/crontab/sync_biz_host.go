@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	// sync data once a week
-	defaultSyncBizHostInterval = 7 * 24 * time.Hour
 	// Default QPS limit for CMDB requests
 	defaultQpsLimit = 80.0
 	// Default page size for list host requests
@@ -50,6 +48,7 @@ func NewSyncBizHost(
 	redisClient bedis.Client,
 	pageSize int,
 	qpsLimit float64,
+	syncInterval time.Duration,
 ) SyncBizHost {
 	// Validate and set default values
 	if pageSize <= 0 || pageSize > defaultPageSize {
@@ -63,13 +62,14 @@ func NewSyncBizHost(
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
 	return SyncBizHost{
-		set:         set,
-		state:       sd,
-		cmdbService: cmdbService,
-		redisClient: redisClient,
-		rateLimiter: rateLimiter,
-		pageSize:    pageSize,
-		qpsLimit:    qpsLimit,
+		set:          set,
+		state:        sd,
+		cmdbService:  cmdbService,
+		redisClient:  redisClient,
+		rateLimiter:  rateLimiter,
+		pageSize:     pageSize,
+		qpsLimit:     qpsLimit,
+		syncInterval: syncInterval,
 	}
 }
 
@@ -85,6 +85,8 @@ type SyncBizHost struct {
 	pageSize int
 	// qps limit for CMDB requests
 	qpsLimit float64
+	// sync interval for biz host sync
+	syncInterval time.Duration
 	// mutex for sync biz host
 	mutex sync.Mutex
 }
@@ -94,7 +96,7 @@ func (c *SyncBizHost) Run() {
 	logs.Infof("start sync biz host task")
 	notifier := shutdown.AddNotifier()
 	go func() {
-		ticker := time.NewTicker(defaultSyncBizHostInterval)
+		ticker := time.NewTicker(c.syncInterval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()

@@ -306,15 +306,16 @@ type DataServiceSetting struct {
 	Service Service   `yaml:"service"`
 	Log     LogOption `yaml:"log"`
 
-	Credential   Credential   `yaml:"credential"`
-	Sharding     Sharding     `yaml:"sharding"`
-	Esb          Esb          `yaml:"esb"`
-	Repo         Repository   `yaml:"repository"`
-	Vault        Vault        `yaml:"vault"`
-	FeatureFlags FeatureFlags `yaml:"featureFlags"`
-	Gorm         Gorm         `yaml:"gorm"`
-	ITSM         ITSMConfig   `yaml:"itsm"`
-	RedisCluster RedisCluster `yaml:"redisCluster"`
+	Credential   Credential    `yaml:"credential"`
+	Sharding     Sharding      `yaml:"sharding"`
+	Esb          Esb           `yaml:"esb"`
+	Repo         Repository    `yaml:"repository"`
+	Vault        Vault         `yaml:"vault"`
+	FeatureFlags FeatureFlags  `yaml:"featureFlags"`
+	Gorm         Gorm          `yaml:"gorm"`
+	ITSM         ITSMConfig    `yaml:"itsm"`
+	RedisCluster RedisCluster  `yaml:"redisCluster"`
+	Crontab      CrontabConfig `yaml:"crontab"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -338,6 +339,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.FeatureFlags.trySetDefault()
 	s.Gorm.trySetDefault()
 	s.RedisCluster.trySetDefault()
+	s.Crontab.trySetDefault()
 }
 
 // Validate DataServiceSetting option.
@@ -376,6 +378,10 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.RedisCluster.validate(); err != nil {
+		return err
+	}
+
+	if err := s.Crontab.validate(); err != nil {
 		return err
 	}
 

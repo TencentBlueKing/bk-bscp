@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -424,13 +425,43 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
-	// 首次启动时立即执行一次全量同步
-	bizHost := crontab.NewSyncBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, 50.0)
+	// 解析定时任务配置
+	syncInterval, err := time.ParseDuration(cc.DataService().Crontab.SyncBizHostInterval)
+	if err != nil {
+		logs.Errorf("parse syncBizHostInterval failed, using default: %v", err)
+		syncInterval = 7 * 24 * time.Hour // 7 days
+	}
+
+	cleanupInterval, err := time.ParseDuration(cc.DataService().Crontab.CleanupBizHostInterval)
+	if err != nil {
+		logs.Errorf("parse cleanupBizHostInterval failed, using default: %v", err)
+		cleanupInterval = 1 * time.Hour // 1 hour
+	}
+
+	watchBizHostInterval, err := time.ParseDuration(cc.DataService().Crontab.WatchBizHostInterval)
+	if err != nil {
+		logs.Errorf("parse watchBizHostInterval failed, using default: %v", err)
+		watchBizHostInterval = 1 * time.Minute // 1 minute
+	}
+
+	watchHostInterval, err := time.ParseDuration(cc.DataService().Crontab.WatchHostInterval)
+	if err != nil {
+		logs.Errorf("parse watchHostInterval failed, using default: %v", err)
+		watchHostInterval = 30 * time.Second // 30 seconds
+	}
+
+	// 获取QPS限制配置
+	syncBizHostQpsLimit := cc.DataService().Crontab.SyncBizHostQpsLimit
+	cleanupBizHostQpsLimit := cc.DataService().Crontab.CleanupBizHostQpsLimit
+	watchBizHostQpsLimit := cc.DataService().Crontab.WatchBizHostQpsLimit
+
+	bizHost := crontab.NewSyncBizHost(
+		ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, syncBizHostQpsLimit, syncInterval)
 	kt := kit.New()
 	ctx, cancel := context.WithCancel(kt.Ctx)
 	kt.Ctx = ctx
 
-	// 执行全量同步
+	// 首次启动时立即执行一次全量同步
 	if err := func() (err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -449,10 +480,11 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 	bizHost.Run()
 
 	// 监听业务主机关系
-	watchBizHost := crontab.NewWatchBizHost(ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 80.0)
+	watchBizHost := crontab.NewWatchBizHost(
+		ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, watchBizHostQpsLimit, watchBizHostInterval, watchHostInterval)
 	watchBizHost.Run()
 
 	// 清理业务主机关系
-	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, 50.0)
+	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, cleanupBizHostQpsLimit, cleanupInterval)
 	cleanupBizHost.Run()
 }
