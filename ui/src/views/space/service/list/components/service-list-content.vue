@@ -157,11 +157,8 @@
   // import { debounce } from 'lodash';
   import ServiceTable from './service-table.vue';
   import EmptyList from './empty-list.vue';
-<<<<<<< HEAD
   import SearchSelector from '../../../../../components/search-selector.vue';
-=======
   import CloneService from './clone-service/index.vue';
->>>>>>> github/master
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
