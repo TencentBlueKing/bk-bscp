@@ -88,10 +88,10 @@ func (c *CleanupBizHost) Run() {
 				notifier.Done()
 				return
 			case <-ticker.C:
-				if !c.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip cleanup biz host")
-					continue
-				}
+				// if !c.state.IsMaster() {
+				// 	logs.Infof("current service instance is slave, skip cleanup biz host")
+				// 	continue
+				// }
 				logs.Infof("starts to cleanup invalid biz host relationships")
 				c.cleanupBizHost(kt)
 			}

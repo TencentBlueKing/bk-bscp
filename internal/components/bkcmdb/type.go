@@ -415,10 +415,10 @@ type ModuleInfo struct {
 
 // ListBizHostsRequest 查询业务主机请求参数
 type ListBizHostsRequest struct {
-	BkBizID            int                `json:"bk_biz_id"`            // 业务ID
-	Page               PageParam          `json:"page"`                 // 分页参数
-	Fields             []string           `json:"fields"`               // 需要返回的字段列表
-	HostPropertyFilter HostPropertyFilter `json:"host_property_filter"` // 主机属性过滤条件
+	BkBizID            int                 `json:"bk_biz_id"`            // 业务ID
+	Page               PageParam           `json:"page"`                 // 分页参数
+	Fields             []string            `json:"fields"`               // 需要返回的字段列表
+	HostPropertyFilter *HostPropertyFilter `json:"host_property_filter"` // 主机属性过滤条件
 }
 
 // HostPropertyFilter 主机属性过滤条件
@@ -432,9 +432,6 @@ type HostPropertyRule struct {
 	Field    string      `json:"field"`    // 字段名
 	Operator string      `json:"operator"` // 操作符
 	Value    interface{} `json:"value"`    // 值
-	// 嵌套规则支持
-	Condition *string             `json:"condition,omitempty"` // 嵌套条件的逻辑操作符
-	Rules     *[]HostPropertyRule `json:"rules,omitempty"`     // 嵌套规则列表
 }
 
 // HostPropertyOperator 主机属性操作符常量

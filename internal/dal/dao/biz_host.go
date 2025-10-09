@@ -51,7 +51,7 @@ func (dao *bizHostDao) Upsert(kit *kit.Kit, bizHost *table.BizHost) error {
 	m := dao.genQ.BizHost
 	_, err := dao.genQ.BizHost.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(bizHost.BizID), m.HostID.Eq(bizHost.HostID)).
-		Assign(m.AgentID.Value(bizHost.AgentID)).
+		Assign(m.AgentID.Value(bizHost.AgentID), m.BKHostInnerIP.Value(bizHost.BKHostInnerIP)).
 		FirstOrCreate()
 
 	return err

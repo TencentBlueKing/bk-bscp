@@ -20,7 +20,7 @@ import (
 type BizHost struct {
 	BizID         int       `db:"biz_id" json:"biz_id" gorm:"column:biz_id;primaryKey"`
 	HostID        int       `db:"host_id" json:"host_id" gorm:"column:host_id;primaryKey"`
-	AgentID       string    `db:"agent_id" json:"agent_id" gorm:"column:agent_id"`
+	AgentID       string    `db:"bk_agent_id" json:"bk_agent_id" gorm:"column:bk_agent_id"`
 	BKHostInnerIP string    `db:"bk_host_innerip" json:"bk_host_innerip" gorm:"column:bk_host_innerip"`
 	LastUpdated   time.Time `db:"last_updated" json:"last_updated" gorm:"column:last_updated;autoUpdateTime"`
 }
