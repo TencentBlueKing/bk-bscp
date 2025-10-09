@@ -332,6 +332,47 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/clone_app": {
+      "post": {
+        "summary": "克隆服务",
+        "operationId": "Config_CloneApp",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateAppResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCloneAppBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/create/config_item/config_item/app_id/{appId}/biz_id/{bizId}": {
       "post": {
         "summary": "创建文件配置项",
@@ -9905,6 +9946,81 @@
       },
       "title": "ClientCommonReq request param"
     },
+    "ConfigCloneAppBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "服务名称"
+        },
+        "alias": {
+          "type": "string",
+          "description": "服务别名"
+        },
+        "configType": {
+          "type": "string",
+          "description": "数据格式：文件型=file, 键值型=kv"
+        },
+        "memo": {
+          "type": "string",
+          "description": "服务描述"
+        },
+        "isApprove": {
+          "type": "boolean",
+          "description": "是否需要审批：是=true，否=false"
+        },
+        "approveType": {
+          "type": "string",
+          "description": "审批类型：会签=count_sign、或签=or_sign"
+        },
+        "approver": {
+          "type": "string",
+          "description": "审批人列表"
+        },
+        "configItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsCloneAppReqConfigItem"
+          }
+        },
+        "kvItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsCloneAppReqKv"
+          }
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtvTemplateVariableSpec"
+          }
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsCloneAppReqTemplateBinding"
+          }
+        },
+        "preHookId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "前置脚本：脚本ID"
+        },
+        "postHookId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "后置脚本：脚本ID"
+        },
+        "dataType": {
+          "type": "string",
+          "description": "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
+        }
+      }
+    },
     "ConfigCreateAppBody": {
       "type": "object",
       "properties": {
@@ -14044,6 +14160,107 @@
         }
       }
     },
+    "pbcsCloneAppReqConfigItem": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "文件路径"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary"
+        },
+        "fileMode": {
+          "type": "string",
+          "default": "unix",
+          "description": "文件模式"
+        },
+        "memo": {
+          "type": "string",
+          "description": "文件描述"
+        },
+        "user": {
+          "type": "string",
+          "description": "用户权限名"
+        },
+        "userGroup": {
+          "type": "string",
+          "description": "用户组权限名"
+        },
+        "privilege": {
+          "type": "string",
+          "description": "文件权限"
+        },
+        "sign": {
+          "type": "string",
+          "description": "文件sha256"
+        },
+        "byteSize": {
+          "type": "string",
+          "format": "uint64",
+          "description": "文件大小"
+        },
+        "md5": {
+          "type": "string",
+          "description": "文件md5"
+        },
+        "charset": {
+          "type": "string",
+          "description": "文件编码"
+        }
+      }
+    },
+    "pbcsCloneAppReqKv": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "配置项名"
+        },
+        "kvType": {
+          "type": "string",
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)"
+        },
+        "value": {
+          "type": "string",
+          "description": "配置项值"
+        },
+        "memo": {
+          "type": "string",
+          "description": "描述"
+        },
+        "secretType": {
+          "type": "string",
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)"
+        },
+        "secretHidden": {
+          "type": "boolean",
+          "description": "是否隐藏值：是=true，否=false"
+        },
+        "certificateExpirationDate": {
+          "type": "string",
+          "description": "证书过期时间"
+        }
+      }
+    },
+    "pbcsCloneAppReqTemplateBinding": {
+      "type": "object",
+      "properties": {
+        "templateSpaceId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板空间ID"
+        },
+        "templateBinding": {
+          "$ref": "#/definitions/pbatbTemplateBinding"
+        }
+      }
+    },
     "pbcsCompareConfigItemConflictsResp": {
       "type": "object",
       "properties": {
@@ -15068,6 +15285,10 @@
           }
         },
         "conflictNumber": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalQuantity": {
           "type": "integer",
           "format": "int64"
         }

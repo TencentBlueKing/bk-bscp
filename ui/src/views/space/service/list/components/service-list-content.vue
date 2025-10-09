@@ -85,7 +85,8 @@
         @page-change="handleTablePageChange"
         @limit-change="handleLimitChange"
         @edit="handleEditService"
-        @delete="handleDeleteService">
+        @delete="handleDeleteService"
+        @clone="handleCloneService">
         <template #empty>
           <EmptyList
             :is-search-empty="isSearchEmpty"
@@ -98,6 +99,7 @@
     </div>
     <CreateService v-model:show="isCreateServiceOpen" @reload="loadAppList" />
     <EditService v-model:show="isEditServiceOpen" :service="editingService" @reload="loadAppList" />
+    <CloneService v-model:show="isCloneServiceOpen" :service="editingService" @reload="loadAppList" />
     <bk-dialog
       v-model:is-show="isShowDeleteDialog"
       ext-cls="delete-service-dialog"
@@ -155,7 +157,11 @@
   // import { debounce } from 'lodash';
   import ServiceTable from './service-table.vue';
   import EmptyList from './empty-list.vue';
+<<<<<<< HEAD
   import SearchSelector from '../../../../../components/search-selector.vue';
+=======
+  import CloneService from './clone-service/index.vue';
+>>>>>>> github/master
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
@@ -172,6 +178,7 @@
   const searchQuery = ref<{ [key: string]: string }>({});
   const isCreateServiceOpen = ref(false);
   const isEditServiceOpen = ref(false);
+  const isCloneServiceOpen = ref(false);
   const dialogInputStr = ref('');
   const isShowDeleteDialog = ref(false);
   const onlyShowMyService = ref(localStorage.getItem('onlyShowMyService') === 'true');
@@ -307,6 +314,12 @@
   const handleEditService = (service: IAppItem) => {
     editingService.value = service;
     isEditServiceOpen.value = true;
+  };
+
+  // 克隆服务
+  const handleCloneService = (service: IAppItem) => {
+    editingService.value = service;
+    isCloneServiceOpen.value = true;
   };
 
   // 刷新服务列表

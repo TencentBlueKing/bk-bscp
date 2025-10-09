@@ -4,7 +4,7 @@
       <div class="title-content" @click="expand = !expand">
         <DownShape :class="['fold-icon', { fold: !expand }]" />
         <div class="title-text">
-          {{ isExsitTable ? t('已存在配置模板套餐') : t('新建配置模板套餐') }} <span>({{ tableData.length }})</span>
+          {{ tableTitle }} <span>({{ tableData.length }})</span>
         </div>
       </div>
     </div>
@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { DownShape, Warn } from 'bkui-vue/lib/icon';
   import { ImportTemplateConfigItem } from '../../../../../../../../../../types/template';
@@ -52,10 +52,17 @@
 
   const data = ref<ImportTemplateConfigItem[]>([]);
 
-  const props = defineProps<{
-    tableData: ImportTemplateConfigItem[];
-    isExsitTable: boolean;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      tableData: ImportTemplateConfigItem[];
+      isExsitTable?: boolean;
+      isClone?: boolean; // 是否是克隆服务的配置表
+    }>(),
+    {
+      isExsitTable: false,
+      isClone: false,
+    },
+  );
 
   const emits = defineEmits(['change']);
 
@@ -68,6 +75,13 @@
     },
     { immediate: true, deep: true },
   );
+
+  const tableTitle = computed(() => {
+    if (props.isClone) {
+      return t('导入配置模板套餐');
+    }
+    return props.isExsitTable ? t('已存在配置模板套餐') : t('新建配置模板套餐');
+  });
 
   const handleDeleteConfig = (config: ImportTemplateConfigItem) => {
     emits('change', `${config.template_space_id} - ${config.template_set_id}`);

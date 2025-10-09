@@ -71,7 +71,16 @@
               <bk-button size="small" text theme="primary" @click="handleJump(row.id, 'client-search')">
                 {{ $t('客户端查询') }}
               </bk-button>
+<<<<<<< HEAD
               <MoreAction :app="row" :space-id="props.spaceId" @edit="handleEdit(row)" @delete="handleDelete(row)" />
+=======
+              <MoreAction
+                :app="row"
+                :space-id="props.spaceId"
+                @edit="handleEdit(row)"
+                @delete="handleDelete(row)"
+                @clone="handleClone(row)" />
+>>>>>>> github/master
             </div>
           </template>
           <bk-button v-else class="apply-btn" text theme="primary" @click="applyViewPerm(row)">{{
@@ -118,7 +127,7 @@
     loading: boolean;
   }>();
 
-  const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete']);
+  const emits = defineEmits(['pageChange', 'limitChange', 'edit', 'delete', 'clone']);
 
   const tableRef = ref();
 
@@ -195,6 +204,13 @@
     }
   };
 
+<<<<<<< HEAD
+=======
+  const handleClone = (row: IAppItem) => {
+    emits('clone', row);
+  };
+
+>>>>>>> github/master
   const applyViewPerm = (row: IAppItem) => {
     const query = {
       resources: [

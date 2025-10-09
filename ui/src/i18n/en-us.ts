@@ -98,7 +98,11 @@ export default {
   启用: 'Enable',
   table_键值型: 'KV Type',
   服务列表: 'Service List',
-
+  克隆服务: 'Clone Service',
+  填写服务信息: 'Fill in service info',
+  导入配置项: 'Import config items',
+  导入脚本: 'Import script',
+  脚本已复制: 'Script copied',
 
   // 导航栏
   服务配置中心: 'BSCP',
@@ -623,9 +627,15 @@ export default {
   配置文件绝对路径: 'Config File Absolute Path',
   更新: 'Update',
   查看操作: 'View Operation',
+<<<<<<< HEAD
   查看全部配置项: 'View all config items',
   只看冲突配置项: 'Only view conflict config items',
   '已限制该服务下所有配置项数据类型为{n}，如需其他数据类型，请调整服务属性下的数据类型': 'All config item data types under the service are limited to {n}, if you need other data types, please adjust the data type under the service attributes',
+=======
+  查看全部配置项: 'View all configuration items',
+  只看冲突配置项: 'Only view conflict configuration items',
+  '已限制该服务下所有配置项数据类型为{n}，如需其他数据类型，请调整服务属性下的数据类型': 'All configuration item data types under the service are limited to {n}, if you need other data types, please adjust the data type under the service attributes',
+>>>>>>> github/master
   敏感信息不可见: 'Sensitive information is not visible',
   '「敏感信息不可见」启用提示': '"Sensitive information is not visible" enabled prompt',
   '启用后，可降低数据泄露风险。尽管客户端拉去配置不受影响，但仍存在以下注意事项：': 'After enabling, the risk of data leakage can be reduced. Although the client can still pull the config, the following precautions still exist:',
@@ -833,7 +843,11 @@ export default {
   以下服务配置的未命名版本中将添加已选配置文件的: 'The following unnamed version of the service config will be added with the selected profile\'s',
   目标模板套餐: 'Target Template Package',
   批量删除: 'Batch delete',
+<<<<<<< HEAD
   '确认删除以下配置文件？': 'Are you sure you want to delete the following config files?',
+=======
+  '确认删除以下配置文件？': 'Are you sure you want to delete the following configuration files?',
+>>>>>>> github/master
   批量移出: 'Move out in batches',
   批量移出当前套餐: 'Move out current plans in batches',
   确定移出: 'Confirm to move out',

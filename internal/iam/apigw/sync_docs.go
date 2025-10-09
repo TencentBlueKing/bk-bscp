@@ -78,7 +78,8 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 
 	// 定义需要同步的 swagger 文件路径
 	swaggerFiles := []string{
-		"swagger/bkapigw/swagger.json",
+		"swagger/bkapigw.swagger.json",
+		"swagger/bkapigw_thirdparty.swagger.json",
 	}
 
 	// 同步资源和文档导入

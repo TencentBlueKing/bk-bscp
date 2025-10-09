@@ -1,7 +1,7 @@
 <template>
   <div style="margin-bottom: 16px">
     <div class="title">
-      <div class="title-content" @click="emits('changeExpand')">
+      <div class="title-content" @click="expand = !expand">
         <DownShape :class="['fold-icon', { fold: !expand }]" />
         <div class="title-text">
           {{ isExsitTable ? $t('已存在配置文件') : $t('新建配置文件') }} <span>({{ tableData.length }})</span>
@@ -17,7 +17,7 @@
       show-overflow-tooltip>
       <bk-table-column :label="$t('配置项名称')" prop="key" width="320" property="key"></bk-table-column>
       <bk-table-column :label="$t('数据类型')" prop="kv_type" width="200" property="type"></bk-table-column>
-      <bk-table-column :label="$t('配置项值预览')" prop="value" width="280">
+      <bk-table-column :label="$t('配置项值预览')" prop="value" max-width="280">
         <template #default="{ row }">
           <div v-if="row.key" :class="{ hidden: isSecretHidden(row) }" type="tips">
             {{ isSecretHidden(row) ? $t('敏感数据不可见，无法查看实际内容') : row.value }}
@@ -59,18 +59,25 @@
   import { DownShape } from 'bkui-vue/lib/icon';
   import { cloneDeep, isEqual } from 'lodash';
 
-  const props = defineProps<{
-    tableData: IConfigKvItem[];
-    isExsitTable: boolean;
-    expand: boolean;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      tableData: IConfigKvItem[];
+      isExsitTable?: boolean;
+      isClone?: boolean; // 是否是克隆服务的配置表
+    }>(),
+    {
+      isExsitTable: false,
+      isClone: false,
+    },
+  );
 
-  const emits = defineEmits(['changeExpand', 'change']);
+  const emits = defineEmits(['change']);
 
   const memoEditKey = ref('');
   const memoInputRef = ref();
   const data = ref<IConfigKvItem[]>([]);
   const initData = ref<IConfigKvItem[]>([]);
+  const expand = ref(true);
 
   onMounted(() => {
     data.value = cloneDeep(props.tableData);

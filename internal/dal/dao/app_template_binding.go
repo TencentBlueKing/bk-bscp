@@ -108,7 +108,7 @@ func (dao *appTemplateBindingDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryT
 		if err := g.ValidateUpdate(); err != nil {
 			return err
 		}
-		if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
+		if err := dao.validateAttachmentExist(kit, tx, g.Attachment); err != nil {
 			return err
 		}
 	}
@@ -220,7 +220,7 @@ func (dao *appTemplateBindingDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g 
 	if err := g.ValidateCreate(); err != nil {
 		return 0, err
 	}
-	if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
+	if err := dao.validateAttachmentExist(kit, tx, g.Attachment); err != nil {
 		return 0, err
 	}
 
@@ -282,7 +282,7 @@ func (dao *appTemplateBindingDao) Update(kit *kit.Kit, g *table.AppTemplateBindi
 	if err := g.ValidateUpdate(); err != nil {
 		return err
 	}
-	if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
+	if err := dao.validateAttachmentExist(kit, nil, g.Attachment); err != nil {
 		return err
 	}
 	// 删除操作，当前update接口是被当作删除使用，获取当前记录做审计
@@ -347,7 +347,7 @@ func (dao *appTemplateBindingDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 	if err := g.ValidateUpdate(); err != nil {
 		return err
 	}
-	if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
+	if err := dao.validateAttachmentExist(kit, tx, g.Attachment); err != nil {
 		return err
 	}
 
@@ -502,11 +502,22 @@ func (dao *appTemplateBindingDao) DeleteByAppIDWithTx(kit *kit.Kit, tx *gen.Quer
 }
 
 // validateAttachmentExist validate if attachment resource exists before operating template
-func (dao *appTemplateBindingDao) validateAttachmentExist(kit *kit.Kit, am *table.AppTemplateBindingAttachment) error {
+func (dao *appTemplateBindingDao) validateAttachmentExist(kit *kit.Kit, tx *gen.QueryTx,
+	am *table.AppTemplateBindingAttachment) error {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
-	if _, err := q.Where(m.ID.Eq(am.AppID)).Take(); err != nil {
+	var (
+		err error
+	)
+
+	if tx == nil {
+		_, err = q.Where(m.ID.Eq(am.AppID)).Take()
+	} else {
+		_, err = tx.App.WithContext(kit.Ctx).Where(m.ID.Eq(am.AppID)).Take()
+	}
+
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("template attached app %d is not exist", am.AppID)
 		}
