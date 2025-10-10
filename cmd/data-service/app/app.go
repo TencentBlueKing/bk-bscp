@@ -100,6 +100,7 @@ type dataService struct {
 }
 
 // prepare do prepare jobs before run data service.
+// nolint: funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -245,6 +246,7 @@ func initVault() (vault.Set, error) {
 }
 
 // listenAndServe listen the grpc serve and set up the shutdown gracefully job.
+// nolint: funlen
 func (ds *dataService) listenAndServe() error {
 	// generate standard grpc server grpcMetrics.
 	grpcMetrics := grpc_prometheus.NewServerMetrics()
