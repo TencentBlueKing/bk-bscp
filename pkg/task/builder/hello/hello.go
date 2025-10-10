@@ -27,7 +27,7 @@ func (h *helloTask) Steps() ([]*types.Step, error) {
 	return []*types.Step{hello.Add(h.a, h.b)}, nil
 }
 
-// TaskInfo implements types.TaskBu	ilder.
+// TaskInfo implements types.TaskBuilder.
 func (h *helloTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
 		TaskName:      "hello",

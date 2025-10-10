@@ -35,6 +35,9 @@ var (
 		itypes.TaskStatusRevoked,
 		itypes.TaskStatusNotStarted,
 	}
+
+	// defaultWorkerNum 默认worker数量
+	defaultWorkerNum = 200
 )
 
 // TaskManager task manager
@@ -105,7 +108,7 @@ func NewTaskMgr(ctx context.Context, etcdConfig cc.Etcd, dbConfig cc.Database) (
 		Store:        store,
 		ServerConfig: conf,
 		WorkerName:   name,
-		WorkerNum:    200, // 200并发
+		WorkerNum:    defaultWorkerNum, // 200并发
 	}
 	if err := mgr.Init(&cfg); err != nil {
 		return nil, err
@@ -144,10 +147,10 @@ func parseTLSConfig(tlsConfig *cc.TLSConfig) (*tls.Config, error) {
 	pool := x509.NewCertPool()
 	pool.AppendCertsFromPEM(caData)
 
-	// nolint TLS MinVersion too low.
 	tlsCfg := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      pool,
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	return tlsCfg, nil

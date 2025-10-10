@@ -22,13 +22,12 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/hashicorp/vault/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
@@ -101,7 +100,6 @@ type dataService struct {
 }
 
 // prepare do prepare jobs before run data service.
-// nolint: funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -192,6 +190,16 @@ func (ds *dataService) prepare(opt *options.Option) error {
 		repoSyncer.Run()
 	}
 
+	// 初始化并启动任务管理器
+	err = ds.initTaskManager()
+	if err != nil {
+		return fmt.Errorf("init task failed, err: %v", err)
+	}
+
+	return nil
+}
+
+func (ds *dataService) initTaskManager() error {
 	// 注册并启动任务（register要在NewTaskMgr之前）
 	register.RegisterExecutor()
 
@@ -212,7 +220,6 @@ func (ds *dataService) prepare(opt *options.Option) error {
 			logs.Errorf("task manager run failed, err: %v", err)
 		}
 	}()
-
 	return nil
 }
 
