@@ -32,6 +32,8 @@ const (
 	hostUpdateEvent = "update"
 	// watch resource types
 	host = "host"
+	// Config keys for cursor storage
+	hostDetailCursorKey = "host_detail_cursor"
 )
 
 // NewWatchHostUpdates init watch host updates
