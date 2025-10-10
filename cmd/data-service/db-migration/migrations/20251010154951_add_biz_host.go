@@ -35,8 +35,8 @@ func init() {
 func mig20251010154951Up(tx *gorm.DB) error {
 	// BizHost : 业务主机关系表
 	type BizHost struct {
-		BizID         int       `gorm:"column:biz_id;primaryKey"`
-		HostID        int       `gorm:"column:host_id;primaryKey"`
+		BizID         int       `gorm:"column:bk_biz_id;primaryKey;autoIncrement:false"`
+		HostID        int       `gorm:"column:bk_host_id;primaryKey;autoIncrement:false"`
 		AgentID       string    `gorm:"column:bk_agent_id"`
 		BKHostInnerIP string    `gorm:"column:bk_host_innerip"`
 		LastUpdated   time.Time `gorm:"column:last_updated;autoUpdateTime"`
@@ -52,7 +52,7 @@ func mig20251010154951Up(tx *gorm.DB) error {
 
 // mig20251010154951Down for down migration
 func mig20251010154951Down(tx *gorm.DB) error {
-	if err := tx.Migrator().DropTable("biz_host"); err != nil {
+	if err := tx.Migrator().DropTable("biz_hosts"); err != nil {
 		return err
 	}
 
