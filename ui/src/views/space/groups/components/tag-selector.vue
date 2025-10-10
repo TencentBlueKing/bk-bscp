@@ -113,7 +113,7 @@
   const valueList = ref<string[]>([]); // value联想输入列表
 
   // 内置标签
-  const BuiltInTag = ['ip', 'pod_name', 'pod_id'];
+  const BuiltInTag = ['ip', 'pod_name', 'pod_id', 'gray_percent'];
   const keyValidateReg = new RegExp(
     '^[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?((\\.|\\/)[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?)*$',
   );
