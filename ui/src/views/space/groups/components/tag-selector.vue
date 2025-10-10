@@ -64,7 +64,7 @@
           :loading="true"
           placeholder="value"
           :class="{ 'is-error': showValueError }"
-          :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) ? 'number' : 'text'"
+          :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) || rule.key === 'gray_percent' ? 'number' : 'text'"
           @click="isShowValuePopover = true"
           @change="handleValueChange">
           <template #suffix>
@@ -113,7 +113,7 @@
   const valueList = ref<string[]>([]); // value联想输入列表
 
   // 内置标签
-  const BuiltInTag = ['ip', 'pod_name', 'pod_id'];
+  const BuiltInTag = ['ip', 'pod_name', 'pod_id', 'gray_percent'];
   const keyValidateReg = new RegExp(
     '^[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?((\\.|\\/)[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?)*$',
   );
@@ -122,6 +122,7 @@
   const isShowKeyPopover = ref(false);
   const isShowValuePopover = ref(false);
   const keyInputRef = ref();
+
 
   onMounted(async () => {
     if (rule.value.key) {
