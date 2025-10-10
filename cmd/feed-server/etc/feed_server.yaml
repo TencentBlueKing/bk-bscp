@@ -175,8 +175,8 @@ log:
   verbosity: 0
 
 # cross-business download whitelist settings
-crossBizWhitelist:
+verifyAgentIDBelongs:
   # 是否开启 agent 验证
   enabled: false
   # 允许跨业务下载的应用ID列表
-  appIds: []
+  crossBizAppIDs: []

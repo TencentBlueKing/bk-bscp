@@ -753,7 +753,7 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 	// 验证agentID是否属于指定的业务
 	if clientAgentID != "" {
 		// 检查app是否在白名单中
-		crossBizWhitelist := cc.FeedServer().CrossBizWhitelist
+		crossBizWhitelist := cc.FeedServer().VerifyAgentIDBelongs
 		isInWhitelist := crossBizWhitelist.IsAppAllowed(req.FileMeta.ConfigItemAttachment.AppId)
 
 		// 如果app不在白名单中，需要验证agentID是否属于当前业务

@@ -1569,21 +1569,21 @@ type CMDBConfig struct {
 	BkUserName string `yaml:"bkUserName"`
 }
 
-// CrossBizWhitelist defines apps that can download across different businesses
-type CrossBizWhitelist struct {
+// VerifyAgentIDBelongs defines apps that can download across different businesses
+type VerifyAgentIDBelongs struct {
 	// 是否开启agent验证
 	Enabled bool `yaml:"enabled"`
-	// AppIds is a list of app IDs that are allowed to download across businesses
-	AppIds []uint32 `yaml:"appIds"`
+	// 允许跨业务下载的应用ID列表
+	CrossBizAppIDs []uint32 `yaml:"crossBizAppIDs"`
 }
 
-// IsAppAllowed checks if an app is allowed to download across businesses
-func (c CrossBizWhitelist) IsAppAllowed(appId uint32) bool {
+// IsAppAllowed 检查应用是否在允许跨业务下载的列表中
+func (c VerifyAgentIDBelongs) IsAppAllowed(appId uint32) bool {
 	if !c.Enabled {
 		return false
 	}
 
-	for _, allowedAppId := range c.AppIds {
+	for _, allowedAppId := range c.CrossBizAppIDs {
 		if allowedAppId == appId {
 			return true
 		}
@@ -1591,12 +1591,12 @@ func (c CrossBizWhitelist) IsAppAllowed(appId uint32) bool {
 	return false
 }
 
-// trySetDefault set the CrossBizWhitelist default value if user not configured.
-func (c *CrossBizWhitelist) trySetDefault() {
+// trySetDefault set the VerifyAgentIDBelongs default value if user not configured.
+func (c *VerifyAgentIDBelongs) trySetDefault() {
 	if !c.Enabled {
 		c.Enabled = false
 	}
-	if c.AppIds == nil {
-		c.AppIds = []uint32{}
+	if c.CrossBizAppIDs == nil {
+		c.CrossBizAppIDs = []uint32{}
 	}
 }
