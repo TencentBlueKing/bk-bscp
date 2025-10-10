@@ -10,22 +10,9 @@
  * limitations under the License.
  */
 
-package table
+package crontab
 
-import (
-	"time"
+const (
+	// Config keys for cursor storage
+	hostDetailCursorKey = "host_detail_cursor"
 )
-
-// BizHost defines business host relationship
-type BizHost struct {
-	BizID         int       `db:"bk_biz_id" json:"bk_biz_id" gorm:"column:bk_biz_id;primaryKey"`
-	HostID        int       `db:"bk_host_id" json:"bk_host_id" gorm:"column:bk_host_id;primaryKey"`
-	AgentID       string    `db:"bk_agent_id" json:"bk_agent_id" gorm:"column:bk_agent_id"`
-	BKHostInnerIP string    `db:"bk_host_innerip" json:"bk_host_innerip" gorm:"column:bk_host_innerip"`
-	LastUpdated   time.Time `db:"last_updated" json:"last_updated" gorm:"column:last_updated;autoUpdateTime"`
-}
-
-// TableName is the biz_host table name.
-func (b *BizHost) TableName() Name {
-	return BizHostTable
-}

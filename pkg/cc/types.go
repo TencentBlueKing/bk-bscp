@@ -1147,94 +1147,189 @@ func (lm *MatchReleaseLimiter) trySetDefault() {
 	}
 }
 
-// CrontabConfig defines crontab task configuration options.
-type CrontabConfig struct {
-	// SyncBizHostInterval defines the interval for syncing business host relationships
-	SyncBizHostInterval string `yaml:"syncBizHostInterval"`
-	// CleanupBizHostInterval defines the interval for cleaning up invalid business host relationships
-	CleanupBizHostInterval string `yaml:"cleanupBizHostInterval"`
-	// WatchBizHostInterval defines the interval for watching business host relationship changes
-	WatchBizHostInterval string `yaml:"watchBizHostInterval"`
-	// WatchHostInterval defines the interval for watching host update events
-	WatchHostInterval string `yaml:"watchHostInterval"`
-	// SyncBizHostQpsLimit defines the QPS limit for sync biz host CMDB requests
-	SyncBizHostQpsLimit float64 `yaml:"syncBizHostQpsLimit"`
-	// CleanupBizHostQpsLimit defines the QPS limit for cleanup biz host CMDB requests
-	CleanupBizHostQpsLimit float64 `yaml:"cleanupBizHostQpsLimit"`
-	// WatchBizHostQpsLimit defines the QPS limit for watch biz host CMDB requests
-	WatchBizHostQpsLimit float64 `yaml:"watchBizHostQpsLimit"`
+// SyncBizHostConfig defines sync business host task configuration options.
+type SyncBizHostConfig struct {
+	// Enabled defines whether the sync biz host task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for syncing business host relationships
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for sync biz host CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
-// validate if the crontab config is valid or not.
-func (c CrontabConfig) validate() error {
-	if c.SyncBizHostInterval != "" {
-		if _, err := time.ParseDuration(c.SyncBizHostInterval); err != nil {
-			return fmt.Errorf("invalid syncBizHostInterval duration: %s", c.SyncBizHostInterval)
+// CleanupBizHostConfig defines cleanup business host task configuration options.
+type CleanupBizHostConfig struct {
+	// Enabled defines whether the cleanup biz host task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for cleaning up invalid business host relationships
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for cleanup biz host CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// WatchBizHostRelationConfig defines watch business host relation task configuration options.
+type WatchBizHostRelationConfig struct {
+	// Enabled defines whether the watch biz host relation task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for watching business host relationship changes
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for watch biz host relation CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// WatchHostUpdatesConfig defines watch host updates task configuration options.
+type WatchHostUpdatesConfig struct {
+	// Enabled defines whether the watch host updates task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for watching host update events
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for watch host updates CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// CrontabConfig defines crontab task configuration options.
+type CrontabConfig struct {
+	// SyncBizHost defines sync business host task configuration
+	SyncBizHost SyncBizHostConfig `yaml:"syncBizHost"`
+	// CleanupBizHost defines cleanup business host task configuration
+	CleanupBizHost CleanupBizHostConfig `yaml:"cleanupBizHost"`
+	// WatchBizHostRelation defines watch business host relation task configuration
+	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
+	// WatchHostUpdates defines watch host updates task configuration
+	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
+}
+
+// validate if the sync biz host config is valid or not.
+func (c SyncBizHostConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid syncBizHost interval duration: %s", c.Interval)
 		}
 	}
 
-	if c.CleanupBizHostInterval != "" {
-		if _, err := time.ParseDuration(c.CleanupBizHostInterval); err != nil {
-			return fmt.Errorf("invalid cleanupBizHostInterval duration: %s", c.CleanupBizHostInterval)
-		}
-	}
-
-	if c.WatchBizHostInterval != "" {
-		if _, err := time.ParseDuration(c.WatchBizHostInterval); err != nil {
-			return fmt.Errorf("invalid watchBizHostInterval duration: %s", c.WatchBizHostInterval)
-		}
-	}
-
-	if c.WatchHostInterval != "" {
-		if _, err := time.ParseDuration(c.WatchHostInterval); err != nil {
-			return fmt.Errorf("invalid watchHostInterval duration: %s", c.WatchHostInterval)
-		}
-	}
-
-	if c.SyncBizHostQpsLimit < 0 {
-		return fmt.Errorf("invalid syncBizHostQpsLimit value: %f, should >= 0", c.SyncBizHostQpsLimit)
-	}
-
-	if c.CleanupBizHostQpsLimit < 0 {
-		return fmt.Errorf("invalid cleanupBizHostQpsLimit value: %f, should >= 0", c.CleanupBizHostQpsLimit)
-	}
-
-	if c.WatchBizHostQpsLimit < 0 {
-		return fmt.Errorf("invalid watchBizHostQpsLimit value: %f, should >= 0", c.WatchBizHostQpsLimit)
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid syncBizHost qpsLimit value: %f, should >= 0", c.QpsLimit)
 	}
 
 	return nil
 }
 
+// validate if the cleanup biz host config is valid or not.
+func (c CleanupBizHostConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid cleanupBizHost interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid cleanupBizHost qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the watch biz host relation config is valid or not.
+func (c WatchBizHostRelationConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid watchBizHostRelation interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid watchBizHostRelation qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the watch host updates config is valid or not.
+func (c WatchHostUpdatesConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid watchHostUpdates interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid watchHostUpdates qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the crontab config is valid or not.
+func (c CrontabConfig) validate() error {
+	if err := c.SyncBizHost.validate(); err != nil {
+		return err
+	}
+
+	if err := c.CleanupBizHost.validate(); err != nil {
+		return err
+	}
+
+	if err := c.WatchBizHostRelation.validate(); err != nil {
+		return err
+	}
+
+	if err := c.WatchHostUpdates.validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// trySetDefault try set the default value of sync biz host config
+func (c *SyncBizHostConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "168h" // 7 days
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 50.0 // 50 QPS
+	}
+}
+
+// trySetDefault try set the default value of cleanup biz host config
+func (c *CleanupBizHostConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "1h" // 1 hour
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 50.0 // 50 QPS
+	}
+}
+
+// trySetDefault try set the default value of watch biz host relation config
+func (c *WatchBizHostRelationConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "1m" // 1 minute
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 80.0 // 80 QPS
+	}
+}
+
+// trySetDefault try set the default value of watch host updates config
+func (c *WatchHostUpdatesConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "30s" // 30 seconds
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 80.0 // 80 QPS
+	}
+}
+
 // trySetDefault try set the default value of crontab config
 func (c *CrontabConfig) trySetDefault() {
-	if c.SyncBizHostInterval == "" {
-		c.SyncBizHostInterval = "168h" // 7 days
-	}
-
-	if c.CleanupBizHostInterval == "" {
-		c.CleanupBizHostInterval = "1h" // 1 hour
-	}
-
-	if c.WatchBizHostInterval == "" {
-		c.WatchBizHostInterval = "1m" // 1 minute
-	}
-
-	if c.WatchHostInterval == "" {
-		c.WatchHostInterval = "30s" // 30 seconds
-	}
-
-	if c.SyncBizHostQpsLimit == 0 {
-		c.SyncBizHostQpsLimit = 50.0 // 50 QPS
-	}
-
-	if c.CleanupBizHostQpsLimit == 0 {
-		c.CleanupBizHostQpsLimit = 50.0 // 50 QPS
-	}
-
-	if c.WatchBizHostQpsLimit == 0 {
-		c.WatchBizHostQpsLimit = 80.0 // 80 QPS
-	}
+	c.SyncBizHost.trySetDefault()
+	c.CleanupBizHost.trySetDefault()
+	c.WatchBizHostRelation.trySetDefault()
+	c.WatchHostUpdates.trySetDefault()
 }
 
 // RateLimiter defines the rate limiter options for traffic control.

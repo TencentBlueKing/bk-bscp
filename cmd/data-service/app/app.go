@@ -34,7 +34,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
-	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -99,7 +98,6 @@ type dataService struct {
 	repo        repository.Provider
 	ssd         serviced.ServiceDiscover
 	cmdbService bkcmdb.Service
-	redisClient bedis.Client
 }
 
 // prepare do prepare jobs before run data service.
@@ -169,13 +167,6 @@ func (ds *dataService) prepare(opt *options.Option) error {
 		return fmt.Errorf("initial cmdb service failed, err: %v", err)
 	}
 	ds.cmdbService = cmdbService
-
-	// initial redis client
-	redisClient, err := bedis.NewRedisCache(cc.DataService().RedisCluster)
-	if err != nil {
-		return fmt.Errorf("initial redis client failed, err: %v", err)
-	}
-	ds.redisClient = redisClient
 
 	// 同步客户端在线状态
 	state := crontab.NewSyncClientOnlineState(ds.daoSet, ds.sd)
@@ -425,74 +416,86 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
-	// 解析定时任务配置
-	syncInterval, err := time.ParseDuration(cc.DataService().Crontab.SyncBizHostInterval)
-	if err != nil {
-		logs.Errorf("parse syncBizHostInterval failed, using default: %v", err)
-		syncInterval = 7 * 24 * time.Hour // 7 days
-	}
+	crontabConfig := cc.DataService().Crontab
 
-	cleanupInterval, err := time.ParseDuration(cc.DataService().Crontab.CleanupBizHostInterval)
-	if err != nil {
-		logs.Errorf("parse cleanupBizHostInterval failed, using default: %v", err)
-		cleanupInterval = 1 * time.Hour // 1 hour
-	}
-
-	watchBizHostInterval, err := time.ParseDuration(cc.DataService().Crontab.WatchBizHostInterval)
-	if err != nil {
-		logs.Errorf("parse watchBizHostInterval failed, using default: %v", err)
-		watchBizHostInterval = 1 * time.Minute // 1 minute
-	}
-
-	watchHostInterval, err := time.ParseDuration(cc.DataService().Crontab.WatchHostInterval)
-	if err != nil {
-		logs.Errorf("parse watchHostInterval failed, using default: %v", err)
-		watchHostInterval = 30 * time.Second // 30 seconds
-	}
-
-	// 获取QPS限制配置
-	syncBizHostQpsLimit := cc.DataService().Crontab.SyncBizHostQpsLimit
-	cleanupBizHostQpsLimit := cc.DataService().Crontab.CleanupBizHostQpsLimit
-	watchBizHostQpsLimit := cc.DataService().Crontab.WatchBizHostQpsLimit
-
-	bizHost := crontab.NewSyncBizHost(
-		ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, syncBizHostQpsLimit, syncInterval)
-
-	// 启动定时同步任务
-	bizHost.Run()
-
-	// 首次启动时异步执行一次全量同步
-	go func() {
-		if !ds.sd.IsMaster() {
-			logs.Infof("current service instance is slave, skip initial sync")
-			return
+	// 启动同步业务主机关系任务
+	if crontabConfig.SyncBizHost.Enabled {
+		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse syncBizHost interval failed, using default: %v", err)
+			syncInterval = 7 * 24 * time.Hour // 7 days
 		}
 
-		logs.Infof("start initial full sync")
-		kt := kit.New()
-		ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
-		kt.Ctx = ctx
+		bizHost := crontab.NewSyncBizHost(
+			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
 
-		if err := func() (err error) {
-			defer func() {
-				if r := recover(); r != nil {
-					err = fmt.Errorf("initial sync panic: %v", r)
-				}
-			}()
-			bizHost.SyncBizHost(kt)
-			return nil
-		}(); err != nil {
-			logs.Errorf("initial full sync failed: %v", err)
+		// 启动定时同步任务
+		bizHost.Run()
+
+		// 首次启动时异步执行一次全量同步
+		go func() {
+			if !ds.sd.IsMaster() {
+				logs.Infof("current service instance is slave, skip initial sync")
+				return
+			}
+
+			logs.Infof("start initial full sync")
+			kt := kit.New()
+			ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
+			kt.Ctx = ctx
+
+			if err := func() (err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("initial sync panic: %v", r)
+					}
+				}()
+				bizHost.SyncBizHost(kt)
+				return nil
+			}(); err != nil {
+				logs.Errorf("initial full sync failed: %v", err)
+			}
+			cancel()
+		}()
+	}
+
+	// 启动监听业务主机关系任务
+	if crontabConfig.WatchBizHostRelation.Enabled {
+		watchBizHostInterval, err := time.ParseDuration(crontabConfig.WatchBizHostRelation.Interval)
+		if err != nil {
+			logs.Errorf("parse watchBizHostRelation interval failed, using default: %v", err)
+			watchBizHostInterval = 1 * time.Minute // 1 minute
 		}
-		cancel()
-	}()
 
-	// 监听业务主机关系
-	watchBizHost := crontab.NewWatchBizHost(
-		ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, watchBizHostQpsLimit, watchBizHostInterval, watchHostInterval)
-	watchBizHost.Run()
+		watchBizHostRelation := crontab.NewWatchBizHostRelation(
+			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.WatchBizHostRelation.QpsLimit,
+			watchBizHostInterval)
+		watchBizHostRelation.Run()
+	}
 
-	// 清理业务主机关系
-	cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService, cleanupBizHostQpsLimit, cleanupInterval)
-	cleanupBizHost.Run()
+	// 启动监听主机更新任务
+	if crontabConfig.WatchHostUpdates.Enabled {
+		watchHostInterval, err := time.ParseDuration(crontabConfig.WatchHostUpdates.Interval)
+		if err != nil {
+			logs.Errorf("parse watchHostUpdates interval failed, using default: %v", err)
+			watchHostInterval = 30 * time.Second // 30 seconds
+		}
+
+		watchHostUpdates := crontab.NewWatchHostUpdates(
+			ds.daoSet, ds.sd, ds.cmdbService, watchHostInterval)
+		watchHostUpdates.Run()
+	}
+
+	// 启动清理业务主机关系任务
+	if crontabConfig.CleanupBizHost.Enabled {
+		cleanupInterval, err := time.ParseDuration(crontabConfig.CleanupBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse cleanupBizHost interval failed, using default: %v", err)
+			cleanupInterval = 1 * time.Hour // 1 hour
+		}
+
+		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService,
+			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
+		cleanupBizHost.Run()
+	}
 }

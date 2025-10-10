@@ -21,7 +21,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
-	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -31,13 +30,10 @@ import (
 )
 
 const (
-	// Default QPS limit for CMDB requests
-	defaultQpsLimit = 80.0
+	// Default QPS limit for list biz hosts api
+	listBizHostsApiQpsLimit = 80.0
 	// Default page size for list host requests
 	defaultPageSize = 500
-	// Cursor cache keys
-	bizHostCursorKey    = "biz_host_cursor"
-	hostDetailCursorKey = "host_detail_cursor"
 )
 
 // NewSyncBizHost init sync biz host with configurable settings
@@ -45,17 +41,11 @@ func NewSyncBizHost(
 	set dao.Set,
 	sd serviced.Service,
 	cmdbService bkcmdb.Service,
-	redisClient bedis.Client,
-	pageSize int,
 	qpsLimit float64,
 	syncInterval time.Duration,
 ) SyncBizHost {
-	// Validate and set default values
-	if pageSize <= 0 || pageSize > defaultPageSize {
-		pageSize = defaultPageSize
-	}
-	if qpsLimit <= 0 {
-		qpsLimit = defaultQpsLimit
+	if qpsLimit <= 0 || qpsLimit > listBizHostsApiQpsLimit {
+		qpsLimit = listBizHostsApiQpsLimit
 	}
 
 	// Create rate limiter with configurable QPS
@@ -65,9 +55,7 @@ func NewSyncBizHost(
 		set:          set,
 		state:        sd,
 		cmdbService:  cmdbService,
-		redisClient:  redisClient,
 		rateLimiter:  rateLimiter,
-		pageSize:     pageSize,
 		qpsLimit:     qpsLimit,
 		syncInterval: syncInterval,
 	}
@@ -78,11 +66,8 @@ type SyncBizHost struct {
 	set         dao.Set
 	state       serviced.Service
 	cmdbService bkcmdb.Service
-	redisClient bedis.Client
 	// rate limiter for CMDB requests
 	rateLimiter *rate.Limiter
-	// page size for list host requests
-	pageSize int
 	// qps limit for CMDB requests
 	qpsLimit float64
 	// sync interval for biz host sync
@@ -131,12 +116,6 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
-	// get 3 minutes ago event cursor and cache to redis
-	if err := c.cacheEventCursors(kt); err != nil {
-		logs.Errorf("cache event cursors failed, err: %v", err)
-		return
-	}
-
 	// Query BSCP businesses
 	bizList, err := c.queryBSCPBusiness(kt)
 	if err != nil {
@@ -157,7 +136,7 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 // syncBusinessHosts sync host information for a single business
 func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 	start := 0
-	limit := c.pageSize
+	limit := defaultPageSize
 	for {
 		req := &bkcmdb.ListBizHostsRequest{
 			BkBizID: bizID,
@@ -217,91 +196,10 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 
 // queryBSCPBusiness query BSCP businesses
 func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
-	m := c.set.GenQuery().App
-	bizIDs, err := c.set.GenQuery().App.WithContext(kt.Ctx).
-		Select(m.BizID.Distinct()).
-		Find()
+	bizList, err := c.set.App().QueryDistinctBizIDs(kt)
 	if err != nil {
 		return nil, fmt.Errorf("query biz IDs failed: %w", err)
 	}
 
-	var bizList []int
-	for _, app := range bizIDs {
-		bizList = append(bizList, int(app.BizID))
-	}
-
 	return bizList, nil
-}
-
-// cacheEventCursors cache event cursor to Redis
-func (c *SyncBizHost) cacheEventCursors(kt *kit.Kit) error {
-	// get 3 minutes ago timestamp
-	threeMinutesAgo := time.Now().Add(-3 * time.Minute).Unix()
-
-	// get biz host relation event cursor
-	bizHostCursor, err := c.getEventCursor(kt, hostRelation, threeMinutesAgo)
-	if err != nil {
-		return fmt.Errorf("get biz host cursor failed: %w", err)
-	}
-	if bizHostCursor != "" {
-		if err = c.redisClient.Set(kt.Ctx, bizHostCursorKey, bizHostCursor, 7*24*3600); err != nil {
-			return fmt.Errorf("cache biz host cursor to redis failed: %w", err)
-		}
-	}
-
-	// get host detail update event cursor
-	hostDetailCursor, err := c.getEventCursor(kt, "host", threeMinutesAgo)
-	if err != nil {
-		return fmt.Errorf("get host detail cursor failed: %w", err)
-	}
-	if hostDetailCursor != "" {
-		if err := c.redisClient.Set(kt.Ctx, hostDetailCursorKey, hostDetailCursor, 7*24*3600); err != nil {
-			return fmt.Errorf("cache host detail cursor to redis failed: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// getEventCursor get event cursor at specified time
-func (c *SyncBizHost) getEventCursor(kt *kit.Kit, resourceType string, startTime int64) (string, error) {
-	req := &bkcmdb.WatchResourceRequest{
-		BkResource:   resourceType,
-		BkEventTypes: []string{"create", "update"},
-		BkFields:     []string{"bk_biz_id", "bk_host_id"},
-		BkStartFrom:  &startTime,
-	}
-
-	switch resourceType {
-	case hostRelation:
-		watchResult, err := c.cmdbService.WatchHostRelationResource(kt.Ctx, req)
-		if err != nil {
-			return "", err
-		}
-		if !watchResult.Result {
-			return "", fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
-		}
-		if len(watchResult.Data.BkEvents) == 0 {
-			return "", nil
-		}
-		// extract last event cursor from response
-		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-		return lastEvent.BkCursor, nil
-	case host:
-		watchResult, err := c.cmdbService.WatchHostResource(kt.Ctx, req)
-		if err != nil {
-			return "", err
-		}
-		if !watchResult.Result {
-			return "", fmt.Errorf("watch host resource failed: %s", watchResult.Message)
-		}
-		if len(watchResult.Data.BkEvents) == 0 {
-			return "", nil
-		}
-		// extract last event cursor from response
-		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-		return lastEvent.BkCursor, nil
-	default:
-		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
-	}
 }

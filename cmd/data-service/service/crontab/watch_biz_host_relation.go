@@ -14,7 +14,6 @@ package crontab
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
-	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -32,61 +30,62 @@ import (
 )
 
 const (
-	// Default QPS limit for CMDB API requests in watch mode
-	defaultWatchQpsLimit = 80.0
+	// find host biz relations api qps limit
+	findHostBizRelationsApiQpsLimit = 60.0
+	// watch biz host relation create event
+	bizHostRelationCreateEvent = "create"
+	// watch biz host relation delete event
+	bizHostRelationDeleteEvent = "delete"
+	// watch resource types
+	hostRelation = "host_relation"
+	// config key for biz host cursor
+	bizHostCursorKey = "biz_host_cursor"
 )
 
-// NewWatchBizHost init watch biz host
-func NewWatchBizHost(
+// NewWatchBizHostRelation init watch biz host relation
+func NewWatchBizHostRelation(
 	set dao.Set,
 	sd serviced.Service,
 	cmdbService bkcmdb.Service,
-	redisClient bedis.Client,
 	qpsLimit float64,
-	watchBizHostInterval time.Duration,
-	watchHostInterval time.Duration,
-) WatchBizHost {
+	interval time.Duration,
+) WatchBizHostRelation {
 	// when the cursor is lost, listen from 30 minutes ago
 	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
-	if qpsLimit <= 0 || qpsLimit > defaultWatchQpsLimit {
-		qpsLimit = defaultWatchQpsLimit
+	if qpsLimit <= 0 || qpsLimit > findHostBizRelationsApiQpsLimit {
+		qpsLimit = findHostBizRelationsApiQpsLimit
 	}
 	// create rate limiter
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
-	return WatchBizHost{
-		set:                  set,
-		state:                sd,
-		cmdbService:          cmdbService,
-		timeAgo:              timeAgo,
-		redisClient:          redisClient,
-		rateLimiter:          rateLimiter,
-		watchBizHostInterval: watchBizHostInterval,
-		watchHostInterval:    watchHostInterval,
+	return WatchBizHostRelation{
+		set:         set,
+		state:       sd,
+		cmdbService: cmdbService,
+		timeAgo:     timeAgo,
+		rateLimiter: rateLimiter,
+		interval:    interval,
 	}
 }
 
-// WatchBizHost watch business host relationship changes
-type WatchBizHost struct {
-	set                  dao.Set
-	state                serviced.Service
-	cmdbService          bkcmdb.Service
-	timeAgo              int64
-	redisClient          bedis.Client
-	watchBizHostInterval time.Duration
-	watchHostInterval    time.Duration
-	mutex                sync.Mutex
-	rateLimiter          *rate.Limiter // Rate limiter for CMDB API calls
+// WatchBizHostRelation watch business host relationship changes
+type WatchBizHostRelation struct {
+	set         dao.Set
+	state       serviced.Service
+	cmdbService bkcmdb.Service
+	timeAgo     int64
+	interval    time.Duration
+	mutex       sync.Mutex
+	rateLimiter *rate.Limiter // Rate limiter for CMDB API calls
 }
 
-// Run starts two independent watch tasks for host relations and host updates
-func (w *WatchBizHost) Run() {
-	logs.Infof("start watch biz host task - launching two independent watch goroutines")
+// Run starts the watch task for host relations
+func (w *WatchBizHostRelation) Run() {
+	logs.Infof("start watch biz host relation task")
 	notifier := shutdown.AddNotifier()
 
-	// Task 1: Host relation watch task (business-host relationships)
 	go func() {
-		ticker := time.NewTicker(w.watchBizHostInterval)
+		ticker := time.NewTicker(w.interval)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()
@@ -108,48 +107,10 @@ func (w *WatchBizHost) Run() {
 			}
 		}
 	}()
-
-	// Task 2: Host update watch task (host agent_id updates)
-	go func() {
-		ticker := time.NewTicker(w.watchHostInterval)
-		defer ticker.Stop()
-		for {
-			kt := kit.New()
-			ctx, cancel := context.WithCancel(kt.Ctx)
-			kt.Ctx = ctx
-
-			select {
-			case <-notifier.Signal:
-				logs.Infof("stop host update watch success")
-				cancel()
-				return
-			case <-ticker.C:
-				if !w.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip host update watch")
-					continue
-				}
-				logs.Infof("host update watch triggered")
-				w.watchHostUpdates(kt)
-			}
-		}
-	}()
 }
 
-// Event types
-const (
-	createEvent = "create"
-	updateEvent = "update"
-	deleteEvent = "delete"
-)
-
-// Resource types
-const (
-	hostRelation = "host_relation"
-	host         = "host"
-)
-
 // watchBizHost watch business host relationship changes
-func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
+func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 	w.mutex.Lock()
 	defer func() {
 		w.mutex.Unlock()
@@ -158,13 +119,13 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 	req := &bkcmdb.WatchResourceRequest{
 		BkResource: hostRelation, // Listen to host relationships
 		// listen to create and delete events
-		BkEventTypes: []string{createEvent, deleteEvent},
+		BkEventTypes: []string{bizHostRelationCreateEvent, bizHostRelationDeleteEvent},
 		BkFields:     []string{"bk_biz_id", "bk_host_id"},
 	}
-	// get cursor from Redis cache, if not exist, use timestamp to get events
-	cachedCursor, err := w.redisClient.Get(kt.Ctx, bizHostCursorKey)
+	// get cursor from config table, if not exist, use timestamp to get events
+	cachedCursor, err := w.set.Config().GetCursor(kt, bizHostCursorKey)
 	if err != nil {
-		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", bizHostCursorKey, err)
+		logs.Errorf("get cached cursor from config failed, key: %s, err: %v", bizHostCursorKey, err)
 		return
 	}
 	if cachedCursor != "" {
@@ -190,17 +151,17 @@ func (w *WatchBizHost) watchBizHost(kt *kit.Kit) {
 
 	if len(watchResult.Data.BkEvents) > 0 {
 		w.processEvents(kt, watchResult.Data.BkEvents)
-		// update cursor to redis
+		// update cursor to config table
 		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-		err := w.redisClient.Set(kt.Ctx, bizHostCursorKey, lastEvent.BkCursor, 7*24*3600)
+		err := w.set.Config().SetCursor(kt, bizHostCursorKey, lastEvent.BkCursor)
 		if err != nil {
-			logs.Errorf("update biz host cursor to redis failed, err: %v", err)
+			logs.Errorf("update biz host cursor to config failed, err: %v", err)
 		}
 	}
 }
 
 // processEvents process event list
-func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) {
+func (w *WatchBizHostRelation) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) {
 	for _, event := range events {
 		if err := w.processEvent(kt, event); err != nil {
 			logs.Errorf("process event failed, event: %+v, err: %v", event, err)
@@ -211,11 +172,11 @@ func (w *WatchBizHost) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEv
 }
 
 // processEvent process single event
-func (w *WatchBizHost) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
 	switch event.BkEventType {
-	case createEvent:
+	case bizHostRelationCreateEvent:
 		return w.handleHostRelationCreateEvent(kt, event)
-	case deleteEvent:
+	case bizHostRelationDeleteEvent:
 		return w.handleHostRelationDeleteEvent(kt, event)
 	default:
 		logs.Warnf("unknown event type: %s", event.BkEventType)
@@ -224,7 +185,7 @@ func (w *WatchBizHost) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent)
 }
 
 // handleHostRelationEvent handle host relation event
-func (w *WatchBizHost) handleHostRelationCreateEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) handleHostRelationCreateEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
 	if event.BkDetail == nil {
 		logs.Warnf("host relation event has nil detail, skipping")
 		return nil
@@ -286,7 +247,7 @@ func (w *WatchBizHost) handleHostRelationCreateEvent(kt *kit.Kit, event bkcmdb.H
 }
 
 // handleHostRelationDeleteEvent handle host relation delete event
-func (w *WatchBizHost) handleHostRelationDeleteEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
 	if event.BkDetail == nil {
 		logs.Warnf("host relation event has nil detail, skipping")
 		return nil
@@ -330,22 +291,16 @@ func (w *WatchBizHost) handleHostRelationDeleteEvent(kt *kit.Kit, event bkcmdb.H
 }
 
 // isBizBelongsToBSCP check if biz belongs to BSCP
-func (w *WatchBizHost) isBizBelongsToBSCP(kt *kit.Kit, bizID int) (bool, error) {
-	m := w.set.GenQuery().App
-	app, err := w.set.GenQuery().App.WithContext(kt.Ctx).
-		Where(m.BizID.Eq(uint32(bizID))).
-		First()
-	if err == dao.ErrRecordNotFound {
-		return false, nil
-	}
+func (w *WatchBizHostRelation) isBizBelongsToBSCP(kt *kit.Kit, bizID int) (bool, error) {
+	belongsToBSCP, err := w.set.App().CheckBizBelongsToBSCP(kt, bizID)
 	if err != nil {
 		return false, fmt.Errorf("query biz %d belongs to BSCP failed: %w", bizID, err)
 	}
-	return app != nil, nil
+	return belongsToBSCP, nil
 }
 
 // verifyHostBizRelation verify host biz relation exists
-func (w *WatchBizHost) verifyHostBizRelation(kt *kit.Kit, bizID int, hostID int) (bool, error) {
+func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hostID int) (bool, error) {
 	// apply rate limiter
 	if err := w.rateLimiter.Wait(kt.Ctx); err != nil {
 		return false, fmt.Errorf("rate limiter wait failed: %w", err)
@@ -367,120 +322,4 @@ func (w *WatchBizHost) verifyHostBizRelation(kt *kit.Kit, bizID int, hostID int)
 
 	// check if relation exists
 	return len(relationResult.Data) > 0, nil
-}
-
-// watchHostUpdates watch host update events
-func (w *WatchBizHost) watchHostUpdates(kt *kit.Kit) {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-	// Listen to host update events
-	req := &bkcmdb.WatchResourceRequest{
-		BkResource:   host,
-		BkEventTypes: []string{updateEvent},
-		BkFields:     []string{"bk_host_id", "bk_agent_id"},
-	}
-	cachedCursor, err := w.redisClient.Get(kt.Ctx, hostDetailCursorKey)
-	if err != nil {
-		logs.Errorf("get cached cursor from redis failed, key: %s, err: %v", hostDetailCursorKey, err)
-		return
-	}
-	if cachedCursor != "" {
-		req.BkCursor = cachedCursor
-	} else {
-		req.BkStartFrom = &w.timeAgo
-	}
-
-	watchResult, err := w.cmdbService.WatchHostResource(kt.Ctx, req)
-	if err != nil {
-		logs.Errorf("watch host resource failed, err: %v", err)
-		return
-	}
-
-	if !watchResult.Result {
-		logs.Errorf("watch host resource failed: %s", watchResult.Message)
-		return
-	}
-	if !watchResult.Data.BkWatched {
-		// No events found, skip
-		return
-	}
-
-	// Process host update events
-	if len(watchResult.Data.BkEvents) > 0 {
-		w.processHostEvents(kt, watchResult.Data.BkEvents)
-		// update cursor to Redis cache
-		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
-		err := w.redisClient.Set(kt.Ctx, hostDetailCursorKey, lastEvent.BkCursor, 7*24*3600)
-		if err != nil {
-			logs.Errorf("update host detail cursor to redis failed, err: %v", err)
-		}
-	}
-}
-
-// processHostEvents process host event list
-func (w *WatchBizHost) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEvent) {
-	for _, event := range events {
-		if err := w.processHostEvent(kt, event); err != nil {
-			logs.Warnf("process host event failed, event: %s, err: %v", event.BkCursor, err)
-			// Skip failed events, rely on full data sync and other fallback measures
-			continue
-		}
-	}
-}
-
-// processHostEvent process single host event
-func (w *WatchBizHost) processHostEvent(kt *kit.Kit, event bkcmdb.HostEvent) error {
-	switch event.BkEventType {
-	case updateEvent:
-		return w.handleHostUpdateEvent(kt, event)
-	default:
-		// unknown host event type, skip
-		logs.Warnf("unknown host event type: %s", event.BkEventType)
-		return nil
-	}
-}
-
-// handleHostUpdateEvent handle host update event
-func (w *WatchBizHost) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent) error {
-	if event.BkDetail == nil {
-		return errors.New("host update event has nil detail")
-	}
-
-	detail := event.BkDetail
-	if detail.BkHostID == nil {
-		return errors.New("invalid host update event detail")
-	}
-
-	hostID := *detail.BkHostID
-	agentID := ""
-	if detail.BkAgentID != nil {
-		agentID = *detail.BkAgentID
-	}
-
-	// Check if this host exists in biz_host table
-	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, hostID)
-	if err != nil {
-		return fmt.Errorf("query biz hosts for hostID %d failed: %w", hostID, err)
-	}
-
-	if len(existingBizHosts) == 0 {
-		return nil
-	}
-	if len(existingBizHosts) > 1 {
-		// host should only belong to one biz, if multiple biz relations exist, it is considered abnormal
-		logs.Warnf("found multiple business relationships for host %d", hostID)
-	}
-
-	// Update agentID for all business relationships of this host
-	for _, bizHost := range existingBizHosts {
-		// Update the agentID
-		bizHost.AgentID = agentID
-		if err := w.set.BizHost().UpdateByBizHost(kt, bizHost); err != nil {
-			// Update failed means the relationship may have been removed, skip
-			logs.Warnf("update biz[%d] host[%d] agentID failed: %v", bizHost.BizID, bizHost.HostID, err)
-			continue
-		}
-	}
-
-	return nil
 }

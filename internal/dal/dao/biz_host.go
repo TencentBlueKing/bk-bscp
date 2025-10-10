@@ -36,6 +36,8 @@ type BizHost interface {
 	UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) error
 	// Delete delete biz host relationship
 	Delete(kit *kit.Kit, bizID, hostID int) error
+	// QueryOldestBizHosts query oldest biz host relationships for cleanup
+	QueryOldestBizHosts(kit *kit.Kit, limit int) ([]*table.BizHost, error)
 }
 
 var _ BizHost = new(bizHostDao)
@@ -122,4 +124,23 @@ func (dao *bizHostDao) GetByAgentID(kit *kit.Kit, agentID string) (*table.BizHos
 	}
 
 	return bizHost, nil
+}
+
+// QueryOldestBizHosts query oldest biz host relationships for cleanup
+func (dao *bizHostDao) QueryOldestBizHosts(kit *kit.Kit, limit int) ([]*table.BizHost, error) {
+	if limit <= 0 {
+		return nil, errors.New("limit must be greater than 0")
+	}
+
+	m := dao.genQ.BizHost
+	records, err := dao.genQ.BizHost.WithContext(kit.Ctx).
+		Order(m.LastUpdated). // order by last updated time
+		Limit(limit).
+		Find()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
 }

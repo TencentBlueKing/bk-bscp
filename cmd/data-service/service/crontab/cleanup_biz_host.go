@@ -32,8 +32,6 @@ import (
 const (
 	// number of records to process each time
 	defaultCleanupBatchSize = 1000
-	// CMDB request rate limit
-	defaultCleanupQpsLimit = 50.0
 )
 
 // NewCleanupBizHost init cleanup biz host task
@@ -44,8 +42,8 @@ func NewCleanupBizHost(
 	qpsLimit float64,
 	cleanupInterval time.Duration,
 ) CleanupBizHost {
-	if qpsLimit <= 0 || qpsLimit > defaultCleanupQpsLimit {
-		qpsLimit = defaultCleanupQpsLimit
+	if qpsLimit <= 0 || qpsLimit > findHostBizRelationsApiQpsLimit {
+		qpsLimit = findHostBizRelationsApiQpsLimit
 	}
 	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 
@@ -131,12 +129,7 @@ func (c *CleanupBizHost) cleanupBizHost(kt *kit.Kit) {
 
 // queryOldestBizHosts query oldest biz host relationships
 func (c *CleanupBizHost) queryOldestBizHosts(kt *kit.Kit) ([]*table.BizHost, error) {
-	m := c.set.GenQuery().BizHost
-	records, err := c.set.GenQuery().BizHost.WithContext(kt.Ctx).
-		Order(m.LastUpdated). // order by last updated time
-		Limit(defaultCleanupBatchSize).
-		Find()
-
+	records, err := c.set.BizHost().QueryOldestBizHosts(kt, defaultCleanupBatchSize)
 	if err != nil {
 		return nil, fmt.Errorf("query oldest biz hosts failed: %w", err)
 	}
@@ -214,6 +207,7 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	// check and delete invalid records
 	for _, record := range records {
 		if !validHostIDs[record.HostID] {
+			logs.Warnf("host %d is no longer bound to biz %d, deleting record", record.HostID, record.BizID)
 			// host is no longer bound to this biz, delete record
 			if err := c.set.BizHost().Delete(kt, record.BizID, record.HostID); err != nil {
 				logs.Errorf("delete invalid biz host record failed, bizID: %d, hostID: %d, err: %v",
