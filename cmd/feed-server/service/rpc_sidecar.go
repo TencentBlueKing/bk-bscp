@@ -27,6 +27,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bcs"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
@@ -763,13 +764,19 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 			}
 			var getAgentBizResp *pbcs.GetAgentBizResp
 			getAgentBizResp, err = s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "get agent biz failed, %s", err.Error())
-			}
-			if !getAgentBizResp.Found {
-				return nil, status.Errorf(codes.PermissionDenied, "agent %s not found", clientAgentID)
-			}
-			if getAgentBizResp.BizId != req.BizId {
+
+			// 检查是否需要使用 CMDB 兜底验证
+			needFallback := err != nil || getAgentBizResp == nil || !getAgentBizResp.Found
+			if needFallback {
+				fallbackReason := s.getFallbackReason(err, getAgentBizResp)
+				logs.Warnf("get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, clientAgentID)
+
+				// 验证 agent 是否属于当前业务
+				if err := s.validateAgentIsInBiz(ctx, clientAgentID, req.BizId); err != nil {
+					return nil, err
+				}
+			} else if getAgentBizResp.BizId != req.BizId {
+				// agent 属于其他业务，拒绝访问
 				return nil, status.Errorf(codes.PermissionDenied,
 					"agent %s belongs to business %d, not %d, and app %s is not in cross-business whitelist",
 					clientAgentID, getAgentBizResp.BizId, req.BizId, app.Name)
@@ -1145,6 +1152,58 @@ func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resou
 	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
 	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
 	s.mc.clientCurrentMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryUsage))
+}
+
+// getFallbackReason returns the reason for using CMDB fallback
+func (s *Service) getFallbackReason(err error, resp *pbcs.GetAgentBizResp) string {
+	if err != nil {
+		return fmt.Sprintf("failed, err: %v", err)
+	}
+	if resp == nil {
+		return "response is nil"
+	}
+	if !resp.Found {
+		return "not found in cache"
+	}
+	return "unknown reason"
+}
+
+// validateAgentIsInBiz validates agent business relationship using CMDB as fallback
+func (s *Service) validateAgentIsInBiz(ctx context.Context, agentID string, bizID uint32) error {
+	if s.cmdbService == nil {
+		return status.Errorf(codes.Internal, "CMDB service not available")
+	}
+
+	hostResult, err := s.cmdbService.ListBizHosts(ctx, &bkcmdb.ListBizHostsRequest{
+		BkBizID: int(bizID),
+		Page: bkcmdb.PageParam{
+			Start: 0,
+			Limit: 1,
+		},
+		Fields: []string{"bk_host_id", "bk_agent_id", "bk_host_innerip"},
+		HostPropertyFilter: &bkcmdb.HostPropertyFilter{
+			Condition: bkcmdb.HostPropertyConditionAnd,
+			Rules: []bkcmdb.HostPropertyRule{
+				{Field: "bk_agent_id", Operator: bkcmdb.HostPropertyOperatorEqual, Value: agentID},
+			},
+		},
+	})
+	if err != nil {
+		logs.Errorf("failed to query CMDB for agent %s in business %d, err: %v", agentID, bizID, err)
+		return status.Errorf(codes.Internal, "CMDB fallback failed for agent %s in business %d: %v", agentID, bizID, err)
+	}
+
+	if !hostResult.Result {
+		logs.Errorf("CMDB query failed for agent %s in business %d, message: %s", agentID, bizID, hostResult.Message)
+		return status.Errorf(codes.Internal, "CMDB query failed for agent %s in business %d: %s",
+			agentID, bizID, hostResult.Message)
+	}
+
+	if len(hostResult.Data.Info) == 0 {
+		return status.Errorf(codes.PermissionDenied, "agent %s not found in business %d", agentID, bizID)
+	}
+
+	return nil
 }
 
 // 暴露客户端版本变更事件到metrics

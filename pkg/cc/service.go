@@ -404,6 +404,7 @@ type FeedServerSetting struct {
 	MRLimiter    MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
 	RateLimiter  RateLimiter         `yaml:"rateLimiter"`
 	Metric       Metric              `yaml:"metrics"`
+	CMDB         CMDBConfig          `yaml:"cmdb"`
 	// VerifyAgentIDBelongs defines apps that can download across different businesses
 	VerifyAgentIDBelongs VerifyAgentIDBelongs `yaml:"verifyAgentIDBelongs"`
 }
