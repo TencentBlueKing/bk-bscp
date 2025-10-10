@@ -176,7 +176,7 @@ log:
 
 # cross-business download whitelist settings
 crossBizWhitelist:
-  # 是否启用跨业务下载白名单
+  # 是否开启 agent 验证
   enabled: false
   # 允许跨业务下载的应用ID列表
   appIds: []

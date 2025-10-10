@@ -1571,7 +1571,7 @@ type CMDBConfig struct {
 
 // CrossBizWhitelist defines apps that can download across different businesses
 type CrossBizWhitelist struct {
-	// Enabled enables cross-business download whitelist
+	// 是否开启agent验证
 	Enabled bool `yaml:"enabled"`
 	// AppIds is a list of app IDs that are allowed to download across businesses
 	AppIds []uint32 `yaml:"appIds"`
