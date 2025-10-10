@@ -457,27 +457,35 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 
 	bizHost := crontab.NewSyncBizHost(
 		ds.daoSet, ds.sd, ds.cmdbService, ds.redisClient, 500, syncBizHostQpsLimit, syncInterval)
-	kt := kit.New()
-	ctx, cancel := context.WithCancel(kt.Ctx)
-	kt.Ctx = ctx
 
-	// 首次启动时立即执行一次全量同步
-	if err := func() (err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = fmt.Errorf("initial sync panic: %v", r)
-			}
-		}()
-		bizHost.SyncBizHost(kt)
-		return nil
-	}(); err != nil {
-		logs.Errorf("initial full sync failed, but service will continue: %v", err)
-	} else {
-		logs.Infof("initial full sync completed successfully")
-	}
-	cancel()
 	// 启动定时同步任务
 	bizHost.Run()
+
+	// 首次启动时异步执行一次全量同步
+	go func() {
+		if !ds.sd.IsMaster() {
+			logs.Infof("current service instance is slave, skip initial sync")
+			return
+		}
+
+		logs.Infof("start initial full sync")
+		kt := kit.New()
+		ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
+		kt.Ctx = ctx
+
+		if err := func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("initial sync panic: %v", r)
+				}
+			}()
+			bizHost.SyncBizHost(kt)
+			return nil
+		}(); err != nil {
+			logs.Errorf("initial full sync failed: %v", err)
+		}
+		cancel()
+	}()
 
 	// 监听业务主机关系
 	watchBizHost := crontab.NewWatchBizHost(
