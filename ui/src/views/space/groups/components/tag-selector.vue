@@ -64,7 +64,7 @@
           :loading="true"
           placeholder="value"
           :class="{ 'is-error': showValueError }"
-          :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) || rule.key === 'gray_percent' ? 'number' : 'text'"
+          :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) ? 'number' : 'text'"
           @click="isShowValuePopover = true"
           @change="handleValueChange">
           <template #suffix>
@@ -122,7 +122,6 @@
   const isShowKeyPopover = ref(false);
   const isShowValuePopover = ref(false);
   const keyInputRef = ref();
-
 
   onMounted(async () => {
     if (rule.value.key) {
