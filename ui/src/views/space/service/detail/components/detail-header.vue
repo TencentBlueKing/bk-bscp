@@ -410,15 +410,18 @@
   }
 
   .link-btn {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     border-radius: 2px;
-    font-size: 14px;
     margin: 0 8px;
     text-align: center;
-    line-height: 16px;
+    line-height: 22px;
     color: #4d4f56;
+    background: #f0f1f5;
     cursor: pointer;
+    span {
+      font-size: 16px;
+    }
     &:hover {
       color: #3a84ff;
       background: #e1ecff;
