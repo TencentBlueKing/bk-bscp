@@ -761,7 +761,8 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 			getAgentBizReq := &pbcs.GetAgentBizReq{
 				AgentId: clientAgentID,
 			}
-			getAgentBizResp, err := s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
+			var getAgentBizResp *pbcs.GetAgentBizResp
+			getAgentBizResp, err = s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "get agent biz failed, %s", err.Error())
 			}
