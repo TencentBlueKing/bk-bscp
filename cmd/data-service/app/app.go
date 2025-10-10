@@ -46,6 +46,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/task"
+	"github.com/TencentBlueKing/bk-bscp/pkg/task/register"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
@@ -84,19 +86,21 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve    *grpc.Server
-	gwServe  *http.Server
-	service  *service.Service
-	sd       serviced.Service
-	daoSet   dao.Set
-	vault    vault.Set
-	esb      client.Client
-	spaceMgr *space.Manager
-	repo     repository.Provider
-	ssd      serviced.ServiceDiscover
+	serve       *grpc.Server
+	gwServe     *http.Server
+	service     *service.Service
+	sd          serviced.Service
+	daoSet      dao.Set
+	vault       vault.Set
+	esb         client.Client
+	spaceMgr    *space.Manager
+	repo        repository.Provider
+	ssd         serviced.ServiceDiscover
+	taskManager *task.TaskManager
 }
 
 // prepare do prepare jobs before run data service.
+// nolint: funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -187,6 +191,36 @@ func (ds *dataService) prepare(opt *options.Option) error {
 		repoSyncer.Run()
 	}
 
+	// 初始化并启动任务管理器
+	err = ds.initTaskManager()
+	if err != nil {
+		return fmt.Errorf("init task failed, err: %v", err)
+	}
+
+	return nil
+}
+
+func (ds *dataService) initTaskManager() error {
+	// 注册并启动任务（register要在NewTaskMgr之前）
+	register.RegisterExecutor()
+
+	taskManager, err := task.NewTaskMgr(
+		context.Background(),
+		cc.DataService().Service.Etcd,
+		cc.DataService().Sharding.AdminDatabase,
+	)
+	if err != nil {
+		return fmt.Errorf("new task manager failed, err: %v", err)
+	}
+	ds.taskManager = taskManager
+
+	go func() {
+		err := ds.taskManager.Run()
+		if err != nil {
+			ds.taskManager.Stop()
+			logs.Errorf("task manager run failed, err: %v", err)
+		}
+	}()
 	return nil
 }
 
@@ -212,6 +246,7 @@ func initVault() (vault.Set, error) {
 }
 
 // listenAndServe listen the grpc serve and set up the shutdown gracefully job.
+// nolint: funlen
 func (ds *dataService) listenAndServe() error {
 	// generate standard grpc server grpcMetrics.
 	grpcMetrics := grpc_prometheus.NewServerMetrics()
@@ -270,6 +305,8 @@ func (ds *dataService) listenAndServe() error {
 		logs.Infof("start shutdown grpc server gracefully...")
 
 		ds.serve.GracefulStop()
+		ds.taskManager.Stop()
+
 		notifier.Done()
 
 		logs.Infof("shutdown grpc server success...")

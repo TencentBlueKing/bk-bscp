@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/task"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
 
@@ -105,13 +107,22 @@ var migrateUpCmd = &cobra.Command{
 			fmt.Println("Unable to fetch migrator, err:", err)
 			return
 		}
-
 		err = mig.Up(step)
 		if err != nil {
 			fmt.Println("Unable to run `up` migrations, err:", err)
 			return
 		}
-
+		// ensure task table
+		ctx := context.Background()
+		taskMgr, err := task.NewTaskMgr(ctx, cc.DataService().Service.Etcd, cc.DataService().Sharding.AdminDatabase)
+		if err != nil {
+			fmt.Println("Unable to new task manager, err:", err)
+			return
+		}
+		if err = taskMgr.EnsureTable(ctx); err != nil {
+			fmt.Println("Unable to ensure task table, err:", err)
+			return
+		}
 	},
 }
 
