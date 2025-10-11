@@ -64,8 +64,8 @@ type App interface {
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, app *table.App) (uint32, error)
 	// QueryDistinctBizIDs query distinct business IDs from apps
 	QueryDistinctBizIDs(kit *kit.Kit) ([]int, error)
-	// CheckBizBelongsToBSCP check if business belongs to BSCP
-	CheckBizBelongsToBSCP(kit *kit.Kit, bizID int) (bool, error)
+	// CheckBizExists check if business exists in BSCP using lightweight query
+	CheckBizExists(kit *kit.Kit, bizID int) (bool, error)
 }
 
 var _ App = new(appDao)
@@ -545,17 +545,14 @@ func (dao *appDao) QueryDistinctBizIDs(kit *kit.Kit) ([]int, error) {
 	return bizList, nil
 }
 
-// CheckBizBelongsToBSCP check if business belongs to BSCP
-func (dao *appDao) CheckBizBelongsToBSCP(kit *kit.Kit, bizID int) (bool, error) {
+// CheckBizExists check if business exists in BSCP using lightweight query
+func (dao *appDao) CheckBizExists(kit *kit.Kit, bizID int) (bool, error) {
 	m := dao.genQ.App
-	app, err := dao.genQ.App.WithContext(kit.Ctx).
+	count, err := dao.genQ.App.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(uint32(bizID))).
-		First()
-	if err == ErrRecordNotFound {
-		return false, nil
-	}
+		Count()
 	if err != nil {
 		return false, err
 	}
-	return app != nil, nil
+	return count > 0, nil
 }

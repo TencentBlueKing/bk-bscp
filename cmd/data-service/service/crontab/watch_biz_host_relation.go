@@ -204,11 +204,9 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
 		return nil
 	}
 	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
-		logs.Warnf("biz %d is invalued, skipping", *detail.BkBizID)
 		return nil
 	}
-	// create host relation if biz belongs to BSCP (with cache optimization)
-	belongsToBSCP, err := w.isBizBelongsToBSCP(kt, *detail.BkBizID)
+	belongsToBSCP, err := w.set.App().CheckBizExists(kt, *detail.BkBizID)
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
 		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
@@ -278,7 +276,7 @@ func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
 		return nil
 	}
 	// check if biz belongs to BSCP (with cache optimization)
-	belongsToBSCP, err := w.isBizBelongsToBSCP(kt, *detail.BkBizID)
+	belongsToBSCP, err := w.set.App().CheckBizExists(kt, *detail.BkBizID)
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
 		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
@@ -306,15 +304,6 @@ func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
 	}
 
 	return nil
-}
-
-// isBizBelongsToBSCP check if biz belongs to BSCP
-func (w *WatchBizHostRelation) isBizBelongsToBSCP(kt *kit.Kit, bizID int) (bool, error) {
-	belongsToBSCP, err := w.set.App().CheckBizBelongsToBSCP(kt, bizID)
-	if err != nil {
-		return false, fmt.Errorf("query biz %d belongs to BSCP failed: %w", bizID, err)
-	}
-	return belongsToBSCP, nil
 }
 
 // verifyHostBizRelation verify host biz relation exists
