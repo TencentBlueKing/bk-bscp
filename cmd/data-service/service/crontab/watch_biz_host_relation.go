@@ -50,8 +50,8 @@ func NewWatchBizHostRelation(
 	qpsLimit float64,
 	interval time.Duration,
 ) WatchBizHostRelation {
-	// when the cursor is lost, listen from 30 minutes ago
-	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
+	// when the cursor is lost, listen from 3 minutes ago
+	timeAgo := time.Now().Add(-3 * time.Minute).Unix()
 	if qpsLimit <= 0 || qpsLimit > findHostBizRelationsApiQpsLimit {
 		qpsLimit = findHostBizRelationsApiQpsLimit
 	}
@@ -148,6 +148,7 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 		// No events found, skip
 		return
 	}
+	logs.Infof("watch host relation resource success, events: %d", len(watchResult.Data.BkEvents))
 
 	if len(watchResult.Data.BkEvents) > 0 {
 		w.processEvents(kt, watchResult.Data.BkEvents)

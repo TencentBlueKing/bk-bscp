@@ -122,6 +122,7 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Errorf("query BSCP business failed, err: %v", err)
 		return
 	}
+	logs.Infof("query BSCP business success, total business: %d", len(bizList))
 
 	// Query host information by business ID
 	for _, biz := range bizList {

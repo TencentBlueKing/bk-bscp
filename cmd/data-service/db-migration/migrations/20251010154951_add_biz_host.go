@@ -35,11 +35,11 @@ func init() {
 func mig20251010154951Up(tx *gorm.DB) error {
 	// BizHost : 业务主机关系表
 	type BizHost struct {
-		BizID         int       `gorm:"column:bk_biz_id;primaryKey;autoIncrement:false"`
-		HostID        int       `gorm:"column:bk_host_id;primaryKey;autoIncrement:false"`
-		AgentID       string    `gorm:"column:bk_agent_id"`
-		BKHostInnerIP string    `gorm:"column:bk_host_innerip"`
-		LastUpdated   time.Time `gorm:"column:last_updated;autoUpdateTime"`
+		BizID         int       `gorm:"type:bigint(1) unsigned not null;column:bk_biz_id;primaryKey;autoIncrement:false"`
+		HostID        int       `gorm:"type:bigint(1) unsigned not null;column:bk_host_id;primaryKey;autoIncrement:false"`
+		AgentID       string    `gorm:"type:varchar(256);column:bk_agent_id"`
+		BKHostInnerIP string    `gorm:"type:varchar(256);column:bk_host_innerip"`
+		LastUpdated   time.Time `gorm:"type:datetime(6) not null;column:last_updated;autoUpdateTime"`
 	}
 
 	if err := tx.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4").

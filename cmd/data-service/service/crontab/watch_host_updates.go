@@ -43,8 +43,8 @@ func NewWatchHostUpdates(
 	cmdbService bkcmdb.Service,
 	interval time.Duration,
 ) WatchHostUpdates {
-	// when the cursor is lost, listen from 30 minutes ago
-	timeAgo := time.Now().Add(-30 * time.Minute).Unix()
+	// when the cursor is lost, listen from 3 minutes ago
+	timeAgo := time.Now().Add(-3 * time.Minute).Unix()
 	return WatchHostUpdates{
 		set:         set,
 		state:       sd,
@@ -129,6 +129,7 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 		// No events found, skip
 		return
 	}
+	logs.Infof("watch host resource success, events: %d", len(watchResult.Data.BkEvents))
 
 	// Process host update events
 	if len(watchResult.Data.BkEvents) > 0 {
