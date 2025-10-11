@@ -314,7 +314,6 @@ type DataServiceSetting struct {
 	FeatureFlags FeatureFlags  `yaml:"featureFlags"`
 	Gorm         Gorm          `yaml:"gorm"`
 	ITSM         ITSMConfig    `yaml:"itsm"`
-	RedisCluster RedisCluster  `yaml:"redisCluster"`
 	Crontab      CrontabConfig `yaml:"crontab"`
 }
 
@@ -338,7 +337,6 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.Vault.getConfigFromEnv()
 	s.FeatureFlags.trySetDefault()
 	s.Gorm.trySetDefault()
-	s.RedisCluster.trySetDefault()
 	s.Crontab.trySetDefault()
 }
 
@@ -374,10 +372,6 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.Gorm.validate(); err != nil {
-		return err
-	}
-
-	if err := s.RedisCluster.validate(); err != nil {
 		return err
 	}
 
