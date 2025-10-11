@@ -772,7 +772,7 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 				logs.Warnf("get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, clientAgentID)
 
 				// 验证 agent 是否属于当前业务
-				if err := s.validateAgentIsInBiz(ctx, clientAgentID, req.BizId); err != nil {
+				if err = s.validateAgentIsInBiz(ctx, clientAgentID, req.BizId); err != nil {
 					return nil, err
 				}
 			} else if getAgentBizResp.BizId != req.BizId {
