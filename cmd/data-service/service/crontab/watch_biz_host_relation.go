@@ -163,8 +163,10 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 
 // processEvents process event list
 func (w *WatchBizHostRelation) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) {
+	// 记录非BSCP业务，避免重复查询数据库判断是否属于BSCP
+	invaluedBiz := make(map[int]struct{}, 0)
 	for _, event := range events {
-		if err := w.processEvent(kt, event); err != nil {
+		if err := w.processEvent(kt, event, invaluedBiz); err != nil {
 			logs.Errorf("process event failed, event: %+v, err: %v", event, err)
 			// Skip failed events, rely on full data sync and other fallback measures
 			continue
@@ -173,12 +175,12 @@ func (w *WatchBizHostRelation) processEvents(kt *kit.Kit, events []bkcmdb.HostRe
 }
 
 // processEvent process single event
-func (w *WatchBizHostRelation) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) processEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent, invaluedBiz map[int]struct{}) error {
 	switch event.BkEventType {
 	case bizHostRelationCreateEvent:
-		return w.handleHostRelationCreateEvent(kt, event)
+		return w.handleHostRelationCreateEvent(kt, event, invaluedBiz)
 	case bizHostRelationDeleteEvent:
-		return w.handleHostRelationDeleteEvent(kt, event)
+		return w.handleHostRelationDeleteEvent(kt, event, invaluedBiz)
 	default:
 		logs.Warnf("unknown event type: %s", event.BkEventType)
 		return nil
@@ -186,7 +188,11 @@ func (w *WatchBizHostRelation) processEvent(kt *kit.Kit, event bkcmdb.HostRelati
 }
 
 // handleHostRelationEvent handle host relation event
-func (w *WatchBizHostRelation) handleHostRelationCreateEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
+	kt *kit.Kit,
+	event bkcmdb.HostRelationEvent,
+	invaluedBiz map[int]struct{},
+) error {
 	if event.BkDetail == nil {
 		logs.Warnf("host relation event has nil detail, skipping")
 		return nil
@@ -197,7 +203,11 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(kt *kit.Kit, event 
 		logs.Warnf("invalid host relation event detail: %+v", detail)
 		return nil
 	}
-	// create host relation if biz belongs to BSCP
+	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
+		logs.Warnf("biz %d is invalued, skipping", *detail.BkBizID)
+		return nil
+	}
+	// create host relation if biz belongs to BSCP (with cache optimization)
 	belongsToBSCP, err := w.isBizBelongsToBSCP(kt, *detail.BkBizID)
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
@@ -205,6 +215,7 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(kt *kit.Kit, event 
 	}
 
 	if !belongsToBSCP {
+		invaluedBiz[*detail.BkBizID] = struct{}{}
 		return nil
 	}
 
@@ -248,7 +259,11 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(kt *kit.Kit, event 
 }
 
 // handleHostRelationDeleteEvent handle host relation delete event
-func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(kt *kit.Kit, event bkcmdb.HostRelationEvent) error {
+func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
+	kt *kit.Kit,
+	event bkcmdb.HostRelationEvent,
+	invaluedBiz map[int]struct{},
+) error {
 	if event.BkDetail == nil {
 		logs.Warnf("host relation event has nil detail, skipping")
 		return nil
@@ -259,8 +274,10 @@ func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(kt *kit.Kit, event 
 		logs.Warnf("invalid host relation event detail: %+v", detail)
 		return nil
 	}
-
-	// check if biz belongs to BSCP
+	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
+		return nil
+	}
+	// check if biz belongs to BSCP (with cache optimization)
 	belongsToBSCP, err := w.isBizBelongsToBSCP(kt, *detail.BkBizID)
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)

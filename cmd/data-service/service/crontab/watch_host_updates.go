@@ -145,8 +145,10 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 
 // processHostEvents process host event list
 func (w *WatchHostUpdates) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEvent) {
+	// 记录已经查询过的主机，避免重复查询数据库
+	invaluedHost := make(map[int]struct{}, 0)
 	for _, event := range events {
-		if err := w.processHostEvent(kt, event); err != nil {
+		if err := w.processHostEvent(kt, event, invaluedHost); err != nil {
 			logs.Warnf("process host event failed, event: %s, err: %v", event.BkCursor, err)
 			// Skip failed events, rely on full data sync and other fallback measures
 			continue
@@ -155,10 +157,14 @@ func (w *WatchHostUpdates) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEv
 }
 
 // processHostEvent process single host event
-func (w *WatchHostUpdates) processHostEvent(kt *kit.Kit, event bkcmdb.HostEvent) error {
+func (w *WatchHostUpdates) processHostEvent(
+	kt *kit.Kit,
+	event bkcmdb.HostEvent,
+	invaluedHost map[int]struct{},
+) error {
 	switch event.BkEventType {
 	case hostUpdateEvent:
-		return w.handleHostUpdateEvent(kt, event)
+		return w.handleHostUpdateEvent(kt, event, invaluedHost)
 	default:
 		// unknown host event type, skip
 		logs.Warnf("unknown host event type: %s", event.BkEventType)
@@ -167,7 +173,11 @@ func (w *WatchHostUpdates) processHostEvent(kt *kit.Kit, event bkcmdb.HostEvent)
 }
 
 // handleHostUpdateEvent handle host update event
-func (w *WatchHostUpdates) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostEvent) error {
+func (w *WatchHostUpdates) handleHostUpdateEvent(
+	kt *kit.Kit,
+	event bkcmdb.HostEvent,
+	invaluedHost map[int]struct{},
+) error {
 	if event.BkDetail == nil {
 		return errors.New("host update event has nil detail")
 	}
@@ -182,6 +192,9 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostE
 	if detail.BkAgentID != nil {
 		agentID = *detail.BkAgentID
 	}
+	if _, ok := invaluedHost[hostID]; ok {
+		return nil
+	}
 
 	// Check if this host exists in biz_host table
 	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, hostID)
@@ -190,6 +203,7 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(kt *kit.Kit, event bkcmdb.HostE
 	}
 
 	if len(existingBizHosts) == 0 {
+		invaluedHost[hostID] = struct{}{}
 		return nil
 	}
 	if len(existingBizHosts) > 1 {
