@@ -28,6 +28,10 @@ type Config interface {
 	GetConfig(kit *kit.Kit, key string) (*table.Config, error)
 	// UpsertConfig insert or update itsm config.
 	UpsertConfig(kit *kit.Kit, itsmConfigs []*table.Config) error
+	// GetCursor get cursor by key
+	GetCursor(kit *kit.Kit, key string) (string, error)
+	// SetCursor set cursor by key
+	SetCursor(kit *kit.Kit, key, value string) error
 }
 
 var _ Config = new(configDao)
@@ -80,4 +84,25 @@ func (dao *configDao) UpsertConfig(kit *kit.Kit, itsmConfigs []*table.Config) er
 		}
 	}
 	return nil
+}
+
+// GetCursor get cursor by key
+func (dao *configDao) GetCursor(kit *kit.Kit, key string) (string, error) {
+	config, err := dao.GetConfig(kit, key)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil // cursor not found, return empty string
+		}
+		return "", err
+	}
+	return config.Value, nil
+}
+
+// SetCursor set cursor by key
+func (dao *configDao) SetCursor(kit *kit.Kit, key, value string) error {
+	config := &table.Config{
+		Key:   key,
+		Value: value,
+	}
+	return dao.UpsertConfig(kit, []*table.Config{config})
 }

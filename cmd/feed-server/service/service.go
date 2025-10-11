@@ -35,6 +35,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
@@ -53,10 +54,11 @@ import (
 type Service struct {
 	bll *bll.BLL
 	// authorizer auth related operations.
-	authorizer auth.Authorizer
-	serves     []*http.Server
-	state      serviced.State
-	provider   repository.Provider
+	authorizer  auth.Authorizer
+	serves      []*http.Server
+	state       serviced.State
+	provider    repository.Provider
+	cmdbService bkcmdb.Service
 
 	// name feed server instance name.
 	name  string
@@ -96,15 +98,24 @@ func NewService(sd serviced.Discover, name string) (*Service, error) {
 	rl := ratelimiter.New(cc.FeedServer().RateLimiter)
 	logs.Infof("init rate limiter, conf: %+v", cc.FeedServer().RateLimiter)
 
+	// init cmdb service client
+	cmdbConfig := cc.FeedServer().CMDB
+	cmdbService, err := bkcmdb.New(&cmdbConfig, nil)
+	if err != nil {
+		logs.Errorf("init cmdb service failed, err: %v", err)
+		return nil, fmt.Errorf("init cmdb service failed, err: %v", err)
+	}
+
 	return &Service{
-		bll:        bl,
-		authorizer: authorizer,
-		state:      state,
-		name:       name,
-		provider:   provider,
-		mc:         initMetric(name, cc.FeedServer().Metric.BlacklistBizIDs),
-		gwMux:      gwMux,
-		rl:         rl,
+		bll:         bl,
+		authorizer:  authorizer,
+		state:       state,
+		name:        name,
+		provider:    provider,
+		cmdbService: cmdbService,
+		mc:          initMetric(name, cc.FeedServer().Metric.BlacklistBizIDs),
+		gwMux:       gwMux,
+		rl:          rl,
 	}, nil
 }
 

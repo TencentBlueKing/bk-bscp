@@ -306,14 +306,15 @@ type DataServiceSetting struct {
 	Service Service   `yaml:"service"`
 	Log     LogOption `yaml:"log"`
 
-	Credential   Credential   `yaml:"credential"`
-	Sharding     Sharding     `yaml:"sharding"`
-	Esb          Esb          `yaml:"esb"`
-	Repo         Repository   `yaml:"repository"`
-	Vault        Vault        `yaml:"vault"`
-	FeatureFlags FeatureFlags `yaml:"featureFlags"`
-	Gorm         Gorm         `yaml:"gorm"`
-	ITSM         ITSMConfig   `yaml:"itsm"`
+	Credential   Credential    `yaml:"credential"`
+	Sharding     Sharding      `yaml:"sharding"`
+	Esb          Esb           `yaml:"esb"`
+	Repo         Repository    `yaml:"repository"`
+	Vault        Vault         `yaml:"vault"`
+	FeatureFlags FeatureFlags  `yaml:"featureFlags"`
+	Gorm         Gorm          `yaml:"gorm"`
+	ITSM         ITSMConfig    `yaml:"itsm"`
+	Crontab      CrontabConfig `yaml:"crontab"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -336,6 +337,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.Vault.getConfigFromEnv()
 	s.FeatureFlags.trySetDefault()
 	s.Gorm.trySetDefault()
+	s.Crontab.trySetDefault()
 }
 
 // Validate DataServiceSetting option.
@@ -373,6 +375,10 @@ func (s DataServiceSetting) Validate() error {
 		return err
 	}
 
+	if err := s.Crontab.validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -392,6 +398,9 @@ type FeedServerSetting struct {
 	MRLimiter    MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
 	RateLimiter  RateLimiter         `yaml:"rateLimiter"`
 	Metric       Metric              `yaml:"metrics"`
+	CMDB         CMDBConfig          `yaml:"cmdb"`
+	// VerifyAgentIDBelongs defines apps that can download across different businesses
+	VerifyAgentIDBelongs VerifyAgentIDBelongs `yaml:"verifyAgentIDBelongs"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -416,6 +425,7 @@ func (s *FeedServerSetting) trySetDefault() {
 	s.RedisCluster.trySetDefault()
 	s.MRLimiter.trySetDefault()
 	s.RateLimiter.trySetDefault()
+	s.VerifyAgentIDBelongs.trySetDefault()
 }
 
 // Validate FeedServerSetting option.

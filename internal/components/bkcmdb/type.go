@@ -81,6 +81,24 @@ type CMDBResponse[T any] struct {
 	Permission any    `json:"permission"` // 权限信息（可以根据需要定义 struct）
 }
 
+// HostRelationWatchResponse 主机关系监听响应
+type HostRelationWatchResponse = CMDBResponse[HostRelationWatchData]
+
+// HostWatchData 主机监听数据
+type HostWatchData = WatchResourceData[HostDetail]
+
+// HostDetail 主机事件详情
+type HostDetail struct {
+	BkHostID  *int    `json:"bk_host_id"`  // 主机ID
+	BkAgentID *string `json:"bk_agent_id"` // Agent ID
+}
+
+// HostWatchResponse 主机监听响应
+type HostWatchResponse = CMDBResponse[HostWatchData]
+
+// HostEvent 主机事件
+type HostEvent = Event[HostDetail]
+
 // CMDBListData 表示带数量和列表的 Data
 type CMDBListData[T any] struct {
 	Count int `json:"count"` // 记录条数
@@ -253,6 +271,7 @@ type HostInfo struct {
 	BkHostName        string `json:"bk_host_name"`         // 主机名
 	BkHostInnerIP     string `json:"bk_host_innerip"`      // 内网IP
 	BkHostID          int    `json:"bk_host_id"`           // 主机ID
+	BkAgentID         string `json:"bk_agent_id"`          // Agent ID
 	BkCloudID         int    `json:"bk_cloud_id"`          // 管控区域
 	ImportFrom        string `json:"import_from"`          // 主机导入来源,以api方式导入为3
 	BkAssetID         string `json:"bk_asset_id"`          // 固资编号
@@ -393,3 +412,89 @@ type ModuleInfo struct {
 	BkUpdatedAt       string `json:"bk_updated_at"`       // 更新时间
 	BkCreatedBy       string `json:"bk_created_by"`       // 创建人
 }
+
+// ListBizHostsRequest 查询业务主机请求参数
+type ListBizHostsRequest struct {
+	BkBizID            int                 `json:"bk_biz_id"`            // 业务ID
+	Page               PageParam           `json:"page"`                 // 分页参数
+	Fields             []string            `json:"fields"`               // 需要返回的字段列表
+	HostPropertyFilter *HostPropertyFilter `json:"host_property_filter"` // 主机属性过滤条件
+}
+
+// HostPropertyFilter 主机属性过滤条件
+type HostPropertyFilter struct {
+	Condition string             `json:"condition"` // 逻辑条件，如 "AND", "OR"
+	Rules     []HostPropertyRule `json:"rules"`     // 过滤规则列表
+}
+
+// HostPropertyRule 主机属性过滤规则
+type HostPropertyRule struct {
+	Field    string      `json:"field"`    // 字段名
+	Operator string      `json:"operator"` // 操作符
+	Value    interface{} `json:"value"`    // 值
+}
+
+// HostPropertyOperator 主机属性操作符常量
+const (
+	HostPropertyOperatorEqual = "equal"
+)
+
+// HostPropertyCondition 主机属性条件常量
+const (
+	HostPropertyConditionAnd = "AND"
+)
+
+// WatchResourceRequest 监听资源请求参数
+type WatchResourceRequest struct {
+	BkResource        string      `json:"bk_resource"`         // 资源类型，如 "host", "host_relation"
+	BkEventTypes      []string    `json:"bk_event_types"`      // 事件类型，如 ["create", "update", "delete"]
+	BkFields          []string    `json:"bk_fields"`           // 需要返回的字段列表
+	BkStartFrom       *int64      `json:"bk_start_from"`       // 监听事件的起始时间（该值为unix time的秒数，且仅支持监听3小时内的事件）
+	BkCursor          string      `json:"bk_cursor"`           // 监听事件的游标
+	BkSupplierAccount string      `json:"bk_supplier_account"` // 供应商账户
+	BkFilter          interface{} `json:"bk_filter"`           // 过滤条件
+}
+
+// WatchResourceData 监听资源的数据结构
+type WatchResourceData[T any] struct {
+	BkWatched bool       `json:"bk_watched"` // 是否监听到了事件，true：监听到了事件；false:未监听到事件
+	BkEvents  []Event[T] `json:"bk_events"`  // 事件列表
+}
+
+// HostRelationWatchData 主机关系监听数据
+type HostRelationWatchData = WatchResourceData[HostRelationDetail]
+
+// Event 事件信息
+type Event[T any] struct {
+	BkCursor    string `json:"bk_cursor"`     // 游标
+	BkResource  string `json:"bk_resource"`   // 资源类型
+	BkEventType string `json:"bk_event_type"` // 事件类型
+	BkDetail    *T     `json:"bk_detail"`     // 事件详情，未监听到事件时未nil
+}
+
+// HostRelationDetail 主机关系事件详情
+type HostRelationDetail struct {
+	BkBizID  *int `json:"bk_biz_id"`  // 业务ID
+	BkHostID *int `json:"bk_host_id"` // 主机ID
+}
+
+// HostRelationEvent 主机关系事件
+type HostRelationEvent = Event[HostRelationDetail]
+
+// FindHostBizRelationsRequest 查询主机业务关系请求参数
+type FindHostBizRelationsRequest struct {
+	BkBizID  int   `json:"bk_biz_id"`  // 业务ID
+	BkHostID []int `json:"bk_host_id"` // 主机ID列表
+}
+
+// HostBizRelation 主机业务关系信息
+type HostBizRelation struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	BkHostID          int    `json:"bk_host_id"`          // 主机ID
+	BkModuleID        int    `json:"bk_module_id"`        // 模块ID
+	BkSetID           int    `json:"bk_set_id"`           // 集群ID
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+}
+
+// FindHostBizRelationsResponse 查询主机业务关系响应
+type FindHostBizRelationsResponse = CMDBResponse[[]HostBizRelation]

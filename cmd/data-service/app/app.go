@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -32,6 +33,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -43,6 +45,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -84,19 +87,22 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve    *grpc.Server
-	gwServe  *http.Server
-	service  *service.Service
-	sd       serviced.Service
-	daoSet   dao.Set
-	vault    vault.Set
-	esb      client.Client
-	spaceMgr *space.Manager
-	repo     repository.Provider
-	ssd      serviced.ServiceDiscover
+	serve       *grpc.Server
+	gwServe     *http.Server
+	service     *service.Service
+	sd          serviced.Service
+	daoSet      dao.Set
+	vault       vault.Set
+	esb         client.Client
+	spaceMgr    *space.Manager
+	repo        repository.Provider
+	ssd         serviced.ServiceDiscover
+	cmdbService bkcmdb.Service
 }
 
 // prepare do prepare jobs before run data service.
+//
+//nolint:funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -149,6 +155,18 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	ds.daoSet = set
+
+	// initial cmdb service
+	cmdbService, err := bkcmdb.New(&cc.CMDBConfig{
+		AppCode:    cc.DataService().Esb.AppCode,
+		AppSecret:  cc.DataService().Esb.AppSecret,
+		Host:       cc.DataService().Esb.Endpoints[0],
+		BkUserName: cc.DataService().Esb.User,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("initial cmdb service failed, err: %v", err)
+	}
+	ds.cmdbService = cmdbService
 
 	// 同步客户端在线状态
 	state := crontab.NewSyncClientOnlineState(ds.daoSet, ds.sd)
@@ -250,9 +268,8 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 同步客户端在线状态
-	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
-	status.Run()
+	// 启动定时任务
+	ds.startCronTasks(svc)
 
 	pbds.RegisterDataServer(serve, svc)
 
@@ -391,4 +408,94 @@ func (ds *dataService) register() error {
 
 	logs.Infof("register data service to etcd success.")
 	return nil
+}
+
+// startCronTasks starts all cron tasks for data service
+func (ds *dataService) startCronTasks(svc *service.Service) {
+	// 同步客户端在线状态
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
+	status.Run()
+
+	crontabConfig := cc.DataService().Crontab
+
+	// 启动同步业务主机关系任务
+	if crontabConfig.SyncBizHost.Enabled {
+		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse syncBizHost interval failed, using default: %v", err)
+			syncInterval = 7 * 24 * time.Hour // 7 days
+		}
+
+		bizHost := crontab.NewSyncBizHost(
+			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
+
+		// 启动定时同步任务
+		bizHost.Run()
+
+		// 首次启动时异步执行一次全量同步
+		go func() {
+			if !ds.sd.IsMaster() {
+				logs.Infof("current service instance is slave, skip initial sync")
+				return
+			}
+
+			logs.Infof("start initial full sync")
+			kt := kit.New()
+			ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
+			kt.Ctx = ctx
+
+			if err := func() (err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("initial sync panic: %v", r)
+					}
+				}()
+				bizHost.SyncBizHost(kt)
+				return nil
+			}(); err != nil {
+				logs.Errorf("initial full sync failed: %v", err)
+			}
+			cancel()
+		}()
+	}
+
+	// 启动监听业务主机关系任务
+	if crontabConfig.WatchBizHostRelation.Enabled {
+		watchBizHostInterval, err := time.ParseDuration(crontabConfig.WatchBizHostRelation.Interval)
+		if err != nil {
+			logs.Errorf("parse watchBizHostRelation interval failed, using default: %v", err)
+			watchBizHostInterval = 1 * time.Minute // 1 minute
+		}
+
+		watchBizHostRelation := crontab.NewWatchBizHostRelation(
+			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.WatchBizHostRelation.QpsLimit,
+			watchBizHostInterval)
+		watchBizHostRelation.Run()
+	}
+
+	// 启动监听主机更新任务
+	if crontabConfig.WatchHostUpdates.Enabled {
+		watchHostInterval, err := time.ParseDuration(crontabConfig.WatchHostUpdates.Interval)
+		if err != nil {
+			logs.Errorf("parse watchHostUpdates interval failed, using default: %v", err)
+			watchHostInterval = 30 * time.Second // 30 seconds
+		}
+
+		watchHostUpdates := crontab.NewWatchHostUpdates(
+			ds.daoSet, ds.sd, ds.cmdbService, watchHostInterval)
+		watchHostUpdates.Run()
+	}
+
+	// 启动清理业务主机关系任务
+	if crontabConfig.CleanupBizHost.Enabled {
+		cleanupInterval, err := time.ParseDuration(crontabConfig.CleanupBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse cleanupBizHost interval failed, using default: %v", err)
+			cleanupInterval = 1 * time.Hour // 1 hour
+		}
+
+		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService,
+			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
+		cleanupBizHost.Run()
+	}
 }
