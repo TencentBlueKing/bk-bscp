@@ -112,6 +112,12 @@ service Cache {
   }
 
   rpc GetTenantIDByBiz(GetTenantIDByBizReq) returns (GetTenantIDByBizResp) {}
+
+  rpc GetAgentBiz(GetAgentBizReq) returns (GetAgentBizResp) {
+    option (google.api.http) = {
+      get: "/api/v1/cache/agent/{agent_id}/biz"
+    };
+  }
 }
 
 message JsonRawResp {
@@ -268,4 +274,13 @@ message GetTenantIDByBizReq {
 
 message GetTenantIDByBizResp {
   string tenant_id = 1;
+}
+
+message GetAgentBizReq {
+  string agent_id = 1;
+}
+
+message GetAgentBizResp {
+  uint32 biz_id = 1;
+  bool found = 2;
 }

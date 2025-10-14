@@ -173,3 +173,23 @@ log:
   alsoToStdErr: false
   # log level.
   verbosity: 0
+
+# cmdb related settings
+cmdb:
+  # app code for cmdb api access
+  appCode: ""
+  # app secret for cmdb api access
+  appSecret: ""
+  # cmdb host address
+  host: ""
+  # whether to use esb for cmdb access
+  useEsb: false
+  # bk username for cmdb access
+  bkUserName: ""
+
+# cross-business download whitelist settings
+verifyAgentIDBelongs:
+  # 是否校验agentID归属
+  enabled: false
+  # 允许跨业务下载的应用ID列表
+  crossBizAppIDs: []

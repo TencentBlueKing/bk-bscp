@@ -64,6 +64,7 @@ func main() {
 		table.ClientEvent{},
 		table.ClientQuery{},
 		table.Config{},
+		table.BizHost{},
 	)
 
 	g.Execute()

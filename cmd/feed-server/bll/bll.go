@@ -149,3 +149,8 @@ func (b *BLL) ClientMetric() *lcache.ClientMetric {
 func (b *BLL) AsyncDownload() *asyncdownload.Service {
 	return b.adService
 }
+
+// Client return the client set instance.
+func (b *BLL) Client() *clientset.ClientSet {
+	return b.client
+}
