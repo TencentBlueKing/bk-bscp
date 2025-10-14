@@ -20,6 +20,7 @@ message TemplateSpec {
   string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
   string path = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
   string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件描述" }];
+  string template_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板名称" }];
 }
 
 // TemplateAttachment source resource reference: pkg/dal/table/template.go

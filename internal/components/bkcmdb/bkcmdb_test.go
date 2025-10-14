@@ -40,7 +40,7 @@ func TestFindHostByTopo(t *testing.T) {
 		BkObjID:  "module",
 		BkInstID: 2,
 		// Fields:   []string{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -100,7 +100,7 @@ func TestListServiceTemplate(t *testing.T) {
 		// Search:             "",
 		// IsExact:            false,
 		// ServiceTemplateIDs: []int{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -161,7 +161,7 @@ func TestFindHostBySetTemplate(t *testing.T) {
 		BkServiceTemplateIDs: []int{},
 		BkSetIDs:             []int{},
 		Fields:               []string{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -183,7 +183,7 @@ func TestListSetTemplate(t *testing.T) {
 	resp, err := cmdb.ListSetTemplate(context.Background(), ListSetTemplateReq{
 		BkBizID:        2,
 		SetTemplateIDs: []int{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -224,7 +224,7 @@ func TestListServiceInstanceBySetTemplate(t *testing.T) {
 	resp, err := cmdb.ListServiceInstanceBySetTemplate(context.Background(), ServiceInstanceReq{
 		BkBizID:       2,
 		SetTemplateID: 0,
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -267,7 +267,7 @@ func TestListServiceInstance(t *testing.T) {
 		BkModuleID: 0,
 		BkHostIDs:  []int{},
 		Selectors:  []Selector{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -311,7 +311,7 @@ func TestFindHostTopoRelation(t *testing.T) {
 		BkSetIDs:    []int{},
 		BkModuleIDs: []int{},
 		BkHostIDs:   []int{},
-		Page: PageParam{
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},
@@ -335,7 +335,30 @@ func TestFindModuleWithRelation(t *testing.T) {
 		BkSetIDs:             []int{},
 		BkServiceTemplateIDs: []int{},
 		Fields:               []string{},
-		Page: PageParam{
+		Page: &PageParam{
+			Start: 0,
+			Limit: 20,
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("FindModuleWithRelation error: %v", err)
+	}
+	// 打印结果
+	t.Logf("结果: %v", spew.Sdump(resp))
+}
+
+func TestSearchSet(t *testing.T) {
+	cmdb, err := New(cfg, nil)
+	if err != nil {
+		t.Fatalf("initialize cmdb service error: %v", err)
+	}
+
+	resp, err := cmdb.SearchSet(context.Background(), SearchSetReq{
+		BkSupplierAccount: "0",
+		BkBizID:           2,
+		Fields:            []string{},
+		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
 		},

@@ -17,6 +17,7 @@ import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
 import "pkg/protocol/core/released-ci/released_ci.proto";
+import "pkg/protocol/core/process/process.proto";
 import "pkg/protocol/core/template/template.proto";
 import "pkg/protocol/core/template-binding-relation/template_binding_relation.proto";
 import "pkg/protocol/core/template-revision/template_revision.proto";
@@ -302,6 +303,9 @@ service Data {
       returns (GetTemplateAndNonTemplateCICountResp) {}
 
   rpc BatchUpdateLastConsumedTime(BatchUpdateLastConsumedTimeReq) returns (BatchUpdateLastConsumedTimeResp) {}
+
+  // 进程管理列表
+  rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2256,4 +2260,13 @@ message CloneAppReq {
   uint32 pre_hook_id = 13;
   uint32 post_hook_id = 14;
   string data_type = 15;
+}
+
+message ListProcessReq {
+  uint32 biz_id = 1;
+}
+
+message ListProcessResp {
+  uint32 count = 1;
+  repeated pbproc.Process process = 2;
 }

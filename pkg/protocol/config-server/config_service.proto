@@ -16,6 +16,7 @@ import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
 import "pkg/protocol/core/released-ci/released_ci.proto";
+import "pkg/protocol/core/process/process.proto";
 import "pkg/protocol/core/template/template.proto";
 import "pkg/protocol/core/template-binding-relation/template_binding_relation.proto";
 import "pkg/protocol/core/template-revision/template_revision.proto";
@@ -1471,6 +1472,15 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/apps/{app_id}/config_items/count"
+    };
+  }
+
+  // 进程管理
+  // 进程列表
+  rpc ListProcess(ListProcessReq) returns (ListProcessResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/process/list"
     };
   }
 }
@@ -4384,4 +4394,14 @@ message CloneAppReq {
   string data_type = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
   }];
+}
+
+message ListProcessReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message ListProcessResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbproc.Process process = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程列表" }];
 }

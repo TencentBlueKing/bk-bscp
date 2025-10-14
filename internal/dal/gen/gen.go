@@ -38,6 +38,8 @@ var (
 	HookRevision                *hookRevision
 	IDGenerator                 *iDGenerator
 	Kv                          *kv
+	Process                     *process
+	ProcessInstance             *processInstance
 	Release                     *release
 	ReleasedAppTemplate         *releasedAppTemplate
 	ReleasedAppTemplateVariable *releasedAppTemplateVariable
@@ -77,6 +79,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	HookRevision = &Q.HookRevision
 	IDGenerator = &Q.IDGenerator
 	Kv = &Q.Kv
+	Process = &Q.Process
+	ProcessInstance = &Q.ProcessInstance
 	Release = &Q.Release
 	ReleasedAppTemplate = &Q.ReleasedAppTemplate
 	ReleasedAppTemplateVariable = &Q.ReleasedAppTemplateVariable
@@ -117,6 +121,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		HookRevision:                newHookRevision(db, opts...),
 		IDGenerator:                 newIDGenerator(db, opts...),
 		Kv:                          newKv(db, opts...),
+		Process:                     newProcess(db, opts...),
+		ProcessInstance:             newProcessInstance(db, opts...),
 		Release:                     newRelease(db, opts...),
 		ReleasedAppTemplate:         newReleasedAppTemplate(db, opts...),
 		ReleasedAppTemplateVariable: newReleasedAppTemplateVariable(db, opts...),
@@ -158,6 +164,8 @@ type Query struct {
 	HookRevision                hookRevision
 	IDGenerator                 iDGenerator
 	Kv                          kv
+	Process                     process
+	ProcessInstance             processInstance
 	Release                     release
 	ReleasedAppTemplate         releasedAppTemplate
 	ReleasedAppTemplateVariable releasedAppTemplateVariable
@@ -200,6 +208,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.clone(db),
 		IDGenerator:                 q.IDGenerator.clone(db),
 		Kv:                          q.Kv.clone(db),
+		Process:                     q.Process.clone(db),
+		ProcessInstance:             q.ProcessInstance.clone(db),
 		Release:                     q.Release.clone(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.clone(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.clone(db),
@@ -249,6 +259,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.replaceDB(db),
 		IDGenerator:                 q.IDGenerator.replaceDB(db),
 		Kv:                          q.Kv.replaceDB(db),
+		Process:                     q.Process.replaceDB(db),
+		ProcessInstance:             q.ProcessInstance.replaceDB(db),
 		Release:                     q.Release.replaceDB(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.replaceDB(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.replaceDB(db),
@@ -288,6 +300,8 @@ type queryCtx struct {
 	HookRevision                IHookRevisionDo
 	IDGenerator                 IIDGeneratorDo
 	Kv                          IKvDo
+	Process                     IProcessDo
+	ProcessInstance             IProcessInstanceDo
 	Release                     IReleaseDo
 	ReleasedAppTemplate         IReleasedAppTemplateDo
 	ReleasedAppTemplateVariable IReleasedAppTemplateVariableDo
@@ -327,6 +341,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		HookRevision:                q.HookRevision.WithContext(ctx),
 		IDGenerator:                 q.IDGenerator.WithContext(ctx),
 		Kv:                          q.Kv.WithContext(ctx),
+		Process:                     q.Process.WithContext(ctx),
+		ProcessInstance:             q.ProcessInstance.WithContext(ctx),
 		Release:                     q.Release.WithContext(ctx),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.WithContext(ctx),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.WithContext(ctx),

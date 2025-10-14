@@ -21,7 +21,7 @@ import (
 
 func main() {
 	g := gen.NewGenerator(gen.Config{
-		OutPath:       "../../internal/dal/gen",
+		OutPath:       "internal/dal/gen",
 		Mode:          gen.WithDefaultQuery | gen.WithQueryInterface,
 		FieldNullable: true,
 	})
@@ -64,6 +64,8 @@ func main() {
 		table.ClientEvent{},
 		table.ClientQuery{},
 		table.Config{},
+		table.Process{},
+		table.ProcessInstance{},
 	)
 
 	g.Execute()

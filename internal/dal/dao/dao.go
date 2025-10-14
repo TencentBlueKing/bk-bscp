@@ -79,6 +79,8 @@ type Set interface {
 	ClientEvent() ClientEvent
 	ClientQuery() ClientQuery
 	Config() Config
+	Process() Process
+	ProcessInstance() ProcessInstance
 }
 
 // NewDaoSet create the DAO set instance.
@@ -532,6 +534,24 @@ func (s *set) ClientQuery() ClientQuery {
 // Config returns the Config scope's DAO
 func (s *set) Config() Config {
 	return &configDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// Process implements Set.
+func (s *set) Process() Process {
+	return &processDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// ProcessInstance implements Set.
+func (s *set) ProcessInstance() ProcessInstance {
+	return &processInstanceDao{
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,

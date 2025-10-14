@@ -24,11 +24,11 @@ type Biz struct {
 
 // HostListReq 查询主机列表请求参数
 type HostListReq struct {
-	BkBizID  int       `json:"bk_biz_id"`  // 业务ID，必填
-	BkObjID  string    `json:"bk_obj_id"`  // 拓扑节点模型ID，如 set/module，不可为 biz/host，必填
-	BkInstID int       `json:"bk_inst_id"` // 拓扑节点实例ID，必填
-	Fields   []string  `json:"fields"`     // 主机属性列表，必填，用于加速接口请求和减少网络流量
-	Page     PageParam `json:"page"`       // 分页信息，必填
+	BkBizID  int        `json:"bk_biz_id"`  // 业务ID，必填
+	BkObjID  string     `json:"bk_obj_id"`  // 拓扑节点模型ID，如 set/module，不可为 biz/host，必填
+	BkInstID int        `json:"bk_inst_id"` // 拓扑节点实例ID，必填
+	Fields   []string   `json:"fields"`     // 主机属性列表，必填，用于加速接口请求和减少网络流量
+	Page     *PageParam `json:"page"`       // 分页信息，必填
 }
 
 type HostListResp struct {
@@ -134,12 +134,12 @@ type PageParam struct {
 
 // ListServiceTemplateReq xxx
 type ListServiceTemplateReq struct {
-	BkBizID            int       `json:"bk_biz_id"`                      // 业务ID（必选）
-	ServiceCategoryID  int       `json:"service_category_id,omitempty"`  // 服务分类ID（可选）
-	Search             string    `json:"search,omitempty"`               // 按服务模板名查询，默认为空
-	IsExact            bool      `json:"is_exact,omitempty"`             // 是否精确匹配（搭配 search 使用）
-	ServiceTemplateIDs []int     `json:"service_template_ids,omitempty"` // 服务模板ID列表
-	Page               PageParam `json:"page"`                           // 分页参数（必选）
+	BkBizID            int        `json:"bk_biz_id"`                      // 业务ID（必选）
+	ServiceCategoryID  int        `json:"service_category_id,omitempty"`  // 服务分类ID（可选）
+	Search             string     `json:"search,omitempty"`               // 按服务模板名查询，默认为空
+	IsExact            bool       `json:"is_exact,omitempty"`             // 是否精确匹配（搭配 search 使用）
+	ServiceTemplateIDs []int      `json:"service_template_ids,omitempty"` // 服务模板ID列表
+	Page               *PageParam `json:"page"`                           // 分页参数（必选）
 }
 
 // ServiceTemplateListResp 响应结果
@@ -220,11 +220,11 @@ type Relation struct {
 
 // FindHostBySetTemplateReq xxx
 type FindHostBySetTemplateReq struct {
-	BkBizID              int       `json:"bk_biz_id"`               // 业务ID，必填
-	BkServiceTemplateIDs []int     `json:"bk_service_template_ids"` // 集群模板ID列表，最多可填500个，必填
-	BkSetIDs             []int     `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多可填500个，可选
-	Fields               []string  `json:"fields"`                  // 主机属性列表，控制返回结果的模块信息里有哪些字段，必填
-	Page                 PageParam `json:"page"`                    // 分页信息，必填
+	BkBizID              int        `json:"bk_biz_id"`               // 业务ID，必填
+	BkServiceTemplateIDs []int      `json:"bk_service_template_ids"` // 集群模板ID列表，最多可填500个，必填
+	BkSetIDs             []int      `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多可填500个，可选
+	Fields               []string   `json:"fields"`                  // 主机属性列表，控制返回结果的模块信息里有哪些字段，必填
+	Page                 *PageParam `json:"page"`                    // 分页信息，必填
 }
 
 type FindHostBySetTemplateResp struct {
@@ -234,9 +234,9 @@ type FindHostBySetTemplateResp struct {
 
 // ListSetTemplateReq xxx
 type ListSetTemplateReq struct {
-	BkBizID        int       `json:"bk_biz_id"`                  // 业务ID，必填
-	SetTemplateIDs []int     `json:"set_template_ids,omitempty"` // 集群模板ID数组，可选
-	Page           PageParam `json:"page,omitempty"`             // 分页信息，可选
+	BkBizID        int        `json:"bk_biz_id"`                  // 业务ID，必填
+	SetTemplateIDs []int      `json:"set_template_ids,omitempty"` // 集群模板ID数组，可选
+	Page           *PageParam `json:"page,omitempty"`             // 分页信息，可选
 }
 
 type ListSetTemplateResp struct {
@@ -295,9 +295,9 @@ type ProcessInfo struct {
 
 // ServiceInstanceRequest 查询服务实例请求参数
 type ServiceInstanceReq struct {
-	BkBizID       int       `json:"bk_biz_id"`       // 业务id，必填
-	SetTemplateID int       `json:"set_template_id"` // 集群模版ID，必填
-	Page          PageParam `json:"page"`            // 分页参数，必填
+	BkBizID       int        `json:"bk_biz_id"`       // 业务id，必填
+	SetTemplateID int        `json:"set_template_id"` // 集群模版ID，必填
+	Page          *PageParam `json:"page"`            // 分页参数，必填
 }
 
 type ServiceInstanceResp struct {
@@ -357,7 +357,7 @@ type ServiceInstanceListReq struct {
 	BkModuleID int        `json:"bk_module_id,omitempty"` // 模块ID，可选
 	BkHostIDs  []int      `json:"bk_host_ids,omitempty"`  // 主机id列表，最多支持1000个，可选
 	Selectors  []Selector `json:"selectors,omitempty"`    // label过滤功能，可选
-	Page       PageParam  `json:"page,omitempty"`         // 分页参数，可选
+	Page       *PageParam `json:"page,omitempty"`         // 分页参数，可选
 	SearchKey  string     `json:"search_key,omitempty"`   // 名字过滤参数（模糊搜索），可选
 }
 
@@ -398,11 +398,11 @@ type SetInfo struct {
 
 // HostTopoReq 查询业务下主机与集群/模块绑定关系请求参数
 type HostTopoReq struct {
-	BkBizID     int       `json:"bk_biz_id"`               // 业务ID，必填
-	BkSetIDs    []int     `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多200条
-	BkModuleIDs []int     `json:"bk_module_ids,omitempty"` // 模块ID列表，最多500条
-	BkHostIDs   []int     `json:"bk_host_ids,omitempty"`   // 主机ID列表，最多500条
-	Page        PageParam `json:"page"`                    // 分页信息，必填
+	BkBizID     int        `json:"bk_biz_id"`               // 业务ID，必填
+	BkSetIDs    []int      `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多200条
+	BkModuleIDs []int      `json:"bk_module_ids,omitempty"` // 模块ID列表，最多500条
+	BkHostIDs   []int      `json:"bk_host_ids,omitempty"`   // 主机ID列表，最多500条
+	Page        *PageParam `json:"page"`                    // 分页信息，必填
 }
 
 type HostTopoInfoResp struct {
@@ -421,15 +421,52 @@ type HostTopoInfo struct {
 
 // ModuleListReq 查询模块请求参数
 type ModuleListReq struct {
-	BkBizID              int       `json:"bk_biz_id"`                         // 业务ID，必填
-	BkSetIDs             []int     `json:"bk_set_ids,omitempty"`              // 集群ID列表，可选，最多200个
-	BkServiceTemplateIDs []int     `json:"bk_service_template_ids,omitempty"` // 服务模板ID列表，可选
-	Fields               []string  `json:"fields"`                            // 模块属性列表，必填
-	Page                 PageParam `json:"page"`                              // 分页信息，必填
+	BkBizID              int        `json:"bk_biz_id"`                         // 业务ID，必填
+	BkSetIDs             []int      `json:"bk_set_ids,omitempty"`              // 集群ID列表，可选，最多200个
+	BkServiceTemplateIDs []int      `json:"bk_service_template_ids,omitempty"` // 服务模板ID列表，可选
+	Fields               []string   `json:"fields"`                            // 模块属性列表，必填
+	Page                 *PageParam `json:"page"`                              // 分页信息，必填
 }
 
 // ModuleListResp 查询模块响应参数
 type ModuleListResp struct {
 	Count int          `json:"count"` // 总数
 	Info  []ModuleInfo `json:"info"`  // 模块信息列表
+}
+
+// SearchSetReq 查询集群请求参数
+type SearchSetReq struct {
+	BkSupplierAccount string         `json:"bk_supplier_account,omitempty"` // 开发商账号
+	BkBizID           int            `json:"bk_biz_id"`                     // 业务ID
+	Fields            []string       `json:"fields"`                        // 查询字段
+	Condition         map[string]any `json:"condition,omitempty"`           // 查询条件（不推荐使用）
+	Filter            *Filter        `json:"filter,omitempty"`              // 属性组合查询条件
+	TimeCondition     *TimeFilter    `json:"time_condition,omitempty"`      // 按时间查询模型实例的条件
+	Page              *PageParam     `json:"page"`                          // 分页参数
+}
+
+// Filter 属性组合过滤条件
+type Filter struct {
+	Condition string `json:"condition"` // 规则操作符 (and / or)
+	Rules     []Rule `json:"rules"`     // 过滤规则集合
+}
+
+// Rule 单条过滤规则
+type Rule struct {
+	Field    string      `json:"field"`           // 字段名
+	Operator string      `json:"operator"`        // 操作符
+	Value    interface{} `json:"value,omitempty"` // 操作数，不同操作符对应不同格式
+}
+
+// TimeFilter 按时间查询条件
+type TimeFilter struct {
+	Oper  string         `json:"oper"`  // 操作符，目前仅支持 "and"
+	Rules []TimeRuleItem `json:"rules"` // 时间范围规则
+}
+
+// TimeRuleItem 时间查询规则
+type TimeRuleItem struct {
+	Field string `json:"field"` // 模型字段名
+	Start string `json:"start"` // 起始时间 yyyy-MM-dd hh:mm:ss
+	End   string `json:"end"`   // 结束时间 yyyy-MM-dd hh:mm:ss
 }

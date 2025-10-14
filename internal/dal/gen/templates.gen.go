@@ -31,6 +31,7 @@ func newTemplate(db *gorm.DB, opts ...gen.DOOption) template {
 	_template.Name = field.NewString(tableName, "name")
 	_template.Path = field.NewString(tableName, "path")
 	_template.Memo = field.NewString(tableName, "memo")
+	_template.TemplateName = field.NewString(tableName, "template_name")
 	_template.BizID = field.NewUint32(tableName, "biz_id")
 	_template.TemplateSpaceID = field.NewUint32(tableName, "template_space_id")
 	_template.Creator = field.NewString(tableName, "creator")
@@ -51,6 +52,7 @@ type template struct {
 	Name            field.String
 	Path            field.String
 	Memo            field.String
+	TemplateName    field.String
 	BizID           field.Uint32
 	TemplateSpaceID field.Uint32
 	Creator         field.String
@@ -77,6 +79,7 @@ func (t *template) updateTableName(table string) *template {
 	t.Name = field.NewString(table, "name")
 	t.Path = field.NewString(table, "path")
 	t.Memo = field.NewString(table, "memo")
+	t.TemplateName = field.NewString(table, "template_name")
 	t.BizID = field.NewUint32(table, "biz_id")
 	t.TemplateSpaceID = field.NewUint32(table, "template_space_id")
 	t.Creator = field.NewString(table, "creator")
@@ -107,11 +110,12 @@ func (t *template) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (t *template) fillFieldMap() {
-	t.fieldMap = make(map[string]field.Expr, 10)
+	t.fieldMap = make(map[string]field.Expr, 11)
 	t.fieldMap["id"] = t.ID
 	t.fieldMap["name"] = t.Name
 	t.fieldMap["path"] = t.Path
 	t.fieldMap["memo"] = t.Memo
+	t.fieldMap["template_name"] = t.TemplateName
 	t.fieldMap["biz_id"] = t.BizID
 	t.fieldMap["template_space_id"] = t.TemplateSpaceID
 	t.fieldMap["creator"] = t.Creator

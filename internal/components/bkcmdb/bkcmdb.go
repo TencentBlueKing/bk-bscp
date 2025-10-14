@@ -46,6 +46,7 @@ var (
 	findSetBatch           = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
 	findHostTopoRelation   = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
 	findModuleWithRelation = "%s/api/bk-cmdb/prod/api/v3/findmany/module/with_relation/biz/%d"
+	searchSet              = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
 )
 
 type HTTPMethod string
@@ -413,6 +414,23 @@ func (bkcmdb *CMDBService) FindModuleWithRelation(ctx context.Context, req Modul
 
 	var moduleListResp ModuleListResp
 	if err := resp.Decode(&moduleListResp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// SearchSet 查询集群
+func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error) {
+	url := fmt.Sprintf(searchSet, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID)
+
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var setInfo []SetInfo
+	if err := resp.Decode(&setInfo); err != nil {
 		return nil, err
 	}
 

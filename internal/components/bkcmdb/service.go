@@ -74,6 +74,8 @@ type Service interface {
 	// FindModuleWithRelation 根据条件查询业务下的模块
 	FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
 		*CMDBResponse, error)
+	// SearchSet 查询集群
+	SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
 }
 
 // New cmdb service

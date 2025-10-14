@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+import "pkg/protocol/core/base/base.proto";
+import "pkg/protocol/core/process-instance/process_instance.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+package pbproc;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process;pbproc";
+
+// Process source resource reference: pkg/dal/table/process.go
+message Process {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程管理ID" }];
+  ProcessSpec spec = 2;
+  ProcessAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+  repeated pbpi.ProcInst proc_inst = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例" }];
+}
+
+// ProcessSpec source resource reference: pkg/dal/table/process.go
+message ProcessSpec {
+  string set_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群" }];
+  string module_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块" }];
+  string service_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称" }];
+  string environment = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境类型(production/staging等)" }];
+  string alias = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  string inner_ip = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内网IP" }];
+  string cc_sync_status = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态:synced,deleted,updated" }
+  ];
+  google.protobuf.Timestamp cc_sync_updated_at = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步更新时间" }];
+  string source_data = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源数据,用于和CC对比" }];
+}
+
+message ProcessAttachment {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string tenant_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
+  uint32 cc_process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc进程ID" }];
+}

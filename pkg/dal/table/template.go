@@ -133,9 +133,10 @@ func (t *Template) ValidateDelete() error {
 
 // TemplateSpec defines all the specifics for template set by user.
 type TemplateSpec struct {
-	Name string `json:"name" gorm:"column:name"`
-	Path string `json:"path" gorm:"column:path"`
-	Memo string `json:"memo" gorm:"column:memo"`
+	Name         string `json:"name" gorm:"column:name"`
+	Path         string `json:"path" gorm:"column:path"`
+	Memo         string `json:"memo" gorm:"column:memo"`
+	TemplateName string `json:"template_name" gorm:"column:template_name"`
 }
 
 // ValidateCreate validate template spec when it is created.
