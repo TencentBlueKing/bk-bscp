@@ -41,7 +41,7 @@ type Biz struct {
 // SearchBusiness 组件化的函数
 func (bkcmdb *CMDBService) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (*cmdb.SearchBizResult, error) {
 	// bk_supplier_account 是无效参数, 占位用
-	url := fmt.Sprintf("%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account", bkcmdb.Host)
+	url := fmt.Sprintf("%s/api/v3/biz/search/bk_supplier_account", bkcmdb.Host)
 
 	// SearchBizParams is esb search cmdb business parameter.
 	type esbSearchBizParams struct {
