@@ -151,6 +151,7 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init space manager failed, err: %v", err)
 	}
+	klog.InfoS("init cmdb config done", "host", cmdbCfg.Host, "app_code", cmdbCfg.AppCode, "use_esb", cmdbCfg.UseEsb)
 
 	authz := &authorizer{
 		authClient:      authClient,
