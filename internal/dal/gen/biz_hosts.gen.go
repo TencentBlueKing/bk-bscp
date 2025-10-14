@@ -27,8 +27,8 @@ func newBizHost(db *gorm.DB, opts ...gen.DOOption) bizHost {
 
 	tableName := _bizHost.bizHostDo.TableName()
 	_bizHost.ALL = field.NewAsterisk(tableName)
-	_bizHost.BizID = field.NewInt(tableName, "bk_biz_id")
-	_bizHost.HostID = field.NewInt(tableName, "bk_host_id")
+	_bizHost.BizID = field.NewUint(tableName, "bk_biz_id")
+	_bizHost.HostID = field.NewUint(tableName, "bk_host_id")
 	_bizHost.AgentID = field.NewString(tableName, "bk_agent_id")
 	_bizHost.BKHostInnerIP = field.NewString(tableName, "bk_host_innerip")
 	_bizHost.LastUpdated = field.NewTime(tableName, "last_updated")
@@ -42,8 +42,8 @@ type bizHost struct {
 	bizHostDo bizHostDo
 
 	ALL           field.Asterisk
-	BizID         field.Int
-	HostID        field.Int
+	BizID         field.Uint
+	HostID        field.Uint
 	AgentID       field.String
 	BKHostInnerIP field.String
 	LastUpdated   field.Time
@@ -63,8 +63,8 @@ func (b bizHost) As(alias string) *bizHost {
 
 func (b *bizHost) updateTableName(table string) *bizHost {
 	b.ALL = field.NewAsterisk(table)
-	b.BizID = field.NewInt(table, "bk_biz_id")
-	b.HostID = field.NewInt(table, "bk_host_id")
+	b.BizID = field.NewUint(table, "bk_biz_id")
+	b.HostID = field.NewUint(table, "bk_host_id")
 	b.AgentID = field.NewString(table, "bk_agent_id")
 	b.BKHostInnerIP = field.NewString(table, "bk_host_innerip")
 	b.LastUpdated = field.NewTime(table, "last_updated")

@@ -207,7 +207,7 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(
 	}
 
 	// Check if this host exists in biz_host table
-	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, hostID)
+	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, uint(hostID))
 	if err != nil {
 		return fmt.Errorf("query biz hosts for hostID %d failed: %w", hostID, err)
 	}

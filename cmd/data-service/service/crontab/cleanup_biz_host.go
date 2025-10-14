@@ -138,8 +138,8 @@ func (c *CleanupBizHost) queryOldestBizHosts(kt *kit.Kit) ([]*table.BizHost, err
 }
 
 // groupByBizID group by biz ID
-func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table.BizHost {
-	groups := make(map[int][]*table.BizHost)
+func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[uint][]*table.BizHost {
+	groups := make(map[uint][]*table.BizHost)
 	for _, record := range records {
 		groups[record.BizID] = append(groups[record.BizID], record)
 	}
@@ -147,7 +147,7 @@ func (c *CleanupBizHost) groupByBizID(records []*table.BizHost) map[int][]*table
 }
 
 // validateAndCleanupBizHosts validate and cleanup specified biz host relationships
-func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, records []*table.BizHost) {
+func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID uint, records []*table.BizHost) {
 	if len(records) == 0 {
 		return
 	}
@@ -171,7 +171,7 @@ func (c *CleanupBizHost) validateAndCleanupBizHosts(kt *kit.Kit, bizID int, reco
 }
 
 // validateAndCleanupBatch validate and cleanup a batch of host relationships
-func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records []*table.BizHost) error {
+func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID uint, records []*table.BizHost) error {
 	// apply rate limiter
 	if err := c.rateLimiter.Wait(kt.Ctx); err != nil {
 		return fmt.Errorf("rate limiter wait failed: %w", err)
@@ -180,12 +180,12 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	// extract host IDs
 	hostIDs := make([]int, 0, len(records))
 	for _, record := range records {
-		hostIDs = append(hostIDs, record.HostID)
+		hostIDs = append(hostIDs, int(record.HostID))
 	}
 
 	// call new CMDB API to get valid host biz relationships
 	req := &bkcmdb.FindHostBizRelationsRequest{
-		BkBizID:  bizID,
+		BkBizID:  int(bizID),
 		BkHostID: hostIDs,
 	}
 
@@ -199,9 +199,9 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID int, records
 	}
 
 	// build valid host IDs set (only include hosts with binding relations)
-	validHostIDs := make(map[int]bool)
+	validHostIDs := make(map[uint]bool)
 	for _, relation := range relationResult.Data {
-		validHostIDs[relation.BkHostID] = true
+		validHostIDs[uint(relation.BkHostID)] = true
 	}
 
 	// check and delete invalid records

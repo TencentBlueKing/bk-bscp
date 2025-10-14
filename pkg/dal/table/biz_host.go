@@ -18,8 +18,8 @@ import (
 
 // BizHost defines business host relationship
 type BizHost struct {
-	BizID         int       `db:"bk_biz_id" json:"bk_biz_id" gorm:"column:bk_biz_id;primaryKey;autoIncrement:false"`
-	HostID        int       `db:"bk_host_id" json:"bk_host_id" gorm:"column:bk_host_id;primaryKey;autoIncrement:false"`
+	BizID         uint      `db:"bk_biz_id" json:"bk_biz_id" gorm:"column:bk_biz_id;primaryKey;autoIncrement:false"`
+	HostID        uint      `db:"bk_host_id" json:"bk_host_id" gorm:"column:bk_host_id;primaryKey;autoIncrement:false"`
 	AgentID       string    `db:"bk_agent_id" json:"bk_agent_id" gorm:"column:bk_agent_id"`
 	BKHostInnerIP string    `db:"bk_host_innerip" json:"bk_host_innerip" gorm:"column:bk_host_innerip"`
 	LastUpdated   time.Time `db:"last_updated" json:"last_updated" gorm:"column:last_updated;autoUpdateTime"`

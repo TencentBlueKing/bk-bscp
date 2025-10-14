@@ -68,9 +68,9 @@ type App interface {
 	// CreateWithTx one app instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, app *table.App) (uint32, error)
 	// QueryDistinctBizIDs query distinct business IDs from apps
-	QueryDistinctBizIDs(kit *kit.Kit) ([]int, error)
+	QueryDistinctBizIDs(kit *kit.Kit) ([]uint32, error)
 	// CheckBizExists check if business exists in BSCP using lightweight query
-	CheckBizExists(kit *kit.Kit, bizID int) (bool, error)
+	CheckBizExists(kit *kit.Kit, bizID uint32) (bool, error)
 }
 
 var _ App = new(appDao)
@@ -577,7 +577,7 @@ func (dao *appDao) ListAppMetaForCache(kit *kit.Kit, bizID uint32, appIDs []uint
 }
 
 // QueryDistinctBizIDs query distinct business IDs from apps
-func (dao *appDao) QueryDistinctBizIDs(kit *kit.Kit) ([]int, error) {
+func (dao *appDao) QueryDistinctBizIDs(kit *kit.Kit) ([]uint32, error) {
 	m := dao.genQ.App
 	bizIDs, err := dao.genQ.App.WithContext(kit.Ctx).
 		Select(m.BizID.Distinct()).
@@ -586,19 +586,19 @@ func (dao *appDao) QueryDistinctBizIDs(kit *kit.Kit) ([]int, error) {
 		return nil, err
 	}
 
-	var bizList []int
+	var bizList []uint32
 	for _, app := range bizIDs {
-		bizList = append(bizList, int(app.BizID))
+		bizList = append(bizList, app.BizID)
 	}
 
 	return bizList, nil
 }
 
 // CheckBizExists check if business exists in BSCP using lightweight query
-func (dao *appDao) CheckBizExists(kit *kit.Kit, bizID int) (bool, error) {
+func (dao *appDao) CheckBizExists(kit *kit.Kit, bizID uint32) (bool, error) {
 	m := dao.genQ.App
 	count, err := dao.genQ.App.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(uint32(bizID))).
+		Where(m.BizID.Eq(bizID)).
 		Count()
 	if err != nil {
 		return false, err

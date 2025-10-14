@@ -126,7 +126,7 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 
 	// Query host information by business ID
 	for _, biz := range bizList {
-		if err := c.syncBusinessHosts(kt, biz); err != nil {
+		if err := c.syncBusinessHosts(kt, int(biz)); err != nil {
 			logs.Errorf("sync business %d hosts failed, err: %v", biz, err)
 			// if sync failed, continue to sync next business
 			continue
@@ -170,8 +170,8 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 		var batchBizHosts []*table.BizHost
 		for _, host := range hostResult.Data.Info {
 			bizHost := &table.BizHost{
-				BizID:         bizID,
-				HostID:        host.BkHostID,
+				BizID:         uint(bizID),
+				HostID:        uint(host.BkHostID),
 				AgentID:       host.BkAgentID,
 				BKHostInnerIP: host.BkHostInnerIP,
 			}
@@ -196,7 +196,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 }
 
 // queryBSCPBusiness query BSCP businesses
-func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]int, error) {
+func (c *SyncBizHost) queryBSCPBusiness(kt *kit.Kit) ([]uint32, error) {
 	bizList, err := c.set.App().QueryDistinctBizIDs(kt)
 	if err != nil {
 		return nil, fmt.Errorf("query biz IDs failed: %w", err)

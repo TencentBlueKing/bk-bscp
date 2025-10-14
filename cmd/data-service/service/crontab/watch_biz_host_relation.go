@@ -218,7 +218,7 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
 	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
 		return nil
 	}
-	belongsToBSCP, err := w.set.App().CheckBizExists(kt, *detail.BkBizID)
+	belongsToBSCP, err := w.set.App().CheckBizExists(kt, uint32(*detail.BkBizID))
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
 		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
@@ -230,8 +230,8 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
 	}
 
 	bizHost := &table.BizHost{
-		BizID:  *detail.BkBizID,
-		HostID: *detail.BkHostID,
+		BizID:  uint(*detail.BkBizID),
+		HostID: uint(*detail.BkHostID),
 	}
 	// query host detail
 	hostResult, err := w.cmdbService.ListBizHosts(kt.Ctx, &bkcmdb.ListBizHostsRequest{
@@ -288,7 +288,7 @@ func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
 		return nil
 	}
 	// check if biz belongs to BSCP (with cache optimization)
-	belongsToBSCP, err := w.set.App().CheckBizExists(kt, *detail.BkBizID)
+	belongsToBSCP, err := w.set.App().CheckBizExists(kt, uint32(*detail.BkBizID))
 	if err != nil {
 		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
 		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
@@ -311,7 +311,7 @@ func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
 		return nil
 	}
 
-	if err := w.set.BizHost().Delete(kt, *detail.BkBizID, *detail.BkHostID); err != nil {
+	if err := w.set.BizHost().Delete(kt, uint(*detail.BkBizID), uint(*detail.BkHostID)); err != nil {
 		return fmt.Errorf("delete biz[%d] host[%d] failed: %w", detail.BkBizID, detail.BkHostID, err)
 	}
 
