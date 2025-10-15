@@ -88,22 +88,21 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve       *grpc.Server
-	gwServe     *http.Server
-	service     *service.Service
-	sd          serviced.Service
-	daoSet      dao.Set
-	vault       vault.Set
-	esb         client.Client
-	spaceMgr    *space.Manager
-	repo        repository.Provider
-	ssd         serviced.ServiceDiscover
-	cmdbService bkcmdb.Service
+	serve    *grpc.Server
+	gwServe  *http.Server
+	service  *service.Service
+	sd       serviced.Service
+	daoSet   dao.Set
+	vault    vault.Set
+	cmdb     bkcmdb.Service
+	esb      client.Client
+	spaceMgr *space.Manager
+	repo     repository.Provider
+	ssd      serviced.ServiceDiscover
 }
 
 // prepare do prepare jobs before run data service.
-//
-//nolint:funlen
+// nolint:funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -156,18 +155,6 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	ds.daoSet = set
-
-	// initial cmdb service
-	cmdbService, err := bkcmdb.New(&cc.CMDBConfig{
-		AppCode:    cc.DataService().Esb.AppCode,
-		AppSecret:  cc.DataService().Esb.AppSecret,
-		Host:       cc.DataService().Esb.Endpoints[0],
-		BkUserName: cc.DataService().Esb.User,
-	}, nil)
-	if err != nil {
-		return fmt.Errorf("initial cmdb service failed, err: %v", err)
-	}
-	ds.cmdbService = cmdbService
 
 	// 同步客户端在线状态
 	state := crontab.NewSyncClientOnlineState(ds.daoSet, ds.sd)
@@ -430,12 +417,26 @@ func (ds *dataService) register() error {
 }
 
 // startCronTasks starts all cron tasks for data service
+// nolint:funlen
 func (ds *dataService) startCronTasks(svc *service.Service) {
 	// 同步客户端在线状态
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
 
 	crontabConfig := cc.DataService().Crontab
+
+	// 在启动定时任务之前，先获取事件cursor，避免丢失全量同步期间发生的事件
+	timeAgo := time.Now().Add(-10 * time.Second).Unix()
+	if err := crontab.InitHostDetailCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init host detail cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
+	if err := crontab.InitBizHostCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init biz host cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
 
 	// 启动同步业务主机关系任务
 	if crontabConfig.SyncBizHost.Enabled {
@@ -446,7 +447,7 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 		}
 
 		bizHost := crontab.NewSyncBizHost(
-			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
 
 		// 启动定时同步任务
 		bizHost.Run()
@@ -483,11 +484,11 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 		watchBizHostInterval, err := time.ParseDuration(crontabConfig.WatchBizHostRelation.Interval)
 		if err != nil {
 			logs.Errorf("parse watchBizHostRelation interval failed, using default: %v", err)
-			watchBizHostInterval = 1 * time.Minute // 1 minute
+			watchBizHostInterval = 10 * time.Second // 10 seconds
 		}
 
 		watchBizHostRelation := crontab.NewWatchBizHostRelation(
-			ds.daoSet, ds.sd, ds.cmdbService, crontabConfig.WatchBizHostRelation.QpsLimit,
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.WatchBizHostRelation.QpsLimit,
 			watchBizHostInterval)
 		watchBizHostRelation.Run()
 	}
@@ -497,11 +498,10 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 		watchHostInterval, err := time.ParseDuration(crontabConfig.WatchHostUpdates.Interval)
 		if err != nil {
 			logs.Errorf("parse watchHostUpdates interval failed, using default: %v", err)
-			watchHostInterval = 30 * time.Second // 30 seconds
+			watchHostInterval = 5 * time.Second // 5 seconds
 		}
 
-		watchHostUpdates := crontab.NewWatchHostUpdates(
-			ds.daoSet, ds.sd, ds.cmdbService, watchHostInterval)
+		watchHostUpdates := crontab.NewWatchHostUpdates(ds.daoSet, ds.sd, ds.cmdb, watchHostInterval)
 		watchHostUpdates.Run()
 	}
 
@@ -513,7 +513,7 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 			cleanupInterval = 1 * time.Hour // 1 hour
 		}
 
-		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdbService,
+		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdb,
 			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
 		cleanupBizHost.Run()
 	}

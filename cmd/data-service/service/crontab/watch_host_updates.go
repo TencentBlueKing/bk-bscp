@@ -234,3 +234,46 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(
 
 	return nil
 }
+
+// InitHostDetailCursor initializes host detail cursor to the latest position
+// This function gets the latest cursor from CMDB and updates it to config table
+func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	kt := kit.New()
+	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Second)
+	defer cancel()
+	kt.Ctx = ctx
+
+	req := &bkcmdb.WatchResourceRequest{
+		BkResource:   host,
+		BkEventTypes: []string{hostUpdateEvent},
+		BkFields:     []string{"bk_host_id", "bk_agent_id"},
+		BkStartFrom:  &timeAgo,
+	}
+
+	watchResult, err := cmdbService.WatchHostResource(kt.Ctx, req)
+	if err != nil {
+		return fmt.Errorf("watch host resource failed: %w", err)
+	}
+	if !watchResult.Result {
+		return fmt.Errorf("watch host resource failed: %s", watchResult.Message)
+	}
+
+	if len(watchResult.Data.BkEvents) == 0 {
+		// 监听成功情况下，若无事件则会返回一个不含详情但是含有cursor的事件
+		return fmt.Errorf("watch host resource failed: no events found")
+	}
+
+	cursor := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
+	config := &table.Config{
+		Key:   hostDetailCursorKey,
+		Value: cursor,
+	}
+
+	err = set.Config().UpsertConfig(kt, []*table.Config{config})
+	if err != nil {
+		return fmt.Errorf("update host detail cursor to config failed: %w", err)
+	}
+
+	logs.Infof("successfully initialized host detail cursor to: %s", cursor)
+	return nil
+}

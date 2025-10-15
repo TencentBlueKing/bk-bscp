@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"time"
 
-	bkiam "github.com/TencentBlueKing/iam-go-sdk"
-	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -33,6 +31,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+
+	bkiam "github.com/TencentBlueKing/iam-go-sdk"
+	bkiamlogger "github.com/TencentBlueKing/iam-go-sdk/logger"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/auth"
@@ -321,7 +322,6 @@ func (s *Service) GetAuthConf(_ context.Context,
 			Host:      cc.G().CMDB.Host,
 			AppCode:   cc.G().CMDB.AppCode,
 			AppSecret: cc.G().CMDB.AppSecret,
-			UseEsb:    cc.G().CMDB.UseEsb,
 		},
 	}
 	return resp, nil

@@ -50,9 +50,9 @@ var (
 	searchSet            = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
 	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
-	listBizHosts         = "%s/prod/api/v3/hosts/app/%d/list_hosts"
-	watchResource        = "%s/prod/api/v3/event/watch/resource/%s"
-	findHostBizRelations = "%s/prod/api/v3/hosts/modules/read"
+	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
+	watchResource        = "%s/api/v3/event/watch/resource/%s"
+	findHostBizRelations = "%s/api/v3/hosts/modules/read"
 )
 
 type HTTPMethod string

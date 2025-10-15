@@ -319,6 +319,7 @@ type DataServiceSetting struct {
 	Credential   Credential    `yaml:"credential"`
 	Sharding     Sharding      `yaml:"sharding"`
 	Esb          Esb           `yaml:"esb"`
+	CMDB         CMDBConfig    `yaml:"cmdb"`
 	Repo         Repository    `yaml:"repository"`
 	Vault        Vault         `yaml:"vault"`
 	FeatureFlags FeatureFlags  `yaml:"featureFlags"`

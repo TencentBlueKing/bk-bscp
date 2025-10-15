@@ -42,8 +42,5 @@ type Service interface {
 
 // New cmdb service
 func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
-	if cfg.UseEsb {
-		return esbClient.Cmdb(), nil
-	}
 	return &CMDBService{cfg}, nil
 }

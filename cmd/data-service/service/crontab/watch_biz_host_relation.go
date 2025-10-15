@@ -342,3 +342,46 @@ func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hos
 	// check if relation exists
 	return len(relationResult.Data) > 0, nil
 }
+
+// InitBizHostCursor initializes biz host cursor to the latest position
+// This function gets the latest cursor from CMDB and updates it to config table
+func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	kt := kit.New()
+	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
+	defer cancel()
+	kt.Ctx = ctx
+
+	req := &bkcmdb.WatchResourceRequest{
+		BkResource:   hostRelation,
+		BkEventTypes: []string{bizHostRelationCreateEvent, bizHostRelationDeleteEvent},
+		BkFields:     []string{"bk_biz_id", "bk_host_id"},
+		BkStartFrom:  &timeAgo,
+	}
+
+	watchResult, err := cmdbService.WatchHostRelationResource(kt.Ctx, req)
+	if err != nil {
+		return fmt.Errorf("watch host relation resource failed: %w", err)
+	}
+	if !watchResult.Result {
+		return fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
+	}
+
+	if len(watchResult.Data.BkEvents) == 0 {
+		// 监听成功情况下，若无事件则会返回一个不含详情但是含有cursor的事件
+		return fmt.Errorf("watch host relation resource failed: no events found")
+	}
+
+	cursor := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
+	config := &table.Config{
+		Key:   bizHostCursorKey,
+		Value: cursor,
+	}
+
+	err = set.Config().UpsertConfig(kt, []*table.Config{config})
+	if err != nil {
+		return fmt.Errorf("update biz host cursor to config failed: %w", err)
+	}
+
+	logs.Infof("successfully initialized biz host cursor to: %s", cursor)
+	return nil
+}

@@ -133,7 +133,6 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		Host:      resp.Cmdb.Host,
 		AppCode:   resp.Cmdb.AppCode,
 		AppSecret: resp.Cmdb.AppSecret,
-		UseEsb:    resp.Cmdb.UseEsb,
 	}
 
 	authLoginClient := bkpaas.NewAuthLoginClient(conf)

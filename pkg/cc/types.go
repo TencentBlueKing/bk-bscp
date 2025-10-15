@@ -1316,7 +1316,7 @@ func (c *CleanupBizHostConfig) trySetDefault() {
 // trySetDefault try set the default value of watch biz host relation config
 func (c *WatchBizHostRelationConfig) trySetDefault() {
 	if c.Interval == "" {
-		c.Interval = "1m" // 1 minute
+		c.Interval = "10s" // 10 seconds
 	}
 
 	if c.QpsLimit == 0 {
@@ -1327,7 +1327,7 @@ func (c *WatchBizHostRelationConfig) trySetDefault() {
 // trySetDefault try set the default value of watch host updates config
 func (c *WatchHostUpdatesConfig) trySetDefault() {
 	if c.Interval == "" {
-		c.Interval = "30s" // 30 seconds
+		c.Interval = "5s" // 5 seconds
 	}
 
 	if c.QpsLimit == 0 {
@@ -1680,7 +1680,6 @@ type CMDBConfig struct {
 	AppCode    string `yaml:"appCode"`
 	AppSecret  string `yaml:"appSecret"`
 	Host       string `yaml:"host"`
-	UseEsb     bool   `yaml:"useEsb"`
 	BkUserName string `yaml:"bkUserName"`
 }
 
