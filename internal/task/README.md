@@ -28,8 +28,8 @@ Task 框架采用分层架构设计：
 ```go
 import (
     "context"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/register"
+    "github.com/TencentBlueKing/bk-bscp/internal/task"
+    "github.com/TencentBlueKing/bk-bscp/internal/task/register"
     "github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
@@ -68,7 +68,7 @@ func initTaskManager() (*task.TaskManager, error) {
 在 `executor/` 目录下创建任务执行器：
 
 ```go
-// pkg/task/executor/mytask/mytask.go
+// internal/task/executor/mytask/mytask.go
 package mytask
 
 import (
@@ -117,13 +117,13 @@ func Register(e *MyTaskExecutor) {
 在 `step/` 目录下创建步骤定义：
 
 ```go
-// pkg/task/step/mytask/mytask.go
+// internal/task/step/mytask/mytask.go
 package mytask
 
 import (
     "time"
     "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/executor/mytask"
+    "github.com/TencentBlueKing/bk-bscp/internal/task/executor/mytask"
 )
 
 // Process 创建处理步骤
@@ -148,12 +148,12 @@ func Process(param1 string, complexParam interface{}) *types.Step {
 在 `builder/` 目录下创建任务构建器：
 
 ```go
-// pkg/task/builder/mytask/mytask.go
+// internal/task/builder/mytask/mytask.go
 package mytask
 
 import (
     "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/step/mytask"
+    "github.com/TencentBlueKing/bk-bscp/internal/task/step/mytask"
 )
 
 type myTask struct {
@@ -208,8 +208,8 @@ func (t *myTask) FinalizeTask(task *types.Task) error {
 package register
 
 import (
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/executor/hello"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/executor/mytask" // 新增
+    "github.com/TencentBlueKing/bk-bscp/internal/task/executor/hello"
+    "github.com/TencentBlueKing/bk-bscp/internal/task/executor/mytask" // 新增
 )
 
 // RegisterExecutor 注册所有执行器
@@ -230,8 +230,8 @@ func RegisterExecutor() {
 
 ```go
 import (
-    "github.com/TencentBlueKing/bk-bscp/pkg/task"
-    "github.com/TencentBlueKing/bk-bscp/pkg/task/builder/mytask"
+    "github.com/TencentBlueKing/bk-bscp/internal/task"
+    "github.com/TencentBlueKing/bk-bscp/internal/task/builder/mytask"
 )
 
 func sendTask(taskManager *task.TaskManager) error {
