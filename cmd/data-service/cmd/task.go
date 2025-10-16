@@ -18,11 +18,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/hello"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/register"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/task"
-	"github.com/TencentBlueKing/bk-bscp/pkg/task/builder/hello"
-	"github.com/TencentBlueKing/bk-bscp/pkg/task/register"
 )
 
 // cmd for migration
@@ -46,7 +46,7 @@ var taskRunCmd = &cobra.Command{
 
 		logs.InitLogger(cc.DataService().Log.Logs())
 		// 注意 register 要在 taskMgr 初始化之前
-		register.RegisterExecutor()
+		register.RegisterHello()
 		taskMgr, err := task.NewTaskMgr(
 			context.Background(),
 			cc.DataService().Service.Etcd,

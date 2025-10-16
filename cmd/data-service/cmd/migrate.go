@@ -24,9 +24,9 @@ import (
 	// run the init function to add migrations
 	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/task"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
 

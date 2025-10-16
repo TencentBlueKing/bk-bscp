@@ -30,18 +30,42 @@ func (r *GESResponse) Decode(v any) error {
 	return json.Unmarshal(r.Data, v)
 }
 
-// ProcOperateReq 批量进程操作请求
-type ProcOperateReq struct {
+// MultiProcOperateReq 批量进程操作请求
+type MultiProcOperateReq struct {
 	ProcOperateReq []ProcessOperate `json:"proc_operate_req"` // 进程操作请求数组
 }
+
+// OpType 操作类型
+type OpType int
+
+const (
+	/*
+		0:启动进程（start）,调用spec.control中的start_cmd启动进程，启动成功会注册托管；
+		1:停止进程（stop）, 调用spec.control中的stop_cmd启动进程，停止成功会取消托管；
+		2:进程状态查询；
+		3:注册托管进程，令gse_agent对该进程进行托管（托管：当托管进程异常退出时，agent会自动拉起托管进程；当托管进程资源超限时，agent会杀死托管进程）；
+		4:取消托管进程，令gse_agent对该进程不再托管；
+		7:重启进程（restart）,调用spec.control中的restart_cmd启动进程；
+		8:重新加载进程（reload）,调用spec.control中的reload_cmd启动进程；
+		9:杀死进程（kill）,调用spec.control中的kill_cmd启动进程，杀死成功会取消托管
+	*/
+	OpTypeStart      = 0
+	OpTypeStop       = 1
+	OpTypeQuery      = 2
+	OpTypeRegister   = 3
+	OpTypeUnregister = 4
+	OpTypeRestart    = 7
+	OpTypeReload     = 8
+	OpTypeKill       = 9
+)
 
 // nolint
 // ProcessOperate 单个进程操作对象
 type ProcessOperate struct {
 	Meta        ProcessMeta `json:"meta"`            // 进程管理元数据
 	AgentIDList []string    `json:"agent_id_list"`   // 目标节点 Agent ID 列表
-	Hosts       []HostInfo  `json:"hosts,omitempty"` // 主机对象数组（可选，若设置了 AgentIDList 则忽略）
-	OpType      int         `json:"op_type"`         // 操作类型: 0=start,1=stop,2=query,3=register,4=unregister,7=restart,8=reload,9=kill
+	Hosts       []HostInfo  `json:"hosts,omitempty"` // 主机对象数组（可选，若设置了 AgentIDList 则忽略） ,只用agentID 进行下发
+	OpType      OpType      `json:"op_type"`         // 操作类型: 0=start,1=stop,2=query,3=register,4=unregister,7=restart,8=reload,9=kill
 	Spec        ProcessSpec `json:"spec"`            // 进程详细信息
 }
 
@@ -101,8 +125,8 @@ type ProcessMonitorPolicy struct {
 	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60
 }
 
-// ProcOperateResp 批量进程操作响应
-type ProcOperateResp struct {
+// MultiProcOperateResp 批量进程操作响应
+type MultiProcOperateResp struct {
 	TaskID string `json:"task_id"`
 }
 
@@ -173,15 +197,26 @@ type TaskReq struct {
 	TaskID      string   `json:"task_id"`       // 需要终止的任务 ID
 }
 
+// TaskState 任务状态
+type TaskState string
+
+const (
+	PendingState   TaskState = "pending"
+	ExecutingState TaskState = "pending"
+	TimeoutState   TaskState = "timeout"
+	FailedState    TaskState = "failed"
+	SuccessedState TaskState = "TaskState"
+)
+
 // TaskOperateResult 表示任务操作的具体结果
 type TaskOperateResult struct {
 	Result struct {
-		State           string   `json:"state"`            // pending, executing, timeout, failed, successed
-		SuccessedAgents []string `json:"successed_agents"` // 执行成功的 agent 列表
-		TimeoutAgents   []string `json:"timeout_agents"`   // 执行超时的 agent 列表
-		FailedAgents    []string `json:"failed_agents"`    // 执行失败的 agent 列表
-		PendingAgents   []string `json:"pending_agents"`   // 状态暂时不确定的 agent 列表
-		OfflineAgents   []string `json:"offline_agents"`   // 离线的 agent 列表
-		RestartedAgents []string `json:"restarted_agents"` // 在任务执行期间发生重启的 agent 列表
+		State           TaskState `json:"state"`            // pending，executing，timeout，failed，successed
+		SuccessedAgents []string  `json:"successed_agents"` // 执行成功的 agent 列表
+		TimeoutAgents   []string  `json:"timeout_agents"`   // 执行超时的 agent 列表
+		FailedAgents    []string  `json:"failed_agents"`    // 执行失败的 agent 列表
+		PendingAgents   []string  `json:"pending_agents"`   // 状态暂时不确定的 agent 列表
+		OfflineAgents   []string  `json:"offline_agents"`   // 离线的 agent 列表
+		RestartedAgents []string  `json:"restarted_agents"` // 在任务执行期间发生重启的 agent 列表
 	} `json:"result"`
 }
