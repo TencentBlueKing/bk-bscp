@@ -29,16 +29,17 @@ type Executor struct {
 
 // ProcessPayload 公用的配置，作为任务快照，方便进行获取以及对比
 type ProcessPayload struct {
-	SetName     string // 集群名
-	ModuleName  string // 模块名
-	ServiceName string // 服务实例
-	Environment string // 环境
-	Alias       string // 进程别名
-	InnerIP     string // IP
-	AgentID     string // agnet ID
-	CcProcessID string // CC 进程ID
-	LocalInstID string
-	InstID      string
+	SetName           string // 集群名
+	ModuleName        string // 模块名
+	ServiceName       string // 服务实例
+	Environment       string // 环境
+	Alias             string // 进程别名
+	InnerIP           string // IP
+	AgentID           string // agnet ID
+	CcProcessID       string // CC 进程ID
+	LocalInstID       string // LocalInstID
+	InstID            string // InstID
+	ProcessConfigData string // 进程启动相关配置，比如启动脚本，优先级等
 }
 
 // NewExecutor new executor
