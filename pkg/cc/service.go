@@ -71,6 +71,22 @@ type Setting interface {
 	Validate() error
 }
 
+// GlobalSettings 全局配置, 配置所有模块可访问
+type GlobalSettings struct {
+	BaseConf     BaseConf          `yaml:"baseConf"`
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+	GSE          GSE               `yaml:"gse"`
+	CMDB         CMDBConfig        `yaml:"cmdb"`
+}
+
+// BaseConf 基础配置
+type BaseConf struct {
+	AppCode   string `yaml:"app_code"`
+	AppSecret string `yaml:"app_secret"`
+}
+
 // ApiServerSetting defines api server used setting options.
 type ApiServerSetting struct {
 	Network      Network      `yaml:"network"`

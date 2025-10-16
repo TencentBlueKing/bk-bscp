@@ -46,7 +46,7 @@ var taskRunCmd = &cobra.Command{
 
 		logs.InitLogger(cc.DataService().Log.Logs())
 		// 注意 register 要在 taskMgr 初始化之前
-		register.RegisterExecutor()
+		register.RegisterHello()
 		taskMgr, err := task.NewTaskMgr(
 			context.Background(),
 			cc.DataService().Service.Etcd,

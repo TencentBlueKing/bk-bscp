@@ -21,7 +21,6 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -34,15 +33,25 @@ const (
 
 // Service xxx
 type Service struct {
-	*cc.CMDBConfig
+	appCode   string
+	appSecret string
+	host      string
+}
+
+// NewService new service
+func NewService(appCode, appSecret, host string) *Service {
+	return &Service{
+		appCode:   appCode,
+		appSecret: appSecret,
+		host:      host,
+	}
 }
 
 // nolint: unparam
 func (gse *Service) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
-
 	authHeader := components.MakeBKAPIGWAuthHeader(
-		gse.AppCode,
-		gse.AppSecret,
+		gse.appCode,
+		gse.appSecret,
 	)
 
 	// 构造请求

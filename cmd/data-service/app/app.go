@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -202,7 +203,8 @@ func (ds *dataService) prepare(opt *options.Option) error {
 
 func (ds *dataService) initTaskManager() error {
 	// 注册并启动任务（register要在NewTaskMgr之前）
-	register.RegisterExecutor()
+	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
+	register.RegisterExecutor(gseService, ds.daoSet)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),

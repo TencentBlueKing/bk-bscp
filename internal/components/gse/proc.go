@@ -19,33 +19,33 @@ import (
 )
 
 var (
-	operateProcMulti           = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_multi"
-	updateProcInfo             = "%s/api/bk-gse/prod/api/v2/proc/update_proc_info"
-	asyncTransferFile          = "%s/api/bk-gse/prod/api/v2/task/async_transfer_file"
-	asyncTerminateTransferFile = "%s/api/bk-gse/prod/api/v2/task/async_terminate_transfer_file"
-	getTaskState               = "%s/api/bk-gse/prod/api/v2/task/get_task_state" // nolint: unused
+	operateProcMulti           = "%s/api/v2/proc/operate_proc_multi"
+	updateProcInfo             = "%s/api/v2/proc/update_proc_info"
+	asyncTransferFile          = "%s/api/v2/task/async_transfer_file"
+	asyncTerminateTransferFile = "%s/api/v2/task/async_terminate_transfer_file"
+	getTaskState               = "%s/api/v2/task/get_task_state"
 )
 
 // OperateProcMulti 批量进程操作
-func (gse *Service) OperateProcMulti(ctx context.Context, req ProcOperateReq) (*GESResponse, error) {
-	url := fmt.Sprintf(operateProcMulti, gse.Host)
+func (gse *Service) OperateProcMulti(ctx context.Context, req *MultiProcOperateReq) (*MultiProcOperateResp, error) {
+	url := fmt.Sprintf(operateProcMulti, gse.host)
 
 	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
 
-	var procOperateResp ProcOperateResp
-	if err := resp.Decode(&procOperateResp); err != nil {
+	var multiProcOperateResp MultiProcOperateResp
+	if err := resp.Decode(&multiProcOperateResp); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return &multiProcOperateResp, nil
 }
 
 // UpdateProcInfo 更新进程信息
-func (gse *Service) UpdateProcInfo(ctx context.Context, req UpdateProcInfoReq) (*GESResponse, error) {
-	url := fmt.Sprintf(updateProcInfo, gse.Host)
+func (gse *Service) UpdateProcInfo(ctx context.Context, req *UpdateProcInfoReq) (*GESResponse, error) {
+	url := fmt.Sprintf(updateProcInfo, gse.host)
 
 	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -61,8 +61,8 @@ func (gse *Service) UpdateProcInfo(ctx context.Context, req UpdateProcInfoReq) (
 }
 
 // AsyncTransferFile 文件传输
-func (gse *Service) AsyncTransferFile(ctx context.Context, req FileTaskReq) (*GESResponse, error) {
-	url := fmt.Sprintf(asyncTransferFile, gse.Host)
+func (gse *Service) AsyncTransferFile(ctx context.Context, req *FileTaskReq) (*GESResponse, error) {
+	url := fmt.Sprintf(asyncTransferFile, gse.host)
 
 	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -78,8 +78,8 @@ func (gse *Service) AsyncTransferFile(ctx context.Context, req FileTaskReq) (*GE
 }
 
 // AsyncTerminateTransferFile 终止文件任务执行
-func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req TaskReq) (*GESResponse, error) {
-	url := fmt.Sprintf(asyncTerminateTransferFile, gse.Host)
+func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req *TaskReq) (*GESResponse, error) {
+	url := fmt.Sprintf(asyncTerminateTransferFile, gse.host)
 
 	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -95,8 +95,8 @@ func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req TaskReq)
 }
 
 // GetTaskState 查询任务状态
-func (gse *Service) GetTaskState(ctx context.Context, req TaskReq) (*GESResponse, error) {
-	url := fmt.Sprintf(asyncTerminateTransferFile, gse.Host)
+func (gse *Service) GetTaskState(ctx context.Context, req *TaskReq) (*TaskOperateResult, error) {
+	url := fmt.Sprintf(getTaskState, gse.host)
 
 	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -108,5 +108,5 @@ func (gse *Service) GetTaskState(ctx context.Context, req TaskReq) (*GESResponse
 		return nil, err
 	}
 
-	return resp, nil
+	return &taskResp, nil
 }
