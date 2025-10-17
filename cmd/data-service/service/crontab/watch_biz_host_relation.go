@@ -346,6 +346,7 @@ func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hos
 // InitBizHostCursor initializes biz host cursor to the latest position
 // This function gets the latest cursor from CMDB and updates it to config table
 func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	logs.Infof("start init biz host cursor")
 	kt := kit.New()
 	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
 	defer cancel()

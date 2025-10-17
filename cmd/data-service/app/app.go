@@ -81,6 +81,9 @@ func Run(opt *options.Option) error {
 		return err
 	}
 
+	// 触发定时任务
+	go ds.startCronTasks()
+
 	shutdown.RegisterFirstShutdown(ds.finalizer)
 	shutdown.WaitShutdown(20)
 	return nil
@@ -263,9 +266,6 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 启动定时任务
-	ds.startCronTasks(svc)
-
 	pbds.RegisterDataServer(serve, svc)
 
 	// initialize and register standard grpc server grpcMetrics.
@@ -407,14 +407,12 @@ func (ds *dataService) register() error {
 
 // startCronTasks starts all cron tasks for data service
 // nolint:funlen
-func (ds *dataService) startCronTasks(svc *service.Service) {
+func (ds *dataService) startCronTasks() {
 	// 同步客户端在线状态
-	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, ds.service)
 	status.Run()
 
-	crontabConfig := cc.DataService().Crontab
-
-	// 在启动定时任务之前，先获取事件cursor，避免丢失全量同步期间发生的事件
+	// 在启动全量同步之前，先获取事件cursor，避免丢失全量同步期间发生的事件
 	timeAgo := time.Now().Add(-10 * time.Second).Unix()
 	if err := crontab.InitHostDetailCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
 		logs.Errorf("init host detail cursor failed, err: %v", err)
@@ -427,6 +425,7 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 		// PASS
 	}
 
+	crontabConfig := cc.DataService().Crontab
 	// 启动同步业务主机关系任务
 	if crontabConfig.SyncBizHost.Enabled {
 		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)
@@ -440,32 +439,10 @@ func (ds *dataService) startCronTasks(svc *service.Service) {
 
 		// 启动定时同步任务
 		bizHost.Run()
-
-		// 首次启动时异步执行一次全量同步
-		go func() {
-			if !ds.sd.IsMaster() {
-				logs.Infof("current service instance is slave, skip initial sync")
-				return
-			}
-
-			logs.Infof("start initial full sync")
-			kt := kit.New()
-			ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
-			kt.Ctx = ctx
-
-			if err := func() (err error) {
-				defer func() {
-					if r := recover(); r != nil {
-						err = fmt.Errorf("initial sync panic: %v", r)
-					}
-				}()
-				bizHost.SyncBizHost(kt)
-				return nil
-			}(); err != nil {
-				logs.Errorf("initial full sync failed: %v", err)
-			}
-			cancel()
-		}()
+		// 立即执行一次全量同步，需要等数据完全同步再启动定时任务，避免事件丢失
+		if ds.sd.IsMaster() {
+			bizHost.SyncBizHost(kit.New())
+		}
 	}
 
 	// 启动监听业务主机关系任务
