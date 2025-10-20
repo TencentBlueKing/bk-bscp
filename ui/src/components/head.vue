@@ -176,6 +176,15 @@
         { id: 'configuration-example', module: 'example', name: t('配置示例') },
       ],
     },
+    {
+      id: 'process-and-config-manage',
+      module: 'process-and-config',
+      name: t('进程与配置管理'),
+      children: [
+        { id: 'process-management', module: 'process', name: t('进程管理') },
+        { id: 'config-management', module: 'config', name: t('配置管理') },
+      ],
+    },
     { id: 'records-all', module: 'records', name: t('操作记录') },
   ]);
 
@@ -448,6 +457,7 @@
             top: 52px;
             left: 0;
             z-index: 9999;
+            width: 100%;
             background: #182132;
             border-radius: 0 0 2px 2px;
             padding: 4px 1px;
