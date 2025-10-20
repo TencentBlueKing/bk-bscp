@@ -22,6 +22,8 @@ import (
 type ProcessInstance interface {
 	// List released config items with options.
 	GetProcessInstancesByID(kit *kit.Kit, bizID uint32, processID []uint32) ([]*table.ProcessInstance, error)
+	// BatchCreateWithTx batch create client instances with transaction.
+	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -30,6 +32,24 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// BatchCreateWithTx implements ProcessInstance.
+func (dao *processInstanceDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
+	// generate an config item id and update to config item.
+	if len(data) == 0 {
+		return nil
+	}
+
+	ids, err := dao.idGen.Batch(kit, table.ProcessInstancesTable, len(data))
+	if err != nil {
+		return err
+	}
+	for k, v := range data {
+		v.ID = ids[k]
+	}
+
+	return tx.ProcessInstance.WithContext(kit.Ctx).CreateInBatches(data, 500)
 }
 
 // GetProcessInstancesByID implements ProcessInstance.

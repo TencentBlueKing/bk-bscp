@@ -71,6 +71,15 @@ type Setting interface {
 	Validate() error
 }
 
+// GlobalSettings 全局配置, 配置所有模块可访问
+type GlobalSettings struct {
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+	CMDB         CMDBConfig        `yaml:"cmdb"`
+}
+
 // ApiServerSetting defines api server used setting options.
 type ApiServerSetting struct {
 	Network      Network      `yaml:"network"`
@@ -314,6 +323,7 @@ type DataServiceSetting struct {
 	FeatureFlags FeatureFlags `yaml:"featureFlags"`
 	Gorm         Gorm         `yaml:"gorm"`
 	ITSM         ITSMConfig   `yaml:"itsm"`
+	CMDB         CMDBConfig   `yaml:"cmdb"`
 }
 
 // trySetFlagBindIP try set flag bind ip.

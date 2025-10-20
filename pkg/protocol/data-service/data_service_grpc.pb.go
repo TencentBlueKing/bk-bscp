@@ -219,6 +219,7 @@ const (
 	Data_GetTemplateAndNonTemplateCICount_FullMethodName  = "/pbds.Data/GetTemplateAndNonTemplateCICount"
 	Data_BatchUpdateLastConsumedTime_FullMethodName       = "/pbds.Data/BatchUpdateLastConsumedTime"
 	Data_ListProcess_FullMethodName                       = "/pbds.Data/ListProcess"
+	Data_SyncCMDB_FullMethodName                          = "/pbds.Data/SyncCMDB"
 )
 
 // DataClient is the client API for Data service.
@@ -447,6 +448,7 @@ type DataClient interface {
 	BatchUpdateLastConsumedTime(ctx context.Context, in *BatchUpdateLastConsumedTimeReq, opts ...grpc.CallOption) (*BatchUpdateLastConsumedTimeResp, error)
 	// 进程管理列表
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
+	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 }
 
 type dataClient struct {
@@ -2140,6 +2142,15 @@ func (c *dataClient) ListProcess(ctx context.Context, in *ListProcessReq, opts .
 	return out, nil
 }
 
+func (c *dataClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
+	out := new(SyncCMDBResp)
+	err := c.cc.Invoke(ctx, Data_SyncCMDB_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2366,6 +2377,7 @@ type DataServer interface {
 	BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error)
 	// 进程管理列表
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
+	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -2932,6 +2944,9 @@ func (UnimplementedDataServer) BatchUpdateLastConsumedTime(context.Context, *Bat
 }
 func (UnimplementedDataServer) ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProcess not implemented")
+}
+func (UnimplementedDataServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6311,6 +6326,24 @@ func _Data_ListProcess_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).SyncCMDB(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_SyncCMDB_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).SyncCMDB(ctx, req.(*SyncCMDBReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7065,6 +7098,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProcess",
 			Handler:    _Data_ListProcess_Handler,
+		},
+		{
+			MethodName: "SyncCMDB",
+			Handler:    _Data_SyncCMDB_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

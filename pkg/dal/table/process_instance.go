@@ -53,7 +53,8 @@ type ProcessInstanceSpec struct {
 
 // ProcessInstanceAttachment xxx
 type ProcessInstanceAttachment struct {
-	TenantID  string `gorm:"column:tenant_id" json:"tenant_id"`   // 租户ID
-	BizID     uint32 `gorm:"column:biz_id" json:"biz_id"`         // 业务ID
-	ProcessID uint32 `gorm:"column:process_id" json:"process_id"` // 关联的process表ID
+	TenantID    string `gorm:"column:tenant_id" json:"tenant_id"`         // 租户ID
+	BizID       uint32 `gorm:"column:biz_id" json:"biz_id"`               // 业务ID
+	ProcessID   uint32 `gorm:"column:process_id" json:"process_id"`       // 关联的process表ID
+	CcProcessID uint32 `gorm:"column:cc_process_id" json:"cc_process_id"` // cc进程ID
 }

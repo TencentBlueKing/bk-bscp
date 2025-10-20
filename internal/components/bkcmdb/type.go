@@ -90,6 +90,16 @@ func (r *CMDBResponse) Decode(v any) error {
 	return json.Unmarshal(r.Data, v)
 }
 
+// Encode 把目标结构编码回 Data 部分
+func (r *CMDBResponse) Encode(v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	r.Data = b
+	return nil
+}
+
 // BizTopoReq 查询业务实例拓扑请求参数
 type BizTopoReq struct {
 	BkBizID int `json:"bk_biz_id"` // 业务ID，必填
@@ -189,7 +199,7 @@ type ListProcTemplateResp struct {
 // ListProcessInstanceReq xxx
 type ListProcessInstanceReq struct {
 	BkBizID           int `json:"bk_biz_id"`           // 业务ID
-	ServiceTemplateID int `json:"service_template_id"` // 服务实例ID
+	ServiceInstanceID int `json:"service_instance_id"` // 服务实例ID
 }
 
 // ListProcessInstance 进程数据
@@ -220,11 +230,11 @@ type Relation struct {
 
 // FindHostBySetTemplateReq xxx
 type FindHostBySetTemplateReq struct {
-	BkBizID              int        `json:"bk_biz_id"`               // 业务ID，必填
-	BkServiceTemplateIDs []int      `json:"bk_service_template_ids"` // 集群模板ID列表，最多可填500个，必填
-	BkSetIDs             []int      `json:"bk_set_ids,omitempty"`    // 集群ID列表，最多可填500个，可选
-	Fields               []string   `json:"fields"`                  // 主机属性列表，控制返回结果的模块信息里有哪些字段，必填
-	Page                 *PageParam `json:"page"`                    // 分页信息，必填
+	BkBizID          int        `json:"bk_biz_id"`            // 业务ID，必填
+	BkSetTemplateIDs []int      `json:"bk_set_template_ids"`  // 集群模板ID列表，最多可填500个，必填
+	BkSetIDs         []int      `json:"bk_set_ids,omitempty"` // 集群ID列表，最多可填500个，可选
+	Fields           []string   `json:"fields"`               // 主机属性列表，控制返回结果的模块信息里有哪些字段，必填
+	Page             *PageParam `json:"page"`                 // 分页信息，必填
 }
 
 type FindHostBySetTemplateResp struct {
@@ -278,11 +288,11 @@ type ProcessInfo struct {
 	LastTime          string     `json:"last_time"`            // 更新时间
 	PidFile           string     `json:"pid_file"`             // PID文件路径
 	Priority          int        `json:"priority"`             // 启动优先级
-	ProcNum           any        `json:"proc_num"`             // 启动数量
-	ReloadCmd         any        `json:"reload_cmd"`           // 进程重载命令
-	RestartCmd        any        `json:"restart_cmd"`          // 重启命令
-	StartCmd          any        `json:"start_cmd"`            // 启动命令
-	StopCmd           any        `json:"stop_cmd"`             // 停止命令
+	ProcNum           int        `json:"proc_num"`             // 启动数量
+	ReloadCmd         string     `json:"reload_cmd"`           // 进程重载命令
+	RestartCmd        string     `json:"restart_cmd"`          // 重启命令
+	StartCmd          string     `json:"start_cmd"`            // 启动命令
+	StopCmd           string     `json:"stop_cmd"`             // 停止命令
 	Timeout           int        `json:"timeout"`              // 操作超时时长
 	User              string     `json:"user"`                 // 启动用户
 	WorkPath          string     `json:"work_path"`            // 工作路径
@@ -375,6 +385,12 @@ type SetListReq struct {
 	Fields  []string `json:"fields"`    // 集群属性字段列表，必填
 }
 
+// Business 业务数据
+type Sets struct {
+	Count int       `json:"count"` // 记录条数
+	Info  []SetInfo `json:"info"`  // 集群数据
+}
+
 // SetInfo 集群信息
 type SetInfo struct {
 	BkSetName          string   `json:"bk_set_name"`          // 集群名称
@@ -437,10 +453,11 @@ type ModuleListResp struct {
 // SearchSetReq 查询集群请求参数
 type SearchSetReq struct {
 	BkSupplierAccount string         `json:"bk_supplier_account,omitempty"` // 开发商账号
-	BkBizID           int            `json:"bk_biz_id"`                     // 业务ID
+	BkBizID           int            `json:"bk_biz_id"`                     // 业务ID, 如果查询业务改字段没有
 	Fields            []string       `json:"fields"`                        // 查询字段
 	Condition         map[string]any `json:"condition,omitempty"`           // 查询条件（不推荐使用）
-	Filter            *Filter        `json:"filter,omitempty"`              // 属性组合查询条件
+	Filter            *Filter        `json:"filter,omitempty"`              // 查询集群列表时的参数
+	BizPropertyFilter *Filter        `json:"biz_property_filter,omitempty"` // 查询业务列表时的参数
 	TimeCondition     *TimeFilter    `json:"time_condition,omitempty"`      // 按时间查询模型实例的条件
 	Page              *PageParam     `json:"page"`                          // 分页参数
 }
@@ -469,4 +486,42 @@ type TimeRuleItem struct {
 	Field string `json:"field"` // 模型字段名
 	Start string `json:"start"` // 起始时间 yyyy-MM-dd hh:mm:ss
 	End   string `json:"end"`   // 结束时间 yyyy-MM-dd hh:mm:ss
+}
+
+// Business 业务数据
+type Business struct {
+	Count int            `json:"count"` // 记录条数
+	Info  []BusinessInfo `json:"info"`  // 业务实际数据
+}
+
+// BusinessInfo 单个业务信息
+type BusinessInfo struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	BkBizName         string `json:"bk_biz_name"`         // 业务名
+	BkBizMaintainer   string `json:"bk_biz_maintainer"`   // 运维人员
+	BkBizProductor    string `json:"bk_biz_productor"`    // 产品人员
+	BkBizDeveloper    string `json:"bk_biz_developer"`    // 开发人员
+	BkBizTester       string `json:"bk_biz_tester"`       // 测试人员
+	TimeZone          string `json:"time_zone"`           // 时区
+	Language          string `json:"language"`            // 语言 (1=中文, 2=英文)
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+	CreateTime        string `json:"create_time"`         // 创建时间
+	LastTime          string `json:"last_time"`           // 更新时间
+	Default           int    `json:"default"`             // 业务类型
+	Operator          string `json:"operator"`            // 主要维护人
+	LifeCycle         string `json:"life_cycle"`          // 生命周期
+	BkCreatedAt       string `json:"bk_created_at"`       // 创建时间
+	BkUpdatedAt       string `json:"bk_updated_at"`       // 更新时间
+	BkCreatedBy       string `json:"bk_created_by"`       // 创建人
+}
+
+// SearchModuleReq 查询模块请求参数
+type SearchModuleReq struct {
+	BkSupplierAccount string         `json:"bk_supplier_account,omitempty"` // 开发商账号
+	BkBizID           int            `json:"bk_biz_id"`                     // 业务ID, 必填
+	BkSetID           int            `json:"bk_set_id"`                     // 集群ID, 可选
+	Fields            []string       `json:"fields"`                        // 查询字段
+	Condition         map[string]any `json:"condition,omitempty"`           // 查询条件（不推荐使用）
+	Filter            *Filter        `json:"filter,omitempty"`              // 属性组合查询条件
+	Page              *PageParam     `json:"page"`                          // 分页参数
 }

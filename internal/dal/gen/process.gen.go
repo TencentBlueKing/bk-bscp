@@ -37,8 +37,9 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.Environment = field.NewString(tableName, "environment")
 	_process.Alias_ = field.NewString(tableName, "alias")
 	_process.InnerIP = field.NewString(tableName, "inner_ip")
-	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_statu")
+	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_status")
 	_process.CcSyncUpdatedAt = field.NewTime(tableName, "cc_sync_updated_at")
+	_process.PrevSourceData = field.NewString(tableName, "prev_data")
 	_process.SourceData = field.NewString(tableName, "source_data")
 	_process.Creator = field.NewString(tableName, "creator")
 	_process.Reviser = field.NewString(tableName, "reviser")
@@ -66,6 +67,7 @@ type process struct {
 	InnerIP         field.String
 	CcSyncStatus    field.String
 	CcSyncUpdatedAt field.Time
+	PrevSourceData  field.String
 	SourceData      field.String
 	Creator         field.String
 	Reviser         field.String
@@ -97,8 +99,9 @@ func (p *process) updateTableName(table string) *process {
 	p.Environment = field.NewString(table, "environment")
 	p.Alias_ = field.NewString(table, "alias")
 	p.InnerIP = field.NewString(table, "inner_ip")
-	p.CcSyncStatus = field.NewString(table, "cc_sync_statu")
+	p.CcSyncStatus = field.NewString(table, "cc_sync_status")
 	p.CcSyncUpdatedAt = field.NewTime(table, "cc_sync_updated_at")
+	p.PrevSourceData = field.NewString(table, "prev_data")
 	p.SourceData = field.NewString(table, "source_data")
 	p.Creator = field.NewString(table, "creator")
 	p.Reviser = field.NewString(table, "reviser")
@@ -128,7 +131,7 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 17)
+	p.fieldMap = make(map[string]field.Expr, 18)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
@@ -139,8 +142,9 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["environment"] = p.Environment
 	p.fieldMap["alias"] = p.Alias_
 	p.fieldMap["inner_ip"] = p.InnerIP
-	p.fieldMap["cc_sync_statu"] = p.CcSyncStatus
+	p.fieldMap["cc_sync_status"] = p.CcSyncStatus
 	p.fieldMap["cc_sync_updated_at"] = p.CcSyncUpdatedAt
+	p.fieldMap["prev_data"] = p.PrevSourceData
 	p.fieldMap["source_data"] = p.SourceData
 	p.fieldMap["creator"] = p.Creator
 	p.fieldMap["reviser"] = p.Reviser

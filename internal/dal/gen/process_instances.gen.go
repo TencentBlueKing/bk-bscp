@@ -31,6 +31,7 @@ func newProcessInstance(db *gorm.DB, opts ...gen.DOOption) processInstance {
 	_processInstance.TenantID = field.NewString(tableName, "tenant_id")
 	_processInstance.BizID = field.NewUint32(tableName, "biz_id")
 	_processInstance.ProcessID = field.NewUint32(tableName, "process_id")
+	_processInstance.CcProcessID = field.NewUint32(tableName, "cc_process_id")
 	_processInstance.LocalInstID = field.NewString(tableName, "local_inst_id")
 	_processInstance.InstID = field.NewString(tableName, "inst_id")
 	_processInstance.Status = field.NewString(tableName, "status")
@@ -54,6 +55,7 @@ type processInstance struct {
 	TenantID        field.String
 	BizID           field.Uint32
 	ProcessID       field.Uint32
+	CcProcessID     field.Uint32
 	LocalInstID     field.String
 	InstID          field.String
 	Status          field.String
@@ -83,6 +85,7 @@ func (p *processInstance) updateTableName(table string) *processInstance {
 	p.TenantID = field.NewString(table, "tenant_id")
 	p.BizID = field.NewUint32(table, "biz_id")
 	p.ProcessID = field.NewUint32(table, "process_id")
+	p.CcProcessID = field.NewUint32(table, "cc_process_id")
 	p.LocalInstID = field.NewString(table, "local_inst_id")
 	p.InstID = field.NewString(table, "inst_id")
 	p.Status = field.NewString(table, "status")
@@ -120,11 +123,12 @@ func (p *processInstance) GetFieldByName(fieldName string) (field.OrderExpr, boo
 }
 
 func (p *processInstance) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 13)
+	p.fieldMap = make(map[string]field.Expr, 14)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
 	p.fieldMap["process_id"] = p.ProcessID
+	p.fieldMap["cc_process_id"] = p.CcProcessID
 	p.fieldMap["local_inst_id"] = p.LocalInstID
 	p.fieldMap["inst_id"] = p.InstID
 	p.fieldMap["status"] = p.Status

@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -97,6 +98,7 @@ type dataService struct {
 	repo        repository.Provider
 	ssd         serviced.ServiceDiscover
 	taskManager *task.TaskManager
+	cmdb        bkcmdb.Service
 }
 
 // prepare do prepare jobs before run data service.
@@ -164,12 +166,21 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	// initialize esb client
-	settings := cc.DataService().Esb
-	esbCli, err := client.NewClient(&settings, metrics.Register())
+	esbCfg := cc.DataService().Esb
+	cmdbCfg := cc.G().CMDB
+
+	esbCli, err := client.NewClient(&esbCfg, metrics.Register())
 	if err != nil {
 		return fmt.Errorf("new esb client failed, err: %v", err)
 	}
 	ds.esb = esbCli
+
+	cmdbCli, err := bkcmdb.New(&cmdbCfg, esbCli)
+	if err != nil {
+		return fmt.Errorf("new cmdb client failed, err: %v", err)
+	}
+
+	ds.cmdb = cmdbCli
 
 	// initialize space manager
 	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
@@ -280,7 +291,7 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb)
 	if err != nil {
 		return err
 	}
@@ -288,6 +299,10 @@ func (ds *dataService) listenAndServe() error {
 	// 同步客户端在线状态
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
 	status.Run()
+
+	// // 定时同步cmdb数据
+	// syncCmdb := crontab.NewSycnCMDB(ds.daoSet, ds.sd, svc)
+	// syncCmdb.Run()
 
 	pbds.RegisterDataServer(serve, svc)
 

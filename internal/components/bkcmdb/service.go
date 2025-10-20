@@ -76,6 +76,10 @@ type Service interface {
 		*CMDBResponse, error)
 	// SearchSet 查询集群
 	SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	// SearchBusinessByAccount 查询业务
+	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	// SearchModule 查询模块
+	SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error)
 }
 
 // New cmdb service

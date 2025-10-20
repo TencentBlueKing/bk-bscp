@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -47,11 +48,12 @@ type Service struct {
 	esb      client.Client
 	repo     repository.Provider
 	tmplProc tmplprocess.TmplProcessor
+	cmdb     bkcmdb.Service
 }
 
 // NewService create a service instance.
 func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set,
-	esb client.Client, repo repository.Provider) (*Service, error) {
+	esb client.Client, repo repository.Provider, cmdb bkcmdb.Service) (*Service, error) {
 	state, ok := sd.(serviced.State)
 	if !ok {
 		return nil, errors.New("discover convert state failed")
@@ -98,6 +100,7 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 		repo:     repo,
 		tmplProc: tmplprocess.NewTmplProcessor(),
 		cs:       pbcs.NewCacheClient(csConn),
+		cmdb:     cmdb,
 	}
 
 	return svc, nil

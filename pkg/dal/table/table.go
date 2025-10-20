@@ -253,6 +253,10 @@ const (
 	ClientEventTable Name = "client_events"
 	// ConfigTable is configs table's name
 	ConfigTable Name = "configs"
+	// ProcessTable is process table's name
+	ProcessTable Name = "Process"
+	// ProcessInstancesTable is process_instances table's name
+	ProcessInstancesTable Name = "ProcessInstances"
 )
 
 // RevisionColumns defines all the Revision table's columns.

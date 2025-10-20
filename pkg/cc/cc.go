@@ -26,6 +26,9 @@ var runtimeOnce sync.Once
 // It can be called only after LoadSettings is executed successfully.
 var rt *runtime
 
+// globalSettings : Global Configurations
+var globalSettings *GlobalSettings
+
 func initRuntime(s Setting) {
 	runtimeOnce.Do(func() {
 		rt = &runtime{
@@ -90,6 +93,11 @@ func AuthServer() AuthServerSetting {
 	}
 
 	return *s
+}
+
+// G return global settings.
+func G() GlobalSettings {
+	return *globalSettings
 }
 
 // ConfigServer return config server Setting.

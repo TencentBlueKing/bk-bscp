@@ -207,6 +207,7 @@ const (
 	Config_CompareKvConflicts_FullMethodName                 = "/pbcs.Config/CompareKvConflicts"
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
 	Config_ListProcess_FullMethodName                        = "/pbcs.Config/ListProcess"
+	Config_SyncCMDB_FullMethodName                           = "/pbcs.Config/SyncCMDB"
 )
 
 // ConfigClient is the client API for Config service.
@@ -567,6 +568,7 @@ type ConfigClient interface {
 	// 进程管理
 	// 进程列表
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
+	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 }
 
 type configClient struct {
@@ -2197,6 +2199,15 @@ func (c *configClient) ListProcess(ctx context.Context, in *ListProcessReq, opts
 	return out, nil
 }
 
+func (c *configClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
+	out := new(SyncCMDBResp)
+	err := c.cc.Invoke(ctx, Config_SyncCMDB_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2555,6 +2566,7 @@ type ConfigServer interface {
 	// 进程管理
 	// 进程列表
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
+	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3100,6 +3112,9 @@ func (UnimplementedConfigServer) GetTemplateAndNonTemplateCICount(context.Contex
 }
 func (UnimplementedConfigServer) ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProcess not implemented")
+}
+func (UnimplementedConfigServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6353,6 +6368,24 @@ func _Config_ListProcess_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).SyncCMDB(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_SyncCMDB_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).SyncCMDB(ctx, req.(*SyncCMDBReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7079,6 +7112,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProcess",
 			Handler:    _Config_ListProcess_Handler,
+		},
+		{
+			MethodName: "SyncCMDB",
+			Handler:    _Config_SyncCMDB_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

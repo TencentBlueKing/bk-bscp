@@ -15,6 +15,7 @@ package pbproc
 
 import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	pbpi "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process-instance"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -116,6 +117,24 @@ func PbProcesses(c []*table.Process) []*Process {
 	result := make([]*Process, 0)
 	for _, v := range c {
 		result = append(result, PbProcess(v))
+	}
+	return result
+}
+
+func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*table.ProcessInstance) []*Process {
+	if procs == nil {
+		return []*Process{}
+	}
+
+	result := make([]*Process, 0, len(procs))
+	for _, p := range procs {
+		pbProc := PbProcess(p)
+		if insts, ok := procInstMap[p.ID]; ok {
+			pbProc.ProcInst = pbpi.PbProcInsts(insts)
+		} else {
+			pbProc.ProcInst = []*pbpi.ProcInst{}
+		}
+		result = append(result, pbProc)
 	}
 	return result
 }

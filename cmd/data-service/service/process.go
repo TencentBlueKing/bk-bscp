@@ -15,6 +15,7 @@ package service
 import (
 	"context"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -29,8 +30,26 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		return nil, err
 	}
 
+	processIDs := make([]uint32, 0, len(res))
+	for _, v := range res {
+		processIDs = append(processIDs, v.ID)
+	}
+
+	procInst, err := s.dao.ProcessInstance().GetProcessInstancesByID(kt, req.GetBizId(), processIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 将 procInst 按 process_id 分组
+	procInstMap := make(map[uint32][]*table.ProcessInstance)
+	for _, inst := range procInst {
+		procInstMap[inst.Attachment.ProcessID] = append(procInstMap[inst.Attachment.ProcessID], inst)
+	}
+
+	processes := pbproc.PbProcessesWithInstances(res, procInstMap)
+
 	return &pbds.ListProcessResp{
 		Count:   uint32(count),
-		Process: pbproc.PbProcesses(res),
+		Process: processes,
 	}, nil
 }

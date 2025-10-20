@@ -14,6 +14,8 @@
 package table
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
@@ -50,9 +52,56 @@ type ProcessSpec struct {
 	Environment     string    `gorm:"column:environment" json:"environment"`               // 环境类型(production/staging等)
 	Alias           string    `gorm:"column:alias" json:"alias"`                           // 进程别名
 	InnerIP         string    `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
-	CcSyncStatus    string    `gorm:"column:cc_sync_statu" json:"cc_sync_status"`          // cc同步状态:synced,deleted,updated
+	CcSyncStatus    string    `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
 	CcSyncUpdatedAt time.Time `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
-	SourceData      string    `gorm:"column:source_data" json:"source_data"`               // 源数据，用于和CC对比
+	PrevSourceData  string    `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
+	SourceData      string    `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
+}
+
+func (p ProcessInfo) Value() (string, error) {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return "", fmt.Errorf("marshal ProcessInfo failed: %w", err)
+	}
+
+	str := string(b)
+
+	if str == "" {
+		str = "{}"
+	}
+
+	return str, nil
+}
+
+// Scan 实现 sql.Scanner 接口 —— 从数据库读取 JSON 并反序列化为结构体
+func (p *ProcessInfo) Scan(value any) error {
+	if value == nil {
+		*p = ProcessInfo{}
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("ProcessInfo should be a []byte, got %T", value)
+	}
+
+	if err := json.Unmarshal(bytes, p); err != nil {
+		return fmt.Errorf("unmarshal ProcessInfo failed: %w", err)
+	}
+	return nil
+}
+
+type ProcessInfo struct {
+	BkStartParamRegex string `json:"bk_start_param_regex"` // 进程启动参数
+	WorkPath          string `json:"work_path"`            // 工作路径
+	PidFile           string `json:"pid_file"`             // PID文件路径
+	User              string `json:"user"`                 // 启动用户
+	ReloadCmd         string `json:"reload_cmd"`           // 重载命令
+	RestartCmd        string `json:"restart_cmd"`          // 重启命令
+	StartCmd          string `json:"start_cmd"`            // 启动命令
+	StopCmd           string `json:"stop_cmd"`             // 停止命令
+	FaceStopCmd       string `json:"face_stop_cmd"`        // 强制停止命令
+	Timeout           int    `json:"timeout"`              // 操作超时时长
 }
 
 // ProcessAttachment xxx

@@ -1481,6 +1481,15 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/process/list"
+      body: "*"
+    };
+  }
+
+  rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/sycn/cc"
+      body: "*"
     };
   }
 }
@@ -4404,4 +4413,12 @@ message ListProcessResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbproc.Process process = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程列表" }];
+}
+
+message SyncCMDBReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message SyncCMDBResp {
+  uint32 task_id = 1;
 }

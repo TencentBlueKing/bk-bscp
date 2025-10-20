@@ -13,6 +13,8 @@
 package dao
 
 import (
+	"gorm.io/gorm/clause"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -22,6 +24,14 @@ import (
 type Process interface {
 	// List released config items with options.
 	List(kit *kit.Kit, bizID uint32) ([]*table.Process, int64, error)
+	// BatcheUpsertWithTx 批量更新插入数据
+	BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
+	// BatchCreateWithTx batch create client instances with transaction.
+	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
+	// BatchUpdateWithTx batch update client instances with transaction.
+	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
+	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string, bizID uint32) ([]*table.Process, error)
+	UpdateSyncStatus(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
 }
 
 var _ Process = new(processDao)
@@ -30,6 +40,58 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateSyncStatus implements Process.
+func (dao *processDao) UpdateSyncStatus(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error {
+	m := dao.genQ.Process
+	_, err := dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.ID.In(ids...)).
+		Update(m.CcSyncStatus, state)
+	return err
+}
+
+// ListProcByBizID implements Process.
+func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string,
+	bizID uint32) ([]*table.Process, error) {
+	m := dao.genQ.Process
+
+	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID)).Find()
+}
+
+// BatchUpdateWithTx implements Process.
+func (dao *processDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
+	if len(data) == 0 {
+		return nil
+	}
+	return tx.Process.WithContext(kit.Ctx).Save(data...)
+}
+
+// BatchCreateWithTx implements Process.
+func (dao *processDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	ids, err := dao.idGen.Batch(kit, table.ProcessTable, len(data))
+	if err != nil {
+		return err
+	}
+	for k, v := range data {
+		v.ID = ids[k]
+	}
+
+	return tx.Process.WithContext(kit.Ctx).CreateInBatches(data, 500)
+}
+
+// BatcheUpsertWithTx implements Process.
+func (dao *processDao) BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
+	q := tx.Process.WithContext(kit.Ctx)
+
+	return q.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "biz_id"}, {Name: "cc_process_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"cc_sync_status", "cc_sync_updated_at"}),
+	}).CreateInBatches(data, 500)
 }
 
 // List implements Process.
