@@ -126,6 +126,8 @@ export default {
   业务名: 'Business Name',
   业务: 'Business',
   操作记录: 'Operation Log',
+  进程与配置管理: 'Process and Config Management',
+
 
   // 配置管理
   版本名称: 'Version Name',
@@ -1291,4 +1293,38 @@ export default {
   已选择: '{count} item selected',
   选择所有: 'select all {count} items',
   取消选择所有数据: 'Unselect all items',
+
+  // 任务历史
+  任务历史: 'Task history',
+  '任务对象/动作/执行账户/执行结果': 'Task object / Action / Execution account / Result',
+  任务对象: 'Task object',
+  进程: 'Process',
+  动作: 'Action',
+  环境类型: 'Environment type',
+  操作范围: 'Operation range',
+  执行账户: 'Execution account',
+  执行结果: 'Execution result',
+  执行耗时: 'Execution time',
+  任务详情: 'Task details',
+  任务ID: 'Task ID',
+  任务类型: 'Task type',
+  '搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP/执行结果':
+    'Search by Cluster / Module / Service instance / Process alias / CC process ID / Inst_id / Internal IP / Execution result',
+  集群: 'Cluster',
+  模块: 'Module',
+  服务实例: 'Service instance',
+  进程别名: 'Process alias',
+  'CC 进程 ID': 'CC process ID',
+  '内网 IP': 'Internal IP',
+  查看配置: 'View configuration',
+  等待执行: 'Pending execution',
+  执行成功: 'Execution succeeded',
+  执行失败: 'Execution failed',
+  正在执行: 'Executing',
+  部分失败: 'Partially failed',
+  启动: 'Start',
+  停止: 'Stop',
+  重启: 'Restart',
+  重载: 'Reload',
+  生成: 'Generate',
 };

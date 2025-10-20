@@ -157,14 +157,14 @@ const routes = [
         },
         component: () => import('./views/space/client/example/index.vue'),
       },
-      {
-        path: 'process',
-        name: 'process-management',
-        meta: {
-          navModule: 'process',
-        },
-        component: () => import('./views/space/process/index.vue'),
-      },
+      // {
+      //   path: 'process',
+      //   name: 'process-management',
+      //   meta: {
+      //     navModule: 'process',
+      //   },
+      //   component: () => import('./views/space/process/index.vue'),
+      // },
       {
         path: 'task',
         name: 'task-history',

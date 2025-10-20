@@ -20,6 +20,7 @@ import 'vxe-pc-ui/lib/style.css';
 import VxeUITable from 'vxe-table';
 import 'vxe-table/lib/style.css';
 import useGlobalStore from './store/global';
+import { PrimaryTable, TableColumn } from '@blueking/tdesign-ui';
 
 import BkUserDisplayName from '@blueking/bk-user-display-name';
 
@@ -67,6 +68,8 @@ auth().then((userInfo) => {
     .use(bkui, {
       locale: getCookie('blueking_language') === 'en' ? en : zhCn,
     })
+    .component('PrimaryTable', PrimaryTable)
+    .component('TableColumn', TableColumn)
     .mount('#app');
 });
 
