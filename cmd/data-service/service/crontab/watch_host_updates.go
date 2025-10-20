@@ -238,6 +238,7 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(
 // InitHostDetailCursor initializes host detail cursor to the latest position
 // This function gets the latest cursor from CMDB and updates it to config table
 func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	logs.Infof("start init host detail cursor")
 	kt := kit.New()
 	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Second)
 	defer cancel()
