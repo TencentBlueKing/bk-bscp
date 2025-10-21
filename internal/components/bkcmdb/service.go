@@ -76,6 +76,21 @@ type Service interface {
 		*CMDBResponse, error)
 	// SearchSet 查询集群
 	SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	// SearchBusinessByAccount 查询业务
+	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	// SearchModule 查询模块
+	SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error)
+	// ListBizHosts 查询业务下的主机
+	ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (*CMDBResponseData[CMDBListData[HostInfo]], error)
+	// WatchHostResource 监听主机资源变化
+	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
+		*CMDBResponseData[WatchResourceData[HostDetail]], error)
+	// WatchHostRelationResource 监听主机关系资源变化
+	WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
+		*CMDBResponseData[WatchResourceData[HostRelationDetail]], error)
+	// FindHostBizRelations 查询主机业务关系信息
+	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
+		*FindHostBizRelationsResponse, error)
 }
 
 // New cmdb service

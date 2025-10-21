@@ -263,3 +263,30 @@ func (s *Service) SetPublishTime(ctx context.Context, req *pbcs.SetPublishTimeRe
 	}
 	return &resp, nil
 }
+
+// GetAgentBiz get business ID by agent ID
+func (s *Service) GetAgentBiz(ctx context.Context, req *pbcs.GetAgentBizReq) (*pbcs.GetAgentBizResp, error) {
+	if req.AgentId == "" {
+		return nil, errf.New(errf.InvalidParameter, "invalid agent id")
+	}
+
+	kt := kit.FromGrpcContext(ctx)
+
+	// Query BizHost table by agentID
+	bizHost, err := s.dao.BizHost().GetByAgentID(kt, req.AgentId)
+	if err != nil {
+		// Check if it's a not found error
+		if errf.Error(err).Code == errf.RecordNotFound {
+			return &pbcs.GetAgentBizResp{
+				BizId: 0,
+				Found: false,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &pbcs.GetAgentBizResp{
+		BizId: uint32(bizHost.BizID),
+		Found: true,
+	}, nil
+}

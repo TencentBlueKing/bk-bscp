@@ -164,6 +164,7 @@ const (
 	Data_ListAllGroups_FullMethodName                     = "/pbds.Data/ListAllGroups"
 	Data_ListAppGroups_FullMethodName                     = "/pbds.Data/ListAppGroups"
 	Data_GetGroupByName_FullMethodName                    = "/pbds.Data/GetGroupByName"
+	Data_GetGroupByID_FullMethodName                      = "/pbds.Data/GetGroupByID"
 	Data_UpdateGroup_FullMethodName                       = "/pbds.Data/UpdateGroup"
 	Data_DeleteGroup_FullMethodName                       = "/pbds.Data/DeleteGroup"
 	Data_ListGroupSelector_FullMethodName                 = "/pbds.Data/ListGroupSelector"
@@ -220,6 +221,7 @@ const (
 	Data_BatchUpdateLastConsumedTime_FullMethodName       = "/pbds.Data/BatchUpdateLastConsumedTime"
 	Data_ListProcess_FullMethodName                       = "/pbds.Data/ListProcess"
 	Data_OperateProcess_FullMethodName                    = "/pbds.Data/OperateProcess"
+	Data_SyncCMDB_FullMethodName                          = "/pbds.Data/SyncCMDB"
 )
 
 // DataClient is the client API for Data service.
@@ -377,6 +379,7 @@ type DataClient interface {
 	ListAllGroups(ctx context.Context, in *ListAllGroupsReq, opts ...grpc.CallOption) (*ListAllGroupsResp, error)
 	ListAppGroups(ctx context.Context, in *ListAppGroupsReq, opts ...grpc.CallOption) (*ListAppGroupsResp, error)
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
+	GetGroupByID(ctx context.Context, in *GetGroupByIDReq, opts ...grpc.CallOption) (*group.Group, error)
 	UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	DeleteGroup(ctx context.Context, in *DeleteGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error)
@@ -450,6 +453,8 @@ type DataClient interface {
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 进程同步
+	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 }
 
 type dataClient struct {
@@ -1648,6 +1653,15 @@ func (c *dataClient) GetGroupByName(ctx context.Context, in *GetGroupByNameReq, 
 	return out, nil
 }
 
+func (c *dataClient) GetGroupByID(ctx context.Context, in *GetGroupByIDReq, opts ...grpc.CallOption) (*group.Group, error) {
+	out := new(group.Group)
+	err := c.cc.Invoke(ctx, Data_GetGroupByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
 	out := new(base.EmptyResp)
 	err := c.cc.Invoke(ctx, Data_UpdateGroup_FullMethodName, in, out, opts...)
@@ -2152,6 +2166,15 @@ func (c *dataClient) OperateProcess(ctx context.Context, in *OperateProcessReq, 
 	return out, nil
 }
 
+func (c *dataClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
+	out := new(SyncCMDBResp)
+	err := c.cc.Invoke(ctx, Data_SyncCMDB_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2307,6 +2330,7 @@ type DataServer interface {
 	ListAllGroups(context.Context, *ListAllGroupsReq) (*ListAllGroupsResp, error)
 	ListAppGroups(context.Context, *ListAppGroupsReq) (*ListAppGroupsResp, error)
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
+	GetGroupByID(context.Context, *GetGroupByIDReq) (*group.Group, error)
 	UpdateGroup(context.Context, *UpdateGroupReq) (*base.EmptyResp, error)
 	DeleteGroup(context.Context, *DeleteGroupReq) (*base.EmptyResp, error)
 	ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error)
@@ -2380,6 +2404,8 @@ type DataServer interface {
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
+	// 进程同步
+	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -2782,6 +2808,9 @@ func (UnimplementedDataServer) ListAppGroups(context.Context, *ListAppGroupsReq)
 func (UnimplementedDataServer) GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGroupByName not implemented")
 }
+func (UnimplementedDataServer) GetGroupByID(context.Context, *GetGroupByIDReq) (*group.Group, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGroupByID not implemented")
+}
 func (UnimplementedDataServer) UpdateGroup(context.Context, *UpdateGroupReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroup not implemented")
 }
@@ -2949,6 +2978,9 @@ func (UnimplementedDataServer) ListProcess(context.Context, *ListProcessReq) (*L
 }
 func (UnimplementedDataServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
+}
+func (UnimplementedDataServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -5338,6 +5370,24 @@ func _Data_GetGroupByName_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_GetGroupByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupByIDReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetGroupByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetGroupByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetGroupByID(ctx, req.(*GetGroupByIDReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_UpdateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateGroupReq)
 	if err := dec(in); err != nil {
@@ -6346,6 +6396,24 @@ func _Data_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).SyncCMDB(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_SyncCMDB_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).SyncCMDB(ctx, req.(*SyncCMDBReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6882,6 +6950,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Data_GetGroupByName_Handler,
 		},
 		{
+			MethodName: "GetGroupByID",
+			Handler:    _Data_GetGroupByID_Handler,
+		},
+		{
 			MethodName: "UpdateGroup",
 			Handler:    _Data_UpdateGroup_Handler,
 		},
@@ -7104,6 +7176,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OperateProcess",
 			Handler:    _Data_OperateProcess_Handler,
+		},
+		{
+			MethodName: "SyncCMDB",
+			Handler:    _Data_SyncCMDB_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -165,5 +165,8 @@
   content: '\e12b';
 }
 .icon-back-line:before {
-  content: "\e135";
+  content: '\e135';
+}
+.icon-client:before {
+	content: "\e137";
 }

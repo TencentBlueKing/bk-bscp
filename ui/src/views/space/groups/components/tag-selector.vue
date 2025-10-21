@@ -53,7 +53,7 @@
           :list="[]"
           placeholder="value"
           @click="isShowValuePopover = true"
-          @change="validateValue">
+          @change="handleValueChange">
           <template #suffix>
             <angle-down :class="['suffix-icon', { 'show-popover': isShowValuePopover && valueList.length > 0 }]" />
           </template>
@@ -66,7 +66,7 @@
           :class="{ 'is-error': showValueError }"
           :type="['gt', 'ge', 'lt', 'le'].includes(rule.op) ? 'number' : 'text'"
           @click="isShowValuePopover = true"
-          @change="validateValue">
+          @change="handleValueChange">
           <template #suffix>
             <angle-down :class="['suffix-icon', { 'show-popover': isShowValuePopover && valueList.length > 0 }]" />
           </template>
@@ -113,7 +113,7 @@
   const valueList = ref<string[]>([]); // value联想输入列表
 
   // 内置标签
-  const BuiltInTag = ['ip', 'pod_name', 'pod_id'];
+  const BuiltInTag = ['ip', 'pod_name', 'pod_id', 'gray_percent'];
   const keyValidateReg = new RegExp(
     '^[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?((\\.|\\/)[a-z0-9A-Z]([-_a-z0-9A-Z]*[a-z0-9A-Z])?)*$',
   );
@@ -134,6 +134,11 @@
     isShowKeyPopover.value = false;
     validateKey();
     await getValueList();
+    handleRuleChange();
+  };
+
+  const handleValueChange = () => {
+    validateValue();
     handleRuleChange();
   };
 

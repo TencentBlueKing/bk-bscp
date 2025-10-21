@@ -36,7 +36,7 @@ func init() {
 func mig20250923114014Up(tx *gorm.DB) error {
 	// Process 进程管理主表
 	type Process struct {
-		ID              uint       `gorm:"column:id;type:bigint;primaryKey;autoIncrement:true;comment:主键ID" json:"id"` // 主键ID
+		ID              uint       `gorm:"type:bigint(1) unsigned not null;primaryKey;autoIncrement:false"`
 		TenantID        string     `gorm:"column:tenant_id;type:varchar(255);not null;index:idx_tenantID_bizID_ccProcessID,priority:1;default:default" json:"tenant_id"`
 		BizID           uint       `gorm:"column:biz_id;type:bigint unsigned;not null;index:idx_tenantID_bizID_ccProcessID,priority:2;comment:业务ID" json:"biz_id"`        // 业务ID
 		CcProcessID     uint       `gorm:"column:cc_process_id;type:bigint;not null;index:idx_tenantID_bizID_ccProcessID,priority:3;comment:cc进程ID" json:"cc_process_id"` // cc进程ID
@@ -49,8 +49,12 @@ func mig20250923114014Up(tx *gorm.DB) error {
 		CcSyncStatus    string     `gorm:"column:cc_sync_status;type:varchar(64);not null;comment:cc同步状态:synced,deleted,updated" json:"cc_sync_status"`                   // cc同步状态:synced,deleted,updated
 		CcSyncUpdatedAt *time.Time `gorm:"column:cc_sync_updated_at;type:timestamp;default:CURRENT_TIMESTAMP;comment:cc同步更新时间" json:"cc_sync_updated_at"`                 // cc同步更新时间
 		SourceData      string     `gorm:"column:source_data;type:json;comment:源数据，用于和CC对比" json:"source_data"`                                                           // 源数据，用于和CC对比
-		CreatedAt       *time.Time `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
-		UpdatedAt       *time.Time `gorm:"column:updated_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"updated_at"`
+
+		// Revision is revision info of the resource
+		Creator   string    `gorm:"type:varchar(64) not null"`
+		Reviser   string    `gorm:"type:varchar(64) not null"`
+		CreatedAt time.Time `gorm:"type:datetime(6) not null"`
+		UpdatedAt time.Time `gorm:"type:datetime(6) not null"`
 	}
 
 	// IDGenerators : ID生成器

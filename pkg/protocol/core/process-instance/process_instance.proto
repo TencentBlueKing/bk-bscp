@@ -33,4 +33,5 @@ message ProcInstAttachment {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string tenant_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
   uint32 process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程管理ID" }];
+  uint32 cc_process_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc进程ID" }];
 }

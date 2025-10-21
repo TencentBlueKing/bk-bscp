@@ -191,7 +191,7 @@ func (a *Scheduler) do() {
 }
 
 func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
-
+	logs.Infof("handle async download job %s, biz_id: %d, app_id: %d", job.JobID, job.BizID, job.AppID)
 	kt := kit.New()
 	kt.BizID = job.BizID
 	kt.AppID = job.AppID
@@ -265,7 +265,8 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 		} else {
 			duration = time.Since(job.ExecuteTime).Seconds()
 		}
-
+		logs.Infof("update asyncdownload job %s status from %s to %s, duration: %f, app: %d, fileName: %s",
+			job.JobID, old.Status, job.Status, duration, job.AppID, job.FileName)
 		a.metric.jobDurationSeconds.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
 			"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
 			"targets": strconv.Itoa(len(job.Targets)), "status": old.Status}).
@@ -436,15 +437,22 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 		} else {
 			// only download task would append to the targets list
 			if result.ErrorCode == 0 {
+				logs.Infof("download success, jobID: %s, file: %s, agentID: %s, containerID: %s",
+					job.JobID, result.Content.DestFileName, result.Content.DestAgentID, result.Content.DestContainerID)
 				job.SuccessTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content
 				delete(job.DownloadingTargets,
 					fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID))
 			} else if result.ErrorCode == 115 {
+				logs.Infof("download in progress, jobID: %s, file: %s, agentID: %s, containerID: %s",
+					job.JobID, result.Content.DestFileName, result.Content.DestAgentID, result.Content.DestContainerID)
 				// If the result is 115 downloading state
 				job.DownloadingTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content
 			} else {
+				logs.Errorf("download failed, jobID: %s, file: %s, agentID: %s, containerID: %s, errorCode: %d",
+					job.JobID, result.Content.DestFileName, result.Content.DestAgentID,
+					result.Content.DestContainerID, result.ErrorCode)
 				// other error code means failed
 				job.FailedTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content

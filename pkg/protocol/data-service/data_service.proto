@@ -212,6 +212,7 @@ service Data {
   rpc ListAllGroups(ListAllGroupsReq) returns (ListAllGroupsResp) {}
   rpc ListAppGroups(ListAppGroupsReq) returns (ListAppGroupsResp) {}
   rpc GetGroupByName(GetGroupByNameReq) returns (pbgroup.Group) {}
+  rpc GetGroupByID(GetGroupByIDReq) returns (pbgroup.Group) {}
   rpc UpdateGroup(UpdateGroupReq) returns (pbbase.EmptyResp) {}
   rpc DeleteGroup(DeleteGroupReq) returns (pbbase.EmptyResp) {}
   rpc ListGroupSelector(ListGroupSelectorReq) returns (ListGroupSelectorResp) {}
@@ -308,6 +309,8 @@ service Data {
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
   // 进程操作
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
+  // 进程同步
+  rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -1741,6 +1744,11 @@ message GetGroupByNameReq {
   string group_name = 2;
 }
 
+message GetGroupByIDReq {
+  uint32 biz_id = 1;
+  uint32 group_id = 2;
+}
+
 message UpdateGroupReq {
   uint32 id = 1;
   pbgroup.GroupAttachment attachment = 2;
@@ -2281,4 +2289,12 @@ message OperateProcessReq {
 
 message OperateProcessResp {
   uint32 batchID = 1;
+}
+
+message SyncCMDBReq {
+  uint32 biz_id = 1;
+}
+
+message SyncCMDBResp {
+  uint32 task_id = 1;
 }

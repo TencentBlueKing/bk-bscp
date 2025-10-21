@@ -157,3 +157,37 @@ log:
   alsoToStdErr: false
   # log level.
   verbosity: 0
+
+# defines crontab task configuration
+crontab:
+  # sync business host task configuration
+  syncBizHost:
+    # whether the sync biz host task is enabled (default: true)
+    enabled: true
+    # sync business host relationships interval (default: 168h = 7 days)
+    interval: 168h
+    # QPS limit for sync biz host CMDB requests (default: 50.0)
+    qpsLimit: 50.0
+  # cleanup business host task configuration
+  cleanupBizHost:
+    # whether the cleanup biz host task is enabled (default: true)
+    enabled: true
+    # cleanup invalid business host relationships interval (default: 1h)
+    interval: 1h
+    # QPS limit for cleanup biz host CMDB requests (default: 50.0)
+    qpsLimit: 50.0
+  # watch business host relation task configuration
+  watchBizHostRelation:
+    # whether the watch biz host relation task is enabled (default: true)
+    enabled: true
+    # watch business host relationship changes interval (default: 1m)
+    interval: 1m
+    # QPS limit for watch biz host relation CMDB requests (default: 80.0)
+    qpsLimit: 80.0
+  # watch host updates task configuration
+  watchHostUpdates:
+    # whether the watch host updates task is enabled (default: true)
+    enabled: true
+    # watch host update events interval (default: 30s)
+    interval: 30s
+    

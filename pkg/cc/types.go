@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -1147,6 +1148,191 @@ func (lm *MatchReleaseLimiter) trySetDefault() {
 	}
 }
 
+// SyncBizHostConfig defines sync business host task configuration options.
+type SyncBizHostConfig struct {
+	// Enabled defines whether the sync biz host task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for syncing business host relationships
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for sync biz host CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// CleanupBizHostConfig defines cleanup business host task configuration options.
+type CleanupBizHostConfig struct {
+	// Enabled defines whether the cleanup biz host task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for cleaning up invalid business host relationships
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for cleanup biz host CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// WatchBizHostRelationConfig defines watch business host relation task configuration options.
+type WatchBizHostRelationConfig struct {
+	// Enabled defines whether the watch biz host relation task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for watching business host relationship changes
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for watch biz host relation CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// WatchHostUpdatesConfig defines watch host updates task configuration options.
+type WatchHostUpdatesConfig struct {
+	// Enabled defines whether the watch host updates task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for watching host update events
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for watch host updates CMDB requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
+// CrontabConfig defines crontab task configuration options.
+type CrontabConfig struct {
+	// SyncBizHost defines sync business host task configuration
+	SyncBizHost SyncBizHostConfig `yaml:"syncBizHost"`
+	// CleanupBizHost defines cleanup business host task configuration
+	CleanupBizHost CleanupBizHostConfig `yaml:"cleanupBizHost"`
+	// WatchBizHostRelation defines watch business host relation task configuration
+	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
+	// WatchHostUpdates defines watch host updates task configuration
+	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
+}
+
+// validate if the sync biz host config is valid or not.
+func (c SyncBizHostConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid syncBizHost interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid syncBizHost qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the cleanup biz host config is valid or not.
+func (c CleanupBizHostConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid cleanupBizHost interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid cleanupBizHost qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the watch biz host relation config is valid or not.
+func (c WatchBizHostRelationConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid watchBizHostRelation interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid watchBizHostRelation qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the watch host updates config is valid or not.
+func (c WatchHostUpdatesConfig) validate() error {
+	if c.Interval != "" {
+		if _, err := time.ParseDuration(c.Interval); err != nil {
+			return fmt.Errorf("invalid watchHostUpdates interval duration: %s", c.Interval)
+		}
+	}
+
+	if c.QpsLimit < 0 {
+		return fmt.Errorf("invalid watchHostUpdates qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// validate if the crontab config is valid or not.
+func (c CrontabConfig) validate() error {
+	if err := c.SyncBizHost.validate(); err != nil {
+		return err
+	}
+
+	if err := c.CleanupBizHost.validate(); err != nil {
+		return err
+	}
+
+	if err := c.WatchBizHostRelation.validate(); err != nil {
+		return err
+	}
+
+	if err := c.WatchHostUpdates.validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// trySetDefault try set the default value of sync biz host config
+func (c *SyncBizHostConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "168h" // 7 days
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 50.0 // 50 QPS
+	}
+}
+
+// trySetDefault try set the default value of cleanup biz host config
+func (c *CleanupBizHostConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "1h" // 1 hour
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 50.0 // 50 QPS
+	}
+}
+
+// trySetDefault try set the default value of watch biz host relation config
+func (c *WatchBizHostRelationConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "10s" // 10 seconds
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 80.0 // 80 QPS
+	}
+}
+
+// trySetDefault try set the default value of watch host updates config
+func (c *WatchHostUpdatesConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "5s" // 5 seconds
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 80.0 // 80 QPS
+	}
+}
+
+// trySetDefault try set the default value of crontab config
+func (c *CrontabConfig) trySetDefault() {
+	c.SyncBizHost.trySetDefault()
+	c.CleanupBizHost.trySetDefault()
+	c.WatchBizHostRelation.trySetDefault()
+	c.WatchHostUpdates.trySetDefault()
+}
+
 // RateLimiter defines the rate limiter options for traffic control.
 // requires bscp-go init/sidecar mode and v1.3.1 or above
 type RateLimiter struct {
@@ -1472,8 +1658,32 @@ type ITSMConfig struct {
 
 // CMDBConfig cmdb相关的配置
 type CMDBConfig struct {
-	AppCode   string `yaml:"appCode"`
-	AppSecret string `yaml:"appSecret"`
-	Host      string `yaml:"host"`
-	UseEsb    bool   `yaml:"useEsb"`
+	AppCode    string `yaml:"appCode"`
+	AppSecret  string `yaml:"appSecret"`
+	Host       string `yaml:"host"`
+	UseEsb     bool   `yaml:"useEsb"`
+	BkUserName string `yaml:"bkUserName"`
+}
+
+// VerifyAgentIDBelongs defines apps that can download across different businesses
+type VerifyAgentIDBelongs struct {
+	// 是否校验agentID归属（当应用不在白名单中时）
+	Enabled bool `yaml:"enabled"`
+	// 允许跨业务下载的应用ID列表
+	CrossBizAppIDs []uint32 `yaml:"crossBizAppIDs"`
+}
+
+// IsAppAllowed 检查应用是否在允许跨业务下载的列表中
+func (c VerifyAgentIDBelongs) IsAppAllowed(appId uint32) bool {
+	return slices.Contains(c.CrossBizAppIDs, appId)
+}
+
+// trySetDefault set the VerifyAgentIDBelongs default value if user not configured.
+func (c *VerifyAgentIDBelongs) trySetDefault() {
+	if !c.Enabled {
+		c.Enabled = false
+	}
+	if c.CrossBizAppIDs == nil {
+		c.CrossBizAppIDs = []uint32{}
+	}
 }

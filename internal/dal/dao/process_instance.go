@@ -24,6 +24,8 @@ type ProcessInstance interface {
 	Update(kit *kit.Kit, processInstance *table.ProcessInstance) error
 	// GetByID gets process instances by IDs.
 	GetByID(kit *kit.Kit, bizID uint32, processID []uint32) ([]*table.ProcessInstance, error)
+	// BatchCreateWithTx batch create client instances with transaction.
+	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -46,8 +48,9 @@ func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.Proce
 }
 
 // GetByID implements ProcessInstance.
-func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID uint32, processID []uint32) (
-	[]*table.ProcessInstance, error) {
+func (dao *processInstanceDao) GetByID(
+	kit *kit.Kit, bizID uint32, processID []uint32,
+) ([]*table.ProcessInstance, error) {
 	m := dao.genQ.ProcessInstance
 	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
 
@@ -57,4 +60,22 @@ func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID uint32, processID []u
 	}
 
 	return result, err
+}
+
+// BatchCreateWithTx implements ProcessInstance.
+func (dao *processInstanceDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
+	// generate an config item id and update to config item.
+	if len(data) == 0 {
+		return nil
+	}
+
+	ids, err := dao.idGen.Batch(kit, table.ProcessInstancesTable, len(data))
+	if err != nil {
+		return err
+	}
+	for k, v := range data {
+		v.ID = ids[k]
+	}
+
+	return tx.ProcessInstance.WithContext(kit.Ctx).CreateInBatches(data, 500)
 }

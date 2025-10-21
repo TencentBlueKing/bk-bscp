@@ -40,6 +40,9 @@
             </div>
           </div>
         </ReleasedGroupViewer>
+        <div class="link-btn" v-bk-tooltips="{ content: t('客户端查询') }" @click="handleJumpClientSearch">
+          <span class="bk-bscp-icon icon-client"></span>
+        </div>
         <VersionApproveStatus
           ref="verAppStatus"
           :show-status-id="showStatusId"
@@ -88,6 +91,7 @@
   import useServiceStore from '../../../../../store/service';
   import { IConfigVersion } from '../../../../../../types/config';
   import { permissionCheck } from '../../../../../api/index';
+  import GROUP_RULE_OPS from '../../../../../constants/group';
   import ReleasedGroupViewer from '../config/components/released-group-viewer.vue';
   import PublishVersion from './publish-version/index.vue';
   import CreateVersion from './create-version/index.vue';
@@ -263,6 +267,38 @@
     }
   };
 
+  const handleJumpClientSearch = () => {
+    const query: Record<string, string> = {};
+    const version = versionData.value;
+
+    if (version.id) {
+      query.target_release_name = version.spec.name;
+      const groups = version.status?.released_groups ?? [];
+      // 如果存在“全部实例”分组，则不附带 label 信息
+      const hasAllInstances = groups.some((g) => g.id === 0);
+      if (!hasAllInstances) {
+        const ruleList = groups.flatMap((group) =>
+          (group.new_selector.labels_and ?? []).map((tag) => {
+            const op = GROUP_RULE_OPS.find((o) => o.id === tag.op)?.name ?? '';
+            return `${tag.key}${op}${tag.value}`;
+          }),
+        );
+
+        if (ruleList.length) {
+          query.label = JSON.stringify([ruleList.join('|')]);
+        }
+      }
+    }
+    router.push({
+      name: 'client-search',
+      params: {
+        spaceId: route.params.spaceId,
+        appId: props.appId,
+      },
+      query,
+    });
+  };
+
   const handleRefresh = (versionId: number) => {
     refreshVesionList(); // 刷新版本列表
     verAppStatus.value.loadStatus(); // 刷新版本状态（右上角）
@@ -370,6 +406,25 @@
           border-radius: 2px;
         }
       }
+    }
+  }
+
+  .link-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 2px;
+    margin: 0 8px;
+    text-align: center;
+    line-height: 22px;
+    color: #4d4f56;
+    background: #f0f1f5;
+    cursor: pointer;
+    span {
+      font-size: 16px;
+    }
+    &:hover {
+      color: #3a84ff;
+      background: #e1ecff;
     }
   }
 </style>

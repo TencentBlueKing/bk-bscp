@@ -14,11 +14,15 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -27,6 +31,7 @@ import (
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbgroup "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
 
 // CreateGroup create a group
@@ -37,6 +42,12 @@ func (s *Service) CreateGroup(ctx context.Context, req *pbcs.CreateGroupReq) (*p
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	// 校验灰度比例提交的数据格式
+	if err := s.validateGrayPercentKey(grpcKit, req.Selector); err != nil {
+		logs.Errorf("invalid gray percent, rid: %s, selector: %v, err: %v", grpcKit.Rid, req.Selector, err)
 		return nil, err
 	}
 
@@ -167,6 +178,12 @@ func (s *Service) UpdateGroup(ctx context.Context, req *pbcs.UpdateGroupReq) (*p
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
+		return nil, err
+	}
+
+	// 校验灰度比例提交的数据格式
+	if err = s.validateGrayPercentKey(grpcKit, req.Selector); err != nil {
+		logs.Errorf("invalid gray percent, rid: %s, selector: %v, err: %v", grpcKit.Rid, req.Selector, err)
 		return nil, err
 	}
 
@@ -419,4 +436,64 @@ func (s *Service) ListGroupSelector(ctx context.Context, req *pbcs.ListGroupSele
 	return &pbcs.ListGroupSelectorResp{
 		Values: resp.GetValues(),
 	}, nil
+}
+
+func (s *Service) validateGrayPercentKey(grpcKit *kit.Kit, pbSelector *structpb.Struct) error {
+	if pbSelector == nil {
+		return nil
+	}
+	selectorInstance, err := pbgroup.UnmarshalSelector(pbSelector)
+	if err != nil {
+		logs.Errorf("unmarshal selector failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return err
+	}
+	for _, v := range selectorInstance.LabelsAnd {
+		if v.Key != table.GrayPercentKey {
+			continue
+		}
+		// 灰度操作匹配符 必须是等于操作
+		if v.Op.Name() != selector.Equal {
+			logs.Errorf("gray_percent key must be equal, rid: %s", grpcKit.Rid)
+			return errors.New(i18n.T(grpcKit, "gray_percent key must be equal"))
+		}
+
+		// 验证灰度百分比值的格式和范围
+		if !s.isValidGrayPercentValue(v.Value) {
+			logs.Errorf("gray_percent value must be a valid percentage (1-99), got: %v, type: %T, rid: %s",
+				v.Value, v.Value, grpcKit.Rid)
+			return errors.New(i18n.T(grpcKit, "gray_percent value must be a valid percentage (1-99)"))
+		}
+	}
+	return nil
+}
+
+// isValidGrayPercentValue 验证灰度百分比值是否有效
+// 支持的格式：整数(1-99)、浮点数(20.0)
+func (s *Service) isValidGrayPercentValue(value interface{}) bool {
+	var percent float64
+	var err error
+	switch v := value.(type) {
+	case int64:
+		// 整数类型：直接使用
+		percent = float64(v)
+	case int32:
+		// 32位整数类型
+		percent = float64(v)
+	case int:
+		// int类型
+		percent = float64(v)
+	case string:
+		percent, err = strconv.ParseFloat(v, 64)
+		if err != nil {
+			logs.Warnf("invalid gray_percent value type: %T, value: %v", value, v)
+			return false
+		}
+	default:
+		// 不支持的类型
+		logs.Warnf("unsupported gray_percent value type: %T", value)
+		return false
+	}
+
+	// 验证范围：1-99
+	return percent >= 1.0 && percent <= 99.0
 }

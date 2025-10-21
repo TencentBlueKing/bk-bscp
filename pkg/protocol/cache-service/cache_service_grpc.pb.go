@@ -36,6 +36,7 @@ const (
 	Cache_SetClientMetric_FullMethodName          = "/pbcs.Cache/SetClientMetric"
 	Cache_SetAppLastConsumedTime_FullMethodName   = "/pbcs.Cache/SetAppLastConsumedTime"
 	Cache_SetPublishTime_FullMethodName           = "/pbcs.Cache/SetPublishTime"
+	Cache_GetAgentBiz_FullMethodName              = "/pbcs.Cache/GetAgentBiz"
 )
 
 // CacheClient is the client API for Cache service.
@@ -59,6 +60,7 @@ type CacheClient interface {
 	SetClientMetric(ctx context.Context, in *SetClientMetricReq, opts ...grpc.CallOption) (*SetClientMetricResp, error)
 	SetAppLastConsumedTime(ctx context.Context, in *SetAppLastConsumedTimeReq, opts ...grpc.CallOption) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(ctx context.Context, in *SetPublishTimeReq, opts ...grpc.CallOption) (*SetPublishTimeResp, error)
+	GetAgentBiz(ctx context.Context, in *GetAgentBizReq, opts ...grpc.CallOption) (*GetAgentBizResp, error)
 }
 
 type cacheClient struct {
@@ -213,6 +215,15 @@ func (c *cacheClient) SetPublishTime(ctx context.Context, in *SetPublishTimeReq,
 	return out, nil
 }
 
+func (c *cacheClient) GetAgentBiz(ctx context.Context, in *GetAgentBizReq, opts ...grpc.CallOption) (*GetAgentBizResp, error) {
+	out := new(GetAgentBizResp)
+	err := c.cc.Invoke(ctx, Cache_GetAgentBiz_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CacheServer is the server API for Cache service.
 // All implementations should embed UnimplementedCacheServer
 // for forward compatibility
@@ -234,6 +245,7 @@ type CacheServer interface {
 	SetClientMetric(context.Context, *SetClientMetricReq) (*SetClientMetricResp, error)
 	SetAppLastConsumedTime(context.Context, *SetAppLastConsumedTimeReq) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error)
+	GetAgentBiz(context.Context, *GetAgentBizReq) (*GetAgentBizResp, error)
 }
 
 // UnimplementedCacheServer should be embedded to have forward compatible implementations.
@@ -287,6 +299,9 @@ func (UnimplementedCacheServer) SetAppLastConsumedTime(context.Context, *SetAppL
 }
 func (UnimplementedCacheServer) SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPublishTime not implemented")
+}
+func (UnimplementedCacheServer) GetAgentBiz(context.Context, *GetAgentBizReq) (*GetAgentBizResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgentBiz not implemented")
 }
 
 // UnsafeCacheServer may be embedded to opt out of forward compatibility for this service.
@@ -588,6 +603,24 @@ func _Cache_SetPublishTime_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cache_GetAgentBiz_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAgentBizReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CacheServer).GetAgentBiz(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Cache_GetAgentBiz_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CacheServer).GetAgentBiz(ctx, req.(*GetAgentBizReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Cache_ServiceDesc is the grpc.ServiceDesc for Cache service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -658,6 +691,10 @@ var Cache_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetPublishTime",
 			Handler:    _Cache_SetPublishTime_Handler,
+		},
+		{
+			MethodName: "GetAgentBiz",
+			Handler:    _Cache_GetAgentBiz_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

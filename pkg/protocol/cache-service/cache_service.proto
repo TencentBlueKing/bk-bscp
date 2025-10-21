@@ -110,6 +110,12 @@ service Cache {
       body: "*"
     };
   }
+
+  rpc GetAgentBiz(GetAgentBizReq) returns (GetAgentBizResp) {
+    option (google.api.http) = {
+      get: "/api/v1/cache/agent/{agent_id}/biz"
+    };
+  }
 }
 
 message JsonRawResp {
@@ -258,3 +264,12 @@ message SetAppLastConsumedTimeReq {
 }
 
 message SetAppLastConsumedTimeResp {}
+
+message GetAgentBizReq {
+  string agent_id = 1;
+}
+
+message GetAgentBizResp {
+  uint32 biz_id = 1;
+  bool found = 2;
+}

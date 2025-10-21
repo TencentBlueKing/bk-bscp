@@ -41,12 +41,18 @@ var (
 	listProcessDetailByIds           = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/process_instance/detail/biz/%d"
 	listServiceInstanceBySetTemplate = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service/" +
 		"set_template/list_service_instance/biz/%d"
-	findModuleBatch        = "%s/api/bk-cmdb/prod/api/v3/findmany/module/bk_biz_id/%d"
-	listServiceInstance    = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_instance"
-	findSetBatch           = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
-	findHostTopoRelation   = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
-	findModuleWithRelation = "%s/api/bk-cmdb/prod/api/v3/findmany/module/with_relation/biz/%d"
-	searchSet              = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
+	findModuleWithRelation  = "%s/api/bk-cmdb/prod/api/v3/findmany/module/with_relation/biz/%d"
+	searchSet               = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
+	searchBusinessByAccount = "%s/api/bk-cmdb/prod/api/v3/biz/search/%s"
+	findModuleBatch         = "%s/api/bk-cmdb/prod/api/v3/findmany/module/bk_biz_id/%d"
+	listServiceInstance     = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_instance"
+
+	findSetBatch         = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
+	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
+	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
+	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
+	watchResource        = "%s/api/v3/event/watch/resource/%s"
+	findHostBizRelations = "%s/api/v3/hosts/modules/read"
 )
 
 type HTTPMethod string
@@ -56,24 +62,21 @@ const (
 	POST HTTPMethod = "POST"
 )
 
-// BKCMDBService bkcmdb client
+// CMDBService bkcmdb client
 type CMDBService struct {
 	*cc.CMDBConfig
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
 
-	gwAuthOptions := []components.GWAuthOption{}
-	gwAuthOptions = append(gwAuthOptions, components.WithBkUsername("admin"))
-
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
 		bkcmdb.AppSecret,
-		gwAuthOptions...,
+		components.WithBkUsername(bkcmdb.BkUserName),
 	)
 
 	// 构造请求
-	request := components.GetClient().R().
+	request := components.GetClient().SetDebug(false).R().
 		SetContext(ctx).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(body)
@@ -147,7 +150,7 @@ func (bkcmdb *CMDBService) FindHostByTopo(ctx context.Context, req HostListReq) 
 
 	var hostListResp HostListResp
 	if err := resp.Decode(&hostListResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -165,7 +168,7 @@ func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req BizTopoReq
 
 	var nodes []BizTopoNode
 	if err := resp.Decode(&nodes); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -183,7 +186,7 @@ func (bkcmdb *CMDBService) GetServiceTemplate(ctx context.Context, req ServiceTe
 	var serviceTemplate ServiceTemplate
 
 	if err := resp.Decode(&serviceTemplate); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -200,7 +203,7 @@ func (bkcmdb *CMDBService) ListServiceTemplate(ctx context.Context, req ListServ
 
 	var serviceTemplateListResp ServiceTemplateListResp
 	if err := resp.Decode(&serviceTemplateListResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -217,7 +220,7 @@ func (bkcmdb *CMDBService) GetProcTemplate(ctx context.Context, req GetProcTempl
 
 	var procTemplate ProcTemplate
 	if err := resp.Decode(&procTemplate); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -235,7 +238,7 @@ func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req ListProcTem
 
 	var listProcTemplateResp ListProcTemplateResp
 	if err := resp.Decode(&listProcTemplateResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -253,7 +256,7 @@ func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProc
 
 	var listProcessInstance []ListProcessInstance
 	if err := resp.Decode(&listProcessInstance); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -269,9 +272,9 @@ func (bkcmdb *CMDBService) FindHostBySetTemplate(ctx context.Context, req FindHo
 		return nil, err
 	}
 
-	var findHostBySetTemplateResp []FindHostBySetTemplateResp
-	if err := resp.Decode(&findHostBySetTemplateResp); err != nil {
-		return nil, err
+	var result FindHostBySetTemplateResp
+	if err := resp.Decode(&result); err != nil {
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -289,7 +292,7 @@ func (bkcmdb *CMDBService) ListSetTemplate(ctx context.Context, req ListSetTempl
 
 	var listSetTemplateResp ListSetTemplateResp
 	if err := resp.Decode(&listSetTemplateResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -307,7 +310,7 @@ func (bkcmdb *CMDBService) ListProcessDetailByIds(ctx context.Context, req Proce
 
 	var processInfo []ProcessInfo
 	if err := resp.Decode(&processInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -325,7 +328,7 @@ func (bkcmdb *CMDBService) ListServiceInstanceBySetTemplate(ctx context.Context,
 
 	var serviceInstanceResp []ServiceInstanceResp
 	if err := resp.Decode(&serviceInstanceResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -343,7 +346,7 @@ func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req ModuleReq) (
 
 	var moduleInfo []ModuleInfo
 	if err := resp.Decode(&moduleInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return nil, nil
@@ -361,7 +364,7 @@ func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context, req ServiceI
 
 	var serviceInstanceResp ServiceInstanceResp
 	if err := resp.Decode(&serviceInstanceResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -378,7 +381,7 @@ func (bkcmdb *CMDBService) FindSetBatch(ctx context.Context, req SetListReq) (*C
 
 	var setInfo []SetInfo
 	if err := resp.Decode(&setInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -396,7 +399,7 @@ func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context, req HostTop
 
 	var hostTopoInfoResp HostTopoInfoResp
 	if err := resp.Decode(&hostTopoInfoResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -414,7 +417,7 @@ func (bkcmdb *CMDBService) FindModuleWithRelation(ctx context.Context, req Modul
 
 	var moduleListResp ModuleListResp
 	if err := resp.Decode(&moduleListResp); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -429,8 +432,109 @@ func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*CM
 		return nil, err
 	}
 
-	var setInfo []SetInfo
-	if err := resp.Decode(&setInfo); err != nil {
+	var sets Sets
+	if err := resp.Decode(&sets); err != nil {
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
+	}
+
+	return resp, nil
+}
+
+// SearchBusinessByAccount 查询业务
+func (bkcmdb *CMDBService) SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error) {
+	url := fmt.Sprintf(searchBusinessByAccount, bkcmdb.Host, req.BkSupplierAccount)
+
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var business Business
+	if err := resp.Decode(&business); err != nil {
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
+	}
+
+	return resp, nil
+}
+
+// SearchModule 查询模块
+func (bkcmdb *CMDBService) SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error) {
+	url := fmt.Sprintf(searchModule, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID, req.BkSetID)
+
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var result ModuleListResp
+	if err := resp.Decode(&result); err != nil {
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
+	}
+
+	return resp, nil
+}
+
+// ListBizHosts query hosts under biz
+func (bkcmdb *CMDBService) ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (
+	*CMDBResponseData[CMDBListData[HostInfo]], error) {
+	url := fmt.Sprintf(listBizHosts, bkcmdb.Host, req.BkBizID)
+
+	resp := new(CMDBResponseData[CMDBListData[HostInfo]])
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// WatchHostResource watch host resource change
+func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// WatchHostRelationResource watch host relation resource change
+func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
+	*HostRelationWatchResponse, error) {
+	if req.BkResource == "" {
+		return nil, fmt.Errorf("resource type is required")
+	}
+
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(HostRelationWatchResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// FindHostBizRelations query host biz relation information
+func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
+	*FindHostBizRelationsResponse, error) {
+	if req.BkBizID == 0 {
+		return nil, fmt.Errorf("bk_biz_id is required")
+	}
+	if len(req.BkHostID) == 0 {
+		return nil, fmt.Errorf("bk_host_id list is required")
+	}
+
+	url := fmt.Sprintf(findHostBizRelations, bkcmdb.Host)
+
+	resp := new(FindHostBizRelationsResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
 
