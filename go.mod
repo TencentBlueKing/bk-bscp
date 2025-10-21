@@ -9,7 +9,9 @@ replace (
 )
 
 require (
+	github.com/RichardKnop/machinery/v2 v2.0.16
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20250928112818-5b9818cc2e76
+	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20250928112818-5b9818cc2e76
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v0.1.6
 	github.com/bluele/gcache v0.0.2
@@ -79,8 +81,6 @@ require (
 	cloud.google.com/go/iam v1.1.5 // indirect
 	cloud.google.com/go/pubsub v1.34.0 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
-	github.com/RichardKnop/machinery/v2 v2.0.16 // indirect
-	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20250928112818-5b9818cc2e76 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.38.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
