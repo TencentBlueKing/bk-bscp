@@ -35,11 +35,19 @@ message ProcessSpec {
   google.protobuf.Timestamp cc_sync_updated_at = 8
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步更新时间" }];
   string source_data = 9
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "源数据,用于和CC对比" }];
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "本次同步的数据" }];
+  string prev_data = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "上一次同步的数据" }];
+  uint32 proc_num = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程数量" }];
 }
 
 message ProcessAttachment {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string tenant_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
   uint32 cc_process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc进程ID" }];
+  uint32 set_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群ID" }];
+  uint32 module_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块ID" }];
+  uint32 service_instance_id = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
+  uint32 host_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机ID" }];
 }

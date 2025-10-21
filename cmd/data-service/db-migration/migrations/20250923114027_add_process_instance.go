@@ -36,16 +36,16 @@ func init() {
 func mig20250923114027Up(tx *gorm.DB) error {
 	// ProcessInstances进程实例表
 	type ProcessInstances struct {
-		ID              uint       `gorm:"type:bigint(1) unsigned not null;primaryKey;autoIncrement:false"`
-		TenantID        string     `gorm:"column:tenant_id;type:varchar(255);not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:1;default:default" json:"tenant_id"`
-		BizID           uint       `gorm:"column:biz_id;type:bigint unsigned;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:2;comment:业务ID" json:"biz_id"` // 业务ID
-		CcProcessID     uint       `gorm:"column:cc_process_id;type:bigint;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:3;comment:cc进程ID" json:"cc_process_id"`
-		ProcessID       uint       `gorm:"column:process_id;type:bigint;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:4;comment:关联的process表ID" json:"process_id"` // 关联的process表ID
-		LocalInstID     string     `gorm:"column:local_inst_id;type:varchar(64);not null;comment:LocalInstID" json:"local_inst_id"`                                                  // LocalInstID
-		InstID          string     `gorm:"column:inst_id;type:varchar(64);not null;comment:InstID" json:"inst_id"`                                                                   // InstID
-		Status          string     `gorm:"column:status;type:varchar(64);not null;comment:进程状态:running,stopped" json:"status"`                                                       // 进程状态:running,stopped
-		ManagedStatus   string     `gorm:"column:managed_status;type:varchar(64);not null;comment:托管状态:managed,unmanaged" json:"managed_status"`                                     // 托管状态:managed,unmanaged
-		StatusUpdatedAt *time.Time `gorm:"column:status_updated_at;type:timestamp;default:CURRENT_TIMESTAMP;comment:状态更新时间" json:"status_updated_at"`                                // 状态更新时间
+		ID              uint      `gorm:"type:bigint(1) unsigned not null;primaryKey;autoIncrement:false"`
+		TenantID        string    `gorm:"column:tenant_id;type:varchar(255);not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:1;default:default" json:"tenant_id"`
+		BizID           uint      `gorm:"column:biz_id;type:bigint unsigned;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:2;comment:业务ID" json:"biz_id"` // 业务ID
+		CcProcessID     uint      `gorm:"column:cc_process_id;type:bigint;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:3;comment:cc进程ID" json:"cc_process_id"`
+		ProcessID       uint      `gorm:"column:process_id;type:bigint;not null;index:idx_tenantID_bizID_ccProcessID_processID,priority:4;comment:关联的process表ID" json:"process_id"` // 关联的process表ID
+		LocalInstID     string    `gorm:"column:local_inst_id;type:varchar(64);not null;comment:LocalInstID" json:"local_inst_id"`                                                  // LocalInstID
+		InstID          string    `gorm:"column:inst_id;type:varchar(64);not null;comment:InstID" json:"inst_id"`                                                                   // InstID
+		Status          string    `gorm:"column:status;type:varchar(64);not null;comment:进程状态:running,stopped" json:"status"`                                                       // 进程状态:running,stopped
+		ManagedStatus   string    `gorm:"column:managed_status;type:varchar(64);not null;comment:托管状态:managed,unmanaged" json:"managed_status"`                                     // 托管状态:managed,unmanaged
+		StatusUpdatedAt time.Time `gorm:"column:status_updated_at;type:timestamp;default:CURRENT_TIMESTAMP;comment:状态更新时间" json:"status_updated_at"`                                // 状态更新时间
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null"`

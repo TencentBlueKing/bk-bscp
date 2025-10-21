@@ -15,6 +15,7 @@ package table
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,8 +31,8 @@ type Process struct {
 }
 
 // TableName is the app's database table name.
-func (p *Process) TableName() string {
-	return "process"
+func (p *Process) TableName() Name {
+	return ProcessesTable
 }
 
 // ResID AuditRes interface
@@ -46,26 +47,25 @@ func (p *Process) ResType() string {
 
 // ProcessSpec xxx
 type ProcessSpec struct {
-	SetName         string    `gorm:"column:set_name" json:"set_name"`                     // 集群
-	ModuleName      string    `gorm:"column:module_name" json:"module_name"`               // 模块
-	ServiceName     string    `gorm:"column:service_name" json:"service_name"`             // 服务实例名称
-	Environment     string    `gorm:"column:environment" json:"environment"`               // 环境类型(production/staging等)
-	Alias           string    `gorm:"column:alias" json:"alias"`                           // 进程别名
-	InnerIP         string    `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
-	CcSyncStatus    string    `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
-	CcSyncUpdatedAt time.Time `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
-	PrevSourceData  string    `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
-	SourceData      string    `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
+	SetName         string       `gorm:"column:set_name" json:"set_name"`                     // 集群
+	ModuleName      string       `gorm:"column:module_name" json:"module_name"`               // 模块
+	ServiceName     string       `gorm:"column:service_name" json:"service_name"`             // 服务实例名称
+	Environment     string       `gorm:"column:environment" json:"environment"`               // 环境类型(production/staging等)
+	Alias           string       `gorm:"column:alias" json:"alias"`                           // 进程别名
+	InnerIP         string       `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
+	CcSyncStatus    CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
+	CcSyncUpdatedAt time.Time    `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
+	SourceData      string       `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
+	PrevData        string       `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
+	ProcNum         uint         `gorm:"column:proc_num" json:"proc_num"`                     // 进程数量
 }
 
 func (p ProcessInfo) Value() (string, error) {
 	b, err := json.Marshal(p)
 	if err != nil {
-		return "", fmt.Errorf("marshal ProcessInfo failed: %w", err)
+		return "", fmt.Errorf("marshal process info failed: %w", err)
 	}
-
 	str := string(b)
-
 	if str == "" {
 		str = "{}"
 	}
@@ -91,6 +91,7 @@ func (p *ProcessInfo) Scan(value any) error {
 	return nil
 }
 
+// ProcessInfo xxx
 type ProcessInfo struct {
 	BkStartParamRegex string `json:"bk_start_param_regex"` // 进程启动参数
 	WorkPath          string `json:"work_path"`            // 工作路径
@@ -106,7 +107,38 @@ type ProcessInfo struct {
 
 // ProcessAttachment xxx
 type ProcessAttachment struct {
-	TenantID    string `gorm:"column:tenant_id" json:"tenant_id"`         // 租户ID
-	BizID       uint32 `gorm:"column:biz_id" json:"biz_id"`               // 业务ID
-	CcProcessID uint32 `gorm:"column:cc_process_id" json:"cc_process_id"` // cc进程ID
+	TenantID          string `gorm:"column:tenant_id" json:"tenant_id"`                     // 租户ID
+	BizID             uint32 `gorm:"column:biz_id" json:"biz_id"`                           // 业务ID
+	CcProcessID       uint32 `gorm:"column:cc_process_id" json:"cc_process_id"`             // cc进程ID
+	SetID             uint32 `gorm:"column:set_id" json:"set_id"`                           // 集群ID
+	ModuleID          uint32 `gorm:"column:module_id" json:"module_id"`                     // 模块ID
+	ServiceInstanceID uint32 `gorm:"column:service_instance_id" json:"service_instance_id"` // 服务实例
+	HostID            uint32 `gorm:"column:host_id" json:"host_id"`                         // 主机ID
+}
+
+// CCSyncStatus cc同步状态
+type CCSyncStatus string
+
+const (
+	// Synced 已同步
+	Synced CCSyncStatus = "synced"
+	// Deleted 已删除
+	Deleted CCSyncStatus = "deleted"
+	// Updated 已修改
+	Updated CCSyncStatus = "updated"
+)
+
+// String get string value of cc sync status
+func (p CCSyncStatus) String() string {
+	return string(p)
+}
+
+// Validate validate cc sync status is valid or not.
+func (p CCSyncStatus) Validate() error {
+	switch p {
+	case Synced, Deleted, Updated:
+		return nil
+	default:
+		return errors.New("invalid cc sync status")
+	}
 }

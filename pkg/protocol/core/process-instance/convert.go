@@ -40,8 +40,8 @@ func (p *ProcInstSpec) ProcInstSpec() *table.ProcessInstanceSpec {
 	return &table.ProcessInstanceSpec{
 		LocalInstID:     p.LocalInstId,
 		InstID:          p.InstId,
-		Status:          p.Status,
-		ManagedStatus:   p.ManagedStatus,
+		Status:          table.ProcessStatus(p.Status),
+		ManagedStatus:   table.ManagedStatus(p.ManagedStatus),
 		StatusUpdatedAt: p.GetStatusUpdatedAt().AsTime().UTC(),
 	}
 }
@@ -55,8 +55,8 @@ func PbProcInstSpec(spec *table.ProcessInstanceSpec) *ProcInstSpec {
 	return &ProcInstSpec{
 		LocalInstId:     spec.LocalInstID,
 		InstId:          spec.InstID,
-		Status:          spec.Status,
-		ManagedStatus:   spec.ManagedStatus,
+		Status:          spec.Status.String(),
+		ManagedStatus:   spec.ManagedStatus.String(),
 		StatusUpdatedAt: timestamppb.New(spec.StatusUpdatedAt),
 	}
 }
