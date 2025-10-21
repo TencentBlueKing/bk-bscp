@@ -20,8 +20,10 @@ import (
 
 // ProcessInstance xxx
 type ProcessInstance interface {
-	// List released config items with options.
-	GetProcessInstancesByID(kit *kit.Kit, bizID uint32, processID []uint32) ([]*table.ProcessInstance, error)
+	// Update updates a process instance.
+	Update(kit *kit.Kit, processInstance *table.ProcessInstance) error
+	// GetByID gets process instances by IDs.
+	GetByID(kit *kit.Kit, bizID uint32, processID []uint32) ([]*table.ProcessInstance, error)
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -32,8 +34,19 @@ type processInstanceDao struct {
 	auditDao AuditDao
 }
 
-// GetProcessInstancesByID implements ProcessInstance.
-func (dao *processInstanceDao) GetProcessInstancesByID(kit *kit.Kit, bizID uint32, processID []uint32) (
+// Update implements ProcessInstance.
+func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.ProcessInstance) error {
+	m := dao.genQ.ProcessInstance
+	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
+
+	if _, err := q.Where(m.ID.Eq(processInstance.ID)).Updates(processInstance); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetByID implements ProcessInstance.
+func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID uint32, processID []uint32) (
 	[]*table.ProcessInstance, error) {
 	m := dao.genQ.ProcessInstance
 	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)

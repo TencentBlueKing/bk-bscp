@@ -306,6 +306,8 @@ service Data {
 
   // 进程管理列表
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
+  // 进程操作
+  rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2269,4 +2271,14 @@ message ListProcessReq {
 message ListProcessResp {
   uint32 count = 1;
   repeated pbproc.Process process = 2;
+}
+
+message OperateProcessReq {
+  uint32 biz_id = 1;
+  uint32 process_id = 2;
+  string operateType = 3;
+}
+
+message OperateProcessResp {
+  uint32 batchID = 1;
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -30,7 +31,7 @@ const (
 )
 
 // OperatePrOperateProcessocess 进程操作
-func OperateProcess(processID, processInstanceID string, operateType process.OperateType) *types.Step {
+func OperateProcess(processID, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
 	logs.V(3).Infof("operate process: %s, process instance id: %s, op type: %s", processID, processInstanceID, operateType)
 
 	operate := types.NewStep(process.OperateStepName.String(), process.OperateStepName.String()).

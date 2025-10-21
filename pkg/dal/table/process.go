@@ -19,6 +19,26 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 )
 
+// ProcessOperateType 操作类型
+type ProcessOperateType string
+
+const (
+	// RegisterOperate 托管操作
+	RegisterProcessOperate ProcessOperateType = "register"
+	// UnregisterOperate 取消托管操作
+	UnregisterProcessOperate ProcessOperateType = "unregister"
+	// StartOperate 启动操作
+	StartProcessOperate ProcessOperateType = "start"
+	// StopOperate 停止操作
+	StopProcessOperate ProcessOperateType = "stop"
+	// RestartOperate 重启操作
+	RestartProcessOperate ProcessOperateType = "restart"
+	// ReloadOperate 重载操作
+	ReloadProcessOperate ProcessOperateType = "reload"
+	// KillOperate 强制停止操作
+	KillProcessOperate ProcessOperateType = "kill"
+)
+
 // Process defines an Process detail information
 type Process struct {
 	ID         uint32             `json:"id" gorm:"primaryKey"`

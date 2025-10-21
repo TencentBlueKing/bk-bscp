@@ -19,8 +19,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
-	processExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	processStep "github.com/TencentBlueKing/bk-bscp/internal/task/step/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 const (
@@ -33,10 +33,10 @@ const (
 // OperateTask task operate
 type OperateTask struct {
 	*common.Builder
-	batchID           string
-	processID         string
-	processInstanceID string
-	operateType       processExecutor.OperateType
+	batchID           uint32
+	processID         uint32
+	processInstanceID uint32
+	operateType       table.ProcessOperateType
 	operatorUser      string
 	needCompareCMDB   bool // 是否需要对比cmdb配置，适配页面强制更新的场景
 }
@@ -44,10 +44,10 @@ type OperateTask struct {
 // NewoperateTask 创建一个 operate 任务
 func NewOperateTask(
 	dao dao.Set,
-	batchID string,
-	processID string,
-	processInstanceID string,
-	operateType processExecutor.OperateType,
+	batchID uint32,
+	processID uint32,
+	processInstanceID uint32,
+	operateType table.ProcessOperateType,
 	operatorUser string,
 	needCompareCMDB bool) types.TaskBuilder {
 	return &OperateTask{
@@ -72,11 +72,11 @@ func (t *OperateTask) FinalizeTask(task *types.Task) error {
 func (t *OperateTask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
-		// 1、从 cmdb 获取最新的信息与DB主动对比是否一致，不一致则拒绝，TODO：这里可以增加时间间隔判断，比如cmdb这条数据更新时间再1min以内则不用判断
+		// 1、TODO:从 cmdb 获取最新的信息与DB主动对比是否一致，不一致则拒绝，TODO：这里可以增加时间间隔判断，比如cmdb这条数据更新时间再1min以内则不用判断
 
-		// 2、获取gse管理的进程状态，判断是否跟db中存储一致
+		// 2、TODO:获取gse管理的进程状态，判断是否跟db中存储一致
 
-		// 3、通过GSE脚本执行获取gse托管的配置是否一致
+		// 3、TODO:通过GSE脚本执行获取gse托管的配置是否一致
 
 		// 4、执行具体操作
 		processStep.OperateProcess(t.processID, t.processInstanceID, t.operateType),
@@ -86,10 +86,10 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 // TaskInfo implements types.TaskBuilder.
 func (t *OperateTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
-		TaskName:      fmt.Sprintf("process_operate_%s_%s", t.operateType, t.processInstanceID),
+		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.operateType, t.processInstanceID),
 		TaskType:      TaskType,
-		TaskIndexType: TaskIndexType, // 任务一个索引类型，比如key，uuid等，
-		TaskIndex:     t.batchID,     // 任务索引，代表一批任务
+		TaskIndexType: TaskIndexType,                // 任务一个索引类型，比如key，uuid等，
+		TaskIndex:     fmt.Sprintf("%d", t.batchID), // 任务索引，代表一批任务
 		Creator:       t.operatorUser,
 	}
 }

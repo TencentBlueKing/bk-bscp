@@ -19,6 +19,41 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 )
 
+// ProcessStatus 进程状态
+type ProcessStatus string
+
+// 托管状态
+type ProcessManagedStatus string
+
+const (
+	// 运行中
+	ProcessStatusRunning ProcessStatus = "running"
+	// 部分运行
+	ProcessStatusPartlyRunning ProcessStatus = "partly_running"
+	// 启动中
+	ProcessStatusStarting ProcessStatus = "starting"
+	// 重启中
+	ProcessStatusRestarting ProcessStatus = "restarting"
+	// 停止中
+	ProcessStatusStopping ProcessStatus = "stopping"
+	// 重载中
+	ProcessStatusReloading ProcessStatus = "reloading"
+	// 已停止(即未运行)
+	ProcessStatusStopped ProcessStatus = "stopped"
+)
+const (
+	// 正执行托管中
+	ProcessManagedStatusStarting ProcessManagedStatus = "starting"
+	// 正在取消托管中
+	ProcessManagedStatusStopping ProcessManagedStatus = "stopping"
+	// 托管中
+	ProcessManagedStatusManaged ProcessManagedStatus = "managed"
+	// 未托管
+	ProcessManagedStatusUnmanaged ProcessManagedStatus = "unmanaged"
+	// 部分托管中
+	ProcessManagedStatusPartlyManaged ProcessManagedStatus = "partly_managed"
+)
+
 // ProcessInstances defines an process_instances detail information
 type ProcessInstance struct {
 	ID         uint32                     `json:"id" gorm:"primaryKey"`
@@ -44,11 +79,11 @@ func (p *ProcessInstance) ResType() string {
 
 // ProcessInstanceSpec xxx
 type ProcessInstanceSpec struct {
-	LocalInstID     string    `gorm:"column:local_inst_id" json:"local_inst_id"`         // LocalInstID
-	InstID          string    `gorm:"column:inst_id" json:"inst_id"`                     // InstID
-	Status          string    `gorm:"column:status" json:"status"`                       // 进程状态:running,stopped
-	ManagedStatus   string    `gorm:"column:managed_status" json:"managed_status"`       // 托管状态:managed,unmanaged
-	StatusUpdatedAt time.Time `gorm:"column:status_updated_at" json:"status_updated_at"` // 状态更新时间
+	LocalInstID     string               `gorm:"column:local_inst_id" json:"local_inst_id"`         // LocalInstID
+	InstID          string               `gorm:"column:inst_id" json:"inst_id"`                     // InstID
+	Status          ProcessStatus        `gorm:"column:status" json:"status"`                       // 进程状态:running,stopped
+	ManagedStatus   ProcessManagedStatus `gorm:"column:managed_status" json:"managed_status"`       // 托管状态:managed,unmanaged
+	StatusUpdatedAt time.Time            `gorm:"column:status_updated_at" json:"status_updated_at"` // 状态更新时间
 }
 
 // ProcessInstanceAttachment xxx

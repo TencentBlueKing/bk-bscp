@@ -13,28 +13,19 @@
 package process
 
 import (
+	"fmt"
+
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 const (
 	// RegisterStepName register step name
 	OperateStepName istep.StepName = "Operate"
-)
-
-type OperateType string
-
-const (
-	RegisterOperate   OperateType = "register"
-	UnregisterOperate OperateType = "unregister"
-	StartOperate      OperateType = "start"
-	StopOperate       OperateType = "stop"
-	RestartOperate    OperateType = "restart"
-	ReloadOperate     OperateType = "reload"
-	KillOperate       OperateType = "kill"
 )
 
 // ProcessExecutor process step executor
@@ -56,9 +47,9 @@ func NewProcessExecutor(gseService *gse.Service, dao dao.Set) *ProcessExecutor {
 
 // OperatePayload 进程操作负载
 type OperatePayload struct {
-	OperateType       OperateType
-	ProcessID         string
-	ProcessInstanceID string
+	OperateType       table.ProcessOperateType
+	ProcessID         uint32
+	ProcessInstanceID uint32
 }
 
 // Operate 进程操作
@@ -84,10 +75,8 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		return err
 	}
 
-	// 更新任务托管状态
-	if taskResult.Result.State != gse.PendingState && taskResult.Result.State != gse.ExecutingState {
-		//TODO: 更新任务状态
-	}
+	// TODO:更新任务状态
+	fmt.Println(taskResult)
 
 	return nil
 }

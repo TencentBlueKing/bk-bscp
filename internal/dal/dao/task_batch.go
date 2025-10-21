@@ -18,46 +18,50 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
-// Process xxx
-type Process interface {
-	GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error)
-	// List released config items with options.
-	List(kit *kit.Kit, bizID uint32) ([]*table.Process, int64, error)
+// TaskBatch xxx
+type TaskBatch interface {
+	Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error)
+	GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error)
 }
 
-var _ Process = new(processDao)
+var _ TaskBatch = new(taskBatchDao)
 
-type processDao struct {
+type taskBatchDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
 }
 
-func (dao *processDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error) {
-	m := dao.genQ.Process
-	q := dao.genQ.Process.WithContext(kit.Ctx)
+// Create 创建任务批次
+func (dao *taskBatchDao) Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error) {
+	if taskBatch == nil {
+		return 0, nil
+	}
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Find()
+	if err := taskBatch.ValidateCreate(); err != nil {
+		return 0, err
+	}
+
+	// 生成ID
+	id, err := dao.idGen.One(kit, table.Name(table.Table))
+	if err != nil {
+		return 0, err
+	}
+	taskBatch.ID = id
+
+	return id, q.Create(taskBatch)
+}
+
+// GetByID 根据ID获取批次信息
+func (dao *taskBatchDao) GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error) {
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	taskBatch, err := q.Where(m.ID.Eq(batchID)).Take()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(result) == 0 {
-		return nil, nil
-	}
-
-	return result[0], nil
-}
-
-// List implements Process.
-func (dao *processDao) List(kit *kit.Kit, bizID uint32) ([]*table.Process, int64, error) {
-	m := dao.genQ.Process
-	q := dao.genQ.Process.WithContext(kit.Ctx)
-
-	result, err := q.Where(m.BizID.Eq(bizID)).Find()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return result, int64(len(result)), err
+	return taskBatch, nil
 }

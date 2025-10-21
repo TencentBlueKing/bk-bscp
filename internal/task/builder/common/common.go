@@ -31,7 +31,7 @@ func NewBuilder(dao dao.Set) *Builder {
 }
 
 // SetCommonProcessParam 设置
-func (builder *Builder) CommonProcessFinalize(task *types.Task, processInstanceID string) {
+func (builder *Builder) CommonProcessFinalize(task *types.Task, processInstanceID uint32) {
 	// TODO: 获取根据process_instance_id获取进程相关配置存储在commonParma中，方便查询task可以直接查询任务发起时的配置快照（也方便进行对比）
 	// 从db主动获取进行信息组装payload
 	// task.SetCommonPayload(&commonExecutor.ProcessPayload{})
