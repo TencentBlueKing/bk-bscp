@@ -14,6 +14,7 @@
 package table
 
 import (
+	"errors"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
@@ -63,8 +64,8 @@ type ProcessInstance struct {
 }
 
 // TableName is the app's database table name.
-func (p *ProcessInstance) TableName() string {
-	return "process_instances"
+func (p *ProcessInstance) TableName() Name {
+	return ProcessesTable
 }
 
 // ResID AuditRes interface
@@ -92,4 +93,36 @@ type ProcessInstanceAttachment struct {
 	BizID       uint32 `gorm:"column:biz_id" json:"biz_id"`               // 业务ID
 	ProcessID   uint32 `gorm:"column:process_id" json:"process_id"`       // 关联的process表ID
 	CcProcessID uint32 `gorm:"column:cc_process_id" json:"cc_process_id"` // cc进程ID
+}
+
+// String get string value of process status
+func (p ProcessStatus) String() string {
+	return string(p)
+}
+
+// Validate validate process status is valid or not.
+func (p ProcessStatus) Validate() error {
+	switch p {
+	case ProcessStatusRunning, ProcessStatusStopped, ProcessStatusPartlyRunning, ProcessStatusStarting,
+		ProcessStatusRestarting, ProcessStatusStopping, ProcessStatusReloading:
+		return nil
+	default:
+		return errors.New("invalid process status")
+	}
+}
+
+// String get string value of process managed status
+func (p ProcessManagedStatus) String() string {
+	return string(p)
+}
+
+// Validate validate process managed status is valid or not.
+func (p ProcessManagedStatus) Validate() error {
+	switch p {
+	case ProcessManagedStatusStarting, ProcessManagedStatusStopping, ProcessManagedStatusManaged,
+		ProcessManagedStatusUnmanaged, ProcessManagedStatusPartlyManaged:
+		return nil
+	default:
+		return errors.New("invalid process managed status")
+	}
 }

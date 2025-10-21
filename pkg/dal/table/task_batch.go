@@ -28,7 +28,6 @@ type TaskAction string
 // TaskBatchStatus task batch status
 type TaskBatchStatus string
 
-
 const (
 	// TaskObjectProcess 任务对象：进程
 	TaskObjectProcess TaskObject = "process"

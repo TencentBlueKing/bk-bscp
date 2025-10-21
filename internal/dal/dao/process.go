@@ -33,7 +33,7 @@ type Process interface {
 	// BatchUpdateWithTx batch update client instances with transaction.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string, bizID uint32) ([]*table.Process, error)
-	UpdateSyncStatus(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
+	UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
 }
 
 var _ Process = new(processDao)
@@ -61,11 +61,9 @@ func (dao *processDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, 
 }
 
 // UpdateSyncStatus implements Process.
-func (dao *processDao) UpdateSyncStatus(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error {
+func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error {
 	m := dao.genQ.Process
-	_, err := dao.genQ.Client.WithContext(kit.Ctx).
-		Where(m.ID.In(ids...)).
-		Update(m.CcSyncStatus, state)
+	_, err := tx.Process.WithContext(kit.Ctx).Where(m.ID.In(ids...)).Update(m.CcSyncStatus, state)
 	return err
 }
 
@@ -91,7 +89,7 @@ func (dao *processDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*
 		return nil
 	}
 
-	ids, err := dao.idGen.Batch(kit, table.ProcessTable, len(data))
+	ids, err := dao.idGen.Batch(kit, table.ProcessesTable, len(data))
 	if err != nil {
 		return err
 	}

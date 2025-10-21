@@ -14,9 +14,10 @@
 package pbproc
 
 import (
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbpi "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process-instance"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Process convert pb Process to table Process
@@ -45,9 +46,10 @@ func (p *ProcessSpec) ProcessSpec() *table.ProcessSpec {
 		Environment:     p.Environment,
 		Alias:           p.Alias,
 		InnerIP:         p.InnerIp,
-		CcSyncStatus:    p.CcSyncStatus,
+		CcSyncStatus:    table.CCSyncStatus(p.CcSyncStatus),
 		CcSyncUpdatedAt: p.CcSyncUpdatedAt.AsTime().UTC(),
 		SourceData:      p.SourceData,
+		ProcNum:         uint(p.ProcNum),
 	}
 }
 
@@ -64,9 +66,10 @@ func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
 		Environment:     spec.Environment,
 		Alias:           spec.Alias,
 		InnerIp:         spec.InnerIP,
-		CcSyncStatus:    spec.CcSyncStatus,
+		CcSyncStatus:    spec.CcSyncStatus.String(),
 		CcSyncUpdatedAt: timestamppb.New(spec.CcSyncUpdatedAt),
 		SourceData:      spec.SourceData,
+		ProcNum:         uint32(spec.ProcNum),
 	}
 }
 
@@ -77,9 +80,13 @@ func (p *ProcessAttachment) ProcessAttachment() *table.ProcessAttachment {
 	}
 
 	return &table.ProcessAttachment{
-		TenantID:    p.TenantId,
-		BizID:       p.BizId,
-		CcProcessID: p.CcProcessId,
+		TenantID:          p.TenantId,
+		BizID:             p.BizId,
+		CcProcessID:       p.CcProcessId,
+		SetID:             p.SetId,
+		ModuleID:          p.ModuleId,
+		ServiceInstanceID: p.ServiceInstanceId,
+		HostID:            p.HostId,
 	}
 }
 
@@ -90,9 +97,13 @@ func PbProcessAttachment(attachment *table.ProcessAttachment) *ProcessAttachment
 	}
 
 	return &ProcessAttachment{
-		BizId:       attachment.BizID,
-		TenantId:    attachment.TenantID,
-		CcProcessId: attachment.CcProcessID,
+		BizId:             attachment.BizID,
+		TenantId:          attachment.TenantID,
+		CcProcessId:       attachment.CcProcessID,
+		SetId:             attachment.SetID,
+		ModuleId:          attachment.ModuleID,
+		ServiceInstanceId: attachment.ServiceInstanceID,
+		HostId:            attachment.HostID,
 	}
 }
 

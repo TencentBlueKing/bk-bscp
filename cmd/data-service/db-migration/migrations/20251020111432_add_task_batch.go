@@ -45,8 +45,12 @@ func mig20251020111432Up(tx *gorm.DB) error {
 		Status     string     `gorm:"type:varchar(250) not null;comment:任务状态" json:"status"`                                                                  // 任务状态
 		StartAt    *time.Time `gorm:"type:timestamp not null;comment:任务开始时间" json:"start_at"`                                                                 // 任务开始时间
 		EndAt      *time.Time `gorm:"type:timestamp null;comment:任务结束时间" json:"end_at"`                                                                       // 任务结束时间
-		CreatedAt  *time.Time `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
-		UpdatedAt  *time.Time `gorm:"column:updated_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"updated_at"`
+
+		// Revision is revision info of the resource
+		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`
+		Reviser   string    `gorm:"type:varchar(64) not null" json:"reviser"`
+		CreatedAt time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
+		UpdatedAt time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	}
 
 	if err := tx.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4").

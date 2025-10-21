@@ -109,7 +109,7 @@ var taskSendCmd = &cobra.Command{
 	},
 }
 
-var taskSycnCMDBCmd = &cobra.Command{
+var taskSyncCMDBCmd = &cobra.Command{
 	Use:   "sycn-cmdb",
 	Short: "sycn cmdb task",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -151,9 +151,9 @@ var taskSycnCMDBCmd = &cobra.Command{
 func init() {
 	taskSendCmd.Flags().Int("a", 1, "a")
 	taskSendCmd.Flags().Int("b", 2, "b")
-	taskSycnCMDBCmd.Flags().Int("bizID", 3, "bizID")
+	taskSyncCMDBCmd.Flags().Int("bizID", 3, "bizID")
 
-	taskCmd.AddCommand(taskSycnCMDBCmd)
+	taskCmd.AddCommand(taskSyncCMDBCmd)
 	taskCmd.AddCommand(taskSendCmd)
 	taskCmd.AddCommand(taskRunCmd)
 

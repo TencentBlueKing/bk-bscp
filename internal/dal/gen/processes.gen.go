@@ -31,6 +31,10 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.TenantID = field.NewString(tableName, "tenant_id")
 	_process.BizID = field.NewUint32(tableName, "biz_id")
 	_process.CcProcessID = field.NewUint32(tableName, "cc_process_id")
+	_process.SetID = field.NewUint32(tableName, "set_id")
+	_process.ModuleID = field.NewUint32(tableName, "module_id")
+	_process.ServiceInstanceID = field.NewUint32(tableName, "service_instance_id")
+	_process.HostID = field.NewUint32(tableName, "host_id")
 	_process.SetName = field.NewString(tableName, "set_name")
 	_process.ModuleName = field.NewString(tableName, "module_name")
 	_process.ServiceName = field.NewString(tableName, "service_name")
@@ -39,8 +43,9 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.InnerIP = field.NewString(tableName, "inner_ip")
 	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_status")
 	_process.CcSyncUpdatedAt = field.NewTime(tableName, "cc_sync_updated_at")
-	_process.PrevSourceData = field.NewString(tableName, "prev_data")
 	_process.SourceData = field.NewString(tableName, "source_data")
+	_process.PrevData = field.NewString(tableName, "prev_data")
+	_process.ProcNum = field.NewUint(tableName, "proc_num")
 	_process.Creator = field.NewString(tableName, "creator")
 	_process.Reviser = field.NewString(tableName, "reviser")
 	_process.CreatedAt = field.NewTime(tableName, "created_at")
@@ -54,25 +59,30 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 type process struct {
 	processDo processDo
 
-	ALL             field.Asterisk
-	ID              field.Uint32
-	TenantID        field.String
-	BizID           field.Uint32
-	CcProcessID     field.Uint32
-	SetName         field.String
-	ModuleName      field.String
-	ServiceName     field.String
-	Environment     field.String
-	Alias_          field.String
-	InnerIP         field.String
-	CcSyncStatus    field.String
-	CcSyncUpdatedAt field.Time
-	PrevSourceData  field.String
-	SourceData      field.String
-	Creator         field.String
-	Reviser         field.String
-	CreatedAt       field.Time
-	UpdatedAt       field.Time
+	ALL               field.Asterisk
+	ID                field.Uint32
+	TenantID          field.String
+	BizID             field.Uint32
+	CcProcessID       field.Uint32
+	SetID             field.Uint32
+	ModuleID          field.Uint32
+	ServiceInstanceID field.Uint32
+	HostID            field.Uint32
+	SetName           field.String
+	ModuleName        field.String
+	ServiceName       field.String
+	Environment       field.String
+	Alias_            field.String
+	InnerIP           field.String
+	CcSyncStatus      field.String
+	CcSyncUpdatedAt   field.Time
+	SourceData        field.String
+	PrevData          field.String
+	ProcNum           field.Uint
+	Creator           field.String
+	Reviser           field.String
+	CreatedAt         field.Time
+	UpdatedAt         field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -93,6 +103,10 @@ func (p *process) updateTableName(table string) *process {
 	p.TenantID = field.NewString(table, "tenant_id")
 	p.BizID = field.NewUint32(table, "biz_id")
 	p.CcProcessID = field.NewUint32(table, "cc_process_id")
+	p.SetID = field.NewUint32(table, "set_id")
+	p.ModuleID = field.NewUint32(table, "module_id")
+	p.ServiceInstanceID = field.NewUint32(table, "service_instance_id")
+	p.HostID = field.NewUint32(table, "host_id")
 	p.SetName = field.NewString(table, "set_name")
 	p.ModuleName = field.NewString(table, "module_name")
 	p.ServiceName = field.NewString(table, "service_name")
@@ -101,8 +115,9 @@ func (p *process) updateTableName(table string) *process {
 	p.InnerIP = field.NewString(table, "inner_ip")
 	p.CcSyncStatus = field.NewString(table, "cc_sync_status")
 	p.CcSyncUpdatedAt = field.NewTime(table, "cc_sync_updated_at")
-	p.PrevSourceData = field.NewString(table, "prev_data")
 	p.SourceData = field.NewString(table, "source_data")
+	p.PrevData = field.NewString(table, "prev_data")
+	p.ProcNum = field.NewUint(table, "proc_num")
 	p.Creator = field.NewString(table, "creator")
 	p.Reviser = field.NewString(table, "reviser")
 	p.CreatedAt = field.NewTime(table, "created_at")
@@ -131,11 +146,15 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 18)
+	p.fieldMap = make(map[string]field.Expr, 23)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
 	p.fieldMap["cc_process_id"] = p.CcProcessID
+	p.fieldMap["set_id"] = p.SetID
+	p.fieldMap["module_id"] = p.ModuleID
+	p.fieldMap["service_instance_id"] = p.ServiceInstanceID
+	p.fieldMap["host_id"] = p.HostID
 	p.fieldMap["set_name"] = p.SetName
 	p.fieldMap["module_name"] = p.ModuleName
 	p.fieldMap["service_name"] = p.ServiceName
@@ -144,8 +163,9 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["inner_ip"] = p.InnerIP
 	p.fieldMap["cc_sync_status"] = p.CcSyncStatus
 	p.fieldMap["cc_sync_updated_at"] = p.CcSyncUpdatedAt
-	p.fieldMap["prev_data"] = p.PrevSourceData
 	p.fieldMap["source_data"] = p.SourceData
+	p.fieldMap["prev_data"] = p.PrevData
+	p.fieldMap["proc_num"] = p.ProcNum
 	p.fieldMap["creator"] = p.Creator
 	p.fieldMap["reviser"] = p.Reviser
 	p.fieldMap["created_at"] = p.CreatedAt

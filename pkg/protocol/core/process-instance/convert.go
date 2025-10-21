@@ -56,8 +56,8 @@ func PbProcInstSpec(spec *table.ProcessInstanceSpec) *ProcInstSpec {
 	return &ProcInstSpec{
 		LocalInstId:     spec.LocalInstID,
 		InstId:          spec.InstID,
-		Status:          string(spec.Status),
-		ManagedStatus:   string(spec.ManagedStatus),
+		Status:          spec.Status.String(),
+		ManagedStatus:   spec.ManagedStatus.String(),
 		StatusUpdatedAt: timestamppb.New(spec.StatusUpdatedAt),
 	}
 }
