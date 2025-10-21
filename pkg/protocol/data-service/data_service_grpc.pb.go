@@ -164,6 +164,7 @@ const (
 	Data_ListAllGroups_FullMethodName                     = "/pbds.Data/ListAllGroups"
 	Data_ListAppGroups_FullMethodName                     = "/pbds.Data/ListAppGroups"
 	Data_GetGroupByName_FullMethodName                    = "/pbds.Data/GetGroupByName"
+	Data_GetGroupByID_FullMethodName                      = "/pbds.Data/GetGroupByID"
 	Data_UpdateGroup_FullMethodName                       = "/pbds.Data/UpdateGroup"
 	Data_DeleteGroup_FullMethodName                       = "/pbds.Data/DeleteGroup"
 	Data_ListGroupSelector_FullMethodName                 = "/pbds.Data/ListGroupSelector"
@@ -377,6 +378,7 @@ type DataClient interface {
 	ListAllGroups(ctx context.Context, in *ListAllGroupsReq, opts ...grpc.CallOption) (*ListAllGroupsResp, error)
 	ListAppGroups(ctx context.Context, in *ListAppGroupsReq, opts ...grpc.CallOption) (*ListAppGroupsResp, error)
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
+	GetGroupByID(ctx context.Context, in *GetGroupByIDReq, opts ...grpc.CallOption) (*group.Group, error)
 	UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	DeleteGroup(ctx context.Context, in *DeleteGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error)
@@ -1647,6 +1649,15 @@ func (c *dataClient) GetGroupByName(ctx context.Context, in *GetGroupByNameReq, 
 	return out, nil
 }
 
+func (c *dataClient) GetGroupByID(ctx context.Context, in *GetGroupByIDReq, opts ...grpc.CallOption) (*group.Group, error) {
+	out := new(group.Group)
+	err := c.cc.Invoke(ctx, Data_GetGroupByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) UpdateGroup(ctx context.Context, in *UpdateGroupReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
 	out := new(base.EmptyResp)
 	err := c.cc.Invoke(ctx, Data_UpdateGroup_FullMethodName, in, out, opts...)
@@ -2306,6 +2317,7 @@ type DataServer interface {
 	ListAllGroups(context.Context, *ListAllGroupsReq) (*ListAllGroupsResp, error)
 	ListAppGroups(context.Context, *ListAppGroupsReq) (*ListAppGroupsResp, error)
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
+	GetGroupByID(context.Context, *GetGroupByIDReq) (*group.Group, error)
 	UpdateGroup(context.Context, *UpdateGroupReq) (*base.EmptyResp, error)
 	DeleteGroup(context.Context, *DeleteGroupReq) (*base.EmptyResp, error)
 	ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error)
@@ -2779,6 +2791,9 @@ func (UnimplementedDataServer) ListAppGroups(context.Context, *ListAppGroupsReq)
 }
 func (UnimplementedDataServer) GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGroupByName not implemented")
+}
+func (UnimplementedDataServer) GetGroupByID(context.Context, *GetGroupByIDReq) (*group.Group, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGroupByID not implemented")
 }
 func (UnimplementedDataServer) UpdateGroup(context.Context, *UpdateGroupReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateGroup not implemented")
@@ -5336,6 +5351,24 @@ func _Data_GetGroupByName_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_GetGroupByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupByIDReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetGroupByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetGroupByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetGroupByID(ctx, req.(*GetGroupByIDReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_UpdateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateGroupReq)
 	if err := dec(in); err != nil {
@@ -6878,6 +6911,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGroupByName",
 			Handler:    _Data_GetGroupByName_Handler,
+		},
+		{
+			MethodName: "GetGroupByID",
+			Handler:    _Data_GetGroupByID_Handler,
 		},
 		{
 			MethodName: "UpdateGroup",

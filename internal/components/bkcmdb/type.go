@@ -36,11 +36,194 @@ type HostListResp struct {
 	Info  []HostInfo `json:"info"`  // 返回结果
 }
 
+// FindHostByTopo xxx
+type FindHostByTopo struct {
+	BkHostName        string `json:"bk_host_name"`         // 主机名
+	BkHostInnerip     string `json:"bk_host_innerip"`      // 内网IP
+	BkHostID          int    `json:"bk_host_id"`           // 主机ID
+	BkCloudID         int    `json:"bk_cloud_id"`          // 管控区域
+	ImportFrom        string `json:"import_from"`          // 主机导入来源,以api方式导入为3
+	BkAssetID         string `json:"bk_asset_id"`          // 固资编号
+	BkCloudInstID     string `json:"bk_cloud_inst_id"`     // 云主机实例ID
+	BkCloudVendor     string `json:"bk_cloud_vendor"`      // 云厂商
+	BkCloudHostStatus string `json:"bk_cloud_host_status"` // 云主机状态
+	BkComment         string `json:"bk_comment"`           // 备注
+	BkCPU             int    `json:"bk_cpu"`               // CPU逻辑核心数
+	BkCPUArchitecture string `json:"bk_cpu_architecture"`  // CPU架构
+	BkCPUModule       string `json:"bk_cpu_module"`        // CPU型号
+	BkDisk            int    `json:"bk_disk"`              // 磁盘容量（GB）
+	BkHostOuterip     string `json:"bk_host_outerip"`      // 主机外网IP
+	BkHostInneripV6   string `json:"bk_host_innerip_v6"`   // 主机内网IPv6
+	BkHostOuteripV6   string `json:"bk_host_outerip_v6"`   // 主机外网IPv6
+	BkIspName         string `json:"bk_isp_name"`          // 所属运营商
+	BkMac             string `json:"bk_mac"`               // 主机内网MAC地址
+	BkMem             int    `json:"bk_mem"`               // 主机内存容量（MB）
+	BkOSBit           string `json:"bk_os_bit"`            // 操作系统位数
+	BkOSName          string `json:"bk_os_name"`           // 操作系统名称
+	BkOSType          string `json:"bk_os_type"`           // 操作系统类型
+	BkOSVersion       string `json:"bk_os_version"`        // 操作系统版本
+	BkOuterMac        string `json:"bk_outer_mac"`         // 主机外网MAC地址
+	BkProvinceName    string `json:"bk_province_name"`     // 所在省份
+	BkServiceTerm     int    `json:"bk_service_term"`      // 质保年限
+	BkSla             string `json:"bk_sla"`               // SLA级别
+	BkSn              string `json:"bk_sn"`                // 设备SN
+	BkState           string `json:"bk_state"`             // 当前状态
+	BkStateName       string `json:"bk_state_name"`        // 所在国家
+	Operator          string `json:"operator"`             // 主要维护人
+	BkBakOperator     string `json:"bk_bak_operator"`      // 备份维护人
+}
+
+// Data xxx
+type Data struct {
+	Count int              `json:"count"` // 记录条数
+	Info  []FindHostByTopo `json:"info"`  // 主机实际数据
+}
+
+// CMDBResponse 通用响应结构
+type CMDBResponseData[T any] struct {
+	Result     bool   `json:"result"`     // 请求成功与否
+	Code       int    `json:"code"`       // 错误编码
+	Message    string `json:"message"`    // 错误信息
+	Data       T      `json:"data"`       // 泛型，具体数据结构
+	Permission any    `json:"permission"` // 权限信息（可以根据需要定义 struct）
+}
+
+// HostRelationWatchResponse 主机关系监听响应
+type HostRelationWatchResponse = CMDBResponseData[HostRelationWatchData]
+
+// HostWatchData 主机监听数据
+type HostWatchData = WatchResourceData[HostDetail]
+
+// HostDetail 主机事件详情
+type HostDetail struct {
+	BkHostID  *int    `json:"bk_host_id"`  // 主机ID
+	BkAgentID *string `json:"bk_agent_id"` // Agent ID
+}
+
+// HostWatchResponse 主机监听响应
+type HostWatchResponse = CMDBResponseData[HostWatchData]
+
+// HostEvent 主机事件
+type HostEvent = Event[HostDetail]
+
+// CMDBListData 表示带数量和列表的 Data
+type CMDBListData[T any] struct {
+	Count int `json:"count"` // 记录条数
+	Info  []T `json:"info"`  // 具体数据列表
+}
+
+// SearchBizInstTopoReq xxx
+type SearchBizInstTopoReq struct {
+	BkBizID int `json:"bk_biz_id"` // 业务ID
+}
+
+// SearchBizInstTopo xxx
+type SearchBizInstTopo struct {
+	BkInstID   int                 `json:"bk_inst_id"`   // 实例ID
+	BkInstName string              `json:"bk_inst_name"` // 实例展示名
+	BkObjIcon  string              `json:"bk_obj_icon"`  // 模型图标
+	BkObjID    string              `json:"bk_obj_id"`    // 模型ID
+	BkObjName  string              `json:"bk_obj_name"`  // 模型展示名
+	Child      []SearchBizInstTopo `json:"child"`        // 子节点（递归）
+	Default    int                 `json:"default"`      // 业务类型 / 集群类型
+}
+
+// GetServiceTemplateReq xxx
+type GetServiceTemplateReq struct {
+	ServiceTemplateId int `json:"service_template_id"` // 服务模板ID
+}
+
+// ServiceTemplate 服务模板信息
+type GetServiceTemplate struct {
+	BkBizID           int      `json:"bk_biz_id"`           // 业务ID
+	ID                int      `json:"id"`                  // 服务模板ID
+	Name              []string `json:"name"`                // 服务模板名称（数组）
+	ServiceCategoryID int      `json:"service_category_id"` // 服务分类ID
+	Creator           string   `json:"creator"`             // 创建者
+	Modifier          string   `json:"modifier"`            // 最后修改人员
+	CreateTime        string   `json:"create_time"`         // 创建时间
+	LastTime          string   `json:"last_time"`           // 更新时间
+	BkSupplierAccount string   `json:"bk_supplier_account"` // 开发商账号
+	HostApplyEnabled  bool     `json:"host_apply_enabled"`  // 是否启用主机属性自动应用
+}
+
+// ListServiceTemplateReq xxx
+type ListServiceTemplateReq struct {
+	BkBizID            int        `json:"bk_biz_id"`                      // 业务ID（必选）
+	ServiceCategoryID  int        `json:"service_category_id,omitempty"`  // 服务分类ID（可选）
+	Search             string     `json:"search,omitempty"`               // 按服务模板名查询，默认为空
+	IsExact            bool       `json:"is_exact,omitempty"`             // 是否精确匹配（搭配 search 使用）
+	ServiceTemplateIDs []int      `json:"service_template_ids,omitempty"` // 服务模板ID列表
+	Page               *PageParam `json:"page"`                           // 分页参数（必选）
+}
+
+// ListServiceTemplate xxx
+type ListServiceTemplate struct {
+	BkBizID           int      `json:"bk_biz_id"`
+	ID                int      `json:"id"`
+	Name              []string `json:"name"` // name 是 array
+	ServiceCategoryID int      `json:"service_category_id"`
+	Creator           string   `json:"creator"`
+	Modifier          string   `json:"modifier"`
+	CreateTime        string   `json:"create_time"`
+	LastTime          string   `json:"last_time"`
+	BkSupplierAccount string   `json:"bk_supplier_account"`
+	HostApplyEnabled  bool     `json:"host_apply_enabled"`
+}
+
+// GetProcTemplateReq xxx
+type GetProcTemplateReq struct {
+	BkBizID           int `json:"bk_biz_id"`
+	ProcessTemplateID int `json:"process_template_id"`
+}
+
+// ProcTemplate 进程模板数据
+type ProcTemplate struct {
+	ID                int                      `json:"id"`
+	BkProcessName     string                   `json:"bk_process_name"`
+	BkBizID           int                      `json:"bk_biz_id"`
+	ServiceTemplateID int                      `json:"service_template_id"`
+	Property          map[string]PropertyField `json:"property"`
+	Creator           string                   `json:"creator"`
+	Modifier          string                   `json:"modifier"`
+	CreateTime        string                   `json:"create_time"`
+	LastTime          string                   `json:"last_time"`
+	BkSupplierAccount string                   `json:"bk_supplier_account"`
+}
+
+// Property xxx
+type Property struct {
+	AutoStart         bool     `json:"auto_start"`
+	BkBizID           int      `json:"bk_biz_id"`
+	BkFuncID          string   `json:"bk_func_id"`
+	BkFuncName        string   `json:"bk_func_name"`
+	BkProcessID       int      `json:"bk_process_id"`
+	BkProcessName     string   `json:"bk_process_name"`
+	BkStartParamRegex string   `json:"bk_start_param_regex"`
+	BkSupplierAccount string   `json:"bk_supplier_account"`
+	CreateTime        string   `json:"create_time"`
+	Description       string   `json:"description"`
+	FaceStopCmd       string   `json:"face_stop_cmd"`
+	LastTime          string   `json:"last_time"`
+	PidFile           string   `json:"pid_file"`
+	Priority          int      `json:"priority"`
+	ProcNum           int      `json:"proc_num"`
+	ReloadCmd         string   `json:"reload_cmd"`
+	RestartCmd        string   `json:"restart_cmd"`
+	StartCmd          string   `json:"start_cmd"`
+	StopCmd           string   `json:"stop_cmd"`
+	Timeout           int      `json:"timeout"`
+	User              string   `json:"user"`
+	WorkPath          string   `json:"work_path"`
+	BindInfo          BindInfo `json:"bind_info"`
+}
+
 // HostInfo 主机信息
 type HostInfo struct {
 	BkHostName        string `json:"bk_host_name"`         // 主机名
 	BkHostInnerIP     string `json:"bk_host_innerip"`      // 内网IP
 	BkHostID          int    `json:"bk_host_id"`           // 主机ID
+	BkAgentID         string `json:"bk_agent_id"`          // Agent ID
 	BkCloudID         int    `json:"bk_cloud_id"`          // 管控区域
 	ImportFrom        string `json:"import_from"`          // 主机导入来源, API方式导入为3
 	BkAssetID         string `json:"bk_asset_id"`          // 固资编号
@@ -142,40 +325,10 @@ type PageParam struct {
 	Sort  string `json:"sort,omitempty"` // 排序字段
 }
 
-// ListServiceTemplateReq xxx
-type ListServiceTemplateReq struct {
-	BkBizID            int        `json:"bk_biz_id"`                      // 业务ID（必选）
-	ServiceCategoryID  int        `json:"service_category_id,omitempty"`  // 服务分类ID（可选）
-	Search             string     `json:"search,omitempty"`               // 按服务模板名查询，默认为空
-	IsExact            bool       `json:"is_exact,omitempty"`             // 是否精确匹配（搭配 search 使用）
-	ServiceTemplateIDs []int      `json:"service_template_ids,omitempty"` // 服务模板ID列表
-	Page               *PageParam `json:"page"`                           // 分页参数（必选）
-}
-
 // ServiceTemplateListResp 响应结果
 type ServiceTemplateListResp struct {
 	Count int               `json:"count"` // 总数
 	Info  []ServiceTemplate `json:"info"`  // 返回结果
-}
-
-// GetProcTemplateReq xxx
-type GetProcTemplateReq struct {
-	BkBizID           int `json:"bk_biz_id"`
-	ProcessTemplateID int `json:"process_template_id"`
-}
-
-// ProcTemplate 进程模板数据
-type ProcTemplate struct {
-	ID                int                      `json:"id"`
-	BkProcessName     string                   `json:"bk_process_name"`
-	BkBizID           int                      `json:"bk_biz_id"`
-	ServiceTemplateID int                      `json:"service_template_id"`
-	Property          map[string]PropertyField `json:"property"`
-	Creator           string                   `json:"creator"`
-	Modifier          string                   `json:"modifier"`
-	CreateTime        string                   `json:"create_time"`
-	LastTime          string                   `json:"last_time"`
-	BkSupplierAccount string                   `json:"bk_supplier_account"`
 }
 
 // PropertyField 通用属性字段
@@ -525,3 +678,89 @@ type SearchModuleReq struct {
 	Filter            *Filter        `json:"filter,omitempty"`              // 属性组合查询条件
 	Page              *PageParam     `json:"page"`                          // 分页参数
 }
+
+// ListBizHostsRequest 查询业务主机请求参数
+type ListBizHostsRequest struct {
+	BkBizID            int                 `json:"bk_biz_id"`            // 业务ID
+	Page               PageParam           `json:"page"`                 // 分页参数
+	Fields             []string            `json:"fields"`               // 需要返回的字段列表
+	HostPropertyFilter *HostPropertyFilter `json:"host_property_filter"` // 主机属性过滤条件
+}
+
+// HostPropertyFilter 主机属性过滤条件
+type HostPropertyFilter struct {
+	Condition string             `json:"condition"` // 逻辑条件，如 "AND", "OR"
+	Rules     []HostPropertyRule `json:"rules"`     // 过滤规则列表
+}
+
+// HostPropertyRule 主机属性过滤规则
+type HostPropertyRule struct {
+	Field    string      `json:"field"`    // 字段名
+	Operator string      `json:"operator"` // 操作符
+	Value    interface{} `json:"value"`    // 值
+}
+
+// HostPropertyOperator 主机属性操作符常量
+const (
+	HostPropertyOperatorEqual = "equal"
+)
+
+// HostPropertyCondition 主机属性条件常量
+const (
+	HostPropertyConditionAnd = "AND"
+)
+
+// WatchResourceRequest 监听资源请求参数
+type WatchResourceRequest struct {
+	BkResource        string      `json:"bk_resource"`         // 资源类型，如 "host", "host_relation"
+	BkEventTypes      []string    `json:"bk_event_types"`      // 事件类型，如 ["create", "update", "delete"]
+	BkFields          []string    `json:"bk_fields"`           // 需要返回的字段列表
+	BkStartFrom       *int64      `json:"bk_start_from"`       // 监听事件的起始时间（该值为unix time的秒数，且仅支持监听3小时内的事件）
+	BkCursor          string      `json:"bk_cursor"`           // 监听事件的游标
+	BkSupplierAccount string      `json:"bk_supplier_account"` // 供应商账户
+	BkFilter          interface{} `json:"bk_filter"`           // 过滤条件
+}
+
+// WatchResourceData 监听资源的数据结构
+type WatchResourceData[T any] struct {
+	BkWatched bool       `json:"bk_watched"` // 是否监听到了事件，true：监听到了事件；false:未监听到事件
+	BkEvents  []Event[T] `json:"bk_events"`  // 事件列表
+}
+
+// HostRelationWatchData 主机关系监听数据
+type HostRelationWatchData = WatchResourceData[HostRelationDetail]
+
+// Event 事件信息
+type Event[T any] struct {
+	BkCursor    string `json:"bk_cursor"`     // 游标
+	BkResource  string `json:"bk_resource"`   // 资源类型
+	BkEventType string `json:"bk_event_type"` // 事件类型
+	BkDetail    *T     `json:"bk_detail"`     // 事件详情，未监听到事件时未nil
+}
+
+// HostRelationDetail 主机关系事件详情
+type HostRelationDetail struct {
+	BkBizID  *int `json:"bk_biz_id"`  // 业务ID
+	BkHostID *int `json:"bk_host_id"` // 主机ID
+}
+
+// HostRelationEvent 主机关系事件
+type HostRelationEvent = Event[HostRelationDetail]
+
+// FindHostBizRelationsRequest 查询主机业务关系请求参数
+type FindHostBizRelationsRequest struct {
+	BkBizID  int   `json:"bk_biz_id"`  // 业务ID
+	BkHostID []int `json:"bk_host_id"` // 主机ID列表
+}
+
+// HostBizRelation 主机业务关系信息
+type HostBizRelation struct {
+	BkBizID           int    `json:"bk_biz_id"`           // 业务ID
+	BkHostID          int    `json:"bk_host_id"`          // 主机ID
+	BkModuleID        int    `json:"bk_module_id"`        // 模块ID
+	BkSetID           int    `json:"bk_set_id"`           // 集群ID
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+}
+
+// FindHostBizRelationsResponse 查询主机业务关系响应
+type FindHostBizRelationsResponse = CMDBResponseData[[]HostBizRelation]

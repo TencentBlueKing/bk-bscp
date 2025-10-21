@@ -26,7 +26,7 @@ var cfg *cc.CMDBConfig
 
 func init() {
 	cfg = &cc.CMDBConfig{
-		AppCode: "bk-bscp", AppSecret: "AWy9VhpNoEQ4U6STq3p5XRVxWcuOOceTTEVh", Host: "http://bkapi.sit.bktencent.com", UseEsb: false,
+		AppCode: "bk-bscp", AppSecret: "", Host: "", UseEsb: false,
 	}
 }
 

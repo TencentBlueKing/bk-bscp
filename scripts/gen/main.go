@@ -66,6 +66,7 @@ func main() {
 		table.Config{},
 		table.Process{},
 		table.ProcessInstance{},
+		table.BizHost{},
 	)
 
 	g.Execute()

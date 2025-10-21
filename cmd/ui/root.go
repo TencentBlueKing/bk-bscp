@@ -123,8 +123,8 @@ func init() {
 	// 不开启 completion 子命令
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
-	rootCmd.Flags().StringVar(&cfgFile, "config", "", "config file path")
-	rootCmd.Flags().StringVar(&bindAddr, "bind-address", "127.0.0.1", "the IP address on which to listen")
+	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
+	rootCmd.Flags().StringVarP(&bindAddr, "bind-address", "b", "0.0.0.0", "the IP address on which to listen")
 	rootCmd.Flags().IntVar(&port, "port", 8080, "http/metrics port")
 	rootCmd.Flags().BoolVarP(&outConfInfo, "confinfo", "o", false, "print init confinfo to stdout")
 

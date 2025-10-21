@@ -77,9 +77,11 @@ func (ad *Service) CreateAsyncDownloadTask(kt *kit.Kit, bizID, appID uint32, fil
 	}
 
 	if err = ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
+		logs.Errorf("upsert async download task %s failed, err %s", taskID, err.Error())
 		return "", err
 	}
-
+	logs.Infof("upsert async download task %s success, biz:%d, app:%d, file:%s, status:%s",
+		taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
 	ad.metric.taskCounter.With(prm.Labels{"biz": strconv.Itoa(int(task.BizID)),
 		"app": strconv.Itoa(int(task.AppID)), "file": path.Join(task.FilePath, task.FileName), "status": task.Status}).
 		Inc()
@@ -238,6 +240,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 			return "", false
 
 		}(); ok {
+			logs.Infof("async download, job %s exists, update it", jobID)
 			return jobID, nil
 		}
 	}
@@ -277,6 +280,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
 		"targets": strconv.Itoa(len(job.Targets)), "status": job.Status}).Inc()
 
+	logs.Infof("async download, create new job %s", jobID)
 	return jobID, ad.cs.Redis().Set(kt.Ctx, jobID, string(js), 30*60)
 }
 
@@ -286,5 +290,7 @@ func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,
 	if err != nil {
 		return err
 	}
+	logs.Infof("upsert async download task %s, biz:%d, app:%d, file:%s, status:%s",
+		taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
 	return ad.cs.Redis().Set(ctx, taskID, string(js), 30*60)
 }

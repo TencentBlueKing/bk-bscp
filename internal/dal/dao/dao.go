@@ -81,6 +81,7 @@ type Set interface {
 	Config() Config
 	Process() Process
 	ProcessInstance() ProcessInstance
+	BizHost() BizHost
 }
 
 // NewDaoSet create the DAO set instance.
@@ -555,5 +556,12 @@ func (s *set) ProcessInstance() ProcessInstance {
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,
+	}
+}
+
+// BizHost returns the BizHost scope's DAO
+func (s *set) BizHost() BizHost {
+	return &bizHostDao{
+		genQ: s.genQ,
 	}
 }

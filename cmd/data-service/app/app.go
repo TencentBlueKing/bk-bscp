@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -44,6 +45,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -80,6 +82,9 @@ func Run(opt *options.Option) error {
 	if err := ds.register(); err != nil {
 		return err
 	}
+
+	// 触发定时任务
+	go ds.startCronTasks()
 
 	shutdown.RegisterFirstShutdown(ds.finalizer)
 	shutdown.WaitShutdown(20)
@@ -443,4 +448,85 @@ func (ds *dataService) register() error {
 
 	logs.Infof("register data service to etcd success.")
 	return nil
+}
+
+// startCronTasks starts all cron tasks for data service
+// nolint:funlen
+func (ds *dataService) startCronTasks() {
+	// 同步客户端在线状态
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, ds.service)
+	status.Run()
+
+	// 在启动全量同步之前，先获取事件cursor，避免丢失全量同步期间发生的事件
+	timeAgo := time.Now().Add(-10 * time.Second).Unix()
+	if err := crontab.InitHostDetailCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init host detail cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
+	if err := crontab.InitBizHostCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init biz host cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
+
+	crontabConfig := cc.DataService().Crontab
+	// 启动同步业务主机关系任务
+	if crontabConfig.SyncBizHost.Enabled {
+		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse syncBizHost interval failed, using default: %v", err)
+			syncInterval = 7 * 24 * time.Hour // 7 days
+		}
+
+		bizHost := crontab.NewSyncBizHost(
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
+
+		// 启动定时同步任务
+		bizHost.Run()
+		// 立即执行一次全量同步，需要等数据完全同步再启动定时任务，避免事件丢失
+		if ds.sd.IsMaster() {
+			logs.Infof("current service instance is master, start sync biz host")
+			bizHost.SyncBizHost(kit.New())
+		}
+	}
+
+	// 启动监听业务主机关系任务
+	if crontabConfig.WatchBizHostRelation.Enabled {
+		watchBizHostInterval, err := time.ParseDuration(crontabConfig.WatchBizHostRelation.Interval)
+		if err != nil {
+			logs.Errorf("parse watchBizHostRelation interval failed, using default: %v", err)
+			watchBizHostInterval = 10 * time.Second // 10 seconds
+		}
+
+		watchBizHostRelation := crontab.NewWatchBizHostRelation(
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.WatchBizHostRelation.QpsLimit,
+			watchBizHostInterval)
+		watchBizHostRelation.Run()
+	}
+
+	// 启动监听主机更新任务
+	if crontabConfig.WatchHostUpdates.Enabled {
+		watchHostInterval, err := time.ParseDuration(crontabConfig.WatchHostUpdates.Interval)
+		if err != nil {
+			logs.Errorf("parse watchHostUpdates interval failed, using default: %v", err)
+			watchHostInterval = 5 * time.Second // 5 seconds
+		}
+
+		watchHostUpdates := crontab.NewWatchHostUpdates(ds.daoSet, ds.sd, ds.cmdb, watchHostInterval)
+		watchHostUpdates.Run()
+	}
+
+	// 启动清理业务主机关系任务
+	if crontabConfig.CleanupBizHost.Enabled {
+		cleanupInterval, err := time.ParseDuration(crontabConfig.CleanupBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse cleanupBizHost interval failed, using default: %v", err)
+			cleanupInterval = 1 * time.Hour // 1 hour
+		}
+
+		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdb,
+			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
+		cleanupBizHost.Run()
+	}
 }

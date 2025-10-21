@@ -257,6 +257,8 @@ const (
 	ProcessTable Name = "Process"
 	// ProcessInstancesTable is process_instances table's name
 	ProcessInstancesTable Name = "ProcessInstances"
+	// BizHostTable is biz_host table's name
+	BizHostTable Name = "biz_hosts"
 )
 
 // RevisionColumns defines all the Revision table's columns.

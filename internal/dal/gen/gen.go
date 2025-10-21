@@ -22,6 +22,7 @@ var (
 	AppTemplateVariable         *appTemplateVariable
 	ArchivedApp                 *archivedApp
 	Audit                       *audit
+	BizHost                     *bizHost
 	Client                      *client
 	ClientEvent                 *clientEvent
 	ClientQuery                 *clientQuery
@@ -63,6 +64,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AppTemplateVariable = &Q.AppTemplateVariable
 	ArchivedApp = &Q.ArchivedApp
 	Audit = &Q.Audit
+	BizHost = &Q.BizHost
 	Client = &Q.Client
 	ClientEvent = &Q.ClientEvent
 	ClientQuery = &Q.ClientQuery
@@ -105,6 +107,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AppTemplateVariable:         newAppTemplateVariable(db, opts...),
 		ArchivedApp:                 newArchivedApp(db, opts...),
 		Audit:                       newAudit(db, opts...),
+		BizHost:                     newBizHost(db, opts...),
 		Client:                      newClient(db, opts...),
 		ClientEvent:                 newClientEvent(db, opts...),
 		ClientQuery:                 newClientQuery(db, opts...),
@@ -148,6 +151,7 @@ type Query struct {
 	AppTemplateVariable         appTemplateVariable
 	ArchivedApp                 archivedApp
 	Audit                       audit
+	BizHost                     bizHost
 	Client                      client
 	ClientEvent                 clientEvent
 	ClientQuery                 clientQuery
@@ -192,6 +196,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AppTemplateVariable:         q.AppTemplateVariable.clone(db),
 		ArchivedApp:                 q.ArchivedApp.clone(db),
 		Audit:                       q.Audit.clone(db),
+		BizHost:                     q.BizHost.clone(db),
 		Client:                      q.Client.clone(db),
 		ClientEvent:                 q.ClientEvent.clone(db),
 		ClientQuery:                 q.ClientQuery.clone(db),
@@ -243,6 +248,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AppTemplateVariable:         q.AppTemplateVariable.replaceDB(db),
 		ArchivedApp:                 q.ArchivedApp.replaceDB(db),
 		Audit:                       q.Audit.replaceDB(db),
+		BizHost:                     q.BizHost.replaceDB(db),
 		Client:                      q.Client.replaceDB(db),
 		ClientEvent:                 q.ClientEvent.replaceDB(db),
 		ClientQuery:                 q.ClientQuery.replaceDB(db),
@@ -284,6 +290,7 @@ type queryCtx struct {
 	AppTemplateVariable         IAppTemplateVariableDo
 	ArchivedApp                 IArchivedAppDo
 	Audit                       IAuditDo
+	BizHost                     IBizHostDo
 	Client                      IClientDo
 	ClientEvent                 IClientEventDo
 	ClientQuery                 IClientQueryDo
@@ -325,6 +332,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AppTemplateVariable:         q.AppTemplateVariable.WithContext(ctx),
 		ArchivedApp:                 q.ArchivedApp.WithContext(ctx),
 		Audit:                       q.Audit.WithContext(ctx),
+		BizHost:                     q.BizHost.WithContext(ctx),
 		Client:                      q.Client.WithContext(ctx),
 		ClientEvent:                 q.ClientEvent.WithContext(ctx),
 		ClientQuery:                 q.ClientQuery.WithContext(ctx),
