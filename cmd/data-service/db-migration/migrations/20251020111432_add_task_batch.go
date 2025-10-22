@@ -60,7 +60,7 @@ func mig20251020111432Up(tx *gorm.DB) error {
 
 	now := time.Now()
 	if result := tx.Create([]IDGenerators{
-		{Resource: "task_batch", MaxID: 0, UpdatedAt: now},
+		{Resource: "task_batches", MaxID: 0, UpdatedAt: now},
 	}); result.Error != nil {
 		return result.Error
 	}

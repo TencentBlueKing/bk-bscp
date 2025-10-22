@@ -69,7 +69,7 @@ type TaskBatch struct {
 
 // TableName is the app's database table name.
 func (t *TaskBatch) TableName() string {
-	return "task_batch"
+	return "task_batches"
 }
 
 // ResID AuditRes interface

@@ -45,33 +45,9 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 		return nil, err
 	}
 
-	// 转换为 protobuf 格式
-	list := make([]*pbtb.TaskBatch, 0, len(res))
-	for _, item := range res {
-		detail := &pbtb.TaskBatch{
-			Id:         item.ID,
-			TaskObject: string(item.Spec.TaskObject),
-			TaskAction: string(item.Spec.TaskAction),
-			TaskData:   item.Spec.TaskData,
-			Status:     string(item.Spec.Status),
-		}
-
-		if item.Spec.StartAt != nil {
-			detail.StartAt = item.Spec.StartAt.Format("2006-01-02 15:04:05")
-		}
-		if item.Spec.EndAt != nil {
-			detail.EndAt = item.Spec.EndAt.Format("2006-01-02 15:04:05")
-		}
-		if item.Revision != nil {
-			detail.CreatedAt = item.Revision.CreatedAt.Format("2006-01-02 15:04:05")
-			detail.UpdatedAt = item.Revision.UpdatedAt.Format("2006-01-02 15:04:05")
-		}
-
-		list = append(list, detail)
-	}
-
+	// 使用 convert 函数转换为 protobuf 格式
 	return &pbds.ListTaskBatchResp{
 		Count: uint32(count),
-		List:  list,
+		List:  pbtb.PbTaskBatches(res),
 	}, nil
 }
