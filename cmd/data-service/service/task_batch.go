@@ -45,9 +45,9 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 		return nil, err
 	}
 
-	// 使用 convert 函数转换为 protobuf 格式
 	return &pbds.ListTaskBatchResp{
 		Count: uint32(count),
-		List:  pbtb.PbTaskBatches(res),
+		// 转换为 protobuf 格式
+		List: pbtb.PbTaskBatches(res),
 	}, nil
 }
