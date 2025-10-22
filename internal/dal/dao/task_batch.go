@@ -16,12 +16,22 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
+
+// TaskBatchListFilter task batch list filter
+type TaskBatchListFilter struct {
+	TaskObject table.TaskObject      // 任务对象
+	TaskAction table.TaskAction      // 任务动作
+	Status     table.TaskBatchStatus // 执行状态
+	Executor   string                // 执行帐户（创建者）
+}
 
 // TaskBatch xxx
 type TaskBatch interface {
 	Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error)
 	GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error)
+	List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter, opt *types.BasePage) ([]*table.TaskBatch, int64, error)
 }
 
 var _ TaskBatch = new(taskBatchDao)
@@ -64,4 +74,40 @@ func (dao *taskBatchDao) GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch
 	}
 
 	return taskBatch, nil
+}
+
+// List 查询任务历史列表
+func (dao *taskBatchDao) List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter,
+	opt *types.BasePage) ([]*table.TaskBatch, int64, error) {
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	// 构建查询条件
+	q = q.Where(m.BizID.Eq(bizID))
+
+	if filter != nil {
+		if filter.TaskObject != "" {
+			q = q.Where(m.TaskObject.Eq(string(filter.TaskObject)))
+		}
+		if filter.TaskAction != "" {
+			q = q.Where(m.TaskAction.Eq(string(filter.TaskAction)))
+		}
+		if filter.Status != "" {
+			q = q.Where(m.Status.Eq(string(filter.Status)))
+		}
+		if filter.Executor != "" {
+			q = q.Where(m.Creator.Eq(filter.Executor))
+		}
+	}
+
+	// 按创建时间倒序排列
+	q = q.Order(m.ID.Desc())
+
+	// 分页查询
+	result, count, err := q.FindByPage(opt.Offset(), opt.LimitInt())
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return result, count, nil
 }

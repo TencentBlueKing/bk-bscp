@@ -115,10 +115,10 @@ func (t *TaskBatch) ValidateCreate() error {
 
 // OperateRange 操作范围
 type OperateRange struct {
-	SetID       uint32 `json:"set_id"`        // 集群ID
-	ModuleID    uint32 `json:"module_id"`     // 模块ID
-	ServiceID   uint32 `json:"service_id"`    // 服务实例ID
-	CCProcessID uint32 `json:"cc_process_id"` // cc进程ID
+	SetIDs       []uint32 `json:"set_ids"`        // 集群ID列表
+	ModuleIDs    []uint32 `json:"module_ids"`     // 模块ID列表
+	ServiceIDs   []uint32 `json:"service_ids"`    // 服务实例ID列表
+	CCProcessIDs []uint32 `json:"cc_process_ids"` // cc进程ID列表
 }
 
 // TaskData 任务数据接口

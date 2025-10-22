@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+package pbtb;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch;pbtb";
+
+// TaskBatch represents a batch task execution record
+message TaskBatch {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次ID" }];
+  string task_object = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务对象" }];
+  string task_action = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务动作" }];
+  string task_data = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务数据" }];
+  string status = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
+  string start_at = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
+  string end_at = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
+  string created_at = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
+  string updated_at = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
+}
+

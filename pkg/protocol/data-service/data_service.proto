@@ -18,6 +18,7 @@ import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
 import "pkg/protocol/core/released-ci/released_ci.proto";
 import "pkg/protocol/core/process/process.proto";
+import "pkg/protocol/core/task_batch/task_batch.proto";
 import "pkg/protocol/core/template/template.proto";
 import "pkg/protocol/core/template-binding-relation/template_binding_relation.proto";
 import "pkg/protocol/core/template-revision/template_revision.proto";
@@ -311,6 +312,8 @@ service Data {
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
   // 进程同步
   rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {}
+  // 任务历史列表
+  rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2297,4 +2300,19 @@ message SyncCMDBReq {
 
 message SyncCMDBResp {
   uint32 task_id = 1;
+}
+
+message ListTaskBatchReq {
+  uint32 biz_id = 1;
+  string task_object = 2; // 任务对象类型: process, config_file 等
+  uint32 start = 3;
+  uint32 limit = 4;
+  string task_action = 5; // 任务动作: register, start, stop, restart, reload, kill 等
+  string status = 6; // 执行状态: running, failed, succeed
+  string executor = 7; // 执行帐户（创建者）
+}
+
+message ListTaskBatchResp {
+  uint32 count = 1;
+  repeated pbtb.TaskBatch list = 2;
 }

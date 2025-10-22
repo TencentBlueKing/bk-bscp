@@ -30,6 +30,7 @@ all:
 	@cd client-query && make
 	@cd process && make
 	@cd process-instance && make
+	@cd task_batch && make
 
 clean:
 	@cd base && make clean
@@ -63,3 +64,4 @@ clean:
 	@cd client-query && make clean
 	@cd process && make clean
 	@cd process-instance && make clean
+	@cd task_batch && make clean
