@@ -646,6 +646,9 @@ func (s *Service) genFinalATBForCascade(kt *kit.Kit, tx *gen.QueryTx, atb *table
 	}
 	s.fillATBModel(kt, atb, pbs)
 
+	// 设置修改人信息，用于通过 ValidateUpdate 验证
+	atb.Revision.Reviser = kt.User
+	atb.Revision.UpdatedAt = time.Now().UTC()
 	return nil
 }
 
