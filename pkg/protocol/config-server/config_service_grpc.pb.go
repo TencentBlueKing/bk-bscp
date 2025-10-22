@@ -209,6 +209,7 @@ const (
 	Config_ListProcess_FullMethodName                        = "/pbcs.Config/ListProcess"
 	Config_OperateProcess_FullMethodName                     = "/pbcs.Config/OperateProcess"
 	Config_SyncCMDB_FullMethodName                           = "/pbcs.Config/SyncCMDB"
+	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
 )
 
 // ConfigClient is the client API for Config service.
@@ -572,6 +573,8 @@ type ConfigClient interface {
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
 	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
+	// 任务历史列表
+	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
 }
 
 type configClient struct {
@@ -2220,6 +2223,15 @@ func (c *configClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...gr
 	return out, nil
 }
 
+func (c *configClient) ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error) {
+	out := new(ListTaskBatchResp)
+	err := c.cc.Invoke(ctx, Config_ListTaskBatch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2581,6 +2593,8 @@ type ConfigServer interface {
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
 	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
+	// 任务历史列表
+	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3132,6 +3146,9 @@ func (UnimplementedConfigServer) OperateProcess(context.Context, *OperateProcess
 }
 func (UnimplementedConfigServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
+}
+func (UnimplementedConfigServer) ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTaskBatch not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6421,6 +6438,24 @@ func _Config_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListTaskBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTaskBatchReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListTaskBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListTaskBatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListTaskBatch(ctx, req.(*ListTaskBatchReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7155,6 +7190,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SyncCMDB",
 			Handler:    _Config_SyncCMDB_Handler,
+		},
+		{
+			MethodName: "ListTaskBatch",
+			Handler:    _Config_ListTaskBatch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

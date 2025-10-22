@@ -17,6 +17,7 @@ import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
 import "pkg/protocol/core/released-ci/released_ci.proto";
 import "pkg/protocol/core/process/process.proto";
+import "pkg/protocol/core/task_batch/task_batch.proto";
 import "pkg/protocol/core/template/template.proto";
 import "pkg/protocol/core/template-binding-relation/template_binding_relation.proto";
 import "pkg/protocol/core/template-revision/template_revision.proto";
@@ -1497,6 +1498,13 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/sycn/cc"
       body: "*"
+    };
+  }
+  // 任务历史列表
+  rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/task_batch/list"
     };
   }
 }
@@ -4440,4 +4448,24 @@ message SyncCMDBReq {
 
 message SyncCMDBResp {
   uint32 task_id = 1;
+}
+
+message ListTaskBatchReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string task_object = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "任务对象类型: process, config_file 等"
+  }];
+  uint32 start = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "起始位置" }];
+  uint32 limit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "限制数量" }];
+  string task_action = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "任务动作: register, start, stop, restart, reload, kill 等"
+  }];
+  string status = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态: running, failed, succeed" }];
+  string executor = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户（创建者）" }];
+}
+
+message ListTaskBatchResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbtb.TaskBatch list = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次列表" }];
 }
