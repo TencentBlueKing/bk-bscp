@@ -15,7 +15,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
+
+	"gorm.io/gen/field"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
@@ -24,13 +27,18 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // ListProcess implements pbds.DataServer.
 func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*pbds.ListProcessResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res, count, err := s.dao.Process().List(kt, req.BizId)
+	res, count, err := s.dao.Process().List(kt, req.BizId, req.GetSearch(), &types.BasePage{
+		Start: req.Start,
+		Limit: uint(req.Limit),
+		All:   req.GetAll(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -168,4 +176,80 @@ func getProcessStatus(operateType table.ProcessOperateType) table.ProcessStatus 
 	default:
 		return ""
 	}
+}
+
+// ProcessFilterOptions implements pbds.DataServer.
+func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFilterOptionsReq) (
+	*pbds.ProcessFilterOptionsResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	sets, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
+		field.NewUint32("", "set_id"), field.NewString("", "set_name"))
+	if err != nil {
+		return nil, err
+	}
+	setOptions := make([]*pbproc.ProcessFilterOption, 0, len(sets))
+	for _, v := range sets {
+		setOptions = append(setOptions, &pbproc.ProcessFilterOption{
+			Id:   v.Attachment.SetID,
+			Name: v.Spec.SetName,
+		})
+	}
+
+	modules, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
+		field.NewUint32("", "module_id"), field.NewString("", "module_name"))
+	if err != nil {
+		return nil, err
+	}
+	moduleOptions := make([]*pbproc.ProcessFilterOption, 0, len(modules))
+	for _, v := range modules {
+		moduleOptions = append(moduleOptions, &pbproc.ProcessFilterOption{
+			Id:   v.Attachment.ModuleID,
+			Name: v.Spec.ModuleName,
+		})
+	}
+
+	svcInsts, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
+		field.NewUint32("", "service_instance_id"), field.NewString("", "service_name"))
+	if err != nil {
+		return nil, err
+	}
+	svcInstOptions := make([]*pbproc.ProcessFilterOption, 0, len(svcInsts))
+	for _, v := range svcInsts {
+		svcInstOptions = append(svcInstOptions, &pbproc.ProcessFilterOption{
+			Id:   v.Attachment.ServiceInstanceID,
+			Name: v.Spec.ServiceName,
+		})
+	}
+
+	processIds, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(), field.NewUint32("", "cc_process_id"))
+	if err != nil {
+		return nil, err
+	}
+	processIDOptions := make([]*pbproc.ProcessFilterOption, 0, len(processIds))
+	for _, v := range processIds {
+		processIDOptions = append(processIDOptions, &pbproc.ProcessFilterOption{
+			Id:   v.Attachment.CcProcessID,
+			Name: strconv.Itoa(int(v.Attachment.CcProcessID)),
+		})
+	}
+
+	aliases, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(), field.NewString("", "alias"))
+	if err != nil {
+		return nil, err
+	}
+	processAliasesOptions := make([]*pbproc.ProcessFilterOption, 0, len(aliases))
+	for k, v := range aliases {
+		processAliasesOptions = append(processAliasesOptions, &pbproc.ProcessFilterOption{
+			Id:   uint32(k + 1),
+			Name: v.Spec.Alias,
+		})
+	}
+
+	return &pbds.ProcessFilterOptionsResp{
+		Sets:             setOptions,
+		Modules:          moduleOptions,
+		ServiceInstances: svcInstOptions,
+		ProcessAliases:   processAliasesOptions,
+		CcProcessIds:     processIDOptions,
+	}, nil
 }

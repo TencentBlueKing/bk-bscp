@@ -221,8 +221,10 @@ const (
 	Data_BatchUpdateLastConsumedTime_FullMethodName       = "/pbds.Data/BatchUpdateLastConsumedTime"
 	Data_ListProcess_FullMethodName                       = "/pbds.Data/ListProcess"
 	Data_OperateProcess_FullMethodName                    = "/pbds.Data/OperateProcess"
+	Data_ProcessFilterOptions_FullMethodName              = "/pbds.Data/ProcessFilterOptions"
 	Data_SyncCMDB_FullMethodName                          = "/pbds.Data/SyncCMDB"
 	Data_ListTaskBatch_FullMethodName                     = "/pbds.Data/ListTaskBatch"
+	Data_SyncCMDBStatus_FullMethodName                    = "/pbds.Data/SyncCMDBStatus"
 )
 
 // DataClient is the client API for Data service.
@@ -454,10 +456,14 @@ type DataClient interface {
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error)
 	// 进程同步
 	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error)
 }
 
 type dataClient struct {
@@ -2169,6 +2175,15 @@ func (c *dataClient) OperateProcess(ctx context.Context, in *OperateProcessReq, 
 	return out, nil
 }
 
+func (c *dataClient) ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error) {
+	out := new(ProcessFilterOptionsResp)
+	err := c.cc.Invoke(ctx, Data_ProcessFilterOptions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
 	out := new(SyncCMDBResp)
 	err := c.cc.Invoke(ctx, Data_SyncCMDB_FullMethodName, in, out, opts...)
@@ -2181,6 +2196,15 @@ func (c *dataClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc
 func (c *dataClient) ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error) {
 	out := new(ListTaskBatchResp)
 	err := c.cc.Invoke(ctx, Data_ListTaskBatch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error) {
+	out := new(SyncCMDBStatusResp)
+	err := c.cc.Invoke(ctx, Data_SyncCMDBStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2416,10 +2440,14 @@ type DataServer interface {
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error)
 	// 进程同步
 	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -2993,11 +3021,17 @@ func (UnimplementedDataServer) ListProcess(context.Context, *ListProcessReq) (*L
 func (UnimplementedDataServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
 }
+func (UnimplementedDataServer) ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessFilterOptions not implemented")
+}
 func (UnimplementedDataServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
 }
 func (UnimplementedDataServer) ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTaskBatch not implemented")
+}
+func (UnimplementedDataServer) SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDBStatus not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6413,6 +6447,24 @@ func _Data_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ProcessFilterOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessFilterOptionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ProcessFilterOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ProcessFilterOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ProcessFilterOptions(ctx, req.(*ProcessFilterOptionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncCMDBReq)
 	if err := dec(in); err != nil {
@@ -6445,6 +6497,24 @@ func _Data_ListTaskBatch_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).ListTaskBatch(ctx, req.(*ListTaskBatchReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).SyncCMDBStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_SyncCMDBStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).SyncCMDBStatus(ctx, req.(*SyncCMDBStatusReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7213,12 +7283,20 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Data_OperateProcess_Handler,
 		},
 		{
+			MethodName: "ProcessFilterOptions",
+			Handler:    _Data_ProcessFilterOptions_Handler,
+		},
+		{
 			MethodName: "SyncCMDB",
 			Handler:    _Data_SyncCMDB_Handler,
 		},
 		{
 			MethodName: "ListTaskBatch",
 			Handler:    _Data_ListTaskBatch_Handler,
+		},
+		{
+			MethodName: "SyncCMDBStatus",
+			Handler:    _Data_SyncCMDBStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

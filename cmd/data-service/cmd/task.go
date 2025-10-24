@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
-	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/hello"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/register"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -109,51 +108,10 @@ var taskSendCmd = &cobra.Command{
 	},
 }
 
-var taskSyncCMDBCmd = &cobra.Command{
-	Use:   "sycn-cmdb",
-	Short: "sycn cmdb task",
-	Run: func(cmd *cobra.Command, args []string) {
-		var err error
-		if err = cc.LoadSettings(SysOpt); err != nil {
-			fmt.Println("load settings from config files failed, err:", err)
-			return
-		}
-
-		logs.InitLogger(cc.DataService().Log.Logs())
-		taskMgr, err := task.NewTaskMgr(
-			context.Background(),
-			cc.DataService().Service.Etcd,
-			cc.DataService().Sharding.AdminDatabase,
-		)
-		if err != nil {
-			fmt.Println("new task manager failed, err:", err)
-			return
-		}
-
-		// args
-		bizID, err := cmd.Flags().GetInt("bizID")
-		if err != nil {
-			fmt.Println("get bizID failed, err:", err)
-			return
-		}
-
-		task, err := task.NewByTaskBuilder(
-			cmdb.NewSyncCMDBTask(bizID),
-		)
-		if err != nil {
-			fmt.Println("new task failed, err:", err)
-			return
-		}
-		taskMgr.Dispatch(task)
-	},
-}
-
 func init() {
 	taskSendCmd.Flags().Int("a", 1, "a")
 	taskSendCmd.Flags().Int("b", 2, "b")
-	taskSyncCMDBCmd.Flags().Int("bizID", 3, "bizID")
 
-	taskCmd.AddCommand(taskSyncCMDBCmd)
 	taskCmd.AddCommand(taskSendCmd)
 	taskCmd.AddCommand(taskRunCmd)
 

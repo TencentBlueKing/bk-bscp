@@ -13,7 +13,14 @@
 package cmdb
 
 import (
+	"fmt"
+
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
+
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 const (
@@ -21,56 +28,52 @@ const (
 	SyncCMDB istep.StepName = "SyncCMDB"
 )
 
-// NewSyncBizExecutor xxx
-func NewSyncBizExecutor() *SyncBizExecutor {
-	return &SyncBizExecutor{}
+// NewSyncCMDBExecutor xxx
+func NewSyncCMDBExecutor(svc bkcmdb.Service, dao dao.Set) *syncCmdbExecutor {
+	return &syncCmdbExecutor{
+		svc: svc,
+		dao: dao,
+	}
+}
+
+// SyncCMDBPayload 同步cmdb相关负载
+type SyncCMDBPayload struct {
+	OperateType table.CCSyncStatus
+	BizID       uint32
 }
 
 // HelloExecutor hello step executor
-type SyncBizExecutor struct {
+type syncCmdbExecutor struct {
+	svc bkcmdb.Service
+	dao dao.Set
 }
 
 // SyncCMDB implements istep.Step.
-func (s *SyncBizExecutor) SyncCMDB(c *istep.Context) (err error) {
+func (s *syncCmdbExecutor) SyncCMDB(c *istep.Context) (err error) {
+	payload := &SyncCMDBPayload{}
+	if err = c.GetPayload(payload); err != nil {
+		return err
+	}
+	// 同步业务逻辑
+	bizList, err := s.svc.SearchBusinessByAccount(c.Context(), bkcmdb.SearchSetReq{
+		BkSupplierAccount: "0",
+		Fields:            []string{"bk_biz_id", "bk_biz_name"},
+	})
+	if err != nil {
+		return fmt.Errorf("get business data failed: %v", err)
+	}
 
-	// bizID, err := c.GetParam("bizID")
-	// if err != nil {
-	// 	return err
-	// }
+	var business bkcmdb.Business
+	if err := bizList.Decode(&business); err != nil {
+		return fmt.Errorf("parse business data: %v", err)
+	}
 
-	// // 同步业务逻辑
-	// bizList, err := s.cmdb.SearchBusinessByAccount(c.Context(), bkcmdb.SearchSetReq{
-	// 	BkSupplierAccount: "0",
-	// 	Fields:            []string{"bk_biz_id", "bk_biz_name"},
-	// })
-	// if err != nil {
-	// 	return fmt.Errorf("get business data failed: %v", err)
-	// }
+	syncSvc := cmdb.NewSyncCMDBService(int(payload.BizID), s.svc, s.dao)
 
-	// var business bkcmdb.Business
-	// if err := bizList.Decode(&business); err != nil {
-	// 	return fmt.Errorf("parse business data: %v", err)
-	// }
-
-	// id, err := strconv.Atoi(bizID)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// syncSvc := cmdb.SyncCMDBService{
-	// 	BizID: bizID,
-	// 	Svc:   nil,
-	// }
-
-	// err = syncSvc.SyncSingleBiz(c.Context())
-	// if err != nil {
-	// 	return err
-	// }
-
-	return nil
+	return syncSvc.SyncSingleBiz(c.Context())
 }
 
-// Register register step
-func Register(s *SyncBizExecutor) {
+// RegisterExecutor register step
+func RegisterExecutor(s *syncCmdbExecutor) {
 	istep.Register(SyncCMDB, istep.StepExecutorFunc(s.SyncCMDB))
 }

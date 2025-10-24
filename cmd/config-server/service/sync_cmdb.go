@@ -14,6 +14,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -32,6 +35,21 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbcs.SyncCMDBReq) (*pbcs.Sy
 		return nil, err
 	}
 
+	// 判断是否已经存在同步，存在直接返回任务ID或者其他信息
+	status, err := s.SyncCMDBStatus(grpcKit.RpcCtx(), &pbcs.SyncCMDBStatusReq{
+		BizId: req.GetBizId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if status.GetStatus() == types.TaskStatusInit ||
+		status.GetStatus() == types.TaskStatusRunning ||
+		status.GetStatus() == types.TaskStatusRevoked {
+		return nil, fmt.Errorf("the task already exists. please try again later. current status: %s",
+			status.GetStatus())
+	}
+
 	resp, err := s.client.DS.SyncCMDB(grpcKit.RpcCtx(), &pbds.SyncCMDBReq{
 		BizId: req.GetBizId(),
 	})
@@ -41,5 +59,29 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbcs.SyncCMDBReq) (*pbcs.Sy
 
 	return &pbcs.SyncCMDBResp{
 		TaskId: resp.GetTaskId(),
+	}, nil
+}
+
+// SyncCMDBStatus implements pbcs.ConfigServer.
+func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbcs.SyncCMDBStatusReq) (*pbcs.SyncCMDBStatusResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.SyncCMDBStatus(grpcKit.RpcCtx(), &pbds.SyncCMDBStatusReq{
+		BizId: req.GetBizId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.SyncCMDBStatusResp{
+		LastSyncTime: resp.GetLastSyncTime(),
+		Status:       resp.GetStatus(),
 	}, nil
 }

@@ -13,11 +13,15 @@
 package dao
 
 import (
+	rawgen "gorm.io/gen"
+	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	process "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // Process xxx
@@ -25,7 +29,8 @@ type Process interface {
 	// GetByID get client by id.
 	GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error)
 	// List released config items with options.
-	List(kit *kit.Kit, bizID uint32) ([]*table.Process, int64, error)
+	List(kit *kit.Kit, bizID uint32, search *process.ProcessSearchCondition,
+		opt *types.BasePage) ([]*table.Process, int64, error)
 	// BatcheUpsertWithTx 批量更新插入数据
 	BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 	// BatchCreateWithTx batch create client instances with transaction.
@@ -34,6 +39,7 @@ type Process interface {
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string, bizID uint32) ([]*table.Process, error)
 	UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
+	ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) ([]*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -42,6 +48,15 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ListBizFilterOptions implements Process.
+// fields = append(fields, field.NewString("", "id"))
+func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) (
+	[]*table.Process, error) {
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	return q.Distinct(fields...).Select(fields...).Find()
 }
 
 func (dao *processDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error) {
@@ -111,14 +126,136 @@ func (dao *processDao) BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []
 }
 
 // List implements Process.
-func (dao *processDao) List(kit *kit.Kit, bizID uint32) ([]*table.Process, int64, error) {
+func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessSearchCondition,
+	opt *types.BasePage) ([]*table.Process, int64, error) {
 	m := dao.genQ.Process
 	q := dao.genQ.Process.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.BizID.Eq(bizID)).Find()
-	if err != nil {
-		return nil, 0, err
+	var err error
+	var conds []rawgen.Condition
+	if search.String() != "" {
+		conds, err = dao.handleSearch(kit, search)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
-	return result, int64(len(result)), err
+	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
+
+	if opt.All {
+		result, err := d.Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+	return d.FindByPage(opt.Offset(), opt.LimitInt())
+}
+
+func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchCondition) ([]rawgen.Condition, error) {
+	var conds []rawgen.Condition
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	if len(search.GetEnvironment()) != 0 {
+		conds = append(conds, m.Environment.Eq(search.GetEnvironment()))
+	}
+
+	if len(search.GetSetIds()) != 0 {
+		conds = append(conds, m.SetID.In(search.GetSetIds()...))
+	}
+
+	if len(search.GetModuleIds()) != 0 {
+		conds = append(conds, m.ModuleID.In(search.GetModuleIds()...))
+	}
+
+	if len(search.GetServiceInstanceIds()) != 0 {
+		conds = append(conds, m.ServiceInstanceID.In(search.GetServiceInstanceIds()...))
+	}
+
+	if len(search.GetCcProcessIds()) != 0 {
+		conds = append(conds, m.CcProcessID.In(search.GetCcProcessIds()...))
+	}
+
+	if len(search.GetProcessAliases()) != 0 {
+		conds = append(conds, m.Alias_.In(search.GetProcessAliases()...))
+	}
+
+	if len(search.GetInnerIps()) != 0 {
+		conds = append(conds, dao.handleIPSearch(q, search.GetInnerIps())...)
+	}
+
+	if len(search.GetCcSyncStatuses()) != 0 {
+		conds = append(conds, m.CcSyncStatus.In(search.GetCcSyncStatuses()...))
+	}
+
+	if len(search.GetManagedStatuses()) != 0 {
+		managedStatus, err := dao.handleManagedStatus(kit, q, search.GetManagedStatuses())
+		if err != nil {
+			return nil, err
+		}
+		conds = append(conds, managedStatus...)
+	}
+
+	if len(search.GetProcessStatuses()) != 0 {
+		status, err := dao.handleProcessStatus(kit, q, search.GetProcessStatuses())
+		if err != nil {
+			return nil, err
+		}
+		conds = append(conds, status...)
+	}
+
+	return conds, nil
+}
+
+func (dao *processDao) handleIPSearch(q gen.IProcessDo, ip []string) []rawgen.Condition {
+	conds := make([]rawgen.Condition, 0)
+	for i, v := range ip {
+		if i == 0 {
+			q = q.Where(dao.genQ.Process.InnerIP.Like("%" + v + "%"))
+		} else {
+			q = q.Or(dao.genQ.Process.InnerIP.Like("%" + v + "%"))
+		}
+		conds = append(conds, q)
+	}
+
+	return conds
+}
+
+func (dao *processDao) handleProcessStatus(kit *kit.Kit, q gen.IProcessDo, status []string) (
+	[]rawgen.Condition, error) {
+	// 1. 先根据实例表的状态查询到processID
+	// 2. 再根据查询到的processID做搜索
+	m := dao.genQ.Process
+	instQ := dao.genQ.ProcessInstance
+
+	var pid []uint32
+	err := instQ.WithContext(kit.Ctx).
+		Distinct(instQ.ProcessID).
+		Where(instQ.Status.In(status...)).
+		Pluck(instQ.ProcessID, &pid)
+	if err != nil {
+		return nil, err
+	}
+
+	return []rawgen.Condition{q.Where(m.ID.In(pid...))}, nil
+}
+
+func (dao *processDao) handleManagedStatus(kit *kit.Kit, q gen.IProcessDo, status []string) (
+	[]rawgen.Condition, error) {
+	// 1. 先根据实例表的状态查询到processID
+	// 2. 再根据查询到的processID做搜索
+	m := dao.genQ.Process
+	instQ := dao.genQ.ProcessInstance
+
+	var pid []uint32
+	err := instQ.WithContext(kit.Ctx).
+		Distinct(instQ.ProcessID).
+		Where(instQ.ManagedStatus.In(status...)).
+		Pluck(instQ.ProcessID, &pid)
+	if err != nil {
+		return nil, err
+	}
+
+	return []rawgen.Condition{q.Where(m.ID.In(pid...))}, nil
 }

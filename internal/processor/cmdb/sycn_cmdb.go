@@ -505,6 +505,10 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 		}
 	}
 
+	// 如果主表不需要新增，那么副表也不需要操作
+	// 实例表更新通过其他方式更新
+	var toWriteInstances []*table.ProcessInstance
+
 	// 回填 ProcessID 给 Instance
 	idMap := make(map[string]uint32)
 	for _, p := range toAdd {
@@ -515,11 +519,12 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 		if pid, ok := idMap[fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, bizID,
 			inst.Attachment.CcProcessID)]; ok {
 			inst.Attachment.ProcessID = pid
+			toWriteInstances = append(toWriteInstances, inst)
 		}
 	}
 
-	// 插入 process instance
-	if len(processInstanceBatch) > 0 {
+	// 只写入匹配到 pid 的实例
+	if len(toWriteInstances) > 0 {
 		if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, processInstanceBatch); err != nil {
 			return fmt.Errorf("insert process instances failed: %w", err)
 		}

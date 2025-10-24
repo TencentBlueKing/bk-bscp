@@ -18,4 +18,3 @@ message TaskBatch {
   string created_at = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
   string updated_at = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
 }
-

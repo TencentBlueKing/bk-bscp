@@ -31,6 +31,7 @@ import "pkg/protocol/core/strategy/strategy.proto";
 import "google/api/annotations.proto";
 import "google/api/visibility.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbcs;
@@ -1481,7 +1482,8 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz_id/{biz_id}/process/list"
+      post: "/api/v1/config/biz_id/{biz_id}/process/list"
+      body: "*"
     };
   }
   // 进程操作
@@ -1492,7 +1494,14 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       body: "*"
     };
   }
-
+  // 进程过滤条件
+  rpc ProcessFilterOptions(ProcessFilterOptionsReq) returns (ProcessFilterOptionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/process/filter_options"
+    };
+  }
+  // 同步cc
   rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
@@ -1505,6 +1514,13 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/task_batch/list"
+    };
+  }
+  // 获取同步cc状态
+  rpc SyncCMDBStatus(SyncCMDBStatusReq) returns (SyncCMDBStatusResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/sync/cc/status"
     };
   }
 }
@@ -4422,6 +4438,11 @@ message CloneAppReq {
 
 message ListProcessReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  pbproc.ProcessSearchCondition search = 2;
+  bool all = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
 }
 
 message ListProcessResp {
@@ -4447,7 +4468,7 @@ message SyncCMDBReq {
 }
 
 message SyncCMDBResp {
-  uint32 task_id = 1;
+  string task_id = 1;
 }
 
 message ListTaskBatchReq {
@@ -4460,12 +4481,37 @@ message ListTaskBatchReq {
   string task_action = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "任务动作: register, start, stop, restart, reload, kill 等"
   }];
-  string status = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态: running, failed, succeed" }];
-  string executor = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户（创建者）" }];
+  string status = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态: running, failed, succeed" }
+  ];
+  string executor = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户（创建者）" }];
 }
 
 message ListTaskBatchResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbtb.TaskBatch list = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次列表" }];
+}
+
+message SyncCMDBStatusReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message SyncCMDBStatusResp {
+  google.protobuf.Timestamp last_sync_time = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最近一次同步时间" }];
+  string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "同步状态" }];
+}
+
+message ProcessFilterOptionsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message ProcessFilterOptionsResp {
+  repeated pbproc.ProcessFilterOption sets = 1;
+  repeated pbproc.ProcessFilterOption modules = 2;
+  repeated pbproc.ProcessFilterOption service_instances = 3;
+  repeated pbproc.ProcessFilterOption process_aliases = 4;
+  repeated pbproc.ProcessFilterOption cc_process_ids = 5;
 }

@@ -13,18 +13,35 @@
 package cmdb
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
+
+	"github.com/TencentBlueKing/bk-bscp/internal/task/step/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+)
+
+const (
+	// TaskType 任务类型
+	TaskType = "cmdb_sync"
+	// TaskIndexType 任务索引类型
+	TaskIndexType = "biz_id"
 )
 
 type syncCMDBTask struct {
-	bizID int
+	bizID        uint32
+	operatorUser string
+	operateType  table.CCSyncStatus
 }
 
 // NewSyncCMDBTask 创建一个 同步cmdb 任务
-func NewSyncCMDBTask(bizID int) types.TaskBuilder {
-	return &syncCMDBTask{bizID: bizID}
+func NewSyncCMDBTask(bizID uint32, operateType table.CCSyncStatus,
+	operatorUser string) types.TaskBuilder {
+	return &syncCMDBTask{
+		bizID:        bizID,
+		operateType:  operateType,
+		operatorUser: operatorUser,
+	}
 }
 
 // FinalizeTask implements types.TaskBuilder.
@@ -37,17 +54,22 @@ func (s *syncCMDBTask) FinalizeTask(t *types.Task) error {
 func (s *syncCMDBTask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
-		// cmdb.SyncCMDB(s.bizID),
+		cmdb.SyncCMDB(s.bizID, s.operateType),
 	}, nil
 }
 
 // TaskInfo implements types.TaskBuilder.
 func (s *syncCMDBTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
-		TaskName:      "sync-cmdb",
-		TaskType:      "cmdb-sync",
-		TaskIndexType: "biz_id",
-		TaskIndex:     strconv.Itoa(s.bizID),
-		Creator:       "admin",
+		TaskName:      BuildSyncCMDBTaskName(s.operateType.String(), s.bizID),
+		TaskType:      TaskType,
+		TaskIndexType: TaskIndexType,
+		TaskIndex:     fmt.Sprintf("%d", s.bizID),
+		Creator:       s.operatorUser,
 	}
+}
+
+// BuildSyncCMDBTaskName 构造同步CMDB任务名
+func BuildSyncCMDBTaskName(operateType string, bizID uint32) string {
+	return fmt.Sprintf("sync-cmdb-%s-%d", operateType, bizID)
 }

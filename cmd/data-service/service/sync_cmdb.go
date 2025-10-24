@@ -15,22 +15,39 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
+	cmdbBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // SyncCMDB implements pbds.DataServer.
 func (s *Service) SyncCMDB(ctx context.Context, req *pbds.SyncCMDBReq) (*pbds.SyncCMDBResp, error) {
-	// grpcKit := kit.FromGrpcContext(ctx)
+	grpcKit := kit.FromGrpcContext(ctx)
 
-	// s.SynchronizeCmdbData(ctx, []int{3})
+	processOperateTask, err := task.NewByTaskBuilder(
+		cmdbBuilder.NewSyncCMDBTask(req.GetBizId(), table.Sync, "admin"),
+	)
+	if err != nil {
+		logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 启动任务
+	s.taskManager.Dispatch(processOperateTask)
 
 	return &pbds.SyncCMDBResp{
-		TaskId: 0,
+		TaskId: processOperateTask.TaskID,
 	}, nil
 
 }
@@ -73,4 +90,33 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 	}
 
 	return nil
+}
+
+// SyncCMDBStatus implements pbds.DataServer.
+func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbds.SyncCMDBStatusReq) (*pbds.SyncCMDBStatusResp, error) {
+
+	// 获取通过业务查询是否有同步任务
+	task, err := s.taskManager.ListTask(ctx, &iface.ListOption{
+		TaskType:      cmdbBuilder.TaskType,
+		TaskName:      cmdbBuilder.BuildSyncCMDBTaskName(table.Sync.String(), req.GetBizId()),
+		TaskIndex:     fmt.Sprintf("%d", req.GetBizId()),
+		TaskIndexType: cmdbBuilder.TaskIndexType,
+		Offset:        1,
+		Limit:         1,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var status string
+	var lastSyncTime time.Time
+	for _, v := range task.Items {
+		status = v.GetStatus()
+		lastSyncTime = v.GetEndTime()
+	}
+
+	return &pbds.SyncCMDBStatusResp{
+		LastSyncTime: timestamppb.New(lastSyncTime),
+		Status:       status,
+	}, nil
 }

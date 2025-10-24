@@ -43,6 +43,10 @@ message ProcessSpec {
   map<string, bool> actions = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "展示操作按钮是否可以操作(key可以是register,unregister,start,stop,restart,reload,kill)"
   }];
+  string status = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
+  string managed_status = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
 }
 
 message ProcessAttachment {
@@ -54,4 +58,32 @@ message ProcessAttachment {
   uint32 service_instance_id = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
   uint32 host_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机ID" }];
+}
+
+// ProcessSearchCondition 进程搜索条件
+message ProcessSearchCondition {
+  repeated uint32 set_ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群ID" }];
+  repeated uint32 module_ids = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块ID" }];
+  repeated uint32 service_instance_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
+  repeated uint32 cc_process_ids = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
+  repeated string process_aliases = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  repeated string inner_ips = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内网IP" }];
+  repeated string process_statuses = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态" }];
+  repeated string managed_statuses = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态" }];
+  repeated string cc_sync_statuses = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
+  string environment = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+}
+
+// ProcessFilterOption 进程过滤选项
+message ProcessFilterOption {
+  uint32 id = 1;
+  string name = 2;
 }

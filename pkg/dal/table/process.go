@@ -140,6 +140,8 @@ type ProcessAttachment struct {
 type CCSyncStatus string
 
 const (
+	// Sync 同步中
+	Sync CCSyncStatus = "sync"
 	// Synced 已同步
 	Synced CCSyncStatus = "synced"
 	// Deleted 已删除

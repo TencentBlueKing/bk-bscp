@@ -58,7 +58,11 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	}
 
 	resp, err := s.client.DS.ListProcess(grpcKit.RpcCtx(), &pbds.ListProcessReq{
-		BizId: req.GetBizId(),
+		BizId:  req.GetBizId(),
+		Search: req.GetSearch(),
+		All:    req.GetAll(),
+		Start:  req.Start,
+		Limit:  req.Limit,
 	})
 	if err != nil {
 		return nil, err
@@ -67,5 +71,33 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	return &pbcs.ListProcessResp{
 		Count:   resp.Count,
 		Process: resp.GetProcess(),
+	}, nil
+}
+
+// ProcessFilterOptions implements pbcs.ConfigServer.
+func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbcs.ProcessFilterOptionsReq) (
+	*pbcs.ProcessFilterOptionsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ProcessFilterOptions(grpcKit.RpcCtx(), &pbds.ProcessFilterOptionsReq{
+		BizId: req.GetBizId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ProcessFilterOptionsResp{
+		Sets:             resp.Sets,
+		Modules:          resp.Modules,
+		ServiceInstances: resp.ServiceInstances,
+		ProcessAliases:   resp.ProcessAliases,
+		CcProcessIds:     resp.CcProcessIds,
 	}, nil
 }

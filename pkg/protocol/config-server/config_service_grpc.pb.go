@@ -208,8 +208,10 @@ const (
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
 	Config_ListProcess_FullMethodName                        = "/pbcs.Config/ListProcess"
 	Config_OperateProcess_FullMethodName                     = "/pbcs.Config/OperateProcess"
+	Config_ProcessFilterOptions_FullMethodName               = "/pbcs.Config/ProcessFilterOptions"
 	Config_SyncCMDB_FullMethodName                           = "/pbcs.Config/SyncCMDB"
 	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
+	Config_SyncCMDBStatus_FullMethodName                     = "/pbcs.Config/SyncCMDBStatus"
 )
 
 // ConfigClient is the client API for Config service.
@@ -572,9 +574,14 @@ type ConfigClient interface {
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error)
+	// 同步cc
 	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error)
 }
 
 type configClient struct {
@@ -2214,6 +2221,15 @@ func (c *configClient) OperateProcess(ctx context.Context, in *OperateProcessReq
 	return out, nil
 }
 
+func (c *configClient) ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error) {
+	out := new(ProcessFilterOptionsResp)
+	err := c.cc.Invoke(ctx, Config_ProcessFilterOptions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
 	out := new(SyncCMDBResp)
 	err := c.cc.Invoke(ctx, Config_SyncCMDB_FullMethodName, in, out, opts...)
@@ -2226,6 +2242,15 @@ func (c *configClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...gr
 func (c *configClient) ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error) {
 	out := new(ListTaskBatchResp)
 	err := c.cc.Invoke(ctx, Config_ListTaskBatch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error) {
+	out := new(SyncCMDBStatusResp)
+	err := c.cc.Invoke(ctx, Config_SyncCMDBStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2592,9 +2617,14 @@ type ConfigServer interface {
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error)
+	// 同步cc
 	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3144,11 +3174,17 @@ func (UnimplementedConfigServer) ListProcess(context.Context, *ListProcessReq) (
 func (UnimplementedConfigServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
 }
+func (UnimplementedConfigServer) ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessFilterOptions not implemented")
+}
 func (UnimplementedConfigServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
 }
 func (UnimplementedConfigServer) ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTaskBatch not implemented")
+}
+func (UnimplementedConfigServer) SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDBStatus not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6420,6 +6456,24 @@ func _Config_OperateProcess_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ProcessFilterOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessFilterOptionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ProcessFilterOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ProcessFilterOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ProcessFilterOptions(ctx, req.(*ProcessFilterOptionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncCMDBReq)
 	if err := dec(in); err != nil {
@@ -6452,6 +6506,24 @@ func _Config_ListTaskBatch_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServer).ListTaskBatch(ctx, req.(*ListTaskBatchReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).SyncCMDBStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_SyncCMDBStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).SyncCMDBStatus(ctx, req.(*SyncCMDBStatusReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7188,12 +7260,20 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Config_OperateProcess_Handler,
 		},
 		{
+			MethodName: "ProcessFilterOptions",
+			Handler:    _Config_ProcessFilterOptions_Handler,
+		},
+		{
 			MethodName: "SyncCMDB",
 			Handler:    _Config_SyncCMDB_Handler,
 		},
 		{
 			MethodName: "ListTaskBatch",
 			Handler:    _Config_ListTaskBatch_Handler,
+		},
+		{
+			MethodName: "SyncCMDBStatus",
+			Handler:    _Config_SyncCMDBStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

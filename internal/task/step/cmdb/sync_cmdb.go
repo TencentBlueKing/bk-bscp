@@ -13,21 +13,28 @@
 package cmdb
 
 import (
-	"strconv"
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
+	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/step/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // Biz 同步业务步骤
-func SyncCMDB(bizID int) *types.Step {
-	add := types.NewStep("sync-cmdb-task", cmdb.SyncCMDB.String()).
-		SetAlias("sync-cmdb").
-		AddParam("bizID", strconv.Itoa(bizID)).
-		SetMaxExecution(3 * time.Minute).
-		SetMaxTries(3)
+func SyncCMDB(bizID uint32, operateType table.CCSyncStatus) *types.Step {
+	logs.V(3).Infof("Start synchronizing CMDB, bizID=%d", bizID)
 
-	return add
+	syncCmdb := types.NewStep("sync-cmdb-task", cmdb.SyncCMDB.String()).
+		SetAlias("sync-cmdb").
+		SetMaxExecution(process.MaxExecutionTime).
+		SetMaxTries(process.MaxTries)
+
+	lo.Must0(syncCmdb.SetPayload(cmdb.SyncCMDBPayload{
+		OperateType: operateType,
+		BizID:       bizID,
+	}))
+
+	return syncCmdb
 }
