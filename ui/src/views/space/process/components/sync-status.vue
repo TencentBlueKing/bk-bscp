@@ -3,22 +3,54 @@
     <span class="title">{{ $t('进程管理') }}</span>
     <div class="line"></div>
     <div class="status">
-      <bk-button class="sync-button" text :disabled="syncLoading">
-        <right-turn-line />{{ $t('一键同步状态') }}
+      <bk-button class="sync-button" text :disabled="syncStatus === 'loading'" @click="handleSyncStatus">
+        <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncLoading">
+      <span v-if="syncStatus === 'loading'">
         <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
       </span>
-      <span v-else class="sync-time">{{ $t('最近一次同步：2025-09-01  10:00:00') }}</span>
+      <span v-else class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
     </div>
   </div>
   <PrimartTable></PrimartTable>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
-  const syncLoading = ref(true);
+  import { getSyncStatus, syncProcessStatus } from '../../../../api/process';
+
+  const props = defineProps<{
+    bizId: string;
+  }>();
+
+  const syncStatus = ref('success');
+  const time = ref('');
+
+  onMounted(() => {
+    handleGetSyncStatus();
+  });
+
+  const handleGetSyncStatus = async () => {
+    try {
+      const res = await getSyncStatus(props.bizId);
+      time.value = res.last_sync_time;
+      syncStatus.value = res.status;
+    } catch (error) {
+      console.error('获取同步状态失败：', error);
+    }
+  };
+
+  const handleSyncStatus = async () => {
+    if (syncStatus.value === 'loading') return;
+    try {
+      await syncProcessStatus(props.bizId);
+      await handleGetSyncStatus();
+    } catch (error) {
+      console.error('同步状态失败：', error);
+      syncStatus.value = 'error';
+    }
+  };
 </script>
 
 <style scoped lang="scss">
@@ -37,6 +69,13 @@
     width: 1px;
     height: 16px;
     background: #dcdee5;
+  }
+  .sync-button {
+    color: #3a84ff;
+    .icon {
+      font-size: 14px;
+      margin-right: 4px;
+    }
   }
   .status {
     display: flex;
