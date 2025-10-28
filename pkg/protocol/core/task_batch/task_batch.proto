@@ -18,3 +18,27 @@ message TaskBatch {
   string created_at = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
   string updated_at = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新时间" }];
 }
+
+// ProcessPayload 进程任务的配置快照
+message ProcessPayload {
+  string set_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名" }];
+  string module_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名" }];
+  string service_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例" }];
+  string environment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+  string alias = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  string inner_ip = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "IP" }];
+  string agent_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "Agent ID" }];
+  string cc_process_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  string local_inst_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "本地实例ID" }];
+  string inst_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "实例ID" }];
+  string config_data = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程启动相关配置" }];
+}
+
+// TaskDetail 任务详情
+message TaskDetail {
+  string status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
+  string message = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务消息" }];
+  string creator = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建者" }];
+  uint32 execution_time = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行时间(ms)" }];
+  ProcessPayload process_payload = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程配置快照" }];
+}

@@ -14,8 +14,14 @@ package service
 
 import (
 	"context"
+	"fmt"
+
+	taskpkg "github.com/Tencent/bk-bcs/bcs-common/common/task"
+	istore "github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
+	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	commonExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -50,4 +56,84 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 		// 转换为 protobuf 格式
 		List: pbtb.PbTaskBatches(res),
 	}, nil
+}
+
+// GetTaskBatchDetail implements pbds.DataServer.
+func (s *Service) GetTaskBatchDetail(
+	ctx context.Context,
+	req *pbds.GetTaskBatchDetailReq,
+) (*pbds.GetTaskBatchDetailResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	// 从 task store 查询所有相关任务（通过 taskIndex = batchID）
+	taskStorage := taskpkg.GetGlobalStorage()
+	if taskStorage == nil {
+		return nil, fmt.Errorf("task storage not initialized")
+	}
+
+	listOpt := &istore.ListOption{
+		TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
+		Offset:    int64(req.GetStart()),
+		Limit:     int64(req.GetLimit()),
+		Status:    req.GetStatus(),
+	}
+
+	pagination, err := taskStorage.ListTask(ctx, listOpt)
+	if err != nil {
+		logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, fmt.Errorf("list tasks failed: %v", err)
+	}
+
+	// 解析每个 task 的 CommonPayload，构建 TaskDetail
+	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
+	for _, task := range pagination.Items {
+		detail, err := convertTaskToDetail(task)
+		if err != nil {
+			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
+			return nil, fmt.Errorf("convert task to detail failed: %v", err)
+		}
+		taskDetails = append(taskDetails, detail)
+	}
+
+	return &pbds.GetTaskBatchDetailResp{
+		Tasks: taskDetails,
+		Count: uint32(pagination.Count),
+	}, nil
+}
+
+// convertTaskToDetail 将 task 转换为 pb 数据结构 TaskDetail
+func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
+	if task == nil {
+		return nil, fmt.Errorf("task is nil")
+	}
+
+	// 解析 CommonPayload 为 ProcessPayload
+	var processPayload commonExecutor.ProcessPayload
+	err := task.GetCommonPayload(&processPayload)
+	if err != nil {
+		return nil, fmt.Errorf("get common payload failed: %v", err)
+	}
+
+	// 构建返回的 TaskDetail
+	detail := &pbtb.TaskDetail{
+		Status:        task.Status,
+		Message:       task.Message,
+		Creator:       task.Creator,
+		ExecutionTime: task.ExecutionTime,
+		ProcessPayload: &pbtb.ProcessPayload{
+			SetName:     processPayload.SetName,
+			ModuleName:  processPayload.ModuleName,
+			ServiceName: processPayload.ServiceName,
+			Environment: processPayload.Environment,
+			Alias:       processPayload.Alias,
+			InnerIp:     processPayload.InnerIP,
+			AgentId:     processPayload.AgentID,
+			CcProcessId: processPayload.CcProcessID,
+			LocalInstId: processPayload.LocalInstID,
+			InstId:      processPayload.InstID,
+			ConfigData:  processPayload.ConfigData,
+		},
+	}
+
+	return detail, nil
 }

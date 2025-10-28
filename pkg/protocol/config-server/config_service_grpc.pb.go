@@ -211,6 +211,7 @@ const (
 	Config_ProcessFilterOptions_FullMethodName               = "/pbcs.Config/ProcessFilterOptions"
 	Config_SyncCMDB_FullMethodName                           = "/pbcs.Config/SyncCMDB"
 	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
+	Config_GetTaskBatchDetail_FullMethodName                 = "/pbcs.Config/GetTaskBatchDetail"
 	Config_SyncCMDBStatus_FullMethodName                     = "/pbcs.Config/SyncCMDBStatus"
 )
 
@@ -580,6 +581,8 @@ type ConfigClient interface {
 	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
+	// 任务批次详情
+	GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error)
 	// 获取同步cc状态
 	SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error)
 }
@@ -2248,6 +2251,15 @@ func (c *configClient) ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, 
 	return out, nil
 }
 
+func (c *configClient) GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error) {
+	out := new(GetTaskBatchDetailResp)
+	err := c.cc.Invoke(ctx, Config_GetTaskBatchDetail_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error) {
 	out := new(SyncCMDBStatusResp)
 	err := c.cc.Invoke(ctx, Config_SyncCMDBStatus_FullMethodName, in, out, opts...)
@@ -2623,6 +2635,8 @@ type ConfigServer interface {
 	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
 	// 任务历史列表
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
+	// 任务批次详情
+	GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error)
 	// 获取同步cc状态
 	SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error)
 }
@@ -3182,6 +3196,9 @@ func (UnimplementedConfigServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncC
 }
 func (UnimplementedConfigServer) ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTaskBatch not implemented")
+}
+func (UnimplementedConfigServer) GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTaskBatchDetail not implemented")
 }
 func (UnimplementedConfigServer) SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDBStatus not implemented")
@@ -6510,6 +6527,24 @@ func _Config_ListTaskBatch_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_GetTaskBatchDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskBatchDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetTaskBatchDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetTaskBatchDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetTaskBatchDetail(ctx, req.(*GetTaskBatchDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncCMDBStatusReq)
 	if err := dec(in); err != nil {
@@ -7270,6 +7305,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTaskBatch",
 			Handler:    _Config_ListTaskBatch_Handler,
+		},
+		{
+			MethodName: "GetTaskBatchDetail",
+			Handler:    _Config_GetTaskBatchDetail_Handler,
 		},
 		{
 			MethodName: "SyncCMDBStatus",
