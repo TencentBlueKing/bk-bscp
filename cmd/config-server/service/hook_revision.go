@@ -74,11 +74,11 @@ func (s *Service) ListHookRevisions(ctx context.Context, req *pbcs.ListHookRevis
 	}
 
 	r := &pbds.ListHookRevisionsReq{
-		HookId:    req.HookId,
-		SearchKey: req.SearchKey,
-		BizId:     grpcKit.BizID,
-		All:       req.All,
-		State:     req.State,
+		HookId: req.HookId,
+		Search: req.GetSearch(),
+		BizId:  grpcKit.BizID,
+		All:    req.All,
+		State:  req.State,
 	}
 
 	if !req.All {

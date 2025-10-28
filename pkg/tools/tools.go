@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gobwas/glob"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -340,4 +341,28 @@ func SplitPathAndName(remainingPath string) (string, string) {
 // ConvertBackslashes 用于将字符串中的反斜杠转换为正斜杠
 func ConvertBackslashes(input string) string {
 	return strings.ReplaceAll(input, `\`, "/")
+}
+
+// TruncateWithHumanize 截断字符串，确保不超过 60KB，且保留 UTF-8 编码正确性。
+func TruncateWithHumanize(s string) string {
+	var safeLimit = 60 * 1024 // 60KB 安全阈值，低于 TEXT 最大 64KB 限制
+
+	if len(s) <= safeLimit {
+		return s
+	}
+
+	truncated := safeTruncateUTF8(s, safeLimit)
+	return fmt.Sprintf("%s...(Truncated, Total %s)", truncated, humanize.Bytes(uint64(len(s))))
+}
+
+// safeTruncateUTF8 保证截断字符串时不会破坏 UTF-8 编码（中文等多字节字符）
+func safeTruncateUTF8(s string, maxBytes int) string {
+	lastValid := 0
+	for i := range s {
+		if i > maxBytes {
+			break
+		}
+		lastValid = i
+	}
+	return s[:lastValid]
 }

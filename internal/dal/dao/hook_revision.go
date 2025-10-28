@@ -16,6 +16,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	rawgen "gorm.io/gen"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
@@ -177,16 +179,12 @@ func (dao *hookRevisionDao) List(kit *kit.Kit,
 		m.BizID.Eq(opt.BizID),
 		m.HookID.Eq(opt.HookID)).Order(m.ID.Desc())
 
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		// Where 内嵌表示括号, 例如: q.Where(q.Where(a).Or(b)) => (a or b)
-		// 参考: https://gorm.io/zh_CN/gen/query.html#Group-%E6%9D%A1%E4%BB%B6
-		q = q.Where(q.Where(m.Name.Regexp(searchKey)).Or(m.Memo.Regexp(searchKey)).Or(m.Reviser.Regexp(searchKey)))
-	}
-
+	var conds []rawgen.Condition
+	conds = dao.handleSearch(conds, opt.Page.Search.AsMap())
 	if opt.State != "" {
-		q = q.Where(m.State.Eq(opt.State.String()))
+		conds = append(conds, m.State.Eq(opt.State.String()))
 	}
+	q = q.Where(conds...)
 
 	var result []*table.HookRevision
 	var count int64
@@ -222,21 +220,15 @@ func (dao *hookRevisionDao) ListWithRefer(kit *kit.Kit, opt *types.ListHookRevis
 
 	m := dao.genQ.HookRevision
 	rh := dao.genQ.ReleasedHook
-	q := dao.genQ.HookRevision.WithContext(kit.Ctx)
+	q := dao.genQ.HookRevision.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(opt.BizID), m.HookID.Eq(opt.HookID))
 
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		// Where 内嵌表示括号, 例如: q.Where(q.Where(a).Or(b)) => (a or b)
-		// 参考: https://gorm.io/zh_CN/gen/query.html#Group-%E6%9D%A1%E4%BB%B6
-		q = q.Where(m.BizID.Eq(opt.BizID), m.HookID.Eq(opt.HookID)).
-			Where(q.Where(m.Name.Regexp(searchKey)).Or(m.Memo.Regexp(searchKey)).Or(m.Reviser.Regexp(searchKey)))
-	} else {
-		q = q.Where(m.BizID.Eq(opt.BizID), m.HookID.Eq(opt.HookID))
-	}
-
+	var conds []rawgen.Condition
+	conds = dao.handleSearch(conds, opt.Page.Search.AsMap())
 	if opt.State != "" {
-		q = q.Where(m.State.Eq(opt.State.String()))
+		conds = append(conds, m.State.Eq(opt.State.String()))
 	}
+	q = q.Where(conds...)
 
 	details := make([]*types.ListHookRevisionsWithReferDetail, 0)
 	var count int64
@@ -267,6 +259,31 @@ func (dao *hookRevisionDao) ListWithRefer(kit *kit.Kit, opt *types.ListHookRevis
 	}
 
 	return details, count, err
+}
+
+// 支持版本号、版本说明、更新人搜索
+func (dao *hookRevisionDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.HookRevision
+
+	if search["name"] != nil {
+		name, _ := search["name"].(string)
+		conds = append(conds, m.Name.Like("%"+name+"%"))
+	}
+
+	if search["memo"] != nil {
+		memo, _ := search["memo"].(string)
+		conds = append(conds, m.Memo.Like("%"+memo+"%"))
+	}
+
+	if search["reviser"] != nil {
+		reviser, _ := search["reviser"].(string)
+		conds = append(conds, m.Reviser.Like("%"+reviser+"%"))
+	}
+
+	return conds
 }
 
 // ListHookRevisionReferences list hook references.

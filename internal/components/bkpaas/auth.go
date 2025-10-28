@@ -14,11 +14,10 @@ package bkpaas
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-
-	"github.com/pkg/errors"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -59,7 +58,7 @@ func (b *bkPaaSAuthClient) GetUserInfoByToken(ctx context.Context, host, uid, to
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return "", errors.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+		return "", fmt.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
 	}
 
 	user := new(userInfo)
@@ -81,4 +80,9 @@ func (b *bkPaaSAuthClient) BuildLoginURL(r *http.Request) (string, string) {
 	loginURL := fmt.Sprintf("%s/login/?c_url=", b.conf.Host)
 	loginPlainURL := fmt.Sprintf("%s/login/plain/?c_url=", b.conf.Host)
 	return loginURL, loginPlainURL
+}
+
+// GetTenantUserInfoByToken 获取租户用户信息
+func (b *bkPaaSAuthClient) GetTenantUserInfoByToken(ctx context.Context, token string) (*TenantUserInfo, error) {
+	return getTenantUserInfoByToken(ctx, token)
 }

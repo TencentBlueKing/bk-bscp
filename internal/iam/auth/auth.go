@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/gwparser"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -67,7 +68,7 @@ type Authorizer interface {
 	// LogOut handler will build login url, client should make redirect
 	LogOut(r *http.Request) *rest.UnauthorizedData
 	// HasBiz 业务是否存在
-	HasBiz(bizID uint32) bool
+	HasBiz(ctx context.Context, bizID uint32) bool
 	// IAMVerify iam 验证
 	IAMVerify(next http.Handler) http.Handler
 }
@@ -112,8 +113,6 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		InnerHost: resp.LoginAuth.InnerHost,
 		Provider:  resp.LoginAuth.Provider,
 	}
-	authLoginClient := bkpaas.NewAuthLoginClient(conf)
-	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
 
 	// init space manager
 	esbSetting := &cc.Esb{
@@ -129,11 +128,26 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 			Password:           resp.Esb.Tls.Password,
 		},
 	}
+
+	cmdbCfg := &cc.CMDBConfig{
+		Host:       resp.Cmdb.GetHost(),
+		AppCode:    resp.Cmdb.GetAppCode(),
+		AppSecret:  resp.Cmdb.GetAppSecret(),
+		BkUserName: resp.Cmdb.GetBkUserName(),
+	}
+
+	authLoginClient := bkpaas.NewAuthLoginClient(conf)
+	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
 	esbCli, err := esbcli.NewClient(esbSetting, metrics.Register())
 	if err != nil {
-		return nil, fmt.Errorf("new esb cleint failed, err: %v", err)
+		return nil, fmt.Errorf("new esb client failed, err: %v", err)
 	}
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	cmdb, err := bkcmdb.New(cmdbCfg, esbCli)
+	if err != nil {
+		klog.ErrorS(err, "init cmdb client failed")
+		return nil, fmt.Errorf("init cmdb client failed, err: %v", err)
+	}
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdb)
 	if err != nil {
 		return nil, fmt.Errorf("init space manager failed, err: %v", err)
 	}
@@ -188,6 +202,13 @@ func (a authorizer) AuthorizeDecision(kt *kit.Kit, resources ...*meta.ResourceAt
 		if !decision.Authorized {
 			authorized = false
 			break
+		}
+	}
+
+	Decisions := make([]*meta.Decision, len(req.Resources))
+	for idx := range resp.Decisions {
+		Decisions[idx] = &meta.Decision{
+			Authorized: true,
 		}
 	}
 
@@ -262,6 +283,6 @@ func (a authorizer) LogOut(r *http.Request) *rest.UnauthorizedData {
 }
 
 // HasBiz 业务是否存在
-func (a authorizer) HasBiz(bizID uint32) bool {
-	return a.spaceMgr.HasCMDBSpace(strconv.Itoa(int(bizID)))
+func (a authorizer) HasBiz(ctx context.Context, bizID uint32) bool {
+	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(bizID), 10))
 }

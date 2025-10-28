@@ -99,6 +99,10 @@ func NewDaoSet(opt cc.Sharding, credentialSetting cc.Credential, gormSetting cc.
 	if err != nil {
 		return nil, err
 	}
+
+	// 注册回调
+	registerCallbacks(adminDB)
+
 	db, err := adminDB.DB()
 	if err != nil {
 		return nil, err

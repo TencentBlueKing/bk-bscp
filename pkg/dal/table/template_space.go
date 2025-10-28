@@ -156,7 +156,8 @@ func (t *TemplateSpaceSpec) ValidateUpdate(kit *kit.Kit) error {
 
 // TemplateSpaceAttachment defines the template space attachments.
 type TemplateSpaceAttachment struct {
-	BizID uint32 `json:"biz_id" gorm:"column:biz_id"`
+	BizID    uint32 `json:"biz_id" gorm:"column:biz_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate whether template space attachment is valid or not.

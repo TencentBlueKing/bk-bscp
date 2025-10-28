@@ -34,6 +34,7 @@ func newClientEvent(db *gorm.DB, opts ...gen.DOOption) clientEvent {
 	_clientEvent.BizID = field.NewUint32(tableName, "biz_id")
 	_clientEvent.AppID = field.NewUint32(tableName, "app_id")
 	_clientEvent.ClientMode = field.NewString(tableName, "client_mode")
+	_clientEvent.TenantID = field.NewString(tableName, "tenant_id")
 	_clientEvent.OriginalReleaseID = field.NewUint32(tableName, "original_release_id")
 	_clientEvent.TargetReleaseID = field.NewUint32(tableName, "target_release_id")
 	_clientEvent.StartTime = field.NewTime(tableName, "start_time")
@@ -64,6 +65,7 @@ type clientEvent struct {
 	BizID                     field.Uint32
 	AppID                     field.Uint32
 	ClientMode                field.String
+	TenantID                  field.String
 	OriginalReleaseID         field.Uint32
 	TargetReleaseID           field.Uint32
 	StartTime                 field.Time
@@ -100,6 +102,7 @@ func (c *clientEvent) updateTableName(table string) *clientEvent {
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.AppID = field.NewUint32(table, "app_id")
 	c.ClientMode = field.NewString(table, "client_mode")
+	c.TenantID = field.NewString(table, "tenant_id")
 	c.OriginalReleaseID = field.NewUint32(table, "original_release_id")
 	c.TargetReleaseID = field.NewUint32(table, "target_release_id")
 	c.StartTime = field.NewTime(table, "start_time")
@@ -139,7 +142,7 @@ func (c *clientEvent) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *clientEvent) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 20)
+	c.fieldMap = make(map[string]field.Expr, 21)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["client_id"] = c.ClientID
 	c.fieldMap["cursor_id"] = c.CursorID
@@ -147,6 +150,7 @@ func (c *clientEvent) fillFieldMap() {
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["app_id"] = c.AppID
 	c.fieldMap["client_mode"] = c.ClientMode
+	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["original_release_id"] = c.OriginalReleaseID
 	c.fieldMap["target_release_id"] = c.TargetReleaseID
 	c.fieldMap["start_time"] = c.StartTime

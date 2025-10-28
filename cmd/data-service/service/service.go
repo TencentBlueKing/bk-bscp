@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -49,6 +50,7 @@ type Service struct {
 	esb         client.Client
 	repo        repository.Provider
 	tmplProc    tmplprocess.TmplProcessor
+	itsm        itsm.Service
 	cmdb        bkcmdb.Service
 	taskManager *task.TaskManager
 }
@@ -102,6 +104,7 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 		repo:        repo,
 		tmplProc:    tmplprocess.NewTmplProcessor(),
 		cs:          pbcs.NewCacheClient(csConn),
+		itsm:        itsm.NewITSMService(),
 		cmdb:        cmdb,
 		taskManager: taskManager,
 	}

@@ -22,7 +22,6 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -36,7 +35,7 @@ type TemplateRevision interface {
 	// CreateWithTx create one template revision instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.TemplateRevision, needAudit bool) (uint32, error)
 	// List templates with options.
-	List(kit *kit.Kit, bizID, templateID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateRevision,
+	List(kit *kit.Kit, bizID, templateID uint32, opt *types.BasePage) ([]*table.TemplateRevision,
 		int64, error)
 	// Delete one template revision instance.
 	Delete(kit *kit.Kit, templateRevision *table.TemplateRevision) error
@@ -214,26 +213,14 @@ func (dao *templateRevisionDao) CreateWithTx(
 }
 
 // List template revisions with options.
-func (dao *templateRevisionDao) List(kit *kit.Kit, bizID, templateID uint32, s search.Searcher, opt *types.BasePage) (
+func (dao *templateRevisionDao) List(kit *kit.Kit, bizID, templateID uint32, opt *types.BasePage) (
 	[]*table.TemplateRevision, int64, error) {
 	m := dao.genQ.TemplateRevision
 	q := dao.genQ.TemplateRevision.WithContext(kit.Ctx)
 
 	var conds []rawgen.Condition
 	// add search condition
-	if s != nil {
-		exprs := s.SearchExprs(dao.genQ)
-		if len(exprs) > 0 {
-			var do gen.ITemplateRevisionDo
-			for i := range exprs {
-				if i == 0 {
-					do = q.Where(exprs[i])
-				}
-				do = do.Or(exprs[i])
-			}
-			conds = append(conds, do)
-		}
-	}
+	conds = dao.handleSearch(conds, opt.Search.AsMap())
 
 	d := q.Where(m.BizID.Eq(bizID), m.TemplateID.Eq(templateID)).Where(conds...).Order(m.ID.Desc())
 	if opt.All {
@@ -245,6 +232,31 @@ func (dao *templateRevisionDao) List(kit *kit.Kit, bizID, templateID uint32, s s
 	}
 
 	return d.FindByPage(opt.Offset(), opt.LimitInt())
+}
+
+// 支持版本号、版本说明、创建人搜索
+func (dao *templateRevisionDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.TemplateRevision
+
+	if search["revision_name"] != nil {
+		revisionName, _ := search["revision_name"].(string)
+		conds = append(conds, m.RevisionName.Like("%"+revisionName+"%"))
+	}
+
+	if search["revision_memo"] != nil {
+		revisionMemo, _ := search["revision_memo"].(string)
+		conds = append(conds, m.RevisionMemo.Like("%"+revisionMemo+"%"))
+	}
+
+	if search["creator"] != nil {
+		creator, _ := search["creator"].(string)
+		conds = append(conds, m.Creator.Like("%"+creator+"%"))
+	}
+
+	return conds
 }
 
 // Delete one template revision instance.

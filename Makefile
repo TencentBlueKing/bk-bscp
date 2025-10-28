@@ -16,9 +16,14 @@ GOBIN     = ${PREFIX}/bin/proto
 PATH     := ${PREFIX}/bin/proto:${PATH}
 swag      = ${PREFIX}/bin/swag
 swagger   = ${PREFIX}/bin/swagger
+# image repo tag
+REPO ?= ""
+TAG ?=  $(shell git describe --tags --match='v*' --dirty='.dirty')
 # protoc v4.22.0
 export PROTOC_VERSION=25.1
+SKIP_FRONTEND_BUILD ?= false
 GOBUILD=CGO_ENABLED=0 go build -trimpath
+
 
 
 # output directory for release package and version for command line
@@ -212,3 +217,14 @@ markdown_docs: ${swag} ${swagger}
 
 .PHONY: docs
 docs: api_docs bkapigw_docs markdown_docs
+
+.PHONY: push-image
+push-image: 
+	@if [ "${SKIP_FRONTEND_BUILD}" != "true" ]; then \
+		echo -e "\e[34;1mBuilding frontend...\033[0m"; \
+		$(MAKE) build_frontend; \
+	else \
+		echo -e "\e[33;1mSkipping frontend build as SKIP_FRONTEND_BUILD=true\033[0m"; \
+	fi
+	$(MAKE) build_bscp
+	docker build -t ${REPO}/bk-bscp-hyper:${TAG} . --push

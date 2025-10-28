@@ -16,6 +16,8 @@ import (
 	"errors"
 	"fmt"
 
+	rawgen "gorm.io/gen"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -108,13 +110,11 @@ func (dao *releasedKvDao) List(kit *kit.Kit, opt *types.ListRKvOption) ([]*table
 		q = q.Order(orderCol)
 	}
 
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		q = q.Where(q.Where(q.Or(m.Key.Regexp(searchKey)).Or(m.Creator.Regexp(searchKey)).Or(
-			m.Reviser.Regexp(searchKey))))
-	}
+	var conds []rawgen.Condition
+	conds = dao.handleSearch(conds, opt.Page.Search.AsMap())
 
-	q = q.Where(m.BizID.Eq(opt.BizID), m.AppID.Eq(opt.AppID), m.ReleaseID.Eq(opt.ReleaseID))
+	q = q.Where(m.BizID.Eq(opt.BizID), m.AppID.Eq(opt.AppID),
+		m.ReleaseID.Eq(opt.ReleaseID)).Where(conds...)
 
 	if len(opt.KvType) > 0 {
 		q = q.Where(m.KvType.In(opt.KvType...))
@@ -139,6 +139,31 @@ func (dao *releasedKvDao) List(kit *kit.Kit, opt *types.ListRKvOption) ([]*table
 
 	return result, count, err
 
+}
+
+// 支持配置文件名、创建人、更新人搜索
+func (dao *releasedKvDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.ReleasedKv
+
+	if search["key"] != nil {
+		key, _ := search["key"].(string)
+		conds = append(conds, m.Key.Like("%"+key+"%"))
+	}
+
+	if search["creator"] != nil {
+		creator, _ := search["creator"].(string)
+		conds = append(conds, m.Creator.Like("%"+creator+"%"))
+	}
+
+	if search["reviser"] != nil {
+		reviser, _ := search["reviser"].(string)
+		conds = append(conds, m.Reviser.Like("%"+reviser+"%"))
+	}
+
+	return conds
 }
 
 // ListAllByReleaseIDs batch list released kvs by releaseIDs.

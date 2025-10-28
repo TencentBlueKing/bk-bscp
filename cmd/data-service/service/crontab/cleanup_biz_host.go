@@ -194,13 +194,9 @@ func (c *CleanupBizHost) validateAndCleanupBatch(kt *kit.Kit, bizID uint, record
 		return fmt.Errorf("find host biz relations failed: %w", err)
 	}
 
-	if !relationResult.Result {
-		return fmt.Errorf("find host biz relations failed: %s", relationResult.Message)
-	}
-
 	// build valid host IDs set (only include hosts with binding relations)
 	validHostIDs := make(map[uint]bool)
-	for _, relation := range relationResult.Data {
+	for _, relation := range relationResult {
 		validHostIDs[uint(relation.BkHostID)] = true
 	}
 

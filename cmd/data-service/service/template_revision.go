@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -113,17 +112,12 @@ func (s *Service) ListTemplateRevisions(ctx context.Context,
 	req *pbds.ListTemplateRevisionsReq) (*pbds.ListTemplateRevisionsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, Search: req.GetSearch()}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
 
-	searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.TemplateRevision)
-	if err != nil {
-		return nil, err
-	}
-
-	details, count, err := s.dao.TemplateRevision().List(kt, req.BizId, req.TemplateId, searcher, opt)
+	details, count, err := s.dao.TemplateRevision().List(kt, req.BizId, req.TemplateId, opt)
 
 	if err != nil {
 		logs.Errorf("list template revisions failed, err: %v, rid: %s", err, kt.Rid)

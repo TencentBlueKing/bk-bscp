@@ -19,9 +19,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
@@ -52,7 +54,13 @@ var migrateInitCmd = &cobra.Command{
 			fmt.Printf("new iam sys failed, err: %v\n", err)
 		}
 
-		if err := iamSys.Register(context.Background(), cc.AuthServer().Esb.BscpHost); err != nil {
+		// 添加默认租户ID, 兼容多租户和非租户环境
+		kt := &kit.Kit{
+			Ctx:      context.Background(),
+			TenantID: constant.DefaultTenantID,
+		}
+
+		if err := iamSys.Register(kt.InternalRpcCtx(), cc.AuthServer().Esb.BscpHost); err != nil {
 			fmt.Printf("initialize service failed, err: %v\n", err)
 			return
 		}

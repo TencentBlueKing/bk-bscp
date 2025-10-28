@@ -77,7 +77,7 @@ func (s *Service) ListReleasedKvs(ctx context.Context, req *pbcs.ListReleasedKvs
 		Limit:     req.Limit,
 		All:       req.All,
 		ReleaseId: req.ReleaseId,
-		SearchKey: req.SearchKey,
+		Search:    req.GetSearch(),
 		Key:       req.Key,
 		KvType:    req.KvType,
 		Sort:      req.Sort,

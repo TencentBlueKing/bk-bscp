@@ -28,8 +28,7 @@ import (
 
 // UnaryServerInterceptor is a grpc interceptor that add audit.
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (
-		resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		fn, ok := auditGrpcMap[info.FullMethod]
 		if !ok {
 			klog.Warningf("no audit for grpc method:%s", info.FullMethod)

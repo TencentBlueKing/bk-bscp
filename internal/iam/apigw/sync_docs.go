@@ -30,6 +30,7 @@ const (
 // ReleaseSwagger 导入swagge 文档
 // nolint:funlen
 func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version string) error {
+	fmt.Printf("release swagger docs, language: %s, version: %s\n", language, version)
 	// 初始化网关
 	gw, err := NewApiGw(esbOpt, apiGwOpt)
 	if err != nil {

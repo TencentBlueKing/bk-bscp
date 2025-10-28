@@ -142,7 +142,7 @@ func (s *Service) ListKvs(ctx context.Context, req *pbcs.ListKvsReq) (*pbcs.List
 		Start:      req.Start,
 		Limit:      req.Limit,
 		All:        req.All,
-		SearchKey:  req.SearchKey,
+		Search:     req.GetSearch(),
 		WithStatus: req.WithStatus,
 		KvType:     req.KvType,
 		Sort:       req.Sort,

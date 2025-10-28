@@ -154,7 +154,6 @@ func (ap *App) GetAppID(kt *kit.Kit, bizID uint32, appName string) (uint32, erro
 
 // GetMeta the app meta cache.
 func (ap *App) GetMeta(kt *kit.Kit, bizID uint32, appID uint32) (*types.AppCacheMeta, error) {
-
 	val, err := ap.metaClient.GetIFPresent(appID)
 	if err == nil {
 		ap.mc.hitCounter.With(prm.Labels{"resource": "app_meta", "biz": tools.Itoa(bizID)}).Inc()
@@ -239,4 +238,57 @@ func (ap *App) SetAppLastConsumedTime(kt *kit.Kit, bizID uint32, appIDs []uint32
 		return err
 	}
 	return nil
+}
+
+// HasBiz 业务是否存在
+func (ap *App) HasBiz(kt *kit.Kit, bizID uint32) bool {
+	key := fmt.Sprintf("%d-%s", bizID, "tenant-id")
+	val, err := ap.idClient.GetIFPresent(key)
+	if err == nil {
+		ap.mc.hitCounter.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Inc()
+
+		// hit from cache.
+		tenantID, yes := val.(string)
+		if !yes {
+			logs.Infof("unsupported app id cache value type: %v", reflect.TypeOf(val).String())
+			return false
+		}
+
+		if len(tenantID) == 0 {
+			return false
+		}
+
+		return true
+	}
+
+	if err != gcache.KeyNotFoundError {
+		// this is not a not found error, log it.
+		logs.Errorf("get biz: %d, tenant id from local cache failed, err: %v, rid: %s", bizID,
+			err, kt.Rid)
+		// do not return here, try to refresh cache for now.
+	}
+
+	start := time.Now()
+
+	resp, err := ap.cs.CS().GetTenantIDByBiz(kt.RpcCtx(), &pbcs.GetTenantIDByBizReq{
+		BizId:   bizID,
+		Refresh: false,
+	})
+
+	if err != nil || len(resp.TenantId) == 0 {
+		ap.mc.errCounter.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Inc()
+		logs.Errorf("get biz: %d, tenant id failed, err: %v, rid: %s", bizID,
+			err, kt.Rid)
+		return false
+	}
+
+	err = ap.idClient.Set(key, resp.TenantId)
+	if err != nil {
+		logs.Errorf("update biz: %d, tenant id cache failed, err: %v, rid: %s", bizID, err, kt.Rid)
+		// do not return, ignore the error directly.
+	}
+
+	ap.mc.refreshLagMS.With(prm.Labels{"resource": "tenant_id", "biz": tools.Itoa(bizID)}).Observe(tools.SinceMS(start))
+
+	return len(resp.TenantId) != 0
 }

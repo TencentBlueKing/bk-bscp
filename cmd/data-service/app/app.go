@@ -189,7 +189,7 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	ds.cmdb = cmdbCli
 
 	// initialize space manager
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdbCli)
 	if err != nil {
 		return fmt.Errorf("init space manager failed, err: %v", err)
 	}
@@ -303,10 +303,6 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 同步客户端在线状态
-	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
-	status.Run()
-
 	// // 定时同步cmdb数据
 	// syncCmdb := crontab.NewSycnCMDB(ds.daoSet, ds.sd, svc)
 	// syncCmdb.Run()
@@ -314,6 +310,15 @@ func (ds *dataService) listenAndServe() error {
 	// 监听cmdb资源变化
 	// syncCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb)
 	// syncCmdb.Run()
+
+	// 启动定时任务
+	ds.startCronTasks()
+
+	// 初始化ITSM模板[只有v4版本才需要]
+	if cc.DataService().ITSM.EnableV4 {
+		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
+		registerItsmV4Templates.Run()
+	}
 
 	pbds.RegisterDataServer(serve, svc)
 
@@ -459,7 +464,7 @@ func (ds *dataService) register() error {
 // startCronTasks starts all cron tasks for data service
 // nolint:funlen
 func (ds *dataService) startCronTasks() {
-	// 同步客户端在线状态
+	// 同步itsm 单据状态：避免单据没回被正确回调感知
 	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, ds.service)
 	status.Run()
 
@@ -477,6 +482,7 @@ func (ds *dataService) startCronTasks() {
 	}
 
 	crontabConfig := cc.DataService().Crontab
+	logs.Infof("crontabConfig: %+v", crontabConfig)
 	// 启动同步业务主机关系任务
 	if crontabConfig.SyncBizHost.Enabled {
 		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)

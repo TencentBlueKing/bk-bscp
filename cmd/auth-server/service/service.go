@@ -16,6 +16,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -38,6 +39,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/iam"
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/service/initial"
 	confsvc "github.com/TencentBlueKing/bk-bscp/cmd/config-server/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkpaas"
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/apigw"
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
@@ -99,7 +101,7 @@ func NewService(sd serviced.Discover, iamSettings cc.IAM, disableAuth bool,
 		return nil, fmt.Errorf("new gateway failed, err: %v", err)
 	}
 
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), client.Esb)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), client.cmdb)
 	if err != nil {
 		return nil, errors.Wrap(err, "init space mgr")
 	}
@@ -234,6 +236,11 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 	if err != nil {
 		return nil, err
 	}
+	cmdbConfig := cc.G().CMDB
+	cmdb, err := bkcmdb.New(&cmdbConfig, esbCli)
+	if err != nil {
+		return nil, err
+	}
 
 	log := &logrus.Logger{
 		Out:          os.Stderr,
@@ -244,15 +251,19 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 		ReportCaller: false,
 	}
 	bkiamlogger.SetLogger(log)
-	apiGatewayIAM := bkiam.NewAPIGatewayIAM(
-		sys.SystemIDBSCP, iamSettings.AppCode, iamSettings.AppSecret, iamSettings.APIURL)
 
 	cs := &ClientSet{
-		DS:        ds,
-		sys:       iamSys,
-		auth:      authSdk,
-		Esb:       esbCli,
-		iamClient: apiGatewayIAM,
+		DS:   ds,
+		sys:  iamSys,
+		auth: authSdk,
+		Esb:  esbCli,
+		cmdb: cmdb,
+		iam: &auth.Iam{
+			SystemID:  sys.SystemIDBSCP,
+			AppCode:   iamSettings.AppCode,
+			AppSecret: iamSettings.AppSecret,
+			APIURL:    iamSettings.APIURL,
+		},
 	}
 	logs.Infof("initialize the client set success.")
 	return cs, nil
@@ -261,14 +272,14 @@ func newClientSet(sd serviced.Discover, tls cc.TLSConfig, iamSettings cc.IAM, di
 // ClientSet defines configure server's all the depends api client.
 type ClientSet struct {
 	// data service's sys api
-	DS pbds.DataClient
-	// iam sys related operate.
-	iamClient *bkiam.IAM
-	sys       *sys.Sys
+	DS  pbds.DataClient
+	sys *sys.Sys
 	// auth related operate.
 	auth pkgauth.Authorizer
 	// Esb Esb client api
-	Esb esbcli.Client
+	Esb  esbcli.Client
+	iam  *auth.Iam
+	cmdb bkcmdb.Service
 }
 
 // PullResource init auth center's auth model.
@@ -305,6 +316,12 @@ func (s *Service) GetAuthConf(_ context.Context,
 				CaFile:             cc.AuthServer().Esb.TLS.CAFile,
 				Password:           cc.AuthServer().Esb.TLS.Password,
 			},
+		},
+		Cmdb: &pbas.CMDB{
+			Host:       cc.G().CMDB.Host,
+			AppCode:    cc.G().CMDB.AppCode,
+			AppSecret:  cc.G().CMDB.AppSecret,
+			BkUserName: cc.G().CMDB.BkUserName,
 		},
 	}
 	return resp, nil
@@ -413,7 +430,10 @@ func (s *Service) initLogicModule() error {
 		return err
 	}
 
-	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, s.client.iamClient, s.disableWriteOpt,
+	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, func(tenantID string) *bkiam.IAM {
+		return s.client.iam.WithTenant(tenantID)
+	},
+		s.disableWriteOpt,
 		s.spaceMgr)
 	if err != nil {
 		return err
@@ -429,14 +449,29 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, errors.New("token not provided")
 	}
 
+	conf := cc.AuthServer().LoginAuth
+	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
+
+	// 多租户模式
+	if cc.AuthServer().FeatureFlags.EnableMultiTenantMode {
+		tenant, err := authLoginClient.GetTenantUserInfoByToken(ctx, token)
+		if err != nil {
+			if errors.Is(err, errf.ErrPermissionDenied) {
+				return nil, status.New(codes.PermissionDenied, errf.GetErrMsg(err)).Err()
+			}
+			return nil, err
+		}
+
+		slog.Info("get user info success in MultiTenantMode", "username", tenant.BkUsername, "tenant_id", tenant.TenantID)
+		return &pbas.UserInfoResp{Username: tenant.BkUsername, AvatarUrl: "", TenantId: tenant.TenantID}, nil
+
+	}
+
 	// 优先使用 InnerHost
 	host := cc.AuthServer().LoginAuth.Host
 	if cc.AuthServer().LoginAuth.InnerHost != "" {
 		host = cc.AuthServer().LoginAuth.InnerHost
 	}
-
-	conf := cc.AuthServer().LoginAuth
-	authLoginClient := bkpaas.NewAuthLoginClient(&conf)
 
 	var (
 		username string
@@ -456,6 +491,7 @@ func (s *Service) GetUserInfo(ctx context.Context, req *pbas.UserCredentialReq) 
 		return nil, err
 	}
 
+	slog.Info("get user info success", "username", username)
 	return &pbas.UserInfoResp{Username: username, AvatarUrl: ""}, nil
 }
 
@@ -508,7 +544,7 @@ func (s *Service) ListUserSpace(ctx context.Context, req *pbas.ListUserSpaceReq)
 	}
 
 	// 定期同步
-	spaceList := s.spaceMgr.AllSpaces()
+	spaceList := s.spaceMgr.AllSpaces(ctx)
 
 	items := make([]*pbas.Space, 0, len(spaceList))
 	for _, space := range spaceList {
@@ -532,7 +568,7 @@ func (s *Service) QuerySpace(ctx context.Context, req *pbas.QuerySpaceReq) (*pba
 		return &pbas.QuerySpaceResp{}, nil
 	}
 
-	spaceList, err := s.spaceMgr.QuerySpace(uidList)
+	spaceList, err := s.spaceMgr.QuerySpace(ctx, uidList)
 	if err != nil {
 		return nil, err
 	}

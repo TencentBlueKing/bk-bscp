@@ -111,6 +111,8 @@ service Cache {
     };
   }
 
+  rpc GetTenantIDByBiz(GetTenantIDByBizReq) returns (GetTenantIDByBizResp) {}
+
   rpc GetAgentBiz(GetAgentBizReq) returns (GetAgentBizResp) {
     option (google.api.http) = {
       get: "/api/v1/cache/agent/{agent_id}/biz"
@@ -264,6 +266,15 @@ message SetAppLastConsumedTimeReq {
 }
 
 message SetAppLastConsumedTimeResp {}
+
+message GetTenantIDByBizReq {
+  uint32 biz_id = 1;
+  bool refresh = 2;
+}
+
+message GetTenantIDByBizResp {
+  string tenant_id = 1;
+}
 
 message GetAgentBizReq {
   string agent_id = 1;

@@ -313,7 +313,7 @@
     padding: 0 24px;
     height: 41px;
     border-bottom: 1px solid #dcdee5;
-    z-index: 1;
+    z-index: 10;
     .summary-wrapper {
       display: flex;
       align-items: center;

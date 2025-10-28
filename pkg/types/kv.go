@@ -129,17 +129,16 @@ func (o *DeleteKvOpt) Validate() error {
 
 // ListKvOption defines options to list kv.
 type ListKvOption struct {
-	BizID     uint32    `json:"biz_id"`
-	AppID     uint32    `json:"app_id"`
-	Name      string    `json:"name"`
-	Key       []string  `json:"key"`
-	SearchKey string    `json:"search_key"`
-	All       bool      `json:"all"`
-	Page      *BasePage `json:"page"`
-	IDs       []uint32  `json:"ids"`
-	KvType    []string  `json:"kv_type"`
-	TopIDs    []uint32  `json:"top_ids"`
-	Status    []string  `json:"status"`
+	BizID  uint32    `json:"biz_id"`
+	AppID  uint32    `json:"app_id"`
+	Name   string    `json:"name"`
+	Key    []string  `json:"key"`
+	All    bool      `json:"all"`
+	Page   *BasePage `json:"page"`
+	IDs    []uint32  `json:"ids"`
+	KvType []string  `json:"kv_type"`
+	TopIDs []uint32  `json:"top_ids"`
+	Status []string  `json:"status"`
 }
 
 // Validate is used to validate the effectiveness of the ListKvOption structure.

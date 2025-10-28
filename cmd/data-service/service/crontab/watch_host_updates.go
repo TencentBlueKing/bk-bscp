@@ -127,21 +127,17 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 		return
 	}
 
-	if !watchResult.Result {
-		logs.Errorf("watch host resource failed: %s", watchResult.Message)
-		return
-	}
-	if !watchResult.Data.BkWatched {
+	if !watchResult.BkWatched {
 		// No events found, skip
 		return
 	}
-	logs.Infof("watch host resource success, events: %d", len(watchResult.Data.BkEvents))
+	logs.Infof("watch host resource success, events: %d", len(watchResult.BkEvents))
 
 	// Process host update events
-	if len(watchResult.Data.BkEvents) > 0 {
-		w.processHostEvents(kt, watchResult.Data.BkEvents)
+	if len(watchResult.BkEvents) > 0 {
+		w.processHostEvents(kt, watchResult.BkEvents)
 		// update cursor to config table
-		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+		lastEvent := watchResult.BkEvents[len(watchResult.BkEvents)-1]
 		config := &table.Config{
 			Key:   hostDetailCursorKey,
 			Value: lastEvent.BkCursor,
@@ -255,16 +251,13 @@ func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64
 	if err != nil {
 		return fmt.Errorf("watch host resource failed: %w", err)
 	}
-	if !watchResult.Result {
-		return fmt.Errorf("watch host resource failed: %s", watchResult.Message)
-	}
 
-	if len(watchResult.Data.BkEvents) == 0 {
+	if len(watchResult.BkEvents) == 0 {
 		// 监听成功情况下，若无事件则会返回一个不含详情但是含有cursor的事件
 		return fmt.Errorf("watch host resource failed: no events found")
 	}
 
-	cursor := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
+	cursor := watchResult.BkEvents[len(watchResult.BkEvents)-1].BkCursor
 	config := &table.Config{
 		Key:   hostDetailCursorKey,
 		Value: cursor,

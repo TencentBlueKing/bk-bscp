@@ -58,7 +58,7 @@ func LoadSettings(sys *SysOption) error {
 		return err
 	}
 
-	initRuntime(s)
+	InitRuntime(s)
 
 	return nil
 }

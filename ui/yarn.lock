@@ -447,6 +447,19 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
+"@blueking/bk-user-display-name@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.npmmirror.com/@blueking/bk-user-display-name/-/bk-user-display-name-1.0.2.tgz#5db5d791db60571d744a352ed5100d9005489544"
+  integrity sha512-HutBumyW9cQEPD1rby7kJfCdKOZ5T1HHE4icQhuoHGP9rtQoB9NYmEbFdgQvNLVu1EbH4cCtdaaiu8imTzTJlw==
+
+"@blueking/bk-user-selector@^0.0.28":
+  version "0.0.28"
+  resolved "https://registry.npmmirror.com/@blueking/bk-user-selector/-/bk-user-selector-0.0.28.tgz#9a03a563f145f632004641b26dbc9506edb9615c"
+  integrity sha512-0FEwNHo2F5GVRcDhPPHw3qFcRCbEu2q2AMOORhZH1Mae5jLe+bxu6ycjG8TWn+RkIbuIYAmGRcHKT9exJuFlqg==
+  dependencies:
+    lodash "^4.17.21"
+    sortablejs "^1.15.6"
+
 "@blueking/eslint-config@^1.0.6":
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/@blueking/eslint-config/-/eslint-config-1.0.6.tgz#af8dbb84c96ff056ea8d87f9f5f027fccb08492f"
@@ -4675,6 +4688,11 @@ slice-ansi@^2.1.0:
     ansi-styles "^3.2.0"
     astral-regex "^1.0.0"
     is-fullwidth-code-point "^2.0.0"
+
+sortablejs@^1.15.6:
+  version "1.15.6"
+  resolved "https://registry.npmmirror.com/sortablejs/-/sortablejs-1.15.6.tgz#ff93699493f5b8ab8d828f933227b4988df1d393"
+  integrity sha512-aNfiuwMEpfBM/CN6LY0ibyhxPfPbyFeBTYJKCvzkJ2GkUpazIt3H+QIPAMHwqQ7tMKaHz1Qj+rJJCqljnf4p3A==
 
 "source-map-js@>=0.6.2 <2.0.0", source-map-js@^1.0.2, source-map-js@^1.2.0, source-map-js@^1.2.1:
   version "1.2.1"

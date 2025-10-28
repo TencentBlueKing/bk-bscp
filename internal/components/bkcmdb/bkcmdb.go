@@ -15,12 +15,12 @@ package bkcmdb
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkuser"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -28,28 +28,29 @@ import (
 )
 
 var (
-	searchBusiness                   = "%s/api/bk-cmdb/prod/api/v3/biz/search/bk_supplier_account"
-	findHostByTopo                   = "%s/api/bk-cmdb/prod/api/v3/findmany/hosts/by_topo/biz/%d"
-	searchBizInstTopo                = "%s/api/bk-cmdb/prod/api/v3/find/topoinst/biz/%d"
-	getServiceTemplate               = "%s/api/bk-cmdb/prod/api/v3/find/proc/service_template/%d"
-	listServiceTemplate              = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_template"
-	getProcTemplate                  = "%s/api/bk-cmdb/prod/api/v3/find/proc/proc_template/id/%d"
-	listProcTemplate                 = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/proc_template"
-	listProcessInstance              = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/process_instance"
-	findHostBySetTemplate            = "%s/api/bk-cmdb/prod/api/v3/findmany/hosts/by_set_templates/biz/%d"
-	listSetTemplate                  = "%s/api/bk-cmdb/prod/api/v3/findmany/topo/set_template/bk_biz_id/%d"
-	listProcessDetailByIds           = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/process_instance/detail/biz/%d"
-	listServiceInstanceBySetTemplate = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service/" +
+	searchBusiness                   = "%s/api/v3/biz/search/bk_supplier_account"
+	findHostByTopo                   = "%s/api/v3/findmany/hosts/by_topo/biz/%d"
+	searchBizInstTopo                = "%s/api/v3/find/topoinst/biz/%d"
+	getServiceTemplate               = "%s/api/v3/find/proc/service_template/%d"
+	listServiceTemplate              = "%s/api/v3/findmany/proc/service_template"
+	getProcTemplate                  = "%s/api/v3/find/proc/proc_template/id/%d"
+	listProcTemplate                 = "%s/api/v3/findmany/proc/proc_template"
+	listProcessInstance              = "%s/api/v3/findmany/proc/process_instance"
+	findHostBySetTemplate            = "%s/api/v3/findmany/hosts/by_set_templates/biz/%d"
+	listSetTemplate                  = "%s/api/v3/findmany/topo/set_template/bk_biz_id/%d"
+	listProcessDetailByIds           = "%s/api/v3/findmany/proc/process_instance/detail/biz/%d"
+	listServiceInstanceBySetTemplate = "%s/api/v3/findmany/proc/service/" +
 		"set_template/list_service_instance/biz/%d"
-	findModuleWithRelation  = "%s/api/bk-cmdb/prod/api/v3/findmany/module/with_relation/biz/%d"
-	searchSet               = "%s/api/bk-cmdb/prod/api/v3/set/search/%s/%d"
-	searchBusinessByAccount = "%s/api/bk-cmdb/prod/api/v3/biz/search/%s"
-	findModuleBatch         = "%s/api/bk-cmdb/prod/api/v3/findmany/module/bk_biz_id/%d"
-	listServiceInstance     = "%s/api/bk-cmdb/prod/api/v3/findmany/proc/service_instance"
+	findModuleWithRelation  = "%s/api/v3/findmany/module/with_relation/biz/%d"
+	searchBusinessByAccount = "%s/api/v3/biz/search/%s"
 
-	findSetBatch         = "%s/api/bk-cmdb/prod/api/v3/findmany/set/bk_biz_id/%d"
-	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
-	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
+	findModuleBatch     = "%s/api/v3/findmany/module/bk_biz_id/%d"
+	listServiceInstance = "%s/api/v3/findmany/proc/service_instance"
+
+	findSetBatch         = "%s/api/v3/findmany/set/bk_biz_id/%d"
+	searchSet            = "%s/api/v3/set/search/%s/%d"
+	searchModule         = "%s/api/v3/module/search/%s/%d/%d"
+	findHostTopoRelation = "%s/api/v3/host/topo/relation/read"
 	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
 	watchResource        = "%s/api/bk-cmdb/prod/api/v3/event/watch/resource/%s"
 	findHostBizRelations = "%s/api/v3/hosts/modules/read"
@@ -68,11 +69,24 @@ type CMDBService struct {
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
+	// 组装网关认证信息
+	gwAuthOptions := []components.GWAuthOption{}
+	withBkUsername := components.WithBkUsername(bkcmdb.BkUserName)
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		admin, err := bkuser.GetTenantBKAdmin(ctx)
+		if err != nil {
+			return fmt.Errorf("get tenant admin failed: %w", err)
+		}
+		withBkUsername = components.WithBkUsername(admin.BkUsername)
+	}
+	gwAuthOptions = append(gwAuthOptions, withBkUsername)
 
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		bkcmdb.AppCode,
 		bkcmdb.AppSecret,
-		components.WithBkUsername(bkcmdb.BkUserName),
+		gwAuthOptions...,
 	)
 
 	// 构造请求
@@ -98,8 +112,9 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 		return err
 	}
 
-	if err := json.Unmarshal(resp.Body(), result); err != nil {
-		logs.Errorf("unmarshal bk result failed, err: %v", err)
+	// 统一反序列化结果，自动处理外层包装和错误码验证
+	if err := components.UnmarshalBKResult(resp, result); err != nil {
+		logs.Errorf("unmarshal bk result failed, err: %v, resp: %v", err, resp.Body())
 		return err
 	}
 
@@ -120,9 +135,12 @@ func (bkcmdb *CMDBService) SearchBusiness(ctx context.Context, params *cmdb.Sear
 	req := &esbSearchBizParams{SearchBizParams: params}
 	result := new(cmdb.SearchBizResult)
 
+	// UnmarshalBKResult 会自动处理外层的 data 包装
 	if err := bkcmdb.doRequest(ctx, POST, url, req, result); err != nil {
 		return nil, err
 	}
+
+	logs.Infof("search business result: count=%d, info_len=%d", result.Count, len(result.Info))
 	return result, nil
 }
 
@@ -476,54 +494,57 @@ func (bkcmdb *CMDBService) SearchModule(ctx context.Context, req SearchModuleReq
 
 // ListBizHosts query hosts under biz
 func (bkcmdb *CMDBService) ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (
-	*CMDBResponseData[CMDBListData[HostInfo]], error) {
+	*CMDBListData[HostInfo], error) {
 	url := fmt.Sprintf(listBizHosts, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponseData[CMDBListData[HostInfo]])
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	result := new(CMDBListData[HostInfo])
+	// UnmarshalBKResult 会自动处理外层包装和错误验证
+	if err := bkcmdb.doRequest(ctx, POST, url, req, result); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return result, nil
 }
 
 // WatchHostResource watch host resource change
 func (bkcmdb *CMDBService) WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
-	*HostWatchResponse, error) {
+	*WatchResourceData[HostDetail], error) {
 	if req.BkResource == "" {
 		return nil, fmt.Errorf("resource type is required")
 	}
 
 	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
 
-	resp := new(HostWatchResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	result := new(WatchResourceData[HostDetail])
+	// UnmarshalBKResult 会自动处理外层包装和错误验证
+	if err := bkcmdb.doRequest(ctx, POST, url, req, result); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return result, nil
 }
 
 // WatchHostRelationResource watch host relation resource change
 func (bkcmdb *CMDBService) WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
-	*HostRelationWatchResponse, error) {
+	*WatchResourceData[HostRelationDetail], error) {
 	if req.BkResource == "" {
 		return nil, fmt.Errorf("resource type is required")
 	}
 
 	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
 
-	resp := new(HostRelationWatchResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	result := new(WatchResourceData[HostRelationDetail])
+	// UnmarshalBKResult 会自动处理外层包装和错误验证
+	if err := bkcmdb.doRequest(ctx, POST, url, req, result); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return result, nil
 }
 
 // FindHostBizRelations query host biz relation information
 func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
-	*FindHostBizRelationsResponse, error) {
+	[]HostBizRelation, error) {
 	if req.BkBizID == 0 {
 		return nil, fmt.Errorf("bk_biz_id is required")
 	}
@@ -533,12 +554,13 @@ func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHo
 
 	url := fmt.Sprintf(findHostBizRelations, bkcmdb.Host)
 
-	resp := new(FindHostBizRelationsResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	var result []HostBizRelation
+	// UnmarshalBKResult 会自动处理外层包装和错误验证
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &result); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return result, nil
 }
 
 // ResourceWatch 监听资源变化事件

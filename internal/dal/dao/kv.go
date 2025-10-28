@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"time"
 
+	rawgen "gorm.io/gen"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
@@ -161,17 +163,45 @@ func (dao *kvDao) CountNumberUnDeleted(kit *kit.Kit, bizID uint32, opt *types.Li
 	m := dao.genQ.Kv
 	q := dao.genQ.Kv.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(opt.AppID),
 		m.KvState.Neq(table.KvStateDelete.String()))
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		q = q.Where(q.Where(q.Or(m.Key.Regexp(searchKey)).Or(m.Creator.Regexp(searchKey)).Or(
-			m.Reviser.Regexp(searchKey))))
+
+	var conds []rawgen.Condition
+	var searchMap map[string]any
+	if opt.Page != nil && opt.Page.Search != nil {
+		searchMap = opt.Page.Search.AsMap()
 	}
+	conds = dao.handleSearch(conds, searchMap)
+	q = q.Where(conds...)
 
 	if len(opt.Status) != 0 {
 		q = q.Where(m.KvState.In(opt.Status...))
 	}
 
 	return q.Count()
+}
+
+// 支持配置文件名、创建人、更新人搜索
+func (dao *kvDao) handleSearch(conds []rawgen.Condition, search map[string]any) []rawgen.Condition {
+	if len(search) == 0 {
+		return conds
+	}
+	m := dao.genQ.Kv
+
+	if search["key"] != nil {
+		key, _ := search["key"].(string)
+		conds = append(conds, m.Key.Like("%"+key+"%"))
+	}
+
+	if search["creator"] != nil {
+		creator, _ := search["creator"].(string)
+		conds = append(conds, m.Creator.Like("%"+creator+"%"))
+	}
+
+	if search["reviser"] != nil {
+		reviser, _ := search["reviser"].(string)
+		conds = append(conds, m.Reviser.Like("%"+reviser+"%"))
+	}
+
+	return conds
 }
 
 // FetchIDsExcluding 获取指定ID后排除的ID
@@ -334,16 +364,13 @@ func (dao *kvDao) List(kit *kit.Kit, opt *types.ListKvOption) ([]*table.Kv, int6
 		q = q.Order(utils.NewCustomExpr(orderStr, nil))
 	}
 
-	if opt.SearchKey != "" {
-		searchKey := "(?i)" + opt.SearchKey
-		q = q.Where(q.Where(q.Or(m.Key.Regexp(searchKey)).Or(m.Creator.Regexp(searchKey)).Or(
-			m.Reviser.Regexp(searchKey))))
-	}
+	var conds []rawgen.Condition
+	conds = dao.handleSearch(conds, opt.Page.Search.AsMap())
 
 	if len(opt.Status) != 0 {
 		q = q.Where(m.KvState.In(opt.Status...))
 	}
-	q = q.Where(m.BizID.Eq(opt.BizID)).Where(m.AppID.Eq(opt.AppID))
+	q = q.Where(m.BizID.Eq(opt.BizID)).Where(m.AppID.Eq(opt.AppID)).Where(conds...)
 
 	if len(opt.KvType) > 0 {
 		q = q.Where(m.KvType.In(opt.KvType...))

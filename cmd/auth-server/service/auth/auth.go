@@ -35,6 +35,28 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
+// Iam 用于动态创建带租户信息的 IAM 客户端
+type Iam struct {
+	SystemID  string
+	AppCode   string
+	AppSecret string
+	APIURL    string
+}
+
+// WithTenant 构造带指定 TenantID 的 IAM 客户端
+func (i *Iam) WithTenant(tenantID string) *bkiam.IAM {
+	return bkiam.NewAPIGatewayIAM(
+		i.SystemID,
+		i.AppCode,
+		i.AppSecret,
+		i.APIURL,
+		bkiam.WithBkTenantID(tenantID),
+	)
+}
+
+// IAMClientGetter 定义函数来获取带有租户信息的 IAM 客户端
+type IAMClientGetter func(tenantID string) *bkiam.IAM
+
 // Auth related operate.
 type Auth struct {
 	// auth related operate.
@@ -46,13 +68,13 @@ type Auth struct {
 	// disableWriteOpt defines which biz's write operation needs to be disabled
 	disableWriteOpt *options.DisableWriteOption
 	// iamSettings defines iam settings
-	iamClient *bkiam.IAM
 	// spaceMgr defines space manager
 	spaceMgr *space.Manager
+	iamCli   IAMClientGetter
 }
 
 // NewAuth new auth.
-func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamClient *bkiam.IAM,
+func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli IAMClientGetter,
 	disableWriteOpt *options.DisableWriteOption, spaceMgr *space.Manager) (*Auth, error) {
 
 	if auth == nil {
@@ -71,9 +93,9 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamClie
 		auth:            auth,
 		ds:              ds,
 		disableAuth:     disableAuth,
-		iamClient:       iamClient,
 		disableWriteOpt: disableWriteOpt,
 		spaceMgr:        spaceMgr,
+		iamCli:          iamCli,
 	}
 
 	return i, nil
@@ -240,7 +262,8 @@ func (a *Auth) GetPermissionToApply(ctx context.Context, req *pbas.GetPermission
 	if err != nil {
 		return nil, err
 	}
-	url, err := a.iamClient.GetApplyURL(*application, "", kt.User)
+
+	url, err := a.iamCli(kt.TenantID).GetApplyURL(*application)
 	if err != nil {
 		return nil, errors.Wrap(err, "gen apply url")
 	}
@@ -398,7 +421,7 @@ func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]s
 		switch resType {
 		case sys.Business:
 			for _, id := range ids {
-				space, err := a.spaceMgr.GetSpaceByUID(id)
+				space, err := a.spaceMgr.GetSpaceByUID(kt.Ctx, id)
 				if err != nil {
 					return nil, err
 				}

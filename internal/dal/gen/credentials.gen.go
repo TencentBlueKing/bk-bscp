@@ -36,6 +36,7 @@ func newCredential(db *gorm.DB, opts ...gen.DOOption) credential {
 	_credential.Enable = field.NewBool(tableName, "enable")
 	_credential.ExpiredAt = field.NewTime(tableName, "expired_at")
 	_credential.BizID = field.NewUint32(tableName, "biz_id")
+	_credential.TenantID = field.NewString(tableName, "tenant_id")
 	_credential.Creator = field.NewString(tableName, "creator")
 	_credential.Reviser = field.NewString(tableName, "reviser")
 	_credential.CreatedAt = field.NewTime(tableName, "created_at")
@@ -59,6 +60,7 @@ type credential struct {
 	Enable         field.Bool
 	ExpiredAt      field.Time
 	BizID          field.Uint32
+	TenantID       field.String
 	Creator        field.String
 	Reviser        field.String
 	CreatedAt      field.Time
@@ -88,6 +90,7 @@ func (c *credential) updateTableName(table string) *credential {
 	c.Enable = field.NewBool(table, "enable")
 	c.ExpiredAt = field.NewTime(table, "expired_at")
 	c.BizID = field.NewUint32(table, "biz_id")
+	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
 	c.CreatedAt = field.NewTime(table, "created_at")
@@ -118,7 +121,7 @@ func (c *credential) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *credential) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 13)
+	c.fieldMap = make(map[string]field.Expr, 14)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["credential_type"] = c.CredentialType
 	c.fieldMap["enc_credential"] = c.EncCredential
@@ -128,6 +131,7 @@ func (c *credential) fillFieldMap() {
 	c.fieldMap["enable"] = c.Enable
 	c.fieldMap["expired_at"] = c.ExpiredAt
 	c.fieldMap["biz_id"] = c.BizID
+	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser
 	c.fieldMap["created_at"] = c.CreatedAt

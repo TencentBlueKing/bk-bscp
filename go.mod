@@ -13,7 +13,7 @@ require (
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20250928112818-5b9818cc2e76
 	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20250928112818-5b9818cc2e76
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
-	github.com/TencentBlueKing/iam-go-sdk v0.1.6
+	github.com/TencentBlueKing/iam-go-sdk v1.0.1
 	github.com/bluele/gcache v0.0.2
 	github.com/changsongl/gorm-plugin v0.0.1
 	github.com/dustin/go-humanize v1.0.1
@@ -261,7 +261,7 @@ require (
 	gorm.io/hints v1.1.2 // indirect
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3 // indirect
-	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	moul.io/http2curl v1.0.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect

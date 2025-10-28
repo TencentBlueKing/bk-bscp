@@ -42,6 +42,8 @@ const (
 
 // FeatureFlags 特性配置
 type FeatureFlags struct {
+	// EnableMultiTenantMode 是否开启多租户模式
+	EnableMultiTenantMode bool `json:"enableMultiTenantMode" yaml:"enableMultiTenantMode"`
 	// BizView 业务白名单
 	BizView FeatureBizView `json:"biz_view" yaml:"BIZ_VIEW"`
 	// ResourceLimit 业务资源限制
@@ -887,6 +889,14 @@ type Esb struct {
 	BscpHost string    `yaml:"bscpHost"`
 }
 
+// GetHost 获取网关host地址
+func (s Esb) APIGWHost() string {
+	if len(s.Endpoints) > 0 {
+		return s.Endpoints[0]
+	}
+	return ""
+}
+
 // validate esb runtime.
 func (s Esb) validate() error {
 	if len(s.Endpoints) == 0 {
@@ -1654,6 +1664,15 @@ type ITSMConfig struct {
 	Host        string `yaml:"host" usage:"itsm esb host"`
 	BscpGateway string `yaml:"bscpGateway" usage:"bscpGateway for itsm"`
 	BscpPageUrl string `yaml:"bscpPageUrl" usage:"bscpPageUrl for itsm"`
+	EnableV4    bool   `yaml:"enableV4" usage:"use itsm v4 instead of v2"`
+	// AppCode is the blueking app code of bscp to request esb.
+	AppCode string `yaml:"appCode"`
+	// AppSecret is the blueking app secret of bscp to request esb.
+	AppSecret string `yaml:"appSecret"`
+	// User is the blueking user of bscp to request esb.
+	User string `yaml:"user"`
+	// SystemId 系统标识
+	SystemId string `yaml:"systemId"`
 }
 
 // CMDBConfig cmdb相关的配置
