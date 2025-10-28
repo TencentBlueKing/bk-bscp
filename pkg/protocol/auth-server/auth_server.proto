@@ -109,7 +109,7 @@ message CMDB {
   string host = 1;
   string app_code = 2;
   string app_secret = 3;
-  bool use_esb = 4;
+  string bk_user_name = 4;
 }
 
 message TLS {

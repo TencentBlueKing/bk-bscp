@@ -158,17 +158,13 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 			return fmt.Errorf("list biz hosts failed: %w", err)
 		}
 
-		if !hostResult.Result {
-			return fmt.Errorf("list biz hosts failed: %s", hostResult.Message)
-		}
-
 		// If current page has no data, query is complete
-		if len(hostResult.Data.Info) == 0 {
+		if len(hostResult.Info) == 0 {
 			break
 		}
 
 		var batchBizHosts []*table.BizHost
-		for _, host := range hostResult.Data.Info {
+		for _, host := range hostResult.Info {
 			bizHost := &table.BizHost{
 				BizID:         uint(bizID),
 				HostID:        uint(host.BkHostID),
@@ -184,7 +180,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 		}
 
 		// If returned data is less than limit, it's the last page
-		if len(hostResult.Data.Info) < limit {
+		if len(hostResult.Info) < limit {
 			break
 		}
 

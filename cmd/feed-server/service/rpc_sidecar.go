@@ -1199,13 +1199,7 @@ func (s *Service) validateAgentIsInBiz(ctx context.Context, agentID string, bizI
 		return status.Errorf(codes.Internal, "CMDB fallback failed for agent %s in business %d: %v", agentID, bizID, err)
 	}
 
-	if !hostResult.Result {
-		logs.Errorf("CMDB query failed for agent %s in business %d, message: %s", agentID, bizID, hostResult.Message)
-		return status.Errorf(codes.Internal, "CMDB query failed for agent %s in business %d: %s",
-			agentID, bizID, hostResult.Message)
-	}
-
-	if len(hostResult.Data.Info) == 0 {
+	if len(hostResult.Info) == 0 {
 		return status.Errorf(codes.PermissionDenied, "agent %s not found in business %d", agentID, bizID)
 	}
 

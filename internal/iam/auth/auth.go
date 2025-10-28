@@ -130,9 +130,10 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	}
 
 	cmdbCfg := &cc.CMDBConfig{
-		Host:      resp.Cmdb.Host,
-		AppCode:   resp.Cmdb.AppCode,
-		AppSecret: resp.Cmdb.AppSecret,
+		Host:       resp.Cmdb.GetHost(),
+		AppCode:    resp.Cmdb.GetAppCode(),
+		AppSecret:  resp.Cmdb.GetAppSecret(),
+		BkUserName: resp.Cmdb.GetBkUserName(),
 	}
 
 	authLoginClient := bkpaas.NewAuthLoginClient(conf)

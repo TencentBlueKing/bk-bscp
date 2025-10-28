@@ -439,6 +439,7 @@ func (ds *dataService) startCronTasks() {
 	}
 
 	crontabConfig := cc.DataService().Crontab
+	logs.Infof("crontabConfig: %+v", crontabConfig)
 	// 启动同步业务主机关系任务
 	if crontabConfig.SyncBizHost.Enabled {
 		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)

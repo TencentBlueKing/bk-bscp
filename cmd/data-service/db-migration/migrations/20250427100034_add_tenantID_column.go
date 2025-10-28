@@ -73,11 +73,6 @@ var allModels = func() []any {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
 	}
 
-	// Configs mapped from table <configs>
-	type Configs struct {
-		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
-	}
-
 	// Contents mapped from table <contents>
 	type Contents struct {
 		TenantID string `gorm:"column:tenant_id;type:varchar(255);not null;default:default" json:"tenant_id"`
@@ -229,7 +224,6 @@ var allModels = func() []any {
 		&Clients{},
 		&Commit{},
 		&ConfigItems{},
-		&Configs{},
 		&Contents{},
 		&CredentialScopes{},
 		&Credentials{},

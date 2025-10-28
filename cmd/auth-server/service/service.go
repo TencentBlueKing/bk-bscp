@@ -318,9 +318,10 @@ func (s *Service) GetAuthConf(_ context.Context,
 			},
 		},
 		Cmdb: &pbas.CMDB{
-			Host:      cc.G().CMDB.Host,
-			AppCode:   cc.G().CMDB.AppCode,
-			AppSecret: cc.G().CMDB.AppSecret,
+			Host:       cc.G().CMDB.Host,
+			AppCode:    cc.G().CMDB.AppCode,
+			AppSecret:  cc.G().CMDB.AppSecret,
+			BkUserName: cc.G().CMDB.BkUserName,
 		},
 	}
 	return resp, nil
