@@ -65,7 +65,7 @@ type ProcessInstance struct {
 
 // TableName is the app's database table name.
 func (p *ProcessInstance) TableName() Name {
-	return ProcessesTable
+	return ProcessInstancesTable
 }
 
 // ResID AuditRes interface

@@ -10,7 +10,7 @@
  * limitations under the License.
  */
 
-// Package pbapp provides application core protocol struct and convert functions.
+// Package pbpi provides process instance core protocol struct and convert functions.
 package pbpi
 
 import (

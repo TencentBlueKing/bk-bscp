@@ -10,7 +10,7 @@
  * limitations under the License.
  */
 
-// Package pbapp provides application core protocol struct and convert functions.
+// Package pbproc provides process core protocol struct and convert functions.
 package pbproc
 
 import (

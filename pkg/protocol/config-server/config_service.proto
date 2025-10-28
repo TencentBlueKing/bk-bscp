@@ -1564,7 +1564,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/biz_id/{biz_id}/sycn/cc"
+      post: "/api/v1/config/biz_id/{biz_id}/sync/cc"
       body: "*"
     };
   }
