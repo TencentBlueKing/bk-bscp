@@ -219,7 +219,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -2273,7 +2273,7 @@ func (c *configClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)

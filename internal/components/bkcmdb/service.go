@@ -91,6 +91,8 @@ type Service interface {
 	// FindHostBizRelations 查询主机业务关系信息
 	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
 		*FindHostBizRelationsResponse, error)
+	// ResourceWatch 监听资源变化事件
+	ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse, error)
 }
 
 // New cmdb service

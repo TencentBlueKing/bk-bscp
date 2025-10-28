@@ -54,7 +54,7 @@ func (dao *taskBatchDao) Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint3
 	}
 
 	// 生成ID
-	id, err := dao.idGen.One(kit, table.Name(table.Table))
+	id, err := dao.idGen.One(kit, table.Name(taskBatch.TableName()))
 	if err != nil {
 		return 0, err
 	}

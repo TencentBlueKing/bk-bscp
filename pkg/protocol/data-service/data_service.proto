@@ -2297,8 +2297,9 @@ message ListProcessResp {
 
 message OperateProcessReq {
   uint32 biz_id = 1;
-  uint32 process_id = 2;
-  string operateType = 3;
+  repeated uint32 process_ids = 2;
+  uint32 inst_id = 3;
+  string operateType = 4;
 }
 
 message OperateProcessResp {
@@ -2331,14 +2332,14 @@ message ListTaskBatchResp {
 message GetTaskBatchDetailReq {
   uint32 biz_id = 1;
   uint32 batch_id = 2;
-  uint32 start = 3; // 起始位置
-  uint32 limit = 4; // 限制数量
-  string status = 5; // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE, TIMEOUT, REVOKED, NOTSTARTED 等
+  uint32 start = 3;   // 起始位置
+  uint32 limit = 4;   // 限制数量
+  string status = 5;  // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE, TIMEOUT, REVOKED, NOTSTARTED 等
 }
 
 message GetTaskBatchDetailResp {
-  repeated pbtb.TaskDetail tasks = 1; // 任务详情列表
-  uint32 count = 2; // 任务总数
+  repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
+  uint32 count = 2;                    // 任务总数
 }
 
 message SyncCMDBStatusReq {

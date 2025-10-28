@@ -22,6 +22,9 @@ import (
 
 // getTestConfig 从环境变量获取测试配置
 func getGseService(t *testing.T) *Service {
+	os.Setenv("GSE_HOST", "http://bkapi.sit.bktencent.com")
+	os.Setenv("BK_APP_CODE", "bk-bscp")
+	os.Setenv("BK_APP_SECRET", "AWy9VhpNoEQ4U6STq3p5XRVxWcuOOceTTEVh")
 	host := os.Getenv("GSE_HOST")
 	appCode := os.Getenv("BK_APP_CODE")
 	appSecret := os.Getenv("BK_APP_SECRET")
@@ -51,7 +54,7 @@ func TestOperateProcMulti(t *testing.T) {
 						"app": "bscp",
 					},
 				},
-				OpType: OpTypeQuery,
+				OpType: OpTypeStart,
 				Spec: ProcessSpec{
 					Identity: ProcessIdentity{
 						ProcName:   "test-proc",
@@ -81,6 +84,8 @@ func TestOperateProcMulti(t *testing.T) {
 						OpTimeout:      60, // 命令执行超时时间（秒）
 					},
 				},
+				AgentIDList: []string{"11:10.0.0.8"},
+				Hosts:       []HostInfo{},
 			},
 		},
 	}

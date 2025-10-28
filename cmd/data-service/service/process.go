@@ -48,7 +48,7 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		processIDs = append(processIDs, v.ID)
 	}
 
-	procInst, err := s.dao.ProcessInstance().GetByID(kt, req.GetBizId(), processIDs)
+	procInst, err := s.dao.ProcessInstance().GetByProcessIDs(kt, req.GetBizId(), processIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -68,22 +68,54 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 }
 
 // OperateProcess implements pbds.DataServer.
+// nolint:funlen
 func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessReq) (*pbds.OperateProcessResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	// 校验请求：如果指定实例，则进程ID只能有一条
+	if len(req.ProcessIds) > 1 && req.InstId != 0 {
+		return nil, fmt.Errorf("invalid request: when InstId != 0, only one processId is allowed")
+	}
+
 	// 1、查询进程对应的进程实例，进行任务下发
-	process, err := s.dao.Process().GetByID(kt, req.BizId, req.ProcessId)
+	processes, err := s.dao.Process().GetByIDs(kt, req.BizId, req.ProcessIds)
 	if err != nil {
 		logs.Errorf("get process failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
-	processInstances, err := s.dao.ProcessInstance().GetByID(kt, req.BizId, []uint32{req.ProcessId})
-	if err != nil {
-		logs.Errorf("get process instance failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, err
+
+	if len(processes) == 0 {
+		return nil, fmt.Errorf("no process found for biz %d", req.BizId)
 	}
-	if len(processInstances) == 0 {
-		return nil, fmt.Errorf("no process instances found for process id %d", req.ProcessId)
+
+	// 2. 查询进程实例
+	var processInstances []*table.ProcessInstance
+	if req.InstId != 0 {
+		// 指定了单个实例
+		inst, errI := s.dao.ProcessInstance().GetByID(kt, req.BizId, req.InstId)
+		if errI != nil {
+			logs.Errorf("get process instance by id failed, err: %v, rid: %s", errI, kt.Rid)
+			return nil, errI
+		}
+		if inst == nil {
+			return nil, fmt.Errorf("no process instance found for id %d", req.InstId)
+		}
+		processInstances = append(processInstances, inst)
+	} else {
+		// 未指定实例：查询所有进程对应的实例
+		processIDs := make([]uint32, 0, len(processes))
+		for _, p := range processes {
+			processIDs = append(processIDs, p.ID)
+		}
+
+		processInstances, err = s.dao.ProcessInstance().GetByProcessIDs(kt, req.BizId, processIDs)
+		if err != nil {
+			logs.Errorf("get process instances failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, err
+		}
+		if len(processInstances) == 0 {
+			return nil, fmt.Errorf("no process instances found for processes %+v", processIDs)
+		}
 	}
 
 	// 2、先写入task_batch获取一个batchID，然后写入任务并开启
@@ -94,7 +126,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		StartAt:    &now,
 	}
 	taskBatchSpec.SetTaskData(&table.ProcessTaskData{
-		Environment:  process.Spec.Environment,
+		// Environment:  process.Spec.Environment,
 		OperateRange: table.OperateRange{
 			// TODO : 增加对应的范围ID
 			// SetID:       process.Spec.SetID,
@@ -108,46 +140,59 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 			BizID: kt.BizID,
 		},
 		Spec: taskBatchSpec,
+		Revision: &table.Revision{
+			Creator:   kt.User,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
 	})
 	if err != nil {
 		logs.Errorf("create task batch failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
-	// 如果是托管/取消托管,设置托管状态
+	// 4. 计算托管/状态
 	managedStatus := getProcessManagedStatus(table.ProcessOperateType(req.OperateType))
-	processStauts := getProcessStatus(table.ProcessOperateType(req.OperateType))
-	// 3、写入并开启任务
-	for _, processInstance := range processInstances {
-		// 更新任务状态为进行中
+	processStatus := getProcessStatus(table.ProcessOperateType(req.OperateType))
+
+	// 5. 遍历进程实例，更新状态并下发任务
+	for _, inst := range processInstances {
 		if managedStatus != "" {
-			processInstance.Spec.ManagedStatus = managedStatus
+			inst.Spec.ManagedStatus = managedStatus
 		}
-		if processStauts != "" {
-			processInstance.Spec.Status = processStauts
+		if processStatus != "" {
+			inst.Spec.Status = processStatus
 		}
 
-		// 更新状态
-		err = s.dao.ProcessInstance().Update(kt, processInstance)
-		if err != nil {
-			logs.Errorf("update process instance failed, err: %v, rid: %s", err, kt.Rid)
+		if err := s.dao.ProcessInstance().Update(kt, inst); err != nil {
+			logs.Errorf("update process instance failed, id: %d, err: %v, rid: %s", inst.ID, err, kt.Rid)
 			return nil, err
 		}
-		// 写入任务
-		processOperateTask, err := task.NewByTaskBuilder(
-			processBuilder.NewOperateTask(s.dao, batchID, processInstance.ID, processInstance.ID,
-				table.ProcessOperateType(req.OperateType), kt.User, true))
+
+		// 找到对应进程（仅用于日志或任务参数）
+		var procID uint32
+		if len(req.ProcessIds) == 1 {
+			procID = req.ProcessIds[0]
+		} else {
+			procID = inst.Attachment.ProcessID
+		}
+
+		// 创建任务
+		taskObj, err := task.NewByTaskBuilder(
+			processBuilder.NewOperateTask(
+				s.dao, req.GetBizId(), batchID, procID, inst.ID,
+				table.ProcessOperateType(req.OperateType), kt.User, true,
+			))
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
+
 		// 启动任务
-		s.taskManager.Dispatch(processOperateTask)
+		s.taskManager.Dispatch(taskObj)
 	}
 
-	return &pbds.OperateProcessResp{
-		BatchID: batchID,
-	}, nil
+	return &pbds.OperateProcessResp{BatchID: batchID}, nil
 }
 
 func getProcessManagedStatus(operateType table.ProcessOperateType) table.ProcessManagedStatus {

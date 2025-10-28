@@ -62,10 +62,11 @@ message ProcessAttachment {
 
 // ProcessSearchCondition 进程搜索条件
 message ProcessSearchCondition {
-  repeated uint32 set_ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群ID" }];
-  repeated uint32 module_ids = 2
+  repeated string set_names = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群ID" }];
+  repeated string module_names = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块ID" }];
-  repeated uint32 service_instance_ids = 3
+  repeated string service_instance_names = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
   repeated uint32 cc_process_ids = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];

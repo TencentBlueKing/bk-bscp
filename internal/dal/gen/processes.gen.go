@@ -35,6 +35,7 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.ModuleID = field.NewUint32(tableName, "module_id")
 	_process.ServiceInstanceID = field.NewUint32(tableName, "service_instance_id")
 	_process.HostID = field.NewUint32(tableName, "host_id")
+	_process.CloudID = field.NewUint32(tableName, "cloud_id")
 	_process.SetName = field.NewString(tableName, "set_name")
 	_process.ModuleName = field.NewString(tableName, "module_name")
 	_process.ServiceName = field.NewString(tableName, "service_name")
@@ -68,6 +69,7 @@ type process struct {
 	ModuleID          field.Uint32
 	ServiceInstanceID field.Uint32
 	HostID            field.Uint32
+	CloudID           field.Uint32
 	SetName           field.String
 	ModuleName        field.String
 	ServiceName       field.String
@@ -107,6 +109,7 @@ func (p *process) updateTableName(table string) *process {
 	p.ModuleID = field.NewUint32(table, "module_id")
 	p.ServiceInstanceID = field.NewUint32(table, "service_instance_id")
 	p.HostID = field.NewUint32(table, "host_id")
+	p.CloudID = field.NewUint32(table, "cloud_id")
 	p.SetName = field.NewString(table, "set_name")
 	p.ModuleName = field.NewString(table, "module_name")
 	p.ServiceName = field.NewString(table, "service_name")
@@ -146,7 +149,7 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 23)
+	p.fieldMap = make(map[string]field.Expr, 24)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
@@ -155,6 +158,7 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["module_id"] = p.ModuleID
 	p.fieldMap["service_instance_id"] = p.ServiceInstanceID
 	p.fieldMap["host_id"] = p.HostID
+	p.fieldMap["cloud_id"] = p.CloudID
 	p.fieldMap["set_name"] = p.SetName
 	p.fieldMap["module_name"] = p.ModuleName
 	p.fieldMap["service_name"] = p.ServiceName

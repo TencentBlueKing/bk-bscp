@@ -26,8 +26,10 @@ import (
 
 // Process xxx
 type Process interface {
+	// GetByIDs get client by ids.
+	GetByIDs(kit *kit.Kit, bizID uint32, id []uint32) ([]*table.Process, error)
 	// GetByID get client by id.
-	GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error)
+	GetByID(kit *kit.Kit, bizID uint32, id uint32) (*table.Process, error)
 	// List released config items with options.
 	List(kit *kit.Kit, bizID uint32, search *process.ProcessSearchCondition,
 		opt *types.BasePage) ([]*table.Process, int64, error)
@@ -50,6 +52,15 @@ type processDao struct {
 	auditDao AuditDao
 }
 
+// GetByID implements Process.
+func (dao *processDao) GetByID(kit *kit.Kit, bizID uint32, id uint32) (*table.Process, error) {
+	m := dao.genQ.Process
+
+	return dao.genQ.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.Eq(id)).
+		Take()
+}
+
 // ListBizFilterOptions implements Process.
 // fields = append(fields, field.NewString("", "id"))
 func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) (
@@ -59,11 +70,11 @@ func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields .
 	return q.Distinct(fields...).Select(fields...).Find()
 }
 
-func (dao *processDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, error) {
+func (dao *processDao) GetByIDs(kit *kit.Kit, bizID uint32, id []uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 	q := dao.genQ.Process.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Find()
+	result, err := q.Where(m.ID.In(id...), m.BizID.Eq(bizID)).Find()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +83,7 @@ func (dao *processDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.Process, 
 		return nil, nil
 	}
 
-	return result[0], nil
+	return result, nil
 }
 
 // UpdateSyncStatus implements Process.
@@ -161,16 +172,16 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 		conds = append(conds, m.Environment.Eq(search.GetEnvironment()))
 	}
 
-	if len(search.GetSetIds()) != 0 {
-		conds = append(conds, m.SetID.In(search.GetSetIds()...))
+	if len(search.GetSetNames()) != 0 {
+		conds = append(conds, m.SetName.In(search.GetSetNames()...))
 	}
 
-	if len(search.GetModuleIds()) != 0 {
-		conds = append(conds, m.ModuleID.In(search.GetModuleIds()...))
+	if len(search.GetModuleNames()) != 0 {
+		conds = append(conds, m.ModuleName.In(search.GetModuleNames()...))
 	}
 
-	if len(search.GetServiceInstanceIds()) != 0 {
-		conds = append(conds, m.ServiceInstanceID.In(search.GetServiceInstanceIds()...))
+	if len(search.GetServiceInstanceNames()) != 0 {
+		conds = append(conds, m.ServiceName.In(search.GetServiceInstanceNames()...))
 	}
 
 	if len(search.GetCcProcessIds()) != 0 {
@@ -182,7 +193,7 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 	}
 
 	if len(search.GetInnerIps()) != 0 {
-		conds = append(conds, dao.handleIPSearch(q, search.GetInnerIps())...)
+		conds = append(conds, m.InnerIP.In(search.GetInnerIps()...))
 	}
 
 	if len(search.GetCcSyncStatuses()) != 0 {
@@ -206,20 +217,6 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 	}
 
 	return conds, nil
-}
-
-func (dao *processDao) handleIPSearch(q gen.IProcessDo, ip []string) []rawgen.Condition {
-	conds := make([]rawgen.Condition, 0)
-	for i, v := range ip {
-		if i == 0 {
-			q = q.Where(dao.genQ.Process.InnerIP.Like("%" + v + "%"))
-		} else {
-			q = q.Or(dao.genQ.Process.InnerIP.Like("%" + v + "%"))
-		}
-		conds = append(conds, q)
-	}
-
-	return conds
 }
 
 func (dao *processDao) handleProcessStatus(kit *kit.Kit, q gen.IProcessDo, status []string) (

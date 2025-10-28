@@ -10,7 +10,7 @@
  * limitations under the License.
  */
 
-// Package cmdb provides cmdb client.
+// Package cmdb provides cmdb service.
 package cmdb
 
 import (
@@ -86,7 +86,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	}
 	var hosts []Host
 	for _, h := range listHosts {
-		hosts = append(hosts, Host{ID: h.BkHostID, Name: h.BkHostName, IP: h.BkHostInnerIP})
+		hosts = append(hosts, Host{ID: h.BkHostID, Name: h.BkHostName, IP: h.BkHostInnerIP, CloudId: h.BkCloudID})
 	}
 
 	// 4. 服务实例
@@ -232,6 +232,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 					"bk_host_id",
 					"bk_host_name",
 					"bk_host_innerip",
+					"bk_cloud_id",
 				},
 				Page: page,
 			})
@@ -299,13 +300,21 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 			moduleCounter := make(map[int]int)
 			for _, mod := range set.Module {
 				// 构建 HostID -> IP 映射
-				hostMap := make(map[int]string, len(mod.Host))
+				hostMap := make(map[int]HostInfo, len(mod.Host))
 				for _, h := range mod.Host {
-					hostMap[h.ID] = h.IP
+					hostMap[h.ID] = HostInfo{
+						IP:      h.IP,
+						CloudId: h.CloudId,
+					}
 				}
 				for _, svc := range mod.SvcInst {
 					for _, proc := range svc.ProcInst {
-						ip := hostMap[proc.HostID]
+						hinfo, ok := hostMap[proc.HostID]
+						if !ok {
+							log.Printf("[WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s: hostID=%d not found in hostMap",
+								bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID)
+							continue
+						}
 						sourceData, err := proc.ProcessInfo.Value()
 						if err != nil {
 							log.Printf("[ERROR] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: failed to get process info: %v",
@@ -322,6 +331,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 								ModuleID:          uint32(mod.ID),
 								ServiceInstanceID: uint32(svc.ID),
 								HostID:            uint32(proc.HostID),
+								CloudID:           uint32(hinfo.CloudId),
 							},
 							Spec: &table.ProcessSpec{
 								SetName:         set.Name,
@@ -329,7 +339,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 								ServiceName:     svc.Name,
 								Environment:     translateEnv(set.SetEnv),
 								Alias:           proc.Name,
-								InnerIP:         ip,
+								InnerIP:         hinfo.IP,
 								CcSyncStatus:    table.Synced,
 								CcSyncUpdatedAt: now,
 								SourceData:      sourceData,
@@ -505,27 +515,32 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 		}
 	}
 
-	// 如果主表不需要新增，那么副表也不需要操作
-	// 实例表更新通过其他方式更新
-	var toWriteInstances []*table.ProcessInstance
-
-	// 回填 ProcessID 给 Instance
-	idMap := make(map[string]uint32)
-	for _, p := range toAdd {
-		idMap[fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, bizID, p.Attachment.CcProcessID)] = p.ID
+	// 只有新增的进程才需要创建实例
+	if len(toAdd) == 0 {
+		return nil
 	}
 
+	// 构建新增进程的 ProcessID 映射
+	idMap := make(map[string]uint32)
+	for _, p := range toAdd {
+		key := fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, bizID, p.Attachment.CcProcessID)
+		idMap[key] = p.ID
+	}
+
+	// 回填 ProcessID 给 Instance，只处理新增进程对应的实例
+	var toWriteInstances []*table.ProcessInstance
 	for _, inst := range processInstanceBatch {
-		if pid, ok := idMap[fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, bizID,
-			inst.Attachment.CcProcessID)]; ok {
+		key := fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, bizID, inst.Attachment.CcProcessID)
+		if pid, ok := idMap[key]; ok && pid != 0 {
 			inst.Attachment.ProcessID = pid
 			toWriteInstances = append(toWriteInstances, inst)
 		}
+		// 如果找不到对应的新增进程，则跳过这个实例
 	}
 
-	// 只写入匹配到 pid 的实例
+	// 只写入有有效 process_id 的实例
 	if len(toWriteInstances) > 0 {
-		if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, processInstanceBatch); err != nil {
+		if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, toWriteInstances); err != nil {
 			return fmt.Errorf("insert process instances failed: %w", err)
 		}
 	}
