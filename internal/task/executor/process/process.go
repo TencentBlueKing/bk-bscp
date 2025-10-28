@@ -13,6 +13,7 @@
 package process
 
 import (
+	"encoding/json"
 	"fmt"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
@@ -63,13 +64,68 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	if err := c.GetCommonPayload(commonPayload); err != nil {
 		return err
 	}
-	// TODO 构造请求参数，这里是批量进程接口，转换一下，
-	req := &gse.MultiProcOperateReq{}
-	req.ProcOperateReq = []gse.ProcessOperate{}
-	resp, err := e.gseService.OperateProcMulti(c.Context(), req)
+
+	items := make([]gse.ProcessOperate, 0)
+
+	hosts := make([]gse.HostInfo, 0)
+
+	var processInfo table.ProcessInfo
+
+	err := json.Unmarshal([]byte(commonPayload.ConfigData), &processInfo)
 	if err != nil {
 		return err
 	}
+
+	hosts = append(hosts, gse.HostInfo{
+		IP:        commonPayload.InnerIP,
+		BkCloudID: commonPayload.CloudID,
+	})
+
+	var autoType int
+
+	items = append(items, gse.ProcessOperate{
+		Meta: gse.ProcessMeta{
+			Namespace: "bscp",
+			Name:      commonPayload.Alias,
+			Labels:    map[string]string{"env": commonPayload.Environment},
+		},
+		AgentIDList: []string{commonPayload.AgentID},
+		Hosts:       hosts,
+		OpType:      0,
+		Spec: gse.ProcessSpec{
+			Identity: gse.ProcessIdentity{
+				ProcName:  commonPayload.Alias,
+				SetupPath: processInfo.WorkPath,
+				PidPath:   processInfo.PidFile,
+				User:      processInfo.User,
+			},
+			Control: gse.ProcessControl{
+				StartCmd:   processInfo.StartCmd,
+				StopCmd:    processInfo.StopCmd,
+				RestartCmd: processInfo.RestartCmd,
+				ReloadCmd:  processInfo.ReloadCmd,
+				KillCmd:    processInfo.FaceStopCmd,
+			},
+			Resource: gse.ProcessResource{
+				CPU: 30.0,
+				Mem: 10.0,
+			},
+			MonitorPolicy: gse.ProcessMonitorPolicy{
+				AutoType:  autoType,
+				OpTimeout: processInfo.Timeout,
+			},
+		},
+	})
+
+	req := &gse.MultiProcOperateReq{
+		ProcOperateReq: items,
+	}
+
+	resp, err := e.gseService.OperateProcMulti(c.Context(), req)
+	if err != nil {
+		return fmt.Errorf("failed to operate process via gseService.OperateProcMulti: %w", err)
+	}
+
 	taskResult, err := e.WaitTaskFinish(c.Context(), resp.TaskID, []string{commonPayload.AgentID})
 	if err != nil {
 		return err

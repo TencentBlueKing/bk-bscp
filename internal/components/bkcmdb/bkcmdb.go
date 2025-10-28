@@ -51,7 +51,7 @@ var (
 	searchModule         = "%s/api/bk-cmdb/prod/api/v3/module/search/%s/%d/%d"
 	findHostTopoRelation = "%s/api/bk-cmdb/prod/api/v3/host/topo/relation/read"
 	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
-	watchResource        = "%s/api/v3/event/watch/resource/%s"
+	watchResource        = "%s/api/bk-cmdb/prod/api/v3/event/watch/resource/%s"
 	findHostBizRelations = "%s/api/v3/hosts/modules/read"
 )
 
@@ -536,6 +536,23 @@ func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHo
 	resp := new(FindHostBizRelationsResponse)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ResourceWatch 监听资源变化事件
+func (bkcmdb *CMDBService) ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse, error) {
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+
+	resp := new(CMDBResponse)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var result WatchData
+	if err := resp.Decode(&result); err != nil {
+		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil

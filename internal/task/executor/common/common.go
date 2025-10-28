@@ -36,6 +36,7 @@ type ProcessPayload struct {
 	Alias       string // 进程别名
 	InnerIP     string // IP
 	AgentID     string // agnet ID
+	CloudID     int    // cloud ID
 	CcProcessID string // CC 进程ID
 	LocalInstID string // LocalInstID
 	InstID      string // InstID
@@ -51,28 +52,32 @@ func NewExecutor(gseService *gse.Service) *Executor {
 func (e *Executor) WaitTaskFinish(
 	ctx context.Context,
 	gseTaskID string,
-	agentIDs []string) (*gse.TaskOperateResult, error) {
+	agentIDs []string) (*gse.GESResponse, error) {
 	var (
-		taskResult *gse.TaskOperateResult
+		taskResult *gse.GESResponse
 		err        error
 	)
 
 	err = task.LoopDoFunc(ctx, func() error {
-		req := &gse.TaskReq{
-			TaskID:      gseTaskID,
-			AgentIDList: agentIDs,
-		}
-		taskResult, err = e.gseService.GetTaskState(ctx, req)
+		taskResult, err = e.gseService.GetProcOperateResultV2(ctx, &gse.QueryProcResultReq{
+			TaskID: gseTaskID,
+		})
 		if err != nil {
 			logs.Warnf("WaitTaskFinish get gse task state error, gseTaskID %s, err=%+v ", gseTaskID, err)
 			return nil
 		}
 
-		// 任务处理进行中需要继续
-		if taskResult.Result.State == gse.ExecutingState || taskResult.Result.State == gse.PendingState {
-			logs.Warnf("WaitTaskFinish task %s is in progress, state=%s", gseTaskID, taskResult.Result.State)
-			return nil
+		result := make(map[string]gse.ProcResult)
+		err = taskResult.Encode(&result)
+		if err != nil {
+			return err
 		}
+
+		// 任务处理进行中需要继续
+		// if taskResult.Result.State == gse.ExecutingState || taskResult.Result.State == gse.PendingState {
+		// 	logs.Warnf("WaitTaskFinish task %s is in progress, state=%s", gseTaskID, taskResult.Result.State)
+		// 	return nil
+		// }
 
 		// 结束任务
 		return task.ErrEndLoop

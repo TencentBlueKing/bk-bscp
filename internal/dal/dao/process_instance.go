@@ -22,10 +22,12 @@ import (
 type ProcessInstance interface {
 	// Update updates a process instance.
 	Update(kit *kit.Kit, processInstance *table.ProcessInstance) error
-	// GetByID gets process instances by IDs.
-	GetByID(kit *kit.Kit, bizID uint32, processID []uint32) ([]*table.ProcessInstance, error)
+	// GetByID gets process instances by ID.
+	GetByID(kit *kit.Kit, bizID, id uint32) (*table.ProcessInstance, error)
 	// BatchCreateWithTx batch create client instances with transaction.
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
+	// GetByProcessIDs gets process instances by proccessIDs.
+	GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -34,6 +36,20 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByProcessIDs implements ProcessInstance.
+func (dao *processInstanceDao) GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) (
+	[]*table.ProcessInstance, error) {
+	m := dao.genQ.ProcessInstance
+	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
+
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }
 
 // Update implements ProcessInstance.
@@ -48,18 +64,12 @@ func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.Proce
 }
 
 // GetByID implements ProcessInstance.
-func (dao *processInstanceDao) GetByID(
-	kit *kit.Kit, bizID uint32, processID []uint32,
-) ([]*table.ProcessInstance, error) {
+func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.ProcessInstance, error) {
 	m := dao.genQ.ProcessInstance
-	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processID...)).Find()
-	if err != nil {
-		return nil, err
-	}
-
-	return result, err
+	return dao.genQ.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.Eq(id)).
+		Take()
 }
 
 // BatchCreateWithTx implements ProcessInstance.

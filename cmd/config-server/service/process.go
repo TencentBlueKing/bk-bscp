@@ -34,7 +34,8 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 
 	resp, err := s.client.DS.OperateProcess(grpcKit.RpcCtx(), &pbds.OperateProcessReq{
 		BizId:       req.GetBizId(),
-		ProcessId:   req.GetProcessId(),
+		ProcessIds:  req.GetProcessIds(),
+		InstId:      req.GetInstId(),
 		OperateType: req.GetOperateType(),
 	})
 	if err != nil {

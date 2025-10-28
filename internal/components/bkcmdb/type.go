@@ -13,7 +13,10 @@
 // Package bkcmdb provides bkcmdb client.
 package bkcmdb
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 // Biz is cmdb biz info.
 type Biz struct {
@@ -764,3 +767,118 @@ type HostBizRelation struct {
 
 // FindHostBizRelationsResponse 查询主机业务关系响应
 type FindHostBizRelationsResponse = CMDBResponseData[[]HostBizRelation]
+
+// WatchData 定义了监听到的事件数据详情
+type WatchData struct {
+	BkWatched bool         `json:"bk_watched"` // 是否监听到了事件，true：监听到了事件；false：未监听到事件
+	BkEvents  []BkEventObj `json:"bk_events"`  // 监听到的事件详情列表（最大长度为200）
+}
+
+// BkEventObj 定义了单条监听到的事件
+type BkEventObj struct {
+	BkCursor    string          `json:"bk_cursor"`     // 当前资源事件的游标值，可用于获取下一个事件
+	BkResource  ResourceType    `json:"bk_resource"`   // 事件对应的资源类型，例如 host、host_relation、biz_set_relation 等
+	BkEventType EventType       `json:"bk_event_type"` // 事件类型：create（新增）、update（更新）、delete（删除）
+	BkDetail    json.RawMessage `json:"bk_detail"`     // 事件对应资源的详情数据（结构随资源类型不同而不同）
+}
+
+// Decode 把 Data 部分解码到目标结构里
+func (r *BkEventObj) Decode(v any) error {
+	if len(r.BkDetail) == 0 {
+		return nil
+	}
+	return json.Unmarshal(r.BkDetail, v)
+}
+
+// Encode 把目标结构编码回 Data 部分
+func (r *BkEventObj) Encode(v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	r.BkDetail = b
+	return nil
+}
+
+// EventType 表示 CMDB 事件类型
+type EventType string
+
+const (
+	// EventCreate 表示资源新增事件
+	EventCreate EventType = "create"
+	// EventUpdate 表示资源更新事件
+	EventUpdate EventType = "update"
+	// EventDelete 表示资源删除事件
+	EventDelete EventType = "delete"
+)
+
+// String 返回事件类型字符串
+func (e EventType) String() string {
+	return string(e)
+}
+
+// Validate 校验事件类型是否合法
+func (e EventType) Validate() error {
+	switch e {
+	case EventCreate, EventUpdate, EventDelete:
+		return nil
+	default:
+		return errors.New("invalid CMDB event type")
+	}
+}
+
+// ResourceType 表示 CMDB 可监听的资源类型
+type ResourceType string
+
+const (
+	// 主机详情事件
+	ResourceHost ResourceType = "host"
+	// 主机关系事件
+	ResourceHostRelation ResourceType = "host_relation"
+	// 业务详情事件
+	ResourceBiz ResourceType = "biz"
+	// 集群详情事件
+	ResourceSet ResourceType = "set"
+	// 模块详情事件
+	ResourceModule ResourceType = "module"
+	// 进程详情事件
+	ResourceProcess ResourceType = "process"
+	// 通用模型实例事件
+	ResourceObjectInstance ResourceType = "object_instance"
+	// 主线模型实例事件
+	ResourceMainlineInstance ResourceType = "mainline_instance"
+	// 业务集事件
+	ResourceBizSet ResourceType = "biz_set"
+	// 业务集与业务关系事件
+	ResourceBizSetRelation ResourceType = "biz_set_relation"
+	// 管控区域事件
+	ResourcePlat ResourceType = "plat"
+	// 项目事件
+	ResourceProject ResourceType = "project"
+)
+
+// String 返回资源类型字符串
+func (r ResourceType) String() string {
+	return string(r)
+}
+
+// Validate 校验资源类型是否合法
+func (r ResourceType) Validate() error {
+	switch r {
+	case ResourceHost,
+		ResourceHostRelation,
+		ResourceBiz,
+		ResourceSet,
+		ResourceModule,
+		ResourceProcess,
+		ResourceObjectInstance,
+		ResourceMainlineInstance,
+		ResourceBizSet,
+		ResourceBizSetRelation,
+		ResourcePlat,
+		ResourceProject:
+		return nil
+	default:
+		return errors.New("invalid CMDB resource type")
+	}
+}

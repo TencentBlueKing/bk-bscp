@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	defaultSycnCmdbTime = 60 * time.Second
+	defaultSyncCmdbTime = 20 * time.Second
 )
 
-// NewSyncTicketStatus init sync ticket status
-func NewSycnCMDB(set dao.Set, sd serviced.Service, srv *service.Service) SyncCMDB {
+// NewSyncCMDB init sync ticket status
+func NewSyncCMDB(set dao.Set, sd serviced.Service, svc *service.Service) SyncCMDB {
 	return SyncCMDB{
 		set:   set,
 		state: sd,
-		srv:   srv,
+		svc:   svc,
 	}
 }
 
@@ -42,14 +42,14 @@ func NewSycnCMDB(set dao.Set, sd serviced.Service, srv *service.Service) SyncCMD
 type SyncCMDB struct {
 	set   dao.Set
 	state serviced.Service
-	srv   *service.Service
+	svc   *service.Service
 }
 
 func (s *SyncCMDB) Run() {
 	logs.Infof("Start synchronizing cmdb data")
 	notifier := shutdown.AddNotifier()
 	go func() {
-		ticker := time.NewTicker(defaultSycnCmdbTime)
+		ticker := time.NewTicker(defaultSyncCmdbTime)
 		defer ticker.Stop()
 		for {
 			kt := kit.New()
@@ -68,7 +68,7 @@ func (s *SyncCMDB) Run() {
 					continue
 				}
 
-				err := s.srv.SynchronizeCmdbData(kt.Ctx, []int{})
+				err := s.svc.SynchronizeCmdbData(kt.Ctx, []int{})
 				if err != nil {
 					logs.Errorf("synchronizing cmdb data failed: %v", err)
 				}

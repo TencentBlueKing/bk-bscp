@@ -19,15 +19,19 @@ import (
 )
 
 var (
-	operateProcMulti           = "%s/api/v2/proc/operate_proc_multi"
+	operateProcMulti           = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_multi"
 	updateProcInfo             = "%s/api/v2/proc/update_proc_info"
 	asyncTransferFile          = "%s/api/v2/task/async_transfer_file"
 	asyncTerminateTransferFile = "%s/api/v2/task/async_terminate_transfer_file"
 	getTaskState               = "%s/api/v2/task/get_task_state"
+	getProcOperateResultV2     = "%s/api/bk-gse/prod/api/v2/proc/get_proc_operate_result_v2"
+	getProcStatusV2            = "%s/api/bk-gse/prod/api/v2/proc/get_proc_status_v2"
+	syncProcStatus             = "%s/api/bk-gse/prod/api/v2/proc/sync_proc_status"
+	operateProcV2              = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_v2"
 )
 
 // OperateProcMulti 批量进程操作
-func (gse *Service) OperateProcMulti(ctx context.Context, req *MultiProcOperateReq) (*MultiProcOperateResp, error) {
+func (gse *Service) OperateProcMulti(ctx context.Context, req *MultiProcOperateReq) (*ProcOperationData, error) {
 	url := fmt.Sprintf(operateProcMulti, gse.host)
 
 	resp := new(GESResponse)
@@ -35,7 +39,7 @@ func (gse *Service) OperateProcMulti(ctx context.Context, req *MultiProcOperateR
 		return nil, err
 	}
 
-	var multiProcOperateResp MultiProcOperateResp
+	var multiProcOperateResp ProcOperationData
 	if err := resp.Decode(&multiProcOperateResp); err != nil {
 		return nil, err
 	}
@@ -52,7 +56,7 @@ func (gse *Service) UpdateProcInfo(ctx context.Context, req *UpdateProcInfoReq) 
 		return nil, err
 	}
 
-	UpdateProcInfoResp := make(map[string]ProcTestItem, 0)
+	UpdateProcInfoResp := make(map[string]ProcResult, 0)
 	if err := resp.Decode(&UpdateProcInfoResp); err != nil {
 		return nil, err
 	}
@@ -109,4 +113,73 @@ func (gse *Service) GetTaskState(ctx context.Context, req *TaskReq) (*TaskOperat
 	}
 
 	return &taskResp, nil
+}
+
+// GetProcOperateResultV2 进程操作
+// 查询进程操作结果
+func (gse *Service) GetProcOperateResultV2(ctx context.Context, req *QueryProcResultReq) (*GESResponse, error) {
+	url := fmt.Sprintf(getProcOperateResultV2, gse.host)
+
+	resp := new(GESResponse)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]ProcResult, 0)
+	if err := resp.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// GetProcStatusV2 查询进程状态信息
+func (gse *Service) GetProcStatusV2(ctx context.Context, req *QueryProcStatusReq) (*GESResponse, error) {
+	url := fmt.Sprintf(getProcStatusV2, gse.host)
+
+	resp := new(GESResponse)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var result ProcStatusData
+	if err := resp.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// SyncProcStatus  同步查询进程状态信息
+func (gse *Service) SyncProcStatus(ctx context.Context, req *SyncQueryProcStatusReq) (*GESResponse, error) {
+	url := fmt.Sprintf(syncProcStatus, gse.host)
+
+	resp := new(GESResponse)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var result SyncProcStatusData
+	if err := resp.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// OperateProcV2  进程操作
+func (gse *Service) OperateProcV2(ctx context.Context, req *ProcOperationReq) (*GESResponse, error) {
+	url := fmt.Sprintf(operateProcV2, gse.host)
+
+	resp := new(GESResponse)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
+	}
+
+	var result ProcOperationData
+	if err := resp.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

@@ -311,6 +311,10 @@ func (ds *dataService) listenAndServe() error {
 	// syncCmdb := crontab.NewSycnCMDB(ds.daoSet, ds.sd, svc)
 	// syncCmdb.Run()
 
+	// 监听cmdb资源变化
+	// syncCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb)
+	// syncCmdb.Run()
+
 	pbds.RegisterDataServer(serve, svc)
 
 	// initialize and register standard grpc server grpcMetrics.
