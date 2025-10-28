@@ -52,6 +52,7 @@ func (gse *Service) doRequest(ctx context.Context, method HTTPMethod, url string
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		gse.appCode,
 		gse.appSecret,
+		components.WithBkUsername("admin"),
 	)
 
 	// 构造请求

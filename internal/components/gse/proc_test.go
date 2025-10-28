@@ -51,7 +51,7 @@ func TestOperateProcMulti(t *testing.T) {
 						"app": "bscp",
 					},
 				},
-				OpType: OpTypeQuery,
+				OpType: OpTypeStart,
 				Spec: ProcessSpec{
 					Identity: ProcessIdentity{
 						ProcName:   "test-proc",
@@ -81,6 +81,8 @@ func TestOperateProcMulti(t *testing.T) {
 						OpTimeout:      60, // 命令执行超时时间（秒）
 					},
 				},
+				AgentIDList: []string{""},
+				Hosts:       []HostInfo{},
 			},
 		},
 	}

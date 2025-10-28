@@ -30,8 +30,8 @@ const (
 	MaxTries = 3
 )
 
-// OperatePrOperateProcessocess 进程操作
-func OperateProcess(processID, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
+// OperateProcess 进程操作
+func OperateProcess(processID uint32, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
 	logs.V(3).Infof("operate process: %s, process instance id: %s, op type: %s", processID, processInstanceID, operateType)
 
 	operate := types.NewStep(process.OperateStepName.String(), process.OperateStepName.String()).

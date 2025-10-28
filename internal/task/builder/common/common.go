@@ -13,9 +13,13 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // Builder common builder
@@ -31,8 +35,37 @@ func NewBuilder(dao dao.Set) *Builder {
 }
 
 // SetCommonProcessParam 设置
-func (builder *Builder) CommonProcessFinalize(task *types.Task, processInstanceID uint32) {
+func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID, processInstanceID uint32) error {
 	// TODO: 获取根据process_instance_id获取进程相关配置存储在commonParma中，方便查询task可以直接查询任务发起时的配置快照（也方便进行对比）
 	// 从db主动获取进行信息组装payload
-	// task.SetCommonPayload(&commonExecutor.ProcessPayload{})
+	kit := kit.New()
+	process, err := builder.dao.Process().GetByID(kit, bizID, processID)
+	if err != nil {
+		return err
+	}
+	if process == nil {
+		return fmt.Errorf("no process found for biz %d", bizID)
+	}
+
+	inst, err := builder.dao.ProcessInstance().GetByID(kit, bizID, processInstanceID)
+	if err != nil {
+		return err
+	}
+	if inst == nil {
+		return fmt.Errorf("no process instance found for id %d", processInstanceID)
+	}
+	return task.SetCommonPayload(&common.ProcessPayload{
+		SetName:     process.Spec.SetName,
+		ModuleName:  process.Spec.ModuleName,
+		ServiceName: process.Spec.ServiceName,
+		Environment: process.Spec.Environment,
+		Alias:       process.Spec.Alias,
+		InnerIP:     process.Spec.InnerIP,
+		AgentID:     fmt.Sprintf("%d:%s", process.Attachment.CloudID, process.Spec.InnerIP),
+		CcProcessID: fmt.Sprintf("%d", process.Attachment.CcProcessID),
+		LocalInstID: inst.Spec.LocalInstID,
+		InstID:      inst.Spec.InstID,
+		ConfigData:  process.Spec.SourceData,
+		CloudID:     int(process.Attachment.CloudID),
+	})
 }

@@ -33,6 +33,7 @@ const (
 // OperateTask task operate
 type OperateTask struct {
 	*common.Builder
+	bizID             uint32
 	batchID           uint32
 	processID         uint32
 	processInstanceID uint32
@@ -44,6 +45,7 @@ type OperateTask struct {
 // NewoperateTask 创建一个 operate 任务
 func NewOperateTask(
 	dao dao.Set,
+	bizID uint32,
 	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
@@ -52,6 +54,7 @@ func NewOperateTask(
 	needCompareCMDB bool) types.TaskBuilder {
 	return &OperateTask{
 		Builder:           common.NewBuilder(dao),
+		bizID:             bizID,
 		batchID:           batchID,
 		processID:         processID,
 		processInstanceID: processInstanceID,
@@ -63,9 +66,7 @@ func NewOperateTask(
 
 // FinalizeTask implements types.TaskBuilder.
 func (t *OperateTask) FinalizeTask(task *types.Task) error {
-	t.CommonProcessFinalize(task, t.processInstanceID)
-
-	return nil
+	return t.CommonProcessFinalize(task, t.bizID, t.processID, t.processInstanceID)
 }
 
 // Steps implements types.TaskBuilder.

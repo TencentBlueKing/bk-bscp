@@ -33,9 +33,10 @@ type Module struct {
 
 // Host 主机
 type Host struct {
-	ID   int
-	Name string
-	IP   string
+	ID      int
+	Name    string
+	IP      string
+	CloudId int
 }
 
 // SvcInst 服务实例
@@ -52,6 +53,12 @@ type ProcInst struct {
 	Name    string
 	ProcNum int
 	table.ProcessInfo
+}
+
+// HostInfo 构建 HostID -> HostInfo 映射
+type HostInfo struct {
+	IP      string
+	CloudId int
 }
 
 // Bizs 业务

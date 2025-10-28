@@ -30,6 +30,16 @@ func (r *GESResponse) Decode(v any) error {
 	return json.Unmarshal(r.Data, v)
 }
 
+// Encode 把目标结构编码回 Data 部分
+func (r *GESResponse) Encode(v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	r.Data = b
+	return nil
+}
+
 // MultiProcOperateReq 批量进程操作请求
 type MultiProcOperateReq struct {
 	ProcOperateReq []ProcessOperate `json:"proc_operate_req"` // 进程操作请求数组
@@ -125,11 +135,6 @@ type ProcessMonitorPolicy struct {
 	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60
 }
 
-// MultiProcOperateResp 批量进程操作响应
-type MultiProcOperateResp struct {
-	TaskID string `json:"task_id"`
-}
-
 // FileTaskRequest 启动文件分发任务的请求参数
 type FileTaskReq struct {
 	Tasks          []FileTask `json:"tasks"`                     // 文件任务配置列表
@@ -184,8 +189,9 @@ type UpdateProcInfoReq struct {
 	Spec        ProcessSpec `json:"spec"`            // 进程详细信息
 }
 
-// ProcTestItem xxx
-type ProcTestItem struct {
+// ProcResult 表示单个进程操作结果的详细信息
+// 每个 key 对应一个进程的执行结果
+type ProcResult struct {
 	ErrorCode int    `json:"error_code"`
 	ErrorMsg  string `json:"error_msg"`
 	Content   string `json:"content"`
@@ -219,4 +225,278 @@ type TaskOperateResult struct {
 		OfflineAgents   []string  `json:"offline_agents"`   // 离线的 agent 列表
 		RestartedAgents []string  `json:"restarted_agents"` // 在任务执行期间发生重启的 agent 列表
 	} `json:"result"`
+}
+
+// QueryProcResultReq  用于根据 task_id 查询进程操作任务的执行结果。
+type QueryProcResultReq struct {
+	// TaskID 为进程操作接口返回的任务 ID。
+	// 该字段为必选参数。
+	TaskID string `json:"task_id" binding:"required"`
+}
+
+// QueryProcStatusReq 定义“查询进程状态信息”接口的请求参数结构
+// 该接口用于查询指定进程在多个 Agent 节点上的运行状态
+type QueryProcStatusReq struct {
+	// Meta 进程管理元数据，用于唯一标识一个进程。
+	// 该字段为必选参数。
+	Meta ProcMeta `json:"meta" binding:"required"`
+
+	// AgentIDList 目标节点 Agent ID 列表。
+	// 每个 ID 最大长度不超过 64 个字符。
+	// 若设置此参数，则 hosts 参数会被忽略。
+	AgentIDList []string `json:"agent_id_list" binding:"required"`
+
+	// Hosts 主机对象数组，为兼容参数。
+	// 当设置了 agent_id_list 时，此参数会被忽略。
+	Hosts []Host `json:"hosts,omitempty"`
+}
+
+// ProcMeta 定义进程的元数据信息，用于进程分组与标识。
+type ProcMeta struct {
+	// Namespace 命名空间，用于进程分组管理。
+	Namespace string `json:"namespace" binding:"required"`
+
+	// Name 进程名，由用户自定义。
+	// 与 Namespace 共同组成进程的唯一标识。
+	Name string `json:"name" binding:"required"`
+
+	// Labels 进程标签，用于按标签管理进程。
+	// key 和 value 均为用户自定义，value 为字符串。
+	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// Host 表示主机信息对象。
+// 用于指定进程所在主机的 IP 和云区域 ID。
+type Host struct {
+	// IP 主机 IP 地址。
+	IP string `json:"ip" binding:"required"`
+
+	// BkCloudID 云区域 ID。
+	BkCloudID int `json:"bk_cloud_id" binding:"required"`
+}
+
+// ProcStatusData 表示查询结果中的数据部分。
+// 包含进程状态信息数组。
+type ProcStatusData struct {
+	// ProcInfos 进程状态信息列表。
+	ProcInfos []ProcInfo `json:"proc_infos"`
+}
+
+// ProcInfo 表示单个进程在某个 Agent 节点上的状态信息。
+type ProcInfo struct {
+	// Meta 进程管理元数据。
+	Meta ProcMeta `json:"meta"`
+
+	// BkAgentID Agent ID，最大长度不超过 64 个字符。
+	BkAgentID string `json:"bk_agent_id"`
+
+	// Status 动态运行状态：
+	// 0 表示未注册；
+	// 1 表示运行中；
+	// 2 表示停止。
+	Status int `json:"status"`
+
+	// IsAuto 表示该进程是否被托管。
+	// true 表示已托管；false 表示未托管。
+	IsAuto bool `json:"isauto"`
+
+	// PID 进程 ID。
+	PID int `json:"pid"`
+
+	// Version 进程版本号。
+	Version string `json:"version"`
+
+	// ReportTime 信息上报时间（时间戳）。
+	ReportTime int64 `json:"report_time"`
+
+	// CPUUsage 进程 CPU 使用率。
+	CPUUsage float64 `json:"cpu_usage"`
+
+	// MemUsage 进程内存使用率。
+	MemUsage float64 `json:"mem_usage"`
+}
+
+// SyncQueryProcStatusReq 定义“同步查询进程状态信息”接口的请求结构。
+// 该接口用于分页同步查询指定命名空间下所有进程的运行状态。
+type SyncQueryProcStatusReq struct {
+	// Meta 进程管理元数据。
+	// 用于指定查询的命名空间。
+	Meta SyncProcMeta `json:"meta" binding:"required"`
+
+	// Page 分页查询条件。
+	// 指定记录起始位置与每页数量。
+	Page Page `json:"page" binding:"required"`
+}
+
+// SyncProcMeta 定义同步查询中用于过滤的进程元数据。
+// 仅包含命名空间字段。
+type SyncProcMeta struct {
+	// Namespace 命名空间，用于进程分组管理。
+	Namespace string `json:"namespace" binding:"required"`
+}
+
+// Page 定义分页查询条件。
+type Page struct {
+	// Start 记录开始位置（从 0 开始）。
+	Start int `json:"start" binding:"required"`
+
+	// Limit 每页限制条数，最大 1000。
+	Limit int `json:"limit" binding:"required"`
+}
+
+// SyncProcStatusData 表示同步查询结果的数据部分。
+// 包含记录总数及进程状态列表。
+type SyncProcStatusData struct {
+	// Count 查询结果的总记录条数。
+	Count int `json:"count"`
+
+	// ProcInfos 进程状态信息列表。
+	ProcInfos []SyncProcInfo `json:"proc_infos"`
+}
+
+// SyncProcInfo 表示单个进程的状态信息。
+// 用于展示进程的运行状态及资源使用情况。
+type SyncProcInfo struct {
+	// Meta 进程管理元数据。
+	Meta ProcMeta `json:"meta"`
+
+	// BkAgentID Agent ID，最大长度不超过 64 个字符。
+	BkAgentID string `json:"bk_agent_id"`
+
+	// Status 动态运行状态：
+	// 0 表示未注册；
+	// 1 表示运行中；
+	// 2 表示停止。
+	Status int `json:"status"`
+
+	// PID 进程 ID。
+	PID int `json:"pid"`
+
+	// Version 进程版本号。
+	Version string `json:"version"`
+
+	// ReportTime 信息上报时间（时间戳）。
+	ReportTime int64 `json:"report_time"`
+
+	// CPUUsage 进程 CPU 使用率。
+	CPUUsage float64 `json:"cpu_usage"`
+
+	// MemUsage 进程内存使用率。
+	MemUsage float64 `json:"mem_usage"`
+}
+
+// ProcOperationReq 定义“进程操作”接口的请求结构。
+// 用于在指定节点上执行进程的启动、停止、托管、取消托管、重启等操作。
+type ProcOperationReq struct {
+	// Meta 进程管理元数据，用于唯一标识进程。
+	Meta ProcMeta `json:"meta" binding:"required"`
+
+	// AgentIDList 目标节点 Agent ID 列表。
+	// 每个 ID 最大长度不超过 64 个字符。
+	// 若设置此参数，则 hosts 参数会被忽略。
+	AgentIDList []string `json:"agent_id_list" binding:"required"`
+
+	// Hosts 主机对象数组，为兼容参数。
+	// 当设置了 agent_id_list 时，此参数会被忽略。
+	Hosts []Host `json:"hosts,omitempty"`
+
+	// OpType 进程操作类型：
+	// 0: 启动进程 (start)
+	// 1: 停止进程 (stop)
+	// 2: 查询状态 (status)
+	// 3: 注册托管 (register)
+	// 4: 取消托管 (unregister)
+	// 7: 重启进程 (restart)
+	// 8: 重新加载 (reload)
+	// 9: 杀死进程 (kill)
+	OpType int `json:"op_type" binding:"required"`
+
+	// Spec 进程详细信息定义，包含身份、控制、资源和监控策略。
+	Spec ProcSpec `json:"spec" binding:"required"`
+}
+
+// ProcSpec 定义进程的详细信息。
+// 包含进程身份、控制命令、资源限制及监控策略。
+type ProcSpec struct {
+	// Identity 进程身份信息。
+	Identity ProcIdentity `json:"identity" binding:"required"`
+
+	// Control 进程控制命令。
+	Control ProcControl `json:"control" binding:"required"`
+
+	// Resource 进程资源限制。
+	Resource ProcResource `json:"resource" binding:"required"`
+
+	// MonitorPolicy 进程存活监控策略。
+	MonitorPolicy ProcMonitorPolicy `json:"monitor_policy" binding:"required"`
+}
+
+// ProcIdentity 定义进程的身份信息。
+type ProcIdentity struct {
+	// ProcName 进程二进制文件名。
+	ProcName string `json:"proc_name" binding:"required"`
+
+	// SetupPath 工作路径（绝对路径）。
+	SetupPath string `json:"setup_path" binding:"required"`
+
+	// PidPath PID 文件路径（绝对路径）。
+	PidPath string `json:"pid_path" binding:"required"`
+
+	// ConfigPath 配置文件路径（绝对路径）。
+	ConfigPath string `json:"config_path,omitempty"`
+
+	// LogPath 日志文件路径（绝对路径）。
+	LogPath string `json:"log_path,omitempty"`
+
+	// User 进程所属系统账户，如 root 或 Administrator。
+	User string `json:"user" binding:"required"`
+}
+
+// ProcControl 定义进程的控制命令集合。
+// 所有命令均为可选字段。
+type ProcControl struct {
+	StartCmd   string `json:"start_cmd,omitempty"`   // 启动命令
+	StopCmd    string `json:"stop_cmd,omitempty"`    // 停止命令
+	RestartCmd string `json:"restart_cmd,omitempty"` // 重启命令
+	ReloadCmd  string `json:"reload_cmd,omitempty"`  // reload 命令
+	KillCmd    string `json:"kill_cmd,omitempty"`    // kill 命令
+	VersionCmd string `json:"version_cmd,omitempty"` // 版本查询命令
+	HealthCmd  string `json:"health_cmd,omitempty"`  // 健康检查命令
+}
+
+// ProcResource 定义进程资源限制信息。
+type ProcResource struct {
+	// CPU CPU 使用率上限百分比（总占比，非单核占比）。
+	// 例如 30.0 表示 CPU 总使用率上限为 30%。
+	CPU float64 `json:"cpu" binding:"required"`
+
+	// Mem 内存使用率上限百分比。
+	// 例如 10.0 表示内存使用率上限为 10%。
+	Mem float64 `json:"mem" binding:"required"`
+}
+
+// ProcMonitorPolicy 定义进程的存活监控策略。
+// 兼容字段名为 alive_monitor_policy。
+type ProcMonitorPolicy struct {
+	// AutoType 托管参数类型：
+	// 1 表示常驻进程；
+	// 2 表示单次执行进程。
+	AutoType int `json:"auto_type" binding:"required"`
+
+	// StartCheckSecs 启动命令执行后开始检查进程存活的时间（秒）。
+	// 默认值为 5。
+	StartCheckSecs int `json:"start_check_secs,omitempty"`
+
+	// StopCheckSecs 停止命令执行后开始检查进程存活的时间（秒）。
+	StopCheckSecs int `json:"stop_check_secs,omitempty"`
+
+	// OpTimeout 命令执行超时时间（秒）。
+	// 默认值为 60。
+	OpTimeout int `json:"op_timeout,omitempty"`
+}
+
+// ProcOperationData 定义进程操作返回的结果数据。
+type ProcOperationData struct {
+	// TaskID 进程操作实例 ID。
+	TaskID string `json:"task_id"`
 }
