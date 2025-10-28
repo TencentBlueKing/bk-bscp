@@ -37,7 +37,7 @@
       time.value = res.last_sync_time;
       syncStatus.value = res.status;
     } catch (error) {
-      console.error('获取同步状态失败：', error);
+      console.error(error);
     }
   };
 
@@ -47,7 +47,7 @@
       await syncProcessStatus(props.bizId);
       await handleGetSyncStatus();
     } catch (error) {
-      console.error('同步状态失败：', error);
+      console.error(error);
       syncStatus.value = 'error';
     }
   };

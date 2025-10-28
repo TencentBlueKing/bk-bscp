@@ -14,7 +14,7 @@
   </div>
   <PrimaryTable class="border" :data="processList" row-key="id" size="small">
     <TableColumn col-key="row-select" type="multiple" width="32"></TableColumn>
-    <TableColumn :title="t('集群')" width="183">
+    <TableColumn :title="t('集群')" col-key="spec.set_name" width="183">
       <template #default="{ row }">
         <bk-button text theme="primary">{{ row.spec.set_name }}</bk-button>
       </template>
@@ -30,7 +30,7 @@
       </template>
     </TableColumn>
     <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" />
-    <TableColumn :title="t('进程状态')">
+    <TableColumn :title="t('进程状态')" col-key="spec.process_satus">
       <template #default="{ row }">
         {{ row.spec.process_status }}
       </template>
@@ -206,7 +206,7 @@
       processList.value = res.process;
       updatePagination('count', res.count);
     } catch (error) {
-      console.error('加载进程列表失败:', error);
+      console.error(error);
     }
   };
 

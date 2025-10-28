@@ -85,7 +85,7 @@
       list: [],
     },
   ]);
-  const activeEnv = ref('正式');
+  const activeEnv = ref(t('正式'));
   const filterValues = ref({
     sets: [],
     modules: [],
@@ -106,9 +106,8 @@
         filter.list = res[filter.value as keyof typeof res] as Array<{ name: string; id: string }>;
         return filter;
       });
-      console.log('获取进程筛选项成功：', res);
     } catch (error) {
-      console.error('获取进程筛选项失败：', error);
+      console.error(error);
     }
   };
 

@@ -2,7 +2,7 @@
   <bk-dialog :is-show="isShow" :title="$t('更新托管信息')" width="960">
     <bk-alert theme="warning">
       <template #title>
-        <span>{{ $t('全部进程将会进行重启：') }}</span>
+        <span>{{ $t('全部进程将会进行重启') }}:</span>
         <br />
         <span>{{ $t('执行旧的停止命令，使用新的启动命令') }}</span>
       </template>
