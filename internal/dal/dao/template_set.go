@@ -137,7 +137,7 @@ func (dao *templateSetDao) BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.Q
 
 		resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName+
 			constant.ResSeparator+constant.TemplateAbsolutePath, templateSpace.Spec.Name, templateSet[i].Spec.Name,
-			strings.Join(templateNames, constant.NameSeparator))
+			tools.TruncateWithHumanize(strings.Join(templateNames, constant.NameSeparator)))
 
 		ad := dao.auditDao.Decorator(kit, templateSet[i].Attachment.BizID, &table.AuditField{
 			ResourceInstance: resInstance,
@@ -309,7 +309,7 @@ func (dao *templateSetDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.
 
 		resInstance := fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName+
 			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, oldOne.Spec.Name,
-			strings.Join(templateNames, constant.NameSeparator))
+			tools.TruncateWithHumanize(strings.Join(templateNames, constant.NameSeparator)))
 
 		ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
 			ResourceInstance: resInstance,

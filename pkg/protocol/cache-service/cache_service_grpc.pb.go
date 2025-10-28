@@ -36,6 +36,7 @@ const (
 	Cache_SetClientMetric_FullMethodName          = "/pbcs.Cache/SetClientMetric"
 	Cache_SetAppLastConsumedTime_FullMethodName   = "/pbcs.Cache/SetAppLastConsumedTime"
 	Cache_SetPublishTime_FullMethodName           = "/pbcs.Cache/SetPublishTime"
+	Cache_GetTenantIDByBiz_FullMethodName         = "/pbcs.Cache/GetTenantIDByBiz"
 	Cache_GetAgentBiz_FullMethodName              = "/pbcs.Cache/GetAgentBiz"
 )
 
@@ -60,6 +61,7 @@ type CacheClient interface {
 	SetClientMetric(ctx context.Context, in *SetClientMetricReq, opts ...grpc.CallOption) (*SetClientMetricResp, error)
 	SetAppLastConsumedTime(ctx context.Context, in *SetAppLastConsumedTimeReq, opts ...grpc.CallOption) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(ctx context.Context, in *SetPublishTimeReq, opts ...grpc.CallOption) (*SetPublishTimeResp, error)
+	GetTenantIDByBiz(ctx context.Context, in *GetTenantIDByBizReq, opts ...grpc.CallOption) (*GetTenantIDByBizResp, error)
 	GetAgentBiz(ctx context.Context, in *GetAgentBizReq, opts ...grpc.CallOption) (*GetAgentBizResp, error)
 }
 
@@ -215,6 +217,15 @@ func (c *cacheClient) SetPublishTime(ctx context.Context, in *SetPublishTimeReq,
 	return out, nil
 }
 
+func (c *cacheClient) GetTenantIDByBiz(ctx context.Context, in *GetTenantIDByBizReq, opts ...grpc.CallOption) (*GetTenantIDByBizResp, error) {
+	out := new(GetTenantIDByBizResp)
+	err := c.cc.Invoke(ctx, Cache_GetTenantIDByBiz_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cacheClient) GetAgentBiz(ctx context.Context, in *GetAgentBizReq, opts ...grpc.CallOption) (*GetAgentBizResp, error) {
 	out := new(GetAgentBizResp)
 	err := c.cc.Invoke(ctx, Cache_GetAgentBiz_FullMethodName, in, out, opts...)
@@ -245,6 +256,7 @@ type CacheServer interface {
 	SetClientMetric(context.Context, *SetClientMetricReq) (*SetClientMetricResp, error)
 	SetAppLastConsumedTime(context.Context, *SetAppLastConsumedTimeReq) (*SetAppLastConsumedTimeResp, error)
 	SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error)
+	GetTenantIDByBiz(context.Context, *GetTenantIDByBizReq) (*GetTenantIDByBizResp, error)
 	GetAgentBiz(context.Context, *GetAgentBizReq) (*GetAgentBizResp, error)
 }
 
@@ -299,6 +311,9 @@ func (UnimplementedCacheServer) SetAppLastConsumedTime(context.Context, *SetAppL
 }
 func (UnimplementedCacheServer) SetPublishTime(context.Context, *SetPublishTimeReq) (*SetPublishTimeResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPublishTime not implemented")
+}
+func (UnimplementedCacheServer) GetTenantIDByBiz(context.Context, *GetTenantIDByBizReq) (*GetTenantIDByBizResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTenantIDByBiz not implemented")
 }
 func (UnimplementedCacheServer) GetAgentBiz(context.Context, *GetAgentBizReq) (*GetAgentBizResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAgentBiz not implemented")
@@ -603,6 +618,24 @@ func _Cache_SetPublishTime_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cache_GetTenantIDByBiz_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTenantIDByBizReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CacheServer).GetTenantIDByBiz(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Cache_GetTenantIDByBiz_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CacheServer).GetTenantIDByBiz(ctx, req.(*GetTenantIDByBizReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Cache_GetAgentBiz_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAgentBizReq)
 	if err := dec(in); err != nil {
@@ -691,6 +724,10 @@ var Cache_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetPublishTime",
 			Handler:    _Cache_SetPublishTime_Handler,
+		},
+		{
+			MethodName: "GetTenantIDByBiz",
+			Handler:    _Cache_GetTenantIDByBiz_Handler,
 		},
 		{
 			MethodName: "GetAgentBiz",

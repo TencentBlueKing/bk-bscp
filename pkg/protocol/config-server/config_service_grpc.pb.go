@@ -164,6 +164,7 @@ const (
 	Config_GenerateReleaseAndPublish_FullMethodName          = "/pbcs.Config/GenerateReleaseAndPublish"
 	Config_SubmitPublishApprove_FullMethodName               = "/pbcs.Config/SubmitPublishApprove"
 	Config_Approve_FullMethodName                            = "/pbcs.Config/Approve"
+	Config_ApprovalCallback_FullMethodName                   = "/pbcs.Config/ApprovalCallback"
 	Config_GetLastSelect_FullMethodName                      = "/pbcs.Config/GetLastSelect"
 	Config_GetLastPublish_FullMethodName                     = "/pbcs.Config/GetLastPublish"
 	Config_GetReleasesStatus_FullMethodName                  = "/pbcs.Config/GetReleasesStatus"
@@ -489,7 +490,10 @@ type ConfigClient interface {
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
+	// itsm v4 回调接口
+	ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error)
 	GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error)
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
 	GetReleasesStatus(ctx context.Context, in *GetReleasesStatusReq, opts ...grpc.CallOption) (*strategy.Strategy, error)
@@ -1828,6 +1832,15 @@ func (c *configClient) Approve(ctx context.Context, in *ApproveReq, opts ...grpc
 	return out, nil
 }
 
+func (c *configClient) ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error) {
+	out := new(ApprovalCallbackResp)
+	err := c.cc.Invoke(ctx, Config_ApprovalCallback_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error) {
 	out := new(GetLastSelectResp)
 	err := c.cc.Invoke(ctx, Config_GetLastSelect_FullMethodName, in, out, opts...)
@@ -2543,7 +2556,10 @@ type ConfigServer interface {
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
+	// itsm v4 回调接口
+	ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error)
 	GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error)
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)
 	GetReleasesStatus(context.Context, *GetReleasesStatusReq) (*strategy.Strategy, error)
@@ -3055,6 +3071,9 @@ func (UnimplementedConfigServer) SubmitPublishApprove(context.Context, *SubmitPu
 }
 func (UnimplementedConfigServer) Approve(context.Context, *ApproveReq) (*ApproveResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Approve not implemented")
+}
+func (UnimplementedConfigServer) ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApprovalCallback not implemented")
 }
 func (UnimplementedConfigServer) GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLastSelect not implemented")
@@ -5681,6 +5700,24 @@ func _Config_Approve_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ApprovalCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApprovalCallbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ApprovalCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ApprovalCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ApprovalCallback(ctx, req.(*ApprovalCallbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_GetLastSelect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLastSelectReq)
 	if err := dec(in); err != nil {
@@ -7117,6 +7154,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Approve",
 			Handler:    _Config_Approve_Handler,
+		},
+		{
+			MethodName: "ApprovalCallback",
+			Handler:    _Config_ApprovalCallback_Handler,
 		},
 		{
 			MethodName: "GetLastSelect",

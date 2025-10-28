@@ -70,8 +70,16 @@
           <span v-if="row.spec">{{ row.spec.kv_type === 'secret' ? t('敏感信息') : row.spec.kv_type }}</span>
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('创建人')" prop="revision.creator" :width="150"></bk-table-column>
-      <bk-table-column :label="t('修改人')" prop="revision.reviser" :width="150"></bk-table-column>
+      <bk-table-column :label="t('创建人')" prop="revision.creator" :width="150">
+        <template #default="{ row }">
+          <user-name v-if="row.revision" :name="row.revision.creator" />
+        </template>
+      </bk-table-column>
+      <bk-table-column :label="t('修改人')" prop="revision.reviser" :width="150">
+        <template #default="{ row }">
+          <user-name v-if="row.revision" :name="row.revision.reviser" />
+        </template>
+      </bk-table-column>
       <bk-table-column :label="t('修改时间')" :sort="true" :width="180">
         <template #default="{ row }">
           <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>
@@ -214,6 +222,7 @@
   import acrossCheckBox from '../../../../../../../../components/across-checkbox.vue';
   import CheckType from '../../../../../../../../../types/across-checked';
   import dayjs from 'dayjs';
+  import UserName from '../../../../../../../../components/user-name.vue';
 
   const configStore = useConfigStore();
   const serviceStore = useServiceStore();
@@ -226,7 +235,7 @@
   const props = defineProps<{
     bkBizId: string;
     appId: number;
-    searchStr: string;
+    searchQuery: { [key: string]: string };
   }>();
 
   const emits = defineEmits(['clearStr', 'sendTableDataCount', 'updateSelectedItems']);
@@ -306,11 +315,12 @@
   );
 
   watch(
-    () => props.searchStr,
+    () => props.searchQuery,
     () => {
-      isSearchEmpty.value = !!props.searchStr;
+      isSearchEmpty.value = Object.keys(props.searchQuery).length > 0;
       refresh();
     },
+    { deep: true },
   );
 
   watch(
@@ -358,15 +368,12 @@
         start: (pagination.value.current - 1) * pagination.value.limit,
         limit: pagination.value.limit,
         with_status: true,
+        search: props.searchQuery,
       };
       if (!createConfig) {
         serviceStore.$patch((state) => {
           state.topIds = [];
         });
-      }
-      if (props.searchStr) {
-        params.search_fields = 'key,revister,creator';
-        params.search_key = props.searchStr;
       }
       if (typeFilterChecked.value!.length > 0) {
         params.kv_type = typeFilterChecked.value;

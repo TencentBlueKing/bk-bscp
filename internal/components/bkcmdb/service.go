@@ -80,25 +80,18 @@ type Service interface {
 	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
 	// SearchModule 查询模块
 	SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error)
-	// ListBizHosts 查询业务下的主机
-	ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (*CMDBResponseData[CMDBListData[HostInfo]], error)
-	// WatchHostResource 监听主机资源变化
-	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (
-		*CMDBResponseData[WatchResourceData[HostDetail]], error)
-	// WatchHostRelationResource 监听主机关系资源变化
-	WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (
-		*CMDBResponseData[WatchResourceData[HostRelationDetail]], error)
-	// FindHostBizRelations 查询主机业务关系信息
-	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) (
-		*FindHostBizRelationsResponse, error)
 	// ResourceWatch 监听资源变化事件
 	ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse, error)
+	ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (*CMDBListData[HostInfo], error)
+	// WatchHostResource 监听主机资源变化
+	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (*WatchResourceData[HostDetail], error)
+	// WatchHostRelationResource 监听主机关系资源变化
+	WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (*WatchResourceData[HostRelationDetail], error)
+	// FindHostBizRelations 查询主机业务关系信息
+	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) ([]HostBizRelation, error)
 }
 
 // New cmdb service
 func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
-	// if cfg.UseEsb {
-	// 	return esbClient.Cmdb(), nil
-	// }
 	return &CMDBService{cfg}, nil
 }

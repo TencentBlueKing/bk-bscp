@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/modifier"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 const (
@@ -118,6 +119,7 @@ func (w *GenericResponseWriter) BuildWebAnnotation(ctx context.Context, msg prot
 		annotation *webannotation.Annotation
 		err        error
 	)
+	logs.V(5).Infof("BuildWebAnnotation , kt.User: %s, TenantID: %s, msg: %+v ", kt.User, kt.TenantID, msg)
 
 	// 优先 interface 模式
 	iface, ok := msg.(webannotation.AnnotationInterface)

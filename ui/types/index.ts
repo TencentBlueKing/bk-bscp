@@ -30,6 +30,7 @@ export interface ICommonQuery {
   sort?: string;
   status?: string[];
   top_ids?: number[];
+  search?: { [key: string]: string };
 }
 
 // 权限查询参数单个资源条目
@@ -50,4 +51,15 @@ export interface IPermissionResource {
   resource_name: string;
   type: string;
   type_name: string;
+}
+
+// 多租户用户信息
+export interface ITenantUser {
+  bk_username: string;
+  login_name: string;
+  full_name: string;
+  display_name: string;
+  data_source_type: string;
+  owner_tenant_id: string;
+  organization_paths: string[];
 }

@@ -14,7 +14,6 @@
         v-show="stepsStatus.curStep === 1"
         ref="serviceFormRef"
         :form-data="serviceEditForm"
-        :approver-api="getApproverListApi()"
         clone-mode
         @change="handleServiceChange" />
       <ImportConfig
@@ -54,7 +53,7 @@
 <script lang="ts" setup>
   import { ref, watch, computed } from 'vue';
   import { IAppItem } from '../../../../../../../types/app';
-  import { getApproverListApi, cloneApp } from '../../../../../../api';
+  import { cloneApp } from '../../../../../../api';
   import type { IServiceEditForm } from '../../../../../../../types/service';
   import type { IConfigImportItem, IConfigKvItem } from '../../../../../../../types/config';
   import type { ImportTemplateConfigItem } from '../../../../../../../types/template';

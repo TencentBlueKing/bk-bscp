@@ -35,7 +35,7 @@ message StrategySpec {
   string itsm_ticket_url = 15;
   string itsm_ticket_sn = 16;
   string itsm_ticket_status = 17;
-  int32 itsm_ticket_state_id = 18;
+  string itsm_ticket_state_id = 18;
 }
 
 // Scope defines the scope
@@ -81,7 +81,7 @@ message AuditStrategy {
   string itsm_ticket_url = 14;
   string itsm_ticket_sn = 15;
   string itsm_ticket_status = 16;
-  int32 itsm_ticket_state_id = 17;
+  string itsm_ticket_state_id = 17;
   string memo = 18;
 }
 

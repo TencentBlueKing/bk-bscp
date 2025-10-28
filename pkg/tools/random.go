@@ -37,3 +37,12 @@ func RandString(n int) string {
 
 	return string(b)
 }
+
+// RandomString xxx
+func RandomString(prefix string, n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return prefix + string(b)
+}

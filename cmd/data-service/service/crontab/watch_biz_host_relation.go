@@ -145,20 +145,16 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 		return
 	}
 
-	if !watchResult.Result {
-		logs.Errorf("watch host relation resource failed: %s", watchResult.Message)
-		return
-	}
-	if !watchResult.Data.BkWatched {
+	if !watchResult.BkWatched {
 		// No events found, skip
 		return
 	}
-	logs.Infof("watch host relation resource success, events: %d", len(watchResult.Data.BkEvents))
+	logs.Infof("watch host relation resource success, events: %d", len(watchResult.BkEvents))
 
-	if len(watchResult.Data.BkEvents) > 0 {
-		w.processEvents(kt, watchResult.Data.BkEvents)
+	if len(watchResult.BkEvents) > 0 {
+		w.processEvents(kt, watchResult.BkEvents)
 		// update cursor to config table
-		lastEvent := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1]
+		lastEvent := watchResult.BkEvents[len(watchResult.BkEvents)-1]
 		config := &table.Config{
 			Key:   bizHostCursorKey,
 			Value: lastEvent.BkCursor,
@@ -251,14 +247,11 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
 	if err != nil {
 		return fmt.Errorf("list biz hosts failed: %w", err)
 	}
-	if !hostResult.Result {
-		return fmt.Errorf("list biz hosts failed: %s", hostResult.Message)
-	}
 
-	if len(hostResult.Data.Info) == 0 {
+	if len(hostResult.Info) == 0 {
 		return nil
 	}
-	host := hostResult.Data.Info[0]
+	host := hostResult.Info[0]
 	bizHost.AgentID = host.BkAgentID
 	bizHost.BKHostInnerIP = host.BkHostInnerIP
 
@@ -335,12 +328,8 @@ func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hos
 		return false, fmt.Errorf("find host biz relations failed: %w", err)
 	}
 
-	if !relationResult.Result {
-		return false, fmt.Errorf("find host biz relations failed: %s", relationResult.Message)
-	}
-
 	// check if relation exists
-	return len(relationResult.Data) > 0, nil
+	return len(relationResult) > 0, nil
 }
 
 // InitBizHostCursor initializes biz host cursor to the latest position
@@ -363,16 +352,13 @@ func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) e
 	if err != nil {
 		return fmt.Errorf("watch host relation resource failed: %w", err)
 	}
-	if !watchResult.Result {
-		return fmt.Errorf("watch host relation resource failed: %s", watchResult.Message)
-	}
 
-	if len(watchResult.Data.BkEvents) == 0 {
+	if len(watchResult.BkEvents) == 0 {
 		// 监听成功情况下，若无事件则会返回一个不含详情但是含有cursor的事件
 		return fmt.Errorf("watch host relation resource failed: no events found")
 	}
 
-	cursor := watchResult.Data.BkEvents[len(watchResult.Data.BkEvents)-1].BkCursor
+	cursor := watchResult.BkEvents[len(watchResult.BkEvents)-1].BkCursor
 	config := &table.Config{
 		Key:   bizHostCursorKey,
 		Value: cursor,

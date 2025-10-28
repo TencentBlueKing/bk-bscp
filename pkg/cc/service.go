@@ -76,6 +76,7 @@ type GlobalSettings struct {
 	BaseConf     BaseConf          `yaml:"baseConf"`
 	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
 	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"` // esb 配置逐步废弃
 	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
 	GSE          GSE               `yaml:"gse"`
 	CMDB         CMDBConfig        `yaml:"cmdb"`
@@ -142,13 +143,14 @@ func (s ApiServerSetting) Validate() error {
 
 // AuthServerSetting defines auth server used setting options.
 type AuthServerSetting struct {
-	Network    Network           `yaml:"network"`
-	Service    Service           `yaml:"service"`
-	Log        LogOption         `yaml:"log"`
-	LoginAuth  LoginAuthSettings `yaml:"loginAuth"`
-	IAM        IAM               `yaml:"iam"`
-	Esb        Esb               `yaml:"esb"`
-	ApiGateway ApiGateway        `yaml:"apiGateway"`
+	Network      Network           `yaml:"network"`
+	Service      Service           `yaml:"service"`
+	Log          LogOption         `yaml:"log"`
+	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
+	IAM          IAM               `yaml:"iam"`
+	Esb          Esb               `yaml:"esb"`
+	ApiGateway   ApiGateway        `yaml:"apiGateway"`
+	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
 }
 
 // LoginAuthSettings login conf

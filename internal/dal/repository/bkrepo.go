@@ -13,12 +13,14 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -92,7 +94,38 @@ func (c *bkrepoClient) SyncManager() *SyncManager {
 	return nil
 }
 
+func (c *bkrepoClient) buildProject(kt *kit.Kit) string {
+	// 多租户下, bkrepo项目格式{tenantID}.{projectID}
+	if kt.TenantID != "" {
+		return fmt.Sprintf("%s.%s", kt.TenantID, c.project)
+	}
+
+	return c.project
+}
+
+// ensureProject 多租户或者为外部自动化创建项目
+func (c *bkrepoClient) ensureProject(ctx context.Context) error {
+	exist, err := c.cli.IsProjectExist(ctx)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return nil
+	}
+
+	if err = c.cli.CreateProject(ctx); err != nil {
+		return fmt.Errorf("create project: %w", err)
+	}
+
+	return nil
+}
+
 func (c *bkrepoClient) ensureRepo(kt *kit.Kit) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	ctx = kit.WithKit(ctx, kt)
+
 	repoName, err := repo.GenRepoName(kt.BizID)
 	if err != nil {
 		return err
@@ -102,15 +135,19 @@ func (c *bkrepoClient) ensureRepo(kt *kit.Kit) error {
 		return nil
 	}
 
+	if err = c.ensureProject(ctx); err != nil {
+		return fmt.Errorf("ensure project: %w", err)
+	}
+
 	repoReq := &repo.CreateRepoReq{
-		ProjectID:     c.project,
+		ProjectID:     c.buildProject(kt),
 		Name:          repoName,
 		Type:          repo.RepositoryType,
 		Category:      repo.CategoryType,
 		Configuration: repo.Configuration{Type: repo.RepositoryCfgType},
 		Description:   fmt.Sprintf("bscp %d business repository", kt.BizID),
 	}
-	if err := c.cli.CreateRepo(kt.Ctx, repoReq); err != nil {
+	if err := c.cli.CreateRepo(ctx, repoReq); err != nil {
 		return err
 	}
 
@@ -124,7 +161,7 @@ func (c *bkrepoClient) Upload(kt *kit.Kit, sign string, body io.Reader) (*Object
 		return nil, errors.Wrap(err, "ensure repo failed")
 	}
 
-	opt := &repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign}
+	opt := &repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign}
 
 	node, err := repo.GenNodePath(opt)
 	if err != nil {
@@ -138,6 +175,7 @@ func (c *bkrepoClient) Upload(kt *kit.Kit, sign string, body io.Reader) (*Object
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyOverwrite, "true")
 
@@ -171,7 +209,7 @@ func (c *bkrepoClient) Upload(kt *kit.Kit, sign string, body io.Reader) (*Object
 
 // Download downloads file from bkrepo
 func (c *bkrepoClient) Download(kt *kit.Kit, sign string) (io.ReadCloser, int64, error) {
-	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign})
+	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -182,6 +220,7 @@ func (c *bkrepoClient) Download(kt *kit.Kit, sign string) (io.ReadCloser, int64,
 		return nil, 0, err
 	}
 	req.Header.Set(constant.RidKey, kt.Rid)
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -203,7 +242,7 @@ func (c *bkrepoClient) Download(kt *kit.Kit, sign string) (io.ReadCloser, int64,
 
 // Metadata bkrepo file metadata
 func (c *bkrepoClient) Metadata(kt *kit.Kit, sign string) (*ObjectMetadata, error) {
-	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign})
+	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign})
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +253,7 @@ func (c *bkrepoClient) Metadata(kt *kit.Kit, sign string) (*ObjectMetadata, erro
 		return nil, err
 	}
 	req.Header.Set(constant.RidKey, kt.Rid)
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -252,7 +292,7 @@ func (c *bkrepoClient) InitMultipartUpload(kt *kit.Kit, sign string) (string, er
 		return "", errors.Wrap(err, "ensure repo failed")
 	}
 
-	opt := &repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign}
+	opt := &repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign}
 
 	node, err := repo.GenBlockNodePath(opt)
 	if err != nil {
@@ -266,6 +306,7 @@ func (c *bkrepoClient) InitMultipartUpload(kt *kit.Kit, sign string) (string, er
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyOverwrite, "true")
 
@@ -299,7 +340,7 @@ func (c *bkrepoClient) InitMultipartUpload(kt *kit.Kit, sign string) (string, er
 func (c *bkrepoClient) MultipartUpload(kt *kit.Kit, sign string, uploadID string, partNum uint32,
 	body io.Reader) error {
 
-	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign})
+	node, err := repo.GenNodePath(&repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign})
 	if err != nil {
 		return err
 	}
@@ -311,6 +352,7 @@ func (c *bkrepoClient) MultipartUpload(kt *kit.Kit, sign string, uploadID string
 	}
 
 	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyUploadID, uploadID)
 	req.Header.Set(repo.HeaderKeySequence, strconv.Itoa(int(partNum)))
@@ -340,7 +382,7 @@ func (c *bkrepoClient) MultipartUpload(kt *kit.Kit, sign string, uploadID string
 // CompleteMultipartUpload complete multipart upload and return metadata
 func (c *bkrepoClient) CompleteMultipartUpload(kt *kit.Kit, sign string, uploadID string) (*ObjectMetadata, error) {
 
-	node, err := repo.GenBlockNodePath(&repo.NodeOption{Project: c.project, BizID: kt.BizID, Sign: sign})
+	node, err := repo.GenBlockNodePath(&repo.NodeOption{Project: c.buildProject(kt), BizID: kt.BizID, Sign: sign})
 	if err != nil {
 		return nil, err
 	}
@@ -351,6 +393,7 @@ func (c *bkrepoClient) CompleteMultipartUpload(kt *kit.Kit, sign string, uploadI
 		return nil, err
 	}
 
+	req.Header.Set(constant.BkTenantID, kt.TenantID)
 	req.Header.Set(constant.RidKey, kt.Rid)
 	req.Header.Set(repo.HeaderKeyUploadID, uploadID)
 	req.Header.Set(repo.HeaderKeyOverwrite, "true")
@@ -396,7 +439,7 @@ func (c *bkrepoClient) DownloadLink(kt *kit.Kit, sign string, fetchLimit uint32)
 
 	// get file download url.
 	url, err := c.cli.GenerateTempDownloadURL(kt.Ctx, &repo.GenerateTempDownloadURLReq{
-		ProjectID:     c.project,
+		ProjectID:     c.buildProject(kt),
 		RepoName:      repoName,
 		FullPathSet:   []string{objPath},
 		ExpireSeconds: uint32(tempDownloadURLExpireSeconds),

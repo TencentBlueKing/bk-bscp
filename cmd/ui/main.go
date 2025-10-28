@@ -15,8 +15,11 @@ package main
 
 import (
 	_ "github.com/TencentBlueKing/bk-bscp/internal/i18n/translations"
+	"github.com/TencentBlueKing/bk-bscp/internal/logger"
 )
 
 func main() {
+	logger.Init()
+
 	_ = rootCmd.Execute()
 }

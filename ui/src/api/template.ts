@@ -142,7 +142,7 @@ export const getTemplatesBySpaceId = (biz_id: string, template_space_id: number,
  */
 export const getTemplatesWithNoSpecifiedPackage = (biz_id: string, template_space_id: number, params: ICommonQuery) =>
   http
-    .get(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/list_not_bound`, { params })
+    .post(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/list_not_bound`, params)
     .then((res) => res.data);
 
 /**
@@ -530,9 +530,10 @@ export const getTemplateVersionList = (
   params: ICommonQuery,
 ) =>
   http
-    .get(`/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions`, {
+    .post(
+      `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/list`,
       params,
-    })
+    )
     .then((res) => res.data);
 
 /**

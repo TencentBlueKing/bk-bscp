@@ -265,7 +265,8 @@ var GroupAttachmentColumnDescriptor = ColumnDescriptors{
 
 // GroupAttachment defines the group attachments.
 type GroupAttachment struct {
-	BizID uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
+	BizID    uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // IsEmpty test whether group attachment is empty or not.

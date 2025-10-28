@@ -152,6 +152,7 @@ func (cm *Publish) updateStrategy(kt *kit.Kit) {
 				}
 
 				kt.User = v.Revision.Creator
+				kt.TenantID = v.Attachment.TenantID
 				err = cm.set.Publish().UpsertPublishWithTx(kt, tx, &opt, v)
 				if err != nil {
 					logs.Errorf("update publish with tx failed, err: %s, rid: %s", err.Error(), kt.Rid)

@@ -5,12 +5,12 @@
     <Spinner v-show="approveStatus === 0" class="spinner" />
     <div
       v-show="![0, 1].includes(approveStatus)"
-      :class="['dot', { online: approveStatus === 1, offline: [2, 3].includes(approveStatus) }]"></div>
+      :class="['dot', { online: approveStatus === 1, offline: ([2, 3].includes(approveStatus)) }]"></div>
     <span class="approve-status-text" v-show="approveStatus !== 1">{{ approveText }}</span>
     <bk-popover :popover-delay="[0, 300]" placement="bottom-end" theme="light">
-      <text-file v-show="[0, 2].includes(approveStatus)" class="text-file" />
+      <text-file v-show="[0, 2, 3].includes(approveStatus)" class="text-file" />
       <template #content>
-        <div class="popover-content">
+        <div v-if="[0, 2].includes(approveStatus)" class="popover-content">
           <template v-if="itsmData?.itsm_ticket_sn">
             <div class="itsm-title">{{ $t('审批单') }}：</div>
             <div class="itsm-content em">
@@ -24,7 +24,9 @@
             {{ t('审批人') }}
             （{{ approveType === 'or_sign' ? $t('或签') : $t('会签') }}） ：
           </div>
-          <div class="itsm-content">{{ approverList }}</div>
+          <div class="itsm-content">
+            <UserName :name="approverList" />
+          </div>
           <template v-if="approveStatus === 0 && publishTime">
             <div class="itsm-title">{{ $t('定时上线') }}：</div>
             <div class="itsm-content">
@@ -38,19 +40,13 @@
             </div>
           </template>
         </div>
+        <div v-else-if="approveStatus === 3">
+          {{ $t('撤销人: ') }}<user-name :name="reviser" /><br />
+          {{ $t('撤销时间: {n}', { n: convertTime(finalApprovalTime, 'local') }) }}<br />
+          {{ $t('撤销说明: {n}', { n: rejectionReason || '--' }) }}
+        </div>
       </template>
     </bk-popover>
-    <text-file
-      v-if="approveStatus === 3"
-      v-bk-tooltips="{
-        content: t('提示-已撤销', {
-          reviser,
-          time: convertTime(finalApprovalTime, 'local'),
-          reason: rejectionReason,
-        }),
-        placement: 'bottom',
-      }"
-      class="text-file" />
   </div>
 </template>
 
@@ -66,6 +62,7 @@
   import BkMessage from 'bkui-vue/lib/message';
   import { storeToRefs } from 'pinia';
   import useConfigStore from '../../../../../store/config';
+  import UserName from '../../../../../components/user-name.vue';
 
   const emits = defineEmits(['send-data', 'refresh-version']);
 

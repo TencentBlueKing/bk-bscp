@@ -34,6 +34,7 @@ func newContent(db *gorm.DB, opts ...gen.DOOption) content {
 	_content.BizID = field.NewUint32(tableName, "biz_id")
 	_content.AppID = field.NewUint32(tableName, "app_id")
 	_content.ConfigItemID = field.NewUint32(tableName, "config_item_id")
+	_content.TenantID = field.NewString(tableName, "tenant_id")
 	_content.Creator = field.NewString(tableName, "creator")
 	_content.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -53,6 +54,7 @@ type content struct {
 	BizID        field.Uint32
 	AppID        field.Uint32
 	ConfigItemID field.Uint32
+	TenantID     field.String
 	Creator      field.String
 	CreatedAt    field.Time
 
@@ -78,6 +80,7 @@ func (c *content) updateTableName(table string) *content {
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.AppID = field.NewUint32(table, "app_id")
 	c.ConfigItemID = field.NewUint32(table, "config_item_id")
+	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.CreatedAt = field.NewTime(table, "created_at")
 
@@ -104,7 +107,7 @@ func (c *content) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *content) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 9)
+	c.fieldMap = make(map[string]field.Expr, 10)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["signature"] = c.Signature
 	c.fieldMap["byte_size"] = c.ByteSize
@@ -112,6 +115,7 @@ func (c *content) fillFieldMap() {
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["app_id"] = c.AppID
 	c.fieldMap["config_item_id"] = c.ConfigItemID
+	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["created_at"] = c.CreatedAt
 }

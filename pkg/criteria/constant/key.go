@@ -21,6 +21,8 @@ const (
 
 	// RidKey is request id header key.
 	RidKey = "X-Bkapi-Request-Id"
+	// bkTenantID is bk tenant id header key.
+	BkTenantID = "X-Bk-Tenant-Id"
 	// RidKeyGeneric for generic header key
 	RidKeyGeneric = "X-Request-Id"
 
@@ -48,6 +50,8 @@ const (
 	// BKGWJWTTokenKey is blueking api gateway jwt header key.
 	BKGWJWTTokenKey = "X-Bkapi-JWT" //nolint
 
+	// BkToken is bk token header key.
+	BkToken = "X-Bk-Token" // nolint:gosec
 	// BKTokenForTest is a token for test
 	BKTokenForTest = "bk-token-for-test" //nolint:gosec
 
@@ -91,6 +95,8 @@ const (
 
 	// DefaultLanguage is default language
 	DefaultLanguage = "zh-cn"
+	// DefaultTenantID is default tenant id
+	DefaultTenantID = "default"
 )
 
 // Note:
@@ -198,14 +204,14 @@ const (
 
 	// 单据状态:
 
-	// TicketRunningStatu 处理中
-	TicketRunningStatu = "RUNNING"
-	// TicketFinishedStatu 已结束
-	TicketFinishedStatu = "FINISHED"
-	// TicketTerminatedStatu 被终止
-	TicketTerminatedStatu = "TERMINATED"
-	// TicketSuspendedStatu 被挂起
-	TicketSuspendedStatu = "SUSPENDED"
-	// TicketRevokedStatu 被撤销
-	TicketRevokedStatu = "REVOKED"
+	// TicketRunningStatus 处理中
+	TicketRunningStatus = "RUNNING"
+	// TicketFinishedStatus 已结束
+	TicketFinishedStatus = "FINISHED"
+	// TicketTerminatedStatus 被终止
+	TicketTerminatedStatus = "TERMINATED"
+	// TicketSuspendedStatus 被挂起
+	TicketSuspendedStatus = "SUSPENDED"
+	// TicketRevokedStatus 被撤销
+	TicketRevokedStatus = "REVOKED"
 )

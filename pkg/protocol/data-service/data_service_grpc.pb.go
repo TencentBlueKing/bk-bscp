@@ -177,6 +177,7 @@ const (
 	Data_GetLastPublish_FullMethodName                    = "/pbds.Data/GetLastPublish"
 	Data_GetReleasesStatus_FullMethodName                 = "/pbds.Data/GetReleasesStatus"
 	Data_GenerateReleaseAndPublish_FullMethodName         = "/pbds.Data/GenerateReleaseAndPublish"
+	Data_ApprovalCallback_FullMethodName                  = "/pbds.Data/ApprovalCallback"
 	Data_ListAudits_FullMethodName                        = "/pbds.Data/ListAudits"
 	Data_CreateCredential_FullMethodName                  = "/pbds.Data/CreateCredential"
 	Data_ListCredentials_FullMethodName                   = "/pbds.Data/ListCredentials"
@@ -398,6 +399,7 @@ type DataClient interface {
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
 	GetReleasesStatus(ctx context.Context, in *GetReleasesStatusReq, opts ...grpc.CallOption) (*strategy.Strategy, error)
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
+	ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error)
 	// audit related interface.
 	ListAudits(ctx context.Context, in *ListAuditsReq, opts ...grpc.CallOption) (*ListAuditsResp, error)
 	// credential related interface
@@ -1782,6 +1784,15 @@ func (c *dataClient) GenerateReleaseAndPublish(ctx context.Context, in *Generate
 	return out, nil
 }
 
+func (c *dataClient) ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error) {
+	out := new(ApprovalCallbackResp)
+	err := c.cc.Invoke(ctx, Data_ApprovalCallback_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) ListAudits(ctx context.Context, in *ListAuditsReq, opts ...grpc.CallOption) (*ListAuditsResp, error) {
 	out := new(ListAuditsResp)
 	err := c.cc.Invoke(ctx, Data_ListAudits_FullMethodName, in, out, opts...)
@@ -2393,6 +2404,7 @@ type DataServer interface {
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)
 	GetReleasesStatus(context.Context, *GetReleasesStatusReq) (*strategy.Strategy, error)
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
+	ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error)
 	// audit related interface.
 	ListAudits(context.Context, *ListAuditsReq) (*ListAuditsResp, error)
 	// credential related interface
@@ -2902,6 +2914,9 @@ func (UnimplementedDataServer) GetReleasesStatus(context.Context, *GetReleasesSt
 }
 func (UnimplementedDataServer) GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateReleaseAndPublish not implemented")
+}
+func (UnimplementedDataServer) ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApprovalCallback not implemented")
 }
 func (UnimplementedDataServer) ListAudits(context.Context, *ListAuditsReq) (*ListAuditsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAudits not implemented")
@@ -5672,6 +5687,24 @@ func _Data_GenerateReleaseAndPublish_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ApprovalCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApprovalCallbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ApprovalCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ApprovalCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ApprovalCallback(ctx, req.(*ApprovalCallbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_ListAudits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAuditsReq)
 	if err := dec(in); err != nil {
@@ -7140,6 +7173,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateReleaseAndPublish",
 			Handler:    _Data_GenerateReleaseAndPublish_Handler,
+		},
+		{
+			MethodName: "ApprovalCallback",
+			Handler:    _Data_ApprovalCallback_Handler,
 		},
 		{
 			MethodName: "ListAudits",

@@ -34,6 +34,7 @@ func newGroup(db *gorm.DB, opts ...gen.DOOption) group {
 	_group.Selector = field.NewField(tableName, "selector")
 	_group.UID = field.NewString(tableName, "uid")
 	_group.BizID = field.NewUint32(tableName, "biz_id")
+	_group.TenantID = field.NewString(tableName, "tenant_id")
 	_group.Creator = field.NewString(tableName, "creator")
 	_group.Reviser = field.NewString(tableName, "reviser")
 	_group.CreatedAt = field.NewTime(tableName, "created_at")
@@ -55,6 +56,7 @@ type group struct {
 	Selector  field.Field
 	UID       field.String
 	BizID     field.Uint32
+	TenantID  field.String
 	Creator   field.String
 	Reviser   field.String
 	CreatedAt field.Time
@@ -82,6 +84,7 @@ func (g *group) updateTableName(table string) *group {
 	g.Selector = field.NewField(table, "selector")
 	g.UID = field.NewString(table, "uid")
 	g.BizID = field.NewUint32(table, "biz_id")
+	g.TenantID = field.NewString(table, "tenant_id")
 	g.Creator = field.NewString(table, "creator")
 	g.Reviser = field.NewString(table, "reviser")
 	g.CreatedAt = field.NewTime(table, "created_at")
@@ -110,7 +113,7 @@ func (g *group) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (g *group) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 11)
+	g.fieldMap = make(map[string]field.Expr, 12)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["name"] = g.Name
 	g.fieldMap["public"] = g.Public
@@ -118,6 +121,7 @@ func (g *group) fillFieldMap() {
 	g.fieldMap["selector"] = g.Selector
 	g.fieldMap["uid"] = g.UID
 	g.fieldMap["biz_id"] = g.BizID
+	g.fieldMap["tenant_id"] = g.TenantID
 	g.fieldMap["creator"] = g.Creator
 	g.fieldMap["reviser"] = g.Reviser
 	g.fieldMap["created_at"] = g.CreatedAt

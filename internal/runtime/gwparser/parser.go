@@ -30,7 +30,7 @@ import (
 
 // Parser is request header parser.
 type Parser interface {
-	Parse(ctx context.Context, r http.Header) (kt *kit.Kit, err error)
+	Parse(ctx context.Context, r http.Header, validateUser bool) (kt *kit.Kit, err error)
 	Fingerprint() string
 }
 
@@ -44,7 +44,7 @@ func NewDefaultParser() Parser {
 }
 
 // Parse http request header to context kit and validate.
-func (p *defaultParser) Parse(ctx context.Context, header http.Header) (*kit.Kit, error) {
+func (p *defaultParser) Parse(ctx context.Context, header http.Header, validateUser bool) (*kit.Kit, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -56,7 +56,7 @@ func (p *defaultParser) Parse(ctx context.Context, header http.Header) (*kit.Kit
 		AppCode: header.Get(constant.AppCodeKey),
 	}
 
-	if err := kt.Validate(); err != nil {
+	if err := kt.Validate(validateUser); err != nil {
 		return nil, errors.Wrapf(err, "validate kit")
 	}
 
@@ -107,7 +107,7 @@ func (p *jwtParser) Fingerprint() string {
 }
 
 // Parse api-gateway request header to context kit and validate.
-func (p *jwtParser) Parse(ctx context.Context, header http.Header) (*kit.Kit, error) {
+func (p *jwtParser) Parse(ctx context.Context, header http.Header, validateUser bool) (*kit.Kit, error) {
 	jwtToken := header.Get(constant.BKGWJWTTokenKey)
 	if len(jwtToken) == 0 {
 		return nil, errors.Errorf("jwt token header %s is required", constant.BKGWJWTTokenKey)
@@ -134,7 +134,7 @@ func (p *jwtParser) Parse(ctx context.Context, header http.Header) (*kit.Kit, er
 		Rid:     header.Get(constant.RidKey),
 	}
 
-	if err := kt.Validate(); err != nil {
+	if err := kt.Validate(validateUser); err != nil {
 		return nil, errors.Wrapf(err, "validate kit")
 	}
 

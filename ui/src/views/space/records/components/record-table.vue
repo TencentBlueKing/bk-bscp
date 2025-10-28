@@ -54,7 +54,7 @@
           </bk-table-column>
           <bk-table-column :label="t('操作人')" width="140">
             <template #default="{ row }">
-              {{ row.audit?.spec.operator || '--' }}
+              <user-name v-if="row.audit" :name="row.audit.spec.operator" />
             </template>
           </bk-table-column>
           <bk-table-column :label="t('操作途径')" :width="locale === 'zh-cn' ? '90' : '150'">
@@ -63,7 +63,7 @@
           <bk-table-column
             :label="t('状态')"
             :show-overflow-tooltip="false"
-            :width="locale === 'zh-cn' ? '130' : '190'"
+            :width="locale === 'zh-cn' ? '150' : '210'"
             :filter="{
               filterFn: () => true,
               list: approveStatusFilterList,
@@ -109,7 +109,7 @@
                         ({{ row.app.approve_type === 'or_sign' ? $t('或签') : $t('会签') }})：
                       </div>
                       <div class="itsm-content">
-                        {{ row.strategy.approver_progress }}
+                        <UserName :name="row.strategy.approver_progress" />
                       </div>
                       <template v-if="row.audit.spec.status === APPROVE_STATUS.rejected_approval">
                         <div class="itsm-title">{{ $t('审批时间') }}：</div>
@@ -134,17 +134,30 @@
                   </template>
                 </bk-popover>
                 <!-- 信息提示icon：已上线/已撤销/失败样式 -->
-                <info-line
-                  v-if="
-                    [APPROVE_STATUS.already_publish, APPROVE_STATUS.revoked_publish, APPROVE_STATUS.failure].includes(
-                      row.audit.spec.status,
-                    )
-                  "
-                  v-bk-tooltips="{
-                    content: statusTip(row),
-                    placement: 'top',
-                  }"
-                  class="info-line" />
+                <bk-popover placement="top" theme="dark">
+                  <info-line
+                    v-if="
+                      [APPROVE_STATUS.already_publish, APPROVE_STATUS.revoked_publish, APPROVE_STATUS.failure].includes(
+                        row.audit.spec.status,
+                      )
+                    "
+                    class="info-line" />
+                  <template #content>
+                    <template v-if="row.audit.spec.status === APPROVE_STATUS.already_publish">
+                      {{ $t('上线操作人: ') }}<user-name :name="row.strategy.reviser" /><br />
+                      {{ $t('上线时间: {n}', { n: convertTime(row.strategy.final_approval_time, 'local') }) }}<br />
+                      {{ $t('上线说明: {n}', { n: row.strategy.memo || '--' }) }}
+                    </template>
+                    <template v-else-if="row.audit.spec.status === APPROVE_STATUS.revoked_publish">
+                      {{ $t('撤销人: ') }}<user-name :name="row.strategy.reviser" /><br />
+                      {{ $t('撤销时间: {n}', { n: convertTime(row.strategy.final_approval_time, 'local') }) }}<br />
+                      {{ $t('撤销说明: {n}', { n: row.strategy.reject_reason || '--' }) }}
+                    </template>
+                    <template v-else-if="row.audit.spec.status === APPROVE_STATUS.failure">
+                      {{ row.audit.spec.detail }}
+                    </template>
+                  </template>
+                </bk-popover>
               </template>
               <template v-else>--</template>
             </template>
@@ -158,23 +171,32 @@
               <!-- 仅上线配置版本存在待审批或待上线等状态和相关操作 -->
               <div v-if="row.audit && row.audit.spec.action === 'publish'" class="action-btns">
                 <!-- 创建者且版本待上线 才展示上线按钮;审批通过的时间在定时上线的时间以前，上线按钮置灰 -->
-                <bk-button
+                <bk-popover
                   v-if="
                     row.audit.spec.status === APPROVE_STATUS.pending_publish &&
                     (!row.strategy.publish_time || isTimeout(row.strategy.publish_time))
                   "
-                  v-bk-tooltips="{
-                    content: $t('无确认上线权限文案', { creator: row.strategy.creator }),
-                    placement: 'top',
-                    disabled: row.strategy.creator === userInfo.username,
-                  }"
-                  class="action-btn"
-                  text
-                  theme="primary"
-                  :disabled="row.strategy.creator !== userInfo.username"
-                  @click="handlePublishClick(row)">
-                  {{ t('确认上线') }}
-                </bk-button>
+                  :popover-delay="[0, 300]"
+                  placement="bottom-end"
+                  :disabled="row.strategy.creator === userInfo.username">
+                  <bk-button
+                    class="action-btn"
+                    text
+                    theme="primary"
+                    :disabled="row.strategy.creator !== userInfo.username"
+                    @click="handlePublishClick(row)">
+                    {{ t('确认上线') }}
+                  </bk-button>
+                  <template #content>
+                    <div>
+                      {{ $t('请联系服务上线提交人') }}
+                      <UserName :name="row.strategy.creator" />
+                      {{ $t('进行确认上线操作。') }}<br />
+                      {{ $t('如果无法联系到提交人，并且有紧急配置需要发布，可以执') }}<br />
+                      {{ $t('行“撤销上线”后重新提交服务上线流程') }}
+                    </div>
+                  </template>
+                </bk-popover>
                 <!-- 1.待审批状态 且 对应审批人才可显示 -->
                 <!-- 2.版本首次在分组上线的情况，显示审批，点击审批直接通过 -->
 
@@ -312,6 +334,7 @@
   import dayjs from 'dayjs';
   import PublishDialog from '../../service/detail/components/publish-version/confirm-dialog.vue';
   import { InfoBox } from 'bkui-vue';
+  import UserName from '../../../../components/user-name.vue';
 
   const props = withDefaults(
     defineProps<{
@@ -489,40 +512,6 @@
     }
 
     return resultList.join('<br />');
-  };
-
-  // 状态提示信息
-  const statusTip = (row: IRowData) => {
-    if (!row) {
-      return '--';
-    }
-    const { status, detail } = row.audit.spec;
-    // const approveType = row.app.approve_type === 'or_sign' ? t('或签') : t('会签');
-    const {
-      final_approval_time: time,
-      reviser,
-      reject_reason: reason,
-      memo,
-      final_approval_time: publish_time,
-    } = row.strategy;
-    switch (status) {
-      // case APPROVE_STATUS.pending_approval:
-      //   return t('提示-待审批', { approver_progress, approveType });
-      case APPROVE_STATUS.already_publish:
-        return t('提示-已上线文案', { time: convertTime(publish_time, 'local'), reviser, memo: memo || '--' });
-      // case APPROVE_STATUS.rejected_approval:
-      //   return t('提示-审批驳回', {
-      //     reviser,
-      //     time: convertTime(time, 'local'),
-      //     reason,
-      //   });
-      case APPROVE_STATUS.revoked_publish:
-        return t('提示-已撤销', { reviser, time: convertTime(time, 'local'), reason: reason || '--' });
-      case APPROVE_STATUS.failure:
-        return detail;
-      default:
-        return '--';
-    }
   };
 
   // 复制审批链接
@@ -885,10 +874,8 @@
     }
   }
   .action-btns {
-    position: relative;
-    .action-btn + .action-btn {
-      margin-left: 14px;
-    }
+    display: flex;
+    gap: 14px;
   }
   .table-list-pagination {
     padding: 12px;

@@ -31,6 +31,7 @@ func newAppTemplateVariable(db *gorm.DB, opts ...gen.DOOption) appTemplateVariab
 	_appTemplateVariable.Variables = field.NewField(tableName, "variables")
 	_appTemplateVariable.BizID = field.NewUint32(tableName, "biz_id")
 	_appTemplateVariable.AppID = field.NewUint32(tableName, "app_id")
+	_appTemplateVariable.TenantID = field.NewString(tableName, "tenant_id")
 	_appTemplateVariable.Creator = field.NewString(tableName, "creator")
 	_appTemplateVariable.Reviser = field.NewString(tableName, "reviser")
 	_appTemplateVariable.CreatedAt = field.NewTime(tableName, "created_at")
@@ -49,6 +50,7 @@ type appTemplateVariable struct {
 	Variables field.Field
 	BizID     field.Uint32
 	AppID     field.Uint32
+	TenantID  field.String
 	Creator   field.String
 	Reviser   field.String
 	CreatedAt field.Time
@@ -73,6 +75,7 @@ func (a *appTemplateVariable) updateTableName(table string) *appTemplateVariable
 	a.Variables = field.NewField(table, "variables")
 	a.BizID = field.NewUint32(table, "biz_id")
 	a.AppID = field.NewUint32(table, "app_id")
+	a.TenantID = field.NewString(table, "tenant_id")
 	a.Creator = field.NewString(table, "creator")
 	a.Reviser = field.NewString(table, "reviser")
 	a.CreatedAt = field.NewTime(table, "created_at")
@@ -105,11 +108,12 @@ func (a *appTemplateVariable) GetFieldByName(fieldName string) (field.OrderExpr,
 }
 
 func (a *appTemplateVariable) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 8)
+	a.fieldMap = make(map[string]field.Expr, 9)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["variables"] = a.Variables
 	a.fieldMap["biz_id"] = a.BizID
 	a.fieldMap["app_id"] = a.AppID
+	a.fieldMap["tenant_id"] = a.TenantID
 	a.fieldMap["creator"] = a.Creator
 	a.fieldMap["reviser"] = a.Reviser
 	a.fieldMap["created_at"] = a.CreatedAt
