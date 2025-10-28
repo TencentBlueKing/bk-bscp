@@ -18219,10 +18219,6 @@
         "memo": {
           "type": "string",
           "description": "文件描述"
-        },
-        "templateName": {
-          "type": "string",
-          "description": "模板名称"
         }
       },
       "title": "TemplateSpec source resource reference: pkg/dal/table/template.go"
