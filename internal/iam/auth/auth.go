@@ -284,5 +284,5 @@ func (a authorizer) LogOut(r *http.Request) *rest.UnauthorizedData {
 
 // HasBiz 业务是否存在
 func (a authorizer) HasBiz(ctx context.Context, bizID uint32) bool {
-	return a.spaceMgr.HasCMDBSpace(ctx, strconv.Itoa(int(bizID)))
+	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(bizID), 10))
 }

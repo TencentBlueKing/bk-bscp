@@ -125,7 +125,7 @@ func (s *RepoSyncer) collectMetrics() {
 }
 
 type syncStat struct {
-	bizID       int32
+	bizID       uint32
 	total       int32
 	success     int32
 	failed      int32
@@ -134,7 +134,7 @@ type syncStat struct {
 }
 
 type noFiles struct {
-	bizID     int32
+	bizID     uint32
 	fileSigns []string
 }
 
@@ -265,14 +265,14 @@ func (s *RepoSyncer) syncOneBiz(kt *kit.Kit, bizID uint32, signs []string) {
 
 	if len(nofiles) > 0 {
 		noFileInMaster = append(noFileInMaster, noFiles{
-			bizID:     int32(bizID),
+			bizID:     bizID,
 			fileSigns: nofiles,
 		})
 	}
 
 	cost := time.Since(start)
 	stat := syncStat{
-		bizID:       int32(bizID),
+		bizID:       bizID,
 		total:       int32(len(signs)),
 		success:     success,
 		failed:      failed,
