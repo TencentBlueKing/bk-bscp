@@ -9396,7 +9396,7 @@
         ]
       }
     },
-    "/api/v1/config/biz_id/{bizId}/sycn/cc": {
+    "/api/v1/config/biz_id/{bizId}/sync/cc": {
       "post": {
         "summary": "同步cc",
         "operationId": "Config_SyncCMDB",
