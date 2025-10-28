@@ -319,14 +319,15 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		lang := tools.GetLangFromReq(r)
 		kt.Lang = lang
 
-		bizID, err := strconv.Atoi(bizIDStr)
+		bizIDUint64, err := strconv.ParseUint(bizIDStr, 10, 32)
 		if err != nil {
 			render.Render(w, r, rest.BadRequest(err))
 			return
 		}
-		kt.BizID = uint32(bizID)
+		bizID := uint32(bizIDUint64)
+		kt.BizID = bizID
 
-		if !a.HasBiz(r.Context(), uint32(bizID)) {
+		if !a.HasBiz(r.Context(), bizID) {
 			err := fmt.Errorf("biz id %d does not exist", bizID)
 			render.Render(w, r, rest.BadRequest(err))
 			return

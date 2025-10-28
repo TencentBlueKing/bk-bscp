@@ -158,19 +158,22 @@ func (s *RepoSyncer) syncAll(kt *kit.Kit) {
 
 	// get all sorted bizs
 	allSpaces := s.spaceMgr.AllSpaces(kt.Ctx)
-	bizs := make([]int, 0, len(allSpaces))
+	bizs := make([]uint32, 0, len(allSpaces))
 	for _, space := range allSpaces {
-		bizID, _ := strconv.Atoi(space.SpaceId)
-		bizs = append(bizs, bizID)
+		bizID, err := strconv.ParseUint(space.SpaceId, 10, 32)
+		if err != nil {
+			logs.Warnf("invalid space id %s, skip, err: %v, rid: %s", space.SpaceId, err, kt.Rid)
+			continue
+		}
+		bizs = append(bizs, uint32(bizID))
 	}
-	sort.Ints(bizs)
+	sort.Slice(bizs, func(i, j int) bool { return bizs[i] < bizs[j] })
 
 	// sync files for all bizs
 	// we think the file count would not be too large for every biz, eg:<100000
 	// so, we directly retrieve all file signatures under one biz from the db
 	// this syncs biz serially (one by one) , and sync files under every biz concurrently
-	for _, biz := range bizs {
-		bizID := uint32(biz)
+	for _, bizID := range bizs {
 		var allSigns []string
 		var normalSigns, releasedNormalSigns, tmplSigns, releasedTmplSigns []string
 		var err error
