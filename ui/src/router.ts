@@ -158,6 +158,40 @@ const routes = [
         component: () => import('./views/space/client/example/index.vue'),
       },
       {
+        path: 'process',
+        name: 'process-management',
+        meta: {
+          navModule: 'process',
+        },
+        component: () => import('./views/space/process/index.vue'),
+      },
+      {
+        path: 'task',
+        name: 'task-history',
+        meta: {
+          navModule: 'task',
+        },
+        component: () => import('./views/space/task/index.vue'),
+        children: [
+          {
+            path: 'list',
+            name: 'task-list',
+            meta: {
+              navModule: 'task',
+            },
+            component: () => import('./views/space/task/list/tast-list.vue'),
+          },
+          {
+            path: 'detail/:taskId',
+            name: 'task-detail',
+            meta: {
+              navModule: 'task',
+            },
+            component: () => import('./views/space/task/detail/index.vue'),
+          },
+        ],
+      },
+      {
         path: 'records',
         children: [
           {
