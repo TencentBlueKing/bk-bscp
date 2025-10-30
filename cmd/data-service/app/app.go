@@ -23,12 +23,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/hashicorp/vault/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
@@ -303,23 +304,6 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// 定时同步cmdb数据
-	syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, svc)
-	syncCmdb.Run()
-
-	// 监听cmdb资源变化
-	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, svc)
-	watchCmdb.Run()
-
-	// 启动定时任务
-	ds.startCronTasks()
-
-	// 初始化ITSM模板[只有v4版本才需要]
-	if cc.DataService().ITSM.EnableV4 {
-		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
-		registerItsmV4Templates.Run()
-	}
-
 	pbds.RegisterDataServer(serve, svc)
 
 	// initialize and register standard grpc server grpcMetrics.
@@ -541,4 +525,20 @@ func (ds *dataService) startCronTasks() {
 			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
 		cleanupBizHost.Run()
 	}
+
+	// TODO： 增加配置项，控制定时时间
+	// 定时同步cmdb数据
+	syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service)
+	syncCmdb.Run()
+
+	// 监听cmdb资源变化
+	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.service)
+	watchCmdb.Run()
+
+	// 初始化ITSM模板[只有v4版本才需要]
+	if cc.DataService().ITSM.EnableV4 {
+		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
+		registerItsmV4Templates.Run()
+	}
+
 }
