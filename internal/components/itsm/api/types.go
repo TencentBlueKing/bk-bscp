@@ -116,7 +116,8 @@ type GetTicketLogsReq struct {
 // GetApproveResultReq xxx
 type GetApproveResultReq struct {
 	TicketID string `json:"ticket_id"`
-	StateID  string `json:"state_id"`
+	// v2 使用state_id 匹配结果
+	StateID string `json:"state_id"`
 	// v4使用activity_key 匹配结果
 	ActivityKey string `json:"activity_key"`
 }
