@@ -37,6 +37,7 @@ type Host struct {
 	Name    string
 	IP      string
 	CloudId int
+	AgentID string
 }
 
 // SvcInst 服务实例
@@ -59,6 +60,7 @@ type ProcInst struct {
 type HostInfo struct {
 	IP      string
 	CloudId int
+	AgentID string
 }
 
 // Bizs 业务

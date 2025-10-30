@@ -42,6 +42,10 @@ type Process interface {
 	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string, bizID uint32) ([]*table.Process, error)
 	UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
 	ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) ([]*table.Process, error)
+	// UpdateSelectedFields 更新指定字段
+	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
+	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
+	GetProcByBizScvProc(kit *kit.Kit, bizID, svcInstID, processID uint32) (*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -50,6 +54,29 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetProcByBizScvProc implements Process.
+func (dao *processDao) GetProcByBizScvProc(kit *kit.Kit, bizID uint32, svcInstID uint32,
+	processID uint32) (*table.Process, error) {
+	m := dao.genQ.Process
+
+	return dao.genQ.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ServiceInstanceID.Eq(svcInstID), m.CcProcessID.Eq(processID),
+			m.CcSyncStatus.Neq(string(table.Deleted))).
+		Take()
+}
+
+// UpdateSelectedFields implements Process.
+func (dao *processDao) UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error {
+	m := dao.genQ.Process
+
+	_, err := dao.genQ.WithContext(kit.Ctx).Process.Where(m.BizID.Eq(bizID)).Where(conds...).Updates(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetByID implements Process.

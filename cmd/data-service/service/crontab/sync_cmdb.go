@@ -26,26 +26,26 @@ import (
 )
 
 const (
-	defaultSyncCmdbTime = 20 * time.Second
+	defaultSyncCmdbTime = 10 * time.Minute
 )
 
 // NewSyncCMDB init sync ticket status
-func NewSyncCMDB(set dao.Set, sd serviced.Service, svc *service.Service) SyncCMDB {
-	return SyncCMDB{
+func NewSyncCMDB(set dao.Set, sd serviced.Service, svc *service.Service) *syncCMDB {
+	return &syncCMDB{
 		set:   set,
 		state: sd,
 		svc:   svc,
 	}
 }
 
-// SyncCMDB xxx
-type SyncCMDB struct {
+// syncCMDB xxx
+type syncCMDB struct {
 	set   dao.Set
 	state serviced.Service
 	svc   *service.Service
 }
 
-func (s *SyncCMDB) Run() {
+func (s *syncCMDB) Run() {
 	logs.Infof("Start synchronizing cmdb data")
 	notifier := shutdown.AddNotifier()
 	go func() {

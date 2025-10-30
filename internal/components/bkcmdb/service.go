@@ -47,10 +47,10 @@ type Service interface {
 		*CMDBResponse, error)
 	// ListProcessInstance 查询进程实例列表
 	ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
-		*CMDBResponse, error)
+		[]*ListProcessInstance, error)
 	// FindHostBySetTemplate 查询集群模板下的主机
 	FindHostBySetTemplate(ctx context.Context, req FindHostBySetTemplateReq) (
-		*CMDBResponse, error)
+		*FindHostBySetTemplateResp, error)
 	// ListSetTemplate 查询集群模板
 	ListSetTemplate(ctx context.Context, req ListSetTemplateReq) (
 		*CMDBResponse, error)
@@ -65,7 +65,7 @@ type Service interface {
 		*CMDBResponse, error)
 	// ListServiceInstance 查询服务实例列表
 	ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
-		*CMDBResponse, error)
+		*ServiceInstanceResp, error)
 	// FindSetBatch 批量查询某业务的集群详情
 	FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error)
 	// FindHostTopoRelation 获取主机与拓扑的关系
@@ -75,13 +75,13 @@ type Service interface {
 	FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
 		*CMDBResponse, error)
 	// SearchSet 查询集群
-	SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	SearchSet(ctx context.Context, req SearchSetReq) (*Sets, error)
 	// SearchBusinessByAccount 查询业务
-	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error)
+	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*Business, error)
 	// SearchModule 查询模块
-	SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error)
+	SearchModule(ctx context.Context, req SearchModuleReq) (*ModuleListResp, error)
 	// ResourceWatch 监听资源变化事件
-	ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse, error)
+	ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*WatchData, error)
 	ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (*CMDBListData[HostInfo], error)
 	// WatchHostResource 监听主机资源变化
 	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (*WatchResourceData[HostDetail], error)

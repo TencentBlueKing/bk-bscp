@@ -80,14 +80,14 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
 		}
 	}
-
 	listHosts, err := s.fetchAllHostsBySetTemplate(ctx, setTemplateIDs)
 	if err != nil {
 		return fmt.Errorf("fetch all hosts by set template failed: %v", err)
 	}
 	var hosts []Host
 	for _, h := range listHosts {
-		hosts = append(hosts, Host{ID: h.BkHostID, Name: h.BkHostName, IP: h.BkHostInnerIP, CloudId: h.BkCloudID})
+		hosts = append(hosts, Host{ID: h.BkHostID, Name: h.BkHostName, IP: h.BkHostInnerIP,
+			CloudId: h.BkCloudID, AgentID: h.BkAgentID})
 	}
 
 	// 4. 服务实例
@@ -113,17 +113,13 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 5. 进程
 	listProcMap := map[int][]ProcInst{}
 	for _, inst := range listSvcInsts {
-		processInstanceList, err := s.svc.ListProcessInstance(ctx, bkcmdb.ListProcessInstanceReq{
+		procs, err := s.svc.ListProcessInstance(ctx, bkcmdb.ListProcessInstanceReq{
 			BkBizID: s.bizID, ServiceInstanceID: inst.ID,
 		})
 		if err != nil {
 			return fmt.Errorf("fetch all process instances failed: %v", err)
 		}
 
-		var procs []bkcmdb.ListProcessInstance
-		if err := processInstanceList.Decode(&procs); err != nil {
-			return err
-		}
 		for _, proc := range procs {
 			listProcMap[inst.ID] = append(listProcMap[inst.ID], ProcInst{
 				ID:      proc.Property.BkProcessID,
@@ -190,14 +186,12 @@ func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, e
 			Fields:            []string{"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"},
 			Page:              page,
 		})
+
 		if err != nil {
 			return nil, 0, err
 		}
-		var result bkcmdb.Sets
-		if err := resp.Decode(&result); err != nil {
-			return nil, 0, err
-		}
-		return result.Info, result.Count, nil
+
+		return resp.Info, resp.Count, nil
 	})
 }
 
@@ -212,11 +206,8 @@ func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkc
 		if err != nil {
 			return nil, 0, err
 		}
-		var result bkcmdb.ModuleListResp
-		if err := resp.Decode(&result); err != nil {
-			return nil, 0, err
-		}
-		return result.Info, result.Count, nil
+
+		return resp.Info, resp.Count, nil
 	})
 }
 
@@ -234,6 +225,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 					"bk_host_name",
 					"bk_host_innerip",
 					"bk_cloud_id",
+					"bk_agent_id",
 				},
 				Page: page,
 			})
@@ -241,11 +233,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 				return nil, 0, err
 			}
 
-			var result bkcmdb.HostListResp
-			if err := resp.Decode(&result); err != nil {
-				return nil, 0, err
-			}
-			return result.Info, result.Count, nil
+			return resp.Info, resp.Count, nil
 		})
 		if err != nil {
 			return nil, err
@@ -270,12 +258,8 @@ func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID
 			if err != nil {
 				return nil, 0, err
 			}
-			var result bkcmdb.ServiceInstanceResp
-			if err := resp.Decode(&result); err != nil {
-				return nil, 0, err
-			}
 
-			return result.Info, result.Count, nil
+			return resp.Info, resp.Count, nil
 		})
 		if err != nil {
 			return nil, err
@@ -306,6 +290,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 					hostMap[h.ID] = HostInfo{
 						IP:      h.IP,
 						CloudId: h.CloudId,
+						AgentID: h.AgentID,
 					}
 				}
 				for _, svc := range mod.SvcInst {
@@ -333,6 +318,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 								ServiceInstanceID: uint32(svc.ID),
 								HostID:            uint32(proc.HostID),
 								CloudID:           uint32(hinfo.CloudId),
+								AgentID:           hinfo.AgentID,
 							},
 							Spec: &table.ProcessSpec{
 								SetName:         set.Name,
@@ -353,7 +339,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 							},
 						})
 
-						instances := buildInstances(&proc, bizID, mod.ID, now, hostCounter, moduleCounter)
+						instances := BuildInstances(&proc, bizID, mod.ID, now, hostCounter, moduleCounter)
 						processInstanceBatch = append(processInstanceBatch, instances...)
 					}
 				}
@@ -364,7 +350,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 	return processBatch, processInstanceBatch
 }
 
-func buildInstances(proc *ProcInst, bizID, modID int, now time.Time, hostCounter map[int]int,
+func BuildInstances(proc *ProcInst, bizID, modID int, now time.Time, hostCounter map[int]int,
 	moduleCounter map[int]int) []*table.ProcessInstance {
 
 	num := proc.ProcNum

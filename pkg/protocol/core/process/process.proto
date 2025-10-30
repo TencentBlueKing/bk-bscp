@@ -58,6 +58,8 @@ message ProcessAttachment {
   uint32 service_instance_id = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
   uint32 host_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机ID" }];
+  uint32 cloud_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cloud_id" }];
+  string agent_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "agent_id" }];
 }
 
 // ProcessSearchCondition 进程搜索条件

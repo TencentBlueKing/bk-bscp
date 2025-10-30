@@ -56,6 +56,7 @@ func mig20250923114014Up(tx *gorm.DB) error {
 		PrevData          string    `gorm:"column:prev_data;type:json;comment:上一次同步的数据" json:"prev_data"`                                                                  // 上一次同步的数据
 		ProcNum           uint      `gorm:"column:proc_num;type:int unsigned;not null;comment:进程数量"`                                                                       // 进程数量
 		CloudID           uint      `gorm:"column:cloud_id;type:bigint;not null;comment:管控区域"`                                                                             // 管控区域
+		AgentID           string    `gorm:"column:agent_id;type:varchar(255);not null"`
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`

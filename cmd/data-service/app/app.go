@@ -303,13 +303,13 @@ func (ds *dataService) listenAndServe() error {
 		return err
 	}
 
-	// // 定时同步cmdb数据
-	// syncCmdb := crontab.NewSycnCMDB(ds.daoSet, ds.sd, svc)
-	// syncCmdb.Run()
+	// 定时同步cmdb数据
+	syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, svc)
+	syncCmdb.Run()
 
 	// 监听cmdb资源变化
-	// syncCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb)
-	// syncCmdb.Run()
+	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, svc)
+	watchCmdb.Run()
 
 	// 启动定时任务
 	ds.startCronTasks()

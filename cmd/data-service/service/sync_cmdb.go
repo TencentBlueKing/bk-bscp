@@ -56,17 +56,12 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbds.SyncCMDBReq) (*pbds.Sy
 func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 	// 不指定业务同步，表示同步所有业务
 	if len(bizIDs) == 0 {
-		bizList, err := s.cmdb.SearchBusinessByAccount(ctx, bkcmdb.SearchSetReq{
+		business, err := s.cmdb.SearchBusinessByAccount(ctx, bkcmdb.SearchSetReq{
 			BkSupplierAccount: "0",
 			Fields:            []string{"bk_biz_id", "bk_biz_name"},
 		})
 		if err != nil {
 			return fmt.Errorf("get business data failed: %v", err)
-		}
-
-		var business bkcmdb.Business
-		if err := bizList.Decode(&business); err != nil {
-			return fmt.Errorf("parse business data: %v", err)
 		}
 
 		for _, item := range business.Info {

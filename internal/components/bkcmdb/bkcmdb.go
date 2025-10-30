@@ -52,7 +52,7 @@ var (
 	searchModule         = "%s/api/v3/module/search/%s/%d/%d"
 	findHostTopoRelation = "%s/api/v3/host/topo/relation/read"
 	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
-	watchResource        = "%s/api/bk-cmdb/prod/api/v3/event/watch/resource/%s"
+	watchResource        = "%s/api/v3/event/watch/resource/%s"
 	findHostBizRelations = "%s/api/v3/hosts/modules/read"
 )
 
@@ -264,17 +264,12 @@ func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req ListProcTem
 
 // ListProcessInstance 查询进程实例列表
 func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
-	*CMDBResponse, error) {
+	[]*ListProcessInstance, error) {
 	url := fmt.Sprintf(listProcessInstance, bkcmdb.Host)
 
-	resp := new(CMDBResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	var resp []*ListProcessInstance
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
 		return nil, err
-	}
-
-	var listProcessInstance []ListProcessInstance
-	if err := resp.Decode(&listProcessInstance); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -282,20 +277,16 @@ func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProc
 
 // FindHostBySetTemplate 查询集群模板下的主机
 func (bkcmdb *CMDBService) FindHostBySetTemplate(ctx context.Context, req FindHostBySetTemplateReq) (
-	*CMDBResponse, error) {
+	*FindHostBySetTemplateResp, error) {
 	url := fmt.Sprintf(findHostBySetTemplate, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	result := new(FindHostBySetTemplateResp)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, result); err != nil {
 		return nil, err
 	}
 
-	var result FindHostBySetTemplateResp
-	if err := resp.Decode(&result); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
-	}
-
-	return resp, nil
+	logs.Infof("search business result: count=%d, info_len=%d", result.Count, len(result.Info))
+	return result, nil
 }
 
 // ListSetTemplate 查询集群模板
@@ -372,19 +363,15 @@ func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req ModuleReq) (
 
 // ListServiceInstance 查询服务实例列表
 func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
-	*CMDBResponse, error) {
+	*ServiceInstanceResp, error) {
 	url := fmt.Sprintf(listServiceInstance, bkcmdb.Host)
 
-	resp := new(CMDBResponse)
+	resp := new(ServiceInstanceResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
 
-	var serviceInstanceResp ServiceInstanceResp
-	if err := resp.Decode(&serviceInstanceResp); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
-	}
-
+	logs.Infof("list service instance result: count=%d, info_len=%d", resp.Count, len(resp.Info))
 	return resp, nil
 }
 
@@ -442,51 +429,36 @@ func (bkcmdb *CMDBService) FindModuleWithRelation(ctx context.Context, req Modul
 }
 
 // SearchSet 查询集群
-func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*CMDBResponse, error) {
+func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*Sets, error) {
 	url := fmt.Sprintf(searchSet, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID)
 
-	resp := new(CMDBResponse)
+	resp := new(Sets)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var sets Sets
-	if err := resp.Decode(&sets); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
 }
 
 // SearchBusinessByAccount 查询业务
-func (bkcmdb *CMDBService) SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*CMDBResponse, error) {
+func (bkcmdb *CMDBService) SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*Business, error) {
 	url := fmt.Sprintf(searchBusinessByAccount, bkcmdb.Host, req.BkSupplierAccount)
 
-	resp := new(CMDBResponse)
+	resp := new(Business)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var business Business
-	if err := resp.Decode(&business); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
 }
 
 // SearchModule 查询模块
-func (bkcmdb *CMDBService) SearchModule(ctx context.Context, req SearchModuleReq) (*CMDBResponse, error) {
+func (bkcmdb *CMDBService) SearchModule(ctx context.Context, req SearchModuleReq) (*ModuleListResp, error) {
 	url := fmt.Sprintf(searchModule, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID, req.BkSetID)
 
-	resp := new(CMDBResponse)
+	resp := new(ModuleListResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var result ModuleListResp
-	if err := resp.Decode(&result); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -564,18 +536,12 @@ func (bkcmdb *CMDBService) FindHostBizRelations(ctx context.Context, req *FindHo
 }
 
 // ResourceWatch 监听资源变化事件
-func (bkcmdb *CMDBService) ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*CMDBResponse, error) {
+func (bkcmdb *CMDBService) ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*WatchData, error) {
 	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
-
-	resp := new(CMDBResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	result := new(WatchData)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &result); err != nil {
 		return nil, err
 	}
 
-	var result WatchData
-	if err := resp.Decode(&result); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
-	}
-
-	return resp, nil
+	return result, nil
 }
