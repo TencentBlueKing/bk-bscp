@@ -4564,9 +4564,9 @@ message ListTaskBatchReq {
   string task_action = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "任务动作: register,unregister, start, stop, restart, reload, kill"
   }];
-  string status = 6 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态: running, failed, succeed, partly_failed" }
-  ];
+  string status = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "执行状态: running, failed, succeed, partly_failed"
+  }];
   string executor = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户（创建者）" }];
 }

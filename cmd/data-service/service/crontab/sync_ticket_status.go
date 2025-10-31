@@ -125,7 +125,7 @@ func (c *SyncTicketStatus) processTicket(kit *kit.Kit, strategy *table.Strategy)
 
 	if ticksetStatus.CurrentStatus == constant.TicketRunningStatus {
 		if !cc.DataService().ITSM.EnableV4 {
-			// V2 版本 running 也要去查审批结果
+			// V2 版本 running 也要去查审批结果，因为v2版本的回调是在流程中加上的，所以需要查一下审批结果
 			return c.handleApprove(kit, strategy)
 		}
 		logs.Warnf("ticket %s is running, ignore", strategy.Spec.ItsmTicketSn)
@@ -146,19 +146,23 @@ func (c *SyncTicketStatus) handleApprove(kit *kit.Kit, strategy *table.Strategy)
 		StrategyId:    strategy.ID,
 	}
 
-	// 获取active key
-	stateIDKey := itsm.BuildStateIDKey(kit.TenantID, table.ApproveType(strategy.Spec.ApproveType))
-	itsmSign, err := c.set.Config().GetConfig(kit, stateIDKey)
-	if err != nil {
-		logs.Errorf("get itsm config failed: %s", err.Error())
-		return err
+	// itsmv4 获取active key,v2 使用state_id
+	activeKey := ""
+	if cc.DataService().ITSM.EnableV4 {
+		stateIDKey := itsm.BuildStateIDKey(kit.TenantID, table.ApproveType(strategy.Spec.ApproveType))
+		itsmSign, err := c.set.Config().GetConfig(kit, stateIDKey)
+		if err != nil {
+			logs.Errorf("get itsm config failed: %s", err.Error())
+			return err
+		}
+		activeKey = itsmSign.Value
 	}
 
 	// 调用ITSM获取审批结果
 	approveResult, err := c.itsm.GetApproveResult(kit.InternalRpcCtx(), api.GetApproveResultReq{
 		TicketID:    strategy.Spec.ItsmTicketSn,
-		ActivityKey: itsmSign.Value,
-		StateID:     itsmSign.Value,
+		ActivityKey: activeKey,
+		StateID:     strategy.Spec.ItsmTicketStateID,
 	})
 	if err != nil {
 		logs.Errorf("get itsm approve result failed, err=%v, rid=%s", err, kit.Rid)
