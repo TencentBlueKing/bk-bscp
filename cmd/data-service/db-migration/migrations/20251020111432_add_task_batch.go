@@ -71,13 +71,13 @@ func mig20251020111432Up(tx *gorm.DB) error {
 // mig20251020111432Down for down migration
 func mig20251020111432Down(tx *gorm.DB) error {
 	var resources = []string{
-		"task_batch",
+		"task_batches",
 	}
 	if result := tx.Where("resource IN ?", resources).Delete(&IDGenerators{}); result.Error != nil {
 		return result.Error
 	}
 
-	if err := tx.Migrator().DropTable("task_batch"); err != nil {
+	if err := tx.Migrator().DropTable("task_batches"); err != nil {
 		return err
 	}
 

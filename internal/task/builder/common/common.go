@@ -36,7 +36,6 @@ func NewBuilder(dao dao.Set) *Builder {
 
 // SetCommonProcessParam 设置
 func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID, processInstanceID uint32) error {
-	// TODO: 获取根据process_instance_id获取进程相关配置存储在commonParma中，方便查询task可以直接查询任务发起时的配置快照（也方便进行对比）
 	// 从db主动获取进行信息组装payload
 	kit := kit.New()
 	process, err := builder.dao.Process().GetByID(kit, bizID, processID)
@@ -61,7 +60,7 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID
 		Environment: process.Spec.Environment,
 		Alias:       process.Spec.Alias,
 		InnerIP:     process.Spec.InnerIP,
-		AgentID:     fmt.Sprintf("%d:%s", process.Attachment.CloudID, process.Spec.InnerIP),
+		AgentID:     process.Attachment.AgentID,
 		CcProcessID: fmt.Sprintf("%d", process.Attachment.CcProcessID),
 		LocalInstID: inst.Spec.LocalInstID,
 		InstID:      inst.Spec.InstID,

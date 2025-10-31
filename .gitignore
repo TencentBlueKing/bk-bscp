@@ -12,3 +12,4 @@ scripts/benchmark/bench*.js
 ### PreCI ###
 .codecc
 build.yml
+.ftp/*

@@ -34,22 +34,22 @@ const (
 	// TaskObjectConfigFile 任务对象：配置文件
 	TaskObjectConfigFile TaskObject = "config_file"
 
-	// TaskActionRegister 任务动作：托管
-	TaskActionRegister TaskAction = "register"
-	// TaskActionUnregister 任务动作：取消托管
-	TaskActionUnregister TaskAction = "unregister"
 	// TaskActionStart 任务动作：启动
 	TaskActionStart TaskAction = "start"
 	// TaskActionStop 任务动作：停止
 	TaskActionStop TaskAction = "stop"
+	// TaskActionQueryStatus 任务动作：状态查询
+	TaskActionQueryStatus TaskAction = "query_status"
+	// TaskActionRegister 任务动作：托管
+	TaskActionRegister TaskAction = "register"
+	// TaskActionUnregister 任务动作：取消托管
+	TaskActionUnregister TaskAction = "unregister"
 	// TaskActionRestart 任务动作：重启
 	TaskActionRestart TaskAction = "restart"
 	// TaskActionReload 任务动作：重载
 	TaskActionReload TaskAction = "reload"
 	// TaskActionKill 任务动作：强制停止
 	TaskActionKill TaskAction = "kill"
-	// TaskActionUpdate 任务动作：生成配置
-	TaskActionGenerate TaskAction = "generate"
 
 	// TaskBatchStatusRunning 任务状态：执行中
 	TaskBatchStatusRunning TaskBatchStatus = "running"
@@ -57,6 +57,8 @@ const (
 	TaskBatchStatusFailed TaskBatchStatus = "failed"
 	// TaskBatchStatusSucceed 任务状态：成功
 	TaskBatchStatusSucceed TaskBatchStatus = "succeed"
+	// TaskBatchStatusPartlyFailed 任务状态：部分失败
+	TaskBatchStatusPartlyFailed TaskBatchStatus = "partly_failed"
 )
 
 // TaskBatch task batch
@@ -115,10 +117,11 @@ func (t *TaskBatch) ValidateCreate() error {
 
 // OperateRange 操作范围
 type OperateRange struct {
-	SetIDs       []uint32 `json:"set_ids"`        // 集群ID列表
-	ModuleIDs    []uint32 `json:"module_ids"`     // 模块ID列表
-	ServiceIDs   []uint32 `json:"service_ids"`    // 服务实例ID列表
-	CCProcessIDs []uint32 `json:"cc_process_ids"` // cc进程ID列表
+	SetNames     []string `json:"set_names"`      // 集群名称列表
+	ModuleNames  []string `json:"module_names"`   // 模块名称列表
+	ServiceNames []string `json:"service_names"`  // 服务实例名称列表
+	ProcessAlias []string `json:"process_alias"`  // 进程别名列表
+	CCProcessID  []uint32 `json:"cc_process_ids"` // cc进程ID列表
 }
 
 // TaskData 任务数据接口

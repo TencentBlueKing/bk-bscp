@@ -116,10 +116,10 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 
 	// 构建返回的 TaskDetail
 	detail := &pbtb.TaskDetail{
-		Status:        task.Status,
+		Status:        convertTaskStatus(task.Status),
 		Message:       task.Message,
 		Creator:       task.Creator,
-		ExecutionTime: task.ExecutionTime,
+		ExecutionTime: float32(task.ExecutionTime) / 1000.0,
 		ProcessPayload: &pbtb.ProcessPayload{
 			SetName:     processPayload.SetName,
 			ModuleName:  processPayload.ModuleName,
@@ -136,4 +136,105 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	}
 
 	return detail, nil
+}
+
+// GetTaskStatusStatistics implements pbds.DataServer.
+func (s *Service) GetTaskStatusStatistics(
+	ctx context.Context,
+	req *pbds.GetTaskStatusStatisticsReq,
+) (*pbds.GetTaskStatusStatisticsResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	// 从 task store 查询所有相关任务（通过 taskIndex = batchID）
+	taskStorage := taskpkg.GetGlobalStorage()
+	if taskStorage == nil {
+		return nil, fmt.Errorf("task storage not initialized")
+	}
+
+	// 初始化状态计数器
+	statusCounts := map[string]uint32{
+		taskTypes.TaskStatusInit:    0,
+		taskTypes.TaskStatusRunning: 0,
+		taskTypes.TaskStatusSuccess: 0,
+		taskTypes.TaskStatusFailure: 0,
+	}
+
+	// 分页查询所有任务，进行统计
+	offset := int64(0)
+	limit := int64(1000) // 每次查询1000条
+
+	for {
+		listOpt := &istore.ListOption{
+			TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
+			Offset:    offset,
+			Limit:     limit,
+		}
+
+		pagination, err := taskStorage.ListTask(ctx, listOpt)
+		if err != nil {
+			logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, fmt.Errorf("list tasks failed: %v", err)
+		}
+
+		// 统计每个任务的状态
+		for _, task := range pagination.Items {
+			normalizedStatus := convertTaskStatus(task.Status)
+			statusCounts[normalizedStatus]++
+		}
+
+		if len(pagination.Items) < int(limit) {
+			break
+		}
+
+		offset += limit
+	}
+
+	// 构建返回结果
+	statistics := []*pbtb.TaskStatusStatItem{
+		{
+			Status:  taskTypes.TaskStatusInit,
+			Count:   statusCounts[taskTypes.TaskStatusInit],
+			Message: "任务初始化",
+		},
+		{
+			Status:  taskTypes.TaskStatusRunning,
+			Count:   statusCounts[taskTypes.TaskStatusRunning],
+			Message: "任务运行中",
+		},
+		{
+			Status:  taskTypes.TaskStatusSuccess,
+			Count:   statusCounts[taskTypes.TaskStatusSuccess],
+			Message: "任务成功",
+		},
+		{
+			Status:  taskTypes.TaskStatusFailure,
+			Count:   statusCounts[taskTypes.TaskStatusFailure],
+			Message: "任务失败",
+		},
+	}
+
+	return &pbds.GetTaskStatusStatisticsResp{
+		Statistics: statistics,
+	}, nil
+}
+
+// convertTaskStatus 将任务状态转换为四类：INITIALIZING, RUNNING, SUCCESS, FAILURE
+func convertTaskStatus(status string) string {
+	switch status {
+	case taskTypes.TaskStatusInit:
+		return taskTypes.TaskStatusInit
+	case taskTypes.TaskStatusRunning:
+		return taskTypes.TaskStatusRunning
+	case taskTypes.TaskStatusRevoked, taskTypes.TaskStatusNotStarted:
+		// revoke和notstarted认为是running
+		return taskTypes.TaskStatusRunning
+	case taskTypes.TaskStatusSuccess:
+		return taskTypes.TaskStatusSuccess
+	case taskTypes.TaskStatusFailure, taskTypes.TaskStatusTimeout:
+		// 超时认为是失败
+		return taskTypes.TaskStatusFailure
+	default:
+		// 未知状态默认为失败
+		return taskTypes.TaskStatusFailure
+	}
 }

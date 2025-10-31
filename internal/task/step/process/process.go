@@ -30,19 +30,80 @@ const (
 	MaxTries = 3
 )
 
-// OperateProcess 进程操作
-func OperateProcess(processID uint32, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
-	logs.V(3).Infof("operate process: %s, process instance id: %s, op type: %s", processID, processInstanceID, operateType)
+// CompareWithCMDBProcessInfo 对比CMDB进程信息
+func CompareWithCMDBProcessInfo(bizID uint32, processID uint32, processInstanceID uint32, needCompareCMDB bool) *types.Step {
+	logs.V(3).Infof("compare with cmdb process info: bizID: %d, processID: %d, processInstanceID: %d, needCompareCMDB: %t",
+		bizID, processID, processInstanceID, needCompareCMDB)
 
-	operate := types.NewStep(process.OperateStepName.String(), process.OperateStepName.String()).
+	compare := types.NewStep(process.CompareWithCMDBProcessInfoStepName.String(),
+		process.CompareWithCMDBProcessInfoStepName.String()).
+		SetAlias("compare_with_cmdb_process_info").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(MaxTries)
+
+	return compare
+}
+
+// CompareWithGSEProcessStatus 对比GSE进程状态
+func CompareWithGSEProcessStatus(bizID uint32, processID uint32, processInstanceID uint32) *types.Step {
+	logs.V(3).Infof("compare with gse process status: bizID: %d, processID: %d, processInstanceID: %d",
+		bizID, processID, processInstanceID)
+
+	compare := types.NewStep(process.CompareWithGSEProcessStatusStepName.String(),
+		process.CompareWithGSEProcessStatusStepName.String()).
+		SetAlias("compare_with_gse_process_status").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(MaxTries)
+	return compare
+}
+
+// CompareWithGSEProcessConfig 对比GSE进程配置
+func CompareWithGSEProcessConfig(bizID uint32, processID uint32, processInstanceID uint32) *types.Step {
+	logs.V(3).Infof("compare with gse process config: bizID: %d, processID: %d, processInstanceID: %d",
+		bizID, processID, processInstanceID)
+
+	compare := types.NewStep(process.CompareWithGSEProcessConfigStepName.String(),
+		process.CompareWithGSEProcessConfigStepName.String()).
+		SetAlias("compare_with_gse_process_config").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(MaxTries)
+	return compare
+}
+
+// OperateProcess 进程操作
+func OperateProcess(bizID uint32, processID uint32, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
+	logs.V(3).Infof("operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
+		bizID, processID, processInstanceID, operateType)
+
+	operate := types.NewStep(process.OperateProcessStepName.String(), process.OperateProcessStepName.String()).
 		SetAlias("operate_process").
 		SetMaxExecution(MaxExecutionTime).
 		SetMaxTries(MaxTries)
 
 	lo.Must0(operate.SetPayload(process.OperatePayload{
+		BizID:             bizID,
 		ProcessID:         processID,
 		ProcessInstanceID: processInstanceID,
 		OperateType:       operateType,
 	}))
 	return operate
+}
+
+// FinalizeOperateProcess 进程操作完成
+func FinalizeOperateProcess(bizID uint32, processID uint32, processInstanceID uint32, operateType table.ProcessOperateType) *types.Step {
+	logs.V(3).Infof("finalize process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
+		bizID, processID, processInstanceID, operateType)
+
+	finalize := types.NewStep(process.FinalizeOperateProcessStepName.String(), process.FinalizeOperateProcessStepName.String()).
+		SetAlias("finalize_operate_process").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(MaxTries)
+
+	lo.Must0(finalize.SetPayload(process.OperatePayload{
+		BizID:             bizID,
+		ProcessID:         processID,
+		ProcessInstanceID: processInstanceID,
+		OperateType:       operateType,
+	}))
+	return finalize
 }

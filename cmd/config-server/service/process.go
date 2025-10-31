@@ -102,3 +102,27 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbcs.ProcessFil
 		CcProcessIds:     resp.CcProcessIds,
 	}, nil
 }
+
+// RetryTasks implements pbcs.ConfigServer.
+func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbcs.RetryTasksResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.RetryTasks(grpcKit.RpcCtx(), &pbds.RetryTasksReq{
+		BizId:   req.GetBizId(),
+		BatchId: req.GetBatchId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.RetryTasksResp{
+		RetryCount: resp.GetRetryCount(),
+	}, nil
+}

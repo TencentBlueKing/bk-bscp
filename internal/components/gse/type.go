@@ -13,7 +13,10 @@
 // Package gse provides gse api client.
 package gse
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // GESResponse 通用响应结构
 type GESResponse struct {
@@ -69,6 +72,79 @@ const (
 	OpTypeKill       = 9
 )
 
+const (
+	// 常驻进程
+	AutoTypePersistent = 1
+	// 单次执行进程
+	AutoTypeOneTime = 2
+)
+
+// GSE 命名空间和格式常量
+const (
+	// NamespacePrefix GSE 命名空间前缀，用于进程分组管理
+	NamespacePrefix = "GSEKIT_BIZ_"
+
+	// ResultKeyWithInstanceFormat GSE 进程操作结果的 key 格式（带实例ID）
+	// 格式：{agentID}:{namespace}:{processName}_{processInstanceID}
+	// 示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1_1
+	ResultKeyWithInstanceFormat = "%s:%s%d:%s_%d"
+
+	// ResultKeyWithoutInstanceFormat GSE 进程操作结果的 key 格式（不带实例ID）
+	// 格式：{agentID}:{namespace}:{processName}
+	// 示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1
+	ResultKeyWithoutInstanceFormat = "%s:%s%d:%s"
+)
+
+// GSE 错误码常量
+const (
+	// ErrCodeSuccess 操作成功
+	ErrCodeSuccess = 0
+
+	// ErrCodeInProgress 任务正在执行中（GSE 侧任务尚未完成）
+	ErrCodeInProgress = 115
+)
+
+// BuildNamespace 构建 GSE 命名空间
+// 格式：GSEKIT_BIZ_{bizID}
+func BuildNamespace(bizID uint32) string {
+	return fmt.Sprintf("%s%d", NamespacePrefix, bizID)
+}
+
+// BuildProcessName 构建 GSE 进程名称
+// 支持可选的 processInstanceID 参数：
+//   - 如果提供 processInstanceID，格式为：{alias}_{processInstanceID}
+//     示例：http-server-test1_1
+//   - 如果不提供 processInstanceID，格式为：{alias}
+//     示例：http-server-test1
+func BuildProcessName(alias string, processInstanceID ...uint32) string {
+	if len(processInstanceID) > 0 && processInstanceID[0] > 0 {
+		return fmt.Sprintf("%s_%d", alias, processInstanceID[0])
+	}
+	return alias
+}
+
+// BuildResultKey 构建 GSE 进程操作结果的查询 key
+// 支持可选的 processInstanceID 参数：
+//   - 如果提供 processInstanceID，格式为：{agentID}:{namespace}:{alias}_{processInstanceID}
+//     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1_1
+//   - 如果不提供 processInstanceID，格式为：{agentID}:{namespace}:{alias}
+//     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1
+func BuildResultKey(agentID string, bizID uint32, alias string, processInstanceID ...uint32) string {
+	namespace := BuildNamespace(bizID)
+	processName := BuildProcessName(alias, processInstanceID...)
+	return fmt.Sprintf("%s:%s:%s", agentID, namespace, processName)
+}
+
+// IsSuccess 判断错误码是否表示成功
+func IsSuccess(errorCode int) bool {
+	return errorCode == ErrCodeSuccess
+}
+
+// IsInProgress 判断错误码是否表示任务正在执行中
+func IsInProgress(errorCode int) bool {
+	return errorCode == ErrCodeInProgress
+}
+
 // nolint
 // ProcessOperate 单个进程操作对象
 type ProcessOperate struct {
@@ -81,9 +157,8 @@ type ProcessOperate struct {
 
 // ProcessMeta 进程管理元数据
 type ProcessMeta struct {
-	Namespace string            `json:"namespace"`        // 命名空间，用于进程分组管理
-	Name      string            `json:"name"`             // 进程名，用户自定义，与 namespace 共同用于进程标识
-	Labels    map[string]string `json:"labels,omitempty"` // 进程标签，key-value 键值对
+	Namespace string `json:"namespace"` // 命名空间，用于进程分组管理
+	Name      string `json:"name"`      // 进程名，用户自定义，与 namespace 共同用于进程标识
 }
 
 // HostInfo 主机信息
@@ -112,27 +187,27 @@ type ProcessIdentity struct {
 
 // ProcessControl 进程控制信息
 type ProcessControl struct {
-	StartCmd   string `json:"start_cmd,omitempty"`   // 启动命令
-	StopCmd    string `json:"stop_cmd,omitempty"`    // 停止命令
-	RestartCmd string `json:"restart_cmd,omitempty"` // 重启命令
-	ReloadCmd  string `json:"reload_cmd,omitempty"`  // reload 命令
-	KillCmd    string `json:"kill_cmd,omitempty"`    // kill 命令
-	VersionCmd string `json:"version_cmd,omitempty"` // 进程版本查询命令
-	HealthCmd  string `json:"health_cmd,omitempty"`  // 健康检查命令
+	StartCmd   string `json:"start_cmd,omitempty"`   // 启动命令（可选）
+	StopCmd    string `json:"stop_cmd,omitempty"`    // 停止命令（可选）
+	RestartCmd string `json:"restart_cmd,omitempty"` // 重启命令（可选）
+	ReloadCmd  string `json:"reload_cmd,omitempty"`  // reload 命令（可选）
+	KillCmd    string `json:"kill_cmd,omitempty"`    // kill 命令（可选）
+	VersionCmd string `json:"version_cmd,omitempty"` // 进程版本查询命令（可选）
+	HealthCmd  string `json:"health_cmd,omitempty"`  // 健康检查命令（可选）
 }
 
 // ProcessResource 进程资源信息
 type ProcessResource struct {
-	CPU float64 `json:"cpu"` // CPU 使用率上限百分比，例如 30.0 表示最多使用 30%
-	Mem float64 `json:"mem"` // 内存使用率上限百分比，例如 10.0 表示最多使用 10%
+	CPU float64 `json:"cpu"` // CPU 使用率上限百分比，例如 30.0 表示最多使用 30%（必填）
+	Mem float64 `json:"mem"` // 内存使用率上限百分比，例如 10.0 表示最多使用 10%（必填）
 }
 
 // ProcessMonitorPolicy 进程存活状态监控策略
 type ProcessMonitorPolicy struct {
-	AutoType       int `json:"auto_type"`                  // 托管参数类型：1=常驻进程，2=单次执行进程
-	StartCheckSecs int `json:"start_check_secs,omitempty"` // 启动后检查存活的时间（秒），默认 5
-	StopCheckSecs  int `json:"stop_check_secs,omitempty"`  // 停止后检查存活的时间（秒）
-	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60
+	AutoType       int `json:"auto_type"`                  // 托管参数类型：1=常驻进程，2=单次执行进程（必填）
+	StartCheckSecs int `json:"start_check_secs,omitempty"` // 启动后检查存活的时间（秒），默认 5（可选）
+	StopCheckSecs  int `json:"stop_check_secs,omitempty"`  // 停止后检查存活的时间（秒）(可选)
+	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60（可选）
 }
 
 // FileTaskRequest 启动文件分发任务的请求参数
@@ -208,10 +283,10 @@ type TaskState string
 
 const (
 	PendingState   TaskState = "pending"
-	ExecutingState TaskState = "pending"
+	ExecutingState TaskState = "executing"
 	TimeoutState   TaskState = "timeout"
 	FailedState    TaskState = "failed"
-	SuccessedState TaskState = "TaskState"
+	SuccessedState TaskState = "successed"
 )
 
 // TaskOperateResult 表示任务操作的具体结果

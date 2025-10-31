@@ -9489,14 +9489,14 @@
           },
           {
             "name": "taskAction",
-            "description": "任务动作: register, start, stop, restart, reload, kill 等",
+            "description": "任务动作: register,unregister, start, stop, restart, reload, kill",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "status",
-            "description": "执行状态: running, failed, succeed",
+            "description": "执行状态: running, failed, succeed, partly_failed",
             "in": "query",
             "required": false,
             "type": "string"
@@ -9567,10 +9567,51 @@
           },
           {
             "name": "status",
-            "description": "任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE, TIMEOUT, REVOKED, NOTSTARTED 等",
+            "description": "任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE",
             "in": "query",
             "required": false,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/task_batch/{batchId}/statistics": {
+      "get": {
+        "summary": "任务状态统计",
+        "operationId": "Config_GetTaskStatusStatistics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetTaskStatusStatisticsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "batchId",
+            "description": "批任务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -9604,6 +9645,55 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/task_batch/{batchId}/retry": {
+      "post": {
+        "summary": "重试失败的任务",
+        "operationId": "Config_RetryTasks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsRetryTasksResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "batchId",
+            "description": "任务批次ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigRetryTasksBody"
+            }
           }
         ],
         "tags": [
@@ -11699,7 +11789,7 @@
         },
         "operateType": {
           "type": "string",
-          "description": "操作类型：(register、unregister、start、stop、restart、reload、kill)"
+          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill"
         }
       }
     },
@@ -11764,6 +11854,9 @@
           "description": "是否排除操作：是=true，否=false"
         }
       }
+    },
+    "ConfigRetryTasksBody": {
+      "type": "object"
     },
     "ConfigSubmitPublishApproveBody": {
       "type": "object",
@@ -15221,6 +15314,19 @@
         }
       }
     },
+    "pbcsGetTaskStatusStatisticsResp": {
+      "type": "object",
+      "properties": {
+        "statistics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbTaskStatusStatItem"
+          },
+          "description": "状态统计列表"
+        }
+      }
+    },
     "pbcsGetTemplateAndNonTemplateCICountResp": {
       "type": "object",
       "properties": {
@@ -16606,6 +16712,16 @@
     "pbcsRetryClientsResp": {
       "type": "object"
     },
+    "pbcsRetryTasksResp": {
+      "type": "object",
+      "properties": {
+        "retryCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "重试的任务数量"
+        }
+      }
+    },
     "pbcsSyncCMDBResp": {
       "type": "object",
       "properties": {
@@ -17112,6 +17228,15 @@
           "type": "integer",
           "format": "int64",
           "description": "主机ID"
+        },
+        "cloudId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "cloud_id"
+        },
+        "agentId": {
+          "type": "string",
+          "description": "agent_id"
         }
       }
     },
@@ -17759,6 +17884,48 @@
       },
       "title": "StrategyState defines the strategy's state"
     },
+    "pbtbOperateRange": {
+      "type": "object",
+      "properties": {
+        "setNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "集群名称列表"
+        },
+        "moduleNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "模块名称列表"
+        },
+        "serviceNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "服务实例名称列表"
+        },
+        "ccProcessNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CC进程名称列表"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "CC进程ID列表"
+        }
+      },
+      "title": "OperateRange 操作范围"
+    },
     "pbtbProcessPayload": {
       "type": "object",
       "properties": {
@@ -17809,6 +17976,20 @@
       },
       "title": "ProcessPayload 进程任务的配置快照"
     },
+    "pbtbProcessTaskData": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "description": "环境"
+        },
+        "operateRange": {
+          "$ref": "#/definitions/pbtbOperateRange",
+          "description": "操作范围"
+        }
+      },
+      "title": "ProcessTaskData 进程任务数据"
+    },
     "pbtbTaskBatch": {
       "type": "object",
       "properties": {
@@ -17826,28 +18007,31 @@
           "description": "任务动作"
         },
         "taskData": {
-          "type": "string",
+          "$ref": "#/definitions/pbtbProcessTaskData",
           "description": "任务数据"
         },
         "status": {
           "type": "string",
           "description": "任务状态"
         },
+        "executionTime": {
+          "type": "number",
+          "format": "float",
+          "description": "执行耗时(秒)"
+        },
         "startAt": {
           "type": "string",
+          "format": "date-time",
           "description": "开始时间"
         },
         "endAt": {
           "type": "string",
+          "format": "date-time",
           "description": "结束时间"
         },
-        "createdAt": {
+        "creator": {
           "type": "string",
-          "description": "创建时间"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "更新时间"
+          "description": "创建人"
         }
       },
       "title": "TaskBatch represents a batch task execution record"
@@ -17868,9 +18052,9 @@
           "description": "创建者"
         },
         "executionTime": {
-          "type": "integer",
-          "format": "int64",
-          "description": "执行时间(ms)"
+          "type": "number",
+          "format": "float",
+          "description": "执行时间(s)"
         },
         "processPayload": {
           "$ref": "#/definitions/pbtbProcessPayload",
@@ -17878,6 +18062,25 @@
         }
       },
       "title": "TaskDetail 任务详情"
+    },
+    "pbtbTaskStatusStatItem": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "任务状态"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数量"
+        },
+        "message": {
+          "type": "string",
+          "description": "状态描述"
+        }
+      },
+      "title": "TaskStatusStatItem 任务状态统计项"
     },
     "pbtbrLatestTemplateBoundUnnamedAppDetail": {
       "type": "object",

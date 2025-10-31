@@ -320,8 +320,12 @@ service Data {
   rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {}
   // 任务批次详情
   rpc GetTaskBatchDetail(GetTaskBatchDetailReq) returns (GetTaskBatchDetailResp) {}
+  // 任务状态统计
+  rpc GetTaskStatusStatistics(GetTaskStatusStatisticsReq) returns (GetTaskStatusStatisticsResp) {}
   // 获取同步cc状态
   rpc SyncCMDBStatus(SyncCMDBStatusReq) returns (SyncCMDBStatusResp) {}
+  // 重试失败的任务
+  rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2300,7 +2304,7 @@ message OperateProcessReq {
   uint32 biz_id = 1;
   repeated uint32 process_ids = 2;
   uint32 inst_id = 3;
-  string operateType = 4;
+  string operate_type = 4;
 }
 
 message OperateProcessResp {
@@ -2335,12 +2339,21 @@ message GetTaskBatchDetailReq {
   uint32 batch_id = 2;
   uint32 start = 3;   // 起始位置
   uint32 limit = 4;   // 限制数量
-  string status = 5;  // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE, TIMEOUT, REVOKED, NOTSTARTED 等
+  string status = 5;  // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE
 }
 
 message GetTaskBatchDetailResp {
   repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
   uint32 count = 2;                    // 任务总数
+}
+
+message GetTaskStatusStatisticsReq {
+  uint32 biz_id = 1;
+  uint32 batch_id = 2;  // 批次ID
+}
+
+message GetTaskStatusStatisticsResp {
+  repeated pbtb.TaskStatusStatItem statistics = 1;  // 状态统计列表
 }
 
 message SyncCMDBStatusReq {
@@ -2362,4 +2375,13 @@ message ProcessFilterOptionsResp {
   repeated pbproc.ProcessFilterOption service_instances = 3;
   repeated pbproc.ProcessFilterOption process_aliases = 4;
   repeated pbproc.ProcessFilterOption cc_process_ids = 5;
+}
+
+message RetryTasksReq {
+  uint32 biz_id = 1;    // 业务ID
+  uint32 batch_id = 2;  // 任务批次ID
+}
+
+message RetryTasksResp {
+  uint32 retry_count = 1;  // 重试的任务数量
 }

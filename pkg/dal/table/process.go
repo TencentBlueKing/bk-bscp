@@ -26,14 +26,16 @@ import (
 type ProcessOperateType string
 
 const (
-	// RegisterOperate 托管操作
-	RegisterProcessOperate ProcessOperateType = "register"
-	// UnregisterOperate 取消托管操作
-	UnregisterProcessOperate ProcessOperateType = "unregister"
 	// StartOperate 启动操作
 	StartProcessOperate ProcessOperateType = "start"
 	// StopOperate 停止操作
 	StopProcessOperate ProcessOperateType = "stop"
+	// QueryStatusOperate 状态查询操作
+	QueryStatusProcessOperate ProcessOperateType = "query_status"
+	// RegisterOperate 托管操作
+	RegisterProcessOperate ProcessOperateType = "register"
+	// UnregisterOperate 取消托管操作
+	UnregisterProcessOperate ProcessOperateType = "unregister"
 	// RestartOperate 重启操作
 	RestartProcessOperate ProcessOperateType = "restart"
 	// ReloadOperate 重载操作
@@ -41,6 +43,39 @@ const (
 	// KillOperate 强制停止操作
 	KillProcessOperate ProcessOperateType = "kill"
 )
+
+// ToGSEOpType 转换为 GSE 操作类型
+// GSE 操作类型定义：
+// 0: 启动进程（start）- 调用 spec.control 中的 start_cmd，启动成功会注册托管
+// 1: 停止进程（stop）- 调用 spec.control 中的 stop_cmd，停止成功会取消托管
+// 2: 进程状态查询
+// 3: 注册托管进程 - 令 gse_agent 对该进程进行托管
+// 4: 取消托管进程 - 令 gse_agent 对该进程不再托管
+// 7: 重启进程（restart）- 调用 spec.control 中的 restart_cmd
+// 8: 重新加载进程（reload）- 调用 spec.control 中的 reload_cmd
+// 9: 杀死进程（kill）- 调用 spec.control 中的 kill_cmd，杀死成功会取消托管
+func (p ProcessOperateType) ToGSEOpType() (int, error) {
+	switch p {
+	case StartProcessOperate:
+		return 0, nil
+	case StopProcessOperate:
+		return 1, nil
+	case QueryStatusProcessOperate:
+		return 2, nil
+	case RegisterProcessOperate:
+		return 3, nil
+	case UnregisterProcessOperate:
+		return 4, nil
+	case RestartProcessOperate:
+		return 7, nil
+	case ReloadProcessOperate:
+		return 8, nil
+	case KillProcessOperate:
+		return 9, nil
+	default:
+		return -1, fmt.Errorf("unsupported operation type: %s", p)
+	}
+}
 
 // Process defines an Process detail information
 type Process struct {

@@ -13,6 +13,8 @@
 package dao
 
 import (
+	"time"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -32,6 +34,7 @@ type TaskBatch interface {
 	Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error)
 	GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error)
 	List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter, opt *types.BasePage) ([]*table.TaskBatch, int64, error)
+	UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error
 }
 
 var _ TaskBatch = new(taskBatchDao)
@@ -110,4 +113,23 @@ func (dao *taskBatchDao) List(kit *kit.Kit, bizID uint32, filter *TaskBatchListF
 	}
 
 	return result, count, nil
+}
+
+// UpdateStatus 更新任务批次状态
+func (dao *taskBatchDao) UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error {
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	updates := make(map[string]interface{})
+	updates["status"] = status
+
+	// 如果状态是完成状态，设置结束时间
+	if status == table.TaskBatchStatusSucceed || status == table.TaskBatchStatusFailed ||
+		status == table.TaskBatchStatusPartlyFailed {
+		now := time.Now()
+		updates["end_at"] = &now
+	}
+
+	_, err := q.Where(m.ID.Eq(batchID)).Updates(updates)
+	return err
 }

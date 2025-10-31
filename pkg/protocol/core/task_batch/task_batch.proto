@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 package pbtb;
 
@@ -8,13 +9,15 @@ option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_b
 
 // OperateRange 操作范围
 message OperateRange {
-  repeated uint32 set_ids = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群ID列表" }];
-  repeated uint32 module_ids = 2
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块ID列表" }];
-  repeated uint32 service_ids = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID列表" }];
-  repeated uint32 cc_process_ids = 4
+  repeated string set_names = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称列表" }];
+  repeated string module_names = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称列表" }];
+  repeated string service_names = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称列表" }];
+  repeated string cc_process_names = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程名称列表" }];
+  repeated uint32 cc_process_ids = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
 }
 
@@ -33,10 +36,13 @@ message TaskBatch {
   ProcessTaskData task_data = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务数据" }];
   string status = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
-  string start_at = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
-  string end_at = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
-  uint32 execution_time = 8
+  float execution_time = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行耗时(秒)" }];
+  google.protobuf.Timestamp start_at = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
+  google.protobuf.Timestamp end_at = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
+  string creator = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
 }
 
 // ProcessPayload 进程任务的配置快照
@@ -61,8 +67,15 @@ message TaskDetail {
   string status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
   string message = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务消息" }];
   string creator = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建者" }];
-  uint32 execution_time = 4
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行时间(ms)" }];
+  float execution_time = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行时间(s)" }];
   ProcessPayload process_payload = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程配置快照" }];
+}
+
+// TaskStatusStatItem 任务状态统计项
+message TaskStatusStatItem {
+  string status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
+  uint32 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数量" }];
+  string message = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态描述" }];
 }

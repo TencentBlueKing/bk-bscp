@@ -22,6 +22,8 @@ import (
 type ProcessInstance interface {
 	// Update updates a process instance.
 	Update(kit *kit.Kit, processInstance *table.ProcessInstance) error
+	// BatchUpdate batch updates process instances.
+	BatchUpdate(kit *kit.Kit, instances []*table.ProcessInstance) error
 	// GetByID gets process instances by ID.
 	GetByID(kit *kit.Kit, bizID, id uint32) (*table.ProcessInstance, error)
 	// BatchCreateWithTx batch create client instances with transaction.
@@ -60,6 +62,31 @@ func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.Proce
 	if _, err := q.Where(m.ID.Eq(processInstance.ID)).Updates(processInstance); err != nil {
 		return err
 	}
+	return nil
+}
+
+// BatchUpdate implements ProcessInstance.
+func (dao *processInstanceDao) BatchUpdate(kit *kit.Kit, instances []*table.ProcessInstance) error {
+	if len(instances) == 0 {
+		return nil
+	}
+
+	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
+
+	// 按批次更新，每次最多 500 条
+	batchSize := 500
+	for i := 0; i < len(instances); i += batchSize {
+		end := i + batchSize
+		if end > len(instances) {
+			end = len(instances)
+		}
+		batch := instances[i:end]
+
+		if err := q.Save(batch...); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

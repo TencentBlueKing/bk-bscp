@@ -81,3 +81,30 @@ func (s *Service) GetTaskBatchDetail(
 		Count: resp.Count,
 	}, nil
 }
+
+// GetTaskStatusStatistics implements pbcs.ConfigServer.
+func (s *Service) GetTaskStatusStatistics(
+	ctx context.Context,
+	req *pbcs.GetTaskStatusStatisticsReq,
+) (*pbcs.GetTaskStatusStatisticsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetTaskStatusStatistics(grpcKit.RpcCtx(), &pbds.GetTaskStatusStatisticsReq{
+		BizId:   req.GetBizId(),
+		BatchId: req.GetBatchId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetTaskStatusStatisticsResp{
+		Statistics: resp.GetStatistics(),
+	}, nil
+}

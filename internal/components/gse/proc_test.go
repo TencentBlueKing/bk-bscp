@@ -46,10 +46,6 @@ func TestOperateProcMulti(t *testing.T) {
 				Meta: ProcessMeta{
 					Namespace: "test-namespace",
 					Name:      "test-process",
-					Labels: map[string]string{
-						"env": "test",
-						"app": "bscp",
-					},
 				},
 				OpType: OpTypeStart,
 				Spec: ProcessSpec{

@@ -14,7 +14,7 @@
 package pbtb
 
 import (
-	"encoding/json"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -27,40 +27,48 @@ func PbTaskBatch(tb *table.TaskBatch) *TaskBatch {
 	}
 
 	result := &TaskBatch{
-		Id:         tb.ID,
-		TaskObject: string(tb.Spec.TaskObject),
-		TaskAction: string(tb.Spec.TaskAction),
-		Status:     string(tb.Spec.Status),
+		Id: tb.ID,
 	}
 
-	// 解析 TaskData 从 JSON 字符串到 ProcessTaskData 对象
-	if tb.Spec != nil && tb.Spec.TaskData != "" {
-		var taskData table.ProcessTaskData
-		if err := json.Unmarshal([]byte(tb.Spec.TaskData), &taskData); err != nil {
-			logs.Errorf("unmarshal task data failed, err: %v, task_data: %s", err, tb.Spec.TaskData)
-		} else {
+	// 处理 Spec 相关字段
+	if tb.Spec != nil {
+		result.TaskObject = string(tb.Spec.TaskObject)
+		result.TaskAction = string(tb.Spec.TaskAction)
+		result.Status = string(tb.Spec.Status)
+
+		// 解析 TaskData 从 JSON 字符串到 ProcessTaskData 对象
+		if taskData, err := tb.Spec.GetProcessTaskData(); err != nil {
+			logs.Errorf("get process task data failed, err: %v, task_data: %s", err, tb.Spec.TaskData)
+		} else if taskData != nil {
 			result.TaskData = &ProcessTaskData{
 				Environment: taskData.Environment,
 				OperateRange: &OperateRange{
-					SetIds:       taskData.OperateRange.SetIDs,
-					ModuleIds:    taskData.OperateRange.ModuleIDs,
-					ServiceIds:   taskData.OperateRange.ServiceIDs,
-					CcProcessIds: taskData.OperateRange.CCProcessIDs,
+					SetNames:       taskData.OperateRange.SetNames,
+					ModuleNames:    taskData.OperateRange.ModuleNames,
+					ServiceNames:   taskData.OperateRange.ServiceNames,
+					CcProcessNames: taskData.OperateRange.ProcessAlias,
+					CcProcessIds:   taskData.OperateRange.CCProcessID,
 				},
 			}
 		}
+
+		// 转换时间字段
+		if tb.Spec.StartAt != nil {
+			result.StartAt = timestamppb.New(*tb.Spec.StartAt)
+		}
+		if tb.Spec.EndAt != nil {
+			result.EndAt = timestamppb.New(*tb.Spec.EndAt)
+		}
+
+		// 计算执行耗时
+		if tb.Spec.StartAt != nil && tb.Spec.EndAt != nil {
+			result.ExecutionTime = float32(tb.Spec.EndAt.Sub(*tb.Spec.StartAt).Seconds())
+		}
 	}
 
-	if tb.Spec.StartAt != nil {
-		result.StartAt = tb.Spec.StartAt.Format("2006-01-02 15:04:05")
-	}
-	if tb.Spec.EndAt != nil {
-		result.EndAt = tb.Spec.EndAt.Format("2006-01-02 15:04:05")
-	}
-
-	// 计算执行耗时（秒）
-	if tb.Spec.StartAt != nil && tb.Spec.EndAt != nil {
-		result.ExecutionTime = uint32(tb.Spec.EndAt.Sub(*tb.Spec.StartAt).Seconds())
+	// 处理 Revision 相关字段
+	if tb.Revision != nil {
+		result.Creator = tb.Revision.Creator
 	}
 
 	return result

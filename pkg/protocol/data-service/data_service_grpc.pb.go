@@ -226,7 +226,9 @@ const (
 	Data_SyncCMDB_FullMethodName                          = "/pbds.Data/SyncCMDB"
 	Data_ListTaskBatch_FullMethodName                     = "/pbds.Data/ListTaskBatch"
 	Data_GetTaskBatchDetail_FullMethodName                = "/pbds.Data/GetTaskBatchDetail"
+	Data_GetTaskStatusStatistics_FullMethodName           = "/pbds.Data/GetTaskStatusStatistics"
 	Data_SyncCMDBStatus_FullMethodName                    = "/pbds.Data/SyncCMDBStatus"
+	Data_RetryTasks_FullMethodName                        = "/pbds.Data/RetryTasks"
 )
 
 // DataClient is the client API for Data service.
@@ -467,8 +469,12 @@ type DataClient interface {
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
 	// 任务批次详情
 	GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error)
+	// 任务状态统计
+	GetTaskStatusStatistics(ctx context.Context, in *GetTaskStatusStatisticsReq, opts ...grpc.CallOption) (*GetTaskStatusStatisticsResp, error)
 	// 获取同步cc状态
 	SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error)
+	// 重试失败的任务
+	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
 }
 
 type dataClient struct {
@@ -2225,9 +2231,27 @@ func (c *dataClient) GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDet
 	return out, nil
 }
 
+func (c *dataClient) GetTaskStatusStatistics(ctx context.Context, in *GetTaskStatusStatisticsReq, opts ...grpc.CallOption) (*GetTaskStatusStatisticsResp, error) {
+	out := new(GetTaskStatusStatisticsResp)
+	err := c.cc.Invoke(ctx, Data_GetTaskStatusStatistics_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error) {
 	out := new(SyncCMDBStatusResp)
 	err := c.cc.Invoke(ctx, Data_SyncCMDBStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error) {
+	out := new(RetryTasksResp)
+	err := c.cc.Invoke(ctx, Data_RetryTasks_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2472,8 +2496,12 @@ type DataServer interface {
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
 	// 任务批次详情
 	GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error)
+	// 任务状态统计
+	GetTaskStatusStatistics(context.Context, *GetTaskStatusStatisticsReq) (*GetTaskStatusStatisticsResp, error)
 	// 获取同步cc状态
 	SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error)
+	// 重试失败的任务
+	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3062,8 +3090,14 @@ func (UnimplementedDataServer) ListTaskBatch(context.Context, *ListTaskBatchReq)
 func (UnimplementedDataServer) GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskBatchDetail not implemented")
 }
+func (UnimplementedDataServer) GetTaskStatusStatistics(context.Context, *GetTaskStatusStatisticsReq) (*GetTaskStatusStatisticsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTaskStatusStatistics not implemented")
+}
 func (UnimplementedDataServer) SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDBStatus not implemented")
+}
+func (UnimplementedDataServer) RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetryTasks not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6569,6 +6603,24 @@ func _Data_GetTaskBatchDetail_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_GetTaskStatusStatistics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskStatusStatisticsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetTaskStatusStatistics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetTaskStatusStatistics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetTaskStatusStatistics(ctx, req.(*GetTaskStatusStatisticsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncCMDBStatusReq)
 	if err := dec(in); err != nil {
@@ -6583,6 +6635,24 @@ func _Data_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).SyncCMDBStatus(ctx, req.(*SyncCMDBStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_RetryTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryTasksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).RetryTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_RetryTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).RetryTasks(ctx, req.(*RetryTasksReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7371,8 +7441,16 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Data_GetTaskBatchDetail_Handler,
 		},
 		{
+			MethodName: "GetTaskStatusStatistics",
+			Handler:    _Data_GetTaskStatusStatistics_Handler,
+		},
+		{
 			MethodName: "SyncCMDBStatus",
 			Handler:    _Data_SyncCMDBStatus_Handler,
+		},
+		{
+			MethodName: "RetryTasks",
+			Handler:    _Data_RetryTasks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
