@@ -91,7 +91,6 @@
   import useServiceStore from '../../../../../store/service';
   import { IConfigVersion } from '../../../../../../types/config';
   import { permissionCheck } from '../../../../../api/index';
-  import GROUP_RULE_OPS from '../../../../../constants/group';
   import ReleasedGroupViewer from '../config/components/released-group-viewer.vue';
   import PublishVersion from './publish-version/index.vue';
   import CreateVersion from './create-version/index.vue';
@@ -273,21 +272,6 @@
 
     if (version.id) {
       query.target_release_name = version.spec.name;
-      const groups = version.status?.released_groups ?? [];
-      // 如果存在“全部实例”分组，则不附带 label 信息
-      const hasAllInstances = groups.some((g) => g.id === 0);
-      if (!hasAllInstances) {
-        const ruleList = groups.flatMap((group) =>
-          (group.new_selector.labels_and ?? []).map((tag) => {
-            const op = GROUP_RULE_OPS.find((o) => o.id === tag.op)?.name ?? '';
-            return `${tag.key}${op}${tag.value}`;
-          }),
-        );
-
-        if (ruleList.length) {
-          query.label = JSON.stringify([ruleList.join('|')]);
-        }
-      }
     }
     router.push({
       name: 'client-search',

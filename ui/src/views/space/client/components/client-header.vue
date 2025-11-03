@@ -91,7 +91,6 @@
       id: service.id!,
     };
     setLastAccessedService(service.id!);
-    if (service.id === localApp.value.id) return;
     await router.push({ name: route.name!, params: { spaceId: bizId.value, appId: service.id } });
     heartbeatTime.value = 1;
     handleHeartbeatTimeChange(1);

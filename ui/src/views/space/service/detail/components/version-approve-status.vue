@@ -95,10 +95,8 @@
 
   watch(
     () => route.params.versionId,
-    (newV) => {
-      if (newV !== 'undefined') {
-        loadStatus();
-      }
+    () => {
+      loadStatus();
     },
   );
 
@@ -161,6 +159,17 @@
         console.log(error);
         clearInterval(interval);
       }
+    } else {
+      // 切换到未命名版本 重置状态
+      const approveData = {
+        status: '',
+        time: '',
+        type: '',
+        memo: '',
+        groupIds: [],
+        targetGroups: [],
+      };
+      emits('send-data', approveData, '');
     }
   }, 300);
 
