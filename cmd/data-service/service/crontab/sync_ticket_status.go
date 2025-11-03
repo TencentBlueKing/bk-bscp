@@ -146,7 +146,7 @@ func (c *SyncTicketStatus) handleApprove(kit *kit.Kit, strategy *table.Strategy)
 		StrategyId:    strategy.ID,
 	}
 
-	// itsmv4 获取active key,v2 使用state_id
+	// itsm v4 获取active key, v2 使用state_id
 	activeKey := ""
 	if cc.DataService().ITSM.EnableV4 {
 		stateIDKey := itsm.BuildStateIDKey(kit.TenantID, table.ApproveType(strategy.Spec.ApproveType))
