@@ -4,6 +4,7 @@
       <div class="nav-title">
         <ArrowsLeft class="arrow-icon" @click="emits('close')" />
         <span class="title">{{ props.name }}</span>
+        <slot name="header-suffix"></slot>
       </div>
     </header>
     <div :class="['layout-content', { 'without-footer': !props.showFooter }]">
@@ -61,6 +62,7 @@
       cursor: pointer;
     }
     .title {
+      margin-right: 16px;
       padding: 14px 0;
       font-size: 16px;
       line-height: 24px;
