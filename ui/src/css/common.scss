@@ -75,3 +75,32 @@
     font-weight: normal;
   }
 }
+
+// 全局设置t-design表格样式
+.t-table {
+  font-size: 12px !important;
+  &.border {
+    border: 1px solid #dcdee5;
+    tr:last-child td {
+      border: none;
+    }
+  }
+  th {
+    color: #313238 !important;
+    background: #fafbfd !important;
+  }
+  td {
+    color: #4d4f56 !important;
+  }
+  .tips-title {
+    text-decoration-style: dashed;
+    text-decoration-line: underline;
+    cursor: pointer;
+  }
+  .t-loading__gradient-conic {
+    display: none;
+  }
+  .t-table--scroll-vertical {
+    display: none;
+  }
+}

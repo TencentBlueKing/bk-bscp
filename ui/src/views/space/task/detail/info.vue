@@ -2,15 +2,26 @@
   <div class="info-wrap">
     <div v-for="item in infoList" :key="item.value" class="info-item">
       <div class="label">{{ item.label }}：</div>
-      <div class="value">{{ item.value }}</div>
+      <div class="value">
+        <bk-overflow-title :class="{ theme: item.value === 'operate_range' }" type="tips">
+          {{ taskDetail![item.value as keyof typeof taskDetail] }}
+        </bk-overflow-title>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { onBeforeMount } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
+  import useTaskStore from '../../../../store/task';
 
   const { t } = useI18n();
+  const router = useRouter();
+  const { taskDetail } = storeToRefs(useTaskStore());
+
   const infoList = [
     {
       label: t('任务ID'),
@@ -18,33 +29,39 @@
     },
     {
       label: t('任务类型'),
-      value: 'type',
+      value: 'task_type',
     },
     {
       label: t('环境类型'),
-      value: 'type',
+      value: 'environment',
     },
     {
       label: t('操作范围'),
-      value: 'status',
+      value: 'operate_range',
     },
     {
       label: t('执行账号'),
-      value: 'createTime',
+      value: 'creator',
     },
     {
       label: t('执行时间'),
-      value: 'type',
+      value: 'execution_time',
     },
     {
       label: t('开始时间'),
-      value: 'status',
+      value: 'end_at',
     },
     {
       label: t('结束时间'),
-      value: 'createTime',
+      value: 'end_at',
     },
   ];
+
+  onBeforeMount(() => {
+    if (!taskDetail.value.id) {
+      router.push({ name: 'task-list' });
+    }
+  });
 </script>
 
 <style scoped lang="scss">
@@ -58,6 +75,7 @@
       display: flex;
       align-items: center;
       line-height: 32px;
+      font-size: 12px;
       height: 32px;
       .label {
         margin-right: 8px;
@@ -66,7 +84,11 @@
         color: #4d4f56;
       }
       .value {
+        width: 200px;
         color: #313238;
+      }
+      .theme {
+        color: #3a84ff;
       }
     }
   }
