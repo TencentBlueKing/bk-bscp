@@ -67,3 +67,39 @@ message PublishRecord {
   string updated_at = 6;
   string final_approval_time = 7;
 }
+
+// Ticket 工单
+message Ticket {
+  string id = 1;
+  string sn = 2;
+  string title = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  string end_at = 6;
+  string status = 7;
+  string status_display = 8;
+  string workflow_id = 9;
+  string service_id = 10;
+  string portal_id = 11;
+  string system_id = 12;
+  repeated google.protobuf.Value current_processors = 13;
+  repeated CurrentSteps current_steps = 14;
+  string frontend_url = 15;
+  FormData form_data = 16;
+  bool approve_result = 17;
+  CallbackResult callback_result = 18;
+}
+
+// CurrentSteps 当前审批步骤
+message CurrentSteps {
+  string ticket_id = 1;
+  string name = 2;
+  string activity_key = 3;
+}
+
+// FormData 表单数据
+message FormData {
+  string ticket_title = 1;
+}
+// CallbackResult 回调结果（目前空）
+message CallbackResult {}

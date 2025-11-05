@@ -31,6 +31,7 @@ func newGroupAppBind(db *gorm.DB, opts ...gen.DOOption) groupAppBind {
 	_groupAppBind.GroupID = field.NewUint32(tableName, "group_id")
 	_groupAppBind.AppID = field.NewUint32(tableName, "app_id")
 	_groupAppBind.BizID = field.NewUint32(tableName, "biz_id")
+	_groupAppBind.TenantID = field.NewString(tableName, "tenant_id")
 
 	_groupAppBind.fillFieldMap()
 
@@ -40,11 +41,12 @@ func newGroupAppBind(db *gorm.DB, opts ...gen.DOOption) groupAppBind {
 type groupAppBind struct {
 	groupAppBindDo groupAppBindDo
 
-	ALL     field.Asterisk
-	ID      field.Uint32
-	GroupID field.Uint32
-	AppID   field.Uint32
-	BizID   field.Uint32
+	ALL      field.Asterisk
+	ID       field.Uint32
+	GroupID  field.Uint32
+	AppID    field.Uint32
+	BizID    field.Uint32
+	TenantID field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -65,6 +67,7 @@ func (g *groupAppBind) updateTableName(table string) *groupAppBind {
 	g.GroupID = field.NewUint32(table, "group_id")
 	g.AppID = field.NewUint32(table, "app_id")
 	g.BizID = field.NewUint32(table, "biz_id")
+	g.TenantID = field.NewString(table, "tenant_id")
 
 	g.fillFieldMap()
 
@@ -93,11 +96,12 @@ func (g *groupAppBind) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (g *groupAppBind) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 4)
+	g.fieldMap = make(map[string]field.Expr, 5)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["group_id"] = g.GroupID
 	g.fieldMap["app_id"] = g.AppID
 	g.fieldMap["biz_id"] = g.BizID
+	g.fieldMap["tenant_id"] = g.TenantID
 }
 
 func (g groupAppBind) clone(db *gorm.DB) groupAppBind {

@@ -152,7 +152,8 @@ func (c *CredentialSpec) ValidateUpdate(kit *kit.Kit) error {
 
 // CredentialAttachment defines the credential attachments.
 type CredentialAttachment struct {
-	BizID uint32 `json:"biz_id" gorm:"column:biz_id"`
+	BizID    uint32 `json:"biz_id" gorm:"column:biz_id"`
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // IsEmpty test whether credential attachment is empty or not.

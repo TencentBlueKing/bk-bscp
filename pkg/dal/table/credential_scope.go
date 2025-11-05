@@ -89,6 +89,7 @@ type CredentialScopeSpec struct {
 type CredentialScopeAttachment struct {
 	BizID        uint32 `json:"biz_id" gorm:"column:biz_id"`
 	CredentialId uint32 `json:"credential_id" gorm:"column:credential_id"`
+	TenantID     string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // ValidateDelete credential scope validate

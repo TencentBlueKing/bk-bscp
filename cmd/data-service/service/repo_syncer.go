@@ -125,7 +125,7 @@ func (s *RepoSyncer) collectMetrics() {
 }
 
 type syncStat struct {
-	bizID       int32
+	bizID       uint32
 	total       int32
 	success     int32
 	failed      int32
@@ -134,7 +134,7 @@ type syncStat struct {
 }
 
 type noFiles struct {
-	bizID     int32
+	bizID     uint32
 	fileSigns []string
 }
 
@@ -157,20 +157,23 @@ func (s *RepoSyncer) syncAll(kt *kit.Kit) {
 	syncFailedCnt = 0
 
 	// get all sorted bizs
-	allBizs := s.spaceMgr.AllCMDBSpaces()
-	bizs := make([]int, 0, len(allBizs))
-	for biz := range allBizs {
-		bizID, _ := strconv.Atoi(biz)
-		bizs = append(bizs, bizID)
+	allSpaces := s.spaceMgr.AllSpaces(kt.Ctx)
+	bizs := make([]uint32, 0, len(allSpaces))
+	for _, space := range allSpaces {
+		bizID, err := strconv.ParseUint(space.SpaceId, 10, 32)
+		if err != nil {
+			logs.Warnf("invalid space id %s, skip, err: %v, rid: %s", space.SpaceId, err, kt.Rid)
+			continue
+		}
+		bizs = append(bizs, uint32(bizID))
 	}
-	sort.Ints(bizs)
+	sort.Slice(bizs, func(i, j int) bool { return bizs[i] < bizs[j] })
 
 	// sync files for all bizs
 	// we think the file count would not be too large for every biz, eg:<100000
 	// so, we directly retrieve all file signatures under one biz from the db
 	// this syncs biz serially (one by one) , and sync files under every biz concurrently
-	for _, biz := range bizs {
-		bizID := uint32(biz)
+	for _, bizID := range bizs {
 		var allSigns []string
 		var normalSigns, releasedNormalSigns, tmplSigns, releasedTmplSigns []string
 		var err error
@@ -262,14 +265,14 @@ func (s *RepoSyncer) syncOneBiz(kt *kit.Kit, bizID uint32, signs []string) {
 
 	if len(nofiles) > 0 {
 		noFileInMaster = append(noFileInMaster, noFiles{
-			bizID:     int32(bizID),
+			bizID:     bizID,
 			fileSigns: nofiles,
 		})
 	}
 
 	cost := time.Since(start)
 	stat := syncStat{
-		bizID:       int32(bizID),
+		bizID:       bizID,
 		total:       int32(len(signs)),
 		success:     success,
 		failed:      failed,

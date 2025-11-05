@@ -185,6 +185,7 @@ type ContentAttachment struct {
 	BizID        uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
 	AppID        uint32 `db:"app_id" json:"app_id" gorm:"column:app_id"`
 	ConfigItemID uint32 `db:"config_item_id" json:"config_item_id" gorm:"column:config_item_id"`
+	TenantID     string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate content attachment.

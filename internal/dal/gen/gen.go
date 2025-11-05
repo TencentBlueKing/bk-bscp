@@ -22,6 +22,7 @@ var (
 	AppTemplateVariable         *appTemplateVariable
 	ArchivedApp                 *archivedApp
 	Audit                       *audit
+	BizHost                     *bizHost
 	Client                      *client
 	ClientEvent                 *clientEvent
 	ClientQuery                 *clientQuery
@@ -38,6 +39,8 @@ var (
 	HookRevision                *hookRevision
 	IDGenerator                 *iDGenerator
 	Kv                          *kv
+	Process                     *process
+	ProcessInstance             *processInstance
 	Release                     *release
 	ReleasedAppTemplate         *releasedAppTemplate
 	ReleasedAppTemplateVariable *releasedAppTemplateVariable
@@ -47,6 +50,7 @@ var (
 	ReleasedKv                  *releasedKv
 	ResourceLock                *resourceLock
 	Strategy                    *strategy
+	TaskBatch                   *taskBatch
 	Template                    *template
 	TemplateRevision            *templateRevision
 	TemplateSet                 *templateSet
@@ -61,6 +65,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	AppTemplateVariable = &Q.AppTemplateVariable
 	ArchivedApp = &Q.ArchivedApp
 	Audit = &Q.Audit
+	BizHost = &Q.BizHost
 	Client = &Q.Client
 	ClientEvent = &Q.ClientEvent
 	ClientQuery = &Q.ClientQuery
@@ -77,6 +82,8 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	HookRevision = &Q.HookRevision
 	IDGenerator = &Q.IDGenerator
 	Kv = &Q.Kv
+	Process = &Q.Process
+	ProcessInstance = &Q.ProcessInstance
 	Release = &Q.Release
 	ReleasedAppTemplate = &Q.ReleasedAppTemplate
 	ReleasedAppTemplateVariable = &Q.ReleasedAppTemplateVariable
@@ -86,6 +93,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	ReleasedKv = &Q.ReleasedKv
 	ResourceLock = &Q.ResourceLock
 	Strategy = &Q.Strategy
+	TaskBatch = &Q.TaskBatch
 	Template = &Q.Template
 	TemplateRevision = &Q.TemplateRevision
 	TemplateSet = &Q.TemplateSet
@@ -101,6 +109,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		AppTemplateVariable:         newAppTemplateVariable(db, opts...),
 		ArchivedApp:                 newArchivedApp(db, opts...),
 		Audit:                       newAudit(db, opts...),
+		BizHost:                     newBizHost(db, opts...),
 		Client:                      newClient(db, opts...),
 		ClientEvent:                 newClientEvent(db, opts...),
 		ClientQuery:                 newClientQuery(db, opts...),
@@ -117,6 +126,8 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		HookRevision:                newHookRevision(db, opts...),
 		IDGenerator:                 newIDGenerator(db, opts...),
 		Kv:                          newKv(db, opts...),
+		Process:                     newProcess(db, opts...),
+		ProcessInstance:             newProcessInstance(db, opts...),
 		Release:                     newRelease(db, opts...),
 		ReleasedAppTemplate:         newReleasedAppTemplate(db, opts...),
 		ReleasedAppTemplateVariable: newReleasedAppTemplateVariable(db, opts...),
@@ -126,6 +137,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		ReleasedKv:                  newReleasedKv(db, opts...),
 		ResourceLock:                newResourceLock(db, opts...),
 		Strategy:                    newStrategy(db, opts...),
+		TaskBatch:                   newTaskBatch(db, opts...),
 		Template:                    newTemplate(db, opts...),
 		TemplateRevision:            newTemplateRevision(db, opts...),
 		TemplateSet:                 newTemplateSet(db, opts...),
@@ -142,6 +154,7 @@ type Query struct {
 	AppTemplateVariable         appTemplateVariable
 	ArchivedApp                 archivedApp
 	Audit                       audit
+	BizHost                     bizHost
 	Client                      client
 	ClientEvent                 clientEvent
 	ClientQuery                 clientQuery
@@ -158,6 +171,8 @@ type Query struct {
 	HookRevision                hookRevision
 	IDGenerator                 iDGenerator
 	Kv                          kv
+	Process                     process
+	ProcessInstance             processInstance
 	Release                     release
 	ReleasedAppTemplate         releasedAppTemplate
 	ReleasedAppTemplateVariable releasedAppTemplateVariable
@@ -167,6 +182,7 @@ type Query struct {
 	ReleasedKv                  releasedKv
 	ResourceLock                resourceLock
 	Strategy                    strategy
+	TaskBatch                   taskBatch
 	Template                    template
 	TemplateRevision            templateRevision
 	TemplateSet                 templateSet
@@ -184,6 +200,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		AppTemplateVariable:         q.AppTemplateVariable.clone(db),
 		ArchivedApp:                 q.ArchivedApp.clone(db),
 		Audit:                       q.Audit.clone(db),
+		BizHost:                     q.BizHost.clone(db),
 		Client:                      q.Client.clone(db),
 		ClientEvent:                 q.ClientEvent.clone(db),
 		ClientQuery:                 q.ClientQuery.clone(db),
@@ -200,6 +217,8 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.clone(db),
 		IDGenerator:                 q.IDGenerator.clone(db),
 		Kv:                          q.Kv.clone(db),
+		Process:                     q.Process.clone(db),
+		ProcessInstance:             q.ProcessInstance.clone(db),
 		Release:                     q.Release.clone(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.clone(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.clone(db),
@@ -209,6 +228,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		ReleasedKv:                  q.ReleasedKv.clone(db),
 		ResourceLock:                q.ResourceLock.clone(db),
 		Strategy:                    q.Strategy.clone(db),
+		TaskBatch:                   q.TaskBatch.clone(db),
 		Template:                    q.Template.clone(db),
 		TemplateRevision:            q.TemplateRevision.clone(db),
 		TemplateSet:                 q.TemplateSet.clone(db),
@@ -233,6 +253,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		AppTemplateVariable:         q.AppTemplateVariable.replaceDB(db),
 		ArchivedApp:                 q.ArchivedApp.replaceDB(db),
 		Audit:                       q.Audit.replaceDB(db),
+		BizHost:                     q.BizHost.replaceDB(db),
 		Client:                      q.Client.replaceDB(db),
 		ClientEvent:                 q.ClientEvent.replaceDB(db),
 		ClientQuery:                 q.ClientQuery.replaceDB(db),
@@ -249,6 +270,8 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		HookRevision:                q.HookRevision.replaceDB(db),
 		IDGenerator:                 q.IDGenerator.replaceDB(db),
 		Kv:                          q.Kv.replaceDB(db),
+		Process:                     q.Process.replaceDB(db),
+		ProcessInstance:             q.ProcessInstance.replaceDB(db),
 		Release:                     q.Release.replaceDB(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.replaceDB(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.replaceDB(db),
@@ -258,6 +281,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		ReleasedKv:                  q.ReleasedKv.replaceDB(db),
 		ResourceLock:                q.ResourceLock.replaceDB(db),
 		Strategy:                    q.Strategy.replaceDB(db),
+		TaskBatch:                   q.TaskBatch.replaceDB(db),
 		Template:                    q.Template.replaceDB(db),
 		TemplateRevision:            q.TemplateRevision.replaceDB(db),
 		TemplateSet:                 q.TemplateSet.replaceDB(db),
@@ -272,6 +296,7 @@ type queryCtx struct {
 	AppTemplateVariable         IAppTemplateVariableDo
 	ArchivedApp                 IArchivedAppDo
 	Audit                       IAuditDo
+	BizHost                     IBizHostDo
 	Client                      IClientDo
 	ClientEvent                 IClientEventDo
 	ClientQuery                 IClientQueryDo
@@ -288,6 +313,8 @@ type queryCtx struct {
 	HookRevision                IHookRevisionDo
 	IDGenerator                 IIDGeneratorDo
 	Kv                          IKvDo
+	Process                     IProcessDo
+	ProcessInstance             IProcessInstanceDo
 	Release                     IReleaseDo
 	ReleasedAppTemplate         IReleasedAppTemplateDo
 	ReleasedAppTemplateVariable IReleasedAppTemplateVariableDo
@@ -297,6 +324,7 @@ type queryCtx struct {
 	ReleasedKv                  IReleasedKvDo
 	ResourceLock                IResourceLockDo
 	Strategy                    IStrategyDo
+	TaskBatch                   ITaskBatchDo
 	Template                    ITemplateDo
 	TemplateRevision            ITemplateRevisionDo
 	TemplateSet                 ITemplateSetDo
@@ -311,6 +339,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		AppTemplateVariable:         q.AppTemplateVariable.WithContext(ctx),
 		ArchivedApp:                 q.ArchivedApp.WithContext(ctx),
 		Audit:                       q.Audit.WithContext(ctx),
+		BizHost:                     q.BizHost.WithContext(ctx),
 		Client:                      q.Client.WithContext(ctx),
 		ClientEvent:                 q.ClientEvent.WithContext(ctx),
 		ClientQuery:                 q.ClientQuery.WithContext(ctx),
@@ -327,6 +356,8 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		HookRevision:                q.HookRevision.WithContext(ctx),
 		IDGenerator:                 q.IDGenerator.WithContext(ctx),
 		Kv:                          q.Kv.WithContext(ctx),
+		Process:                     q.Process.WithContext(ctx),
+		ProcessInstance:             q.ProcessInstance.WithContext(ctx),
 		Release:                     q.Release.WithContext(ctx),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.WithContext(ctx),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.WithContext(ctx),
@@ -336,6 +367,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		ReleasedKv:                  q.ReleasedKv.WithContext(ctx),
 		ResourceLock:                q.ResourceLock.WithContext(ctx),
 		Strategy:                    q.Strategy.WithContext(ctx),
+		TaskBatch:                   q.TaskBatch.WithContext(ctx),
 		Template:                    q.Template.WithContext(ctx),
 		TemplateRevision:            q.TemplateRevision.WithContext(ctx),
 		TemplateSet:                 q.TemplateSet.WithContext(ctx),

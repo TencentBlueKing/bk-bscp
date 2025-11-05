@@ -46,8 +46,16 @@
           </bk-tag>
         </template>
       </vxe-column>
-      <vxe-column field="revision.creator" :title="$t('创建人')" width="123" />
-      <vxe-column field="revision.reviser" :title="$t('更新人')" width="123" />
+      <vxe-column field="revision.creator" :title="$t('创建人')" width="123" >
+        <template #default="{ row }">
+          <user-name :name="row.revision.creator"/>
+        </template>
+      </vxe-column>
+      <vxe-column field="revision.reviser" :title="$t('更新人')" width="123">
+        <template #default="{ row }">
+          <user-name :name="row.revision.reviser"/>
+        </template>
+      </vxe-column>
       <vxe-column :title="$t('更新时间')" width="200">
         <template #default="{ row }">
           <span>{{ datetimeFormat(row.revision.update_at) }}</span>
@@ -102,6 +110,7 @@
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../../store/global';
   import MoreAction from './more-action.vue';
+  import UserName from '../../../../../components/user-name.vue';
 
   const { t, locale } = useI18n();
   const router = useRouter();

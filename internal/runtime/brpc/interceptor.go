@@ -55,12 +55,12 @@ func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		defer func() {
 			if err != nil {
 				klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
-					"service", service, "method", method, "grpc.duration", time.Since(st), "err", err)
+					"service", service, "method", method, "TenantID", kt.TenantID, "grpc.duration", time.Since(st), "err", err)
 				return
 			}
 
 			klog.InfoS("grpc", "rid", kt.Rid, "ip", realIP,
-				"service", service, "method", method, "grpc.duration", time.Since(st))
+				"service", service, "method", method, "TenantID", kt.TenantID, "grpc.duration", time.Since(st))
 		}()
 
 		resp, err = handler(ctx, req)

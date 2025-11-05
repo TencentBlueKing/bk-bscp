@@ -2,7 +2,7 @@
 
 ---
 
-[![license](https://img.shields.io/badge/license-mit-brightgreen.svg?style=flat)](https://github.com/TencentBlueKing/bk-bscp/blob/master/LICENSE)[![Release Version](https://img.shields.io/badge/release-1.18.12-brightgreen.svg)](https://github.com/TencentBlueKing/bk-bscp/releases) ![BK Pipelines Status](https://api.bkdevops.qq.com/process/api/external/pipelines/projects/bscp/p-9ba3c5bdcc874723b0c71cc5a9e3a0cd/badge?X-DEVOPS-PROJECT-ID=bscp) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/TencentBlueKing/bk-bscp/pulls)
+[![license](https://img.shields.io/badge/license-mit-brightgreen.svg?style=flat)](https://github.com/TencentBlueKing/bk-bscp/blob/master/LICENSE) [![Release Version](https://img.shields.io/github/v/release/TencentBlueKing/bk-bscp?sort=semver)](https://github.com/TencentBlueKing/bk-bscp/releases) ![BK Pipelines Status](https://api.bkdevops.qq.com/process/api/external/pipelines/projects/bscp/p-9ba3c5bdcc874723b0c71cc5a9e3a0cd/badge?X-DEVOPS-PROJECT-ID=bscp) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/TencentBlueKing/bk-bscp/pulls)
 
 [Chinese Documentation](./README.md)
 

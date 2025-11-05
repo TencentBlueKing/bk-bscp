@@ -297,3 +297,24 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbcs.List
 		Items: items,
 	}, nil
 }
+
+// ApprovalCallback implements pbcs.ConfigServer.
+func (s *Service) ApprovalCallback(ctx context.Context, req *pbcs.ApprovalCallbackReq) (*pbcs.ApprovalCallbackResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	resp, err := s.client.DS.ApprovalCallback(grpcKit.RpcCtx(), &pbds.ApprovalCallbackReq{
+		BizId:         req.GetBizId(),
+		AppId:         req.GetAppId(),
+		ReleaseId:     req.GetReleaseId(),
+		CallbackToken: req.GetCallbackToken(),
+		Ticket:        req.GetTicket(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ApprovalCallbackResp{
+		Result:  resp.GetResult(),
+		Message: resp.GetMessage(),
+	}, nil
+}

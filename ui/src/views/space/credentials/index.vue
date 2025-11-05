@@ -44,6 +44,7 @@
           :row-class="getRowCls"
           :remote-pagination="true"
           :pagination="pagination"
+          show-overflow-tooltip
           @page-limit-change="handlePageLimitChange"
           @page-value-change="refreshListWithLoading"
           @column-filter="handleFilter">
@@ -146,7 +147,11 @@
               <span v-else>--</span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新人')" width="88" prop="revision.reviser"></bk-table-column>
+          <bk-table-column :label="t('更新人')" width="140" prop="revision.reviser" :resizable="false">
+            <template #default="{ row }">
+              <user-name v-if="row.revision" :name="row.revision.reviser" />
+            </template>
+          </bk-table-column>
           <bk-table-column :label="t('更新时间')" width="154">
             <template #default="{ row }">
               <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>
@@ -276,7 +281,8 @@
   import { copyToClipBoard, datetimeFormat } from '../../../utils/index';
   import { ICredentialItem } from '../../../../types/credential';
   import AssociateConfigItems from './associate-config-items/index.vue';
-  import tableEmpty from '../../../components/table/table-empty.vue';
+  import TableEmpty from '../../../components/table/table-empty.vue';
+  import UserName from '../../../components/user-name.vue';
   import { debounce } from 'lodash';
 
   const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());

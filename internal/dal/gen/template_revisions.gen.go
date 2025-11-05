@@ -44,6 +44,7 @@ func newTemplateRevision(db *gorm.DB, opts ...gen.DOOption) templateRevision {
 	_templateRevision.BizID = field.NewUint32(tableName, "biz_id")
 	_templateRevision.TemplateSpaceID = field.NewUint32(tableName, "template_space_id")
 	_templateRevision.TemplateID = field.NewUint32(tableName, "template_id")
+	_templateRevision.TenantID = field.NewString(tableName, "tenant_id")
 	_templateRevision.Creator = field.NewString(tableName, "creator")
 	_templateRevision.CreatedAt = field.NewTime(tableName, "created_at")
 
@@ -73,6 +74,7 @@ type templateRevision struct {
 	BizID           field.Uint32
 	TemplateSpaceID field.Uint32
 	TemplateID      field.Uint32
+	TenantID        field.String
 	Creator         field.String
 	CreatedAt       field.Time
 
@@ -108,6 +110,7 @@ func (t *templateRevision) updateTableName(table string) *templateRevision {
 	t.BizID = field.NewUint32(table, "biz_id")
 	t.TemplateSpaceID = field.NewUint32(table, "template_space_id")
 	t.TemplateID = field.NewUint32(table, "template_id")
+	t.TenantID = field.NewString(table, "tenant_id")
 	t.Creator = field.NewString(table, "creator")
 	t.CreatedAt = field.NewTime(table, "created_at")
 
@@ -138,7 +141,7 @@ func (t *templateRevision) GetFieldByName(fieldName string) (field.OrderExpr, bo
 }
 
 func (t *templateRevision) fillFieldMap() {
-	t.fieldMap = make(map[string]field.Expr, 19)
+	t.fieldMap = make(map[string]field.Expr, 20)
 	t.fieldMap["id"] = t.ID
 	t.fieldMap["revision_name"] = t.RevisionName
 	t.fieldMap["revision_memo"] = t.RevisionMemo
@@ -156,6 +159,7 @@ func (t *templateRevision) fillFieldMap() {
 	t.fieldMap["biz_id"] = t.BizID
 	t.fieldMap["template_space_id"] = t.TemplateSpaceID
 	t.fieldMap["template_id"] = t.TemplateID
+	t.fieldMap["tenant_id"] = t.TenantID
 	t.fieldMap["creator"] = t.Creator
 	t.fieldMap["created_at"] = t.CreatedAt
 }

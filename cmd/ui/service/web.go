@@ -214,6 +214,7 @@ func (s *WebServer) subRouter() http.Handler {
 //	@Tags		Healthz
 //	@Success	200	{string}	string
 //	@Router		/healthz [get]
+//	@ID			Healthz
 func (s *WebServer) HealthzHandler(w http.ResponseWriter, r *http.Request) {
 	if err := s.state.Healthz(); err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)

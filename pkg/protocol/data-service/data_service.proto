@@ -17,6 +17,8 @@ import "pkg/protocol/core/hook/hook.proto";
 import "pkg/protocol/core/hook-revision/hook_revision.proto";
 import "pkg/protocol/core/release/release.proto";
 import "pkg/protocol/core/released-ci/released_ci.proto";
+import "pkg/protocol/core/process/process.proto";
+import "pkg/protocol/core/task_batch/task_batch.proto";
 import "pkg/protocol/core/template/template.proto";
 import "pkg/protocol/core/template-binding-relation/template_binding_relation.proto";
 import "pkg/protocol/core/template-revision/template_revision.proto";
@@ -29,6 +31,7 @@ import "pkg/protocol/core/released-kv/released_kv.proto";
 import "pkg/protocol/core/strategy/strategy.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 
 package pbds;
 
@@ -228,6 +231,7 @@ service Data {
   rpc GetLastPublish(GetLastPublishReq) returns (GetLastPublishResp) {}
   rpc GetReleasesStatus(GetReleasesStatusReq) returns (pbstrategy.Strategy) {}
   rpc GenerateReleaseAndPublish(GenerateReleaseAndPublishReq) returns (PublishResp) {}
+  rpc ApprovalCallback(ApprovalCallbackReq) returns (ApprovalCallbackResp) {}
 
   // audit related interface.
   rpc ListAudits(ListAuditsReq) returns (ListAuditsResp) {}
@@ -303,6 +307,25 @@ service Data {
       returns (GetTemplateAndNonTemplateCICountResp) {}
 
   rpc BatchUpdateLastConsumedTime(BatchUpdateLastConsumedTimeReq) returns (BatchUpdateLastConsumedTimeResp) {}
+
+  // 进程管理列表
+  rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
+  // 进程操作
+  rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
+  // 进程过滤条件
+  rpc ProcessFilterOptions(ProcessFilterOptionsReq) returns (ProcessFilterOptionsResp) {}
+  // 进程同步
+  rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {}
+  // 任务历史列表
+  rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {}
+  // 任务批次详情
+  rpc GetTaskBatchDetail(GetTaskBatchDetailReq) returns (GetTaskBatchDetailResp) {}
+  // 任务状态统计
+  rpc GetTaskStatusStatistics(GetTaskStatusStatisticsReq) returns (GetTaskStatusStatisticsResp) {}
+  // 获取同步cc状态
+  rpc SyncCMDBStatus(SyncCMDBStatusReq) returns (SyncCMDBStatusResp) {}
+  // 重试失败的任务
+  rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -453,8 +476,7 @@ message ListAppsRestReq {
   bool all = 4;
   string top_ids = 5;
   string config_type = 6;
-  string search = 7;
-  string operator = 8;
+  google.protobuf.Struct search = 7;
 }
 
 message ListAppsResp {
@@ -530,15 +552,13 @@ message GetConfigItemReq {
 message ListConfigItemsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
-  string search_fields = 3;
-  string search_value = 4;
-  uint32 start = 5;
-  uint32 limit = 6;
-  repeated uint32 ids = 7;
-  bool all = 8;
-  bool with_status = 9;
-  // ADD、REVISE、DELETE、UNCHANGE
-  repeated string status = 10;
+  google.protobuf.Struct search = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  repeated uint32 ids = 6;
+  bool all = 7;
+  bool with_status = 8;
+  repeated string status = 9;
 }
 
 message ListConfigItemsResp {
@@ -552,11 +572,10 @@ message ListReleasedConfigItemsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
-  string search_fields = 4;
-  string search_value = 5;
-  uint32 start = 6;
-  uint32 limit = 7;
-  bool all = 8;
+  google.protobuf.Struct search = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+  bool all = 7;
 }
 
 message ListReleasedConfigItemsResp {
@@ -689,7 +708,7 @@ message ListReleasedKvReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
-  string search_key = 4;
+  google.protobuf.Struct search = 4;
   repeated string key = 5;
   uint32 start = 6;
   uint32 limit = 7;
@@ -838,7 +857,7 @@ message CreateHookRevisionReq {
 message ListHookRevisionsReq {
   uint32 biz_id = 1;
   uint32 hook_id = 2;
-  string search_key = 3;
+  google.protobuf.Struct search = 3;
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
@@ -986,12 +1005,11 @@ message CreateTemplateReq {
 message ListTemplatesReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
-  string search_fields = 3;
-  string search_value = 4;
-  uint32 start = 5;
-  uint32 limit = 6;
-  repeated uint32 ids = 7;
-  bool all = 8;
+  google.protobuf.Struct search = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  repeated uint32 ids = 6;
+  bool all = 7;
 }
 
 message ListTemplatesResp {
@@ -1047,11 +1065,10 @@ message ListTemplatesByIDsResp {
 message ListTemplatesNotBoundReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
-  string search_fields = 3;
-  string search_value = 4;
-  uint32 start = 5;
-  uint32 limit = 6;
-  bool all = 7;
+  google.protobuf.Struct search = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  bool all = 6;
 }
 
 message ListTemplatesNotBoundResp {
@@ -1063,12 +1080,11 @@ message ListTmplsOfTmplSetReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
   uint32 template_set_id = 3;
-  string search_fields = 4;
-  string search_value = 5;
-  uint32 start = 6;
-  uint32 limit = 7;
-  repeated uint32 ids = 8;
-  bool all = 9;
+  google.protobuf.Struct search = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+  repeated uint32 ids = 7;
+  bool all = 8;
 }
 
 message ListTmplsOfTmplSetResp {
@@ -1153,11 +1169,10 @@ message ListTemplateRevisionsReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
   uint32 template_id = 3;
-  string search_fields = 4;
-  string search_value = 5;
-  uint32 start = 6;
-  uint32 limit = 7;
-  bool all = 8;
+  google.protobuf.Struct search = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+  bool all = 7;
 }
 
 message ListTemplateRevisionsResp {
@@ -1316,12 +1331,11 @@ message DeleteAppTemplateBindingReq {
 message ListAppBoundTmplRevisionsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
-  string search_fields = 3;
-  string search_value = 4;
-  uint32 start = 5;
-  uint32 limit = 6;
-  bool all = 7;
-  bool with_status = 8;
+  google.protobuf.Struct search = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  bool all = 6;
+  bool with_status = 7;
 }
 
 message ListAppBoundTmplRevisionsResp {
@@ -1333,11 +1347,10 @@ message ListReleasedAppBoundTmplRevisionsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
-  string search_fields = 4;
-  string search_value = 5;
-  uint32 start = 6;
-  uint32 limit = 7;
-  bool all = 8;
+  google.protobuf.Struct search = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+  bool all = 7;
 }
 
 message ListReleasedAppBoundTmplRevisionsResp {
@@ -1963,25 +1976,22 @@ message ListKvsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   bool all = 3;
-  string search_key = 4;
-  repeated string key = 5;
-  uint32 start = 6;
-  uint32 limit = 7;
-  bool with_status = 8;
-  string search_fields = 9;
-  string search_value = 10;
-  repeated string kv_type = 11;
-  string sort = 12;
-  string order = 13;
-  repeated uint32 top_ids = 14;  // 置顶的ID
-  // ADD、REVISE、DELETE、UNCHANGE
-  repeated string status = 15;
+  repeated string key = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+  bool with_status = 7;
+  google.protobuf.Struct search = 8;
+  repeated string kv_type = 9;
+  string sort = 10;
+  string order = 11;
+  repeated uint32 top_ids = 12;
+  repeated string status = 13;
 }
 
 message ListKvsResp {
   uint32 count = 1;
   repeated pbkv.Kv details = 2;
-  uint32 exclusion_count = 3;  // 排除删除后的数量
+  uint32 exclusion_count = 3;
   bool is_cert_expired = 4;
 }
 
@@ -2242,6 +2252,19 @@ message GetLatestTemplateVersionsInSpaceResp {
   repeated TemplateSetSpec template_set = 2;
 }
 
+message ApprovalCallbackReq {
+  uint32 biz_id = 1;
+  uint32 app_id = 2;
+  uint32 release_id = 3;
+  string callback_token = 4;
+  pbrelease.Ticket ticket = 5;
+}
+
+message ApprovalCallbackResp {
+  bool result = 1;
+  string message = 2;
+}
+
 message CloneAppReq {
   uint32 biz_id = 1;
   string name = 2;
@@ -2262,4 +2285,103 @@ message CloneAppReq {
   uint32 pre_hook_id = 13;
   uint32 post_hook_id = 14;
   string data_type = 15;
+}
+
+message ListProcessReq {
+  uint32 biz_id = 1;
+  pbproc.ProcessSearchCondition search = 2;
+  bool all = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+}
+
+message ListProcessResp {
+  uint32 count = 1;
+  repeated pbproc.Process process = 2;
+}
+
+message OperateProcessReq {
+  uint32 biz_id = 1;
+  repeated uint32 process_ids = 2;
+  uint32 inst_id = 3;
+  string operate_type = 4;
+}
+
+message OperateProcessResp {
+  uint32 batchID = 1;
+}
+
+message SyncCMDBReq {
+  uint32 biz_id = 1;
+}
+
+message SyncCMDBResp {
+  string task_id = 1;
+}
+
+message ListTaskBatchReq {
+  uint32 biz_id = 1;
+  string task_object = 2;  // 任务对象类型: process, config_file 等
+  uint32 start = 3;
+  uint32 limit = 4;
+  string task_action = 5;  // 任务动作: register, start, stop, restart, reload, kill 等
+  string status = 6;       // 执行状态: running, failed, succeed
+  string executor = 7;     // 执行帐户（创建者）
+}
+
+message ListTaskBatchResp {
+  uint32 count = 1;
+  repeated pbtb.TaskBatch list = 2;
+}
+
+message GetTaskBatchDetailReq {
+  uint32 biz_id = 1;
+  uint32 batch_id = 2;
+  uint32 start = 3;   // 起始位置
+  uint32 limit = 4;   // 限制数量
+  string status = 5;  // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE
+}
+
+message GetTaskBatchDetailResp {
+  repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
+  uint32 count = 2;                    // 任务总数
+}
+
+message GetTaskStatusStatisticsReq {
+  uint32 biz_id = 1;
+  uint32 batch_id = 2;  // 批次ID
+}
+
+message GetTaskStatusStatisticsResp {
+  repeated pbtb.TaskStatusStatItem statistics = 1;  // 状态统计列表
+}
+
+message SyncCMDBStatusReq {
+  uint32 biz_id = 1;
+}
+
+message SyncCMDBStatusResp {
+  google.protobuf.Timestamp last_sync_time = 1;
+  string status = 2;
+}
+
+message ProcessFilterOptionsReq {
+  uint32 biz_id = 1;
+}
+
+message ProcessFilterOptionsResp {
+  repeated pbproc.ProcessFilterOption sets = 1;
+  repeated pbproc.ProcessFilterOption modules = 2;
+  repeated pbproc.ProcessFilterOption service_instances = 3;
+  repeated pbproc.ProcessFilterOption process_aliases = 4;
+  repeated pbproc.ProcessFilterOption cc_process_ids = 5;
+}
+
+message RetryTasksReq {
+  uint32 biz_id = 1;    // 业务ID
+  uint32 batch_id = 2;  // 任务批次ID
+}
+
+message RetryTasksResp {
+  uint32 retry_count = 1;  // 重试的任务数量
 }

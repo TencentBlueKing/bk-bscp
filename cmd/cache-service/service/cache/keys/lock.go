@@ -24,6 +24,11 @@ func (rk resKind) AppID(bizID uint32, appName string) string {
 	return fmt.Sprintf("app-id-%d-%s", bizID, appName)
 }
 
+// TenantID return the tenant id's resource kind
+func (rk resKind) TenantID(bizID uint32) string {
+	return fmt.Sprintf("tenant-id-%d", bizID)
+}
+
 // AppMeta return the app meta's resource kind
 func (rk resKind) AppMeta(appID uint32) string {
 	return fmt.Sprintf("apm-%d", appID)

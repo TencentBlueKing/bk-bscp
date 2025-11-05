@@ -38,6 +38,7 @@ func newKv(db *gorm.DB, opts ...gen.DOOption) kv {
 	_kv.CertificateExpirationDate = field.NewTime(tableName, "certificate_expiration_date")
 	_kv.BizID = field.NewUint32(tableName, "biz_id")
 	_kv.AppID = field.NewUint32(tableName, "app_id")
+	_kv.TenantID = field.NewString(tableName, "tenant_id")
 	_kv.Creator = field.NewString(tableName, "creator")
 	_kv.Reviser = field.NewString(tableName, "reviser")
 	_kv.CreatedAt = field.NewTime(tableName, "created_at")
@@ -66,6 +67,7 @@ type kv struct {
 	CertificateExpirationDate field.Time
 	BizID                     field.Uint32
 	AppID                     field.Uint32
+	TenantID                  field.String
 	Creator                   field.String
 	Reviser                   field.String
 	CreatedAt                 field.Time
@@ -100,6 +102,7 @@ func (k *kv) updateTableName(table string) *kv {
 	k.CertificateExpirationDate = field.NewTime(table, "certificate_expiration_date")
 	k.BizID = field.NewUint32(table, "biz_id")
 	k.AppID = field.NewUint32(table, "app_id")
+	k.TenantID = field.NewString(table, "tenant_id")
 	k.Creator = field.NewString(table, "creator")
 	k.Reviser = field.NewString(table, "reviser")
 	k.CreatedAt = field.NewTime(table, "created_at")
@@ -131,7 +134,7 @@ func (k *kv) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (k *kv) fillFieldMap() {
-	k.fieldMap = make(map[string]field.Expr, 18)
+	k.fieldMap = make(map[string]field.Expr, 19)
 	k.fieldMap["id"] = k.ID
 	k.fieldMap["kv_state"] = k.KvState
 	k.fieldMap["key"] = k.Key
@@ -143,6 +146,7 @@ func (k *kv) fillFieldMap() {
 	k.fieldMap["certificate_expiration_date"] = k.CertificateExpirationDate
 	k.fieldMap["biz_id"] = k.BizID
 	k.fieldMap["app_id"] = k.AppID
+	k.fieldMap["tenant_id"] = k.TenantID
 	k.fieldMap["creator"] = k.Creator
 	k.fieldMap["reviser"] = k.Reviser
 	k.fieldMap["created_at"] = k.CreatedAt

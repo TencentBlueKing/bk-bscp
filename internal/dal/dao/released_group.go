@@ -79,7 +79,7 @@ func (dao *releasedGroupDao) ListAllByAppID(kit *kit.Kit, appID, bizID uint32) (
 	}
 
 	m := dao.genQ.ReleasedGroup
-	return m.WithContext(kit.Ctx).Where(m.AppID.Eq(appID), m.BizID.Eq(bizID)).Find()
+	return m.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID)).Find()
 }
 
 // ListAllByReleaseID list all released groups by releaseID

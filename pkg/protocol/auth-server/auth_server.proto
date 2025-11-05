@@ -86,6 +86,7 @@ message GetAuthConfReq {}
 message GetAuthConfResp {
   LoginAuth login_auth = 1;
   ESB esb = 2;
+  CMDB cmdb = 3;
 }
 
 message LoginAuth {
@@ -102,6 +103,13 @@ message ESB {
   string app_secret = 3;
   string user = 4;
   TLS tls = 5;
+}
+
+message CMDB {
+  string host = 1;
+  string app_code = 2;
+  string app_secret = 3;
+  string bk_user_name = 4;
 }
 
 message TLS {
@@ -241,6 +249,7 @@ message UserCredentialReq {
 message UserInfoResp {
   string username = 1;
   string avatar_url = 2;
+  string tenant_id = 3;
 }
 
 message ListUserSpaceReq {

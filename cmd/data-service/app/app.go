@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -32,6 +33,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -40,9 +43,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/register"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -78,25 +84,31 @@ func Run(opt *options.Option) error {
 		return err
 	}
 
+	// 触发定时任务
+	go ds.startCronTasks()
+
 	shutdown.RegisterFirstShutdown(ds.finalizer)
 	shutdown.WaitShutdown(20)
 	return nil
 }
 
 type dataService struct {
-	serve    *grpc.Server
-	gwServe  *http.Server
-	service  *service.Service
-	sd       serviced.Service
-	daoSet   dao.Set
-	vault    vault.Set
-	esb      client.Client
-	spaceMgr *space.Manager
-	repo     repository.Provider
-	ssd      serviced.ServiceDiscover
+	serve       *grpc.Server
+	gwServe     *http.Server
+	service     *service.Service
+	sd          serviced.Service
+	daoSet      dao.Set
+	vault       vault.Set
+	esb         client.Client
+	spaceMgr    *space.Manager
+	repo        repository.Provider
+	ssd         serviced.ServiceDiscover
+	taskManager *task.TaskManager
+	cmdb        bkcmdb.Service
 }
 
 // prepare do prepare jobs before run data service.
+// nolint: funlen
 func (ds *dataService) prepare(opt *options.Option) error {
 	// load settings from config file.
 	if err := cc.LoadSettings(opt.Sys); err != nil {
@@ -160,15 +172,24 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	}
 
 	// initialize esb client
-	settings := cc.DataService().Esb
-	esbCli, err := client.NewClient(&settings, metrics.Register())
+	esbCfg := cc.DataService().Esb
+	cmdbCfg := cc.G().CMDB
+
+	esbCli, err := client.NewClient(&esbCfg, metrics.Register())
 	if err != nil {
 		return fmt.Errorf("new esb client failed, err: %v", err)
 	}
 	ds.esb = esbCli
 
+	cmdbCli, err := bkcmdb.New(&cmdbCfg, esbCli)
+	if err != nil {
+		return fmt.Errorf("new cmdb client failed, err: %v", err)
+	}
+
+	ds.cmdb = cmdbCli
+
 	// initialize space manager
-	spaceMgr, err := space.NewSpaceMgr(context.Background(), esbCli)
+	spaceMgr, err := space.NewSpaceMgr(context.Background(), cmdbCli)
 	if err != nil {
 		return fmt.Errorf("init space manager failed, err: %v", err)
 	}
@@ -187,6 +208,37 @@ func (ds *dataService) prepare(opt *options.Option) error {
 		repoSyncer.Run()
 	}
 
+	// 初始化并启动任务管理器
+	err = ds.initTaskManager()
+	if err != nil {
+		return fmt.Errorf("init task failed, err: %v", err)
+	}
+
+	return nil
+}
+
+func (ds *dataService) initTaskManager() error {
+	// 注册并启动任务（register要在NewTaskMgr之前）
+	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet)
+
+	taskManager, err := task.NewTaskMgr(
+		context.Background(),
+		cc.DataService().Service.Etcd,
+		cc.DataService().Sharding.AdminDatabase,
+	)
+	if err != nil {
+		return fmt.Errorf("new task manager failed, err: %v", err)
+	}
+	ds.taskManager = taskManager
+
+	go func() {
+		err := ds.taskManager.Run()
+		if err != nil {
+			ds.taskManager.Stop()
+			logs.Errorf("task manager run failed, err: %v", err)
+		}
+	}()
 	return nil
 }
 
@@ -212,6 +264,7 @@ func initVault() (vault.Set, error) {
 }
 
 // listenAndServe listen the grpc serve and set up the shutdown gracefully job.
+// nolint: funlen
 func (ds *dataService) listenAndServe() error {
 	// generate standard grpc server grpcMetrics.
 	grpcMetrics := grpc_prometheus.NewServerMetrics()
@@ -245,14 +298,10 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb, ds.taskManager)
 	if err != nil {
 		return err
 	}
-
-	// 同步客户端在线状态
-	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, svc)
-	status.Run()
 
 	pbds.RegisterDataServer(serve, svc)
 
@@ -270,6 +319,8 @@ func (ds *dataService) listenAndServe() error {
 		logs.Infof("start shutdown grpc server gracefully...")
 
 		ds.serve.GracefulStop()
+		ds.taskManager.Stop()
+
 		notifier.Done()
 
 		logs.Infof("shutdown grpc server success...")
@@ -391,4 +442,102 @@ func (ds *dataService) register() error {
 
 	logs.Infof("register data service to etcd success.")
 	return nil
+}
+
+// startCronTasks starts all cron tasks for data service
+// nolint:funlen
+func (ds *dataService) startCronTasks() {
+	// 同步itsm 单据状态：避免单据没回被正确回调感知
+	status := crontab.NewSyncTicketStatus(ds.daoSet, ds.sd, ds.service)
+	status.Run()
+
+	// 在启动全量同步之前，先获取事件cursor，避免丢失全量同步期间发生的事件
+	timeAgo := time.Now().Add(-10 * time.Second).Unix()
+	if err := crontab.InitHostDetailCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init host detail cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
+	if err := crontab.InitBizHostCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init biz host cursor failed, err: %v", err)
+		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
+		// PASS
+	}
+
+	crontabConfig := cc.DataService().Crontab
+	logs.Infof("crontabConfig: %+v", crontabConfig)
+	// 启动同步业务主机关系任务
+	if crontabConfig.SyncBizHost.Enabled {
+		syncInterval, err := time.ParseDuration(crontabConfig.SyncBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse syncBizHost interval failed, using default: %v", err)
+			syncInterval = 7 * 24 * time.Hour // 7 days
+		}
+
+		bizHost := crontab.NewSyncBizHost(
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.SyncBizHost.QpsLimit, syncInterval)
+
+		// 启动定时同步任务
+		bizHost.Run()
+		// 立即执行一次全量同步，需要等数据完全同步再启动定时任务，避免事件丢失
+		if ds.sd.IsMaster() {
+			logs.Infof("current service instance is master, start sync biz host")
+			bizHost.SyncBizHost(kit.New())
+		}
+	}
+
+	// 启动监听业务主机关系任务
+	if crontabConfig.WatchBizHostRelation.Enabled {
+		watchBizHostInterval, err := time.ParseDuration(crontabConfig.WatchBizHostRelation.Interval)
+		if err != nil {
+			logs.Errorf("parse watchBizHostRelation interval failed, using default: %v", err)
+			watchBizHostInterval = 10 * time.Second // 10 seconds
+		}
+
+		watchBizHostRelation := crontab.NewWatchBizHostRelation(
+			ds.daoSet, ds.sd, ds.cmdb, crontabConfig.WatchBizHostRelation.QpsLimit,
+			watchBizHostInterval)
+		watchBizHostRelation.Run()
+	}
+
+	// 启动监听主机更新任务
+	if crontabConfig.WatchHostUpdates.Enabled {
+		watchHostInterval, err := time.ParseDuration(crontabConfig.WatchHostUpdates.Interval)
+		if err != nil {
+			logs.Errorf("parse watchHostUpdates interval failed, using default: %v", err)
+			watchHostInterval = 5 * time.Second // 5 seconds
+		}
+
+		watchHostUpdates := crontab.NewWatchHostUpdates(ds.daoSet, ds.sd, ds.cmdb, watchHostInterval)
+		watchHostUpdates.Run()
+	}
+
+	// 启动清理业务主机关系任务
+	if crontabConfig.CleanupBizHost.Enabled {
+		cleanupInterval, err := time.ParseDuration(crontabConfig.CleanupBizHost.Interval)
+		if err != nil {
+			logs.Errorf("parse cleanupBizHost interval failed, using default: %v", err)
+			cleanupInterval = 1 * time.Hour // 1 hour
+		}
+
+		cleanupBizHost := crontab.NewCleanupBizHost(ds.daoSet, ds.sd, ds.cmdb,
+			crontabConfig.CleanupBizHost.QpsLimit, cleanupInterval)
+		cleanupBizHost.Run()
+	}
+
+	// TODO: 增加配置项，控制定时时间
+	// 定时同步cmdb数据
+	syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service)
+	syncCmdb.Run()
+
+	// 监听cmdb资源变化
+	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.service)
+	watchCmdb.Run()
+
+	// 初始化ITSM模板[只有v4版本才需要]
+	if cc.DataService().ITSM.EnableV4 {
+		registerItsmV4Templates := crontab.RegisterItsmV4Templates(ds.daoSet, ds.sd)
+		registerItsmV4Templates.Run()
+	}
+
 }

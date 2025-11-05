@@ -79,6 +79,10 @@ type Set interface {
 	ClientEvent() ClientEvent
 	ClientQuery() ClientQuery
 	Config() Config
+	Process() Process
+	ProcessInstance() ProcessInstance
+	TaskBatch() TaskBatch
+	BizHost() BizHost
 }
 
 // NewDaoSet create the DAO set instance.
@@ -95,6 +99,10 @@ func NewDaoSet(opt cc.Sharding, credentialSetting cc.Credential, gormSetting cc.
 	if err != nil {
 		return nil, err
 	}
+
+	// 注册回调
+	registerCallbacks(adminDB)
+
 	db, err := adminDB.DB()
 	if err != nil {
 		return nil, err
@@ -535,5 +543,38 @@ func (s *set) Config() Config {
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,
+	}
+}
+
+// Process implements Set.
+func (s *set) Process() Process {
+	return &processDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// ProcessInstance implements Set.
+func (s *set) ProcessInstance() ProcessInstance {
+	return &processInstanceDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+func (s *set) TaskBatch() TaskBatch {
+	return &taskBatchDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// BizHost returns the BizHost scope's DAO
+func (s *set) BizHost() BizHost {
+	return &bizHostDao{
+		genQ: s.genQ,
 	}
 }

@@ -14,16 +14,21 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/metadata"
 	"gorm.io/gorm"
 
 	// run the init function to add migrations
 	_ "github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrations"
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/scripts/migrations/itsm"
 )
@@ -105,13 +110,22 @@ var migrateUpCmd = &cobra.Command{
 			fmt.Println("Unable to fetch migrator, err:", err)
 			return
 		}
-
 		err = mig.Up(step)
 		if err != nil {
 			fmt.Println("Unable to run `up` migrations, err:", err)
 			return
 		}
-
+		// ensure task table
+		ctx := context.Background()
+		taskMgr, err := task.NewTaskMgr(ctx, cc.DataService().Service.Etcd, cc.DataService().Sharding.AdminDatabase)
+		if err != nil {
+			fmt.Println("Unable to new task manager, err:", err)
+			return
+		}
+		if err = taskMgr.EnsureTable(ctx); err != nil {
+			fmt.Println("Unable to ensure task table, err:", err)
+			return
+		}
 	},
 }
 
@@ -211,6 +225,9 @@ var migrateStatusCmd = &cobra.Command{
 	},
 }
 
+var tenantID string
+var createTemplate bool
+
 var migrateInitITSMCmd = &cobra.Command{
 	Use:   "init-itsm",
 	Short: "Register bcsp approve services into itsm",
@@ -220,8 +237,11 @@ var migrateInitITSMCmd = &cobra.Command{
 			fmt.Printf("load config failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}
-
-		if err := itsm.InitServices(); err != nil {
+		md := metadata.MD{
+			strings.ToLower(constant.BkTenantID): []string{tenantID},
+		}
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+		if err := itsm.InitServices(ctx, createTemplate); err != nil {
 			fmt.Printf("init itsm services failed, err: %s\n", err.Error())
 			os.Exit(1)
 		}
@@ -241,6 +261,9 @@ func init() {
 	// Add "--step" flag to both "up" and "down" command
 	migrateUpCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
 	migrateDownCmd.Flags().IntP("step", "s", 0, "Number of migrations to execute")
+
+	migrateInitITSMCmd.Flags().StringVarP(&tenantID, "tenant", "t", "", "tenant id")
+	migrateInitITSMCmd.Flags().BoolVar(&createTemplate, "create-template", false, "[itsm v4] Whether to create template")
 
 	// Add "create", "up" and "down" commands to the "migrate" command
 	migrateCmd.AddCommand(migrateUpCmd, migrateDownCmd, migrateCreateCmd, migrateStatusCmd)

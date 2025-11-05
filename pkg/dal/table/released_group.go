@@ -56,6 +56,7 @@ type ReleasedGroup struct {
 	BizID      uint32             `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
 	Reviser    string             `db:"reviser" json:"reviser" gorm:"column:reviser"`
 	UpdatedAt  time.Time          `db:"updated_at" json:"updated_at" gorm:"column:updated_at"`
+	TenantID   string             `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the released group's database table name.

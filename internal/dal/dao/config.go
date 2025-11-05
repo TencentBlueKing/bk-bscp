@@ -28,6 +28,8 @@ type Config interface {
 	GetConfig(kit *kit.Kit, key string) (*table.Config, error)
 	// UpsertConfig insert or update itsm config.
 	UpsertConfig(kit *kit.Kit, itsmConfigs []*table.Config) error
+	// ListConfigByKeys 根据多个键获取相关配置信息
+	ListConfigByKeys(kit *kit.Kit, keys []string) ([]*table.Config, error)
 }
 
 var _ Config = new(configDao)
@@ -36,6 +38,12 @@ type configDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao // nolint
+}
+
+// ListConfigByKeys 根据多个键获取相关配置信息
+func (dao *configDao) ListConfigByKeys(kit *kit.Kit, keys []string) ([]*table.Config, error) {
+	m := dao.genQ.Config
+	return m.WithContext(kit.Ctx).Where(m.Key.In(keys...)).Find()
 }
 
 // GetConfig Get itsm config.

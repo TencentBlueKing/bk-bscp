@@ -47,6 +47,7 @@ type Interface interface {
 	BatchUpdateLastConsumedTime(kt *kit.Kit, appIDs []uint32) error
 	GetPublishTime(kt *kit.Kit, publishTime int64) (map[uint32]PublishInfo, error)
 	SetPublishTime(kt *kit.Kit, bizID, appID, strategyID uint32, publishTime int64) (int64, error)
+	GetTenantIDByBiz(kit *kit.Kit, bizID uint32, refresh bool) (string, error)
 }
 
 // New initialize a cache client.

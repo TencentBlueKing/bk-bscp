@@ -164,6 +164,7 @@ const (
 	Config_GenerateReleaseAndPublish_FullMethodName          = "/pbcs.Config/GenerateReleaseAndPublish"
 	Config_SubmitPublishApprove_FullMethodName               = "/pbcs.Config/SubmitPublishApprove"
 	Config_Approve_FullMethodName                            = "/pbcs.Config/Approve"
+	Config_ApprovalCallback_FullMethodName                   = "/pbcs.Config/ApprovalCallback"
 	Config_GetLastSelect_FullMethodName                      = "/pbcs.Config/GetLastSelect"
 	Config_GetLastPublish_FullMethodName                     = "/pbcs.Config/GetLastPublish"
 	Config_GetReleasesStatus_FullMethodName                  = "/pbcs.Config/GetReleasesStatus"
@@ -206,6 +207,15 @@ const (
 	Config_CompareConfigItemConflicts_FullMethodName         = "/pbcs.Config/CompareConfigItemConflicts"
 	Config_CompareKvConflicts_FullMethodName                 = "/pbcs.Config/CompareKvConflicts"
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
+	Config_ListProcess_FullMethodName                        = "/pbcs.Config/ListProcess"
+	Config_OperateProcess_FullMethodName                     = "/pbcs.Config/OperateProcess"
+	Config_ProcessFilterOptions_FullMethodName               = "/pbcs.Config/ProcessFilterOptions"
+	Config_SyncCMDB_FullMethodName                           = "/pbcs.Config/SyncCMDB"
+	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
+	Config_GetTaskBatchDetail_FullMethodName                 = "/pbcs.Config/GetTaskBatchDetail"
+	Config_GetTaskStatusStatistics_FullMethodName            = "/pbcs.Config/GetTaskStatusStatistics"
+	Config_SyncCMDBStatus_FullMethodName                     = "/pbcs.Config/SyncCMDBStatus"
+	Config_RetryTasks_FullMethodName                         = "/pbcs.Config/RetryTasks"
 )
 
 // ConfigClient is the client API for Config service.
@@ -482,7 +492,10 @@ type ConfigClient interface {
 	GenerateReleaseAndPublish(ctx context.Context, in *GenerateReleaseAndPublishReq, opts ...grpc.CallOption) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(ctx context.Context, in *SubmitPublishApproveReq, opts ...grpc.CallOption) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(ctx context.Context, in *ApproveReq, opts ...grpc.CallOption) (*ApproveResp, error)
+	// itsm v4 回调接口
+	ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error)
 	GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error)
 	GetLastPublish(ctx context.Context, in *GetLastPublishReq, opts ...grpc.CallOption) (*GetLastPublishResp, error)
 	GetReleasesStatus(ctx context.Context, in *GetReleasesStatusReq, opts ...grpc.CallOption) (*strategy.Strategy, error)
@@ -563,6 +576,25 @@ type ConfigClient interface {
 	CompareKvConflicts(ctx context.Context, in *CompareKvConflictsReq, opts ...grpc.CallOption) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(ctx context.Context, in *GetTemplateAndNonTemplateCICountReq, opts ...grpc.CallOption) (*GetTemplateAndNonTemplateCICountResp, error)
+	// 进程管理
+	// 进程列表
+	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
+	// 进程操作
+	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error)
+	// 同步cc
+	SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error)
+	// 任务历史列表
+	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
+	// 任务批次详情
+	GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error)
+	// 任务状态统计
+	GetTaskStatusStatistics(ctx context.Context, in *GetTaskStatusStatisticsReq, opts ...grpc.CallOption) (*GetTaskStatusStatisticsResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error)
+	// 重试失败的任务
+	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
 }
 
 type configClient struct {
@@ -1806,6 +1838,15 @@ func (c *configClient) Approve(ctx context.Context, in *ApproveReq, opts ...grpc
 	return out, nil
 }
 
+func (c *configClient) ApprovalCallback(ctx context.Context, in *ApprovalCallbackReq, opts ...grpc.CallOption) (*ApprovalCallbackResp, error) {
+	out := new(ApprovalCallbackResp)
+	err := c.cc.Invoke(ctx, Config_ApprovalCallback_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) GetLastSelect(ctx context.Context, in *GetLastSelectReq, opts ...grpc.CallOption) (*GetLastSelectResp, error) {
 	out := new(GetLastSelectResp)
 	err := c.cc.Invoke(ctx, Config_GetLastSelect_FullMethodName, in, out, opts...)
@@ -2184,6 +2225,87 @@ func (c *configClient) GetTemplateAndNonTemplateCICount(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *configClient) ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error) {
+	out := new(ListProcessResp)
+	err := c.cc.Invoke(ctx, Config_ListProcess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error) {
+	out := new(OperateProcessResp)
+	err := c.cc.Invoke(ctx, Config_OperateProcess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error) {
+	out := new(ProcessFilterOptionsResp)
+	err := c.cc.Invoke(ctx, Config_ProcessFilterOptions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) SyncCMDB(ctx context.Context, in *SyncCMDBReq, opts ...grpc.CallOption) (*SyncCMDBResp, error) {
+	out := new(SyncCMDBResp)
+	err := c.cc.Invoke(ctx, Config_SyncCMDB_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error) {
+	out := new(ListTaskBatchResp)
+	err := c.cc.Invoke(ctx, Config_ListTaskBatch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error) {
+	out := new(GetTaskBatchDetailResp)
+	err := c.cc.Invoke(ctx, Config_GetTaskBatchDetail_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetTaskStatusStatistics(ctx context.Context, in *GetTaskStatusStatisticsReq, opts ...grpc.CallOption) (*GetTaskStatusStatisticsResp, error) {
+	out := new(GetTaskStatusStatisticsResp)
+	err := c.cc.Invoke(ctx, Config_GetTaskStatusStatistics_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) SyncCMDBStatus(ctx context.Context, in *SyncCMDBStatusReq, opts ...grpc.CallOption) (*SyncCMDBStatusResp, error) {
+	out := new(SyncCMDBStatusResp)
+	err := c.cc.Invoke(ctx, Config_SyncCMDBStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error) {
+	out := new(RetryTasksResp)
+	err := c.cc.Invoke(ctx, Config_RetryTasks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2458,7 +2580,10 @@ type ConfigServer interface {
 	GenerateReleaseAndPublish(context.Context, *GenerateReleaseAndPublishReq) (*PublishResp, error)
 	// 上线服务版本
 	SubmitPublishApprove(context.Context, *SubmitPublishApproveReq) (*PublishResp, error)
+	// 审批同步，其中v2版本中itsm也是复用这个接口进行回调
 	Approve(context.Context, *ApproveReq) (*ApproveResp, error)
+	// itsm v4 回调接口
+	ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error)
 	GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error)
 	GetLastPublish(context.Context, *GetLastPublishReq) (*GetLastPublishResp, error)
 	GetReleasesStatus(context.Context, *GetReleasesStatusReq) (*strategy.Strategy, error)
@@ -2539,6 +2664,25 @@ type ConfigServer interface {
 	CompareKvConflicts(context.Context, *CompareKvConflictsReq) (*CompareKvConflictsResp, error)
 	// 获取模板和非模板配置项数量
 	GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error)
+	// 进程管理
+	// 进程列表
+	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
+	// 进程操作
+	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
+	// 进程过滤条件
+	ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error)
+	// 同步cc
+	SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error)
+	// 任务历史列表
+	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
+	// 任务批次详情
+	GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error)
+	// 任务状态统计
+	GetTaskStatusStatistics(context.Context, *GetTaskStatusStatisticsReq) (*GetTaskStatusStatisticsResp, error)
+	// 获取同步cc状态
+	SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error)
+	// 重试失败的任务
+	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -2956,6 +3100,9 @@ func (UnimplementedConfigServer) SubmitPublishApprove(context.Context, *SubmitPu
 func (UnimplementedConfigServer) Approve(context.Context, *ApproveReq) (*ApproveResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Approve not implemented")
 }
+func (UnimplementedConfigServer) ApprovalCallback(context.Context, *ApprovalCallbackReq) (*ApprovalCallbackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApprovalCallback not implemented")
+}
 func (UnimplementedConfigServer) GetLastSelect(context.Context, *GetLastSelectReq) (*GetLastSelectResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLastSelect not implemented")
 }
@@ -3081,6 +3228,33 @@ func (UnimplementedConfigServer) CompareKvConflicts(context.Context, *CompareKvC
 }
 func (UnimplementedConfigServer) GetTemplateAndNonTemplateCICount(context.Context, *GetTemplateAndNonTemplateCICountReq) (*GetTemplateAndNonTemplateCICountResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateAndNonTemplateCICount not implemented")
+}
+func (UnimplementedConfigServer) ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcess not implemented")
+}
+func (UnimplementedConfigServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
+}
+func (UnimplementedConfigServer) ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessFilterOptions not implemented")
+}
+func (UnimplementedConfigServer) SyncCMDB(context.Context, *SyncCMDBReq) (*SyncCMDBResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDB not implemented")
+}
+func (UnimplementedConfigServer) ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTaskBatch not implemented")
+}
+func (UnimplementedConfigServer) GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTaskBatchDetail not implemented")
+}
+func (UnimplementedConfigServer) GetTaskStatusStatistics(context.Context, *GetTaskStatusStatisticsReq) (*GetTaskStatusStatisticsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTaskStatusStatistics not implemented")
+}
+func (UnimplementedConfigServer) SyncCMDBStatus(context.Context, *SyncCMDBStatusReq) (*SyncCMDBStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncCMDBStatus not implemented")
+}
+func (UnimplementedConfigServer) RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetryTasks not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -5560,6 +5734,24 @@ func _Config_Approve_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ApprovalCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApprovalCallbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ApprovalCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ApprovalCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ApprovalCallback(ctx, req.(*ApprovalCallbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_GetLastSelect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLastSelectReq)
 	if err := dec(in); err != nil {
@@ -6316,6 +6508,168 @@ func _Config_GetTemplateAndNonTemplateCICount_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListProcess(ctx, req.(*ListProcessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OperateProcessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).OperateProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_OperateProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).OperateProcess(ctx, req.(*OperateProcessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ProcessFilterOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessFilterOptionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ProcessFilterOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ProcessFilterOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ProcessFilterOptions(ctx, req.(*ProcessFilterOptionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_SyncCMDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).SyncCMDB(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_SyncCMDB_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).SyncCMDB(ctx, req.(*SyncCMDBReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ListTaskBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTaskBatchReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListTaskBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListTaskBatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListTaskBatch(ctx, req.(*ListTaskBatchReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetTaskBatchDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskBatchDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetTaskBatchDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetTaskBatchDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetTaskBatchDetail(ctx, req.(*GetTaskBatchDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetTaskStatusStatistics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskStatusStatisticsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetTaskStatusStatistics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetTaskStatusStatistics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetTaskStatusStatistics(ctx, req.(*GetTaskStatusStatisticsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_SyncCMDBStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncCMDBStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).SyncCMDBStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_SyncCMDBStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).SyncCMDBStatus(ctx, req.(*SyncCMDBStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_RetryTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryTasksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).RetryTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_RetryTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).RetryTasks(ctx, req.(*RetryTasksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -6872,6 +7226,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Config_Approve_Handler,
 		},
 		{
+			MethodName: "ApprovalCallback",
+			Handler:    _Config_ApprovalCallback_Handler,
+		},
+		{
 			MethodName: "GetLastSelect",
 			Handler:    _Config_GetLastSelect_Handler,
 		},
@@ -7038,6 +7396,42 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTemplateAndNonTemplateCICount",
 			Handler:    _Config_GetTemplateAndNonTemplateCICount_Handler,
+		},
+		{
+			MethodName: "ListProcess",
+			Handler:    _Config_ListProcess_Handler,
+		},
+		{
+			MethodName: "OperateProcess",
+			Handler:    _Config_OperateProcess_Handler,
+		},
+		{
+			MethodName: "ProcessFilterOptions",
+			Handler:    _Config_ProcessFilterOptions_Handler,
+		},
+		{
+			MethodName: "SyncCMDB",
+			Handler:    _Config_SyncCMDB_Handler,
+		},
+		{
+			MethodName: "ListTaskBatch",
+			Handler:    _Config_ListTaskBatch_Handler,
+		},
+		{
+			MethodName: "GetTaskBatchDetail",
+			Handler:    _Config_GetTaskBatchDetail_Handler,
+		},
+		{
+			MethodName: "GetTaskStatusStatistics",
+			Handler:    _Config_GetTaskStatusStatistics_Handler,
+		},
+		{
+			MethodName: "SyncCMDBStatus",
+			Handler:    _Config_SyncCMDBStatus_Handler,
+		},
+		{
+			MethodName: "RetryTasks",
+			Handler:    _Config_RetryTasks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

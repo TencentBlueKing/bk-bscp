@@ -15,9 +15,11 @@ package auth
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -43,6 +45,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
+var (
+	// skipValidateUserPaths 那些路径不需要校验用户，比如v4 itsm中的回调
+	skipValidateUserPaths = []string{
+		"approval_callback",
+	}
+)
+
 // initKitWithBKJWT 蓝鲸网关鉴权
 func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *multierror.Error) bool {
 	if a.gwParser == nil {
@@ -50,8 +59,14 @@ func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *mult
 		multiErr.Errors = append(multiErr.Errors, errors.Wrap(err, "auth with bk_jwt"))
 		return false
 	}
-
-	kt, err := a.gwParser.Parse(r.Context(), r.Header)
+	validateUser := true
+	for _, path := range skipValidateUserPaths {
+		if strings.HasSuffix(r.URL.Path, path) {
+			validateUser = false
+			break
+		}
+	}
+	kt, err := a.gwParser.Parse(r.Context(), r.Header, validateUser)
 	if err != nil {
 		multiErr.Errors = append(multiErr.Errors, errors.Wrap(err, "auth with bk_jwt"))
 		return false
@@ -61,6 +76,7 @@ func (a authorizer) initKitWithBKJWT(r *http.Request, k *kit.Kit, multiErr *mult
 	// user 会从jwt获取, fallback 从 X-Bkapi-User-Name 头部获取(app校验成功, 说明有权限, 网关使用场景)
 	k.AppCode = kt.AppCode
 	k.User = kt.User
+	k.TenantID = r.Header.Get(constant.BkTenantID) // 接口调用会带上这个租户ID
 	return true
 }
 
@@ -96,6 +112,8 @@ func (a authorizer) initKitWithCookie(r *http.Request, k *kit.Kit, multiErr *mul
 
 	// 登入态只支持用户名
 	k.User = resp.Username
+	k.TenantID = resp.TenantId
+	k.BkToken = loginCred.Token
 	return true
 }
 
@@ -122,7 +140,8 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 		}
 		k.Lang = tools.GetLangFromReq(r)
 		multiErr := &multierror.Error{}
-
+		// log 打印，将header 信息打印出来
+		slog.Info("request header", "header", r.Header, "path", path.Base(r.URL.Path))
 		switch {
 		case a.initKitWithBKJWT(r, k, multiErr):
 		case a.initKitWithCookie(r, k, multiErr):
@@ -138,7 +157,6 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 		r.Header.Set(constant.AppCodeKey, k.AppCode)
 		r.Header.Set(constant.RidKey, k.Rid)
 		r.Header.Set(constant.UserKey, k.User)
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)
@@ -176,12 +194,14 @@ func (a authorizer) WebAuthentication(webHost string) func(http.Handler) http.Ha
 					if errors.Is(err, errf.ErrPermissionDenied) {
 						msg := base64.StdEncoding.EncodeToString([]byte(errf.GetErrMsg(err)))
 						redirectURL := fmt.Sprintf("/403.html?msg=%s", url.QueryEscape(msg))
+						slog.Info("web auth failed, redirect to 403 page", "err", err)
 						http.Redirect(w, r, redirectURL, http.StatusFound)
 						return
 					}
 				}
 
 				// web类型做302跳转登入
+				slog.Info("web auth failed, redirect to login page", "err", multiErr)
 				http.Redirect(w, r, a.authLoginClient.BuildLoginRedirectURL(r, webHost), http.StatusFound)
 				return
 			}
@@ -299,14 +319,15 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		lang := tools.GetLangFromReq(r)
 		kt.Lang = lang
 
-		bizID, err := strconv.Atoi(bizIDStr)
+		bizIDUint64, err := strconv.ParseUint(bizIDStr, 10, 32)
 		if err != nil {
 			render.Render(w, r, rest.BadRequest(err))
 			return
 		}
-		kt.BizID = uint32(bizID)
+		bizID := uint32(bizIDUint64)
+		kt.BizID = bizID
 
-		if !a.HasBiz(uint32(bizID)) {
+		if !a.HasBiz(r.Context(), bizID) {
 			err := fmt.Errorf("biz id %d does not exist", bizID)
 			render.Render(w, r, rest.BadRequest(err))
 			return
@@ -320,6 +341,7 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		}
 
 		kt.OperateWay = r.Header.Get(constant.OperateWayKey)
+
 		ctx := kit.WithKit(r.Context(), kt)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -405,6 +427,7 @@ func (a *authorizer) iamRequestFilter(w http.ResponseWriter, req *http.Request, 
 	kit.AppCode = appCode
 	kit.Rid = rid
 	kit.User = user
+	kit.TenantID = req.Header.Get(constant.BkTenantID) // 多租户环境权限中心回调时会带上
 
 	return nil
 }
@@ -430,7 +453,12 @@ func (a *authorizer) checkRequestAuthorization(req *http.Request) (bool, error) 
 		return false, nil
 	}
 
-	resp, err := a.authClient.IAMVerify(req.Context(), &pbas.IAMVerifyReq{Token: pwd})
+	// grpc call
+	kt := kit.New()
+	kt.TenantID = req.Header.Get(constant.BkTenantID) // 多租户环境权限中心回调时会带上
+	kt.Ctx = req.Context()
+
+	resp, err := a.authClient.IAMVerify(kt.RpcCtx(), &pbas.IAMVerifyReq{Token: pwd})
 	if err != nil {
 		return false, err
 	}

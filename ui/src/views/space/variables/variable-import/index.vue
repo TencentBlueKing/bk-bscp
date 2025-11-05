@@ -123,6 +123,7 @@
     margin-top: 24px;
     &.show-example {
       :deep(.config-content-editor) {
+        height: 484px;
         .code-editor-wrapper {
           width: calc(100% - 520px);
         }

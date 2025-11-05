@@ -17,7 +17,6 @@ import (
 	"path"
 	"sort"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/search"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbrci "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/released-ci"
@@ -47,17 +46,12 @@ func (s *Service) ListReleasedConfigItems(ctx context.Context,
 	kt := kit.FromGrpcContext(ctx)
 
 	// validate the page params
-	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
+	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All, Search: req.GetSearch()}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
 		return nil, err
 	}
 
-	searcher, err := search.NewSearcher(req.SearchFields, req.SearchValue, search.ReleasedConfigItem)
-	if err != nil {
-		return nil, err
-	}
-
-	details, count, err := s.dao.ReleasedCI().List(kt, req.BizId, req.AppId, req.ReleaseId, searcher, opt, req.SearchValue)
+	details, count, err := s.dao.ReleasedCI().List(kt, req.BizId, req.AppId, req.ReleaseId, opt)
 	if err != nil {
 		logs.Errorf("list released app bound templates revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

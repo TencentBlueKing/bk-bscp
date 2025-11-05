@@ -58,6 +58,7 @@ func initAuditBuilder(kit *kit.Kit, bizID uint32, au *table.AuditField, ad *audi
 			StrategyId:  au.StrategyId,
 			IsCompare:   au.IsCompare,
 			Detail:      au.Detail,
+			TenantID:    kit.TenantID,
 		},
 		ad:    ad,
 		bizID: bizID,

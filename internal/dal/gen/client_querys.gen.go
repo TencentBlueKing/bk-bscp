@@ -30,6 +30,7 @@ func newClientQuery(db *gorm.DB, opts ...gen.DOOption) clientQuery {
 	_clientQuery.ID = field.NewUint32(tableName, "id")
 	_clientQuery.BizID = field.NewUint32(tableName, "biz_id")
 	_clientQuery.AppID = field.NewUint32(tableName, "app_id")
+	_clientQuery.TenantID = field.NewString(tableName, "tenant_id")
 	_clientQuery.Creator = field.NewString(tableName, "creator")
 	_clientQuery.SearchName = field.NewString(tableName, "search_name")
 	_clientQuery.SearchType = field.NewString(tableName, "search_type")
@@ -49,6 +50,7 @@ type clientQuery struct {
 	ID              field.Uint32
 	BizID           field.Uint32
 	AppID           field.Uint32
+	TenantID        field.String
 	Creator         field.String
 	SearchName      field.String
 	SearchType      field.String
@@ -74,6 +76,7 @@ func (c *clientQuery) updateTableName(table string) *clientQuery {
 	c.ID = field.NewUint32(table, "id")
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.AppID = field.NewUint32(table, "app_id")
+	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.SearchName = field.NewString(table, "search_name")
 	c.SearchType = field.NewString(table, "search_type")
@@ -106,10 +109,11 @@ func (c *clientQuery) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *clientQuery) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 9)
+	c.fieldMap = make(map[string]field.Expr, 10)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["app_id"] = c.AppID
+	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["search_name"] = c.SearchName
 	c.fieldMap["search_type"] = c.SearchType

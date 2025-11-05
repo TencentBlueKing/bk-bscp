@@ -42,6 +42,22 @@ func (s *Service) GetAppID(ctx context.Context, req *pbcs.GetAppIDReq) (*pbcs.Ge
 	}, nil
 }
 
+// GetTenantIDByBiz 通过业务获取租户ID
+func (s *Service) GetTenantIDByBiz(ctx context.Context, req *pbcs.GetTenantIDByBizReq) (
+	*pbcs.GetTenantIDByBizResp, error) {
+	if req.GetBizId() <= 0 {
+		return nil, errf.New(errf.InvalidParameter, "invalid biz id")
+	}
+	kit := kit.FromGrpcContext(ctx)
+
+	tenantID, err := s.op.GetTenantIDByBiz(kit, req.GetBizId(), req.GetRefresh())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetTenantIDByBizResp{TenantId: tenantID}, nil
+}
+
 // GetAppMeta get app's basic info.
 func (s *Service) GetAppMeta(ctx context.Context, req *pbcs.GetAppMetaReq) (*pbcs.JsonRawResp, error) {
 	if req.BizId <= 0 || req.AppId <= 0 {
@@ -68,7 +84,7 @@ func (s *Service) ListApps(ctx context.Context, req *pbcs.ListAppsReq) (*pbcs.Li
 		Limit: math.MaxUint32, // 不需要分页, 直接使用 max 获取
 	}
 
-	apps, count, err := s.dao.App().List(kt, []uint32{req.GetBizId()}, "", "", "", opt)
+	apps, count, err := s.dao.App().List(kt, []uint32{req.GetBizId()}, "", opt)
 	if err != nil {
 		return nil, err
 	}
@@ -262,4 +278,31 @@ func (s *Service) SetPublishTime(ctx context.Context, req *pbcs.SetPublishTimeRe
 		Result: result,
 	}
 	return &resp, nil
+}
+
+// GetAgentBiz get business ID by agent ID
+func (s *Service) GetAgentBiz(ctx context.Context, req *pbcs.GetAgentBizReq) (*pbcs.GetAgentBizResp, error) {
+	if req.AgentId == "" {
+		return nil, errf.New(errf.InvalidParameter, "invalid agent id")
+	}
+
+	kt := kit.FromGrpcContext(ctx)
+
+	// Query BizHost table by agentID
+	bizHost, err := s.dao.BizHost().GetByAgentID(kt, req.AgentId)
+	if err != nil {
+		// Check if it's a not found error
+		if errf.Error(err).Code == errf.RecordNotFound {
+			return &pbcs.GetAgentBizResp{
+				BizId: 0,
+				Found: false,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &pbcs.GetAgentBizResp{
+		BizId: uint32(bizHost.BizID),
+		Found: true,
+	}, nil
 }

@@ -23,15 +23,13 @@
             <span class="text">{{ `${panel.label}(${panel.count})` }}</span>
           </div>
         </div>
-        <bk-input
+        <SearchSelector
+          ref="searchSelectorRef"
+          :search-filed="searchFiled"
+          :user-filed="['reviser', 'creator']"
+          :placeholder="t('搜索 服务别名、服务名称、服务描述、创建人、更新人')"
           class="search-app-name"
-          type="search"
-          v-model="searchStr"
-          :placeholder="t('搜索 服务别名、服务名称、服务描述、更新人、创建人')"
-          :clearable="true"
-          @input="handleSearch"
-          @clear="handleClearSearchStr">
-        </bk-input>
+          @search="handleSearch" />
         <div class="panel-wrap">
           <div
             v-for="panel in showPanels"
@@ -54,7 +52,7 @@
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
             @create="handleCreateServiceClick"
-            @clear="handleClearSearchStr" />
+            @clear="handleClearsearchQuery" />
           <template v-else>
             <div class="serving-list">
               <Card
@@ -95,7 +93,7 @@
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
             @create="handleCreateServiceClick"
-            @clear="handleClearSearchStr" />
+            @clear="handleClearsearchQuery" />
         </template>
       </ServiceTable>
     </div>
@@ -156,9 +154,10 @@
   import CreateService from './create-service.vue';
   import EditService from './edit-service.vue';
   import Message from 'bkui-vue/lib/message';
-  import { debounce } from 'lodash';
+  // import { debounce } from 'lodash';
   import ServiceTable from './service-table.vue';
   import EmptyList from './empty-list.vue';
+  import SearchSelector from '../../../../../components/search-selector.vue';
   import CloneService from './clone-service/index.vue';
 
   const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
@@ -173,7 +172,7 @@
 
   const serviceList = ref<IAppItem[]>([]);
   const isLoading = ref(true);
-  const searchStr = ref('');
+  const searchQuery = ref<{ [key: string]: string }>({});
   const isCreateServiceOpen = ref(false);
   const isEditServiceOpen = ref(false);
   const isCloneServiceOpen = ref(false);
@@ -220,6 +219,14 @@
   ];
   const activeType = ref('all');
   const activeShow = ref('table');
+  const searchFiled = [
+    { field: 'alias', label: t('服务别名') },
+    { field: 'name', label: t('服务名称') },
+    { field: 'memo', label: t('服务描述') },
+    { field: 'creator', label: t('创建人') },
+    { field: 'reviser', label: t('更新人') },
+  ];
+  const searchSelectorRef = ref();
 
   // 查询条件
   const filters = computed(() => {
@@ -229,12 +236,7 @@
       start: (current - 1) * limit,
       limit,
     };
-    if (searchStr.value) {
-      rules.search = searchStr.value;
-    }
-    if (onlyShowMyService.value) {
-      rules.operator = userInfo.value.username;
-    }
+    rules.search = searchQuery.value;
     if (activeType.value) {
       rules.config_type = activeType.value === 'all' ? '' : activeType.value;
     }
@@ -243,11 +245,8 @@
   const isEmpty = computed(() => serviceList.value.length === 0);
 
   watch(
-    () => [onlyShowMyService.value, props.spaceId, activeType.value],
+    () => [props.spaceId, activeType.value],
     () => {
-      searchStr.value = '';
-      isSearchEmpty.value = false;
-      pagination.value.limit = 50;
       refreshSeviceList();
     },
   );
@@ -304,7 +303,6 @@
           },
         ],
       };
-
       showApplyPermDialog.value = true;
     }
   };
@@ -362,7 +360,15 @@
 
   // 切换展示我创建的服务
   const handleChangeShowService = (val: boolean) => {
+    if (val) {
+      // 勾选只显示我的服务 清除创建人搜索项
+      searchSelectorRef.value.clearCreator();
+      searchQuery.value.creator = userInfo.value.username;
+    } else {
+      searchQuery.value.creator = '';
+    }
     localStorage.setItem('onlyShowMyService', val.toString());
+    refreshSeviceList();
   };
 
   const handleLimitChange = (limit: number) => {
@@ -376,12 +382,19 @@
     loadAppList();
   };
 
-  const handleSearch = debounce(() => {
+  const handleSearch = (list: { [key: string]: string }) => {
+    // 搜索项中包含创建人 取消勾选只显示我创建的服务
+    if (list.creator) {
+      onlyShowMyService.value = false;
+      localStorage.setItem('onlyShowMyService', 'false');
+    }
+    searchQuery.value = list;
     isSearchEmpty.value = true;
     refreshSeviceList();
-  }, 300);
-  const handleClearSearchStr = () => {
-    searchStr.value = '';
+  };
+  const handleClearsearchQuery = () => {
+    searchQuery.value = {};
+    searchSelectorRef.value.clear();
     isSearchEmpty.value = false;
     refreshSeviceList();
   };

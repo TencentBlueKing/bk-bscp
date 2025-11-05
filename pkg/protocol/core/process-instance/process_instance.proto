@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "pkg/protocol/core/base/base.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+package pbpi;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process-instance;pbpi";
+
+// ProcInst source resource reference: pkg/dal/table/process_instance.go
+message ProcInst {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例ID" }];
+  ProcInstSpec spec = 2;
+  ProcInstAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+}
+
+// ProcessSpec source resource reference: pkg/dal/table/process_instance.go
+message ProcInstSpec {
+  string local_inst_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "LocalInstID" }];
+  string inst_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "InstID" }];
+  string status = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
+  string managed_status = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
+  google.protobuf.Timestamp status_updated_at = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态更新时间" }];
+}
+
+message ProcInstAttachment {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string tenant_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
+  uint32 process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程管理ID" }];
+  uint32 cc_process_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc进程ID" }];
+}

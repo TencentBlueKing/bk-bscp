@@ -53,12 +53,13 @@
           :selected-exist-count="selectedExistCount"
           @deleted="handleBatchDeleted" />
       </div>
-      <SearchInput
-        v-model="searchStr"
+      <SearchSelector
+        ref="searchSelectorRef"
         class="config-search-input"
-        :width="280"
-        :placeholder="t('配置文件名/创建人/修改人')"
-        v-bk-tooltips="{ content: t('配置文件名/创建人/修改人'), disabled: locale === 'zh-cn' }" />
+        :search-filed="searchFiled"
+        :user-filed="['creator', 'reviser']"
+        :placeholder="searchPlaceholder"
+        @search="searchQuery = $event" />
     </div>
     <section class="config-list-table">
       <TableWithTemplates
@@ -66,8 +67,8 @@
         ref="tableRef"
         :bk-biz-id="props.bkBizId"
         :app-id="props.appId"
-        :search-str="searchStr"
-        @clear-str="clearStr"
+        :search-query="searchQuery"
+        @clear-str="handleClearsearchQuery"
         @delete-config="refreshVariable"
         @update-selected-items="handleTmpSelectedItems" />
       <TableWithKv
@@ -75,9 +76,9 @@
         ref="tableRef"
         :bk-biz-id="props.bkBizId"
         :app-id="props.appId"
-        :search-str="searchStr"
+        :search-query="searchQuery"
         @send-table-data-count="selecTableDataCount = $event"
-        @clear-str="clearStr"
+        @clear-str="handleClearsearchQuery"
         @update-selected-items="
           (data) => {
             selectedKeys = data.selectedConfigKeys;
@@ -91,13 +92,12 @@
   </section>
 </template>
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import useConfigStore from '../../../../../../../store/config';
   import useServiceStore from '../../../../../../../store/service';
   import useGlobalStore from '../../../../../../../store/global';
-  import SearchInput from '../../../../../../../components/search-input.vue';
   import CreateConfig from './create-config/index.vue';
   import EditVariables from './variables/edit-variables.vue';
   import ViewVariables from './variables/view-variables.vue';
@@ -106,13 +106,14 @@
   import ConfigExport from './config-export.vue';
   import BatchOperationBtn from './batch-operation-btn.vue';
   import CountTips from '../../components/count-tips.vue';
+  import SearchSelector from '../../../../../../../components/search-selector.vue';
 
   const configStore = useConfigStore();
   const serviceStore = useServiceStore();
   const { versionData, conflictFileCount, onlyViewConflict, allExistConfigCount } = storeToRefs(configStore);
   const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
   const { isFileType } = storeToRefs(serviceStore);
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   const props = defineProps<{
     bkBizId: string;
@@ -120,7 +121,6 @@
   }>();
 
   const tableRef = ref();
-  const searchStr = ref('');
   const editVariablesRef = ref();
   const selectedIds = ref<number[]>([]);
   const selectedItems = ref<any[]>([]);
@@ -129,6 +129,38 @@
   const selectedKeys = ref<string[]>([]);
   const selectedExistCount = ref(0); // 选中的删除项个数
   const selectedDeleteCount = ref(0); // 选中的恢复项个数
+
+  const searchQuery = ref<{ [key: string]: string }>({});
+  const searchSelectorRef = ref();
+
+  const searchFiled = computed(() => {
+    if (isFileType.value) {
+      return [
+        { field: 'path_name', label: t('配置文件名') },
+        { field: 'creator', label: t('创建人') },
+        { field: 'reviser', label: t('修改人') },
+      ];
+    }
+    return [
+      { field: 'key', label: t('配置项名称') },
+      { field: 'creator', label: t('创建人') },
+      { field: 'reviser', label: t('修改人') },
+    ];
+  });
+
+  const searchPlaceholder = computed(() => {
+    if (isFileType.value) {
+      return t('配置文件名/创建人/修改人');
+    }
+    return t('配置项名称/创建人/修改人');
+  });
+
+  watch(
+    () => versionData.value.id,
+    () => {
+      handleClearsearchQuery();
+    },
+  );
 
   const refreshConfigList = (createConfig = false) => {
     if (isFileType.value) {
@@ -150,8 +182,9 @@
     editVariablesRef.value.getVariableList();
   };
 
-  const clearStr = () => {
-    searchStr.value = '';
+  const handleClearsearchQuery = () => {
+    searchQuery.value = {};
+    searchSelectorRef.value.clear();
   };
 
   // 批量删除配置项回调
@@ -195,6 +228,7 @@
       gap: 8px;
     }
     .config-search-input {
+      width: 280px;
       margin-left: auto;
     }
   }

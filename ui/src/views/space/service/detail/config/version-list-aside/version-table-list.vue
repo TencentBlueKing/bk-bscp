@@ -55,7 +55,7 @@
           </bk-table-column>
           <bk-table-column :label="t('创建人')">
             <template #default="{ row }">
-              {{ row.revision?.creator || '--' }}
+                <user-name v-if="row.revision" :name="row.revision.creator"/>
             </template>
           </bk-table-column>
           <bk-table-column :label="t('生成时间')" width="220">
@@ -153,6 +153,7 @@
   import tableEmpty from '../../../../../../components/table/table-empty.vue';
   import ReleasedGroupViewer from '../components/released-group-viewer.vue';
   import VersionOperateConfirmDialog from './version-operate-confirm-dialog.vue';
+  import UserName from '../../../../../../components/user-name.vue';
 
   const configStore = useConfigStore();
   const { versionData } = storeToRefs(configStore);
