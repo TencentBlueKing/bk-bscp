@@ -10,28 +10,30 @@
  * limitations under the License.
  */
 
-package cmdb
+package gse
 
 import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-// Biz 同步业务步骤
-func SyncCMDB(bizID uint32) *types.Step {
-	logs.V(3).Infof("Start synchronizing CMDB, bizID=%d", bizID)
+// SyncGseStatus 同步gse状态
+func SyncGseStatus(bizID uint32, opType gse.OpType) *types.Step {
+	logs.V(3).Infof("Start synchronizing GSE, bizID=%d, opType=%v", bizID, opType)
 
-	syncCmdb := types.NewStep("sync-cmdb-task", cmdbGse.SyncCMDB.String()).
-		SetAlias("sync-cmdb").
+	syncCmdb := types.NewStep("sync-gse-task", cmdbGse.SyncGSE.String()).
+		SetAlias("sync-gse").
 		SetMaxExecution(process.MaxExecutionTime).
 		SetMaxTries(process.MaxTries)
 
-	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncCMDBPayload{
-		BizID: bizID,
+	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncGSEPayload{
+		OpType: opType,
+		BizID:  bizID,
 	}))
 
 	return syncCmdb

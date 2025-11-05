@@ -10,58 +10,59 @@
  * limitations under the License.
  */
 
-package cmdb
+package cmdbGse
 
 import (
 	"fmt"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
+	gseSvc "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/cmdb"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/step/gse"
 )
 
 const (
-	// TaskType 任务类型
-	TaskType = "cmdb_sync"
+	// TaskType 同步cmdb和gse
+	TaskType = "sync_cmdb_gse"
 	// TaskIndexType 任务索引类型
 	TaskIndexType = "biz_id"
 )
 
-type syncCMDBTask struct {
+type syncCMDBGSETask struct {
 	bizID        uint32
+	opType       gseSvc.OpType
 	operatorUser string
-	operateType  table.CCSyncStatus
 }
 
-// NewSyncCMDBTask 创建一个 同步cmdb 任务
-func NewSyncCMDBTask(bizID uint32, operateType table.CCSyncStatus,
-	operatorUser string) types.TaskBuilder {
-	return &syncCMDBTask{
+// NewSyncCMDBGSETask 创建一个 同步cmdb 任务
+func NewSyncCMDBGSETask(bizID uint32, opType gseSvc.OpType, operatorUser string) types.TaskBuilder {
+	return &syncCMDBGSETask{
 		bizID:        bizID,
-		operateType:  operateType,
+		opType:       opType,
 		operatorUser: operatorUser,
 	}
 }
 
 // FinalizeTask implements types.TaskBuilder.
-func (s *syncCMDBTask) FinalizeTask(t *types.Task) error {
+func (s *syncCMDBGSETask) FinalizeTask(t *types.Task) error {
 	// 设置一些通用的回调，比如执行结果回调
 	return nil
 }
 
 // Steps implements types.TaskBuilder.
-func (s *syncCMDBTask) Steps() ([]*types.Step, error) {
+func (s *syncCMDBGSETask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
-		cmdb.SyncCMDB(s.bizID, s.operateType),
+		cmdb.SyncCMDB(s.bizID),
+		gse.SyncGseStatus(s.bizID, s.opType),
 	}, nil
 }
 
 // TaskInfo implements types.TaskBuilder.
-func (s *syncCMDBTask) TaskInfo() types.TaskInfo {
+func (s *syncCMDBGSETask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
-		TaskName:      BuildSyncCMDBTaskName(s.operateType.String(), s.bizID),
+		TaskName:      BuildSyncCMDBGSETaskName(s.bizID),
 		TaskType:      TaskType,
 		TaskIndexType: TaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", s.bizID),
@@ -70,6 +71,6 @@ func (s *syncCMDBTask) TaskInfo() types.TaskInfo {
 }
 
 // BuildSyncCMDBTaskName 构造同步CMDB任务名
-func BuildSyncCMDBTaskName(operateType string, bizID uint32) string {
-	return fmt.Sprintf("sync-cmdb-%s-%d", operateType, bizID)
+func BuildSyncCMDBGSETaskName(bizID uint32) string {
+	return fmt.Sprintf("sync-cmdb-gse-%d", bizID)
 }

@@ -24,8 +24,9 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
-// SyncCMDB implements pbcs.ConfigServer.
-func (s *Service) SyncCMDB(ctx context.Context, req *pbcs.SyncCMDBReq) (*pbcs.SyncCMDBResp, error) {
+// SyncCmdbGseStatus implements pbcs.ConfigServer.
+func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbcs.SyncCmdbGseStatusReq) (
+	*pbcs.SyncCmdbGseStatusResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
@@ -36,7 +37,7 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbcs.SyncCMDBReq) (*pbcs.Sy
 	}
 
 	// 判断是否已经存在同步，存在直接返回任务ID或者其他信息
-	status, err := s.SyncCMDBStatus(grpcKit.RpcCtx(), &pbcs.SyncCMDBStatusReq{
+	status, err := s.CmdbGseStatus(grpcKit.RpcCtx(), &pbcs.CmdbGseStatusReq{
 		BizId: req.GetBizId(),
 	})
 	if err != nil {
@@ -50,20 +51,20 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbcs.SyncCMDBReq) (*pbcs.Sy
 			status.GetStatus())
 	}
 
-	resp, err := s.client.DS.SyncCMDB(grpcKit.RpcCtx(), &pbds.SyncCMDBReq{
+	resp, err := s.client.DS.SyncCmdbGseStatus(grpcKit.RpcCtx(), &pbds.SyncCmdbGseStatusReq{
 		BizId: req.GetBizId(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &pbcs.SyncCMDBResp{
+	return &pbcs.SyncCmdbGseStatusResp{
 		TaskId: resp.GetTaskId(),
 	}, nil
 }
 
-// SyncCMDBStatus implements pbcs.ConfigServer.
-func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbcs.SyncCMDBStatusReq) (*pbcs.SyncCMDBStatusResp, error) {
+// CmdbGseStatus implements pbcs.ConfigServer.
+func (s *Service) CmdbGseStatus(ctx context.Context, req *pbcs.CmdbGseStatusReq) (*pbcs.CmdbGseStatusResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
@@ -73,14 +74,14 @@ func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbcs.SyncCMDBStatusRe
 		return nil, err
 	}
 
-	resp, err := s.client.DS.SyncCMDBStatus(grpcKit.RpcCtx(), &pbds.SyncCMDBStatusReq{
+	resp, err := s.client.DS.CmdbGseStatus(grpcKit.RpcCtx(), &pbds.CmdbGseStatusReq{
 		BizId: req.GetBizId(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &pbcs.SyncCMDBStatusResp{
+	return &pbcs.CmdbGseStatusResp{
 		LastSyncTime: resp.GetLastSyncTime(),
 		Status:       resp.GetStatus(),
 	}, nil

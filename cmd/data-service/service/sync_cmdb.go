@@ -22,21 +22,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
-	cmdbBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb"
-	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
-// SyncCMDB implements pbds.DataServer.
-func (s *Service) SyncCMDB(ctx context.Context, req *pbds.SyncCMDBReq) (*pbds.SyncCMDBResp, error) {
+// SyncCmdbGseStatus implements pbds.DataServer.
+func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseStatusReq) (*pbds.SyncCmdbGseStatusResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	processOperateTask, err := task.NewByTaskBuilder(
-		cmdbBuilder.NewSyncCMDBTask(req.GetBizId(), table.Sync, "admin"),
+		cmdbGse.NewSyncCMDBGSETask(req.GetBizId(), gse.OpTypeQuery, grpcKit.User),
 	)
 	if err != nil {
 		logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -46,7 +46,7 @@ func (s *Service) SyncCMDB(ctx context.Context, req *pbds.SyncCMDBReq) (*pbds.Sy
 	// 启动任务
 	s.taskManager.Dispatch(processOperateTask)
 
-	return &pbds.SyncCMDBResp{
+	return &pbds.SyncCmdbGseStatusResp{
 		TaskId: processOperateTask.TaskID,
 	}, nil
 
@@ -87,15 +87,15 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 	return nil
 }
 
-// SyncCMDBStatus implements pbds.DataServer.
-func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbds.SyncCMDBStatusReq) (*pbds.SyncCMDBStatusResp, error) {
+// CmdbGseStatus implements pbds.DataServer.
+func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq) (*pbds.CmdbGseStatusResp, error) {
 
 	// 获取通过业务查询是否有同步任务
 	task, err := s.taskManager.ListTask(ctx, &iface.ListOption{
-		TaskType:      cmdbBuilder.TaskType,
-		TaskName:      cmdbBuilder.BuildSyncCMDBTaskName(table.Sync.String(), req.GetBizId()),
+		TaskType:      cmdbGse.TaskType,
+		TaskName:      cmdbGse.BuildSyncCMDBGSETaskName(req.GetBizId()),
 		TaskIndex:     fmt.Sprintf("%d", req.GetBizId()),
-		TaskIndexType: cmdbBuilder.TaskIndexType,
+		TaskIndexType: cmdbGse.TaskIndexType,
 		Offset:        1,
 		Limit:         1,
 	})
@@ -110,7 +110,7 @@ func (s *Service) SyncCMDBStatus(ctx context.Context, req *pbds.SyncCMDBStatusRe
 		lastSyncTime = v.GetEndTime()
 	}
 
-	return &pbds.SyncCMDBStatusResp{
+	return &pbds.CmdbGseStatusResp{
 		LastSyncTime: timestamppb.New(lastSyncTime),
 		Status:       status,
 	}, nil

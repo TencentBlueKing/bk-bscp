@@ -69,7 +69,7 @@ func mig20250923114027Up(tx *gorm.DB) error {
 
 	now := time.Now()
 	if result := tx.Create([]IDGenerators{
-		{Resource: "process_instance", MaxID: 0, UpdatedAt: now},
+		{Resource: "process_instances", MaxID: 0, UpdatedAt: now},
 	}); result.Error != nil {
 		return result.Error
 	}

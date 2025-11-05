@@ -16,7 +16,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb"
+	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/hello"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 )
@@ -29,9 +29,9 @@ func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao
 	processExecutor := process.NewProcessExecutor(gseService, dao)
 	process.RegisterExecutor(processExecutor)
 
-	// 注册 cmdb 执行器
-	cmdbExecutor := cmdb.NewSyncCMDBExecutor(bkcmdbService, dao)
-	cmdb.RegisterExecutor(cmdbExecutor)
+	// 注册 同步cmdb和gse 执行器
+	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(bkcmdbService, gseService, dao)
+	cmdbGse.RegisterExecutor(cmdbGseExecutor)
 }
 
 // RegisterHello register

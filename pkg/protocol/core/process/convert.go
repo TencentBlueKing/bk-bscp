@@ -151,10 +151,104 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 		pbProc := PbProcess(p)
 		if insts, ok := procInstMap[p.ID]; ok {
 			pbProc.ProcInst = pbpi.PbProcInsts(insts)
+			// 新增逻辑：根据实例状态计算 Process 状态
+			statusSet := make(map[string]struct{})
+			managedStatusSet := make(map[string]struct{})
+			for _, inst := range insts {
+				if inst.Spec != nil {
+					statusSet[inst.Spec.Status.String()] = struct{}{}
+					managedStatusSet[inst.Spec.ManagedStatus.String()] = struct{}{}
+				}
+			}
+
+			pbProc.Spec.Status = deriveProcessStatus(statusSet)
+			pbProc.Spec.ManagedStatus = deriveManagedStatus(managedStatusSet)
+
+			// 生成对应的按钮
+			pbProc.Spec.Actions = deriveActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
+				pbProc.Spec.CcSyncStatus)
+
 		} else {
 			pbProc.ProcInst = []*pbpi.ProcInst{}
 		}
+
 		result = append(result, pbProc)
 	}
 	return result
+}
+
+// deriveProcessStatus 根据多个实例状态推导主进程状态
+func deriveProcessStatus(statusSet map[string]struct{}) string {
+	if len(statusSet) == 1 {
+		for s := range statusSet {
+			return s
+		}
+	}
+	// 存在多个不同状态，说明混合
+	return table.ProcessStatusPartlyRunning.String()
+}
+
+// deriveManagedStatus 根据多个实例状态推导主托管状态
+func deriveManagedStatus(statusSet map[string]struct{}) string {
+	if len(statusSet) == 1 {
+		for s := range statusSet {
+			return s
+		}
+	}
+	// 存在多个不同状态，说明混合
+	return table.ProcessManagedStatusPartlyManaged.String()
+}
+
+func deriveActions(status, managedStatus, syncStatus string) map[string]bool {
+	actions := map[string]bool{
+		"register":   false,
+		"unregister": false,
+		"start":      false,
+		"stop":       false,
+		"restart":    false,
+		"reload":     false,
+		"kill":       false,
+		"push":       false,
+	}
+
+	// starting/stopping 状态禁止操作
+	if status == table.ProcessStatusStarting.String() || status == table.ProcessStatusStopping.String() {
+		return actions
+	}
+
+	// 运行中状态
+	if status == table.ProcessStatusRunning.String() {
+		actions["stop"] = true
+		actions["kill"] = true
+
+		if syncStatus != table.Deleted.String() {
+			actions["push"] = true // 配置下发
+		}
+	}
+
+	// 部分运行
+	if status == table.ProcessStatusPartlyRunning.String() {
+		if managedStatus == table.ProcessManagedStatusPartlyManaged.String() {
+			actions["push"] = true
+			actions["stop"] = true
+		}
+	}
+
+	// 停止状态
+	if status == table.ProcessStatusStopped.String() {
+		if managedStatus == table.ProcessManagedStatusUnmanaged.String() {
+			actions["start"] = true
+			actions["register"] = true
+		}
+	}
+
+	// 运行中 或 部分运行 + 托管中 或 部分托管 + 同步状态为 updated → 允许 reload
+	if (status == table.ProcessStatusRunning.String() || status == table.ProcessStatusPartlyRunning.String()) &&
+		(managedStatus == table.ProcessManagedStatusManaged.String() ||
+			managedStatus == table.ProcessManagedStatusPartlyManaged.String()) &&
+		syncStatus == table.Updated.String() {
+		actions["reload"] = true
+	}
+
+	return actions
 }

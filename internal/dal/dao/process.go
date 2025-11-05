@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	process "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
@@ -46,6 +47,8 @@ type Process interface {
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
 	GetProcByBizScvProc(kit *kit.Kit, bizID, svcInstID, processID uint32) (*table.Process, error)
+	// 获取所有未删除的数据
+	ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -71,12 +74,24 @@ func (dao *processDao) GetProcByBizScvProc(kit *kit.Kit, bizID uint32, svcInstID
 func (dao *processDao) UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error {
 	m := dao.genQ.Process
 
-	_, err := dao.genQ.WithContext(kit.Ctx).Process.Where(m.BizID.Eq(bizID)).Where(conds...).Updates(data)
+	_, err := dao.genQ.WithContext(kit.Ctx).Process.
+		Where(m.BizID.Eq(bizID)).
+		Where(conds...).
+		Updates(data)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// ListActiveProcesses implements Process.
+func (dao *processDao) ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error) {
+	m := dao.genQ.Process
+
+	return dao.genQ.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Find()
 }
 
 // GetByID implements Process.
@@ -177,6 +192,17 @@ func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessS
 			return nil, 0, err
 		}
 	}
+
+	// processes 状态不能是删除状态
+	// process_instances 的进程状态和托管状态只要有一条数据是运行中或者托管中的都需要显示
+	sql := `processes.cc_sync_status != ?
+			OR EXISTS (
+			SELECT 1
+			FROM process_instances AS pl
+			WHERE pl.process_id = processes.id
+			AND (pl.status = ? OR pl.managed_status = ?)
+			)`
+	conds = append(conds, q.Where(utils.RawCond(sql, "deleted", "running", "managed")))
 
 	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
 

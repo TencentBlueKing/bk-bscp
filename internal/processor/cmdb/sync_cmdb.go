@@ -15,6 +15,7 @@ package cmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -339,7 +340,7 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 							},
 						})
 
-						instances := BuildInstances(&proc, bizID, mod.ID, now, hostCounter, moduleCounter)
+						instances := BuildInstances(bizID, proc.HostID, mod.ID, proc.ID, proc.ProcNum, now, hostCounter, moduleCounter)
 						processInstanceBatch = append(processInstanceBatch, instances...)
 					}
 				}
@@ -350,10 +351,11 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 	return processBatch, processInstanceBatch
 }
 
-func BuildInstances(proc *ProcInst, bizID, modID int, now time.Time, hostCounter map[int]int,
+// BuildInstances 生成进程实例
+func BuildInstances(bizID, hostID, modID, processID, procNum int, now time.Time, hostCounter map[int]int,
 	moduleCounter map[int]int) []*table.ProcessInstance {
 
-	num := proc.ProcNum
+	num := procNum
 	if num <= 0 {
 		num = 1
 	}
@@ -361,19 +363,19 @@ func BuildInstances(proc *ProcInst, bizID, modID int, now time.Time, hostCounter
 	instances := make([]*table.ProcessInstance, 0, num)
 	for range num {
 		// 先递增计数器
-		hostCounter[proc.HostID]++
+		hostCounter[hostID]++
 		moduleCounter[modID]++
 
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
 				TenantID:    "default",
 				BizID:       uint32(bizID),
-				CcProcessID: uint32(proc.ID),
+				CcProcessID: uint32(processID),
 			},
 			Spec: &table.ProcessInstanceSpec{
 				StatusUpdatedAt: now,
-				LocalInstID:     strconv.Itoa(hostCounter[proc.HostID]), // 同主机递增
-				InstID:          strconv.Itoa(moduleCounter[modID]),     // 同模块递增
+				LocalInstID:     strconv.Itoa(hostCounter[hostID]),  // 同主机递增
+				InstID:          strconv.Itoa(moduleCounter[modID]), // 同模块递增
 			},
 			Revision: &table.Revision{
 				CreatedAt: now,
@@ -416,9 +418,13 @@ func pageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([
 	return all, nil
 }
 
+// diffProcesses 函数比较当前进程列表 (dbProcesses) 和新进程列表 (newProcesses)
 func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) (toAdd, toUpdate []*table.Process,
-	toDelete []uint32) {
+	toDelete []uint32, err error) {
 
+	now := time.Now().UTC()
+
+	// 1. 构建 map 方便对比
 	dbMap := make(map[uint32]*table.Process)
 	for _, p := range dbProcesses {
 		dbMap[p.Attachment.CcProcessID] = p
@@ -429,38 +435,128 @@ func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) 
 		newMap[p.Attachment.CcProcessID] = p
 	}
 
+	// 2. 遍历 newProcesses
 	for _, newP := range newProcesses {
-		dbP, exists := dbMap[newP.Attachment.CcProcessID]
+		oldP, exists := dbMap[newP.Attachment.CcProcessID]
 		if !exists {
-			// DB 没有，新数据 ⇒ 新增
+			// 新增项：数据库中没有，直接加入新增列表
+			newP.Revision = &table.Revision{CreatedAt: now}
 			toAdd = append(toAdd, newP)
 			continue
 		}
 
-		// 如果 alias 变更 ⇒ 标记旧为 deleted，新增新记录
-		if dbP.Spec.Alias != newP.Spec.Alias {
-			dbP.Spec.CcSyncStatus = table.Deleted
-			toDelete = append(toDelete, dbP.ID)
-			toAdd = append(toAdd, newP)
-			continue
+		// 调用 BuildProcessChanges 比较差异
+		add, del, update, err := BuildProcessChanges(newP, oldP, now)
+		if err != nil {
+			return nil, nil, nil, err
 		}
 
-		// 其他字段变动 ⇒ 更新
-		if !reflect.DeepEqual(dbP.Spec, newP.Spec) {
-			newP.ID = dbP.ID // 保留原 id 更新
-			toUpdate = append(toUpdate, newP)
+		toAdd = append(toAdd, add...)
+		toDelete = append(toDelete, del...)
+		toUpdate = append(toUpdate, update...)
+	}
+
+	// 3. 找出被删除的项（在 db 里有，但 new 里没有）
+	for _, oldP := range dbProcesses {
+		if _, exists := newMap[oldP.Attachment.CcProcessID]; !exists {
+			toDelete = append(toDelete, oldP.ID)
 		}
 	}
 
-	// DB 有但新数据没有 ⇒ 删除
-	for _, dbP := range dbProcesses {
-		if _, exists := newMap[dbP.Attachment.CcProcessID]; !exists {
-			dbP.Spec.CcSyncStatus = table.Deleted
-			toDelete = append(toDelete, dbP.ID)
-		}
+	return toAdd, toUpdate, toDelete, nil
+}
+
+func translateEnv(env string) string {
+	switch env {
+	case "1":
+		return "测试"
+	case "2":
+		return "体验"
+	case "3":
+		return "正式"
+	default:
+		return "未知"
+	}
+}
+
+// CompareProcessInfo returns true if jsonStr (旧的 JSON 字符串) 等价于 jsonStr2 (新的 JSON 字符串).
+func CompareProcessInfo(jsonStr, jsonStr2 string) (bool, error) {
+	var oldInfo table.ProcessInfo
+	if err := json.Unmarshal([]byte(jsonStr), &oldInfo); err != nil {
+		return false, err
 	}
 
-	return toAdd, toUpdate, toDelete
+	var newInfo table.ProcessInfo
+	if err := json.Unmarshal([]byte(jsonStr2), &newInfo); err != nil {
+		return false, err
+	}
+
+	return reflect.DeepEqual(oldInfo, newInfo), nil
+}
+
+// BuildProcessChanges 生成进程数据
+func BuildProcessChanges(newP *table.Process, oldP *table.Process, now time.Time) (toAdd []*table.Process,
+	toDelete []uint32, toUpdate []*table.Process, err error) {
+
+	// 1. 判断内容是否变化
+	equal, err := CompareProcessInfo(newP.Spec.SourceData, oldP.Spec.SourceData)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// 名称不相等
+	nameChanged := newP.Spec.Alias != oldP.Spec.Alias
+	// 内容不相等
+	infoChanged := !equal
+	// 数量不相等
+	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
+
+	// 情况 1: 名称变化
+	if nameChanged {
+		// 名称变化 → 删除旧数据 + 新增新数据
+		status := table.Synced
+		if infoChanged {
+			status = table.Updated // 名称 + 内容 都变更
+		}
+
+		toDelete = append(toDelete, oldP.ID)
+
+		newP.Spec.CcSyncStatus = status
+		newP.Spec.PrevData = oldP.Spec.SourceData
+		toAdd = append(toAdd, &table.Process{
+			Attachment: newP.Attachment,
+			Spec:       newP.Spec,
+			Revision:   &table.Revision{CreatedAt: now},
+		})
+
+		return toAdd, toDelete, toUpdate, err
+	}
+
+	// 情况 2: 内容变化或数量变化
+	// 名称相同 → 仅更新，不删除
+	if infoChanged || numChanged {
+		// 如果内容变化，则更新状态为 Updated
+		if infoChanged {
+			oldP.Spec.SourceData = newP.Spec.SourceData
+			oldP.Spec.PrevData = oldP.Spec.SourceData
+			oldP.Spec.CcSyncStatus = table.Updated
+			oldP.Spec.CcSyncUpdatedAt = now
+		}
+
+		// 如果数量变化，更新 ProcNum，但保持状态（除非 info 也变）
+		if numChanged {
+			oldP.Spec.ProcNum = newP.Spec.ProcNum
+		}
+
+		toUpdate = append(toUpdate, &table.Process{
+			ID:         oldP.ID,
+			Attachment: oldP.Attachment,
+			Spec:       oldP.Spec,
+			Revision:   &table.Revision{UpdatedAt: now},
+		})
+	}
+
+	return toAdd, toDelete, toUpdate, nil
 }
 
 func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.QueryTx, processBatch []*table.Process,
@@ -479,8 +575,10 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 	}
 
 	// 比对
-	toAdd, toUpdate, toDelete := diffProcesses(dbProcesses, processBatch)
-
+	toAdd, toUpdate, toDelete, err := diffProcesses(dbProcesses, processBatch)
+	if err != nil {
+		return err
+	}
 	// 插入
 	if len(toAdd) > 0 {
 		if err := s.dao.Process().BatchCreateWithTx(kit, tx, toAdd); err != nil {
@@ -533,17 +631,4 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 	}
 
 	return nil
-}
-
-func translateEnv(env string) string {
-	switch env {
-	case "1":
-		return "测试"
-	case "2":
-		return "体验"
-	case "3":
-		return "正式"
-	default:
-		return "未知"
-	}
 }

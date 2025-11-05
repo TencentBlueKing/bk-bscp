@@ -57,28 +57,13 @@ func TestOperateProcMulti(t *testing.T) {
 						LogPath:    "/data/test/logs",
 						User:       "root",
 					},
-					Control: ProcessControl{
-						StartCmd:   "./test-proc start",
-						StopCmd:    "./test-proc stop",
-						RestartCmd: "./test-proc restart",
-						ReloadCmd:  "./test-proc reload",
-						KillCmd:    "pkill test-proc",
-						VersionCmd: "./test-proc version",
-						HealthCmd:  "./test-proc health",
-					},
-					Resource: ProcessResource{
-						CPU: 30.0, // CPU 限制 30%
-						Mem: 10.0, // 内存限制 10%
-					},
-					MonitorPolicy: ProcessMonitorPolicy{
-						AutoType:       1,  // 1=常驻进程，2=单次执行进程
-						StartCheckSecs: 5,  // 启动后检查存活的时间（秒）
-						StopCheckSecs:  5,  // 停止后检查存活的时间（秒）
-						OpTimeout:      60, // 命令执行超时时间（秒）
-					},
+					// Resource: ProcessResource{
+					// 	CPU: 30.0, // CPU 限制 30%
+					// 	Mem: 10.0, // 内存限制 10%
+					// },
 				},
 				AgentIDList: []string{""},
-				Hosts:       []HostInfo{},
+				// Hosts: []HostInfo{},
 			},
 		},
 	}
