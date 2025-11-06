@@ -173,7 +173,7 @@
   <ViewConfigKv
     v-model:show="viewPanelShow"
     :config="operationConfig"
-    :show-edit-btn="isUnNamedVersion"
+    :show-edit-btn="isUnNamedVersion && operationConfig.kv_state !== 'DELETE'"
     @open-edit="handleSwitchToEdit" />
   <VersionDiff v-model:show="isDiffPanelShow" :current-version="versionData" :selected-kv-config-id="diffConfig" />
   <DeleteConfirmDialog
