@@ -755,36 +755,14 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 	}
 
 	// 验证agentID是否属于指定的业务
-	verifyAgentIDBelongs := cc.FeedServer().VerifyAgentIDBelongs
-	if clientAgentID != "" && verifyAgentIDBelongs.Enabled {
-		// 检查app是否在白名单中
-		isInWhitelist := verifyAgentIDBelongs.IsAppAllowed(req.FileMeta.ConfigItemAttachment.AppId)
-
-		// 如果app不在白名单中，需要验证agentID是否属于当前业务
-		if !isInWhitelist {
-			getAgentBizReq := &pbcs.GetAgentBizReq{
-				AgentId: clientAgentID,
-			}
-			var getAgentBizResp *pbcs.GetAgentBizResp
-			getAgentBizResp, err = s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
-
-			// 检查是否需要使用 CMDB 兜底验证
-			needFallback := err != nil || getAgentBizResp == nil || !getAgentBizResp.Found
-			if needFallback {
-				fallbackReason := s.getFallbackReason(err, getAgentBizResp)
-				logs.Warnf("get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, clientAgentID)
-
-				// 验证 agent 是否属于当前业务
-				if err = s.validateAgentIsInBiz(ctx, clientAgentID, req.BizId); err != nil {
-					return nil, err
-				}
-			} else if getAgentBizResp.BizId != req.BizId {
-				// agent 属于其他业务，拒绝访问
-				return nil, status.Errorf(codes.PermissionDenied,
-					"agent %s belongs to business %d, not %d, and app %s is not in cross-business whitelist",
-					clientAgentID, getAgentBizResp.BizId, req.BizId, app.Name)
-			}
-		}
+	if err = s.verifyAgentBelongsToBiz(
+		ctx,
+		clientAgentID,
+		req.BizId,
+		req.FileMeta.ConfigItemAttachment.AppId,
+		app.Name,
+	); err != nil {
+		return nil, err
 	}
 
 	// 创建下载任务
@@ -1158,6 +1136,78 @@ func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resou
 	s.mc.clientCurrentCPUUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(resource.CpuUsage)
 	s.mc.clientMaxMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryMaxUsage))
 	s.mc.clientCurrentMemUsage.WithLabelValues(strconv.Itoa(int(bizID)), appName).Set(float64(resource.MemoryUsage))
+}
+
+// verifyAgentBelongsToBiz 验证 agent 是否属于指定的业务
+// nolint
+func (s *Service) verifyAgentBelongsToBiz(ctx context.Context, agentID string, bizID uint32, appID uint32, appName string) error {
+	if agentID == "" {
+		logs.Warnf("verify agent id belongs to biz, agentID is empty, appID: %d, appName: %s", appID, appName)
+		return nil
+	}
+
+	verifyAgentIDBelongs := cc.FeedServer().VerifyAgentIDBelongs
+	// 检查 app 是否在白名单中
+	isInWhitelist := verifyAgentIDBelongs.IsAppAllowed(appID)
+	if isInWhitelist {
+		logs.Warnf("verify agent id belongs to biz, appID is in whitelist, appID: %d, appName: %s", appID, appName)
+		return nil
+	}
+
+	// app 不在白名单中，需要验证 agentID 是否属于当前业务
+	getAgentBizReq := &pbcs.GetAgentBizReq{
+		AgentId: agentID,
+	}
+	getAgentBizResp, err := s.bll.Client().CS().GetAgentBiz(ctx, getAgentBizReq)
+	// 查询一次，但是不判断结果，只用作日志记录
+	if !verifyAgentIDBelongs.Enabled {
+		if err != nil {
+			logs.Errorf("[log verify agent id]get agent biz failed, agent: %s, app: %s, err: %s", agentID, appName, err.Error())
+			return nil
+		}
+		if getAgentBizResp == nil {
+			logs.Errorf("[log verify agent id]get agent biz not found, agent: %s, app: %s", agentID, appName)
+			return nil
+		}
+		if !getAgentBizResp.Found {
+			logs.Errorf("[log verify agent id]get agent biz not found, agent: %s, app: %s", agentID, appName)
+			return nil
+		}
+		if getAgentBizResp.BizId != bizID {
+			logs.Errorf("[log verify agent id]agent biz mismatch, agent: %s, app: %s, expected biz: %d, actual biz: %d", agentID, appName, bizID, getAgentBizResp.BizId)
+			return nil
+		}
+		logs.Infof("[log verify agent id]verify agent id belongs to biz, agent belongs to biz, agent: %s, app: %s", agentID, appName)
+		return nil
+	}
+
+	// 检查是否需要使用 CMDB 兜底验证（加上开关和条件判断）
+	needFallback := err != nil || getAgentBizResp == nil || !getAgentBizResp.Found
+	if verifyAgentIDBelongs.NeedFallbackToCmdb && needFallback {
+		fallbackReason := s.getFallbackReason(err, getAgentBizResp)
+		logs.Warnf("get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, agentID)
+
+		// 验证 agent 是否属于当前业务
+		if err = s.validateAgentIsInBiz(ctx, agentID, bizID); err != nil {
+			logs.Errorf("validate agent belongs to biz failed, use cmdb fallback, %s", err.Error())
+			return err
+		}
+		return nil
+	}
+
+	// agent 属于其他业务，拒绝访问
+	if getAgentBizResp == nil {
+		return status.Errorf(codes.PermissionDenied,
+			"agent %s business info not found, cannot verify belongs to business %d, and app %s is not in cross-business whitelist",
+			agentID, bizID, appName)
+	}
+	if getAgentBizResp.BizId != bizID {
+		return status.Errorf(codes.PermissionDenied,
+			"agent %s belongs to business %d, not %d, and app %s is not in cross-business whitelist",
+			agentID, getAgentBizResp.BizId, bizID, appName)
+	}
+
+	return nil
 }
 
 // getFallbackReason returns the reason for using CMDB fallback
