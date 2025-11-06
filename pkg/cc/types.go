@@ -1670,6 +1670,8 @@ type VerifyAgentIDBelongs struct {
 	Enabled bool `yaml:"enabled"`
 	// 允许跨业务下载的应用ID列表
 	CrossBizAppIDs []uint32 `yaml:"crossBizAppIDs"`
+	// 是否启用cmdb兜底查询
+	NeedFallbackToCmdb bool `yaml:"needFallbackToCmdb"`
 }
 
 // IsAppAllowed 检查应用是否在允许跨业务下载的列表中
