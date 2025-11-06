@@ -49,7 +49,7 @@
     },
     {
       label: t('开始时间'),
-      value: 'end_at',
+      value: 'start_at',
     },
     {
       label: t('结束时间'),

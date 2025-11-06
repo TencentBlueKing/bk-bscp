@@ -58,7 +58,7 @@
           </TableColumn>
           <TableColumn :title="$t('操作')" col-key="operation">
             <template #default="{ row }">
-              <bk-button v-if="row.suatus !== 'RUNNING'" theme="primary" text>{{ $t('查看配置') }}</bk-button>
+              <bk-button v-if="row.status !== 'RUNNING'" theme="primary" text>{{ $t('查看配置') }}</bk-button>
               <span v-else>--</span>
             </template>
           </TableColumn>

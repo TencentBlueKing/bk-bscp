@@ -15,8 +15,8 @@
       <SearchSelector
         ref="searchSelectorRef"
         class="search-input"
-        :search-filed="searchFiled"
-        :user-filed="['reviser']"
+        :search-field="searchField"
+        :user-field="['reviser']"
         :placeholder="t('版本号/版本说明/更新人')"
         @search="handleSearch" />
     </div>
@@ -120,7 +120,7 @@
   });
   const searchQuery = ref<{ [key: string]: string }>({});
   const searchSelectorRef = ref();
-  const searchFiled = [
+  const searchField = [
     { field: 'revision_name', label: t('版本号') },
     { field: 'revision_memo', label: t('版本说明') },
     { field: 'reviser', label: t('更新人') },

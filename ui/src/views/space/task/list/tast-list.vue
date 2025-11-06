@@ -3,8 +3,8 @@
     <div class="title">{{ $t('任务历史') }}</div>
     <SearchSelector
       ref="searchSelectorRef"
-      :search-filed="searchFiled"
-      :user-filed="['reviser']"
+      :search-field="searchField"
+      :user-field="['reviser']"
       :placeholder="t('任务对象/动作/执行账户/执行结果')"
       class="search-select"
       @search="handleSearch" />
@@ -115,7 +115,7 @@
 
   const isSearchEmpty = ref(false);
   const searchSelectorRef = ref();
-  const searchFiled = [
+  const searchField = [
     { field: 'task_object', label: t('任务对象') },
     { field: 'task_action', label: t('动作') },
     { field: 'creator', label: t('执行账户') },

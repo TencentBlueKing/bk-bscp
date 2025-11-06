@@ -25,8 +25,8 @@
         </div>
         <SearchSelector
           ref="searchSelectorRef"
-          :search-filed="searchFiled"
-          :user-filed="['reviser', 'creator']"
+          :search-field="searchField"
+          :user-field="['reviser', 'creator']"
           :placeholder="t('搜索 服务别名、服务名称、服务描述、创建人、更新人')"
           class="search-app-name"
           @search="handleSearch" />
@@ -219,7 +219,7 @@
   ];
   const activeType = ref('all');
   const activeShow = ref('table');
-  const searchFiled = [
+  const searchField = [
     { field: 'alias', label: t('服务别名') },
     { field: 'name', label: t('服务名称') },
     { field: 'memo', label: t('服务描述') },

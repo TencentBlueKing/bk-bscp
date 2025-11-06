@@ -41,8 +41,8 @@
   }
 
   const props = defineProps<{
-    searchFiled: ISearchField[];
-    userFiled: string[];
+    searchField: ISearchField[];
+    userField: string[];
     placeholder: string;
   }>();
   const emits = defineEmits(['search']);
@@ -51,8 +51,8 @@
   const searchValue = ref<ISearchItem[]>([]);
 
   onBeforeMount(() => {
-    data.value = props.searchFiled.map((item) => {
-      if (props.userFiled.includes(item.field)) {
+    data.value = props.searchField.map((item) => {
+      if (props.userField.includes(item.field)) {
         return {
           name: item.label,
           id: item.field,
