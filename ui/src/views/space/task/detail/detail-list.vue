@@ -4,12 +4,12 @@
       <bk-button class="retry-btn" :disabled="failureCount === 0" @click="handleRetry">
         {{ $t('重试所有失败') }}
       </bk-button>
-      <bk-search-select
-        v-model="searchValue"
-        class="search-select"
-        :data="searchList"
+      <searchSelector
+        ref="searchSelectorRef"
+        :search-field="searchField"
         :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP/执行结果')"
-        unique-select />
+        class="search-select"
+        @search="handleSearch" />
     </div>
     <div class="list-wrap">
       <div class="panels-list">
@@ -63,7 +63,7 @@
             </template>
           </TableColumn>
           <template #empty>
-            <TableEmpty :is-search-empty="isSearchEmpty"></TableEmpty>
+            <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearSearch"></TableEmpty>
           </template>
           <template #loading>
             <bk-loading />
@@ -87,11 +87,12 @@
   import { ref, onBeforeMount, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { Spinner } from 'bkui-vue/lib/icon';
-  import { getTaskDetailStatus, getTaskDetailList, retryTask } from '../../../../api/task';
+  import { getTaskDetailList, retryTask } from '../../../../api/task';
   import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
+  import searchSelector from '../../../../components/search-selector.vue';
 
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { t } = useI18n();
@@ -99,40 +100,48 @@
 
   const emits = defineEmits(['change']);
 
-  const searchList = [
+  const searchField = ref([
     {
-      name: t('集群'),
-      id: 'cluster',
+      label: t('集群'),
+      field: 'set_name',
+      children: [],
     },
     {
-      name: t('模块'),
-      id: 'module',
+      label: t('模块'),
+      field: 'module_name',
+      children: [],
     },
     {
-      name: t('服务实例'),
-      id: 'service',
+      label: t('服务实例'),
+      field: 'service_name',
+      children: [],
     },
     {
-      name: t('进程别名'),
-      id: 'process',
+      label: t('进程别名'),
+      field: 'alias',
+      children: [],
     },
     {
-      name: t('CC 进程 ID'),
-      id: 'cc_process_id',
+      label: t('CC 进程 ID'),
+      field: 'cc_process_id',
+      children: [],
     },
     {
-      name: t('Inst_id'),
-      id: 'inst_id',
+      label: t('Inst_id'),
+      field: 'inst_id',
+      children: [],
     },
     {
-      name: t('内网 IP'),
-      id: 'ip',
+      label: t('内网 IP'),
+      field: 'ip',
+      children: [],
     },
     {
-      name: t('执行结果'),
-      id: 'result',
+      label: t('执行结果'),
+      field: 'status',
+      children: [],
     },
-  ];
+  ]);
   const panels = ref([
     {
       status: 'INITIALIZING',
@@ -157,38 +166,23 @@
   ]);
   const bkBizId = ref(String(route.params.spaceId));
   const taskId = ref(Number(route.params.taskId));
-  const searchValue = ref([]);
-  const activePanels = ref('RUNNING');
+  const searchValue = ref();
+  const activePanels = ref('INITIALIZING');
   const isSearchEmpty = ref(false);
   const detailList = ref<any[]>([]);
   const loading = ref(false);
   const failureCount = ref(0);
   const tableRef = ref();
+  const loadPanelsFlag = ref(true);
+  const searchSelectorRef = ref();
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 150;
   });
 
   onBeforeMount(async () => {
-    await loadTaskStatus();
     loadTaskList();
   });
-
-  const loadTaskStatus = async () => {
-    try {
-      const res = await getTaskDetailStatus(bkBizId.value, taskId.value);
-      panels.value.forEach((panel) => {
-        panel.count = res.statistics.find((item: any) => item.status === panel.status).count;
-        if (panel.status === 'FAILURE') {
-          failureCount.value = panel.count;
-        }
-      });
-      activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'RUNNING';
-      emits('change', activePanels.value);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const loadTaskList = async () => {
     try {
@@ -197,10 +191,25 @@
         status: activePanels.value,
         start: pagination.value.limit * (pagination.value.current - 1),
         limit: pagination.value.limit,
+        ...searchValue.value,
       });
       detailList.value = res.tasks;
       pagination.value.count = res.count;
-      isSearchEmpty.value = false;
+      panels.value.forEach((panel) => {
+        panel.count = res.statistics.find((item: any) => item.status === panel.status).count;
+        if (panel.status === 'FAILURE') {
+          failureCount.value = panel.count;
+        }
+      });
+      if (loadPanelsFlag.value) {
+        loadPanelsFlag.value = false;
+        activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
+        emits('change', activePanels.value);
+        loadTaskList();
+      }
+      searchField.value.forEach((item) => {
+        item.children = res.filter_options[`${item.field}_choices`];
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -209,6 +218,7 @@
   };
 
   const handleChangePanel = (status: string) => {
+    if (activePanels.value === status) return;
     activePanels.value = status;
     updatePagination('current', 1);
     emits('change', activePanels.value);
@@ -225,6 +235,12 @@
     loadTaskList();
   };
 
+  const handleSearch = (list: { [key: string]: string }) => {
+    searchValue.value = list;
+    isSearchEmpty.value = Object.keys(list).length > 0;
+    loadTaskList();
+  };
+
   // 重试所有失败任务
   const handleRetry = async () => {
     try {
@@ -233,6 +249,13 @@
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleClearSearch = () => {
+    searchValue.value = {};
+    isSearchEmpty.value = false;
+    searchSelectorRef.value.clear();
+    loadTaskList();
   };
 </script>
 

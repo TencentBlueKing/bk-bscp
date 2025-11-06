@@ -21,6 +21,7 @@ import VxeUITable from 'vxe-table';
 import 'vxe-table/lib/style.css';
 import useGlobalStore from './store/global';
 import { PrimaryTable, TableColumn } from '@blueking/tdesign-ui';
+import '@blueking/tdesign-ui/vue3/index.css';
 
 import BkUserDisplayName from '@blueking/bk-user-display-name';
 

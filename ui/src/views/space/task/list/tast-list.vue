@@ -4,7 +4,6 @@
     <SearchSelector
       ref="searchSelectorRef"
       :search-field="searchField"
-      :user-field="['reviser']"
       :placeholder="t('任务对象/动作/执行账户/执行结果')"
       class="search-select"
       @search="handleSearch" />
@@ -64,7 +63,7 @@
             </div>
           </template>
         </TableColumn>
-        <TableColumn :title="t('操作')" :width="200" fixed="right">
+        <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
           <template #default="{ row }: { row: ITaskHistoryItem }">
             <bk-button :disabled="row.status === 'success'" theme="primary" text @click="handleRetry(row)">
               {{ t('重试') }}
@@ -72,7 +71,7 @@
           </template>
         </TableColumn>
         <template #empty>
-          <TableEmpty :is-search-empty="isSearchEmpty"></TableEmpty>
+          <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearSearch"></TableEmpty>
         </template>
         <template #loading>
           <bk-loading />
@@ -115,15 +114,16 @@
 
   const isSearchEmpty = ref(false);
   const searchSelectorRef = ref();
-  const searchField = [
-    { field: 'task_object', label: t('任务对象') },
-    { field: 'task_action', label: t('动作') },
-    { field: 'creator', label: t('执行账户') },
-    { field: 'status', label: t('执行结果') },
-  ];
+  const searchField = ref([
+    { field: 'task_object', label: t('任务对象'), children: [] },
+    { field: 'task_action', label: t('动作'), children: [] },
+    { field: 'executor', label: t('执行账户'), children: [] },
+    { field: 'status', label: t('执行结果'), children: [] },
+  ]);
   const tableList = ref<ITaskHistoryItem[]>([]);
   const loading = ref(false);
   const tableRef = ref();
+  const searchValue = ref<{ [key: string]: string }>();
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -148,10 +148,14 @@
       const params = {
         start: (pagination.value.current - 1) * pagination.value.limit,
         limit: pagination.value.limit,
+        ...searchValue.value,
       };
       const res = await getTaskHistoryList(spaceId.value, params);
       tableList.value = res.list;
       pagination.value.count = res.count;
+      searchField.value.forEach((item) => {
+        item.children = res.filter_options[`${item.field}_choices`];
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -160,7 +164,9 @@
   };
 
   const handleSearch = (list: { [key: string]: string }) => {
-    console.log(list);
+    searchValue.value = list;
+    isSearchEmpty.value = Object.keys(list).length > 0;
+    loadTaskList();
   };
 
   const mergeOpRange = (operateRange: IOperateRange) => {
@@ -207,6 +213,13 @@
 
   const handlePageLimitChange = (limit: number) => {
     updatePagination('limit', limit);
+    loadTaskList();
+  };
+
+  const handleClearSearch = () => {
+    searchValue.value = {};
+    isSearchEmpty.value = false;
+    searchSelectorRef.value.clear();
     loadTaskList();
   };
 </script>

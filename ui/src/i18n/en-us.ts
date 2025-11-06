@@ -704,6 +704,7 @@ export default {
   'RSA 私钥格式无效': 'Invalid RSA private key format',
   证书和私钥: 'Certificate and private key',
   版本废弃成功: 'Version discarded successfully',
+  '请选择/请输入': 'Please select/enter',
 
   // 分组管理
   新增分组: 'New group',

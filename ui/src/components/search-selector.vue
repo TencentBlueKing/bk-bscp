@@ -1,6 +1,6 @@
 <template>
   <bk-search-select
-    :model-value="searchValue"
+    v-model="searchValue"
     :data="data"
     :get-menu-list="getMenuList"
     value-behavior="need-key"
@@ -10,17 +10,23 @@
     @paste="handlePaste" />
 </template>
 <script setup lang="ts">
-  import { ref, onBeforeMount } from 'vue';
+  import { ref, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { getUserList } from '../api';
   import { ITenantUser } from '../../types/index';
   import useGlobalStore from '../store/global';
   import { storeToRefs } from 'pinia';
 
   const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { t } = useI18n();
 
   interface ISearchField {
     field: string;
     label: string;
+    children?: {
+      name: string;
+      id: string;
+    }[];
   }
 
   interface ISearchMenuItem {
@@ -42,7 +48,7 @@
 
   const props = defineProps<{
     searchField: ISearchField[];
-    userField: string[];
+    userField?: string[];
     placeholder: string;
   }>();
   const emits = defineEmits(['search']);
@@ -50,27 +56,31 @@
   const data = ref<ISearchMenuItem[]>([]);
   const searchValue = ref<ISearchItem[]>([]);
 
-  onBeforeMount(() => {
-    data.value = props.searchField.map((item) => {
-      if (props.userField.includes(item.field)) {
+  watch(
+    () => props.searchField,
+    () => {
+      data.value = props.searchField.map((item) => {
+        if (props.userField?.includes(item.field)) {
+          return {
+            name: item.label,
+            id: item.field,
+            children: [],
+            placeholder: t('请选择/请输入'),
+            async: true,
+            validate: true,
+          };
+        }
         return {
           name: item.label,
           id: item.field,
-          children: [],
-          placeholder: '请选择/请输入',
-          async: true,
-          validate: true,
+          children: item.children,
+          placeholder: t('请选择/请输入'),
+          async: false,
         };
-      }
-      return {
-        name: item.label,
-        id: item.field,
-        children: [],
-        placeholder: '请选择/请输入',
-        async: false,
-      };
-    });
-  });
+      });
+    },
+    { immediate: true, deep: true },
+  );
 
   const getMenuList = async (item: ISearchMenuItem, keyword: string) => {
     // 处理searchSelect唯一选择失效
@@ -84,6 +94,7 @@
         };
       });
     }
+    if (item.children?.length) return item.children;
     return [];
   };
 
