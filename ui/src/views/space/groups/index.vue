@@ -545,6 +545,7 @@
     padding: 0 10px;
     background: #f0f1f5;
     border-radius: 2px;
+    color: #63656e;
   }
   .group-status {
     display: flex;

@@ -905,6 +905,7 @@ export default {
   form_版本号: 'Version number',
   上线版本成功: 'Online version successful',
   内置变量: 'Internal variables',
+  复制脚本内容: 'Copy script content',
   '客户端配置的配置存放临时目录，默认值为 {n}': 'Temporary directory for config storage temporarily configured by the client, default value is {n}',
   '蓝鲸配置平台上的业务ID，例如：2': 'Service ID on the bscp, for example, 2',
   '服务配置中心上的服务名称，例如：demo_service': 'bscp service name, for example, demo service',
