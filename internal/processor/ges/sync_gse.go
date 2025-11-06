@@ -14,8 +14,16 @@
 package gse
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 const (
@@ -85,4 +93,171 @@ func BuildProcessOperate(params BuildProcessOperateParams) gse.ProcessOperate {
 	}
 
 	return processOperate
+}
+
+// NewSyncGESService 初始化同步gse
+func NewSyncGESService(bizID int, svc *gse.Service, dao dao.Set) *syncGSEService {
+	return &syncGSEService{
+		bizID: bizID,
+		svc:   svc,
+		dao:   dao,
+	}
+}
+
+// syncGSEService 同步gse
+type syncGSEService struct {
+	bizID int
+	svc   *gse.Service
+	dao   dao.Set
+}
+
+// SyncSingleBiz 同步gse状态
+// 1. 按业务获取进程数据
+// 2. 调用gse接口
+func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
+	kit := kit.FromGrpcContext(ctx)
+	processes, err := s.dao.Process().ListActiveProcesses(kit, uint32(s.bizID))
+	if err != nil {
+		logs.Errorf("list active processes failed: %v", err)
+		return err
+	}
+	if len(processes) == 0 {
+		logs.Infof("no active processes found, skip sync")
+		return nil
+	}
+
+	for _, process := range processes {
+		// 查询实例表
+		insts, err := s.dao.ProcessInstance().GetByProcessIDs(kit, uint32(s.bizID), []uint32{process.ID})
+		if err != nil {
+			logs.Errorf("biz %d: get process instances failed, processID=%d, err=%v", s.bizID, process.ID, err)
+			continue
+		}
+
+		req, instMap := buildGSEOperateReq(process, insts, uint32(s.bizID))
+
+		proc, err := s.svc.OperateProcMulti(kit.Ctx, &gse.MultiProcOperateReq{
+			ProcOperateReq: req,
+		})
+		if err != nil {
+			logs.Errorf("biz %d: operate process failed, processID=%d, err=%v", s.bizID, process.ID, err)
+			continue
+		}
+
+		gseResp, err := s.svc.GetProcOperateResultV2(kit.Ctx, &gse.QueryProcResultReq{
+			TaskID: proc.TaskID,
+		})
+		if err != nil {
+			logs.Errorf("biz %d: get process result failed, taskID=%s, err=%v", s.bizID, proc.TaskID, err)
+			continue
+		}
+
+		if gseResp.Code != 0 {
+			logs.Errorf("biz %d: get process result failed, taskID=%s, msg=%v", s.bizID, proc.TaskID, gseResp.Message)
+			continue
+		}
+
+		var result map[string]gse.ProcResult
+		err = gseResp.Decode(&result)
+		if err != nil {
+			return err
+		}
+
+		for key, val := range result {
+			inst := instMap[key]
+			if inst == nil {
+				logs.Warnf("biz %d: unmatched instance key: %s", s.bizID, key)
+				continue
+			}
+
+			status, managed := ParseGSEProcResult(key, val)
+			inst.Spec.Status = status
+			inst.Spec.ManagedStatus = managed
+
+			if err := s.dao.ProcessInstance().Update(kit, inst); err != nil {
+				logs.Errorf("biz %d: update instance failed for key=%s, err=%v", s.bizID, key, err)
+			}
+		}
+
+	}
+
+	return nil
+}
+
+func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, bizID uint32) (
+	[]gse.ProcessOperate, map[string]*table.ProcessInstance) {
+	req := make([]gse.ProcessOperate, 0, len(insts))
+	instMap := make(map[string]*table.ProcessInstance, len(insts))
+
+	for _, inst := range insts {
+		instID, err := strconv.Atoi(inst.Spec.InstID)
+		if err != nil {
+			logs.Errorf("biz=%d, process_id=%d, invalid instance ID (%s): %v",
+				bizID, process.ID, inst.Spec.InstID, err)
+			continue
+		}
+		key := fmt.Sprintf("%s:%s:%s", process.Attachment.AgentID, gse.BuildNamespace(bizID),
+			gse.BuildProcessName(process.Spec.Alias, uint32(instID)))
+		instMap[key] = inst
+
+		req = append(req, BuildProcessOperate(BuildProcessOperateParams{
+			BizID:             bizID,
+			Alias:             process.Spec.Alias,
+			ProcessInstanceID: uint32(instID),
+			AgentID:           []string{process.Attachment.AgentID},
+			GseOpType:         gse.OpTypeQuery,
+		}))
+	}
+
+	return req, instMap
+}
+
+// ParseGSEProcResult 解析 GSE 返回结果
+func ParseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatus, managed table.ProcessManagedStatus) {
+	status = table.ProcessStatusStopped
+	managed = table.ProcessManagedStatusUnmanaged
+
+	switch v.ErrorCode {
+	case gse.ErrCodeSuccess:
+		var contents ProcessReport
+		if err := json.Unmarshal([]byte(v.Content), &contents); err != nil {
+			logs.Warnf("unmarshal success content failed for %s: %v", key, err)
+			return status, managed
+		}
+		status = table.ProcessStatusStarting
+		for _, p := range contents.Process {
+			for _, i := range p.Instance {
+				if i.IsAuto {
+					managed = table.ProcessManagedStatusManaged
+				}
+				if i.PID > 0 {
+					status = table.ProcessStatusRunning
+				}
+				if i.PID < 0 {
+					status = table.ProcessStatusStopping
+				}
+			}
+		}
+
+	case gse.ErrCodeStopping:
+		var contents ProcResult
+		if err := json.Unmarshal([]byte(v.Content), &contents); err != nil {
+			logs.Warnf("unmarshal stopping content failed for %s: %v", key, err)
+			return status, managed
+		}
+		status = table.ProcessStatusStopping
+		for _, c := range contents.Value {
+			if c.IsAuto {
+				managed = table.ProcessManagedStatusManaged
+			}
+		}
+
+	case gse.ErrCodeInProgress:
+		status = table.ProcessStatusStarting
+
+	default:
+		logs.Warnf("key=%s, unknown gse code: %d", key, v.ErrorCode)
+	}
+
+	return status, managed
 }

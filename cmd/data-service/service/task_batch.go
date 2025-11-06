@@ -15,6 +15,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	taskpkg "github.com/Tencent/bk-bcs/bcs-common/common/task"
 	istore "github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
@@ -34,27 +35,122 @@ import (
 func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq) (*pbds.ListTaskBatchResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	opt := &types.BasePage{
-		Start: req.Start,
-		Limit: uint(req.Limit),
+	// 默认分页参数
+	limit := uint(req.Limit)
+	if limit == 0 {
+		limit = 50
 	}
 
+	opt := &types.BasePage{
+		Start: req.Start,
+		Limit: limit,
+	}
+	// 转换proto的SortRule为types.BasePage的Sort和Order
+	if req.Sort != nil && req.Sort.Field != "" {
+		opt.Sort = req.Sort.Field
+		if req.Sort.Order == string(types.Ascending) {
+			opt.Order = types.Ascending
+		} else {
+			opt.Order = types.Descending // 默认倒序
+		}
+	}
+
+	// 验证分页参数
+	if err := opt.Validate(types.DefaultPageOption); err != nil {
+		return nil, err
+	}
+
+	// 构建过滤条件
 	filter := &dao.TaskBatchListFilter{
 		TaskObject: table.TaskObject(req.TaskObject),
 		TaskAction: table.TaskAction(req.TaskAction),
 		Status:     table.TaskBatchStatus(req.Status),
 		Executor:   req.Executor,
 	}
+
+	// 解析时间范围参数
+	if req.TimeRangeStart != "" {
+		timeRangeStart, err := parseTime(req.TimeRangeStart)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time_range_start format: %v", err)
+		}
+		filter.TimeRangeStart = &timeRangeStart
+	}
+	if req.TimeRangeEnd != "" {
+		timeRangeEnd, err := parseTime(req.TimeRangeEnd)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time_range_end format: %v", err)
+		}
+		filter.TimeRangeEnd = &timeRangeEnd
+	}
+
 	res, count, err := s.dao.TaskBatch().List(kt, req.BizId, filter, opt)
 	if err != nil {
 		logs.Errorf("list task batch failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
+	// 获取查询过滤选项
+	filterOptions, err := getFilterOptions(kt, req.BizId, s.dao.TaskBatch())
+	if err != nil {
+		logs.Errorf("get filter options failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, err
+	}
+
 	return &pbds.ListTaskBatchResp{
-		Count: uint32(count),
-		// 转换为 protobuf 格式
-		List: pbtb.PbTaskBatches(res),
+		Count:         uint32(count),
+		List:          pbtb.PbTaskBatches(res),
+		FilterOptions: filterOptions,
+	}, nil
+}
+
+// getFilterOptions 获取查询过滤选项
+func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.FilterOptions, error) {
+	// 获取任务对象查询选项
+	taskObjectChoices := make([]*pbtb.Choice, 0)
+	for _, choice := range table.GetTaskObjectChoices() {
+		taskObjectChoices = append(taskObjectChoices, &pbtb.Choice{
+			Id:   choice.ID,
+			Name: choice.Name,
+		})
+	}
+
+	// 获取任务动作查询选项
+	taskActionChoices := make([]*pbtb.Choice, 0)
+	for _, choice := range table.GetTaskActionChoices() {
+		taskActionChoices = append(taskActionChoices, &pbtb.Choice{
+			Id:   choice.ID,
+			Name: choice.Name,
+		})
+	}
+
+	// 获取执行状态查询选项
+	statusChoices := make([]*pbtb.Choice, 0)
+	for _, choice := range table.GetTaskBatchStatusChoices() {
+		statusChoices = append(statusChoices, &pbtb.Choice{
+			Id:   choice.ID,
+			Name: choice.Name,
+		})
+	}
+
+	// 获取执行帐户查询选项
+	executorChoices := make([]*pbtb.Choice, 0)
+	executors, err := dao.ListExecutors(kt, bizID)
+	if err != nil {
+		return nil, fmt.Errorf("list distinct executors failed: %v", err)
+	}
+	for _, executor := range executors {
+		executorChoices = append(executorChoices, &pbtb.Choice{
+			Id:   executor,
+			Name: executor,
+		})
+	}
+
+	return &pbtb.FilterOptions{
+		TaskObjectChoices: taskObjectChoices,
+		TaskActionChoices: taskActionChoices,
+		StatusChoices:     statusChoices,
+		ExecutorChoices:   executorChoices,
 	}, nil
 }
 
@@ -65,17 +161,25 @@ func (s *Service) GetTaskBatchDetail(
 ) (*pbds.GetTaskBatchDetailResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	// 从 task store 查询所有相关任务（通过 taskIndex = batchID）
+	// 默认分页参数
+	limit := int64(req.GetLimit())
+	if limit == 0 {
+		limit = 50
+	}
+
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
 		return nil, fmt.Errorf("task storage not initialized")
 	}
 
+	// 构建查询选项
 	listOpt := &istore.ListOption{
 		TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
+		Limit:     limit,
 		Offset:    int64(req.GetStart()),
-		Limit:     int64(req.GetLimit()),
-		Status:    req.GetStatus(),
+	}
+	if req.GetStatus() != "" {
+		listOpt.StatusList = expandTaskStatusForQuery(req.GetStatus())
 	}
 
 	pagination, err := taskStorage.ListTask(ctx, listOpt)
@@ -86,8 +190,9 @@ func (s *Service) GetTaskBatchDetail(
 
 	// 解析每个 task 的 CommonPayload，构建 TaskDetail
 	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
+	var detail *pbtb.TaskDetail
 	for _, task := range pagination.Items {
-		detail, err := convertTaskToDetail(task)
+		detail, err = convertTaskToDetail(task)
 		if err != nil {
 			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
 			return nil, fmt.Errorf("convert task to detail failed: %v", err)
@@ -95,9 +200,21 @@ func (s *Service) GetTaskBatchDetail(
 		taskDetails = append(taskDetails, detail)
 	}
 
+	// 计算状态统计
+	statistics, err := getTaskStatusStatistics(ctx, fmt.Sprintf("%d", req.GetBatchId()))
+	if err != nil {
+		logs.Errorf("get task status statistics failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, fmt.Errorf("get task status statistics failed: %v", err)
+	}
+
+	// 获取任务详情过滤选项
+	filterOptions := getTaskDetailFilterOptions()
+
 	return &pbds.GetTaskBatchDetailResp{
-		Tasks: taskDetails,
-		Count: uint32(pagination.Count),
+		Tasks:         taskDetails,
+		Count:         uint32(pagination.Count),
+		Statistics:    statistics,
+		FilterOptions: filterOptions,
 	}, nil
 }
 
@@ -138,55 +255,36 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	return detail, nil
 }
 
-// GetTaskStatusStatistics implements pbds.DataServer.
-func (s *Service) GetTaskStatusStatistics(
-	ctx context.Context,
-	req *pbds.GetTaskStatusStatisticsReq,
-) (*pbds.GetTaskStatusStatisticsResp, error) {
-	kt := kit.FromGrpcContext(ctx)
-
-	// 从 task store 查询所有相关任务（通过 taskIndex = batchID）
+// getTaskStatusStatistics 获取任务状态统计信息
+func getTaskStatusStatistics(ctx context.Context, taskIndex string) ([]*pbtb.TaskStatusStatItem, error) {
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
 		return nil, fmt.Errorf("task storage not initialized")
 	}
 
-	// 初始化状态计数器
-	statusCounts := map[string]uint32{
-		taskTypes.TaskStatusInit:    0,
-		taskTypes.TaskStatusRunning: 0,
-		taskTypes.TaskStatusSuccess: 0,
-		taskTypes.TaskStatusFailure: 0,
+	// 定义需要统计的四种状态及其对应的实际查询状态列表
+	statusQueries := map[string][]string{
+		taskTypes.TaskStatusInit:    {taskTypes.TaskStatusInit},
+		taskTypes.TaskStatusRunning: {taskTypes.TaskStatusRunning, taskTypes.TaskStatusRevoked, taskTypes.TaskStatusNotStarted},
+		taskTypes.TaskStatusSuccess: {taskTypes.TaskStatusSuccess},
+		taskTypes.TaskStatusFailure: {taskTypes.TaskStatusFailure, taskTypes.TaskStatusTimeout},
 	}
 
-	// 分页查询所有任务，进行统计
-	offset := int64(0)
-	limit := int64(1000) // 每次查询1000条
-
-	for {
+	statusCounts := make(map[string]uint32)
+	for normalizedStatus, statusList := range statusQueries {
 		listOpt := &istore.ListOption{
-			TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
-			Offset:    offset,
-			Limit:     limit,
+			TaskIndex:  taskIndex,
+			StatusList: statusList,
+			Limit:      1, // 只需要统计数量，不需要实际数据
+			Offset:     0,
 		}
 
 		pagination, err := taskStorage.ListTask(ctx, listOpt)
 		if err != nil {
-			logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, fmt.Errorf("list tasks failed: %v", err)
+			return nil, fmt.Errorf("list tasks failed for status %s: %v", normalizedStatus, err)
 		}
 
-		// 统计每个任务的状态
-		for _, task := range pagination.Items {
-			normalizedStatus := convertTaskStatus(task.Status)
-			statusCounts[normalizedStatus]++
-		}
-
-		if len(pagination.Items) < int(limit) {
-			break
-		}
-
-		offset += limit
+		statusCounts[normalizedStatus] = uint32(pagination.Count)
 	}
 
 	// 构建返回结果
@@ -213,28 +311,77 @@ func (s *Service) GetTaskStatusStatistics(
 		},
 	}
 
-	return &pbds.GetTaskStatusStatisticsResp{
-		Statistics: statistics,
-	}, nil
+	return statistics, nil
 }
 
-// convertTaskStatus 将任务状态转换为四类：INITIALIZING, RUNNING, SUCCESS, FAILURE
+// expandTaskStatusForQuery 将用户查询的状态扩展为实际要查询的状态列表
+// 例如：查询 RUNNING 状态时，实际要查询 RUNNING、REVOKED、NOT_STARTED 三种状态
+func expandTaskStatusForQuery(status string) []string {
+	switch status {
+	case taskTypes.TaskStatusRunning:
+		// RUNNING 状态需要查询三种状态：RUNNING、REVOKED、NOT_STARTED
+		return []string{
+			taskTypes.TaskStatusRunning,
+			taskTypes.TaskStatusRevoked,
+			taskTypes.TaskStatusNotStarted,
+		}
+	case taskTypes.TaskStatusFailure:
+		// FAILURE 状态包含 FAILURE 和 TIMEOUT
+		return []string{
+			taskTypes.TaskStatusFailure,
+			taskTypes.TaskStatusTimeout,
+		}
+	case taskTypes.TaskStatusInit, taskTypes.TaskStatusSuccess:
+		// INIT 和 SUCCESS 直接返回
+		return []string{status}
+	default:
+		// 未知状态默认返回原状态
+		return []string{status}
+	}
+}
+
+// convertTaskStatus 将任务状态转换为四类：INIT, RUNNING, SUCCESS, FAILURE
 func convertTaskStatus(status string) string {
 	switch status {
 	case taskTypes.TaskStatusInit:
 		return taskTypes.TaskStatusInit
-	case taskTypes.TaskStatusRunning:
-		return taskTypes.TaskStatusRunning
-	case taskTypes.TaskStatusRevoked, taskTypes.TaskStatusNotStarted:
-		// revoke和notstarted认为是running
+	case taskTypes.TaskStatusRunning, taskTypes.TaskStatusRevoked, taskTypes.TaskStatusNotStarted:
+		// RUNNING、REVOKED、NOT_STARTED 都归类为 RUNNING
 		return taskTypes.TaskStatusRunning
 	case taskTypes.TaskStatusSuccess:
 		return taskTypes.TaskStatusSuccess
 	case taskTypes.TaskStatusFailure, taskTypes.TaskStatusTimeout:
-		// 超时认为是失败
+		// FAILURE 和 TIMEOUT 都归类为 FAILURE
 		return taskTypes.TaskStatusFailure
 	default:
-		// 未知状态默认为失败
+		// 未知状态默认为 FAILURE
 		return taskTypes.TaskStatusFailure
+	}
+}
+
+// parseTime 解析 RFC3339 格式的时间字符串
+func parseTime(timeStr string) (time.Time, error) {
+	return time.Parse(time.RFC3339, timeStr)
+}
+
+// getTaskDetailFilterOptions 获取任务详情过滤选项
+func getTaskDetailFilterOptions() *pbtb.TaskDetailFilterOptions {
+	// 任务状态选项（四种归类后的状态）
+	statusChoices := []*pbtb.Choice{
+		{Id: taskTypes.TaskStatusInit, Name: "任务初始化"},
+		{Id: taskTypes.TaskStatusRunning, Name: "任务运行中"},
+		{Id: taskTypes.TaskStatusSuccess, Name: "任务成功"},
+		{Id: taskTypes.TaskStatusFailure, Name: "任务失败"},
+	}
+
+	// todo: 等表设计支持从 CommonPayload 查询后再填充
+	return &pbtb.TaskDetailFilterOptions{
+		SetNameChoices:     []*pbtb.Choice{},
+		ModuleNameChoices:  []*pbtb.Choice{},
+		ServiceNameChoices: []*pbtb.Choice{},
+		AliasChoices:       []*pbtb.Choice{},
+		CcProcessIdChoices: []*pbtb.Choice{},
+		InstIdChoices:      []*pbtb.Choice{},
+		StatusChoices:      statusChoices,
 	}
 }

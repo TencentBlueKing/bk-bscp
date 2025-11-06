@@ -1560,14 +1560,6 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       get: "/api/v1/config/biz_id/{biz_id}/process/filter_options"
     };
   }
-  // 同步cc
-  rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
-    option (google.api.http) = {
-      post: "/api/v1/config/biz_id/{biz_id}/sync/cc"
-      body: "*"
-    };
-  }
   // 任务历史列表
   rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
@@ -1582,18 +1574,19 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       get: "/api/v1/config/biz_id/{biz_id}/task_batch/{batch_id}/detail"
     };
   }
-  // 任务状态统计
-  rpc GetTaskStatusStatistics(GetTaskStatusStatisticsReq) returns (GetTaskStatusStatisticsResp) {
+  // 同步cc和gse状态
+  rpc SyncCmdbGseStatus(SyncCmdbGseStatusReq) returns (SyncCmdbGseStatusResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz_id/{biz_id}/task_batch/{batch_id}/statistics"
+      post: "/api/v1/config/biz_id/{biz_id}/sync/cmdb_gse_status"
+      body: "*"
     };
   }
-  // 获取同步cc状态
-  rpc SyncCMDBStatus(SyncCMDBStatusReq) returns (SyncCMDBStatusResp) {
+  // 获取同步的状态
+  rpc CmdbGseStatus(CmdbGseStatusReq) returns (CmdbGseStatusResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz_id/{biz_id}/sync/cc/status"
+      get: "/api/v1/config/biz_id/{biz_id}/sync/sync_status"
     };
   }
   // 重试失败的任务
@@ -4546,12 +4539,22 @@ message OperateProcessResp {
   uint32 batchID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "批任务ID" }];
 }
 
-message SyncCMDBReq {
+message SyncCmdbGseStatusReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
 }
 
-message SyncCMDBResp {
+message SyncCmdbGseStatusResp {
   string task_id = 1;
+}
+
+// SortRule 排序规则
+message SortRule {
+  string field = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
+    description: "排序字段: id, start_at, end_at" 
+  }];
+  string order = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
+    description: "排序方向: ASC, DESC" 
+  }];
 }
 
 message ListTaskBatchReq {
@@ -4569,12 +4572,23 @@ message ListTaskBatchReq {
   }];
   string executor = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户（创建者）" }];
+  SortRule sort = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
+    description: "排序规则" 
+  }];
+  string time_range_start = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "时间范围起点（如：2024-01-01T00:00:00Z）"
+  }];
+  string time_range_end = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "时间范围终点（如：2024-01-31T23:59:59Z）"
+  }];
 }
 
 message ListTaskBatchResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbtb.TaskBatch list = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次列表" }];
+  pbtb.FilterOptions filter_options = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "查询过滤选项" }];
 }
 
 message GetTaskBatchDetailReq {
@@ -4591,16 +4605,10 @@ message GetTaskBatchDetailResp {
   repeated pbtb.TaskDetail tasks = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务详情列表" }];
   uint32 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务总数" }];
-}
-
-message GetTaskStatusStatisticsReq {
-  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
-  uint32 batch_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "批任务ID" }];
-}
-
-message GetTaskStatusStatisticsResp {
-  repeated pbtb.TaskStatusStatItem statistics = 1
+  repeated pbtb.TaskStatusStatItem statistics = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态统计列表" }];
+  pbtb.TaskDetailFilterOptions filter_options = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务详情过滤选项" }];
 }
 
 message RetryTasksReq {
@@ -4613,11 +4621,11 @@ message RetryTasksResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "重试的任务数量" }];
 }
 
-message SyncCMDBStatusReq {
+message CmdbGseStatusReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
 }
 
-message SyncCMDBStatusResp {
+message CmdbGseStatusResp {
   google.protobuf.Timestamp last_sync_time = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最近一次同步时间" }];
   string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "同步状态" }];

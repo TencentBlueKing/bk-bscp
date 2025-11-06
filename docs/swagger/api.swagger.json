@@ -9507,6 +9507,34 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "sort.field",
+            "description": "排序字段: id, start_at, end_at",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sort.order",
+            "description": "排序方向: ASC, DESC",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "timeRangeStart",
+            "description": "时间范围起点（如：2024-01-01T00:00:00Z）",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "timeRangeEnd",
+            "description": "时间范围终点（如：2024-01-31T23:59:59Z）",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -9571,47 +9599,6 @@
             "in": "query",
             "required": false,
             "type": "string"
-          }
-        ],
-        "tags": [
-          "Config"
-        ]
-      }
-    },
-    "/api/v1/config/biz_id/{bizId}/task_batch/{batchId}/statistics": {
-      "get": {
-        "summary": "任务状态统计",
-        "operationId": "Config_GetTaskStatusStatistics",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/pbcsGetTaskStatusStatisticsResp"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "bizId",
-            "description": "业务ID",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "batchId",
-            "description": "批任务ID",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
           }
         ],
         "tags": [
@@ -15311,12 +15298,7 @@
           "type": "integer",
           "format": "int64",
           "description": "任务总数"
-        }
-      }
-    },
-    "pbcsGetTaskStatusStatisticsResp": {
-      "type": "object",
-      "properties": {
+        },
         "statistics": {
           "type": "array",
           "items": {
@@ -15324,6 +15306,10 @@
             "$ref": "#/definitions/pbtbTaskStatusStatItem"
           },
           "description": "状态统计列表"
+        },
+        "filterOptions": {
+          "$ref": "#/definitions/pbtbTaskDetailFilterOptions",
+          "description": "任务详情过滤选项"
         }
       }
     },
@@ -16223,6 +16209,10 @@
             "$ref": "#/definitions/pbtbTaskBatch"
           },
           "description": "任务批次列表"
+        },
+        "filterOptions": {
+          "$ref": "#/definitions/pbtbFilterOptions",
+          "description": "查询过滤选项"
         }
       }
     },
@@ -16721,6 +16711,20 @@
           "description": "重试的任务数量"
         }
       }
+    },
+    "pbcsSortRule": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "排序字段: id, start_at, end_at"
+        },
+        "order": {
+          "type": "string",
+          "description": "排序方向: ASC, DESC"
+        }
+      },
+      "title": "SortRule 排序规则"
     },
     "pbcsSyncCMDBResp": {
       "type": "object",
@@ -17884,6 +17888,58 @@
       },
       "title": "StrategyState defines the strategy's state"
     },
+    "pbtbChoice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "选项ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "选项名称"
+        }
+      },
+      "title": "Choice 查询枚举值选项"
+    },
+    "pbtbFilterOptions": {
+      "type": "object",
+      "properties": {
+        "taskObjectChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "任务对象查询选项"
+        },
+        "taskActionChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "任务动作查询选项"
+        },
+        "statusChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "执行状态查询选项"
+        },
+        "executorChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "执行帐户查询选项"
+        }
+      },
+      "title": "FilterOptions 查询过滤选项"
+    },
     "pbtbOperateRange": {
       "type": "object",
       "properties": {
@@ -18062,6 +18118,68 @@
         }
       },
       "title": "TaskDetail 任务详情"
+    },
+    "pbtbTaskDetailFilterOptions": {
+      "type": "object",
+      "properties": {
+        "setNameChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "集群名查询选项"
+        },
+        "moduleNameChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "模块名查询选项"
+        },
+        "serviceNameChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "服务名称查询选项"
+        },
+        "aliasChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "进程别名查询选项"
+        },
+        "ccProcessIdChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "CC进程ID查询选项"
+        },
+        "instIdChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "实例ID查询选项"
+        },
+        "statusChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "任务状态查询选项"
+        }
+      },
+      "title": "TaskDetailFilterOptions 任务详情过滤选项"
     },
     "pbtbTaskStatusStatItem": {
       "type": "object",

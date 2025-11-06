@@ -184,6 +184,7 @@
       children: [
         { id: 'process-management', module: 'process', name: t('进程管理') },
         { id: 'config-management', module: 'config', name: t('配置管理') },
+        { id: 'task-list', module: 'task', name: t('任务历史') },
       ],
     },
     { id: 'records-all', module: 'records', name: t('操作记录') },

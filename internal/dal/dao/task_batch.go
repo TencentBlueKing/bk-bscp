@@ -13,6 +13,7 @@
 package dao
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -23,10 +24,12 @@ import (
 
 // TaskBatchListFilter task batch list filter
 type TaskBatchListFilter struct {
-	TaskObject table.TaskObject      // 任务对象
-	TaskAction table.TaskAction      // 任务动作
-	Status     table.TaskBatchStatus // 执行状态
-	Executor   string                // 执行帐户（创建者）
+	TaskObject     table.TaskObject      // 任务对象
+	TaskAction     table.TaskAction      // 任务动作
+	Status         table.TaskBatchStatus // 执行状态
+	Executor       string                // 执行帐户（创建者）
+	TimeRangeStart *time.Time            // 时间范围起点
+	TimeRangeEnd   *time.Time            // 时间范围终点
 }
 
 // TaskBatch xxx
@@ -35,6 +38,7 @@ type TaskBatch interface {
 	GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error)
 	List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter, opt *types.BasePage) ([]*table.TaskBatch, int64, error)
 	UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error
+	ListExecutors(kit *kit.Kit, bizID uint32) ([]string, error)
 }
 
 var _ TaskBatch = new(taskBatchDao)
@@ -101,10 +105,33 @@ func (dao *taskBatchDao) List(kit *kit.Kit, bizID uint32, filter *TaskBatchListF
 		if filter.Executor != "" {
 			q = q.Where(m.Creator.Eq(filter.Executor))
 		}
+		// 时间范围过滤：任务的开始时间或结束时间在指定范围内
+		if filter.TimeRangeStart != nil {
+			// 任务的结束时间 >= 查询起点
+			q = q.Where(m.EndAt.Gte(*filter.TimeRangeStart))
+		}
+		if filter.TimeRangeEnd != nil {
+			// 任务的开始时间 <= 查询终点
+			q = q.Where(m.StartAt.Lte(*filter.TimeRangeEnd))
+		}
 	}
 
-	// 按创建时间倒序排列
-	q = q.Order(m.ID.Desc())
+	// 排序
+	if opt != nil && opt.Sort != "" {
+		orderCol, ok := m.GetFieldByName(opt.Sort)
+		if !ok {
+			return nil, 0, fmt.Errorf("table task_batches doesn't contains column %s", opt.Sort)
+		}
+
+		if opt.Order == types.Ascending {
+			q = q.Order(orderCol)
+		} else {
+			q = q.Order(orderCol.Desc())
+		}
+	} else {
+		// 未传入排序参数时，默认按 ID 倒序排列
+		q = q.Order(m.ID.Desc())
+	}
 
 	// 分页查询
 	result, count, err := q.FindByPage(opt.Offset(), opt.LimitInt())
@@ -132,4 +159,20 @@ func (dao *taskBatchDao) UpdateStatus(kit *kit.Kit, batchID uint32, status table
 
 	_, err := q.Where(m.ID.Eq(batchID)).Updates(updates)
 	return err
+}
+
+// ListExecutors 查询指定业务下所有的执行帐户
+func (dao *taskBatchDao) ListExecutors(kit *kit.Kit, bizID uint32) ([]string, error) {
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	var executors []string
+	err := q.Select(m.Creator.Distinct()).
+		Where(m.BizID.Eq(bizID)).
+		Pluck(m.Creator, &executors)
+	if err != nil {
+		return nil, err
+	}
+
+	return executors, nil
 }

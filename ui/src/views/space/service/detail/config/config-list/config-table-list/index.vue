@@ -56,8 +56,8 @@
       <SearchSelector
         ref="searchSelectorRef"
         class="config-search-input"
-        :search-filed="searchFiled"
-        :user-filed="['creator', 'reviser']"
+        :search-field="searchField"
+        :user-field="['creator', 'reviser']"
         :placeholder="searchPlaceholder"
         @search="searchQuery = $event" />
     </div>
@@ -133,7 +133,7 @@
   const searchQuery = ref<{ [key: string]: string }>({});
   const searchSelectorRef = ref();
 
-  const searchFiled = computed(() => {
+  const searchField = computed(() => {
     if (isFileType.value) {
       return [
         { field: 'path_name', label: t('配置文件名') },

@@ -7,8 +7,8 @@
       <SearchSelector
         ref="searchSelectorRef"
         class="search-script-input"
-        :search-filed="searchFiled"
-        :user-filed="['creator', 'reviser']"
+        :search-field="searchField"
+        :user-field="['creator', 'reviser']"
         :placeholder="t('配置文件名/描述/创建人/更新人')"
         @search="handleSearch" />
     </div>
@@ -252,7 +252,7 @@
   const isAcrossChecked = ref(false);
   const searchQuery = ref<{ [key: string]: string }>({});
   const searchSelectorRef = ref();
-  const searchFiled = [
+  const searchField = [
     { field: 'path_name', label: t('配置文件名') },
     { field: 'memo', label: t('描述') },
     { field: 'creator', label: t('创建人') },

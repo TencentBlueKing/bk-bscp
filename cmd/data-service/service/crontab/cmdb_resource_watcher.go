@@ -116,7 +116,7 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 		cursor = existing.Value
 		logs.Infof("[CMDB Watch] loaded cursor from db: resource=%s cursor=%s", resource, cursor)
 	}
-
+	done := false
 	for {
 		resp, err := c.cmdb.ResourceWatch(kt.Ctx, &bkcmdb.WatchResourceRequest{
 			BkCursor:          cursor,
@@ -130,34 +130,41 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			return fmt.Errorf("request CMDB watch for %s failed: %w", resource, err)
 		}
 
-		if !resp.BkWatched {
-			// 没有新的事件，结束循环
-			logs.Infof("[CMDB Watch] resource=%s no new events, stop watching", resource)
-			break
-		}
-
 		// 处理事件
 		for _, event := range resp.BkEvents {
 			logs.Infof("[CMDB Watch] resource=%s event=%s cursor=%s", event.BkResource, event.BkEventType, event.BkCursor)
 
+			// 空事件: 仅更新游标并退出到下一个资源
+			if event.BkEventType == "" {
+				logs.Infof("[CMDB Watch] resource=%s: empty event detected, update cursor=%s and break", resource, event.BkCursor)
+				cursor = event.BkCursor
+				if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
+					Key:   cursorKey,
+					Value: cursor,
+				}}); err != nil {
+					logs.Errorf("[CMDB][Watch] update cursor failed, resource=%v, err=%v", resource, err)
+				}
+				done = true
+				break
+			}
+
+			// 正常事件: 处理 + 更新游标
 			c.handleEvent(kt, event)
-			// 更新游标
 			cursor = event.BkCursor
-			config := &table.Config{
+			if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
 				Key:   cursorKey,
 				Value: cursor,
-			}
-			if err := c.dao.Config().UpsertConfig(kt, []*table.Config{config}); err != nil {
+			}}); err != nil {
 				logs.Errorf("[CMDB][Watch] update cursor failed, resource=%v, err=%v", resource, err)
 			}
 		}
 
-		// 若最后一个事件的 detail 为空，也说明已经没有新的事件
-		lastEvent := resp.BkEvents[len(resp.BkEvents)-1]
-		if lastEvent.BkDetail == nil {
-			logs.Infof("[CMDB Watch] resource=%s detail is empty, all events processed", resource)
+		// 如果刚才的循环被空事件 break，就退出到下一个资源
+		// 若检测到空事件，跳出外层循环
+		if done {
 			break
 		}
+
 	}
 
 	return nil
@@ -313,66 +320,41 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	p *bkcmdb.ProcessInfo, old *table.Process) error {
 
-	now := time.Now().UTC()
-	var toAdd, toUpdate []*table.Process
-	var toDelete []uint32
-
-	var toAddProcInst []*table.ProcessInstance
-
-	// 别名变更 -> 删除旧数据 + 新增新进程 + 新增进程实例
-	if p.BkProcessName != old.Spec.Alias {
-		info := table.ProcessInfo{
-			BkStartParamRegex: p.BkStartParamRegex,
-			WorkPath:          p.WorkPath,
-			PidFile:           p.PidFile,
-			User:              p.User,
-			ReloadCmd:         p.ReloadCmd,
-			RestartCmd:        p.RestartCmd,
-			StartCmd:          p.StartCmd,
-			StopCmd:           p.StopCmd,
-			FaceStopCmd:       p.FaceStopCmd,
-			Timeout:           p.Timeout,
-		}
-		data, _ := json.Marshal(info)
-
-		toDelete = append(toDelete, old.ID)
-		toAdd = append(toAdd, &table.Process{
-			Attachment: old.Attachment,
-			Spec: &table.ProcessSpec{
-				SetName:         old.Spec.SetName,
-				ModuleName:      old.Spec.ModuleName,
-				ServiceName:     old.Spec.ServiceName,
-				Environment:     old.Spec.Environment,
-				Alias:           p.BkProcessName,
-				InnerIP:         old.Spec.InnerIP,
-				CcSyncStatus:    table.Synced,
-				CcSyncUpdatedAt: now,
-				SourceData:      string(data),
-				PrevData:        old.Spec.PrevData,
-				ProcNum:         uint(p.ProcNum),
-			},
-			Revision: &table.Revision{CreatedAt: now},
-		})
-
-		procInst := cmdb.BuildInstances(&cmdb.ProcInst{
-			ID:          p.BkProcessID,
-			HostID:      int(old.Attachment.HostID),
-			Name:        p.BkProcessName,
-			ProcNum:     p.ProcNum,
-			ProcessInfo: info,
-		}, p.BkBizID, int(old.Attachment.ModuleID), now, map[int]int{}, map[int]int{})
-		toAddProcInst = append(toAddProcInst, procInst...)
+	info := table.ProcessInfo{
+		BkStartParamRegex: p.BkStartParamRegex,
+		WorkPath:          p.WorkPath,
+		PidFile:           p.PidFile,
+		User:              p.User,
+		ReloadCmd:         p.ReloadCmd,
+		RestartCmd:        p.RestartCmd,
+		StartCmd:          p.StartCmd,
+		StopCmd:           p.StopCmd,
+		FaceStopCmd:       p.FaceStopCmd,
+		Timeout:           p.Timeout,
+	}
+	sourceData, err := json.Marshal(info)
+	if err != nil {
+		return err
 	}
 
-	// 进程数变化 -> 更新
-	if old.Spec.ProcNum != uint(p.ProcNum) {
-		old.Spec.ProcNum = uint(p.ProcNum)
-		toUpdate = append(toUpdate, &table.Process{
-			ID:         old.ID,
-			Attachment: old.Attachment,
-			Spec:       old.Spec,
-			Revision:   &table.Revision{UpdatedAt: now},
-		})
+	now := time.Now().UTC()
+
+	newP := &table.Process{
+		Attachment: old.Attachment,
+		Spec:       old.Spec,
+		Revision: &table.Revision{
+			CreatedAt: now,
+		},
+	}
+	newP.Attachment.CcProcessID = uint32(p.BkProcessID)
+	newP.Attachment.ServiceInstanceID = uint32(p.ServiceInstanceID)
+	newP.Spec.Alias = p.BkProcessName
+	newP.Spec.ProcNum = uint(p.ProcNum)
+	newP.Spec.SourceData = string(sourceData)
+
+	toAdd, toDelete, toUpdate, err := cmdb.BuildProcessChanges(newP, old, now)
+	if err != nil {
+		return err
 	}
 
 	// 删除
@@ -396,9 +378,14 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 		}
 	}
 
-	// 构建 ProcessID 映射
+	// 构建要写入的实例
+	var toAddProcInst []*table.ProcessInstance
+	// 生成进程实例
 	idMap := make(map[string]uint32)
 	for _, p := range toAdd {
+		toAddProcInst = cmdb.BuildInstances(int(p.Attachment.BizID), int(p.Attachment.HostID), int(p.Attachment.ModuleID),
+			int(p.Attachment.CcProcessID), int(p.Spec.ProcNum), now, map[int]int{}, map[int]int{})
+
 		key := fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, p.Attachment.BizID, p.Attachment.CcProcessID)
 		idMap[key] = p.ID
 	}

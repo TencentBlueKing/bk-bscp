@@ -79,3 +79,39 @@ message TaskStatusStatItem {
   uint32 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数量" }];
   string message = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态描述" }];
 }
+
+// Choice 查询枚举值选项
+message Choice {
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "选项ID" }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "选项名称" }];
+}
+
+// FilterOptions 查询过滤选项
+message FilterOptions {
+  repeated Choice task_object_choices = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务对象查询选项" }];
+  repeated Choice task_action_choices = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务动作查询选项" }];
+  repeated Choice status_choices = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态查询选项" }];
+  repeated Choice executor_choices = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户查询选项" }];
+}
+
+// TaskDetailFilterOptions 任务详情过滤选项
+message TaskDetailFilterOptions {
+  repeated Choice set_name_choices = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名查询选项" }];
+  repeated Choice module_name_choices = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名查询选项" }];
+  repeated Choice service_name_choices = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称查询选项" }];
+  repeated Choice alias_choices = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名查询选项" }];
+  repeated Choice cc_process_id_choices = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID查询选项" }];
+  repeated Choice inst_id_choices = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "实例ID查询选项" }];
+  repeated Choice status_choices = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态查询选项" }];
+}

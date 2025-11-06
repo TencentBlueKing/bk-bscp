@@ -80,7 +80,7 @@ func mig20250923114014Up(tx *gorm.DB) error {
 
 	now := time.Now()
 	if result := tx.Create([]IDGenerators{
-		{Resource: "process", MaxID: 0, UpdatedAt: now},
+		{Resource: "processes", MaxID: 0, UpdatedAt: now},
 	}); result.Error != nil {
 		return result.Error
 	}
@@ -99,13 +99,13 @@ func mig20250923114014Down(tx *gorm.DB) error {
 	}
 
 	var resources = []string{
-		"process",
+		"processes",
 	}
 	if result := tx.Where("resource IN ?", resources).Delete(&IDGenerators{}); result.Error != nil {
 		return result.Error
 	}
 
-	if err := tx.Migrator().DropTable("process"); err != nil {
+	if err := tx.Migrator().DropTable("processes"); err != nil {
 		return err
 	}
 

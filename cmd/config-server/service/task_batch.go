@@ -32,22 +32,34 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbcs.ListTaskBatchReq)
 		return nil, err
 	}
 
+	var sortRule *pbds.SortRule
+	if req.GetSort() != nil {
+		sortRule = &pbds.SortRule{
+			Field: req.GetSort().GetField(),
+			Order: req.GetSort().GetOrder(),
+		}
+	}
+
 	resp, err := s.client.DS.ListTaskBatch(grpcKit.RpcCtx(), &pbds.ListTaskBatchReq{
-		BizId:      req.GetBizId(),
-		TaskObject: req.GetTaskObject(),
-		Start:      req.GetStart(),
-		Limit:      req.GetLimit(),
-		TaskAction: req.GetTaskAction(),
-		Status:     req.GetStatus(),
-		Executor:   req.GetExecutor(),
+		BizId:          req.GetBizId(),
+		TaskObject:     req.GetTaskObject(),
+		Start:          req.GetStart(),
+		Limit:          req.GetLimit(),
+		TaskAction:     req.GetTaskAction(),
+		Status:         req.GetStatus(),
+		Executor:       req.GetExecutor(),
+		Sort:           sortRule,
+		TimeRangeStart: req.GetTimeRangeStart(),
+		TimeRangeEnd:   req.GetTimeRangeEnd(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &pbcs.ListTaskBatchResp{
-		Count: resp.Count,
-		List:  resp.GetList(),
+		Count:         resp.Count,
+		List:          resp.GetList(),
+		FilterOptions: resp.GetFilterOptions(),
 	}, nil
 }
 
@@ -77,34 +89,9 @@ func (s *Service) GetTaskBatchDetail(
 	}
 
 	return &pbcs.GetTaskBatchDetailResp{
-		Tasks: resp.GetTasks(),
-		Count: resp.Count,
-	}, nil
-}
-
-// GetTaskStatusStatistics implements pbcs.ConfigServer.
-func (s *Service) GetTaskStatusStatistics(
-	ctx context.Context,
-	req *pbcs.GetTaskStatusStatisticsReq,
-) (*pbcs.GetTaskStatusStatisticsResp, error) {
-	grpcKit := kit.FromGrpcContext(ctx)
-
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-	}
-	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
-		return nil, err
-	}
-
-	resp, err := s.client.DS.GetTaskStatusStatistics(grpcKit.RpcCtx(), &pbds.GetTaskStatusStatisticsReq{
-		BizId:   req.GetBizId(),
-		BatchId: req.GetBatchId(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &pbcs.GetTaskStatusStatisticsResp{
-		Statistics: resp.GetStatistics(),
+		Tasks:         resp.GetTasks(),
+		Count:         resp.Count,
+		Statistics:    resp.GetStatistics(),
+		FilterOptions: resp.GetFilterOptions(),
 	}, nil
 }

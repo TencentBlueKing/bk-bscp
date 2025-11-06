@@ -50,6 +50,12 @@ const (
 	TaskActionReload TaskAction = "reload"
 	// TaskActionKill 任务动作：强制停止
 	TaskActionKill TaskAction = "kill"
+	// TaskActionConfigPublish 任务动作：配置下发
+	TaskActionConfigPublish TaskAction = "config_publish"
+	// TaskActionConfigGenerate 任务动作：配置生成
+	TaskActionConfigGenerate TaskAction = "config_generate"
+	// TaskActionConfigCheck 任务动作：配置检查
+	TaskActionConfigCheck TaskAction = "config_check"
 
 	// TaskBatchStatusRunning 任务状态：执行中
 	TaskBatchStatusRunning TaskBatchStatus = "running"
@@ -60,6 +66,58 @@ const (
 	// TaskBatchStatusPartlyFailed 任务状态：部分失败
 	TaskBatchStatusPartlyFailed TaskBatchStatus = "partly_failed"
 )
+
+// TaskObjectChoice 任务对象查询选项
+type TaskObjectChoice struct {
+	ID   string
+	Name string
+}
+
+// TaskActionChoice 任务动作查询选项
+type TaskActionChoice struct {
+	ID   string
+	Name string
+}
+
+// TaskBatchStatusChoice 任务状态查询选项
+type TaskBatchStatusChoice struct {
+	ID   string
+	Name string
+}
+
+// GetTaskObjectChoices 获取所有任务对象查询选项
+func GetTaskObjectChoices() []TaskObjectChoice {
+	return []TaskObjectChoice{
+		{ID: string(TaskObjectConfigFile), Name: "配置文件"},
+		{ID: string(TaskObjectProcess), Name: "进程"},
+	}
+}
+
+// GetTaskActionChoices 获取所有任务动作查询选项
+func GetTaskActionChoices() []TaskActionChoice {
+	return []TaskActionChoice{
+		{ID: string(TaskActionStart), Name: "启动"},
+		{ID: string(TaskActionStop), Name: "停止"},
+		{ID: string(TaskActionRestart), Name: "重启"},
+		{ID: string(TaskActionReload), Name: "重载"},
+		{ID: string(TaskActionKill), Name: "强制停止"},
+		{ID: string(TaskActionRegister), Name: "托管"},
+		{ID: string(TaskActionUnregister), Name: "取消托管"},
+		{ID: string(TaskActionConfigPublish), Name: "配置下发"},
+		{ID: string(TaskActionConfigGenerate), Name: "配置生成"},
+		{ID: string(TaskActionConfigCheck), Name: "配置检查"},
+	}
+}
+
+// GetTaskBatchStatusChoices 获取所有任务状态查询选项
+func GetTaskBatchStatusChoices() []TaskBatchStatusChoice {
+	return []TaskBatchStatusChoice{
+		{ID: string(TaskBatchStatusRunning), Name: "正在执行"},
+		{ID: string(TaskBatchStatusSucceed), Name: "执行成功"},
+		{ID: string(TaskBatchStatusFailed), Name: "执行失败"},
+		{ID: string(TaskBatchStatusPartlyFailed), Name: "部分失败"},
+	}
+}
 
 // TaskBatch task batch
 type TaskBatch struct {

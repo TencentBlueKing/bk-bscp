@@ -314,18 +314,16 @@ service Data {
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
   // 进程过滤条件
   rpc ProcessFilterOptions(ProcessFilterOptionsReq) returns (ProcessFilterOptionsResp) {}
-  // 进程同步
-  rpc SyncCMDB(SyncCMDBReq) returns (SyncCMDBResp) {}
+  // 同步cc和gse状态
+  rpc SyncCmdbGseStatus(SyncCmdbGseStatusReq) returns (SyncCmdbGseStatusResp) {}
   // 任务历史列表
   rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {}
   // 任务批次详情
   rpc GetTaskBatchDetail(GetTaskBatchDetailReq) returns (GetTaskBatchDetailResp) {}
-  // 任务状态统计
-  rpc GetTaskStatusStatistics(GetTaskStatusStatisticsReq) returns (GetTaskStatusStatisticsResp) {}
-  // 获取同步cc状态
-  rpc SyncCMDBStatus(SyncCMDBStatusReq) returns (SyncCMDBStatusResp) {}
   // 重试失败的任务
   rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
+  // 获取同步的状态
+  rpc CmdbGseStatus(CmdbGseStatusReq) returns (CmdbGseStatusResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2311,12 +2309,18 @@ message OperateProcessResp {
   uint32 batchID = 1;
 }
 
-message SyncCMDBReq {
+message SyncCmdbGseStatusReq {
   uint32 biz_id = 1;
 }
 
-message SyncCMDBResp {
+message SyncCmdbGseStatusResp {
   string task_id = 1;
+}
+
+// SortRule 排序规则
+message SortRule {
+  string field = 1;  // 排序字段: id, start_at, end_at
+  string order = 2; // 排序方向: ASC, DESC
 }
 
 message ListTaskBatchReq {
@@ -2327,11 +2331,15 @@ message ListTaskBatchReq {
   string task_action = 5;  // 任务动作: register, start, stop, restart, reload, kill 等
   string status = 6;       // 执行状态: running, failed, succeed
   string executor = 7;     // 执行帐户（创建者）
+  SortRule sort = 8;       // 排序规则
+  string time_range_start = 9;  // 时间范围起点（如：2024-01-01T00:00:00Z）
+  string time_range_end = 10;   // 时间范围终点（如：2024-01-31T23:59:59Z）
 }
 
 message ListTaskBatchResp {
   uint32 count = 1;
   repeated pbtb.TaskBatch list = 2;
+  pbtb.FilterOptions filter_options = 3;  // 查询过滤选项
 }
 
 message GetTaskBatchDetailReq {
@@ -2345,22 +2353,15 @@ message GetTaskBatchDetailReq {
 message GetTaskBatchDetailResp {
   repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
   uint32 count = 2;                    // 任务总数
+  repeated pbtb.TaskStatusStatItem statistics = 3;  // 状态统计列表
+  pbtb.TaskDetailFilterOptions filter_options = 4;  // 任务详情过滤选项
 }
 
-message GetTaskStatusStatisticsReq {
-  uint32 biz_id = 1;
-  uint32 batch_id = 2;  // 批次ID
-}
-
-message GetTaskStatusStatisticsResp {
-  repeated pbtb.TaskStatusStatItem statistics = 1;  // 状态统计列表
-}
-
-message SyncCMDBStatusReq {
+message CmdbGseStatusReq {
   uint32 biz_id = 1;
 }
 
-message SyncCMDBStatusResp {
+message CmdbGseStatusResp {
   google.protobuf.Timestamp last_sync_time = 1;
   string status = 2;
 }

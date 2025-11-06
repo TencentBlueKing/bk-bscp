@@ -126,6 +126,8 @@ export default {
   业务名: 'Business Name',
   业务: 'Business',
   操作记录: 'Operation Log',
+  进程与配置管理: 'Process and Config Management',
+
 
   // 配置管理
   版本名称: 'Version Name',
@@ -702,6 +704,7 @@ export default {
   'RSA 私钥格式无效': 'Invalid RSA private key format',
   证书和私钥: 'Certificate and private key',
   版本废弃成功: 'Version discarded successfully',
+  '请选择/请输入': 'Please select/enter',
 
   // 分组管理
   新增分组: 'New group',
@@ -905,6 +908,7 @@ export default {
   form_版本号: 'Version number',
   上线版本成功: 'Online version successful',
   内置变量: 'Internal variables',
+  复制脚本内容: 'Copy script content',
   '客户端配置的配置存放临时目录，默认值为 {n}': 'Temporary directory for config storage temporarily configured by the client, default value is {n}',
   '蓝鲸配置平台上的业务ID，例如：2': 'Service ID on the bscp, for example, 2',
   '服务配置中心上的服务名称，例如：demo_service': 'bscp service name, for example, demo service',
@@ -1293,7 +1297,6 @@ export default {
   取消选择所有数据: 'Unselect all items',
 
   // 进程管理
-  进程与配置管理: 'Process and Config Management',
   进程管理: 'Process Management',
   批量启动: 'Batch Start',
   批量停止: 'Batch Stop',
@@ -1372,4 +1375,28 @@ export default {
   启动: 'Start',
   停止: 'Stop',
   内网IP: 'Internal IP',
+  // 任务历史
+  任务历史: 'Task history',
+  '任务对象/动作/执行账户/执行结果': 'Task object / Action / Execution account / Result',
+  任务对象: 'Task object',
+  进程: 'Process',
+  动作: 'Action',
+  环境类型: 'Environment type',
+  操作范围: 'Operation range',
+  执行账户: 'Execution account',
+  执行结果: 'Execution result',
+  执行耗时: 'Execution time',
+  任务详情: 'Task details',
+  任务ID: 'Task ID',
+  任务类型: 'Task type',
+  '搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP/执行结果':
+    'Search by Cluster / Module / Service instance / Process alias / CC process ID / Inst_id / Internal IP / Execution result',
+  'CC 进程 ID': 'CC process ID',
+  查看配置: 'View configuration',
+  等待执行: 'Pending execution',
+  执行成功: 'Execution succeeded',
+  执行失败: 'Execution failed',
+  正在执行: 'Executing',
+  部分失败: 'Partially failed',
+  生成: 'Generate',
 };

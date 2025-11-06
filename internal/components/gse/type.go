@@ -102,6 +102,9 @@ const (
 
 	// ErrCodeInProgress 任务正在执行中（GSE 侧任务尚未完成）
 	ErrCodeInProgress = 115
+
+	// ErrCodeStopping 停止启动
+	ErrCodeStopping = 1015012
 )
 
 // BuildNamespace 构建 GSE 命名空间
