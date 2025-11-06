@@ -15,9 +15,11 @@
             <span class="title">进程别名</span>
           </div>
           <div class="content">
-            <div v-for="info in infoList" :key="info.label" class="info-item">
-              <div class="label">{{ info.label }}</div>
-              <span :class="{ update: value === 2 && info.warn }">{{ info.value }}</span>
+            <div v-for="info in value === 1 ? oldDisplayData : newDisplayData" :key="info.title" class="info-item">
+              <div class="label">{{ info.title }}</div>
+              <div :class="['value', { update: value === 2 && info.isWarn }]">
+                {{ info.content }}
+              </div>
             </div>
           </div>
         </div>
@@ -39,60 +41,63 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   const { t } = useI18n();
-  defineProps<{
+  const props = defineProps<{
     isShow: boolean;
+    managedInfo: {
+      old: string;
+      new: string;
+    };
   }>();
-  const emits = defineEmits(['close']);
+  const emits = defineEmits(['close', 'update']);
+  const newDisplayData = ref();
+  const oldDisplayData = ref();
 
-  const infoList = [
-    {
-      label: t('进程启动参数：'),
-      value: 'aa',
-      warn: true,
+  watch(
+    () => props.managedInfo,
+    () => {
+      compareData(
+        props.managedInfo.new && JSON.parse(props.managedInfo.new),
+        props.managedInfo.old && JSON.parse(props.managedInfo.old),
+      );
     },
-    {
-      label: t('工作路径：'),
-      value: 'bb',
-    },
-    {
-      label: t('PID 路径：'),
-      value: 'cc',
-      warn: true,
-    },
-    {
-      label: t('启动用户：'),
-      value: 'dd',
-    },
-    {
-      label: t('启动命令：'),
-      value: 'ee',
-    },
-    {
-      label: t('停止命令：'),
-      value: 'ff',
-    },
-    {
-      label: t('强制停止：'),
-      value: 'gg',
-    },
-    {
-      label: t('重载命令：'),
-      value: 'hh',
-    },
-    {
-      label: t('启动等待时长：'),
-      value: 'ii',
-    },
-    {
-      label: t('操作超时时长：'),
-      value: 'jj',
-    },
-  ];
+    { deep: true },
+  );
+
+  // 转换成展示格式的函数
+  const transformToDisplayFormat = (data: any) => {
+    return [
+      { title: t('进程启动参数：'), content: data.bk_start_param_regex || '--', isWarn: false },
+      { title: t('工作路径：'), content: data.work_path || '--', isWarn: false },
+      { title: t('PID 路径：'), content: data.pid_file || '--', isWarn: false },
+      { title: t('启动用户：'), content: data.user || '--', isWarn: false },
+      { title: t('启动命令：'), content: data.start_cmd || '--', isWarn: false },
+      { title: t('停止命令：'), content: data.stop_cmd || '--', isWarn: false },
+      { title: t('强制停止：'), content: data.face_stop_cmd || '--', isWarn: false },
+      { title: t('重载命令：'), content: data.reload_cmd || '--', isWarn: false },
+      { title: t('操作超时时长：'), content: data.timeout || '--', isWarn: false },
+    ];
+  };
+
+  const compareData = (newData: any, oldData: any) => {
+    newDisplayData.value = transformToDisplayFormat(newData);
+    oldDisplayData.value = transformToDisplayFormat(oldData);
+
+    newDisplayData.value.forEach((newItem: any, index: number) => {
+      const oldItem = oldDisplayData.value[index];
+      if (newItem.content !== oldItem.content) {
+        newItem.isWarn = true;
+      }
+    });
+
+    return newDisplayData;
+  };
 
   const handleSubmitClick = () => {
     // TODO 提交更新托管信息
+    emits('update');
   };
   const handleClose = () => {
     emits('close');
@@ -136,6 +141,9 @@
           width: 110px;
           text-align: right;
           color: #4d4f56;
+        }
+        .value {
+          width: 300px;
         }
         .update {
           color: #e38b02;

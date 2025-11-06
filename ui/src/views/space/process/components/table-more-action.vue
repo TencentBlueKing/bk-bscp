@@ -5,7 +5,7 @@
     </div>
     <template #content>
       <ul class="dropdown-ul">
-        <li class="dropdown-li" v-for="item in operationList" :key="item.name" @click="item.click()">
+        <li :class="getLiClass(item.id)" v-for="item in operationList" :key="item.name" @click="handleClick(item.id)">
           <span>{{ item.name }}</span>
         </li>
       </ul>
@@ -17,37 +17,52 @@
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { Ellipsis } from 'bkui-vue/lib/icon';
+  import { IProcessTableAction } from '../../../../../types/process';
 
   const { t } = useI18n();
+
+  const props = defineProps<{
+    actions: IProcessTableAction;
+  }>();
 
   const opPopRef = ref();
 
   const operationList = [
     {
       name: t('重启'),
-      click: () => {},
+      id: 'restart',
     },
     {
       name: t('重载'),
-      click: () => {},
+      id: 'reload',
     },
     {
       name: t('强制停止'),
-      click: () => {},
+      id: 'kill',
     },
     {
       name: t('托管'),
-      click: () => {},
+      id: 'register',
     },
     {
       name: t('取消托管'),
-      click: () => {},
+      id: 'unregister',
     },
     {
       name: t('查看进程配置'),
-      click: () => {},
+      id: 'viewConfig',
     },
   ];
+
+  const getLiClass = (id: string) => {
+    return ['dropdown-li', { disabled: !props.actions[id as keyof typeof props.actions] }];
+  };
+
+  const handleClick = (id: string) => {
+    if (!props.actions[id as keyof typeof props.actions]) return;
+    opPopRef.value.hide();
+    console.log(id);
+  };
 </script>
 
 <style scoped lang="scss">
@@ -81,7 +96,7 @@
       line-height: 32px;
       color: #4d4f56;
       cursor: pointer;
-      .no-perm {
+      &.disabled {
         color: #c4c6cc;
         cursor: not-allowed;
       }

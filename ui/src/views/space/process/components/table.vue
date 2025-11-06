@@ -24,7 +24,7 @@
         <bk-button text theme="primary">{{ row.spec.set_name }}</bk-button>
       </template>
     </TableColumn>
-    <TableColumn col-key="spec.module_name" :title="t('模块')" />
+    <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" />
     <TableColumn col-key="spec.service_name" :title="t('服务实例')" />
     <TableColumn col-key="spec.alias" :title="t('进程别名')" />
     <TableColumn col-key="attachment.cc_process_id">
@@ -37,20 +37,22 @@
     <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" />
     <TableColumn col-key="spec.status" :title="t('进程状态')">
       <template #default="{ row }: { row: IProcessItem }">
-        <div class="process-status">
+        <div v-if="row.spec.status" class="process-status">
           <Spinner
             v-if="['running', 'starting', 'restarting', 'reloading'].includes(row.spec.status)"
             class="spinner-icon" />
           <span v-else :class="['dot', row.spec.status]"></span>
           {{ PROCESS_STATUS_MAP[row.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
         </div>
+        <span v-else>--</span>
       </template>
     </TableColumn>
     <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152">
       <template #default="{ row }: { row: IProcessItem }">
-        <bk-tag :theme="getManagedStatusTheme(row.spec.managed_status)">
+        <bk-tag v-if="row.spec.managed_status" :theme="getManagedStatusTheme(row.spec.managed_status)">
           {{ PROCESS_MANAGED_STATUS_MAP[row.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
         </bk-tag>
+        <span v-else>--</span>
       </template>
     </TableColumn>
     <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')">
@@ -65,20 +67,24 @@
         </span>
       </template>
     </TableColumn>
-    <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="id">
+    <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
       <template #default="{ row }: { row: IProcessItem }">
         <div class="op-btns">
-          <bk-badge position="top-right" theme="danger" dot>
-            <bk-button text theme="primary" @click="isShowUpdateManagedInfo = true">
+          <bk-badge v-if="row.spec.cc_sync_status === 'updated'" position="top-right" theme="danger" dot>
+            <bk-button text theme="primary" @click="handleUpdateManagedInfo(row)">
               {{ t('更新托管信息') }}
             </bk-button>
           </bk-badge>
-          <!-- <bk-button text theme="primary">{{ t('配置下发') }}</bk-button>
-          <bk-button text theme="primary" @click="handleOpProcess(row, 'stop')">{{ t('停止') }}</bk-button>
-          <bk-button text theme="primary" @click="handleOpProcess(row, 'force-stop')">{{ t('强制停止') }}</bk-button>
-          <bk-button text theme="primary">{{ t('取消托管') }}</bk-button> -->
-          <bk-button text theme="primary" @click="handleOpProcess(row, 'start')">{{ t('启动') }}</bk-button>
-          <TableMoreAction />
+          <template v-else>
+            <bk-button text theme="primary" :disabled="!row.spec.actions.start" @click="handleOpProcess(row, 'start')">
+              {{ t('启动') }}
+            </bk-button>
+            <bk-button text theme="primary" :disabled="!row.spec.actions.stop" @click="handleOpProcess(row, 'stop')">
+              {{ t('停止') }}
+            </bk-button>
+          </template>
+          <bk-button text theme="primary" :disabled="!row.spec.actions.push">{{ t('配置下发') }}</bk-button>
+          <TableMoreAction :actions="row.spec.actions" />
         </div>
       </template>
     </TableColumn>
@@ -102,20 +108,22 @@
           </TableColumn>
           <TableColumn col-key="spec.status" :title="t('进程状态')">
             <template #default="{ row: rowData }: { row: IProcInst }">
-              <div class="process-status">
+              <div v-if="rowData.spec.status" class="process-status">
                 <Spinner
                   v-if="['running', 'starting', 'restarting', 'reloading'].includes(rowData.spec.status)"
                   class="spinner-icon" />
                 <span v-else :class="['dot', rowData.spec.status]"></span>
                 {{ PROCESS_STATUS_MAP[rowData.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
               </div>
+              <span v-else>--</span>
             </template>
           </TableColumn>
           <TableColumn col-key="spec.managed_status" :title="t('托管状态')">
             <template #default="{ row: rowData }: { row: IProcInst }">
-              <bk-tag :theme="getManagedStatusTheme(rowData.spec.managed_status)">
+              <bk-tag v-if="rowData.spec.managed_status" :theme="getManagedStatusTheme(rowData.spec.managed_status)">
                 {{ PROCESS_MANAGED_STATUS_MAP[rowData.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
               </bk-tag>
+              <span v-else>--</span>
             </template>
           </TableColumn>
           <TableColumn>
@@ -143,7 +151,11 @@
     :limit="pagination.limit"
     location="left"
     :layout="['total', 'limit', 'list']" />
-  <UpdateManagedInfo :is-show="isShowUpdateManagedInfo" @close="isShowUpdateManagedInfo = false" />
+  <UpdateManagedInfo
+    :is-show="isShowUpdateManagedInfo"
+    :managed-info="managedInfo"
+    @update="handleConfirmOp('update')"
+    @close="isShowUpdateManagedInfo = false" />
   <OpProcessDialog :is-show="isShowOpProcess" :info="opProcessInfo" @close="isShowOpProcess = false" />
   <BatchOpProcessDialog
     :is-show="isShowBatchOpProcess"
@@ -155,7 +167,7 @@
   import { ref, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
-  import { getProcessList } from '../../../../api/process';
+  import { getProcessList, processOperate } from '../../../../api/process';
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
   import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
@@ -213,6 +225,12 @@
     count: 0,
   });
   const filterConditions = ref<Record<string, any>>({});
+  const managedInfo = ref({
+    old: '',
+    new: '',
+  });
+  const processIds = ref<number[]>([]);
+  const instId = ref(0);
 
   onMounted(() => {
     loadProcessList();
@@ -233,7 +251,7 @@
     }
   };
 
-  const handleOpProcess = (data: any, op: string) => {
+  const handleOpProcess = (data: IProcessItem, op: string) => {
     if (op === 'start') {
       opProcessInfo.value = {
         op: 'start',
@@ -294,6 +312,30 @@
       stopping: 'warning',
     };
     return themeMap[status] ?? 'default';
+  };
+
+  const handleUpdateManagedInfo = (data: IProcessItem) => {
+    processIds.value = [data.id];
+    managedInfo.value.old = data.spec.prev_data;
+    managedInfo.value.new = data.spec.source_data;
+    isShowUpdateManagedInfo.value = true;
+  };
+
+  const handleConfirmOp = async (op: string) => {
+    try {
+      const query = {
+        processIds: processIds.value,
+        instId: instId.value,
+        operateType: op,
+      };
+      await processOperate(spaceId.value, query);
+      loadProcessList();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      processIds.value = [];
+      instId.value = 0;
+    }
   };
 </script>
 

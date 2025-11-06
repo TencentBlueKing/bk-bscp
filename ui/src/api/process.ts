@@ -32,3 +32,12 @@ export const getSyncStatus = (biz_id: string) =>
  */
 export const getProcessFilter = (biz_id: string) =>
   http.get(`/config/biz_id/${biz_id}/process/filter_options`).then((res) => res.data);
+
+/**
+ * 进程操作
+ * @param bizId 业务ID
+ * @param query 查询参数
+ * @returns
+ */
+export const processOperate = (biz_id: string, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/process/operate`, query).then((res) => res.data);
