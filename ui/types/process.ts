@@ -6,6 +6,7 @@ export interface IProcessItem {
   };
   proc_inst: IProcInst[];
   spec: {
+    actions: IProcessTableAction;
     alias: string;
     cc_sync_status: string;
     cc_sync_updated_at: string;
@@ -17,7 +18,20 @@ export interface IProcessItem {
     source_data: string;
     managed_status: string;
     status: string;
+    prev_data: string;
+    proc_num: number;
   };
+}
+
+export interface IProcessTableAction {
+  kill: boolean;
+  push: boolean;
+  register: boolean;
+  reload: boolean;
+  restart: boolean;
+  start: boolean;
+  stop: boolean;
+  unregister: boolean;
 }
 
 export interface IProcInst {

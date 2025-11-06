@@ -15,7 +15,7 @@ export const getProcessList = (biz_id: string, query: any) =>
  * @returns
  */
 export const syncProcessStatus = (biz_id: string) =>
-  http.post(`/config/biz_id/${biz_id}/sycn/cc`).then((res) => res.data);
+  http.post(`/config/biz_id/${biz_id}/sync/cmdb_gse_status`).then((res) => res.data);
 
 /**
  * 获取同步cc状态
@@ -23,7 +23,7 @@ export const syncProcessStatus = (biz_id: string) =>
  * @returns
  */
 export const getSyncStatus = (biz_id: string) =>
-  http.get(`/config/biz_id/${biz_id}/sycn/cc/status`).then((res) => res.data);
+  http.get(`/config/biz_id/${biz_id}/sync/sync_status`).then((res) => res.data);
 
 /**
  * 获取进程过滤条件

@@ -19,6 +19,7 @@
   import { ref, onMounted } from 'vue';
   import { RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
   import { getSyncStatus, syncProcessStatus } from '../../../../api/process';
+  import { datetimeFormat } from '../../../../utils';
 
   const props = defineProps<{
     bizId: string;
@@ -34,7 +35,7 @@
   const handleGetSyncStatus = async () => {
     try {
       const res = await getSyncStatus(props.bizId);
-      time.value = res.last_sync_time;
+      time.value = datetimeFormat(res.last_sync_time);
       syncStatus.value = res.status;
     } catch (error) {
       console.error(error);

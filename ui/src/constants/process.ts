@@ -20,8 +20,8 @@ export const PROCESS_STATUS_MAP = {
 
 // 进程托管状态
 export const PROCESS_MANAGED_STATUS_MAP = {
-  starting: localT('正执行托管中'),
-  stopping: localT('正在取消托管中'),
+  starting: localT('启动托管中'),
+  stopping: localT('停止托管中'),
   managed: localT('托管中'),
   unmanaged: localT('未托管'),
   partly_managed: localT('部分托管中'),
