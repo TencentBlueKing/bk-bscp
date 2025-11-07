@@ -1,9 +1,19 @@
+// * Tencent is pleased to support the open source community by making Blueking Container Service available.
+//  * Copyright (C) 20\d\d THL A29 Limited, a Tencent company. All rights reserved.
+//  * Licensed under the MIT License (the "License"); you may not use this file except
+//  * in compliance with the License. You may obtain a copy of the License at
+//  * http://opensource.org/licenses/MIT
+//  * Unless required by applicable law or agreed to in writing, software distributed under
+//  * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//  * either express or implied. See the License for the specific language governing permissions and
+//  * limitations under the License.
+
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"log"
-	"encoding/xml"
 	"strings"
 
 	"github.com/TencentBlueKing/bk-bscp/render"
@@ -60,8 +70,8 @@ Current Host IP via this.cc_host:
 
 	// Build complete context in Go
 	context1 := map[string]interface{}{
-		"name":  "BSCP",
-		"cc_xml": ccXML,
+		"name":            "BSCP",
+		"cc_xml":          ccXML,
 		"bk_set_name":     "set-A",
 		"bk_module_name":  "module-X",
 		"bk_host_innerip": "10.0.0.1",
@@ -72,14 +82,14 @@ Current Host IP via this.cc_host:
 			"module_name":  "module-X",
 			"custom_field": "my-custom-value",
 			"attrib": map[string]interface{}{
-				"my_key": "my-value",
+				"my_key":  "my-value",
 				"another": 123,
 			},
 			// Can add any new fields
 			"new_field": "new data",
 		},
 	}
-	
+
 	result1, err := renderer.Render(template1, context1)
 	if err != nil {
 		log.Fatalf("Render failed: %v", err)
