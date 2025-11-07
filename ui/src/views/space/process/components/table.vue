@@ -12,21 +12,16 @@
       :placeholder="t('内网IP/进程状态/托管状态/CC 同步状态')"
       unique-select />
   </div>
-  <PrimaryTable
-    class="border process-table"
-    :data="processList"
-    row-key="id"
-    :ellipsis="true"
-    :row-class-name="getRowClassName">
+  <PrimaryTable class="border process-table" :data="processList" row-key="id" :row-class-name="getRowClassName">
     <TableColumn col-key="row-select" type="multiple" width="32"></TableColumn>
     <TableColumn :title="t('集群')" col-key="spec.set_name" width="183">
       <template #default="{ row }: { row: IProcessItem }">
         <bk-button text theme="primary">{{ row.spec.set_name }}</bk-button>
       </template>
     </TableColumn>
-    <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" />
-    <TableColumn col-key="spec.service_name" :title="t('服务实例')" />
-    <TableColumn col-key="spec.alias" :title="t('进程别名')" />
+    <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis />
+    <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis />
+    <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis />
     <TableColumn col-key="attachment.cc_process_id">
       <template #title>
         <span class="tips-title" v-bk-tooltips="{ content: t('对应 CMDB 中唯一 ID'), placement: 'top' }">
@@ -84,14 +79,29 @@
             </bk-button>
           </template>
           <bk-button text theme="primary" :disabled="!row.spec.actions.push">{{ t('配置下发') }}</bk-button>
-          <TableMoreAction :actions="row.spec.actions" />
+          <TableMoreAction
+            :actions="row.spec.actions"
+            @kill="handleOpProcess(row, 'kill')"
+            @click="handleMoreActionClick(row, $event)" />
         </div>
       </template>
     </TableColumn>
     <template #expandedRow="{ row }: { row: IProcessItem }">
       <div class="second-table">
-        <PrimaryTable :data="row.proc_inst" row-key="id" size="small">
-          <TableColumn col-key="spec.inst_id" :title="t('实例')"> </TableColumn>
+        <PrimaryTable :data="row.proc_inst" row-key="id" :row-class-name="getSecondTableRowClass">
+          <TableColumn col-key="spec.inst_id" :title="t('实例')">
+            <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
+              <div class="instance">
+                <span>{{ row.spec.service_name }}</span>
+                <span
+                  v-if="rowIndex + 1 > rowData.num"
+                  class="error-icon"
+                  v-bk-tooltips="{ content: t('CC 中更新了数量，已不存在这条实例记录，建议停止') }">
+                  !
+                </span>
+              </div>
+            </template>
+          </TableColumn>
           <TableColumn col-key="spec.local_inst_id">
             <template #title>
               <span class="tips-title" v-bk-tooltips="{ content: t('主机下唯一标识'), placement: 'top' }">
@@ -127,11 +137,16 @@
             </template>
           </TableColumn>
           <TableColumn>
-            <template #default>
-              <div class="op-btns">
-                <bk-button text theme="primary">{{ t('停止') }}</bk-button>
-                <bk-button text theme="primary">{{ t('取消托管') }}</bk-button>
+            <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
+              <div v-if="rowIndex + 1 > rowData.num" class="op-btns">
+                <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.spec.inst_id, 'stop')">
+                  {{ t('停止') }}
+                </bk-button>
+                <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.spec.inst_id, 'unregister')">
+                  {{ t('取消托管') }}
+                </bk-button>
               </div>
+              <span v-else>--</span>
             </template>
           </TableColumn>
         </PrimaryTable>
@@ -156,7 +171,11 @@
     :managed-info="managedInfo"
     @update="handleConfirmOp('update')"
     @close="isShowUpdateManagedInfo = false" />
-  <OpProcessDialog :is-show="isShowOpProcess" :info="opProcessInfo" @close="isShowOpProcess = false" />
+  <OpProcessDialog
+    :is-show="isShowOpProcess"
+    :info="opProcessInfo"
+    @close="isShowOpProcess = false"
+    @confirm="handleConfirmOp" />
   <BatchOpProcessDialog
     :is-show="isShowBatchOpProcess"
     :info="batchOpProcessInfo"
@@ -244,37 +263,53 @@
         limit: pagination.value.limit,
       };
       const res = await getProcessList(spaceId.value, params);
-      processList.value = res.process;
+      processList.value = res.process.map((item: IProcessItem) => ({
+        ...item,
+        proc_inst: item.proc_inst.map((proc) => ({
+          ...proc,
+          num: item.spec.proc_num,
+        })),
+      }));
       updatePagination('count', res.count);
     } catch (error) {
       console.error(error);
     }
   };
 
+  // 进程表格操作
   const handleOpProcess = (data: IProcessItem, op: string) => {
+    const cmd = JSON.parse(data.spec.source_data);
+    processIds.value = [data.id];
     if (op === 'start') {
       opProcessInfo.value = {
         op: 'start',
         label: t('启动'),
         name: data.spec.alias,
-        command: '111',
+        command: cmd.start_cmd,
       };
     } else if (op === 'stop') {
       opProcessInfo.value = {
         op: 'stop',
         label: t('停止'),
         name: data.spec.alias,
-        command: '222',
+        command: cmd.stop_cmd,
       };
-    } else if (op === 'force-stop') {
+    } else if (op === 'kill') {
       opProcessInfo.value = {
-        op: 'force-stop',
+        op: 'kill',
         label: t('强制停止'),
         name: data.spec.alias,
-        command: '333',
+        command: cmd.face_stop_cmd,
       };
     }
     isShowOpProcess.value = true;
+  };
+
+  // 实例表格操作
+  const handleOpInst = (processId: number, id: number, op: string) => {
+    processIds.value = [processId];
+    instId.value = id;
+    handleConfirmOp(op);
   };
 
   const handleBatchOpProcess = (op: string) => {
@@ -304,6 +339,13 @@
     if (row.spec.cc_sync_status === 'deleted') return 'deleted';
   };
 
+  const getSecondTableRowClass = ({ row, rowIndex }: { row: IProcInst; rowIndex: number }) => {
+    if (row.num && rowIndex + 1 > row.num) {
+      return 'warn';
+    }
+    return 'default';
+  };
+
   const getManagedStatusTheme = (status: string) => {
     const themeMap: Record<string, string> = {
       managed: 'success',
@@ -319,6 +361,11 @@
     managedInfo.value.old = data.spec.prev_data;
     managedInfo.value.new = data.spec.source_data;
     isShowUpdateManagedInfo.value = true;
+  };
+
+  const handleMoreActionClick = (data: IProcessItem, op: string) => {
+    processIds.value = [data.id];
+    handleConfirmOp(op);
   };
 
   const handleConfirmOp = async (op: string) => {
@@ -403,7 +450,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-
     .dot {
       width: 13px;
       height: 13px;
@@ -422,12 +468,37 @@
       }
     }
   }
+  .instance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    .error-icon {
+      font-size: 14px;
+      line-height: 14px;
+      vertical-align: middle;
+      color: #e71818;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  }
 </style>
 
 <style lang="scss">
   .process-table {
     .deleted {
       background: #fff0f0;
+    }
+    .warn {
+      background: #fdf4e8;
+    }
+    .default {
+      background: #fafbfd;
+    }
+    .t-table__row-full-element {
+      padding: 0;
+    }
+    .t-table__expanded-row {
+      background: #fafbfd;
     }
   }
 </style>

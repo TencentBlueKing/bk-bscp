@@ -21,6 +21,7 @@
 
   const { t } = useI18n();
 
+  const emits = defineEmits(['click', 'kill']);
   const props = defineProps<{
     actions: IProcessTableAction;
   }>();
@@ -60,8 +61,12 @@
 
   const handleClick = (id: string) => {
     if (!props.actions[id as keyof typeof props.actions]) return;
+    if (id === 'kill') {
+      emits('kill');
+    } else {
+      emits('click', id);
+    }
     opPopRef.value.hide();
-    console.log(id);
   };
 </script>
 

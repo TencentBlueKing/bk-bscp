@@ -14,7 +14,12 @@
         <span class="label">{{ $t('进程别名') }}：</span>
         <span class="name">{{ info.name }}</span>
       </div>
-      <div class="command">{{ $t('将执行{n}命令', { n: info.label }) }} {{ info.command }}</div>
+      <div class="command">
+        {{ $t('将执行{n}命令', { n: info.label }) }}
+        <div class="content">
+          <bk-overflow-title type="tips"> {{ info.command }}</bk-overflow-title>
+        </div>
+      </div>
     </div>
     <template #footer>
       <div class="dialog-footer">
@@ -37,9 +42,10 @@
       command: string;
     };
   }>();
-  const emits = defineEmits(['close']);
+  const emits = defineEmits(['close', 'confirm']);
 
   const handleConfirm = () => {
+    emits('confirm', props.info.op);
     emits('close');
   };
 </script>
@@ -56,12 +62,18 @@
       }
     }
     .command {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-top: 16px;
       padding: 0 16px;
       height: 46px;
       background: #f5f7fa;
       border-radius: 2px;
       line-height: 46px;
+      .content {
+        width: 240px;
+      }
     }
   }
   .dialog-footer {

@@ -44,15 +44,15 @@
     },
     {
       label: t('强制停止'),
-      value: 'force_stop',
+      value: 'kill',
     },
     {
       label: t('托管'),
-      value: 'hosted',
+      value: 'register',
     },
     {
       label: t('取消托管'),
-      value: 'unhosted',
+      value: 'unregister',
     },
   ];
   const buttonRef = ref();

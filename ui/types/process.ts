@@ -36,6 +36,7 @@ export interface IProcessTableAction {
 
 export interface IProcInst {
   id: number;
+  num?: number;
   spec: {
     local_inst_id: string;
     inst_id: string;
