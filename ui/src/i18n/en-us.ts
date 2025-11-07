@@ -1375,6 +1375,8 @@ export default {
   启动: 'Start',
   停止: 'Stop',
   内网IP: 'Internal IP',
+  'CC 中更新了数量，已不存在这条实例记录，建议停止': 'The number of CC has been updated, this instance record no longer exists, it is recommended to stop',
+
   // 任务历史
   任务历史: 'Task history',
   '任务对象/动作/执行账户/执行结果': 'Task object / Action / Execution account / Result',

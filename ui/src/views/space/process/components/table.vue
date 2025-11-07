@@ -106,7 +106,7 @@
                 <div class="instance">
                   <span>{{ row.spec.service_name }}</span>
                   <span
-                    v-if="rowIndex + 1 > rowData.num"
+                    v-if="rowIndex + 1 > rowData.num!"
                     class="error-icon"
                     v-bk-tooltips="{ content: t('CC 中更新了数量，已不存在这条实例记录，建议停止') }">
                     !
@@ -121,7 +121,7 @@
                 </span>
               </template>
             </TableColumn>
-            <TableColumn col-key="spec.inst_id" :title="t('实例ID')">
+            <TableColumn col-key="spec.inst_id">
               <template #title>
                 <span class="tips-title" v-bk-tooltips="{ content: t('模块下唯一标识'), placement: 'top' }">
                   InstID
@@ -152,11 +152,11 @@
             </TableColumn>
             <TableColumn>
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
-                <div v-if="rowIndex + 1 > rowData.num" class="op-btns">
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.spec.inst_id, 'stop')">
+                <div v-if="rowIndex + 1 > rowData.num!" class="op-btns">
+                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'stop')">
                     {{ t('停止') }}
                   </bk-button>
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.spec.inst_id, 'unregister')">
+                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'unregister')">
                     {{ t('取消托管') }}
                   </bk-button>
                 </div>
