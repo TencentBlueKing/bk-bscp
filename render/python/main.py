@@ -13,6 +13,8 @@ from pathlib import Path
 # Add current directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from types import SimpleNamespace
+from lxml import etree
 from mako_render import mako_render
 
 
@@ -79,6 +81,65 @@ def main():
             else:
                 context = {}
         
+        # Build cc and this objects from context
+        def build_cc_context(ctx: dict) -> dict:
+            # 1. Handle cc_xml if present
+            cc_xml = ctx.get('cc_xml')
+            if cc_xml:
+                # Parse cc_xml into lxml Element
+                if isinstance(cc_xml, str):
+                    cc = etree.fromstring(cc_xml.encode('utf-8'))
+                else:
+                    cc = etree.fromstring(cc_xml)
+                ctx['cc'] = cc
+
+            # 2. Build 'this' object if not already provided
+            # If Go already passed a 'this' dict, convert it to object for attribute access
+            if 'this' in ctx:
+                if isinstance(ctx['this'], dict):
+                    # Convert dict to object for this.attr access in Mako
+                    this_obj = SimpleNamespace(**ctx['this'])
+                    ctx['this'] = this_obj
+                # else: already an object, keep as-is
+                return ctx
+            
+            # 3. Auto-build 'this' from cc_xml + identifiers (backward compatibility)
+            if cc_xml:
+                bk_set_name = ctx.get('bk_set_name')
+                bk_module_name = ctx.get('bk_module_name')
+                bk_host_innerip = ctx.get('bk_host_innerip')
+                bk_cloud_id = ctx.get('bk_cloud_id')
+
+                this_obj = SimpleNamespace()
+                cc = ctx.get('cc')
+
+                # cc_set
+                if bk_set_name and cc is not None:
+                    this_obj.cc_set = cc.find(f'.//Set[@SetName="{bk_set_name}"]')
+                # cc_module
+                if bk_set_name and bk_module_name and cc is not None:
+                    this_obj.cc_module = cc.find(
+                        f'.//Set[@SetName="{bk_set_name}"]/Module[@ModuleName="{bk_module_name}"]'
+                    )
+                # cc_host
+                if bk_set_name and bk_module_name and bk_host_innerip is not None and bk_cloud_id is not None and cc is not None:
+                    xpath = (
+                        f'.//Set[@SetName="{bk_set_name}"]'
+                        f'/Module[@ModuleName="{bk_module_name}"]'
+                        f'/Host[@InnerIP="{bk_host_innerip}"][@bk_cloud_id="{bk_cloud_id}"]'
+                    )
+                    this_obj.cc_host = cc.find(xpath)
+
+                # attach attrib container to mimic original API (empty by default)
+                if not hasattr(this_obj, 'attrib'):
+                    this_obj.attrib = {}
+
+                ctx['this'] = this_obj
+            
+            return ctx
+
+        context = build_cc_context(context)
+
         # Render template
         rendered_output = mako_render(template_content, context)
         

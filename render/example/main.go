@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"encoding/xml"
+	"strings"
 
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
@@ -17,19 +19,74 @@ func main() {
 		log.Fatalf("Failed to create renderer: %v", err)
 	}
 
-	// Example 1: Simple template rendering
-	fmt.Println("Example 1: Simple template")
-	template1 := "Hello ${name}!"
-	context1 := map[string]interface{}{
-		"name": "BSCP",
+	// Build a small cc topology XML to demonstrate cc / this.* usage
+	// Structure: Business(Set->Module->Host)
+	ccXML := `<?xml version="1.0" encoding="UTF-8"?>
+<Business Name="demo">
+  <Set SetName="set-A">
+	<Module ModuleName="module-X">
+	  <Host InnerIP="10.0.0.1" bk_cloud_id="0" OS="linux" />
+	  <Host InnerIP="10.0.0.2" bk_cloud_id="0" OS="linux" />
+	</Module>
+  </Set>
+</Business>`
+
+	// Validate XML just to ensure no syntax error (optional)
+	if err := xml.Unmarshal([]byte(ccXML), new(interface{})); err != nil {
+		log.Fatalf("invalid ccXML: %v", err)
 	}
+
+	// Example 1: Simple template with cc context and this object
+	fmt.Println("Example 1: Complete context built in Go")
+	template1 := strings.TrimSpace(`Hello ${name}!
+Total Hosts: ${len(cc.findall('.//Host'))}
+
+First Host IP:
+% if cc.findall('.//Host'):
+	${cc.findall('.//Host')[0].get('InnerIP')}
+% endif
+
+This object - Set: ${this.set_name}
+This object - Module: ${this.module_name}
+This object - Custom field: ${this.custom_field}
+This attrib: ${this.attrib.get('my_key', 'default')}
+
+Current Host IP via this.cc_host:
+% if getattr(this, 'cc_host', None):
+	${this.cc_host.get('InnerIP')}
+% else:
+	N/A
+% endif`)
+
+	// Build complete context in Go
+	context1 := map[string]interface{}{
+		"name":  "BSCP",
+		"cc_xml": ccXML,
+		"bk_set_name":     "set-A",
+		"bk_module_name":  "module-X",
+		"bk_host_innerip": "10.0.0.1",
+		"bk_cloud_id":     0,
+		// Build 'this' object in Go
+		"this": map[string]interface{}{
+			"set_name":     "set-A",
+			"module_name":  "module-X",
+			"custom_field": "my-custom-value",
+			"attrib": map[string]interface{}{
+				"my_key": "my-value",
+				"another": 123,
+			},
+			// Can add any new fields
+			"new_field": "new data",
+		},
+	}
+	
 	result1, err := renderer.Render(template1, context1)
 	if err != nil {
 		log.Fatalf("Render failed: %v", err)
 	}
-	fmt.Printf("Result: %s\n\n", result1)
+	fmt.Printf("Result:\n%s\n\n", result1)
 
-	// Example 2: Template with multiple variables
+	// Example 2: Template with multiple variables - simple context
 	fmt.Println("Example 2: Multiple variables")
 	template2 := `Server Configuration:
 Name: ${server_name}

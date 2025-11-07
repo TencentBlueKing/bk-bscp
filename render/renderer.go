@@ -1,14 +1,14 @@
 package render
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"time"
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "time"
 )
 
 // Renderer handles Mako template rendering by calling Python scripts
@@ -80,7 +80,7 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 // Render renders a Mako template with given context
 // It uses stdin to pass JSON data to Python script
 func (r *Renderer) Render(template string, ctx map[string]interface{}) (string, error) {
-	return r.RenderWithContext(context.Background(), template, ctx)
+    return r.RenderWithContext(context.Background(), template, ctx)
 }
 
 // RenderWithContext renders a Mako template with given context and Go context
@@ -97,7 +97,7 @@ func (r *Renderer) RenderWithContext(ctx context.Context, template string, conte
 		Template: template,
 		Context:  contextData,
 	}
-
+	
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
 		return "", &RenderError{
