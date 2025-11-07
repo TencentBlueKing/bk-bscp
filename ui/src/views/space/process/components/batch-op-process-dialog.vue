@@ -24,7 +24,7 @@
 
 <script lang="ts" setup>
   import { ExclamationCircleShape } from 'bkui-vue/lib/icon';
-  defineProps<{
+  const props = defineProps<{
     isShow: boolean;
     info: {
       op: string;
@@ -32,9 +32,10 @@
       count: number;
     };
   }>();
-  const emits = defineEmits(['close']);
+  const emits = defineEmits(['close', 'confirm']);
 
   const handleConfirm = () => {
+    emits('confirm', props.info.op);
     emits('close');
   };
 </script>

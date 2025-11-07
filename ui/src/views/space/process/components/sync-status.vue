@@ -3,10 +3,15 @@
     <span class="title">{{ $t('进程管理') }}</span>
     <div class="line"></div>
     <div class="status">
-      <bk-button class="sync-button" text :disabled="syncStatus === 'loading'" @click="handleSyncStatus">
+      <bk-button
+        class="sync-button"
+        text
+        theme="primary"
+        :disabled="syncStatus === 'RUNNING'"
+        @click="handleSyncStatus">
         <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncStatus === 'loading'">
+      <span v-if="syncStatus === 'RUNNING'">
         <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
       </span>
       <span v-else class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
@@ -16,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, onBeforeUnmount } from 'vue';
   import { RightTurnLine, Spinner } from 'bkui-vue/lib/icon';
   import { getSyncStatus, syncProcessStatus } from '../../../../api/process';
   import { datetimeFormat } from '../../../../utils';
@@ -24,32 +29,50 @@
   const props = defineProps<{
     bizId: string;
   }>();
+  const emits = defineEmits(['refresh']);
 
-  const syncStatus = ref('success');
+  const syncStatus = ref('SUCCESS');
   const time = ref('');
+  const statusTimer = ref(0);
 
   onMounted(() => {
     handleGetSyncStatus();
   });
 
+  onBeforeUnmount(() => {
+    if (statusTimer.value) {
+      clearTimeout(statusTimer.value);
+    }
+  });
+
   const handleGetSyncStatus = async () => {
     try {
+      if (statusTimer.value) {
+        clearTimeout(statusTimer.value);
+      }
       const res = await getSyncStatus(props.bizId);
       time.value = datetimeFormat(res.last_sync_time);
       syncStatus.value = res.status;
+      if (syncStatus.value === 'RUNNING') {
+        statusTimer.value = setInterval(() => {
+          handleGetSyncStatus();
+        }, 5000);
+      }
+      if (syncStatus.value === 'SUCCESS') {
+        emits('refresh');
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
   const handleSyncStatus = async () => {
-    if (syncStatus.value === 'loading') return;
+    if (syncStatus.value === 'RUNNING') return;
     try {
       await syncProcessStatus(props.bizId);
       await handleGetSyncStatus();
     } catch (error) {
       console.error(error);
-      syncStatus.value = 'error';
     }
   };
 </script>
@@ -72,7 +95,6 @@
     background: #dcdee5;
   }
   .sync-button {
-    color: #3a84ff;
     .icon {
       font-size: 14px;
       margin-right: 4px;

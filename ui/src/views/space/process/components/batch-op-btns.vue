@@ -1,8 +1,8 @@
 <template>
   <div class="op-content">
-    <bk-button theme="primary" @click="emits('start')">{{ $t('批量启动') }}</bk-button>
-    <bk-button @click="emits('stop')">{{ $t('批量停止') }}</bk-button>
-    <bk-button>{{ $t('批量配置下发') }}</bk-button>
+    <bk-button theme="primary" :disabled="count === 0" @click="emits('click', 'start')">{{ $t('批量启动') }}</bk-button>
+    <bk-button :disabled="count === 0" @click="emits('click', 'stop')">{{ $t('批量停止') }}</bk-button>
+    <bk-button :disabled="count === 0">{{ $t('批量配置下发') }}</bk-button>
     <bk-popover
       ref="buttonRef"
       trigger="click"
@@ -12,12 +12,18 @@
       width="80"
       @after-show="isPopoverOpen = true"
       @after-hidden="isPopoverOpen = false">
-      <bk-button :class="['more-op-btn', { 'popover-open': isPopoverOpen }]">
+      <bk-button :class="['more-op-btn', { 'popover-open': isPopoverOpen }]" :disabled="count === 0">
         {{ $t('更多') }}<angle-down class="angle-icon" />
       </bk-button>
       <template #content>
         <div class="more-list">
-          <div class="more-item" v-for="item in moreOperation" :key="item.value">{{ item.label }}</div>
+          <div
+            :class="['more-item', { disabled: count === 0 }]"
+            v-for="item in moreOperation"
+            :key="item.value"
+            @click="handleClick(item.value)">
+            {{ item.label }}
+          </div>
         </div>
       </template>
     </bk-popover>
@@ -31,7 +37,10 @@
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['start', 'stop']);
+  const emits = defineEmits(['click']);
+  defineProps<{
+    count: number;
+  }>();
 
   const moreOperation = [
     {
@@ -57,6 +66,11 @@
   ];
   const buttonRef = ref();
   const isPopoverOpen = ref(false);
+
+  const handleClick = (op: string) => {
+    emits('click', op);
+    buttonRef.value.hideHandler();
+  };
 </script>
 
 <style scoped lang="scss">
@@ -83,6 +97,10 @@
       cursor: pointer;
       &:hover {
         background: #f5f7fa;
+      }
+      &.disabled {
+        color: #c4c6cc;
+        cursor: not-allowed;
       }
     }
   }

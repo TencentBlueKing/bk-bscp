@@ -10,7 +10,7 @@
       </div>
     </div>
     <div class="filter">
-      <template v-if="filterType === 'screen'">
+      <template v-if="filterType === 'filter'">
         <bk-select
           v-model="filterValues[filter.value as keyof typeof filterValues]"
           v-for="filter in filterList"
@@ -34,8 +34,9 @@
           :key="filter.value"
           class="bk-input"
           placeholder="*"
-          show-overflow-tooltips />
-        <bk-button class="transfer-button" text theme="primary" @click="filterType = 'screen'">
+          show-overflow-tooltips
+          @change="handleInputChange(filter.value, $event)" />
+        <bk-button class="transfer-button" text theme="primary" @click="filterType = 'filter'">
           <transfer class="icon" />{{ t('筛选') }}
         </bk-button>
       </template>
@@ -86,14 +87,20 @@
     },
   ]);
   const activeEnv = ref(t('正式'));
-  const filterValues = ref({
+  const filterValues = ref<{
+    sets: string[];
+    modules: string[];
+    service_instances: string[];
+    process_aliases: string[];
+    cc_process_ids: string[];
+  }>({
     sets: [],
     modules: [],
     service_instances: [],
     process_aliases: [],
     cc_process_ids: [],
   });
-  const filterType = ref('screen');
+  const filterType = ref('filter');
 
   onMounted(() => {
     loadPerocessFilterList();
@@ -115,6 +122,26 @@
     activeEnv.value = env;
     emits('search', { ...filterValues.value, env });
   };
+
+  const handleClearFilter = () => {
+    filterValues.value = {
+      sets: [],
+      modules: [],
+      service_instances: [],
+      process_aliases: [],
+      cc_process_ids: [],
+    };
+    emits('search', { ...filterValues.value, env: activeEnv.value });
+  };
+
+  const handleInputChange = (key: string, value: string) => {
+    filterValues.value[key as keyof typeof filterValues.value] = value.split(',');
+    emits('search', { ...filterValues.value, env: activeEnv.value });
+  };
+
+  defineExpose({
+    clear: handleClearFilter,
+  });
 </script>
 
 <style scoped lang="scss">

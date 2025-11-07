@@ -10,6 +10,8 @@
 
 <style scoped lang="scss">
   .process-page {
+    display: flex;
+    flex-direction: column;
     height: 100%;
     padding: 24px;
     background: #f5f7fa;
