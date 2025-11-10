@@ -14,7 +14,7 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["./*.ts", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "include": ["./*.ts", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/views/space/process/components/op-process-dialog.vue"],
   "exclude": ["src/views/service/detail/group/**/*.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

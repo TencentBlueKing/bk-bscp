@@ -1,0 +1,28 @@
+import { localT } from '../i18n';
+
+// cc 同步状态
+export const CC_SYNC_STATUS = {
+  synced: localT('正常'),
+  deleted: localT('已删除'),
+  updated: localT('有更新'),
+};
+
+// 进程状态
+export const PROCESS_STATUS_MAP = {
+  running: localT('运行中'),
+  partly_running: localT('部分运行'),
+  starting: localT('启动中'),
+  restarting: localT('重启中'),
+  stopping: localT('未运行'),
+  reloading: localT('重载中'),
+  stopped: localT('已停止'),
+};
+
+// 进程托管状态
+export const PROCESS_MANAGED_STATUS_MAP = {
+  starting: localT('启动托管中'),
+  stopping: localT('停止托管中'),
+  managed: localT('托管中'),
+  unmanaged: localT('未托管'),
+  partly_managed: localT('部分托管中'),
+};

@@ -182,7 +182,7 @@
       module: 'process-and-config',
       name: t('进程与配置管理'),
       children: [
-        // { id: 'process-management', module: 'process', name: t('进程管理') },
+        { id: 'process-management', module: 'process', name: t('进程管理') },
         // { id: 'config-management', module: 'config', name: t('配置管理') },
         { id: 'task-list', module: 'task', name: t('任务历史') },
       ],

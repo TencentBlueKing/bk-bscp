@@ -13,7 +13,6 @@
         row-key="id"
         cell-empty-content="--"
         :data="tableList"
-        :ellipsis="true"
         :loading="loading"
         :max-height="tableMaxHeight">
         <TableColumn col-key="id" title="ID">
@@ -32,7 +31,7 @@
           </template>
         </TableColumn>
         <TableColumn col-key="task_data.environment" :title="t('环境类型')" />
-        <TableColumn col-key="task_data.operate_range" :title="t('操作范围')" width="180" :ellipsis="true">
+        <TableColumn col-key="task_data.operate_range" :title="t('操作范围')" width="180" ellipsis>
           <template #default="{ row }: { row: ITaskHistoryItem }">
             {{ mergeOpRange(row.task_data.operate_range) }}
           </template>

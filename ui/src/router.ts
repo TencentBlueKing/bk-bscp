@@ -192,6 +192,14 @@ const routes = [
         ],
       },
       {
+        path: 'process',
+        name: 'process-management',
+        meta: {
+          navModule: 'process',
+        },
+        component: () => import('./views/space/process/index.vue'),
+      },
+      {
         path: 'records',
         children: [
           {
