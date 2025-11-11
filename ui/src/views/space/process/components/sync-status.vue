@@ -34,6 +34,7 @@
   const syncStatus = ref('SUCCESS');
   const time = ref('');
   const statusTimer = ref(0);
+  const firstSync = ref(true);
 
   onMounted(() => {
     handleGetSyncStatus();
@@ -57,6 +58,10 @@
         statusTimer.value = setInterval(() => {
           handleGetSyncStatus();
         }, 5000);
+      }
+      if (firstSync.value) {
+        firstSync.value = false;
+        return;
       }
       if (syncStatus.value === 'SUCCESS') {
         emits('refresh');

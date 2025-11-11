@@ -153,7 +153,11 @@
             <TableColumn>
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
                 <div v-if="rowIndex + 1 > rowData.num!" class="op-btns">
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'stop')">
+                  <bk-button
+                    text
+                    theme="primary"
+                    :disabled="rowData.spec.status === 'stopped'"
+                    @click="handleOpInst(row.id, rowData.id, 'stop')">
                     {{ t('停止') }}
                   </bk-button>
                   <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'unregister')">
@@ -229,28 +233,28 @@
   const { pagination, updatePagination } = useTablePagination('clientSearch');
 
   const { t } = useI18n();
-  const searchField = [
+  const searchField = ref([
     {
       label: t('内网IP'),
-      field: 'inner_ip',
+      field: 'inner_ips',
       children: [],
     },
     {
       label: t('进程状态'),
-      field: 'process_status',
+      field: 'process_statuses',
       children: [],
     },
     {
       label: t('托管状态'),
-      field: 'host_status',
+      field: 'managed_statuses',
       children: [],
     },
     {
       label: t('CC 同步状态'),
-      field: 'cc_status',
+      field: 'cc_sync_statuses',
       children: [],
     },
-  ];
+  ]);
 
   const processList = ref<IProcessItem[]>([]);
   const isSearchEmpty = ref(false);
@@ -276,7 +280,7 @@
   const processIds = ref<number[]>([]);
   const instId = ref(0);
   const filterRef = ref();
-  const searchValue = ref<{ [key: string]: string }>();
+  const searchValue = ref<{ [key: string]: string[] }>();
   const selectedIds = ref<number[]>([]);
   const tableLoading = ref(false);
   const tableRef = ref();
@@ -306,6 +310,9 @@
         })),
       }));
       updatePagination('count', res.count);
+      searchField.value.forEach((item) => {
+        item.children = res.filter_options[item.field];
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -374,7 +381,7 @@
     }
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
+  const handleSearch = (list: { [key: string]: string[] }) => {
     searchValue.value = list;
     isSearchEmpty.value = Object.keys(list).length > 0;
     loadProcessList();
