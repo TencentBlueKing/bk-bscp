@@ -1400,5 +1400,7 @@ export default {
   执行失败: 'Execution failed',
   正在执行: 'Executing',
   部分失败: 'Partially failed',
-  生成: 'Generate',
+  执行账号: 'Execution account',
+  执行时间: 'Execution time',
+  重试所有失败: 'Retry all failures',
 };

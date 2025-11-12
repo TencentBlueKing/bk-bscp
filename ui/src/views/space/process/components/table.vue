@@ -53,7 +53,10 @@
       <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152">
         <template #default="{ row }: { row: IProcessItem }">
           <bk-tag v-if="row.spec.managed_status" :theme="getManagedStatusTheme(row.spec.managed_status)">
-            {{ PROCESS_MANAGED_STATUS_MAP[row.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
+            <span class="process-status">
+              <Spinner v-if="['starting', 'stopping'].includes(row.spec.managed_status)" class="spinner-icon" />
+              {{ PROCESS_MANAGED_STATUS_MAP[row.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
+            </span>
           </bk-tag>
           <span v-else>--</span>
         </template>

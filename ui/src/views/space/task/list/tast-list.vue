@@ -193,6 +193,7 @@
       taskDetail: {
         id,
         task_type: `${typePrefix}${actionText}`,
+        task_object,
         environment,
         operate_range: mergeOpRange(operate_range),
         creator,

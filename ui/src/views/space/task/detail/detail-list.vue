@@ -53,12 +53,18 @@
                 <Spinner v-if="row.status === 'RUNNING'" class="spinner-icon" />
                 <span v-else :class="['dot', row.status]"></span>
                 <span>{{ TASK_DETAIL_STATUS_MAP[row.status as keyof typeof TASK_DETAIL_STATUS_MAP] }}</span>
+                <info-line class="info-icon" v-bk-tooltips="{ content: row.message }" />
               </div>
             </template>
           </TableColumn>
           <TableColumn :title="$t('操作')" col-key="operation">
             <template #default="{ row }">
-              <bk-button v-if="row.status !== 'RUNNING'" theme="primary" text>{{ $t('查看配置') }}</bk-button>
+              <bk-button
+                v-if="['FAILURE', 'SUCCESS'].includes(row.status) && taskDetail.task_object !== 'process'"
+                theme="primary"
+                text>
+                {{ $t('查看配置') }}
+              </bk-button>
               <span v-else>--</span>
             </template>
           </TableColumn>
@@ -86,15 +92,18 @@
 <script lang="ts" setup>
   import { ref, onBeforeMount, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { Spinner } from 'bkui-vue/lib/icon';
+  import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
   import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
+  import { storeToRefs } from 'pinia';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
   import searchSelector from '../../../../components/search-selector.vue';
+  import useTaskStore from '../../../../store/task';
 
   const { pagination, updatePagination } = useTablePagination('taskList');
+  const { taskDetail } = storeToRefs(useTaskStore());
   const { t } = useI18n();
   const route = useRoute();
 
@@ -127,7 +136,7 @@
       children: [],
     },
     {
-      label: t('Inst_id'),
+      label: 'Inst_id',
       field: 'inst_id',
       children: [],
     },
@@ -326,6 +335,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      .info-icon {
+        font-size: 14px;
+        color: #979ba5;
+      }
     }
     .dot {
       width: 8px;
