@@ -21,6 +21,30 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
+// ListProcessTree implements pbcs.ConfigServer.
+func (s *Service) ListProcessTree(ctx context.Context, req *pbcs.ListProcessTreeReq) (*pbcs.ListProcessTreeResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ListProcessTree(grpcKit.RpcCtx(), &pbds.ListProcessTreeReq{
+		BizId:    req.GetBizId(),
+		ViewType: req.GetViewType(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ListProcessTreeResp{
+		Topology: resp.GetTopology(),
+	}, nil
+}
+
 // OperateProcess implements pbcs.ConfigServer.
 func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessReq) (*pbcs.OperateProcessResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
