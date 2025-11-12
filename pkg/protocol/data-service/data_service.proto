@@ -2296,6 +2296,7 @@ message ListProcessReq {
 message ListProcessResp {
   uint32 count = 1;
   repeated pbproc.Process process = 2;
+  pbproc.FilterOptions filter_options = 3;
 }
 
 message OperateProcessReq {
@@ -2320,20 +2321,20 @@ message SyncCmdbGseStatusResp {
 // SortRule 排序规则
 message SortRule {
   string field = 1;  // 排序字段: id, start_at, end_at
-  string order = 2; // 排序方向: ASC, DESC
+  string order = 2;  // 排序方向: ASC, DESC
 }
 
 message ListTaskBatchReq {
   uint32 biz_id = 1;
-  string task_object = 2;  // 任务对象类型: process, config_file 等
+  repeated string task_objects = 2;  // 任务对象类型列表: process, config_file 等
   uint32 start = 3;
   uint32 limit = 4;
-  string task_action = 5;  // 任务动作: register, start, stop, restart, reload, kill 等
-  string status = 6;       // 执行状态: running, failed, succeed
-  string executor = 7;     // 执行帐户（创建者）
-  SortRule sort = 8;       // 排序规则
-  string time_range_start = 9;  // 时间范围起点（如：2024-01-01T00:00:00Z）
-  string time_range_end = 10;   // 时间范围终点（如：2024-01-31T23:59:59Z）
+  repeated string task_actions = 5;  // 任务动作列表: register, start, stop, restart, reload, kill 等
+  repeated string statuses = 6;      // 执行状态列表: running, failed, succeed
+  repeated string executors = 7;     // 执行帐户列表（创建者）
+  SortRule sort = 8;                 // 排序规则
+  string time_range_start = 9;       // 时间范围起点（如：2024-01-01T00:00:00Z）
+  string time_range_end = 10;        // 时间范围终点（如：2024-01-31T23:59:59Z）
 }
 
 message ListTaskBatchResp {
@@ -2351,8 +2352,8 @@ message GetTaskBatchDetailReq {
 }
 
 message GetTaskBatchDetailResp {
-  repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
-  uint32 count = 2;                    // 任务总数
+  repeated pbtb.TaskDetail tasks = 1;               // 任务详情列表
+  uint32 count = 2;                                 // 任务总数
   repeated pbtb.TaskStatusStatItem statistics = 3;  // 状态统计列表
   pbtb.TaskDetailFilterOptions filter_options = 4;  // 任务详情过滤选项
 }

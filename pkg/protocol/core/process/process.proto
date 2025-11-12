@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/process-instance/process_instance.proto";
+import "pkg/protocol/core/task_batch/task_batch.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -64,11 +65,10 @@ message ProcessAttachment {
 
 // ProcessSearchCondition 进程搜索条件
 message ProcessSearchCondition {
-  repeated string set_names = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
-  repeated string module_names = 2
+  repeated string sets = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
+  repeated string modules = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
-  repeated string service_instance_names = 3
+  repeated string service_instances = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
   repeated uint32 cc_process_ids = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
@@ -89,4 +89,16 @@ message ProcessSearchCondition {
 message ProcessFilterOption {
   uint32 id = 1;
   string name = 2;
+}
+
+// FilterOptions 查询过滤选项
+message FilterOptions {
+  repeated pbtb.Choice inner_ips = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内网IP" }];
+  repeated pbtb.Choice process_statuses = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态" }];
+  repeated pbtb.Choice managed_statuses = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态" }];
+  repeated pbtb.Choice cc_sync_statuses = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
 }

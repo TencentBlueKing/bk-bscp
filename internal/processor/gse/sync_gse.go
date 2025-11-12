@@ -17,7 +17,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
@@ -35,6 +37,9 @@ const (
 
 	// DefaultStartCheckSecs 默认启动后检查存活的时间（秒）
 	DefaultStartCheckSecs = 5
+
+	defaultMaxWait  = 30 * time.Second
+	defaultInterval = 2 * time.Second
 )
 
 // BuildProcessOperateParams 构建 ProcessOperate 的参数
@@ -135,23 +140,10 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			continue
 		}
 
-		gseResp, err := s.svc.GetProcOperateResultV2(kit.Ctx, &gse.QueryProcResultReq{
-			TaskID: proc.TaskID,
-		})
+		result, err := waitForProcResult(kit.Ctx, s.svc, proc.TaskID, defaultMaxWait, defaultInterval)
 		if err != nil {
-			logs.Errorf("biz %d: get process result failed, taskID=%s, err=%v", s.bizID, proc.TaskID, err)
+			logs.Errorf("biz %d: wait for process result failed, taskID=%s, err=%v", s.bizID, proc.TaskID, err)
 			continue
-		}
-
-		if gseResp.Code != 0 {
-			logs.Errorf("biz %d: get process result failed, taskID=%s, msg=%v", s.bizID, proc.TaskID, gseResp.Message)
-			continue
-		}
-
-		var result map[string]gse.ProcResult
-		err = gseResp.Decode(&result)
-		if err != nil {
-			return err
 		}
 
 		for key, val := range result {
@@ -161,7 +153,7 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 				continue
 			}
 
-			status, managed := ParseGSEProcResult(key, val)
+			status, managed := parseGSEProcResult(key, val)
 			inst.Spec.Status = status
 			inst.Spec.ManagedStatus = managed
 
@@ -181,20 +173,15 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 	instMap := make(map[string]*table.ProcessInstance, len(insts))
 
 	for _, inst := range insts {
-		instID, err := strconv.Atoi(inst.Spec.InstID)
-		if err != nil {
-			logs.Errorf("biz=%d, process_id=%d, invalid instance ID (%s): %v",
-				bizID, process.ID, inst.Spec.InstID, err)
-			continue
-		}
+
 		key := fmt.Sprintf("%s:%s:%s", process.Attachment.AgentID, gse.BuildNamespace(bizID),
-			gse.BuildProcessName(process.Spec.Alias, uint32(instID)))
+			gse.BuildProcessName(process.Spec.Alias, inst.Spec.InstID))
 		instMap[key] = inst
 
 		req = append(req, BuildProcessOperate(BuildProcessOperateParams{
 			BizID:             bizID,
 			Alias:             process.Spec.Alias,
-			ProcessInstanceID: uint32(instID),
+			ProcessInstanceID: inst.Spec.InstID,
 			AgentID:           []string{process.Attachment.AgentID},
 			GseOpType:         gse.OpTypeQuery,
 		}))
@@ -203,8 +190,8 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 	return req, instMap
 }
 
-// ParseGSEProcResult 解析 GSE 返回结果
-func ParseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatus, managed table.ProcessManagedStatus) {
+// parseGSEProcResult 解析 GSE 返回结果
+func parseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatus, managed table.ProcessManagedStatus) {
 	status = table.ProcessStatusStopped
 	managed = table.ProcessManagedStatusUnmanaged
 
@@ -224,8 +211,9 @@ func ParseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 				if i.PID > 0 {
 					status = table.ProcessStatusRunning
 				}
+				// 启动失败了
 				if i.PID < 0 {
-					status = table.ProcessStatusStopping
+					status = table.ProcessStatusStopped
 				}
 			}
 		}
@@ -251,4 +239,48 @@ func ParseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 	}
 
 	return status, managed
+}
+
+func waitForProcResult(ctx context.Context, svc *gse.Service, taskID string, maxWait, interval time.Duration) (map[string]gse.ProcResult, error) {
+	var result map[string]gse.ProcResult
+
+	err := wait.PollUntilContextTimeout(
+		ctx,
+		interval,
+		maxWait,
+		true,
+		func(ctx context.Context) (bool, error) {
+			resp, err := svc.GetProcOperateResultV2(ctx, &gse.QueryProcResultReq{TaskID: taskID})
+			if err != nil {
+				return false, fmt.Errorf("get process result failed, taskID=%s, err=%v", taskID, err)
+			}
+
+			if resp.Code != 0 {
+				return false, fmt.Errorf("gse API error, code=%d, msg=%s", resp.Code, resp.Message)
+			}
+
+			// 解码结果
+			if err := resp.Decode(&result); err != nil {
+				return false, fmt.Errorf("decode gse result failed, taskID=%s, err=%v", taskID, err)
+			}
+
+			// 检查是否还有实例在进行中
+			for _, proc := range result {
+				if gse.IsInProgress(proc.ErrorCode) { // 进程仍在执行中
+					return false, nil // 继续轮询
+				}
+			}
+
+			return true, nil // 全部完成
+		},
+	)
+
+	if err != nil {
+		if wait.Interrupted(err) || err == context.DeadlineExceeded || err == context.Canceled {
+			return nil, fmt.Errorf("timeout or canceled waiting for GSE result, taskID=%s", taskID)
+		}
+		return nil, err
+	}
+
+	return result, nil
 }

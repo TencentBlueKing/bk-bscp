@@ -26,10 +26,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
+	pbtb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
@@ -65,10 +67,82 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 
 	processes := pbproc.PbProcessesWithInstances(res, procInstMap)
 
+	filterOptions, err := s.buildfilterOptions(kt, req.GetBizId())
+	if err != nil {
+		return nil, err
+	}
+
 	return &pbds.ListProcessResp{
-		Count:   uint32(count),
-		Process: processes,
+		Count:         uint32(count),
+		Process:       processes,
+		FilterOptions: filterOptions,
 	}, nil
+}
+
+func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterOptions, error) {
+
+	ips, err := s.dao.Process().ListBizFilterOptions(kt, bizID, field.NewString("", "inner_ip"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Inner IP 选项
+	ipsOptions := make([]*pbtb.Choice, 0, len(ips))
+	for _, v := range ips {
+		ipsOptions = append(ipsOptions, &pbtb.Choice{
+			Id:   v.Spec.InnerIP,
+			Name: v.Spec.InnerIP,
+		})
+	}
+
+	makeChoices := func(values map[string]string) []*pbtb.Choice {
+		choices := make([]*pbtb.Choice, 0, len(values))
+		for k, v := range values {
+			choices = append(choices, &pbtb.Choice{
+				Id:   k,
+				Name: v,
+			})
+		}
+		return choices
+	}
+
+	// Process Status 选项
+	processStatusValues := map[string]string{
+		table.ProcessStatusRunning.String():       "运行中",
+		table.ProcessStatusPartlyRunning.String(): "部分运行",
+		table.ProcessStatusStarting.String():      "启动中",
+		table.ProcessStatusRestarting.String():    "重启中",
+		table.ProcessStatusStopping.String():      "停止中",
+		table.ProcessStatusReloading.String():     "重载中",
+		table.ProcessStatusStopped.String():       "已停止",
+	}
+	psOptions := makeChoices(processStatusValues)
+
+	// Managed Status 选项
+	managedStatusValues := map[string]string{
+		table.ProcessManagedStatusStarting.String():      "启动中",
+		table.ProcessManagedStatusStopping.String():      "停止中",
+		table.ProcessManagedStatusManaged.String():       "已托管",
+		table.ProcessManagedStatusUnmanaged.String():     "未托管",
+		table.ProcessManagedStatusPartlyManaged.String(): "部分托管",
+	}
+	msOptions := makeChoices(managedStatusValues)
+
+	// CC Sync Status 选项
+	ccSyncStatusValues := map[string]string{
+		table.Synced.String():  "已同步",
+		table.Deleted.String(): "已删除",
+		table.Updated.String(): "已更新",
+	}
+	ccSyncOptions := makeChoices(ccSyncStatusValues)
+
+	filterOptions := &pbproc.FilterOptions{
+		InnerIps:        ipsOptions,
+		ProcessStatuses: psOptions,
+		ManagedStatuses: msOptions,
+		CcSyncStatuses:  ccSyncOptions,
+	}
+	return filterOptions, nil
 }
 
 // OperateProcess implements pbds.DataServer.
@@ -130,7 +204,15 @@ func validateOperateRequest(req *pbds.OperateProcessReq) error {
 		return fmt.Errorf("invalid request: when InstId is specified, only one processId is allowed")
 	}
 
-	// todo：验证操作类型是否有效，目前只支持 start、stop、query_status、register、unregister、restart、reload、kill
+	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill
+	gseOpType, err := table.ProcessOperateType(req.OperateType).ToGSEOpType()
+	if err != nil {
+		return fmt.Errorf("invalid request: operate type is not supported: %w", err)
+	}
+	// query_status 操作仅用于服务端查询，不作为客户端操作类型
+	if gseOpType == table.GSEOpTypeQuery {
+		return fmt.Errorf("query_status operation is not supported")
+	}
 	return nil
 }
 
@@ -325,17 +407,11 @@ func dispatchProcessTasks(
 
 func getProcessManagedStatus(operateType table.ProcessOperateType) table.ProcessManagedStatus {
 	switch operateType {
-	case table.RegisterProcessOperate:
+	case table.RegisterProcessOperate, table.StartProcessOperate:
 		// 托管操作：只修改托管状态，不修改进程状态
 		return table.ProcessManagedStatusStarting
-	case table.UnregisterProcessOperate:
+	case table.UnregisterProcessOperate, table.StopProcessOperate:
 		// 取消托管操作：只修改托管状态，不修改进程状态
-		return table.ProcessManagedStatusStopping
-	case table.StartProcessOperate:
-		// 进程启动操作：修改托管状态为托管中
-		return table.ProcessManagedStatusStarting
-	case table.StopProcessOperate:
-		// 进程停止操作：修改托管状态为正在取消托管中
 		return table.ProcessManagedStatusStopping
 	default:
 		return ""
@@ -453,7 +529,11 @@ func monitorTaskBatchStatus(
 		select {
 		case <-timeout:
 			logs.Warnf("monitor task batch %d timeout after 1 hour, rid: %s", batchID, kt.Rid)
-			// todo：task_batch 增加超时状态，当任务超时则处理为超时状态
+			// 任务超时，更新任务批次状态为失败
+			err := dao.TaskBatch().UpdateStatus(kt, batchID, table.TaskBatchStatusFailed)
+			if err != nil {
+				logs.Errorf("update task batch %d status failed, err: %v, rid: %s", batchID, err, kt.Rid)
+			}
 			return
 
 		case <-ticker.C:
@@ -590,11 +670,22 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
 	}
 
-	// 查询任务批次信息，获取操作类型和任务数据
+	// 查询任务批次信息
 	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.BatchId)
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.BatchId, err, kt.Rid)
 		return nil, fmt.Errorf("get task batch failed: %v", err)
+	}
+
+	// 如果任务批次状态为成功，则拒绝重试
+	if taskBatch.Spec.Status == table.TaskBatchStatusSucceed {
+		logs.Infof("task batch %d is already succeed, skip retry, rid: %s", req.BatchId, kt.Rid)
+		return &pbds.RetryTasksResp{RetryCount: 0}, nil
+	}
+	// 更新任务批次状态为执行中
+	if err = s.dao.TaskBatch().UpdateStatus(kt, req.BatchId, table.TaskBatchStatusRunning); err != nil {
+		logs.Errorf("update task batch status failed, batchID: %d, err: %v, rid: %s", req.BatchId, err, kt.Rid)
+		return nil, fmt.Errorf("update task batch status failed: %v", err)
 	}
 
 	// 查询该批次所有失败的任务
@@ -610,22 +701,43 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 	}
 
 	// 重试每个失败的任务
-	retryCount := uint32(0)
-	operateType := table.ProcessOperateType(taskBatch.Spec.TaskAction)
-	logs.Infof("operate type: %s, rid: %s", operateType, kt.Rid)
 	for _, failedTask := range failedTasks {
-		logs.Infof("retry failed task, taskID: %s, rid: %s", failedTask.TaskID, kt.Rid)
-
-		retryCount++
+		// 从进程操作完成步骤中获取进程操作负载，用于获取进程实例id
+		finalizeStep, ok := failedTask.GetStep(process.FinalizeOperateProcessStepName.String())
+		if !ok {
+			logs.Errorf("operate step not found, taskID: %s, rid: %s", failedTask.TaskID, kt.Rid)
+			return nil, fmt.Errorf("operate step not found")
+		}
+		var processPayload process.OperatePayload
+		if err := finalizeStep.GetPayload(&processPayload); err != nil {
+			logs.Errorf("get payload failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
+			return nil, fmt.Errorf("get payload failed: %v", err)
+		}
+		// 获取进程实例
+		processInstance, err := s.dao.ProcessInstance().GetByID(kt, req.BizId, processPayload.ProcessInstanceID)
+		if err != nil {
+			logs.Errorf("get process instance failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
+			return nil, fmt.Errorf("get process instance failed: %v", err)
+		}
+		if processInstance == nil {
+			logs.Errorf("process instance not found, processInstanceID: %d, rid: %s", processPayload.ProcessInstanceID, kt.Rid)
+			return nil, fmt.Errorf("process instance not found")
+		}
+		// 更新进程实例状态
+		if err = updateProcessInstanceStatus(kt, s.dao, table.ProcessOperateType(taskBatch.Spec.TaskAction), processInstance); err != nil {
+			logs.Errorf("update process instance status failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
+			return nil, fmt.Errorf("update process instance status failed: %v", err)
+		}
+		err = s.taskManager.RetryAll(failedTask)
+		if err != nil {
+			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
+			return nil, fmt.Errorf("retry failed task failed: %v", err)
+		}
 	}
-
-	// todo：重试失败的任务
-	// 可行的方案之一：删除失败任务，创建新的任务执行
-	// 异步监控任务批次状态
-	// go monitorTaskBatchStatus(s.dao, taskStorage, req.BatchId)
-
-	logs.Infof("retry tasks completed, batchID: %d, retry count: %d, rid: %s", req.BatchId, retryCount, kt.Rid)
-	return &pbds.RetryTasksResp{RetryCount: retryCount}, nil
+	logs.Infof("retry tasks completed, batchID: %d, rid: %s", req.BatchId, kt.Rid)
+	// 重新监控任务批次状态
+	go monitorTaskBatchStatus(s.dao, taskStorage, req.BatchId)
+	return &pbds.RetryTasksResp{RetryCount: uint32(len(failedTasks))}, nil
 }
 
 // queryFailedTasks 查询批次中所有失败的任务
@@ -647,6 +759,9 @@ func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uin
 		if err != nil {
 			return nil, fmt.Errorf("list tasks failed: %v", err)
 		}
+
+		// 将查询到的任务添加到结果集
+		failedTasks = append(failedTasks, pagination.Items...)
 
 		// 如果没有更多任务，退出循环
 		if len(pagination.Items) < int(limit) {

@@ -24,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	gseProc "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -75,8 +76,19 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 	for _, id := range bizIDs {
 		bizID := id
 		g.Go(func() error {
-			svc := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
-			return svc.SyncSingleBiz(gctx)
+			cmdbimpl := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
+			if err := cmdbimpl.SyncSingleBiz(gctx); err != nil {
+				logs.Errorf("biz: %d sync cmdb data failed: %v", bizID, err)
+				return err
+			}
+
+			gseimpl := gseProc.NewSyncGESService(bizID, s.gseSvc, s.dao)
+			if err := gseimpl.SyncSingleBiz(gctx); err != nil {
+				logs.Errorf("biz: %d sync gse data failed: %v", bizID, err)
+				return err
+			}
+
+			return nil
 		})
 	}
 

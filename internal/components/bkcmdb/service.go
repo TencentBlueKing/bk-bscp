@@ -56,7 +56,7 @@ type Service interface {
 		*CMDBResponse, error)
 	// ListProcessDetailByIds 查询某业务下进程ID对应的进程详情
 	ListProcessDetailByIds(ctx context.Context, req ProcessReq) (
-		*CMDBResponse, error)
+		[]*ProcessInfo, error)
 	// ListServiceInstanceBySetTemplate 通过集群模版查询关联的服务实例列表
 	ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceReq) (
 		*CMDBResponse, error)

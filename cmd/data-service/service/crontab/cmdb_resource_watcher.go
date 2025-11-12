@@ -274,7 +274,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 
 	// 如果是空全量同步
 	if procs == nil {
-		if err := c.svc.SynchronizeCmdbData(kt.RpcCtx(), []int{p.BkBizID}); err != nil {
+		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
 			logs.Errorf("sync cmdb data failed: %v", err)
 		}
 		return
@@ -334,14 +334,16 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	}
 	sourceData, err := json.Marshal(info)
 	if err != nil {
+		logs.Errorf("biz %d: marshal process info failed, processID=%d, err=%v, data=%+v",
+			old.Attachment.BizID, old.ID, err, info)
 		return err
 	}
 
 	now := time.Now().UTC()
-
+	newSpec := *old.Spec
 	newP := &table.Process{
 		Attachment: old.Attachment,
-		Spec:       old.Spec,
+		Spec:       &newSpec,
 		Revision: &table.Revision{
 			CreatedAt: now,
 		},
@@ -352,61 +354,65 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	newP.Spec.ProcNum = uint(p.ProcNum)
 	newP.Spec.SourceData = string(sourceData)
 
-	toAdd, toDelete, toUpdate, err := cmdb.BuildProcessChanges(newP, old, now)
+	toAdd, toUpdate, toDelete, procInst, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP, old, now, map[int]int{}, map[int]int{})
 	if err != nil {
+		logs.Errorf("biz %d: build process changes failed, processID=%d, err=%v, new=%+v, old=%+v",
+			old.Attachment.BizID, old.ID, err, newP, old)
 		return err
 	}
 
+	idMap := make(map[string]uint32)
+	// 插入
+	if toAdd != nil {
+		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{toAdd}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: insert process failed: name=%s, ccProcessID=%d, err=%v",
+				p.BkBizID, toAdd.Spec.Alias, toAdd.Attachment.CcProcessID, err)
+			return fmt.Errorf("insert failed: %w", err)
+		}
+		toAddKey := fmt.Sprintf("%s-%d-%d", toAdd.Attachment.TenantID, p.BkBizID, toAdd.Attachment.CcProcessID)
+		idMap[toAddKey] = toAdd.ID
+	}
+
+	// 更新
+	if toUpdate != nil {
+		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{toUpdate}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: update process failed: id=%d, name=%s, err=%v",
+				p.BkBizID, toUpdate.ID, toUpdate.Spec.Alias, err)
+			return fmt.Errorf("update failed: %w", err)
+		}
+		toUpdatekey := fmt.Sprintf("%s-%d-%d", toUpdate.Attachment.TenantID, p.BkBizID, toUpdate.Attachment.CcProcessID)
+		idMap[toUpdatekey] = toUpdate.ID
+	}
+
 	// 删除
-	if len(toDelete) > 0 {
-		if err := c.dao.Process().UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), toDelete); err != nil {
+	if toDelete > 0 {
+		if err := c.dao.Process().UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), []uint32{toDelete}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: mark deleted failed: processID=%d, err=%v",
+				old.Attachment.BizID, toDelete, err)
 			return fmt.Errorf("mark deleted failed: %w", err)
 		}
 	}
 
-	// 插入
-	if len(toAdd) > 0 {
-		if err := c.dao.Process().BatchCreateWithTx(kt, tx, toAdd); err != nil {
-			return fmt.Errorf("insert failed: %w", err)
-		}
-	}
-
-	// 更新
-	if len(toUpdate) > 0 {
-		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
-			return fmt.Errorf("update failed: %w", err)
-		}
-	}
-
-	// 构建要写入的实例
-	var toAddProcInst []*table.ProcessInstance
-	// 生成进程实例
-	idMap := make(map[string]uint32)
-	for _, p := range toAdd {
-		toAddProcInst = cmdb.BuildInstances(int(p.Attachment.BizID), int(p.Attachment.HostID), int(p.Attachment.ModuleID),
-			int(p.Attachment.CcProcessID), int(p.Spec.ProcNum), now, map[int]int{}, map[int]int{})
-
-		key := fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, p.Attachment.BizID, p.Attachment.CcProcessID)
-		idMap[key] = p.ID
-	}
-
-	// 构建要写入的实例
-	var toWriteInstances []*table.ProcessInstance
-	for _, inst := range toAddProcInst {
+	// 回填 ProcessID 给 Instance
+	for _, inst := range procInst {
 		key := fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, inst.Attachment.BizID, inst.Attachment.CcProcessID)
 		if pid, ok := idMap[key]; ok && pid != 0 {
 			inst.Attachment.ProcessID = pid
-			toWriteInstances = append(toWriteInstances, inst)
 		}
 	}
 
-	if len(toWriteInstances) == 0 {
+	if len(procInst) == 0 {
+		logs.Infof("[ProcessSync] biz=%d: no process instances to insert", old.Attachment.BizID)
 		return nil
 	}
 
-	if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, toWriteInstances); err != nil {
+	if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, procInst); err != nil {
+		logs.Errorf("biz %d: insert process instances failed, count=%d, err=%v, data=%+v",
+			old.Attachment.BizID, len(procInst), err, procInst)
 		return fmt.Errorf("insert process instances failed: %w", err)
 	}
+
+	logs.Infof("[ProcessSync] biz=%d: successfully handled process update")
 
 	return nil
 }

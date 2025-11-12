@@ -60,30 +60,11 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 		return nil, err
 	}
 
-	// 构建过滤条件
-	filter := &dao.TaskBatchListFilter{
-		TaskObject: table.TaskObject(req.TaskObject),
-		TaskAction: table.TaskAction(req.TaskAction),
-		Status:     table.TaskBatchStatus(req.Status),
-		Executor:   req.Executor,
+	filter, err := buildTaskBatchListFilter(req)
+	if err != nil {
+		logs.Errorf("build task batch list filter failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, err
 	}
-
-	// 解析时间范围参数
-	if req.TimeRangeStart != "" {
-		timeRangeStart, err := parseTime(req.TimeRangeStart)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time_range_start format: %v", err)
-		}
-		filter.TimeRangeStart = &timeRangeStart
-	}
-	if req.TimeRangeEnd != "" {
-		timeRangeEnd, err := parseTime(req.TimeRangeEnd)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time_range_end format: %v", err)
-		}
-		filter.TimeRangeEnd = &timeRangeEnd
-	}
-
 	res, count, err := s.dao.TaskBatch().List(kt, req.BizId, filter, opt)
 	if err != nil {
 		logs.Errorf("list task batch failed, err: %v, rid: %s", err, kt.Rid)
@@ -152,6 +133,27 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 		StatusChoices:     statusChoices,
 		ExecutorChoices:   executorChoices,
 	}, nil
+}
+
+// buildTaskBatchListFilter 构建任务批次列表过滤条件
+func buildTaskBatchListFilter(req *pbds.ListTaskBatchReq) (*dao.TaskBatchListFilter, error) {
+	filter := &dao.TaskBatchListFilter{
+		TaskObjects: req.GetTaskObjects(),
+		TaskActions: req.GetTaskActions(),
+		Statuses:    req.GetStatuses(),
+		Executors:   req.GetExecutors(),
+	}
+
+	// 解析时间范围参数
+	var err error
+	if filter.TimeRangeStart, err = parseTimeIfNotEmpty(req.TimeRangeStart, "time_range_start"); err != nil {
+		return nil, err
+	}
+	if filter.TimeRangeEnd, err = parseTimeIfNotEmpty(req.TimeRangeEnd, "time_range_end"); err != nil {
+		return nil, err
+	}
+
+	return filter, nil
 }
 
 // GetTaskBatchDetail implements pbds.DataServer.
@@ -362,6 +364,18 @@ func convertTaskStatus(status string) string {
 // parseTime 解析 RFC3339 格式的时间字符串
 func parseTime(timeStr string) (time.Time, error) {
 	return time.Parse(time.RFC3339, timeStr)
+}
+
+// parseTimeIfNotEmpty 如果时间字符串非空则解析，否则返回 nil
+func parseTimeIfNotEmpty(timeStr, fieldName string) (*time.Time, error) {
+	if timeStr == "" {
+		return nil, nil
+	}
+	t, err := parseTime(timeStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s format: %v", fieldName, err)
+	}
+	return &t, nil
 }
 
 // getTaskDetailFilterOptions 获取任务详情过滤选项

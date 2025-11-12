@@ -105,6 +105,7 @@ type dataService struct {
 	ssd         serviced.ServiceDiscover
 	taskManager *task.TaskManager
 	cmdb        bkcmdb.Service
+	gseSvc      *gse.Service
 }
 
 // prepare do prepare jobs before run data service.
@@ -220,6 +221,7 @@ func (ds *dataService) prepare(opt *options.Option) error {
 func (ds *dataService) initTaskManager() error {
 	// 注册并启动任务（register要在NewTaskMgr之前）
 	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
+	ds.gseSvc = gseService
 	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet)
 
 	taskManager, err := task.NewTaskMgr(
@@ -298,7 +300,7 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb, ds.taskManager)
+	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb, ds.taskManager, ds.gseSvc)
 	if err != nil {
 		return err
 	}

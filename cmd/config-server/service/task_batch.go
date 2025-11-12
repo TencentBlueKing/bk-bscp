@@ -42,12 +42,12 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbcs.ListTaskBatchReq)
 
 	resp, err := s.client.DS.ListTaskBatch(grpcKit.RpcCtx(), &pbds.ListTaskBatchReq{
 		BizId:          req.GetBizId(),
-		TaskObject:     req.GetTaskObject(),
+		TaskObjects:    req.GetTaskObjects(),
 		Start:          req.GetStart(),
 		Limit:          req.GetLimit(),
-		TaskAction:     req.GetTaskAction(),
-		Status:         req.GetStatus(),
-		Executor:       req.GetExecutor(),
+		TaskActions:    req.GetTaskActions(),
+		Statuses:       req.GetStatuses(),
+		Executors:      req.GetExecutors(),
 		Sort:           sortRule,
 		TimeRangeStart: req.GetTimeRangeStart(),
 		TimeRangeEnd:   req.GetTimeRangeEnd(),

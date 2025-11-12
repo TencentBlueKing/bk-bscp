@@ -23,7 +23,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/ges"
+	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -107,32 +107,20 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 	if err != nil {
 		return fmt.Errorf("【CompareWithCMDBProcessInfo STEP】: get process from database failed: %w", err)
 	}
-	// 调用 CMDB ListProcessInstance 接口获取最新进程配置
-	// TODO：当前根据服务实例ID获取进程配置，拿到的是该服务下所有的进程配置，后续可以优化为直接使用cc进程id去获取进程配置
-	processInstances, err := e.CMDBService.ListProcessInstance(c.Context(), bkcmdb.ListProcessInstanceReq{
-		BkBizID:           int(payload.BizID),
-		ServiceInstanceID: int(process.Attachment.ServiceInstanceID),
+	// 获取cmdb侧最新进程详情
+	processInfo, err := e.CMDBService.ListProcessDetailByIds(c.Context(), bkcmdb.ProcessReq{
+		BkBizID:      int(payload.BizID),
+		BkProcessIDs: []int{int(process.Attachment.CcProcessID)},
 	})
 	if err != nil {
-		logs.Errorf("【CompareWithCMDBProcessInfo STEP】: failed to get process from CMDB, bizID: %d, "+
-			"serviceInstanceID: %d, err: %v", payload.BizID, process.Attachment.ServiceInstanceID, err)
-		return fmt.Errorf("【CompareWithCMDBProcessInfo STEP】: failed to get process from CMDB: %w", err)
+		return fmt.Errorf("【CompareWithCMDBProcessInfo STEP】: failed to get process from CMDB, bizID: %d, "+
+			"ccProcessID: %d, err: %v", payload.BizID, process.Attachment.CcProcessID, err)
 	}
-
-	// 根据 CcProcessID 匹配对应的cmdb侧的进程配置
-	var cmdbProcessInfo *bkcmdb.ProcessInfo
-	for _, procInst := range processInstances {
-		if uint32(procInst.Property.BkProcessID) == process.Attachment.CcProcessID {
-			cmdbProcessInfo = &procInst.Property
-			break
-		}
-	}
-
-	// 进程可能已经被删除
-	if cmdbProcessInfo == nil {
+	if len(processInfo) == 0 {
 		return fmt.Errorf("process not found in CMDB, bizID: %d, ccProcessID: %d",
 			payload.BizID, process.Attachment.CcProcessID)
 	}
+	cmdbProcessInfo := processInfo[0]
 
 	// 用cmdb的ProcessInfo构建bscp侧的ProcessInfo方便后续对比
 	latestCMDBInfo := table.ProcessInfo{
@@ -374,7 +362,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		Alias:             commonPayload.Alias,
 		ProcessInstanceID: payload.ProcessInstanceID,
 		AgentID:           []string{commonPayload.AgentID},
-		GseOpType:         gseOpType,
+		GseOpType:         int(gseOpType),
 		ProcessInfo:       processInfo,
 	})
 
@@ -412,6 +400,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 }
 
 // Finalize 进程操作完成
+// nolint: funlen
 func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 	logs.Infof("Finalize: starting finalize")
 	// 进程操作完成，无论进程操作执行成功与否，都获取进程状态，更新进程实例状态
@@ -496,6 +485,26 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 			managedStatus = table.ProcessManagedStatusManaged
 		} else {
 			managedStatus = table.ProcessManagedStatusUnmanaged
+		}
+	}
+
+	if payload.OperateType == table.UnregisterProcessOperate {
+		// 判断是否存在缩容
+		process, errP := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
+		if errP != nil {
+			return fmt.Errorf("【Finalize STEP】: failed to get process: %w", errP)
+		}
+
+		procInst, errI := e.Dao.ProcessInstance().GetByProcessIDs(kit.New(), payload.BizID, []uint32{payload.ProcessID})
+		if errI != nil {
+			return fmt.Errorf("【Finalize STEP】: failed to get process instance: %w", errI)
+		}
+		// 若进程数量被缩容，则删除对应的实例
+		if process.Spec.ProcNum < uint(len(procInst)) {
+			if errD := e.Dao.ProcessInstance().Delete(kit.New(), payload.BizID, payload.ProcessInstanceID); errD != nil {
+				return fmt.Errorf("【Finalize STEP】: failed to delete process instance: %w", errD)
+			}
+			return nil // 删除后直接返回，无需执行后续更新逻辑
 		}
 	}
 

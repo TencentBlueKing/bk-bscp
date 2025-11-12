@@ -9396,47 +9396,6 @@
         ]
       }
     },
-    "/api/v1/config/biz_id/{bizId}/sync/cc": {
-      "post": {
-        "summary": "同步cc",
-        "operationId": "Config_SyncCMDB",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/pbcsSyncCMDBResp"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "bizId",
-            "description": "业务ID",
-            "in": "path",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/ConfigSyncCMDBBody"
-            }
-          }
-        ],
-        "tags": [
-          "Config"
-        ]
-      }
-    },
     "/api/v1/config/biz_id/{bizId}/task_batch/list": {
       "get": {
         "summary": "任务历史列表",
@@ -9465,11 +9424,15 @@
             "format": "int64"
           },
           {
-            "name": "taskObject",
-            "description": "任务对象类型: process, config_file 等",
+            "name": "taskObjects",
+            "description": "任务对象类型列表: process, config_file 等",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           },
           {
             "name": "start",
@@ -9488,25 +9451,37 @@
             "format": "int64"
           },
           {
-            "name": "taskAction",
-            "description": "任务动作: register,unregister, start, stop, restart, reload, kill",
+            "name": "taskActions",
+            "description": "任务动作列表: register,unregister, start, stop, restart, reload, kill",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           },
           {
-            "name": "status",
-            "description": "执行状态: running, failed, succeed, partly_failed",
+            "name": "statuses",
+            "description": "执行状态列表: running, failed, succeed, partly_failed",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           },
           {
-            "name": "executor",
-            "description": "执行帐户（创建者）",
+            "name": "executors",
+            "description": "执行帐户列表（创建者）",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           },
           {
             "name": "sort.field",
@@ -9606,15 +9581,56 @@
         ]
       }
     },
-    "/api/v1/config/biz_id/{bizId}/sync/cc/status": {
-      "get": {
-        "summary": "获取同步cc状态",
-        "operationId": "Config_SyncCMDBStatus",
+    "/api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status": {
+      "post": {
+        "summary": "同步cc和gse状态",
+        "operationId": "Config_SyncCmdbGseStatus",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbcsSyncCMDBStatusResp"
+              "$ref": "#/definitions/pbcsSyncCmdbGseStatusResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigSyncCmdbGseStatusBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/sync/sync_status": {
+      "get": {
+        "summary": "获取同步的状态",
+        "operationId": "Config_CmdbGseStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCmdbGseStatusResp"
             }
           },
           "default": {
@@ -11898,7 +11914,7 @@
         }
       }
     },
-    "ConfigSyncCMDBBody": {
+    "ConfigSyncCmdbGseStatusBody": {
       "type": "object"
     },
     "ConfigUnDeprecateReleaseBody": {
@@ -14719,6 +14735,20 @@
         }
       }
     },
+    "pbcsCmdbGseStatusResp": {
+      "type": "object",
+      "properties": {
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "最近一次同步时间"
+        },
+        "status": {
+          "type": "string",
+          "description": "同步状态"
+        }
+      }
+    },
     "pbcsCompareConfigItemConflictsResp": {
       "type": "object",
       "properties": {
@@ -16726,25 +16756,11 @@
       },
       "title": "SortRule 排序规则"
     },
-    "pbcsSyncCMDBResp": {
+    "pbcsSyncCmdbGseStatusResp": {
       "type": "object",
       "properties": {
         "taskId": {
           "type": "string"
-        }
-      }
-    },
-    "pbcsSyncCMDBStatusResp": {
-      "type": "object",
-      "properties": {
-        "lastSyncTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "最近一次同步时间"
-        },
-        "status": {
-          "type": "string",
-          "description": "同步状态"
         }
       }
     },

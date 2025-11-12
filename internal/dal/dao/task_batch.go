@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"time"
 
+	rawgen "gorm.io/gen"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -24,12 +26,12 @@ import (
 
 // TaskBatchListFilter task batch list filter
 type TaskBatchListFilter struct {
-	TaskObject     table.TaskObject      // 任务对象
-	TaskAction     table.TaskAction      // 任务动作
-	Status         table.TaskBatchStatus // 执行状态
-	Executor       string                // 执行帐户（创建者）
-	TimeRangeStart *time.Time            // 时间范围起点
-	TimeRangeEnd   *time.Time            // 时间范围终点
+	TaskObjects    []string   // 任务对象列表
+	TaskActions    []string   // 任务动作列表
+	Statuses       []string   // 执行状态列表
+	Executors      []string   // 执行帐户列表（创建者）
+	TimeRangeStart *time.Time // 时间范围起点
+	TimeRangeEnd   *time.Time // 时间范围终点
 }
 
 // TaskBatch xxx
@@ -89,32 +91,9 @@ func (dao *taskBatchDao) List(kit *kit.Kit, bizID uint32, filter *TaskBatchListF
 	m := dao.genQ.TaskBatch
 	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
 
-	// 构建查询条件
-	q = q.Where(m.BizID.Eq(bizID))
-
-	if filter != nil {
-		if filter.TaskObject != "" {
-			q = q.Where(m.TaskObject.Eq(string(filter.TaskObject)))
-		}
-		if filter.TaskAction != "" {
-			q = q.Where(m.TaskAction.Eq(string(filter.TaskAction)))
-		}
-		if filter.Status != "" {
-			q = q.Where(m.Status.Eq(string(filter.Status)))
-		}
-		if filter.Executor != "" {
-			q = q.Where(m.Creator.Eq(filter.Executor))
-		}
-		// 时间范围过滤：任务的开始时间或结束时间在指定范围内
-		if filter.TimeRangeStart != nil {
-			// 任务的结束时间 >= 查询起点
-			q = q.Where(m.EndAt.Gte(*filter.TimeRangeStart))
-		}
-		if filter.TimeRangeEnd != nil {
-			// 任务的开始时间 <= 查询终点
-			q = q.Where(m.StartAt.Lte(*filter.TimeRangeEnd))
-		}
-	}
+	// 构建过滤条件
+	conds := dao.buildFilterConditions(filter)
+	q = q.Where(m.BizID.Eq(bizID)).Where(conds...)
 
 	// 排序
 	if opt != nil && opt.Sort != "" {
@@ -175,4 +154,46 @@ func (dao *taskBatchDao) ListExecutors(kit *kit.Kit, bizID uint32) ([]string, er
 	}
 
 	return executors, nil
+}
+
+// buildFilterConditions 构建任务批次过滤条件
+func (dao *taskBatchDao) buildFilterConditions(filter *TaskBatchListFilter) []rawgen.Condition {
+	var conds []rawgen.Condition
+	if filter == nil {
+		return conds
+	}
+
+	m := dao.genQ.TaskBatch
+
+	// 任务对象类型过滤
+	if len(filter.TaskObjects) > 0 {
+		conds = append(conds, m.TaskObject.In(filter.TaskObjects...))
+	}
+
+	// 任务动作过滤
+	if len(filter.TaskActions) > 0 {
+		conds = append(conds, m.TaskAction.In(filter.TaskActions...))
+	}
+
+	// 执行状态过滤
+	if len(filter.Statuses) > 0 {
+		conds = append(conds, m.Status.In(filter.Statuses...))
+	}
+
+	// 执行帐户过滤
+	if len(filter.Executors) > 0 {
+		conds = append(conds, m.Creator.In(filter.Executors...))
+	}
+
+	// 时间范围过滤：任务的开始时间或结束时间在指定范围内
+	if filter.TimeRangeStart != nil {
+		// 任务的结束时间 >= 查询起点
+		conds = append(conds, m.EndAt.Gte(*filter.TimeRangeStart))
+	}
+	if filter.TimeRangeEnd != nil {
+		// 任务的开始时间 <= 查询终点
+		conds = append(conds, m.StartAt.Lte(*filter.TimeRangeEnd))
+	}
+
+	return conds
 }
