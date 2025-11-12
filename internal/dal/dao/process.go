@@ -47,8 +47,12 @@ type Process interface {
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
 	GetProcByBizScvProc(kit *kit.Kit, bizID, svcInstID, processID uint32) (*table.Process, error)
-	// 获取所有未删除的数据
+	// ListActiveProcesses 获取所有未删除的数据
 	ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error)
+	// GetByModuleID 查询模块下所有进程 ID.
+	GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32) ([]uint32, error)
+	// GetByHostIDWithTx 查询主机下所有进程 ID.
+	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
 }
 
 var _ Process = new(processDao)
@@ -57,6 +61,36 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByHostIDWithTx implements Process.
+func (dao *processDao) GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, hostID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.HostID.Eq(hostID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetByModuleIDWithTx implements Process.
+func (dao *processDao) GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, moduleID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.ModuleID.Eq(moduleID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // GetProcByBizScvProc implements Process.
@@ -225,16 +259,16 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 		conds = append(conds, m.Environment.Eq(search.GetEnvironment()))
 	}
 
-	if len(search.GetSetNames()) != 0 {
-		conds = append(conds, m.SetName.In(search.GetSetNames()...))
+	if len(search.GetSets()) != 0 {
+		conds = append(conds, m.SetName.In(search.GetSets()...))
 	}
 
-	if len(search.GetModuleNames()) != 0 {
-		conds = append(conds, m.ModuleName.In(search.GetModuleNames()...))
+	if len(search.GetModules()) != 0 {
+		conds = append(conds, m.ModuleName.In(search.GetModules()...))
 	}
 
-	if len(search.GetServiceInstanceNames()) != 0 {
-		conds = append(conds, m.ServiceName.In(search.GetServiceInstanceNames()...))
+	if len(search.GetServiceInstances()) != 0 {
+		conds = append(conds, m.ServiceName.In(search.GetServiceInstances()...))
 	}
 
 	if len(search.GetCcProcessIds()) != 0 {

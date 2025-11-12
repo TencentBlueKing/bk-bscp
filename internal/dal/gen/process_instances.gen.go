@@ -32,8 +32,8 @@ func newProcessInstance(db *gorm.DB, opts ...gen.DOOption) processInstance {
 	_processInstance.BizID = field.NewUint32(tableName, "biz_id")
 	_processInstance.ProcessID = field.NewUint32(tableName, "process_id")
 	_processInstance.CcProcessID = field.NewUint32(tableName, "cc_process_id")
-	_processInstance.LocalInstID = field.NewString(tableName, "local_inst_id")
-	_processInstance.InstID = field.NewString(tableName, "inst_id")
+	_processInstance.LocalInstID = field.NewUint32(tableName, "local_inst_id")
+	_processInstance.InstID = field.NewUint32(tableName, "inst_id")
 	_processInstance.Status = field.NewString(tableName, "status")
 	_processInstance.ManagedStatus = field.NewString(tableName, "managed_status")
 	_processInstance.StatusUpdatedAt = field.NewTime(tableName, "status_updated_at")
@@ -56,8 +56,8 @@ type processInstance struct {
 	BizID           field.Uint32
 	ProcessID       field.Uint32
 	CcProcessID     field.Uint32
-	LocalInstID     field.String
-	InstID          field.String
+	LocalInstID     field.Uint32
+	InstID          field.Uint32
 	Status          field.String
 	ManagedStatus   field.String
 	StatusUpdatedAt field.Time
@@ -86,8 +86,8 @@ func (p *processInstance) updateTableName(table string) *processInstance {
 	p.BizID = field.NewUint32(table, "biz_id")
 	p.ProcessID = field.NewUint32(table, "process_id")
 	p.CcProcessID = field.NewUint32(table, "cc_process_id")
-	p.LocalInstID = field.NewString(table, "local_inst_id")
-	p.InstID = field.NewString(table, "inst_id")
+	p.LocalInstID = field.NewUint32(table, "local_inst_id")
+	p.InstID = field.NewUint32(table, "inst_id")
 	p.Status = field.NewString(table, "status")
 	p.ManagedStatus = field.NewString(table, "managed_status")
 	p.StatusUpdatedAt = field.NewTime(table, "status_updated_at")

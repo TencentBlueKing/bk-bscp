@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/itsm"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
@@ -53,11 +54,12 @@ type Service struct {
 	itsm        itsm.Service
 	cmdb        bkcmdb.Service
 	taskManager *task.TaskManager
+	gseSvc      *gse.Service
 }
 
 // NewService create a service instance.
-func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set,
-	esb client.Client, repo repository.Provider, cmdb bkcmdb.Service, taskManager *task.TaskManager) (*Service, error) {
+func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set, esb client.Client,
+	repo repository.Provider, cmdb bkcmdb.Service, taskManager *task.TaskManager, gseSvc *gse.Service) (*Service, error) {
 	state, ok := sd.(serviced.State)
 	if !ok {
 		return nil, errors.New("discover convert state failed")
@@ -107,6 +109,7 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 		itsm:        itsm.NewITSMService(),
 		cmdb:        cmdb,
 		taskManager: taskManager,
+		gseSvc:      gseSvc,
 	}
 
 	return svc, nil

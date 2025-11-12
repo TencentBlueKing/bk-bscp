@@ -31,6 +31,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
+	pbtb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
@@ -66,10 +67,82 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 
 	processes := pbproc.PbProcessesWithInstances(res, procInstMap)
 
+	filterOptions, err := s.buildfilterOptions(kt, req.GetBizId())
+	if err != nil {
+		return nil, err
+	}
+
 	return &pbds.ListProcessResp{
-		Count:   uint32(count),
-		Process: processes,
+		Count:         uint32(count),
+		Process:       processes,
+		FilterOptions: filterOptions,
 	}, nil
+}
+
+func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterOptions, error) {
+
+	ips, err := s.dao.Process().ListBizFilterOptions(kt, bizID, field.NewString("", "inner_ip"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Inner IP 选项
+	ipsOptions := make([]*pbtb.Choice, 0, len(ips))
+	for _, v := range ips {
+		ipsOptions = append(ipsOptions, &pbtb.Choice{
+			Id:   v.Spec.InnerIP,
+			Name: v.Spec.InnerIP,
+		})
+	}
+
+	makeChoices := func(values map[string]string) []*pbtb.Choice {
+		choices := make([]*pbtb.Choice, 0, len(values))
+		for k, v := range values {
+			choices = append(choices, &pbtb.Choice{
+				Id:   k,
+				Name: v,
+			})
+		}
+		return choices
+	}
+
+	// Process Status 选项
+	processStatusValues := map[string]string{
+		table.ProcessStatusRunning.String():       "运行中",
+		table.ProcessStatusPartlyRunning.String(): "部分运行",
+		table.ProcessStatusStarting.String():      "启动中",
+		table.ProcessStatusRestarting.String():    "重启中",
+		table.ProcessStatusStopping.String():      "停止中",
+		table.ProcessStatusReloading.String():     "重载中",
+		table.ProcessStatusStopped.String():       "已停止",
+	}
+	psOptions := makeChoices(processStatusValues)
+
+	// Managed Status 选项
+	managedStatusValues := map[string]string{
+		table.ProcessManagedStatusStarting.String():      "启动中",
+		table.ProcessManagedStatusStopping.String():      "停止中",
+		table.ProcessManagedStatusManaged.String():       "已托管",
+		table.ProcessManagedStatusUnmanaged.String():     "未托管",
+		table.ProcessManagedStatusPartlyManaged.String(): "部分托管",
+	}
+	msOptions := makeChoices(managedStatusValues)
+
+	// CC Sync Status 选项
+	ccSyncStatusValues := map[string]string{
+		table.Synced.String():  "已同步",
+		table.Deleted.String(): "已删除",
+		table.Updated.String(): "已更新",
+	}
+	ccSyncOptions := makeChoices(ccSyncStatusValues)
+
+	filterOptions := &pbproc.FilterOptions{
+		InnerIps:        ipsOptions,
+		ProcessStatuses: psOptions,
+		ManagedStatuses: msOptions,
+		CcSyncStatuses:  ccSyncOptions,
+	}
+	return filterOptions, nil
 }
 
 // OperateProcess implements pbds.DataServer.

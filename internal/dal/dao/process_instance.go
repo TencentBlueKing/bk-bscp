@@ -30,6 +30,14 @@ type ProcessInstance interface {
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 	// GetByProcessIDs gets process instances by proccessIDs.
 	GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
+	// GetCountTx 查询指定进程的实例数量.
+	GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error)
+	// Delete ..
+	Delete(kit *kit.Kit, bizID, id uint32) error
+	// GetMaxInstTx 查询模块下所有进程的最大 InstID
+	GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// GetMaxLocalTx 查询主机下所有进程的最大 LocalInstID
+	GetMaxLocalTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -38,6 +46,55 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetCountTx implements ProcessInstance.
+func (dao *processInstanceDao) GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error) {
+	m := dao.genQ.ProcessInstance
+	return tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
+		Count()
+}
+
+// GetMaxInstTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+	var result struct {
+		MaxID int `gorm:"column:max_id"`
+	}
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.InstID.Max().As("max_id")).Scan(&result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxID, nil
+}
+
+// GetMaxLocalTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxLocalTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+	var result struct {
+		MaxID int `gorm:"column:max_id"`
+	}
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.LocalInstID.Max().As("max_id")).Scan(&result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxID, nil
+}
+
+// Delete implements ProcessInstance.
+func (dao *processInstanceDao) Delete(kit *kit.Kit, bizID uint32, id uint32) error {
+	m := dao.genQ.ProcessInstance
+	_, err := dao.genQ.ProcessInstance.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetByProcessIDs implements ProcessInstance.

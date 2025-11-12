@@ -19,7 +19,7 @@ import (
 	gseSvc "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
-	gse "github.com/TencentBlueKing/bk-bscp/internal/processor/ges"
+	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 

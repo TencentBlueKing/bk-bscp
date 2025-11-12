@@ -2296,6 +2296,7 @@ message ListProcessReq {
 message ListProcessResp {
   uint32 count = 1;
   repeated pbproc.Process process = 2;
+  pbproc.FilterOptions filter_options = 3;
 }
 
 message OperateProcessReq {
@@ -2320,7 +2321,7 @@ message SyncCmdbGseStatusResp {
 // SortRule 排序规则
 message SortRule {
   string field = 1;  // 排序字段: id, start_at, end_at
-  string order = 2; // 排序方向: ASC, DESC
+  string order = 2;  // 排序方向: ASC, DESC
 }
 
 message ListTaskBatchReq {
@@ -2351,8 +2352,8 @@ message GetTaskBatchDetailReq {
 }
 
 message GetTaskBatchDetailResp {
-  repeated pbtb.TaskDetail tasks = 1;  // 任务详情列表
-  uint32 count = 2;                    // 任务总数
+  repeated pbtb.TaskDetail tasks = 1;               // 任务详情列表
+  uint32 count = 2;                                 // 任务总数
   repeated pbtb.TaskStatusStatItem statistics = 3;  // 状态统计列表
   pbtb.TaskDetailFilterOptions filter_options = 4;  // 任务详情过滤选项
 }

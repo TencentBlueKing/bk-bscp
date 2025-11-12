@@ -4523,6 +4523,7 @@ message ListProcessResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbproc.Process process = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程列表" }];
+  pbproc.FilterOptions filter_options = 3;
 }
 
 message OperateProcessReq {
@@ -4549,12 +4550,10 @@ message SyncCmdbGseStatusResp {
 
 // SortRule 排序规则
 message SortRule {
-  string field = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
-    description: "排序字段: id, start_at, end_at" 
-  }];
-  string order = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
-    description: "排序方向: ASC, DESC" 
-  }];
+  string field = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序字段: id, start_at, end_at" }];
+  string order = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序方向: ASC, DESC" }];
 }
 
 message ListTaskBatchReq {
@@ -4572,9 +4571,7 @@ message ListTaskBatchReq {
   }];
   repeated string executors = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行帐户列表（创建者）" }];
-  SortRule sort = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { 
-    description: "排序规则" 
-  }];
+  SortRule sort = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排序规则" }];
   string time_range_start = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "时间范围起点（如：2024-01-01T00:00:00Z）"
   }];

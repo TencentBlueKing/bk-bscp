@@ -70,8 +70,9 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	}
 
 	return &pbcs.ListProcessResp{
-		Count:   resp.Count,
-		Process: resp.GetProcess(),
+		Count:         resp.Count,
+		Process:       resp.GetProcess(),
+		FilterOptions: resp.GetFilterOptions(),
 	}, nil
 }
 
