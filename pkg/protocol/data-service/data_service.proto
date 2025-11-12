@@ -324,6 +324,7 @@ service Data {
   rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
   // 获取同步的状态
   rpc CmdbGseStatus(CmdbGseStatusReq) returns (CmdbGseStatusResp) {}
+  rpc ListProcessTree(ListProcessTreeReq) returns (ListProcessTreeResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2386,4 +2387,13 @@ message RetryTasksReq {
 
 message RetryTasksResp {
   uint32 retry_count = 1;  // 重试的任务数量
+}
+
+message ListProcessTreeReq {
+  uint32 biz_id = 1;
+  string view_type = 2;
+}
+
+message ListProcessTreeResp {
+  repeated pbproc.ProcessTreeNode topology = 1;
 }

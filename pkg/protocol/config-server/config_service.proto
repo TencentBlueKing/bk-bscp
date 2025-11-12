@@ -1597,6 +1597,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       body: "*"
     };
   }
+  rpc ListProcessTree(ListProcessTreeReq) returns (ListProcessTreeResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/process/{view_type}/tree"
+    };
+  }
 }
 
 message UpdateCredentialScopeReq {
@@ -4638,4 +4643,15 @@ message ProcessFilterOptionsResp {
   repeated pbproc.ProcessFilterOption service_instances = 3;
   repeated pbproc.ProcessFilterOption process_aliases = 4;
   repeated pbproc.ProcessFilterOption cc_process_ids = 5;
+}
+
+message ListProcessTreeReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string view_type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "类型: by_topo(按业务拓扑), by_service(按服务模板)"
+  }];
+}
+
+message ListProcessTreeResp {
+  repeated pbproc.ProcessTreeNode topology = 1;
 }

@@ -102,3 +102,11 @@ message FilterOptions {
   repeated pbtb.Choice cc_sync_statuses = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
 }
+
+// ProcessTreeNode 进程树状节点
+message ProcessTreeNode {
+  uint32 id = 1;
+  string name = 2;
+  string type = 3;  // "set" | "module" | "service" | "process"
+  repeated ProcessTreeNode children = 4;
+}

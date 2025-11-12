@@ -36,6 +36,30 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
+// ListProcessTree implements pbds.DataServer.
+func (s *Service) ListProcessTree(ctx context.Context, req *pbds.ListProcessTreeReq) (*pbds.ListProcessTreeResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	processes, _, err := s.dao.Process().List(kt, req.BizId, nil, &types.BasePage{
+		All: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list processes failed: %w", err)
+	}
+
+	var nodes []*pbproc.ProcessTreeNode
+	switch req.ViewType {
+	case "by_service":
+		nodes = buildByService(processes)
+	case "by_topo":
+		nodes = buildByTopo(processes)
+	default:
+		return nil, fmt.Errorf("unsupported view type: %s", req.ViewType)
+	}
+
+	return &pbds.ListProcessTreeResp{Topology: nodes}, nil
+}
+
 // ListProcess implements pbds.DataServer.
 func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*pbds.ListProcessResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -772,4 +796,77 @@ func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uin
 	}
 
 	return failedTasks, nil
+}
+
+func buildByTopo(list []*table.Process) []*pbproc.ProcessTreeNode {
+	setMap := make(map[uint32]*pbproc.ProcessTreeNode)
+
+	for _, p := range list {
+		setNode, ok := setMap[p.Attachment.SetID]
+		if !ok {
+			setNode = &pbproc.ProcessTreeNode{
+				Id:   p.Attachment.SetID,
+				Name: p.Spec.SetName,
+				Type: "set",
+			}
+			setMap[p.Attachment.SetID] = setNode
+		}
+
+		moduleNode := findOrCreateChild(setNode, p.Attachment.ModuleID, p.Spec.ModuleName, "module")
+		serviceNode := findOrCreateChild(moduleNode, p.Attachment.ServiceInstanceID, p.Spec.ServiceName, "service")
+
+		procNode := &pbproc.ProcessTreeNode{
+			Id:   p.ID,
+			Name: p.Spec.Alias,
+			Type: "process",
+		}
+		serviceNode.Children = append(serviceNode.Children, procNode)
+	}
+
+	var result []*pbproc.ProcessTreeNode
+	for _, n := range setMap {
+		result = append(result, n)
+	}
+	return result
+}
+
+func buildByService(list []*table.Process) []*pbproc.ProcessTreeNode {
+	moduleMap := make(map[uint32]*pbproc.ProcessTreeNode)
+
+	for _, p := range list {
+		moduleNode, ok := moduleMap[p.Attachment.ModuleID]
+		if !ok {
+			moduleNode = &pbproc.ProcessTreeNode{
+				Id:   p.Attachment.ModuleID,
+				Name: p.Spec.ModuleName,
+				Type: "module",
+			}
+			moduleMap[p.Attachment.ModuleID] = moduleNode
+		}
+
+		serviceNode := findOrCreateChild(moduleNode, p.Attachment.ServiceInstanceID, p.Spec.ServiceName, "service")
+		procNode := &pbproc.ProcessTreeNode{
+			Id:   p.ID,
+			Name: p.Spec.Alias,
+			Type: "process",
+		}
+		serviceNode.Children = append(serviceNode.Children, procNode)
+	}
+
+	var result []*pbproc.ProcessTreeNode
+	for _, n := range moduleMap {
+		result = append(result, n)
+	}
+	return result
+}
+
+func findOrCreateChild(parent *pbproc.ProcessTreeNode, id uint32, name, typ string) *pbproc.ProcessTreeNode {
+	for _, c := range parent.Children {
+		if c.Type == typ && c.Name == name {
+			return c
+		}
+	}
+	child := &pbproc.ProcessTreeNode{Id: id, Name: name, Type: typ}
+	parent.Children = append(parent.Children, child)
+	return child
 }

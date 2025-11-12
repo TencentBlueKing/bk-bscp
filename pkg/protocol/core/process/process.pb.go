@@ -605,6 +605,76 @@ func (x *FilterOptions) GetCcSyncStatuses() []*task_batch.Choice {
 	return nil
 }
 
+// ProcessTreeNode 进程树状节点
+type ProcessTreeNode struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id       uint32             `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name     string             `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Type     string             `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"` // "set" | "module" | "service" | "process"
+	Children []*ProcessTreeNode `protobuf:"bytes,4,rep,name=children,proto3" json:"children,omitempty"`
+}
+
+func (x *ProcessTreeNode) Reset() {
+	*x = ProcessTreeNode{}
+	mi := &file_process_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessTreeNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessTreeNode) ProtoMessage() {}
+
+func (x *ProcessTreeNode) ProtoReflect() protoreflect.Message {
+	mi := &file_process_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessTreeNode.ProtoReflect.Descriptor instead.
+func (*ProcessTreeNode) Descriptor() ([]byte, []int) {
+	return file_process_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ProcessTreeNode) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *ProcessTreeNode) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ProcessTreeNode) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ProcessTreeNode) GetChildren() []*ProcessTreeNode {
+	if x != nil {
+		return x.Children
+	}
+	return nil
+}
+
 var File_process_proto protoreflect.FileDescriptor
 
 var file_process_proto_rawDesc = []byte{
@@ -789,7 +859,15 @@ var file_process_proto_rawDesc = []byte{
 	0x32, 0x0c, 0x2e, 0x70, 0x62, 0x74, 0x62, 0x2e, 0x43, 0x68, 0x6f, 0x69, 0x63, 0x65, 0x42, 0x13,
 	0x92, 0x41, 0x10, 0x32, 0x0e, 0x63, 0x63, 0xe5, 0x90, 0x8c, 0xe6, 0xad, 0xa5, 0xe7, 0x8a, 0xb6,
 	0xe6, 0x80, 0x81, 0x52, 0x0e, 0x63, 0x63, 0x53, 0x79, 0x6e, 0x63, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x65, 0x73, 0x42, 0x45, 0x5a, 0x43, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x73, 0x65, 0x73, 0x22, 0x7e, 0x0a, 0x0f, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x54, 0x72,
+	0x65, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79,
+	0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x33,
+	0x0a, 0x08, 0x63, 0x68, 0x69, 0x6c, 0x64, 0x72, 0x65, 0x6e, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x17, 0x2e, 0x70, 0x62, 0x70, 0x72, 0x6f, 0x63, 0x2e, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73,
+	0x73, 0x54, 0x72, 0x65, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x08, 0x63, 0x68, 0x69, 0x6c, 0x64,
+	0x72, 0x65, 0x6e, 0x42, 0x45, 0x5a, 0x43, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
 	0x6d, 0x2f, 0x54, 0x65, 0x6e, 0x63, 0x65, 0x6e, 0x74, 0x42, 0x6c, 0x75, 0x65, 0x4b, 0x69, 0x6e,
 	0x67, 0x2f, 0x62, 0x6b, 0x2d, 0x62, 0x73, 0x63, 0x70, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x63,
@@ -809,7 +887,7 @@ func file_process_proto_rawDescGZIP() []byte {
 	return file_process_proto_rawDescData
 }
 
-var file_process_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_process_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_process_proto_goTypes = []any{
 	(*Process)(nil),                   // 0: pbproc.Process
 	(*ProcessSpec)(nil),               // 1: pbproc.ProcessSpec
@@ -817,28 +895,30 @@ var file_process_proto_goTypes = []any{
 	(*ProcessSearchCondition)(nil),    // 3: pbproc.ProcessSearchCondition
 	(*ProcessFilterOption)(nil),       // 4: pbproc.ProcessFilterOption
 	(*FilterOptions)(nil),             // 5: pbproc.FilterOptions
-	nil,                               // 6: pbproc.ProcessSpec.ActionsEntry
-	(*base.Revision)(nil),             // 7: pbbase.Revision
-	(*process_instance.ProcInst)(nil), // 8: pbpi.ProcInst
-	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
-	(*task_batch.Choice)(nil),         // 10: pbtb.Choice
+	(*ProcessTreeNode)(nil),           // 6: pbproc.ProcessTreeNode
+	nil,                               // 7: pbproc.ProcessSpec.ActionsEntry
+	(*base.Revision)(nil),             // 8: pbbase.Revision
+	(*process_instance.ProcInst)(nil), // 9: pbpi.ProcInst
+	(*timestamppb.Timestamp)(nil),     // 10: google.protobuf.Timestamp
+	(*task_batch.Choice)(nil),         // 11: pbtb.Choice
 }
 var file_process_proto_depIdxs = []int32{
 	1,  // 0: pbproc.Process.spec:type_name -> pbproc.ProcessSpec
 	2,  // 1: pbproc.Process.attachment:type_name -> pbproc.ProcessAttachment
-	7,  // 2: pbproc.Process.revision:type_name -> pbbase.Revision
-	8,  // 3: pbproc.Process.proc_inst:type_name -> pbpi.ProcInst
-	9,  // 4: pbproc.ProcessSpec.cc_sync_updated_at:type_name -> google.protobuf.Timestamp
-	6,  // 5: pbproc.ProcessSpec.actions:type_name -> pbproc.ProcessSpec.ActionsEntry
-	10, // 6: pbproc.FilterOptions.inner_ips:type_name -> pbtb.Choice
-	10, // 7: pbproc.FilterOptions.process_statuses:type_name -> pbtb.Choice
-	10, // 8: pbproc.FilterOptions.managed_statuses:type_name -> pbtb.Choice
-	10, // 9: pbproc.FilterOptions.cc_sync_statuses:type_name -> pbtb.Choice
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	8,  // 2: pbproc.Process.revision:type_name -> pbbase.Revision
+	9,  // 3: pbproc.Process.proc_inst:type_name -> pbpi.ProcInst
+	10, // 4: pbproc.ProcessSpec.cc_sync_updated_at:type_name -> google.protobuf.Timestamp
+	7,  // 5: pbproc.ProcessSpec.actions:type_name -> pbproc.ProcessSpec.ActionsEntry
+	11, // 6: pbproc.FilterOptions.inner_ips:type_name -> pbtb.Choice
+	11, // 7: pbproc.FilterOptions.process_statuses:type_name -> pbtb.Choice
+	11, // 8: pbproc.FilterOptions.managed_statuses:type_name -> pbtb.Choice
+	11, // 9: pbproc.FilterOptions.cc_sync_statuses:type_name -> pbtb.Choice
+	6,  // 10: pbproc.ProcessTreeNode.children:type_name -> pbproc.ProcessTreeNode
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_process_proto_init() }
@@ -852,7 +932,7 @@ func file_process_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_process_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

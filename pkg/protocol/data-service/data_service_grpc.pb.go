@@ -228,6 +228,7 @@ const (
 	Data_GetTaskBatchDetail_FullMethodName                = "/pbds.Data/GetTaskBatchDetail"
 	Data_RetryTasks_FullMethodName                        = "/pbds.Data/RetryTasks"
 	Data_CmdbGseStatus_FullMethodName                     = "/pbds.Data/CmdbGseStatus"
+	Data_ListProcessTree_FullMethodName                   = "/pbds.Data/ListProcessTree"
 )
 
 // DataClient is the client API for Data service.
@@ -472,6 +473,7 @@ type DataClient interface {
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
+	ListProcessTree(ctx context.Context, in *ListProcessTreeReq, opts ...grpc.CallOption) (*ListProcessTreeResp, error)
 }
 
 type dataClient struct {
@@ -2246,6 +2248,15 @@ func (c *dataClient) CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, op
 	return out, nil
 }
 
+func (c *dataClient) ListProcessTree(ctx context.Context, in *ListProcessTreeReq, opts ...grpc.CallOption) (*ListProcessTreeResp, error) {
+	out := new(ListProcessTreeResp)
+	err := c.cc.Invoke(ctx, Data_ListProcessTree_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2488,6 +2499,7 @@ type DataServer interface {
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
+	ListProcessTree(context.Context, *ListProcessTreeReq) (*ListProcessTreeResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3081,6 +3093,9 @@ func (UnimplementedDataServer) RetryTasks(context.Context, *RetryTasksReq) (*Ret
 }
 func (UnimplementedDataServer) CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CmdbGseStatus not implemented")
+}
+func (UnimplementedDataServer) ListProcessTree(context.Context, *ListProcessTreeReq) (*ListProcessTreeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessTree not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6622,6 +6637,24 @@ func _Data_CmdbGseStatus_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListProcessTree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessTreeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListProcessTree(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListProcessTree_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListProcessTree(ctx, req.(*ListProcessTreeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7412,6 +7445,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CmdbGseStatus",
 			Handler:    _Data_CmdbGseStatus_Handler,
+		},
+		{
+			MethodName: "ListProcessTree",
+			Handler:    _Data_ListProcessTree_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -215,6 +215,7 @@ const (
 	Config_SyncCmdbGseStatus_FullMethodName                  = "/pbcs.Config/SyncCmdbGseStatus"
 	Config_CmdbGseStatus_FullMethodName                      = "/pbcs.Config/CmdbGseStatus"
 	Config_RetryTasks_FullMethodName                         = "/pbcs.Config/RetryTasks"
+	Config_ListProcessTree_FullMethodName                    = "/pbcs.Config/ListProcessTree"
 )
 
 // ConfigClient is the client API for Config service.
@@ -592,6 +593,7 @@ type ConfigClient interface {
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
+	ListProcessTree(ctx context.Context, in *ListProcessTreeReq, opts ...grpc.CallOption) (*ListProcessTreeResp, error)
 }
 
 type configClient struct {
@@ -2294,6 +2296,15 @@ func (c *configClient) RetryTasks(ctx context.Context, in *RetryTasksReq, opts .
 	return out, nil
 }
 
+func (c *configClient) ListProcessTree(ctx context.Context, in *ListProcessTreeReq, opts ...grpc.CallOption) (*ListProcessTreeResp, error) {
+	out := new(ListProcessTreeResp)
+	err := c.cc.Invoke(ctx, Config_ListProcessTree_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2669,6 +2680,7 @@ type ConfigServer interface {
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
+	ListProcessTree(context.Context, *ListProcessTreeReq) (*ListProcessTreeResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3238,6 +3250,9 @@ func (UnimplementedConfigServer) CmdbGseStatus(context.Context, *CmdbGseStatusRe
 }
 func (UnimplementedConfigServer) RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RetryTasks not implemented")
+}
+func (UnimplementedConfigServer) ListProcessTree(context.Context, *ListProcessTreeReq) (*ListProcessTreeResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessTree not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6635,6 +6650,24 @@ func _Config_RetryTasks_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListProcessTree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessTreeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListProcessTree(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListProcessTree_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListProcessTree(ctx, req.(*ListProcessTreeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7393,6 +7426,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RetryTasks",
 			Handler:    _Config_RetryTasks_Handler,
+		},
+		{
+			MethodName: "ListProcessTree",
+			Handler:    _Config_ListProcessTree_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
