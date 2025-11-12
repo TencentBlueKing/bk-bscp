@@ -53,7 +53,10 @@
                 <Spinner v-if="row.status === 'RUNNING'" class="spinner-icon" />
                 <span v-else :class="['dot', row.status]"></span>
                 <span>{{ TASK_DETAIL_STATUS_MAP[row.status as keyof typeof TASK_DETAIL_STATUS_MAP] }}</span>
-                <info-line class="info-icon" v-bk-tooltips="{ content: row.message }" />
+                <info-line
+                  v-if="row.status === 'FAILURE'"
+                  class="info-icon"
+                  v-bk-tooltips="{ content: row.message || '--' }" />
               </div>
             </template>
           </TableColumn>
