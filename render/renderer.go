@@ -57,10 +57,17 @@ func WithTimeout(timeout time.Duration) RendererOption {
 
 // NewRenderer creates a new Renderer instance
 func NewRenderer(opts ...RendererOption) (*Renderer, error) {
+	// Get default script path from environment variable or use default
+	defaultScriptPath := "render/python/main.py"
+	if envPath := os.Getenv("BSCP_PYTHON_RENDER_PATH"); envPath != "" {
+		// If environment variable is set, use it as the directory path and append main.py
+		defaultScriptPath = filepath.Join(envPath, "main.py")
+	}
+
 	r := &Renderer{
-		uvPath:     "uv",                    // default to uv in PATH
-		scriptPath: "render/python/main.py", // default script path
-		timeout:    30 * time.Second,        // default 30s timeout
+		uvPath:     "uv", // default to uv in PATH
+		scriptPath: defaultScriptPath,
+		timeout:    30 * time.Second, // default 30s timeout
 	}
 
 	// Apply options
