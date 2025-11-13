@@ -14,12 +14,32 @@ package gse
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
+
+var (
+	// defaultRenderer is a singleton Renderer instance reused across multiple calls
+	defaultRenderer     *render.Renderer
+	defaultRendererOnce sync.Once
+	defaultRendererErr  error
+)
+
+// getDefaultRenderer returns a singleton Renderer instance
+// It initializes the renderer on first call and reuses it for subsequent calls
+func getDefaultRenderer() (*render.Renderer, error) {
+	defaultRendererOnce.Do(func() {
+		defaultRenderer, defaultRendererErr = render.NewRenderer()
+		if defaultRendererErr != nil {
+			logs.Errorf("failed to initialize default renderer: %+v", defaultRendererErr)
+		}
+	})
+	return defaultRenderer, defaultRendererErr
+}
 
 // BuildProcessOperateParams 构建 ProcessOperate 的参数
 type BuildProcessOperateParams struct {
@@ -47,8 +67,8 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 	// 构建模板渲染的上下文
 	renderContext := buildRenderContext(params)
 
-	// 创建渲染器
-	renderer, err := render.NewRenderer()
+	// 获取单例渲染器（复用实例，避免重复创建和验证）
+	renderer, err := getDefaultRenderer()
 	if err != nil {
 		logs.Errorf("build process operate failed, err: %+v", err)
 		return nil, err
