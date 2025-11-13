@@ -13,6 +13,8 @@
 package gse
 
 import (
+	"fmt"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -37,6 +39,11 @@ type BuildProcessOperateParams struct {
 // 所有操作类型都建议传入全量参数
 // 渲染需要完全兼容：https://github.com/TencentBlueKing/bk-process-config-manager/blob/V1.0.X/apps/gsekit/pipeline_plugins/components/collections/gse.py#L327
 func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate, error) {
+	// 验证必填参数
+	if err := validateBuildProcessOperateParams(params); err != nil {
+		logs.Errorf("validate build process operate params failed, err: %+v", err)
+		return nil, err
+	}
 	// 构建模板渲染的上下文
 	renderContext := buildRenderContext(params)
 
@@ -118,6 +125,27 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 		},
 	}
 	return processOperate, nil
+}
+
+func validateBuildProcessOperateParams(params BuildProcessOperateParams) error {
+	if params.BizID == 0 {
+		return fmt.Errorf("bizID is required")
+	}
+	if params.Alias == "" {
+		return fmt.Errorf("alias is required")
+	}
+
+	if params.ProcessInstanceID == 0 {
+		return fmt.Errorf("processInstanceID is required")
+	}
+	// 验证 localInstID 和 instID 必须大于 0
+	if params.LocalInstID <= 0 {
+		return fmt.Errorf("localInstID is required")
+	}
+	if params.InstID <= 0 {
+		return fmt.Errorf("instID is required")
+	}
+	return nil
 }
 
 // buildRenderContext 构建模板渲染的上下文

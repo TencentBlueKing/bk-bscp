@@ -292,6 +292,60 @@ func TestBuildProcessOperate(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "error with invalid instID (zero)",
+			params: BuildProcessOperateParams{
+				BizID:             600,
+				Alias:             "invalid-process",
+				ProcessInstanceID: 6,
+				LocalInstID:       60,
+				InstID:            0, // 无效的 instID
+				SetName:           "test-set",
+				ModuleName:        "test-module",
+				AgentID:           []string{"agent-006"},
+				GseOpType:         int(gse.OpTypeStart),
+				ProcessInfo: table.ProcessInfo{
+					WorkPath:    "/opt/app",
+					PidFile:     "/var/run/app.pid",
+					User:        "appuser",
+					StartCmd:    "start.sh",
+					StopCmd:     "stop.sh",
+					RestartCmd:  "restart.sh",
+					ReloadCmd:   "reload.sh",
+					FaceStopCmd: "kill.sh",
+					Timeout:     30,
+				},
+			},
+			wantErr:  true,
+			validate: nil,
+		},
+		{
+			name: "error with invalid localInstID (zero)",
+			params: BuildProcessOperateParams{
+				BizID:             700,
+				Alias:             "invalid-process",
+				ProcessInstanceID: 7,
+				LocalInstID:       0, // 无效的 localInstID
+				InstID:            10,
+				SetName:           "test-set",
+				ModuleName:        "test-module",
+				AgentID:           []string{"agent-007"},
+				GseOpType:         int(gse.OpTypeStart),
+				ProcessInfo: table.ProcessInfo{
+					WorkPath:    "/opt/app",
+					PidFile:     "/var/run/app.pid",
+					User:        "appuser",
+					StartCmd:    "start.sh",
+					StopCmd:     "stop.sh",
+					RestartCmd:  "restart.sh",
+					ReloadCmd:   "reload.sh",
+					FaceStopCmd: "kill.sh",
+					Timeout:     30,
+				},
+			},
+			wantErr:  true,
+			validate: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -323,12 +377,11 @@ func TestBuildRenderContext(t *testing.T) {
 		{
 			name: "full context",
 			params: BuildProcessOperateParams{
-				Alias:             "test-process",
-				ProcessInstanceID: 1,
-				LocalInstID:       10,
-				InstID:            5,
-				SetName:           "test-set",
-				ModuleName:        "test-module",
+				Alias:       "test-process",
+				LocalInstID: 10,
+				InstID:      5,
+				SetName:     "test-set",
+				ModuleName:  "test-module",
 			},
 			want: map[string]interface{}{
 				"inst_id":         uint32(5),
@@ -350,12 +403,11 @@ func TestBuildRenderContext(t *testing.T) {
 		{
 			name: "empty set and module name",
 			params: BuildProcessOperateParams{
-				Alias:             "simple-process",
-				ProcessInstanceID: 2,
-				LocalInstID:       20,
-				InstID:            6,
-				SetName:           "",
-				ModuleName:        "",
+				Alias:       "simple-process",
+				LocalInstID: 20,
+				InstID:      6,
+				SetName:     "",
+				ModuleName:  "",
 			},
 			want: map[string]interface{}{
 				"inst_id":         uint32(6),
@@ -393,6 +445,106 @@ func TestBuildRenderContext(t *testing.T) {
 			for key := range got {
 				if _, ok := tt.want[key]; !ok {
 					t.Errorf("buildRenderContext() has unexpected key: %s", key)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateBuildProcessOperateParams(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  BuildProcessOperateParams
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid params",
+			params: BuildProcessOperateParams{
+				BizID:             100,
+				Alias:             "test-process",
+				ProcessInstanceID: 1,
+				LocalInstID:       10,
+				InstID:            5,
+			},
+			wantErr: false,
+		},
+		{
+			name: "error with zero bizID",
+			params: BuildProcessOperateParams{
+				BizID:             0,
+				Alias:             "test-process",
+				ProcessInstanceID: 1,
+				LocalInstID:       10,
+				InstID:            5,
+			},
+			wantErr: true,
+			errMsg:  "bizID is required",
+		},
+		{
+			name: "error with empty alias",
+			params: BuildProcessOperateParams{
+				BizID:             100,
+				Alias:             "",
+				ProcessInstanceID: 1,
+				LocalInstID:       10,
+				InstID:            5,
+			},
+			wantErr: true,
+			errMsg:  "alias is required",
+		},
+		{
+			name: "error with zero processInstanceID",
+			params: BuildProcessOperateParams{
+				BizID:             100,
+				Alias:             "test-process",
+				ProcessInstanceID: 0,
+				LocalInstID:       10,
+				InstID:            5,
+			},
+			wantErr: true,
+			errMsg:  "processInstanceID is required",
+		},
+		{
+			name: "error with zero localInstID",
+			params: BuildProcessOperateParams{
+				BizID:             100,
+				Alias:             "test-process",
+				ProcessInstanceID: 1,
+				LocalInstID:       0,
+				InstID:            5,
+			},
+			wantErr: true,
+			errMsg:  "localInstID is required",
+		},
+		{
+			name: "error with zero instID",
+			params: BuildProcessOperateParams{
+				BizID:             100,
+				Alias:             "test-process",
+				ProcessInstanceID: 1,
+				LocalInstID:       10,
+				InstID:            0,
+			},
+			wantErr: true,
+			errMsg:  "instID is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateBuildProcessOperateParams(tt.params)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateBuildProcessOperateParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("validateBuildProcessOperateParams() expected error but got nil")
+					return
+				}
+				if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("validateBuildProcessOperateParams() error = %v, want %v", err.Error(), tt.errMsg)
 				}
 			}
 		})

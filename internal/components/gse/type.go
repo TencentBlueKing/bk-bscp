@@ -62,14 +62,14 @@ const (
 		8:重新加载进程（reload）,调用spec.control中的reload_cmd启动进程；
 		9:杀死进程（kill）,调用spec.control中的kill_cmd启动进程，杀死成功会取消托管
 	*/
-	OpTypeStart      = 0
-	OpTypeStop       = 1
-	OpTypeQuery      = 2
-	OpTypeRegister   = 3
-	OpTypeUnregister = 4
-	OpTypeRestart    = 7
-	OpTypeReload     = 8
-	OpTypeKill       = 9
+	OpTypeStart      OpType = 0
+	OpTypeStop       OpType = 1
+	OpTypeQuery      OpType = 2
+	OpTypeRegister   OpType = 3
+	OpTypeUnregister OpType = 4
+	OpTypeRestart    OpType = 7
+	OpTypeReload     OpType = 8
+	OpTypeKill       OpType = 9
 )
 
 const (
