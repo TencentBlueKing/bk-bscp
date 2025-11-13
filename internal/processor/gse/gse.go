@@ -26,7 +26,8 @@ type BuildProcessOperateParams struct {
 	BizID             uint32            // 业务ID
 	Alias             string            // 进程别名
 	ProcessInstanceID uint32            // 进程实例ID
-	LocalInstID       uint32            // 本地实例ID（用于模板渲染）
+	LocalInstID       uint32            // 主机级别的自增ID
+	InstID            uint32            // 模块级别的自增ID
 	SetName           string            // 集群名称（用于模板渲染）
 	ModuleName        string            // 模块名称（用于模板渲染）
 	AgentID           []string          // Agent ID列表
@@ -123,12 +124,8 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 // buildRenderContext 构建模板渲染的上下文
 // 参考 Python 代码中的 context 结构
 func buildRenderContext(params BuildProcessOperateParams) map[string]interface{} {
-	instID := params.ProcessInstanceID
+	instID := params.InstID
 	localInstID := params.LocalInstID
-	if localInstID == 0 {
-		// 如果没有指定 LocalInstID，使用 ProcessInstanceID
-		localInstID = instID
-	}
 
 	context := map[string]interface{}{
 		// [gsekit]新版本字段
