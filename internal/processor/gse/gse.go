@@ -35,6 +35,7 @@ type BuildProcessOperateParams struct {
 
 // BuildProcessOperate 构建 GSE ProcessOperate 对象
 // 所有操作类型都建议传入全量参数
+// 渲染需要完全兼容：https://github.com/TencentBlueKing/bk-process-config-manager/blob/V1.0.X/apps/gsekit/pipeline_plugins/components/collections/gse.py#L327
 func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate, error) {
 	// 构建模板渲染的上下文
 	renderContext := buildRenderContext(params)
