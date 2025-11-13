@@ -259,6 +259,10 @@ const (
 	ProcessInstancesTable Name = "process_instances"
 	// BizHostTable is biz_host table's name
 	BizHostTable Name = "biz_hosts"
+	// ConfigTemplatesTable is config_templates table's name
+	ConfigTemplatesTable Name = "config_templates"
+	// ConfigInstancesTable is config_instances table's name
+	ConfigInstancesTable Name = "config_instances"
 )
 
 // RevisionColumns defines all the Revision table's columns.
