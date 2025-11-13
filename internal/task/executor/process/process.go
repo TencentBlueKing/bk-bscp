@@ -213,16 +213,22 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 	}
 
 	// 使用 OperateProcMulti 接口查询进程状态，操作码为 2（OpTypeQuery）
-	processOperate := gesprocessor.BuildProcessOperate(gesprocessor.BuildProcessOperateParams{
+	params := gesprocessor.BuildProcessOperateParams{
 		BizID:             payload.BizID,
 		Alias:             commonPayload.Alias,
 		ProcessInstanceID: payload.ProcessInstanceID,
 		AgentID:           []string{commonPayload.AgentID},
+		LocalInstID:       payload.ProcessInstanceID,
+		SetName:           commonPayload.SetName,
+		ModuleName:        commonPayload.ModuleName,
 		GseOpType:         int(gse.OpTypeQuery),
-	})
-
+	}
+	processOperate, err := gesprocessor.BuildProcessOperate(params)
+	if err != nil {
+		return fmt.Errorf("【CompareWithGSEProcessStatus STEP】: failed to build process operate: %w", err)
+	}
 	req := &gse.MultiProcOperateReq{
-		ProcOperateReq: []gse.ProcessOperate{processOperate},
+		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
 
 	resp, err := e.GseService.OperateProcMulti(c.Context(), req)
@@ -357,16 +363,23 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	}
 
 	// 构建进程操作接口请求参数
-	processOperate := gesprocessor.BuildProcessOperate(gesprocessor.BuildProcessOperateParams{
+	params := gesprocessor.BuildProcessOperateParams{
 		BizID:             payload.BizID,
 		Alias:             commonPayload.Alias,
 		ProcessInstanceID: payload.ProcessInstanceID,
 		AgentID:           []string{commonPayload.AgentID},
 		GseOpType:         int(gseOpType),
+		LocalInstID:       payload.ProcessInstanceID,
+		SetName:           commonPayload.SetName,
+		ModuleName:        commonPayload.ModuleName,
 		ProcessInfo:       processInfo,
-	})
+	}
+	processOperate, err := gesprocessor.BuildProcessOperate(params)
+	if err != nil {
+		return fmt.Errorf("【Operate STEP】: failed to build process operate: %w", err)
+	}
 
-	items := []gse.ProcessOperate{processOperate}
+	items := []gse.ProcessOperate{*processOperate}
 
 	req := &gse.MultiProcOperateReq{
 		ProcOperateReq: items,
@@ -422,17 +435,23 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 	}
 
 	// 使用 OperateProcMulti 接口查询进程状态，操作码为 2（OpTypeQuery）
-	processOperate := gesprocessor.BuildProcessOperate(gesprocessor.BuildProcessOperateParams{
+	params := gesprocessor.BuildProcessOperateParams{
 		BizID:             payload.BizID,
 		Alias:             commonPayload.Alias,
 		ProcessInstanceID: payload.ProcessInstanceID,
+		LocalInstID:       payload.ProcessInstanceID,
+		SetName:           commonPayload.SetName,
+		ModuleName:        commonPayload.ModuleName,
 		AgentID:           []string{commonPayload.AgentID},
 		GseOpType:         int(gse.OpTypeQuery),
 		ProcessInfo:       processInfo,
-	})
-
+	}
+	processOperate, err := gesprocessor.BuildProcessOperate(params)
+	if err != nil {
+		return fmt.Errorf("【Finalize STEP】: failed to build process operate: %w", err)
+	}
 	req := &gse.MultiProcOperateReq{
-		ProcOperateReq: []gse.ProcessOperate{processOperate},
+		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
 
 	resp, err := e.GseService.OperateProcMulti(c.Context(), req)

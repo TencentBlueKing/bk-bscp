@@ -45,7 +45,7 @@ func main() {
 </Business>`
 
 	// Validate XML just to ensure no syntax error (optional)
-	if err := xml.Unmarshal([]byte(ccXML), new(interface{})); err != nil {
+	if err = xml.Unmarshal([]byte(ccXML), new(interface{})); err != nil {
 		log.Fatalf("invalid ccXML: %v", err)
 	}
 
