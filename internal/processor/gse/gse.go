@@ -13,8 +13,6 @@
 package gse
 
 import (
-	"fmt"
-
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -152,8 +150,8 @@ func buildRenderContext(params BuildProcessOperateParams) map[string]interface{}
 // renderField 渲染单个字段
 func renderField(renderer *render.Renderer, template string, context map[string]interface{}) (string, error) {
 	if template == "" {
-		logs.Errorf("template is empty, template: %s", template)
-		return "", fmt.Errorf("template is empty, template: %s", template)
+		logs.Warnf("template is empty, template: %s", template)
+		return "", nil
 	}
 
 	result, err := renderer.Render(template, context)

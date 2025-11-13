@@ -143,8 +143,9 @@ def main():
         # Render template
         rendered_output = mako_render(template_content, context)
         
-        # Output result to stdout
-        print(rendered_output)
+        # Output result to stdout without trailing newline
+        # Use sys.stdout.write() instead of print() to avoid adding newline
+        sys.stdout.write(rendered_output)
         sys.exit(0)
         
     except FileNotFoundError as e:
