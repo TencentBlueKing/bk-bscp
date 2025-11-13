@@ -222,7 +222,7 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 		InstID:            commonPayload.InstID,
 		SetName:           commonPayload.SetName,
 		ModuleName:        commonPayload.ModuleName,
-		GseOpType:         int(gse.OpTypeQuery),
+		GseOpType:         gse.OpTypeQuery,
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
@@ -358,7 +358,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	}
 
 	// 转换操作类型
-	gseOpType, err := payload.OperateType.ToGSEOpType()
+	gseOpType, err := gse.ConvertProcessOperateTypeToOpType(payload.OperateType)
 	if err != nil {
 		return fmt.Errorf("【Operate STEP】: failed to convert operate type: %w", err)
 	}
@@ -369,7 +369,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		Alias:             commonPayload.Alias,
 		ProcessInstanceID: payload.ProcessInstanceID,
 		AgentID:           []string{commonPayload.AgentID},
-		GseOpType:         int(gseOpType),
+		GseOpType:         gseOpType,
 		LocalInstID:       commonPayload.LocalInstID,
 		InstID:            commonPayload.InstID,
 		SetName:           commonPayload.SetName,
@@ -446,7 +446,7 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 		SetName:           commonPayload.SetName,
 		ModuleName:        commonPayload.ModuleName,
 		AgentID:           []string{commonPayload.AgentID},
-		GseOpType:         int(gse.OpTypeQuery),
+		GseOpType:         gse.OpTypeQuery,
 		ProcessInfo:       processInfo,
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)

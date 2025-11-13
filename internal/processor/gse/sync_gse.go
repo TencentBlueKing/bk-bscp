@@ -136,7 +136,7 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 			InstID:            inst.Spec.InstID,
 			SetName:           process.Spec.SetName,
 			ModuleName:        process.Spec.ModuleName,
-			GseOpType:         int(gse.OpTypeQuery),
+			GseOpType:         gse.OpTypeQuery,
 		})
 		if err != nil {
 			logs.Errorf("build process operate failed, err: %+v", err)

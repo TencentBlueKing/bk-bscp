@@ -51,7 +51,7 @@ type BuildProcessOperateParams struct {
 	SetName           string            // 集群名称（用于模板渲染）
 	ModuleName        string            // 模块名称（用于模板渲染）
 	AgentID           []string          // Agent ID列表
-	GseOpType         int               // GSE操作类型
+	GseOpType         gse.OpType        // GSE操作类型
 	ProcessInfo       table.ProcessInfo // 进程配置信息
 }
 
@@ -118,7 +118,7 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 			Name:      gse.BuildProcessName(params.Alias, params.ProcessInstanceID),
 		},
 		AgentIDList: params.AgentID,
-		OpType:      gse.OpType(params.GseOpType),
+		OpType:      params.GseOpType,
 		Spec: gse.ProcessSpec{
 			Identity: gse.ProcessIdentity{
 				ProcName:  params.Alias,

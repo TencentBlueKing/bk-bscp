@@ -89,7 +89,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "test-set",
 				ModuleName:        "test-module",
 				AgentID:           []string{"agent-001"},
-				GseOpType:         int(gse.OpTypeStart),
+				GseOpType:         gse.OpTypeStart,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/app/${bk_set_name}/${local_inst_id}",
 					PidFile:     "/var/run/${bk_process_name}_${local_inst_id}.pid",
@@ -151,7 +151,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "prod-set",
 				ModuleName:        "prod-module",
 				AgentID:           []string{"agent-002"},
-				GseOpType:         int(gse.OpTypeStop),
+				GseOpType:         gse.OpTypeStop,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/app",
 					PidFile:     "/var/run/app.pid",
@@ -191,7 +191,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "test-set",
 				ModuleName:        "test-module",
 				AgentID:           []string{"agent-003"},
-				GseOpType:         int(gse.OpTypeStart),
+				GseOpType:         gse.OpTypeStart,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "",
 					PidFile:     "/var/run/app.pid",
@@ -218,7 +218,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "my-set",
 				ModuleName:        "my-module",
 				AgentID:           []string{"agent-004"},
-				GseOpType:         int(gse.OpTypeRestart),
+				GseOpType:         gse.OpTypeRestart,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/${bk_set_name}/${bk_module_name}",
 					PidFile:     "/var/run/${bk_process_name}_${inst_id}.pid",
@@ -257,7 +257,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "query-set",
 				ModuleName:        "query-module",
 				AgentID:           []string{"agent-005"},
-				GseOpType:         int(gse.OpTypeQuery),
+				GseOpType:         gse.OpTypeQuery,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/app",
 					PidFile:     "/var/run/app.pid",
@@ -303,7 +303,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "test-set",
 				ModuleName:        "test-module",
 				AgentID:           []string{"agent-006"},
-				GseOpType:         int(gse.OpTypeStart),
+				GseOpType:         gse.OpTypeStart,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/app",
 					PidFile:     "/var/run/app.pid",
@@ -330,7 +330,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				SetName:           "test-set",
 				ModuleName:        "test-module",
 				AgentID:           []string{"agent-007"},
-				GseOpType:         int(gse.OpTypeStart),
+				GseOpType:         gse.OpTypeStart,
 				ProcessInfo: table.ProcessInfo{
 					WorkPath:    "/opt/app",
 					PidFile:     "/var/run/app.pid",
