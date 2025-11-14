@@ -543,7 +543,8 @@
         border: 3px solid #daf6e5;
         background: #3fc06d;
       }
-      &.stopped {
+      &.stopped,
+      .stopping {
         border: 3px solid #ffebeb;
         background: #ea3636;
       }
