@@ -1,8 +1,8 @@
 <template>
-  <bk-tree :data="tree" node-key="id" :show-node-type-icon="false">
+  <bk-tree :data="props.tree" node-key="id" :show-node-type-icon="false">
     <template #node="node">
       <div class="node-item-wrapper">
-        <div v-if="node.children" class="prefix">集</div>
+        <div v-if="node.children.length > 0" class="prefix">集</div>
         <bk-checkbox
           v-else
           size="small"
@@ -18,26 +18,11 @@
 </template>
 
 <script lang="ts" setup>
-  const tree = [
-    {
-      id: 1,
-      name: '根节点',
-      children: [
-        {
-          id: 2,
-          name: '子节点 A',
-        },
-        {
-          id: 3,
-          name: '子节点 B',
-          children: [
-            { id: 4, name: '子节点 B-1' },
-            { id: 5, name: '子节点 B-2' },
-          ],
-        },
-      ],
-    },
-  ];
+  import type { IProcessTreeNode } from '../../../../../../types/config-template';
+
+  const props = defineProps<{
+    tree: IProcessTreeNode[];
+  }>();
 </script>
 
 <style scoped lang="scss">

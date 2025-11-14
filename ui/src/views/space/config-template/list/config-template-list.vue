@@ -70,19 +70,22 @@
         @limit-change="handlePageLimitChange" />
     </div>
   </section>
-  <AssociatedProcess :is-show="isShowAssociatedProcess" />
+  <AssociatedProcess :is-show="isShowAssociatedProcess" :bk-biz-id="spaceId" />
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
   import SearchSelector from '../../../../components/search-selector.vue';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import AssociatedProcess from './associated-process/index.vue';
+  import useGlobalStore from '../../../../store/global';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
+  const { spaceId } = storeToRefs(useGlobalStore());
 
   const searchField = [
     { field: 'template', label: t('模板名称') },

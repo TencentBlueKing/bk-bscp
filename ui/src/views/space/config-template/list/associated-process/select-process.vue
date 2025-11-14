@@ -9,23 +9,43 @@
     </div>
     <div class="associated-content">
       <div class="label">{{ $t('选择关联进程') }}</div>
-      <bk-radio-group v-model="processType" type="card">
-        <bk-radio-button label="business">{{ $t('按业务拓扑') }}</bk-radio-button>
-        <bk-radio-button label="service">{{ $t('按服务模版') }}</bk-radio-button>
+      <bk-radio-group v-model="processType" type="card" @change="loadProcessTree">
+        <bk-radio-button label="by_topo">{{ $t('按业务拓扑') }}</bk-radio-button>
+        <bk-radio-button label="by_service">{{ $t('按服务模版') }}</bk-radio-button>
       </bk-radio-group>
       <SearchInput v-model="searchValue" class="search-input" />
-      <ProcessTree class="process-tree" />
+      <ProcessTree class="process-tree" :tree="processTreeData" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
+  import { getProcessTree } from '../../../../../api/config-template';
+  import type { IProcessTreeNode } from '../../../../../../types/config-template';
   import SearchInput from '../../../../../components/search-input.vue';
   import ProcessTree from './process-tree.vue';
 
-  const processType = ref('business');
+  const props = defineProps<{
+    bkBizId: string;
+  }>();
+
+  const processType = ref('by_topo');
   const searchValue = ref('');
+  const processTreeData = ref<IProcessTreeNode[]>([]);
+
+  onMounted(() => {
+    loadProcessTree();
+  });
+
+  const loadProcessTree = async () => {
+    try {
+      const res = await getProcessTree(props.bkBizId, processType.value);
+      processTreeData.value = res.topology;
+    } catch (error) {
+      console.error(error);
+    }
+  };
 </script>
 
 <style scoped lang="scss">

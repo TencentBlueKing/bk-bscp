@@ -7,7 +7,7 @@
     @closed="handleClose"
     @confirm="handleConfirm">
     <div class="content-wrap">
-      <SelectProcess />
+      <SelectProcess :bk-biz-id="bkBizId"/>
       <ResultPreivew />
     </div>
   </bk-dialog>
@@ -19,6 +19,7 @@
 
   defineProps<{
     isShow: boolean;
+    bkBizId: string;
   }>();
   const emits = defineEmits(['update:isShow', 'confirm']);
 
