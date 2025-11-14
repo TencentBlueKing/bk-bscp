@@ -12,6 +12,7 @@ export default defineStore('task', () => {
     end_at: '',
     execution_time: '',
     task_object: '',
+    status: '',
   });
   return { taskDetail };
 });

@@ -184,6 +184,7 @@
       end_at,
       execution_time,
       task_action,
+      status,
     } = data;
 
     const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
@@ -200,6 +201,7 @@
         start_at: datetimeFormat(start_at),
         end_at: datetimeFormat(end_at),
         execution_time: `${execution_time}s`,
+        status,
       },
     });
 

@@ -14,13 +14,14 @@
 <script lang="ts" setup>
   import { onBeforeMount } from 'vue';
   import { useRouter } from 'vue-router';
-  import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
-  import useTaskStore from '../../../../store/task';
+
+  const props = defineProps<{
+    taskDetail: Record<string, any>;
+  }>();
 
   const { t } = useI18n();
   const router = useRouter();
-  const { taskDetail } = storeToRefs(useTaskStore());
 
   const infoList = [
     {
@@ -58,7 +59,7 @@
   ];
 
   onBeforeMount(() => {
-    if (!taskDetail.value.id) {
+    if (!props.taskDetail.id) {
       router.push({ name: 'task-list' });
     }
   });

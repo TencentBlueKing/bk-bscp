@@ -7,20 +7,23 @@
     </template>
     <template #content>
       <div class="detail-content">
-        <Info />
-        <DetailList @change="handleChange" />
+        <Info :task-detail="taskDetail" />
+        <DetailList :task-detail="taskDetail"/>
       </div>
     </template>
   </DetailLayout>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
-  import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
+  import { ref, onMounted } from 'vue';
+  import { TASK_STATUS_MAP } from '../../../../constants/task';
   import { useRouter } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import Info from './info.vue';
   import DetailList from './detail-list.vue';
+  import useTaskStore from '../../../../store/task';
+  const { taskDetail } = storeToRefs(useTaskStore());
 
   const router = useRouter();
   const suffix = ref({
@@ -28,16 +31,16 @@
     theme: '',
   });
 
-  const handleChange = (status: string) => {
-    suffix.value.text = TASK_DETAIL_STATUS_MAP[status as keyof typeof TASK_DETAIL_STATUS_MAP];
-    if (status === 'SUCCESS') {
+  onMounted(() => {
+    suffix.value.text = TASK_STATUS_MAP[taskDetail.value.status as keyof typeof TASK_STATUS_MAP];
+    if (taskDetail.value.status === 'successd') {
       suffix.value.theme = 'success';
-    } else if (status === 'FAILURE') {
+    } else if (taskDetail.value.status === 'failed') {
       suffix.value.theme = 'danger';
     } else {
       suffix.value.theme = 'info';
     }
-  };
+  });
 
   const handleClose = () => {
     router.push({ name: 'task-list' });

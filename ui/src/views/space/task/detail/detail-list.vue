@@ -98,19 +98,18 @@
   import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
   import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
-  import { storeToRefs } from 'pinia';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
   import searchSelector from '../../../../components/search-selector.vue';
-  import useTaskStore from '../../../../store/task';
+
+  defineProps<{
+    taskDetail: Record<string, any>;
+  }>();
 
   const { pagination, updatePagination } = useTablePagination('taskList');
-  const { taskDetail } = storeToRefs(useTaskStore());
   const { t } = useI18n();
   const route = useRoute();
-
-  const emits = defineEmits(['change']);
 
   const searchField = ref([
     {
@@ -216,7 +215,6 @@
       if (loadPanelsFlag.value) {
         loadPanelsFlag.value = false;
         activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
-        emits('change', activePanels.value);
         loadTaskList();
       }
       searchField.value.forEach((item) => {
@@ -233,7 +231,6 @@
     if (activePanels.value === status) return;
     activePanels.value = status;
     updatePagination('current', 1);
-    emits('change', activePanels.value);
     loadTaskList();
   };
 
