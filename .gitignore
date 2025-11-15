@@ -13,3 +13,13 @@ scripts/benchmark/bench*.js
 .codecc
 build.yml
 .ftp/*
+
+### Python (render) ###
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+render/python/.venv/
+render/python/dist/
+render/python/build/

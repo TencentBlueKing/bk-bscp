@@ -42,55 +42,6 @@ const (
 	defaultInterval = 2 * time.Second
 )
 
-// BuildProcessOperateParams 构建 ProcessOperate 的参数
-type BuildProcessOperateParams struct {
-	BizID             uint32            // 业务ID
-	Alias             string            // 进程别名
-	ProcessInstanceID uint32            // 进程实例ID
-	AgentID           []string          // Agent ID列表
-	GseOpType         int               // GSE操作类型
-	ProcessInfo       table.ProcessInfo // 进程配置信息
-}
-
-// BuildProcessOperate 构建 GSE ProcessOperate 对象
-// 所有操作类型都建议传入全量参数
-func BuildProcessOperate(params BuildProcessOperateParams) gse.ProcessOperate {
-	// 构建基础的 ProcessOperate 对象
-	processOperate := gse.ProcessOperate{
-		Meta: gse.ProcessMeta{
-			Namespace: gse.BuildNamespace(params.BizID),
-			Name:      gse.BuildProcessName(params.Alias, params.ProcessInstanceID),
-		},
-		AgentIDList: params.AgentID,
-		OpType:      gse.OpType(params.GseOpType),
-		Spec: gse.ProcessSpec{
-			Identity: gse.ProcessIdentity{
-				ProcName:  params.Alias,
-				SetupPath: params.ProcessInfo.WorkPath,
-				PidPath:   params.ProcessInfo.PidFile,
-				User:      params.ProcessInfo.User,
-			},
-			Control: gse.ProcessControl{
-				StartCmd:   params.ProcessInfo.StartCmd,
-				StopCmd:    params.ProcessInfo.StopCmd,
-				RestartCmd: params.ProcessInfo.RestartCmd,
-				ReloadCmd:  params.ProcessInfo.ReloadCmd,
-				KillCmd:    params.ProcessInfo.FaceStopCmd,
-			},
-			Resource: gse.ProcessResource{
-				CPU: DefaultCPULimit,
-				Mem: DefaultMemLimit,
-			},
-			MonitorPolicy: gse.ProcessMonitorPolicy{
-				AutoType:       gse.AutoTypePersistent,
-				StartCheckSecs: DefaultStartCheckSecs,
-				OpTimeout:      params.ProcessInfo.Timeout,
-			},
-		},
-	}
-	return processOperate
-}
-
 // NewSyncGESService 初始化同步gse
 func NewSyncGESService(bizID int, svc *gse.Service, dao dao.Set) *syncGSEService {
 	return &syncGSEService{
@@ -173,18 +124,25 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 	instMap := make(map[string]*table.ProcessInstance, len(insts))
 
 	for _, inst := range insts {
-
 		key := fmt.Sprintf("%s:%s:%s", process.Attachment.AgentID, gse.BuildNamespace(bizID),
 			gse.BuildProcessName(process.Spec.Alias, inst.Spec.InstID))
 		instMap[key] = inst
-
-		req = append(req, BuildProcessOperate(BuildProcessOperateParams{
+		processOperate, err := BuildProcessOperate(BuildProcessOperateParams{
 			BizID:             bizID,
 			Alias:             process.Spec.Alias,
 			ProcessInstanceID: inst.Spec.InstID,
 			AgentID:           []string{process.Attachment.AgentID},
+			LocalInstID:       inst.Spec.LocalInstID,
+			InstID:            inst.Spec.InstID,
+			SetName:           process.Spec.SetName,
+			ModuleName:        process.Spec.ModuleName,
 			GseOpType:         gse.OpTypeQuery,
-		}))
+		})
+		if err != nil {
+			logs.Errorf("build process operate failed, err: %+v", err)
+			continue
+		}
+		req = append(req, *processOperate)
 	}
 
 	return req, instMap

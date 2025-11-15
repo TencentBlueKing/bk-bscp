@@ -16,6 +16,8 @@ package gse
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // GESResponse 通用响应结构
@@ -62,14 +64,14 @@ const (
 		8:重新加载进程（reload）,调用spec.control中的reload_cmd启动进程；
 		9:杀死进程（kill）,调用spec.control中的kill_cmd启动进程，杀死成功会取消托管
 	*/
-	OpTypeStart      = 0
-	OpTypeStop       = 1
-	OpTypeQuery      = 2
-	OpTypeRegister   = 3
-	OpTypeUnregister = 4
-	OpTypeRestart    = 7
-	OpTypeReload     = 8
-	OpTypeKill       = 9
+	OpTypeStart      OpType = 0
+	OpTypeStop       OpType = 1
+	OpTypeQuery      OpType = 2
+	OpTypeRegister   OpType = 3
+	OpTypeUnregister OpType = 4
+	OpTypeRestart    OpType = 7
+	OpTypeReload     OpType = 8
+	OpTypeKill       OpType = 9
 )
 
 const (
@@ -136,6 +138,39 @@ func BuildResultKey(agentID string, bizID uint32, alias string, processInstanceI
 	namespace := BuildNamespace(bizID)
 	processName := BuildProcessName(alias, processInstanceID...)
 	return fmt.Sprintf("%s:%s:%s", agentID, namespace, processName)
+}
+
+// ConvertProcessOperateTypeToOpType 将 ProcessOperateType 转换为 GSE OpType
+// GSE 操作类型定义：
+// 0: 启动进程（start）- 调用 spec.control 中的 start_cmd，启动成功会注册托管
+// 1: 停止进程（stop）- 调用 spec.control 中的 stop_cmd，停止成功会取消托管
+// 2: 进程状态查询
+// 3: 注册托管进程 - 令 gse_agent 对该进程进行托管
+// 4: 取消托管进程 - 令 gse_agent 对该进程不再托管
+// 7: 重启进程（restart）- 调用 spec.control 中的 restart_cmd
+// 8: 重新加载进程（reload）- 调用 spec.control 中的 reload_cmd
+// 9: 杀死进程（kill）- 调用 spec.control 中的 kill_cmd，杀死成功会取消托管
+func ConvertProcessOperateTypeToOpType(operateType table.ProcessOperateType) (OpType, error) {
+	switch operateType {
+	case table.StartProcessOperate:
+		return OpTypeStart, nil
+	case table.StopProcessOperate:
+		return OpTypeStop, nil
+	case table.QueryStatusProcessOperate:
+		return OpTypeQuery, nil
+	case table.RegisterProcessOperate:
+		return OpTypeRegister, nil
+	case table.UnregisterProcessOperate:
+		return OpTypeUnregister, nil
+	case table.RestartProcessOperate:
+		return OpTypeRestart, nil
+	case table.ReloadProcessOperate:
+		return OpTypeReload, nil
+	case table.KillProcessOperate:
+		return OpTypeKill, nil
+	default:
+		return OpType(0), fmt.Errorf("unsupported operation type: %s", operateType)
+	}
 }
 
 // IsSuccess 判断错误码是否表示成功

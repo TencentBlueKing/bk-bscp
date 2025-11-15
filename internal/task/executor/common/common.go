@@ -43,8 +43,8 @@ type ProcessPayload struct {
 	AgentID     string // agnet ID
 	CloudID     int    // cloud ID
 	CcProcessID string // CC 进程ID
-	LocalInstID uint32 // LocalInstID
-	InstID      uint32 // InstID
+	LocalInstID uint32 // LocalInstID：主机级别的自增ID
+	InstID      uint32 // InstID：模块级别的自增ID
 	ConfigData  string // 进程启动相关配置，比如启动脚本，优先级等
 }
 
