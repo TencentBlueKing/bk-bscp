@@ -43,6 +43,7 @@ export interface IProcInst {
     status: string;
     managed_status: string;
     status_updated_at: string;
+    name: string;
   };
   attachment: {
     biz_id: number;

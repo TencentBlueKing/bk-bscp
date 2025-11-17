@@ -42,9 +42,7 @@
       <TableColumn col-key="spec.status" :title="t('进程状态')">
         <template #default="{ row }: { row: IProcessItem }">
           <div v-if="row.spec.status" class="process-status">
-            <Spinner
-              v-if="['running', 'starting', 'restarting', 'reloading'].includes(row.spec.status)"
-              class="spinner-icon" />
+            <Spinner v-if="['starting', 'restarting', 'reloading'].includes(row.spec.status)" class="spinner-icon" />
             <span v-else :class="['dot', row.spec.status]"></span>
             {{ PROCESS_STATUS_MAP[row.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
           </div>
@@ -108,7 +106,7 @@
             <TableColumn col-key="spec.inst_id" :title="t('实例')">
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
                 <div class="instance">
-                  <span>{{ row.spec.service_name }}</span>
+                  <span>{{ rowData.spec.name }}</span>
                   <span
                     v-if="rowIndex + 1 > rowData.num!"
                     class="error-icon"
@@ -136,7 +134,7 @@
               <template #default="{ row: rowData }: { row: IProcInst }">
                 <div v-if="rowData.spec.status" class="process-status">
                   <Spinner
-                    v-if="['running', 'starting', 'restarting', 'reloading'].includes(rowData.spec.status)"
+                    v-if="['starting', 'restarting', 'reloading'].includes(rowData.spec.status)"
                     class="spinner-icon" />
                   <span v-else :class="['dot', rowData.spec.status]"></span>
                   {{ PROCESS_STATUS_MAP[rowData.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
@@ -396,7 +394,7 @@
 
   const handleFilter = (filters: Record<string, any>) => {
     isSearchEmpty.value = Object.keys(filters).some((filter) => {
-      return filter !== 'env' && filters[filter].length > 0;
+      return filter !== 'environment' && filters[filter].length > 0;
     });
     filterConditions.value = filters;
     loadProcessList();
@@ -544,7 +542,7 @@
         background: #3fc06d;
       }
       &.stopped,
-      .stopping {
+      &.stopping {
         border: 3px solid #ffebeb;
         background: #ea3636;
       }
