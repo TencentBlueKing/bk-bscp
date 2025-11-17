@@ -1,3 +1,4 @@
+# 使用 uv 镜像，因为 uv 镜像包含了 Python 3.12 和 lxml 库，可以避免在构建时安装依赖
 FROM ghcr.io/astral-sh/uv:python3.12-alpine
 
 RUN apk --update --no-cache add ca-certificates bash vim curl \
