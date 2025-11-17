@@ -44,6 +44,24 @@ const (
 	KillProcessOperate ProcessOperateType = "kill"
 )
 
+// ValidateOperateType 验证操作类型是否有效
+func ValidateOperateType(operateType ProcessOperateType) error {
+	switch operateType {
+	case StartProcessOperate:
+	case StopProcessOperate:
+	case QueryStatusProcessOperate:
+	case RegisterProcessOperate:
+	case UnregisterProcessOperate:
+	case RestartProcessOperate:
+	case ReloadProcessOperate:
+	case KillProcessOperate:
+		return nil
+	default:
+		return fmt.Errorf("unsupported operation type: %s", operateType)
+	}
+	return nil
+}
+
 // Process defines an Process detail information
 type Process struct {
 	ID         uint32             `json:"id" gorm:"primaryKey"`

@@ -23,7 +23,6 @@ import (
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"gorm.io/gen/field"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
@@ -206,12 +205,11 @@ func validateOperateRequest(req *pbds.OperateProcessReq) error {
 	}
 
 	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill
-	gseOpType, err := gse.ConvertProcessOperateTypeToOpType(table.ProcessOperateType(req.OperateType))
-	if err != nil {
+	if err := table.ValidateOperateType(table.ProcessOperateType(req.OperateType)); err != nil {
 		return fmt.Errorf("invalid request: operate type is not supported: %w", err)
 	}
 	// query_status 操作仅用于服务端查询，不作为客户端操作类型
-	if gseOpType == gse.OpTypeQuery {
+	if req.OperateType == string(table.QueryStatusProcessOperate) {
 		return fmt.Errorf("query_status operation is not supported")
 	}
 	return nil
