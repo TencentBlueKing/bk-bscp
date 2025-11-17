@@ -13,8 +13,9 @@ export const TASK_ACTION_MAP = {
 export const TASK_STATUS_MAP = {
   // 执行结果
   failed: localT('执行失败'),
-  successd: localT('执行成功'),
+  succeed: localT('执行成功'),
   partly_failed: localT('部分失败'),
+  running: localT('正在执行'),
 };
 
 export const TASK_DETAIL_STATUS_MAP = {

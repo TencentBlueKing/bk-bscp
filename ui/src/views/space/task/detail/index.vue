@@ -33,7 +33,7 @@
 
   onMounted(() => {
     suffix.value.text = TASK_STATUS_MAP[taskDetail.value.status as keyof typeof TASK_STATUS_MAP];
-    if (taskDetail.value.status === 'successd') {
+    if (taskDetail.value.status === 'succeed') {
       suffix.value.theme = 'success';
     } else if (taskDetail.value.status === 'failed') {
       suffix.value.theme = 'danger';
