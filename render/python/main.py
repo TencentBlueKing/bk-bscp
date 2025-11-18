@@ -87,11 +87,20 @@ def main():
             cc_xml = ctx.get('cc_xml')
             if cc_xml:
                 # Parse cc_xml into lxml Element
-                if isinstance(cc_xml, str):
-                    cc = etree.fromstring(cc_xml.encode('utf-8'))
-                else:
-                    cc = etree.fromstring(cc_xml)
-                ctx['cc'] = cc
+                try:
+                    if isinstance(cc_xml, str):
+                        cc = etree.fromstring(cc_xml.encode('utf-8'))
+                    else:
+                        cc = etree.fromstring(cc_xml)
+                    ctx['cc'] = cc
+                except (etree.XMLSyntaxError, etree.ParseError) as e:
+                    # Provide descriptive error message indicating which field failed
+                    xml_preview = (cc_xml[:200] + '...') if isinstance(cc_xml, str) and len(cc_xml) > 200 else str(cc_xml)[:200]
+                    raise ValueError(
+                        f"Failed to parse 'cc_xml' field as XML. "
+                        f"XML syntax error: {str(e)}. "
+                        f"XML content preview: {xml_preview}"
+                    ) from e
 
             # 2. Build 'this' object if not already provided
             # If Go already passed a 'this' dict, convert it to object for attribute access
