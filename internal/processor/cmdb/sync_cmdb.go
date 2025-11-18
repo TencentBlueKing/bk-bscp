@@ -391,8 +391,8 @@ func (s *syncCMDBService) diffProcesses(kit *kit.Kit, tx *gen.QueryTx, dbProcess
 	for _, p := range newProcesses {
 		newMap[p.Attachment.CcProcessID] = p
 	}
-	hostCounter := make(map[int]int)
-	moduleCounter := make(map[int]int)
+	hostCounter := make(map[[2]int]int)
+	moduleCounter := make(map[[2]int]int)
 	// 2. 遍历 newProcesses
 	for _, newP := range newProcesses {
 		oldP, exists := dbMap[newP.Attachment.CcProcessID]
@@ -479,7 +479,7 @@ func CompareProcessInfo(jsonStr, jsonStr2 string) (bool, error) {
 
 // BuildProcessChanges 生成进程及其实例的新增、更新或删除操
 func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table.Process, oldP *table.Process, now time.Time,
-	hostCounter map[int]int, moduleCounter map[int]int) (toAdd *table.Process, toUpdate *table.Process, toDelete uint32,
+	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (toAdd *table.Process, toUpdate *table.Process, toDelete uint32,
 	procInsts []*table.ProcessInstance, err error) {
 
 	// 1. 判断内容是否变化
@@ -549,28 +549,16 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 		return nil, nil, 0, nil, fmt.Errorf("failed to get process instance count for processID=%d: %w", oldP.ID, err)
 	}
 
-	// 查询模块下所有进程 ID
-	moduleProcessIDs, err := dao.Process().GetByModuleIDWithTx(kit, tx, oldP.Attachment.BizID, oldP.Attachment.ModuleID)
-	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get process IDs for moduleID=%d: %w", oldP.Attachment.ModuleID, err)
-	}
-
 	// 查询模块下所有进程的最大 InstID
-	maxInstID, err := dao.ProcessInstance().GetMaxInstTx(kit, tx, oldP.Attachment.BizID, moduleProcessIDs)
+	maxInstID, err := dao.ProcessInstance().GetMaxInstTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
 	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get max InstID for moduleID=%d: %w", oldP.Attachment.ModuleID, err)
-	}
-
-	// 查询主机下所有进程 ID
-	processIDL, err := dao.Process().GetByHostIDWithTx(kit, tx, oldP.Attachment.BizID, oldP.Attachment.HostID)
-	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get process IDs for hostID=%d: %w", oldP.Attachment.HostID, err)
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max InstID for processID=%d: %w", oldP.Attachment.CcProcessID, err)
 	}
 
 	// 查询主机下所有进程的最大 LocalInstID
-	maxLocalInstID, err := dao.ProcessInstance().GetMaxLocalTx(kit, tx, oldP.Attachment.BizID, processIDL)
+	maxLocalInstID, err := dao.ProcessInstance().GetMaxLocalTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
 	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get max LocalInstID for hostID=%d: %w", oldP.Attachment.HostID, err)
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max LocalInstID for processID=%d: %w", oldP.Attachment.CcProcessID, err)
 	}
 
 	procInsts = buildInstances(
@@ -597,7 +585,7 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 
 // buildInstances 根据进程数量生成进程实例
 func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxInstID, maxLocalInstID int, now time.Time,
-	hostCounter map[int]int, moduleCounter map[int]int) []*table.ProcessInstance {
+	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
 
 	// 如果新的进程数量 <= 已存在数量，则无需新增实例
 	if procNum <= existCount {
@@ -612,26 +600,30 @@ func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxIns
 
 	instances := make([]*table.ProcessInstance, 0, newCount)
 
-	// 获取当前主机、模块的计数起点（优先使用缓存）
-	startLocalID := hostCounter[hostID]
-	startInstID := moduleCounter[modID]
+	// 维度 key： (processID, hostID) 和 (processID, modID)
+	hostKey := [2]int{processID, hostID}
+	modKey := [2]int{processID, modID}
+
+	// 从缓存取
+	startLocalID := hostCounter[hostKey]
+	startInstID := moduleCounter[modKey]
 
 	// 如果缓存未初始化，则从数据库最大值开始
 	if startLocalID == 0 {
 		startLocalID = maxLocalInstID
-		hostCounter[hostID] = startLocalID
+		hostCounter[hostKey] = startLocalID
 	}
 	if startInstID == 0 {
 		startInstID = maxInstID
-		moduleCounter[modID] = startInstID
+		moduleCounter[modKey] = startInstID
 	}
 
 	for i := 1; i <= newCount; i++ {
-		hostCounter[hostID]++
-		moduleCounter[modID]++
+		hostCounter[hostKey]++
+		moduleCounter[modKey]++
 
-		localID := hostCounter[hostID]
-		instID := moduleCounter[modID]
+		localID := hostCounter[hostKey]
+		instID := moduleCounter[modKey]
 
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
@@ -665,32 +657,39 @@ func (s *syncCMDBService) syncProcessData(kit *kit.Kit, tx *gen.QueryTx, process
 	// 查询数据库中已有数据
 	oldProcesses, err := s.dao.Process().ListProcByBizIDWithTx(kit, tx, tenantID, bizID)
 	if err != nil {
+		logs.Errorf("[SYNC] list processes failed for tenantID=%s, bizID=%d: %v", tenantID, bizID, err)
 		return fmt.Errorf("list processes failed: %w", err)
 	}
 
 	// 比对
 	toAdd, toUpdate, toDelete, processInstanceBatch, err := s.diffProcesses(kit, tx, oldProcesses, processBatch)
 	if err != nil {
+		logs.Errorf("[SYNC] diff processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, err)
 		return err
 	}
 	// 插入
 	if len(toAdd) > 0 {
-		if err := s.dao.Process().BatchCreateWithTx(kit, tx, toAdd); err != nil {
-			return fmt.Errorf("insert failed: %w", err)
+		if errC := s.dao.Process().BatchCreateWithTx(kit, tx, toAdd); errC != nil {
+			logs.Errorf("[SYNC][ERROR] insert processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, errC)
+			return fmt.Errorf("insert failed: %w", errC)
 		}
 	}
 
 	// 更新
 	if len(toUpdate) > 0 {
-		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, toUpdate); err != nil {
-			return fmt.Errorf("update failed: %w", err)
+		if errU := s.dao.Process().BatchUpdateWithTx(kit, tx, toUpdate); errU != nil {
+			logs.Errorf("[SYNC][ERROR] update processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, errU)
+			return fmt.Errorf("update failed: %w", errU)
 		}
 	}
 
 	// 删除
 	if len(toDelete) > 0 {
-		if err := s.dao.Process().UpdateSyncStatusWithTx(kit, tx, string(table.Deleted), toDelete); err != nil {
-			return fmt.Errorf("mark deleted failed: %w", err)
+		// 2. 删除process_instances表中的数据
+		if err = DeleteInstanceStoppedUnmanaged(kit, s.dao, tx, bizID, toDelete); err != nil {
+			logs.Errorf("[SYNC][ERROR] delete stopped/unmanaged failed tenantID=%s, bizID=%d, processes=%v: %v",
+				tenantID, bizID, toDelete, err)
+			return err
 		}
 	}
 
@@ -716,11 +715,31 @@ func (s *syncCMDBService) syncProcessData(kit *kit.Kit, tx *gen.QueryTx, process
 	}
 
 	if len(processInstanceBatch) == 0 {
+		logs.Infof("[SYNC] no process instances to insert (tenantID=%s, bizID=%d)", tenantID, bizID)
 		return nil
 	}
 
 	if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, processInstanceBatch); err != nil {
+		logs.Errorf("[SYNC][ERROR] insert process instances failed tenantID=%s, bizID=%d: %v",
+			tenantID, bizID, err)
 		return fmt.Errorf("insert process instances failed: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteInstanceStoppedUnmanaged 删除进程状态是已停止或者是空 和 托管状态是未托管或者是空的实例数据
+func DeleteInstanceStoppedUnmanaged(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
+	// 1. 删除processes表中的数据
+	err := dao.Process().UpdateSyncStatusWithTx(kit, tx, table.Deleted.String(), processIDs)
+	if err != nil {
+		return err
+	}
+
+	// 2. 删除process_instances表中的数据
+	err = dao.ProcessInstance().DeleteStoppedUnmanagedWithTx(kit, tx, bizID, processIDs)
+	if err != nil {
+		return err
 	}
 
 	return nil

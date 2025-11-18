@@ -27,6 +27,7 @@ message ProcInstSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
   google.protobuf.Timestamp status_updated_at = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态更新时间" }];
+  string name = 6;
 }
 
 message ProcInstAttachment {

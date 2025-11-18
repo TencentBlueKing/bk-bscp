@@ -14,6 +14,8 @@
 package pbpi
 
 import (
+	"fmt"
+
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -48,7 +50,7 @@ func (p *ProcInstSpec) ProcInstSpec() *table.ProcessInstanceSpec {
 }
 
 // PbProcessSpec convert table ProcessSpec to pb ProcessSpec
-func PbProcInstSpec(spec *table.ProcessInstanceSpec) *ProcInstSpec {
+func PbProcInstSpec(spec *table.ProcessInstanceSpec, name string) *ProcInstSpec {
 	if spec == nil {
 		return nil
 	}
@@ -59,6 +61,7 @@ func PbProcInstSpec(spec *table.ProcessInstanceSpec) *ProcInstSpec {
 		Status:          spec.Status.String(),
 		ManagedStatus:   spec.ManagedStatus.String(),
 		StatusUpdatedAt: timestamppb.New(spec.StatusUpdatedAt),
+		Name:            name,
 	}
 }
 
@@ -91,14 +94,14 @@ func PbProcInstAttachment(attachment *table.ProcessInstanceAttachment) *ProcInst
 }
 
 // PbClient convert table Process to pb Process
-func PbProcInst(c *table.ProcessInstance) *ProcInst {
+func PbProcInst(c *table.ProcessInstance, name string) *ProcInst {
 	if c == nil {
 		return nil
 	}
 
 	return &ProcInst{
 		Id:         c.ID,
-		Spec:       PbProcInstSpec(c.Spec),
+		Spec:       PbProcInstSpec(c.Spec, name),
 		Attachment: PbProcInstAttachment(c.Attachment),
 	}
 }
@@ -110,7 +113,7 @@ func PbProcInsts(c []*table.ProcessInstance) []*ProcInst {
 	}
 	result := make([]*ProcInst, 0)
 	for _, v := range c {
-		result = append(result, PbProcInst(v))
+		result = append(result, PbProcInst(v, fmt.Sprintf("实例%d", v.Spec.LocalInstID)))
 	}
 	return result
 }

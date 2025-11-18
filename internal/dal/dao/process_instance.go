@@ -38,6 +38,8 @@ type ProcessInstance interface {
 	GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
 	// GetMaxLocalTx 查询主机下所有进程的最大 LocalInstID
 	GetMaxLocalTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
+	DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -46,6 +48,21 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
+func (dao *processInstanceDao) DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
+	m := dao.genQ.ProcessInstance
+
+	_, err := tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...),
+			m.Status.In(table.ProcessStatusStopped.String(), ""), m.ManagedStatus.In(table.ProcessManagedStatusUnmanaged.String(), "")).
+		Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetCountTx implements ProcessInstance.

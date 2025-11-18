@@ -107,6 +107,14 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 	if err != nil {
 		return fmt.Errorf("【CompareWithCMDBProcessInfo STEP】: get process from database failed: %w", err)
 	}
+
+	// 如果是已删除且是停止、强制停止、取消托管
+	if process.Spec.CcSyncStatus == table.Deleted &&
+		(payload.OperateType == table.KillProcessOperate || payload.OperateType == table.StopProcessOperate ||
+			payload.OperateType == table.UnregisterProcessOperate) {
+		return nil
+	}
+
 	// 获取cmdb侧最新进程详情
 	processInfo, err := e.CMDBService.ListProcessDetailByIds(c.Context(), bkcmdb.ProcessReq{
 		BkBizID:      int(payload.BizID),

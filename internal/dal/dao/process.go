@@ -53,6 +53,8 @@ type Process interface {
 	GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32) ([]uint32, error)
 	// GetByHostIDWithTx 查询主机下所有进程 ID.
 	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
+	// GetBySetIDWithTx queries all process IDs under a set.
+	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
 }
 
 var _ Process = new(processDao)
@@ -61,6 +63,21 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetBySetIDWithTx queries all process IDs under a set.
+func (dao *processDao) GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, setID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.SetID.Eq(setID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // GetByHostIDWithTx implements Process.

@@ -108,7 +108,7 @@ func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq)
 		TaskName:      cmdbGse.BuildSyncCMDBGSETaskName(req.GetBizId()),
 		TaskIndex:     fmt.Sprintf("%d", req.GetBizId()),
 		TaskIndexType: cmdbGse.TaskIndexType,
-		Offset:        1,
+		Offset:        0,
 		Limit:         1,
 	})
 	if err != nil {

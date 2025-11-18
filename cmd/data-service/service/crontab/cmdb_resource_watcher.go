@@ -198,19 +198,40 @@ func (c *cmdbResourceWatcher) handleSetEvent(kt *kit.Kit, resource bkcmdb.BkEven
 
 	logPrefix := fmt.Sprintf("[CMDB][SetSync][biz=%d][set=%d][event=%s]", bizID, setID, eventType)
 
-	update := func(data map[string]any, action string) {
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, data, c.dao.GenQuery().Process.SetID.Eq(setID)); err != nil {
-			logs.Errorf("%s failed to %s, data=%+v, err=%v", logPrefix, action, data, err)
-			return
-		}
-		logs.Infof("%s success: %s", logPrefix, action)
-	}
-
 	switch eventType {
 	case bkcmdb.EventUpdate:
-		update(map[string]any{"set_name": setName}, "update set name")
+		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, map[string]any{"set_name": setName},
+			c.dao.GenQuery().Process.SetID.Eq(setID)); err != nil {
+			logs.Errorf("update set name failed to %s, setName=%s, err=%v", logPrefix, setName, err)
+			return
+		}
+		logs.Infof("update set name success: %s", logPrefix)
 	case bkcmdb.EventDelete:
-		update(map[string]any{"cc_sync_status": table.Deleted}, "mark as deleted")
+		// 获取属于该集群下的进程
+		tx := c.dao.GenQuery().Begin()
+		processIDs, err := c.dao.Process().GetBySetIDWithTx(kt, tx, bizID, setID)
+		if err != nil {
+			logs.Errorf("[ERROR] failed to query processIDs for bizID=%d, setID=%d: %v", bizID, setID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, setID=%d, processIDs=%v: %v",
+				bizID, setID, processIDs, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
 	default:
 		logs.Warnf("%s unknown event type: %s", logPrefix, eventType.String())
 	}
@@ -232,20 +253,41 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 
 	logPrefix := fmt.Sprintf("[CMDB][ModuleSync][biz=%d][set=%d][module=%d][event=%s]", bizID, modID, setID, eventType)
 
-	update := func(data map[string]any, action string) {
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, data, c.dao.GenQuery().Process.SetID.Eq(setID),
-			c.dao.GenQuery().Process.ModuleID.Eq(modID)); err != nil {
-			logs.Errorf("%s failed to %s, data=%+v, err=%v", logPrefix, action, data, err)
-			return
-		}
-		logs.Infof("%s success: %s", logPrefix, action)
-	}
-
 	switch eventType {
 	case bkcmdb.EventUpdate:
-		update(map[string]any{"module_name": moduleName}, "update module name")
+		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, map[string]any{"module_name": moduleName},
+			c.dao.GenQuery().Process.SetID.Eq(setID),
+			c.dao.GenQuery().Process.ModuleID.Eq(modID)); err != nil {
+			logs.Errorf("update module name failed to %s, module_name=%s, err=%v", logPrefix, moduleName, err)
+			return
+		}
+		logs.Infof("update module name success: %s", logPrefix)
 	case bkcmdb.EventDelete:
-		update(map[string]any{"cc_sync_status": table.Deleted}, "mark as deleted")
+		// 获取属于该模块下的进程
+		tx := c.dao.GenQuery().Begin()
+		processIDs, err := c.dao.Process().GetByModuleIDWithTx(kt, tx, bizID, modID)
+		if err != nil {
+			logs.Errorf("[ERROR] failed to query processIDs for bizID=%d, modID=%d: %v", bizID, modID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, modID=%d, processIDs=%v: %v",
+				bizID, modID, processIDs, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
 	default:
 		logs.Warnf("%s unknown event type: %s", logPrefix, eventType.String())
 	}
@@ -294,7 +336,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
 				return
 			}
-			logs.Errorf("sync process and instance data failed for biz %d: %v", bizID, err)
+			logs.Errorf("[ERROR] sync process and instance data failed for biz %d: %v", bizID, err)
 			return
 		}
 
@@ -304,13 +346,23 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 		}
 
 	case bkcmdb.EventDelete:
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID,
-			map[string]any{"cc_sync_status": table.Deleted},
-			c.dao.GenQuery().Process.ID.Eq(procs.ID),
-		); err != nil {
-			logs.Errorf("%s delete process failed: %v", logPrefix, err)
+		tx := c.dao.GenQuery().Begin()
+		err := cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, []uint32{procs.ID})
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
+				bizID, procs.ID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
 			return
 		}
+
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
+
 	default:
 		logs.Warnf("%s unknown event: %s", logPrefix, resource.BkEventType)
 	}
@@ -354,7 +406,7 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	newP.Spec.ProcNum = uint(p.ProcNum)
 	newP.Spec.SourceData = string(sourceData)
 
-	toAdd, toUpdate, toDelete, procInst, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP, old, now, map[int]int{}, map[int]int{})
+	toAdd, toUpdate, toDelete, procInst, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP, old, now, map[[2]int]int{}, map[[2]int]int{})
 	if err != nil {
 		logs.Errorf("biz %d: build process changes failed, processID=%d, err=%v, new=%+v, old=%+v",
 			old.Attachment.BizID, old.ID, err, newP, old)
