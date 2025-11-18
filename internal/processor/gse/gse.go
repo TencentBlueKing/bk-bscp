@@ -159,10 +159,10 @@ func validateBuildProcessOperateParams(params BuildProcessOperateParams) error {
 		return fmt.Errorf("processInstanceID is required")
 	}
 	// 验证 localInstID 和 instID 必须大于 0
-	if params.LocalInstID <= 0 {
+	if params.LocalInstID == 0 {
 		return fmt.Errorf("localInstID is required")
 	}
-	if params.InstID <= 0 {
+	if params.InstID == 0 {
 		return fmt.Errorf("instID is required")
 	}
 	return nil
@@ -199,7 +199,7 @@ func buildRenderContext(params BuildProcessOperateParams) map[string]interface{}
 // renderField 渲染单个字段
 func renderField(renderer *render.Renderer, template string, context map[string]interface{}) (string, error) {
 	if template == "" {
-		logs.Warnf("template is empty, template: %s", template)
+		logs.Warnf("template is empty")
 		return "", nil
 	}
 

@@ -40,6 +40,7 @@ func setupTestRendererEnv(t *testing.T) {
 
 	// 从当前工作目录向上查找包含 go.mod 的目录（项目根目录）
 	dir := wd
+	// 最多向上查找 4 级目录，方便测试
 	for i := 0; i < 4; i++ {
 		goModPath := filepath.Join(dir, "go.mod")
 		if _, err := os.Stat(goModPath); err == nil {
