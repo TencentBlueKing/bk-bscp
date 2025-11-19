@@ -123,7 +123,7 @@
   const tableList = ref<ITaskHistoryItem[]>([]);
   const loading = ref(false);
   const tableRef = ref();
-  const searchValue = ref<{ [key: string]: string }>();
+  const searchValue = ref<{ [key: string]: string | string[] }>();
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -163,9 +163,16 @@
     }
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
-    searchValue.value = list;
+  const handleSearch = (list: { [key: string]: string | string[] }) => {
+    searchValue.value = {
+      taskActions: list.task_action || [],
+      taskObjects: list.task_object || [],
+      executors: list.executor || [],
+      statuses: list.status || [],
+    };
     isSearchEmpty.value = Object.keys(list).length > 0;
+    pagination.value.current = 1;
+    updatePagination('limit', 10);
     loadTaskList();
   };
 

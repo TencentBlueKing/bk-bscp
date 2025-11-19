@@ -244,9 +244,21 @@
     loadTaskList();
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
-    searchValue.value = list;
+  const handleSearch = (list: { [key: string]: string | string[] }) => {
+    console.log(list);
+    searchValue.value = {
+      setNames: list.set_name || [],
+      moduleNames: list.module_name || [],
+      serviceNames: list.service_name || [],
+      processAliases: list.alias || [],
+      ccProcessIds: list.cc_process_id || [],
+      instIds: list.inst_id || [],
+      ips: list.ip || [],
+      statuses: list.status || [],
+    };
     isSearchEmpty.value = Object.keys(list).length > 0;
+    pagination.value.current = 1;
+    updatePagination('limit', 10);
     loadTaskList();
   };
 
