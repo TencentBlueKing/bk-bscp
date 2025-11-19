@@ -42,6 +42,8 @@ const (
 	ReloadProcessOperate ProcessOperateType = "reload"
 	// KillOperate 强制停止操作
 	KillProcessOperate ProcessOperateType = "kill"
+	// PullProcessOperate 下发操作
+	PullProcessOperate ProcessOperateType = "pull"
 )
 
 // ValidateOperateType 验证操作类型是否有效

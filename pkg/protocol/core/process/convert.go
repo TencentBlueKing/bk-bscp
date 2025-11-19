@@ -165,7 +165,7 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 			pbProc.Spec.ManagedStatus = deriveManagedStatus(managedStatusSet)
 
 			// 生成对应的按钮
-			pbProc.Spec.Actions = deriveActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
+			pbProc.Spec.Actions = buildProcessActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
 				pbProc.Spec.CcSyncStatus)
 
 		} else {
@@ -175,6 +175,32 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 		result = append(result, pbProc)
 	}
 	return result
+}
+
+func buildProcessActions(processState, managedState, syncStatus string) map[string]bool {
+	actions := map[string]bool{
+		"register":   false,
+		"unregister": false,
+		"start":      false,
+		"stop":       false,
+		"restart":    false,
+		"reload":     false,
+		"kill":       false,
+		"push":       false,
+	}
+
+	// 使用 CanProcessOperate 判断每一个动作
+	actions["register"] = CanProcessOperate(table.RegisterProcessOperate, processState, managedState, syncStatus)
+	actions["unregister"] = CanProcessOperate(table.UnregisterProcessOperate, processState, managedState, syncStatus)
+
+	actions["start"] = CanProcessOperate(table.StartProcessOperate, processState, managedState, syncStatus)
+	actions["stop"] = CanProcessOperate(table.StopProcessOperate, processState, managedState, syncStatus)
+	actions["restart"] = CanProcessOperate(table.RestartProcessOperate, processState, managedState, syncStatus)
+	actions["reload"] = CanProcessOperate(table.ReloadProcessOperate, processState, managedState, syncStatus)
+	actions["kill"] = CanProcessOperate(table.KillProcessOperate, processState, managedState, syncStatus)
+	actions["push"] = CanProcessOperate(table.PullProcessOperate, processState, managedState, syncStatus)
+
+	return actions
 }
 
 // deriveProcessStatus 根据多个实例状态推导主进程状态
@@ -199,56 +225,70 @@ func deriveManagedStatus(statusSet map[string]struct{}) string {
 	return table.ProcessManagedStatusPartlyManaged.String()
 }
 
-func deriveActions(status, managedStatus, syncStatus string) map[string]bool {
-	actions := map[string]bool{
-		"register":   false,
-		"unregister": false,
-		"start":      false,
-		"stop":       false,
-		"restart":    false,
-		"reload":     false,
-		"kill":       false,
-		"push":       false,
+// CanProcessOperate 判断某个操作是否允许执行
+//  1. 进程启动中、停止中、重启中、重载中禁止所有操作
+//  2. 正在托管中、取消托管中禁止所有操作
+//  3. 已删除状态下运行中的进程只能停止，托管中的进程只能取消托管
+//  4. 正常状态下的逻辑：
+//     已停止允许启动、重启、重载
+//     已启动允许停止、强制停止、重启、重载
+//     未托管允许托管
+//     已托管允许取消托管
+//     未删除可以下发
+func CanProcessOperate(op table.ProcessOperateType, processState, managedState, syncStatus string) bool {
+	// 1. ing 状态禁止所有操作
+	isStartingOrStopping := processState == table.ProcessStatusStarting.String() ||
+		processState == table.ProcessStatusStopping.String() ||
+		processState == table.ProcessStatusReloading.String() || processState == table.ProcessStatusRestarting.String()
+	isManagedStartingOrStopping := managedState == table.ProcessManagedStatusStarting.String() ||
+		managedState == table.ProcessManagedStatusStopping.String()
+
+	if isStartingOrStopping || isManagedStartingOrStopping {
+		return false
 	}
 
-	// starting/stopping 状态禁止操作
-	if status == table.ProcessStatusStarting.String() || status == table.ProcessStatusStopping.String() {
-		return actions
-	}
+	// 运行中
+	isRunning := processState == table.ProcessStatusRunning.String()
 
-	// 运行中状态
-	if status == table.ProcessStatusRunning.String() {
-		actions["stop"] = true
-		actions["kill"] = true
+	// 已停止
+	isStopped := processState == table.ProcessStatusStopped.String()
 
-		if syncStatus != table.Deleted.String() {
-			actions["push"] = true // 配置下发
+	// 托管中
+	isManaged := managedState == table.ProcessManagedStatusManaged.String()
+
+	// 未托管
+	isUnmanaged := managedState == table.ProcessManagedStatusUnmanaged.String()
+
+	// 已删除
+	isDeleted := syncStatus == table.Deleted.String()
+
+	// 2. 已删除状态下的额外限制
+	if isDeleted {
+		switch op {
+		case table.StopProcessOperate:
+			return isRunning // 运行中才能 stop
+		case table.UnregisterProcessOperate:
+			return isManaged // 托管中才能 unregister
+		default:
+			return false // 其他全部禁用
 		}
 	}
 
-	// 部分运行
-	if status == table.ProcessStatusPartlyRunning.String() {
-		if managedStatus == table.ProcessManagedStatusPartlyManaged.String() {
-			actions["push"] = true
-			actions["stop"] = true
-		}
+	// 3. 正常状态逻辑
+	switch op {
+	case table.RegisterProcessOperate: // 未托管：可托管
+		return isUnmanaged
+	case table.UnregisterProcessOperate: // 已托管：可取消托管
+		return isManaged
+	case table.StartProcessOperate: // 进程已停止：可启动
+		return isStopped
+	case table.RestartProcessOperate, table.ReloadProcessOperate: // 进程已停止或已启动：可重启、重载
+		return isStopped || isRunning
+	case table.StopProcessOperate, table.KillProcessOperate: // 进程已启动：可停止、强制停止
+		return isRunning
+	case table.PullProcessOperate: // 下发： 只要求未被删除
+		return !isDeleted
+	default:
+		return false
 	}
-
-	// 停止状态
-	if status == table.ProcessStatusStopped.String() {
-		if managedStatus == table.ProcessManagedStatusUnmanaged.String() {
-			actions["start"] = true
-			actions["register"] = true
-		}
-	}
-
-	// 运行中 或 部分运行 + 托管中 或 部分托管 + 同步状态为 updated → 允许 reload
-	if (status == table.ProcessStatusRunning.String() || status == table.ProcessStatusPartlyRunning.String()) &&
-		(managedStatus == table.ProcessManagedStatusManaged.String() ||
-			managedStatus == table.ProcessManagedStatusPartlyManaged.String()) &&
-		syncStatus == table.Updated.String() {
-		actions["reload"] = true
-	}
-
-	return actions
 }
