@@ -213,6 +213,13 @@ const (
 	TicketSuspendedStatus = "SUSPENDED"
 	// TicketRevokedStatus 被撤销
 	TicketRevokedStatus = "REVOKED"
+
+	// StatusNeverSynced 从未同步过
+	StatusNeverSynced = "NeverSynced"
+	// StatusFinished 同步完成
+	StatusFinished = "Finished"
+	// StatusSyncing 同步中
+	StatusRunning = "Running"
 )
 
 // 操作记录资源实例相关
