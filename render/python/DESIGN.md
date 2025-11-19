@@ -81,7 +81,7 @@ os.Remove(tmpFile.Name())
 type ProcessContext struct {
     Scope           string                 `json:"Scope"`
     FuncID          string                 `json:"FuncID"`
-    ModuleInstSeq          int                    `json:"ModuleInstSeq"`
+    ModuleInstSeq   int                    `json:"ModuleInstSeq"`
     InstID0         int                    `json:"InstID0"`
     HostInstSeq     int                    `json:"HostInstSeq"`
     LocalInstID0    int                    `json:"LocalInstID0"`
