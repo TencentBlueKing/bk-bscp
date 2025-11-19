@@ -128,15 +128,14 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 			gse.BuildProcessName(process.Spec.Alias, inst.Spec.HostInstSeq))
 		instMap[key] = inst
 		processOperate, err := BuildProcessOperate(BuildProcessOperateParams{
-			BizID:             bizID,
-			Alias:             process.Spec.Alias,
-			ProcessInstanceID: inst.ID,
-			AgentID:           []string{process.Attachment.AgentID},
-			HostInstSeq:       inst.Spec.HostInstSeq,
-			ModuleInstSeq:     inst.Spec.ModuleInstSeq,
-			SetName:           process.Spec.SetName,
-			ModuleName:        process.Spec.ModuleName,
-			GseOpType:         gse.OpTypeQuery,
+			BizID:         bizID,
+			Alias:         process.Spec.Alias,
+			AgentID:       []string{process.Attachment.AgentID},
+			HostInstSeq:   inst.Spec.HostInstSeq,
+			ModuleInstSeq: inst.Spec.ModuleInstSeq,
+			SetName:       process.Spec.SetName,
+			ModuleName:    process.Spec.ModuleName,
+			GseOpType:     gse.OpTypeQuery,
 		})
 		if err != nil {
 			logs.Errorf("build process operate failed, err: %+v", err)

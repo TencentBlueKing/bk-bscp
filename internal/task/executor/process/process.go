@@ -269,15 +269,14 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 
 	// 使用 OperateProcMulti 接口查询进程状态，操作码为 2（OpTypeQuery）
 	params := gesprocessor.BuildProcessOperateParams{
-		BizID:             payload.BizID,
-		Alias:             commonPayload.Alias,
-		ProcessInstanceID: payload.ProcessInstanceID,
-		AgentID:           []string{commonPayload.AgentID},
-		HostInstSeq:       commonPayload.HostInstSeq,
-		ModuleInstSeq:     commonPayload.ModuleInstSeq,
-		SetName:           commonPayload.SetName,
-		ModuleName:        commonPayload.ModuleName,
-		GseOpType:         gse.OpTypeQuery,
+		BizID:         payload.BizID,
+		Alias:         commonPayload.Alias,
+		AgentID:       []string{commonPayload.AgentID},
+		HostInstSeq:   commonPayload.HostInstSeq,
+		ModuleInstSeq: commonPayload.ModuleInstSeq,
+		SetName:       commonPayload.SetName,
+		ModuleName:    commonPayload.ModuleName,
+		GseOpType:     gse.OpTypeQuery,
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
@@ -420,16 +419,15 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 
 	// 构建进程操作接口请求参数
 	params := gesprocessor.BuildProcessOperateParams{
-		BizID:             payload.BizID,
-		Alias:             commonPayload.Alias,
-		ProcessInstanceID: payload.ProcessInstanceID,
-		AgentID:           []string{commonPayload.AgentID},
-		GseOpType:         gseOpType,
-		HostInstSeq:       commonPayload.HostInstSeq,
-		ModuleInstSeq:     commonPayload.ModuleInstSeq,
-		SetName:           commonPayload.SetName,
-		ModuleName:        commonPayload.ModuleName,
-		ProcessInfo:       processInfo,
+		BizID:         payload.BizID,
+		Alias:         commonPayload.Alias,
+		AgentID:       []string{commonPayload.AgentID},
+		GseOpType:     gseOpType,
+		HostInstSeq:   commonPayload.HostInstSeq,
+		ModuleInstSeq: commonPayload.ModuleInstSeq,
+		SetName:       commonPayload.SetName,
+		ModuleName:    commonPayload.ModuleName,
+		ProcessInfo:   processInfo,
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
@@ -493,16 +491,15 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 
 	// 使用 OperateProcMulti 接口查询进程状态，操作码为 2（OpTypeQuery）
 	params := gesprocessor.BuildProcessOperateParams{
-		BizID:             payload.BizID,
-		Alias:             commonPayload.Alias,
-		ProcessInstanceID: payload.ProcessInstanceID,
-		HostInstSeq:       commonPayload.HostInstSeq,
-		ModuleInstSeq:     commonPayload.ModuleInstSeq,
-		SetName:           commonPayload.SetName,
-		ModuleName:        commonPayload.ModuleName,
-		AgentID:           []string{commonPayload.AgentID},
-		GseOpType:         gse.OpTypeQuery,
-		ProcessInfo:       processInfo,
+		BizID:         payload.BizID,
+		Alias:         commonPayload.Alias,
+		HostInstSeq:   commonPayload.HostInstSeq,
+		ModuleInstSeq: commonPayload.ModuleInstSeq,
+		SetName:       commonPayload.SetName,
+		ModuleName:    commonPayload.ModuleName,
+		AgentID:       []string{commonPayload.AgentID},
+		GseOpType:     gse.OpTypeQuery,
+		ProcessInfo:   processInfo,
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {

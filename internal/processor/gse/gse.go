@@ -43,16 +43,15 @@ func getDefaultRenderer() (*render.Renderer, error) {
 
 // BuildProcessOperateParams 构建 ProcessOperate 的参数
 type BuildProcessOperateParams struct {
-	BizID             uint32            // 业务ID
-	Alias             string            // 进程别名
-	ProcessInstanceID uint32            // 进程实例ID
-	HostInstSeq       uint32            // 主机级别的自增ID
-	ModuleInstSeq     uint32            // 模块级别的自增ID
-	SetName           string            // 集群名称（用于模板渲染）
-	ModuleName        string            // 模块名称（用于模板渲染）
-	AgentID           []string          // Agent ID列表
-	GseOpType         gse.OpType        // GSE操作类型
-	ProcessInfo       table.ProcessInfo // 进程配置信息
+	BizID         uint32            // 业务ID
+	Alias         string            // 进程别名
+	HostInstSeq   uint32            // 主机级别的自增ID
+	ModuleInstSeq uint32            // 模块级别的自增ID
+	SetName       string            // 集群名称（用于模板渲染）
+	ModuleName    string            // 模块名称（用于模板渲染）
+	AgentID       []string          // Agent ID列表
+	GseOpType     gse.OpType        // GSE操作类型
+	ProcessInfo   table.ProcessInfo // 进程配置信息
 }
 
 // BuildProcessOperate 构建 GSE ProcessOperate 对象
@@ -155,9 +154,6 @@ func validateBuildProcessOperateParams(params BuildProcessOperateParams) error {
 		return fmt.Errorf("alias is required")
 	}
 
-	if params.ProcessInstanceID == 0 {
-		return fmt.Errorf("processInstanceID is required")
-	}
 	// 验证 hostInstSeq 和 moduleInstSeq 必须大于 0
 	if params.HostInstSeq == 0 {
 		return fmt.Errorf("hostInstSeq is required")
