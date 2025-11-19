@@ -29,7 +29,7 @@
       </template>
       <template v-else>
         <bk-input
-          v-model="filterValues[filter.value as keyof typeof filterValues]"
+          :model-value="filterValues[filter.value as keyof typeof filterValues]"
           v-for="filter in filterList"
           :key="filter.value"
           class="bk-input"
@@ -148,7 +148,7 @@
   };
 
   const handleInputChange = (key: string, value: string) => {
-    filterValues.value[key as keyof typeof filterValues.value] = value.split(',');
+    filterValues.value[key as keyof typeof filterValues.value] = value.length > 0 ? value.split(',') : [];
     emits('search', { ...filterValues.value, environment: activeEnv.value });
   };
 
