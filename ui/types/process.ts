@@ -38,8 +38,8 @@ export interface IProcInst {
   id: number;
   num?: number;
   spec: {
-    local_inst_id: string;
-    inst_id: string;
+    host_inst_seq: string;
+    module_inst_seq: string;
     status: string;
     managed_status: string;
     status_updated_at: string;

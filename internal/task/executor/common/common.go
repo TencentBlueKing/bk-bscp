@@ -34,18 +34,18 @@ type Executor struct {
 
 // ProcessPayload 公用的配置，作为任务快照，方便进行获取以及对比
 type ProcessPayload struct {
-	SetName     string // 集群名
-	ModuleName  string // 模块名
-	ServiceName string // 服务实例
-	Environment string // 环境
-	Alias       string // 进程别名
-	InnerIP     string // IP
-	AgentID     string // agnet ID
-	CloudID     int    // cloud ID
-	CcProcessID string // CC 进程ID
-	LocalInstID uint32 // LocalInstID：主机级别的自增ID
-	InstID      uint32 // InstID：模块级别的自增ID
-	ConfigData  string // 进程启动相关配置，比如启动脚本，优先级等
+	SetName       string // 集群名
+	ModuleName    string // 模块名
+	ServiceName   string // 服务实例
+	Environment   string // 环境
+	Alias         string // 进程别名
+	InnerIP       string // IP
+	AgentID       string // agnet ID
+	CloudID       int    // cloud ID
+	CcProcessID   string // CC 进程ID
+	HostInstSeq   uint32 // HostInstSeq：主机级别的自增ID
+	ModuleInstSeq uint32 // ModuleInstSeq：模块级别的自增ID
+	ConfigData    string // 进程启动相关配置，比如启动脚本，优先级等
 }
 
 // NewExecutor new executor
@@ -60,7 +60,7 @@ func NewExecutor(gseService *gse.Service, dao dao.Set) *Executor {
 func (e *Executor) WaitTaskFinish(
 	ctx context.Context,
 	gseTaskID string,
-	bizID, processInstanceID uint32,
+	bizID, hostInstSeq uint32,
 	processName string,
 	agentID string,
 ) (map[string]gse.ProcResult, error) {
@@ -89,7 +89,7 @@ func (e *Executor) WaitTaskFinish(
 		}
 
 		// 构建 GSE 结果查询 key
-		key := gse.BuildResultKey(agentID, bizID, processName, processInstanceID)
+		key := gse.BuildResultKey(agentID, bizID, processName, hostInstSeq)
 		logs.Infof("get gse task result, key: %s", key)
 
 		// 该状态表示gse侧进程操作任务正在执行中，尚未完成

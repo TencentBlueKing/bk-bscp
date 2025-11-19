@@ -18,9 +18,10 @@ message ProcInst {
 
 // ProcessSpec source resource reference: pkg/dal/table/process_instance.go
 message ProcInstSpec {
-  uint32 local_inst_id = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "LocalInstID" }];
-  uint32 inst_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "InstID" }];
+  uint32 host_inst_seq = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "HostInstSeq" }];
+  uint32 module_inst_seq = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "ModuleInstSeq" }];
   string status = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
   string managed_status = 4

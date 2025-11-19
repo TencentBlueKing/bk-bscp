@@ -55,9 +55,10 @@ message ProcessPayload {
   string inner_ip = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "IP" }];
   string agent_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "Agent ID" }];
   string cc_process_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  uint32 local_inst_id = 9
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "本地实例ID" }];
-  uint32 inst_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "实例ID" }];
+  uint32 host_inst_seq = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机级别的序号" }];
+  uint32 module_inst_seq = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块级别的序号" }];
   string config_data = 11
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程启动相关配置" }];
 }

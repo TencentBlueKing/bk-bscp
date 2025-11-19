@@ -121,9 +121,9 @@ func BuildNamespace(bizID uint32) string {
 //     示例：http-server-test1_1
 //   - 如果不提供 processInstanceID，格式为：{alias}
 //     示例：http-server-test1
-func BuildProcessName(alias string, processInstanceID ...uint32) string {
-	if len(processInstanceID) > 0 && processInstanceID[0] > 0 {
-		return fmt.Sprintf("%s_%d", alias, processInstanceID[0])
+func BuildProcessName(alias string, hostInstSeqs ...uint32) string {
+	if len(hostInstSeqs) > 0 && hostInstSeqs[0] > 0 {
+		return fmt.Sprintf("%s_%d", alias, hostInstSeqs[0])
 	}
 	return alias
 }
@@ -134,9 +134,9 @@ func BuildProcessName(alias string, processInstanceID ...uint32) string {
 //     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1_1
 //   - 如果不提供 processInstanceID，格式为：{agentID}:{namespace}:{alias}
 //     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1
-func BuildResultKey(agentID string, bizID uint32, alias string, processInstanceID ...uint32) string {
+func BuildResultKey(agentID string, bizID uint32, alias string, hostInstSeq ...uint32) string {
 	namespace := BuildNamespace(bizID)
-	processName := BuildProcessName(alias, processInstanceID...)
+	processName := BuildProcessName(alias, hostInstSeq...)
 	return fmt.Sprintf("%s:%s:%s", agentID, namespace, processName)
 }
 

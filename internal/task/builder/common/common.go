@@ -54,17 +54,17 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID
 		return fmt.Errorf("no process instance found for id %d", processInstanceID)
 	}
 	return task.SetCommonPayload(&common.ProcessPayload{
-		SetName:     process.Spec.SetName,
-		ModuleName:  process.Spec.ModuleName,
-		ServiceName: process.Spec.ServiceName,
-		Environment: process.Spec.Environment,
-		Alias:       process.Spec.Alias,
-		InnerIP:     process.Spec.InnerIP,
-		AgentID:     process.Attachment.AgentID,
-		CcProcessID: fmt.Sprintf("%d", process.Attachment.CcProcessID),
-		LocalInstID: inst.Spec.LocalInstID,
-		InstID:      inst.Spec.InstID,
-		ConfigData:  process.Spec.SourceData,
-		CloudID:     int(process.Attachment.CloudID),
+		SetName:       process.Spec.SetName,
+		ModuleName:    process.Spec.ModuleName,
+		ServiceName:   process.Spec.ServiceName,
+		Environment:   process.Spec.Environment,
+		Alias:         process.Spec.Alias,
+		InnerIP:       process.Spec.InnerIP,
+		AgentID:       process.Attachment.AgentID,
+		CcProcessID:   fmt.Sprintf("%d", process.Attachment.CcProcessID),
+		HostInstSeq:   inst.Spec.HostInstSeq,
+		ModuleInstSeq: inst.Spec.ModuleInstSeq,
+		ConfigData:    process.Spec.SourceData,
+		CloudID:       int(process.Attachment.CloudID),
 	})
 }

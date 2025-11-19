@@ -34,10 +34,10 @@ type ProcessInstance interface {
 	GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error)
 	// Delete ..
 	Delete(kit *kit.Kit, bizID, id uint32) error
-	// GetMaxInstTx 查询模块下所有进程的最大 InstID
-	GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
-	// GetMaxLocalTx 查询主机下所有进程的最大 LocalInstID
-	GetMaxLocalTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// GetMaxModuleInstSeqTx 查询模块下所有进程的最大 ModuleInstSeq
+	GetMaxModuleInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// GetMaxHostInstSeqTx 查询主机下所有进程的最大 HostInstSeq
+	GetMaxHostInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
 	// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
 	DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error
 }
@@ -73,14 +73,14 @@ func (dao *processInstanceDao) GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID u
 		Count()
 }
 
-// GetMaxInstTx implements ProcessInstance.
-func (dao *processInstanceDao) GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+// GetMaxModuleInstSeqTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxModuleInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
 	m := dao.genQ.ProcessInstance
 	q := tx.ProcessInstance.WithContext(kit.Ctx)
 	var result struct {
 		MaxID int `gorm:"column:max_id"`
 	}
-	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.InstID.Max().As("max_id")).Scan(&result)
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.ModuleInstSeq.Max().As("max_id")).Scan(&result)
 	if err != nil {
 		return 0, err
 	}
@@ -88,14 +88,14 @@ func (dao *processInstanceDao) GetMaxInstTx(kit *kit.Kit, tx *gen.QueryTx, bizID
 	return result.MaxID, nil
 }
 
-// GetMaxLocalTx implements ProcessInstance.
-func (dao *processInstanceDao) GetMaxLocalTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+// GetMaxHostInstSeqTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxHostInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
 	m := dao.genQ.ProcessInstance
 	q := tx.ProcessInstance.WithContext(kit.Ctx)
 	var result struct {
 		MaxID int `gorm:"column:max_id"`
 	}
-	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.LocalInstID.Max().As("max_id")).Scan(&result)
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.HostInstSeq.Max().As("max_id")).Scan(&result)
 	if err != nil {
 		return 0, err
 	}

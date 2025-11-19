@@ -549,16 +549,16 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 		return nil, nil, 0, nil, fmt.Errorf("failed to get process instance count for processID=%d: %w", oldP.ID, err)
 	}
 
-	// 查询模块下所有进程的最大 InstID
-	maxInstID, err := dao.ProcessInstance().GetMaxInstTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
+	// 查询模块下所有进程的最大 ModuleInstSeq
+	maxModuleInstSeq, err := dao.ProcessInstance().GetMaxModuleInstSeqTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
 	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get max InstID for processID=%d: %w", oldP.Attachment.CcProcessID, err)
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max ModuleInstSeq for processID=%d: %w", oldP.Attachment.CcProcessID, err)
 	}
 
-	// 查询主机下所有进程的最大 LocalInstID
-	maxLocalInstID, err := dao.ProcessInstance().GetMaxLocalTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
+	// 查询主机下所有进程的最大 HostInstSeq
+	maxHostInstSeq, err := dao.ProcessInstance().GetMaxHostInstSeqTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.Attachment.CcProcessID})
 	if err != nil {
-		return nil, nil, 0, nil, fmt.Errorf("failed to get max LocalInstID for processID=%d: %w", oldP.Attachment.CcProcessID, err)
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max HostInstSeq for processID=%d: %w", oldP.Attachment.CcProcessID, err)
 	}
 
 	procInsts = buildInstances(
@@ -568,8 +568,8 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 		int(oldP.Attachment.CcProcessID),
 		int(newP.Spec.ProcNum),
 		int(count),
-		maxInstID,
-		maxLocalInstID,
+		maxModuleInstSeq,
+		maxHostInstSeq,
 		now, hostCounter, moduleCounter,
 	)
 
@@ -584,7 +584,7 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 }
 
 // buildInstances 根据进程数量生成进程实例
-func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxInstID, maxLocalInstID int, now time.Time,
+func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxModuleInstSeq, maxHostInstSeq int, now time.Time,
 	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
 
 	// 如果新的进程数量 <= 已存在数量，则无需新增实例
@@ -605,25 +605,25 @@ func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxIns
 	modKey := [2]int{processID, modID}
 
 	// 从缓存取
-	startLocalID := hostCounter[hostKey]
-	startInstID := moduleCounter[modKey]
+	startHostInstSeq := hostCounter[hostKey]
+	startModuleInstSeq := moduleCounter[modKey]
 
 	// 如果缓存未初始化，则从数据库最大值开始
-	if startLocalID == 0 {
-		startLocalID = maxLocalInstID
-		hostCounter[hostKey] = startLocalID
+	if startHostInstSeq == 0 {
+		startHostInstSeq = maxHostInstSeq
+		hostCounter[hostKey] = startHostInstSeq
 	}
-	if startInstID == 0 {
-		startInstID = maxInstID
-		moduleCounter[modKey] = startInstID
+	if startModuleInstSeq == 0 {
+		startModuleInstSeq = maxModuleInstSeq
+		moduleCounter[modKey] = startModuleInstSeq
 	}
 
 	for i := 1; i <= newCount; i++ {
 		hostCounter[hostKey]++
 		moduleCounter[modKey]++
 
-		localID := hostCounter[hostKey]
-		instID := moduleCounter[modKey]
+		hostInstSeq := hostCounter[hostKey]
+		moduleInstSeq := moduleCounter[modKey]
 
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
@@ -633,8 +633,8 @@ func buildInstances(bizID, hostID, modID, processID, procNum, existCount, maxIns
 			},
 			Spec: &table.ProcessInstanceSpec{
 				StatusUpdatedAt: now,
-				LocalInstID:     uint32(localID),
-				InstID:          uint32(instID),
+				HostInstSeq:     uint32(hostInstSeq),
+				ModuleInstSeq:   uint32(moduleInstSeq),
 			},
 			Revision: &table.Revision{
 				CreatedAt: now,

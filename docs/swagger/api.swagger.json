@@ -11044,7 +11044,7 @@
             "type": "integer",
             "format": "int64"
           },
-          "description": "模块下的自增ID序号列表"
+          "description": "模块下的递增ID序号列表"
         },
         "statuses": {
           "type": "array",
@@ -11811,10 +11811,10 @@
           },
           "description": "进程ID"
         },
-        "instId": {
+        "processInstanceId": {
           "type": "integer",
           "format": "int64",
-          "description": "实例ID"
+          "description": "进程实例ID"
         },
         "operateType": {
           "type": "string",
@@ -17189,15 +17189,15 @@
     "pbpiProcInstSpec": {
       "type": "object",
       "properties": {
-        "localInstId": {
+        "hostInstSeq": {
           "type": "integer",
           "format": "int64",
-          "description": "LocalInstID"
+          "description": "HostInstSeq"
         },
-        "instId": {
+        "moduleInstSeq": {
           "type": "integer",
           "format": "int64",
-          "description": "InstID"
+          "description": "ModuleInstSeq"
         },
         "status": {
           "type": "string",
@@ -18105,15 +18105,15 @@
           "type": "string",
           "description": "CC进程ID"
         },
-        "localInstId": {
+        "hostInstSeq": {
           "type": "integer",
           "format": "int64",
-          "description": "本地实例ID"
+          "description": "主机级别的序号"
         },
-        "instId": {
+        "moduleInstSeq": {
           "type": "integer",
           "format": "int64",
-          "description": "实例ID"
+          "description": "模块级别的序号"
         },
         "configData": {
           "type": "string",

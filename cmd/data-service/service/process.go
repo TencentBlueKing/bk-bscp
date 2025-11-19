@@ -200,8 +200,8 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 // validateOperateRequest 校验操作请求参数
 func validateOperateRequest(req *pbds.OperateProcessReq) error {
 	// 指定实例时，只能指定一个进程ID
-	if len(req.ProcessIds) > 1 && req.InstId != 0 {
-		return fmt.Errorf("invalid request: when InstId is specified, only one processId is allowed")
+	if len(req.ProcessIds) > 1 && req.ProcessInstanceId != 0 {
+		return fmt.Errorf("invalid request: when processInstanceId is specified, only one processId is allowed")
 	}
 
 	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill
@@ -219,23 +219,23 @@ func validateOperateRequest(req *pbds.OperateProcessReq) error {
 func getProcessesAndInstances(kt *kit.Kit, dao dao.Set, req *pbds.OperateProcessReq) (
 	[]*table.Process, []*table.ProcessInstance, error) {
 	// 指定实例
-	if req.InstId != 0 {
-		return getByInstanceID(kt, dao, req.BizId, req.InstId)
+	if req.ProcessInstanceId != 0 {
+		return getByProcessInstanceID(kt, dao, req.BizId, req.ProcessInstanceId)
 	}
 	return getByProcessIDs(kt, dao, req.BizId, req.ProcessIds)
 }
 
 // getByInstanceID 根据实例ID获取进程和进程实例
-func getByInstanceID(kt *kit.Kit, dao dao.Set, bizID, instID uint32) (
+func getByProcessInstanceID(kt *kit.Kit, dao dao.Set, bizID, processInstanceId uint32) (
 	[]*table.Process, []*table.ProcessInstance, error) {
 	// 查询指定的进程实例
-	inst, err := dao.ProcessInstance().GetByID(kt, bizID, instID)
+	inst, err := dao.ProcessInstance().GetByID(kt, bizID, processInstanceId)
 	if err != nil {
 		logs.Errorf("get process instance by id failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err
 	}
 	if inst == nil {
-		return nil, nil, fmt.Errorf("process instance not found for id %d", instID)
+		return nil, nil, fmt.Errorf("process instance not found for id %d", processInstanceId)
 	}
 
 	// 查询进程信息

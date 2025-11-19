@@ -103,7 +103,7 @@
       <template #expandedRow="{ row }: { row: IProcessItem }">
         <div class="second-table">
           <PrimaryTable :data="row.proc_inst" row-key="id" :row-class-name="getSecondTableRowClass">
-            <TableColumn col-key="spec.inst_id" :title="t('实例')">
+            <TableColumn col-key="spec.host_inst_seq" :title="t('实例')">
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
                 <div class="instance">
                   <span>{{ rowData.spec.name }}</span>
@@ -116,17 +116,17 @@
                 </div>
               </template>
             </TableColumn>
-            <TableColumn col-key="spec.local_inst_id">
+            <TableColumn col-key="spec.host_inst_seq">
               <template #title>
                 <span class="tips-title" v-bk-tooltips="{ content: t('主机下唯一标识'), placement: 'top' }">
-                  LocalInstID
+                  HostInstSeq
                 </span>
               </template>
             </TableColumn>
-            <TableColumn col-key="spec.inst_id">
+            <TableColumn col-key="spec.module_inst_seq">
               <template #title>
                 <span class="tips-title" v-bk-tooltips="{ content: t('模块下唯一标识'), placement: 'top' }">
-                  InstID
+                  ModuleInstSeq
                 </span>
               </template>
             </TableColumn>
@@ -283,7 +283,7 @@
     new: '',
   });
   const processIds = ref<number[]>([]);
-  const instId = ref(0);
+  const processInstanceId = ref(0);
   const filterRef = ref();
   const searchValue = ref<{ [key: string]: string[] }>();
   const selectedIds = ref<number[]>([]);
@@ -363,7 +363,7 @@
   // 实例表格操作
   const handleOpInst = (processId: number, id: number, op: string) => {
     processIds.value = [processId];
-    instId.value = id;
+    processInstanceId.value = id;
     handleConfirmOp(op);
   };
 
@@ -439,7 +439,7 @@
     try {
       const query = {
         processIds: processIds.value,
-        instId: instId.value,
+        processInstanceId: processInstanceId.value,
         operateType: op,
       };
       await processOperate(spaceId.value, query);
@@ -448,7 +448,7 @@
       console.error(error);
     } finally {
       processIds.value = [];
-      instId.value = 0;
+      processInstanceId.value = 0;
     }
   };
 

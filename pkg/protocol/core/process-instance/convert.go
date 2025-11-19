@@ -41,8 +41,8 @@ func (p *ProcInstSpec) ProcInstSpec() *table.ProcessInstanceSpec {
 	}
 
 	return &table.ProcessInstanceSpec{
-		LocalInstID:     p.LocalInstId,
-		InstID:          p.InstId,
+		HostInstSeq:     p.HostInstSeq,
+		ModuleInstSeq:   p.ModuleInstSeq,
 		Status:          table.ProcessStatus(p.Status),
 		ManagedStatus:   table.ProcessManagedStatus(p.ManagedStatus),
 		StatusUpdatedAt: p.GetStatusUpdatedAt().AsTime().UTC(),
@@ -56,8 +56,8 @@ func PbProcInstSpec(spec *table.ProcessInstanceSpec, name string) *ProcInstSpec 
 	}
 
 	return &ProcInstSpec{
-		LocalInstId:     spec.LocalInstID,
-		InstId:          spec.InstID,
+		HostInstSeq:     spec.HostInstSeq,
+		ModuleInstSeq:   spec.ModuleInstSeq,
 		Status:          spec.Status.String(),
 		ManagedStatus:   spec.ManagedStatus.String(),
 		StatusUpdatedAt: timestamppb.New(spec.StatusUpdatedAt),
@@ -113,7 +113,7 @@ func PbProcInsts(c []*table.ProcessInstance) []*ProcInst {
 	}
 	result := make([]*ProcInst, 0)
 	for _, v := range c {
-		result = append(result, PbProcInst(v, fmt.Sprintf("实例%d", v.Spec.LocalInstID)))
+		result = append(result, PbProcInst(v, fmt.Sprintf("实例%d", v.Spec.HostInstSeq)))
 	}
 	return result
 }

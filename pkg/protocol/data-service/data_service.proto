@@ -2302,7 +2302,7 @@ message ListProcessResp {
 message OperateProcessReq {
   uint32 biz_id = 1;
   repeated uint32 process_ids = 2;
-  uint32 inst_id = 3;
+  uint32 process_instance_id = 3;
   string operate_type = 4;
 }
 
@@ -2346,15 +2346,15 @@ message ListTaskBatchResp {
 message GetTaskBatchDetailReq {
   uint32 biz_id = 1;
   uint32 batch_id = 2;
-  uint32 start = 3;   // 起始位置
-  uint32 limit = 4;   // 限制数量
-  repeated string set_names = 5;  // 集群名称列表
-  repeated string module_names = 6;  // 模块名称列表
-  repeated string service_names = 7;  // 服务名称列表
+  uint32 start = 3;                     // 起始位置
+  uint32 limit = 4;                     // 限制数量
+  repeated string set_names = 5;        // 集群名称列表
+  repeated string module_names = 6;     // 模块名称列表
+  repeated string service_names = 7;    // 服务名称列表
   repeated string process_aliases = 8;  // 进程别名列表
-  repeated uint32 cc_process_ids = 9;  // CC进程ID列表
-  repeated uint32 inst_ids = 10;  // 模块下的递增ID序号列表
-  repeated string statuses = 11;  // 任务状态列表: INITIALIZING, RUNNING, SUCCESS, FAILURE
+  repeated uint32 cc_process_ids = 9;   // CC进程ID列表
+  repeated uint32 inst_ids = 10;        // 模块下的递增ID序号列表
+  repeated string statuses = 11;        // 任务状态列表: INITIALIZING, RUNNING, SUCCESS, FAILURE
 }
 
 message GetTaskBatchDetailResp {

@@ -46,8 +46,8 @@ type BuildProcessOperateParams struct {
 	BizID             uint32            // 业务ID
 	Alias             string            // 进程别名
 	ProcessInstanceID uint32            // 进程实例ID
-	LocalInstID       uint32            // 主机级别的自增ID
-	InstID            uint32            // 模块级别的自增ID
+	HostInstSeq       uint32            // 主机级别的自增ID
+	ModuleInstSeq     uint32            // 模块级别的自增ID
 	SetName           string            // 集群名称（用于模板渲染）
 	ModuleName        string            // 模块名称（用于模板渲染）
 	AgentID           []string          // Agent ID列表
@@ -115,7 +115,7 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 	processOperate := &gse.ProcessOperate{
 		Meta: gse.ProcessMeta{
 			Namespace: gse.BuildNamespace(params.BizID),
-			Name:      gse.BuildProcessName(params.Alias, params.LocalInstID),
+			Name:      gse.BuildProcessName(params.Alias, params.HostInstSeq),
 		},
 		AgentIDList: params.AgentID,
 		OpType:      params.GseOpType,
@@ -158,12 +158,12 @@ func validateBuildProcessOperateParams(params BuildProcessOperateParams) error {
 	if params.ProcessInstanceID == 0 {
 		return fmt.Errorf("processInstanceID is required")
 	}
-	// 验证 localInstID 和 instID 必须大于 0
-	if params.LocalInstID == 0 {
-		return fmt.Errorf("localInstID is required")
+	// 验证 hostInstSeq 和 moduleInstSeq 必须大于 0
+	if params.HostInstSeq == 0 {
+		return fmt.Errorf("hostInstSeq is required")
 	}
-	if params.InstID == 0 {
-		return fmt.Errorf("instID is required")
+	if params.ModuleInstSeq == 0 {
+		return fmt.Errorf("moduleInstSeq is required")
 	}
 	return nil
 }
@@ -171,23 +171,28 @@ func validateBuildProcessOperateParams(params BuildProcessOperateParams) error {
 // buildRenderContext 构建模板渲染的上下文
 // 参考 Python 代码中的 context 结构
 func buildRenderContext(params BuildProcessOperateParams) map[string]interface{} {
-	instID := params.InstID
-	localInstID := params.LocalInstID
+	moduleInstSeq := params.ModuleInstSeq
+	hostInstSeq := params.HostInstSeq
 
 	context := map[string]interface{}{
-		// [gsekit]新版本字段
-		"inst_id":         instID,
-		"inst_id_0":       instID - 1,
-		"local_inst_id":   localInstID,
-		"local_inst_id0":  localInstID - 1,
+		// bscp 字段
+		"module_inst_seq":   moduleInstSeq,
+		"module_inst_seq_0": moduleInstSeq - 1,
+		"host_inst_seq":     hostInstSeq,
+		"host_inst_seq_0":   hostInstSeq - 1,
+		// [gsekit]新版本字段(key不能修改，需要兼容原来定义，)
+		"inst_id":         moduleInstSeq,
+		"inst_id_0":       moduleInstSeq - 1,
+		"local_inst_id":   hostInstSeq,
+		"local_inst_id0":  hostInstSeq - 1,
 		"bk_set_name":     params.SetName,
 		"bk_module_name":  params.ModuleName,
 		"bk_process_name": params.Alias,
 		// [gsekit]兼容老版本字段
-		"InstID":       instID,
-		"InstID0":      instID - 1,
-		"LocalInstID":  localInstID,
-		"LocalInstID0": localInstID - 1,
+		"InstID":       moduleInstSeq,
+		"InstID0":      moduleInstSeq - 1,
+		"LocalInstID":  hostInstSeq,
+		"LocalInstID0": hostInstSeq - 1,
 		"SetName":      params.SetName,
 		"ModuleName":   params.ModuleName,
 		"FuncID":       params.Alias,

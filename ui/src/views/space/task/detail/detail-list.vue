@@ -42,7 +42,7 @@
           <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name"></TableColumn>
           <TableColumn :title="$t('进程别名')" col-key="process_payload.alias"></TableColumn>
           <TableColumn :title="$t('CC 进程 ID')" col-key="process_payload.cc_process_id"></TableColumn>
-          <TableColumn title="Inst_id" col-key="process_payload.inst_id"></TableColumn>
+          <TableColumn :title="$t('模块下唯一标识')" col-key="process_payload.module_inst_seq"></TableColumn>
           <TableColumn :title="$t('内网 IP')" col-key="process_payload.inner_ip"></TableColumn>
           <TableColumn :title="$t('执行耗时')" col-key="execution_time">
             <template #default="{ row }"> {{ row.execution_time }}s </template>
@@ -138,8 +138,8 @@
       children: [],
     },
     {
-      label: 'Inst_id',
-      field: 'inst_id',
+      label: t('模块下唯一标识'),
+      field: 'module_inst_seq',
       children: [],
     },
     {
@@ -252,7 +252,7 @@
       serviceNames: list.service_name || [],
       processAliases: list.alias || [],
       ccProcessIds: list.cc_process_id || [],
-      instIds: list.inst_id || [],
+      instIds: list.module_inst_seq || [],
       ips: list.ip || [],
       statuses: list.status || [],
     };

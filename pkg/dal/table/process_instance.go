@@ -80,8 +80,8 @@ func (p *ProcessInstance) ResType() string {
 
 // ProcessInstanceSpec xxx
 type ProcessInstanceSpec struct {
-	LocalInstID     uint32               `gorm:"column:local_inst_id" json:"local_inst_id"`         // LocalInstID
-	InstID          uint32               `gorm:"column:inst_id" json:"inst_id"`                     // InstID
+	HostInstSeq     uint32               `gorm:"column:host_inst_seq" json:"host_inst_seq"`         // HostInstSeq
+	ModuleInstSeq   uint32               `gorm:"column:module_inst_seq" json:"module_inst_seq"`     // ModuleInstSeq
 	Status          ProcessStatus        `gorm:"column:status" json:"status"`                       // 进程状态:running,stopped
 	ManagedStatus   ProcessManagedStatus `gorm:"column:managed_status" json:"managed_status"`       // 托管状态:managed,unmanaged
 	StatusUpdatedAt time.Time            `gorm:"column:status_updated_at" json:"status_updated_at"` // 状态更新时间

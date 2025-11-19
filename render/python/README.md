@@ -209,9 +209,9 @@ func renderTemplateWithFile(template string, context map[string]interface{}) (st
 {
   "Scope": "SetName.ModuleName.ServiceInstanceName.ProcessName.ProcessID",
   "FuncID": "process_name",
-  "InstID": 1,
+  "ModuleInstSeq": 1,
   "InstID0": 0,
-  "LocalInstID": 1,
+  "HostInstSeq": 1,
   "LocalInstID0": 0,
   "bk_set_name": "set_name",
   "bk_module_name": "module_name",

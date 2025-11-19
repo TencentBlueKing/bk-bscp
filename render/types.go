@@ -35,9 +35,9 @@ type RenderOutput struct {
 type ProcessContext struct {
 	Scope           string                 `json:"Scope"`
 	FuncID          string                 `json:"FuncID"`
-	InstID          int                    `json:"InstID"`
+	ModuleInstSeq   int                    `json:"ModuleInstSeq"`
 	InstID0         int                    `json:"InstID0"`
-	LocalInstID     int                    `json:"LocalInstID"`
+	HostInstSeq     int                    `json:"HostInstSeq"`
 	LocalInstID0    int                    `json:"LocalInstID0"`
 	BkSetName       string                 `json:"bk_set_name"`
 	BkModuleName    string                 `json:"bk_module_name"`
