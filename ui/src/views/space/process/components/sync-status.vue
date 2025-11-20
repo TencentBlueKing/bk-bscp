@@ -7,17 +7,16 @@
         class="sync-button"
         text
         theme="primary"
-        :disabled="syncStatus !== 'SUCCESS'"
+        :disabled="syncStatus === 'Running'"
         @click="handleSyncStatus">
         <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncStatus === 'SUCCESS'" class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
-      <span v-else>
+      <span v-if="syncStatus === 'Finished'" class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
+      <span v-else-if="syncStatus === 'Running'">
         <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
       </span>
     </div>
   </div>
-  <PrimartTable></PrimartTable>
 </template>
 
 <script lang="ts" setup>
@@ -31,7 +30,7 @@
   }>();
   const emits = defineEmits(['refresh']);
 
-  const syncStatus = ref('SUCCESS');
+  const syncStatus = ref('NeverSynced');
   const time = ref('');
   const statusTimer = ref(0);
   const firstSync = ref(true);
@@ -58,12 +57,12 @@
       // 首次请求仅更新，不触发 refresh
       if (firstSync.value) {
         firstSync.value = false;
-      } else if (syncStatus.value === 'SUCCESS') {
+      } else if (syncStatus.value === 'Finished') {
         emits('refresh');
       }
 
-      // 若未成功，继续轮询
-      if (syncStatus.value !== 'SUCCESS') {
+      // 同步中，继续轮询
+      if (syncStatus.value === 'Running') {
         statusTimer.value = setTimeout(() => {
           handleGetSyncStatus();
         }, 5000);
