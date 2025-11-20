@@ -11046,12 +11046,9 @@
           },
           "description": "模块下的递增ID序号列表"
         },
-        "statuses": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "任务状态列表: INITIALIZING, RUNNING, SUCCESS, FAILURE"
+        "status": {
+          "type": "string",
+          "description": "任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE"
         }
       }
     },
@@ -15366,6 +15363,37 @@
         "filterOptions": {
           "$ref": "#/definitions/pbtbTaskDetailFilterOptions",
           "description": "任务详情过滤选项"
+        },
+        "taskObject": {
+          "type": "string",
+          "description": "任务对象"
+        },
+        "taskAction": {
+          "type": "string",
+          "description": "任务动作"
+        },
+        "taskData": {
+          "$ref": "#/definitions/pbtbProcessTaskData",
+          "description": "任务数据（包含操作范围）"
+        },
+        "executionTime": {
+          "type": "number",
+          "format": "float",
+          "description": "执行耗时(秒)"
+        },
+        "startAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "开始时间"
+        },
+        "endAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "结束时间"
+        },
+        "creator": {
+          "type": "string",
+          "description": "创建人"
         }
       }
     },
@@ -18118,6 +18146,10 @@
         "configData": {
           "type": "string",
           "description": "进程启动相关配置"
+        },
+        "funcName": {
+          "type": "string",
+          "description": "进程二进制文件名"
         }
       },
       "title": "ProcessPayload 进程任务的配置快照"

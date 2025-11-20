@@ -4608,8 +4608,8 @@ message GetTaskBatchDetailReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
   repeated uint32 inst_ids = 10
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的递增ID序号列表" }];
-  repeated string statuses = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "任务状态列表: INITIALIZING, RUNNING, SUCCESS, FAILURE"
+  string status = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE"
   }];
 }
 
@@ -4621,6 +4621,20 @@ message GetTaskBatchDetailResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态统计列表" }];
   pbtb.TaskDetailFilterOptions filter_options = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务详情过滤选项" }];
+  string task_object = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务对象" }];
+  string task_action = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务动作" }];
+  pbtb.ProcessTaskData task_data = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务数据（包含操作范围）" }];
+  float execution_time = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行耗时(秒)" }];
+  google.protobuf.Timestamp start_at = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
+  google.protobuf.Timestamp end_at = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
+  string creator = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人" }];
 }
 
 message RetryTasksReq {

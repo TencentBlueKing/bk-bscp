@@ -88,7 +88,7 @@ func (s *Service) GetTaskBatchDetail(
 		ProcessAliases: req.GetProcessAliases(),
 		CcProcessIds:   req.GetCcProcessIds(),
 		InstIds:        req.GetInstIds(),
-		Statuses:       req.GetStatuses(),
+		Status:         req.GetStatus(),
 	})
 	if err != nil {
 		return nil, err
@@ -99,5 +99,12 @@ func (s *Service) GetTaskBatchDetail(
 		Count:         resp.Count,
 		Statistics:    resp.GetStatistics(),
 		FilterOptions: resp.GetFilterOptions(),
+		TaskObject:    resp.GetTaskObject(),
+		TaskAction:    resp.GetTaskAction(),
+		TaskData:      resp.GetTaskData(),
+		ExecutionTime: resp.GetExecutionTime(),
+		StartAt:       resp.GetStartAt(),
+		EndAt:         resp.GetEndAt(),
+		Creator:       resp.GetCreator(),
 	}, nil
 }

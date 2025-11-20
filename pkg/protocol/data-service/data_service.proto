@@ -2354,7 +2354,7 @@ message GetTaskBatchDetailReq {
   repeated string process_aliases = 8;  // 进程别名列表
   repeated uint32 cc_process_ids = 9;   // CC进程ID列表
   repeated uint32 inst_ids = 10;        // 模块下的递增ID序号列表
-  repeated string statuses = 11;        // 任务状态列表: INITIALIZING, RUNNING, SUCCESS, FAILURE
+  string status = 11;                    // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE
 }
 
 message GetTaskBatchDetailResp {
@@ -2362,6 +2362,13 @@ message GetTaskBatchDetailResp {
   uint32 count = 2;                                 // 任务总数
   repeated pbtb.TaskStatusStatItem statistics = 3;  // 状态统计列表
   pbtb.TaskDetailFilterOptions filter_options = 4;  // 任务详情过滤选项
+  string task_object = 5;                           // 任务对象
+  string task_action = 6;                           // 任务动作
+  pbtb.ProcessTaskData task_data = 7;               // 任务数据（包含操作范围）
+  float execution_time = 8;                          // 执行耗时(秒)
+  google.protobuf.Timestamp start_at = 9;            // 开始时间
+  google.protobuf.Timestamp end_at = 10;            // 结束时间
+  string creator = 11;                               // 创建人
 }
 
 message CmdbGseStatusReq {
