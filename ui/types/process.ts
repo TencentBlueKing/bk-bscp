@@ -39,8 +39,8 @@ export interface IProcInst {
   num?: number;
   spec: {
     actions: {
-      stop: boolean;
-      unregister: boolean;
+      stop?: boolean;
+      unregister?: boolean;
     };
     host_inst_seq: string;
     module_inst_seq: string;

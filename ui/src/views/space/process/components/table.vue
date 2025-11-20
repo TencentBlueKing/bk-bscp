@@ -156,8 +156,8 @@
               </template>
             </TableColumn>
             <TableColumn>
-              <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
-                <div v-if="rowIndex + 1 === row.proc_inst.length" class="op-btns">
+              <template #default="{ row: rowData }: { row: IProcInst }">
+                <div v-if="Object.keys(rowData.spec.actions).length" class="op-btns">
                   <bk-button
                     text
                     theme="primary"

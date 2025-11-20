@@ -65,9 +65,15 @@
         </TableColumn>
         <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            <bk-button :disabled="row.status === 'success'" theme="primary" text @click="handleRetry(row)">
+            <bk-button
+              v-if="row.status !== 'running'"
+              :disabled="row.status === 'success'"
+              theme="primary"
+              text
+              @click="handleRetry(row)">
               {{ t('重试') }}
             </bk-button>
+            <span v-else>--</span>
           </template>
         </TableColumn>
         <template #empty>
