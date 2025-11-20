@@ -45,6 +45,7 @@ func getDefaultRenderer() (*render.Renderer, error) {
 type BuildProcessOperateParams struct {
 	BizID         uint32            // 业务ID
 	Alias         string            // 进程别名
+	FuncName      string            // 进程二进制文件名
 	HostInstSeq   uint32            // 主机级别的自增ID
 	ModuleInstSeq uint32            // 模块级别的自增ID
 	SetName       string            // 集群名称（用于模板渲染）
@@ -120,7 +121,7 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 		OpType:      params.GseOpType,
 		Spec: gse.ProcessSpec{
 			Identity: gse.ProcessIdentity{
-				ProcName:  params.Alias,
+				ProcName:  params.FuncName,
 				SetupPath: workPath,
 				PidPath:   pidFile,
 				User:      params.ProcessInfo.User,

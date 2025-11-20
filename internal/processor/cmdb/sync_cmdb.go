@@ -122,10 +122,11 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 
 		for _, proc := range procs {
 			listProcMap[inst.ID] = append(listProcMap[inst.ID], ProcInst{
-				ID:      proc.Property.BkProcessID,
-				HostID:  proc.Relation.BkHostID,
-				Name:    proc.Property.BkProcessName,
-				ProcNum: proc.Property.ProcNum,
+				ID:       proc.Property.BkProcessID,
+				HostID:   proc.Relation.BkHostID,
+				Name:     proc.Property.BkProcessName,
+				FuncName: proc.Property.BkFuncName,
+				ProcNum:  proc.Property.ProcNum,
 				ProcessInfo: table.ProcessInfo{
 					BkStartParamRegex: proc.Property.BkStartParamRegex,
 					WorkPath:          proc.Property.WorkPath,
@@ -326,6 +327,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 								SourceData:      sourceData,
 								PrevData:        "{}",
 								ProcNum:         uint(proc.ProcNum),
+								FuncName:        proc.FuncName,
 							},
 							Revision: &table.Revision{
 								CreatedAt: now,

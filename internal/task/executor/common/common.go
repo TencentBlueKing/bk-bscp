@@ -39,6 +39,7 @@ type ProcessPayload struct {
 	ServiceName   string // 服务实例
 	Environment   string // 环境
 	Alias         string // 进程别名
+	FuncName      string // 进程二进制文件名
 	InnerIP       string // IP
 	AgentID       string // agnet ID
 	CloudID       int    // cloud ID
@@ -61,7 +62,7 @@ func (e *Executor) WaitTaskFinish(
 	ctx context.Context,
 	gseTaskID string,
 	bizID, hostInstSeq uint32,
-	processName string,
+	alias string,
 	agentID string,
 ) (map[string]gse.ProcResult, error) {
 	var (
@@ -89,7 +90,7 @@ func (e *Executor) WaitTaskFinish(
 		}
 
 		// 构建 GSE 结果查询 key
-		key := gse.BuildResultKey(agentID, bizID, processName, hostInstSeq)
+		key := gse.BuildResultKey(agentID, bizID, alias, hostInstSeq)
 		logs.Infof("get gse task result, key: %s", key)
 
 		// 该状态表示gse侧进程操作任务正在执行中，尚未完成

@@ -271,6 +271,7 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 	params := gesprocessor.BuildProcessOperateParams{
 		BizID:         payload.BizID,
 		Alias:         commonPayload.Alias,
+		FuncName:      commonPayload.FuncName,
 		AgentID:       []string{commonPayload.AgentID},
 		HostInstSeq:   commonPayload.HostInstSeq,
 		ModuleInstSeq: commonPayload.ModuleInstSeq,
@@ -421,6 +422,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	params := gesprocessor.BuildProcessOperateParams{
 		BizID:         payload.BizID,
 		Alias:         commonPayload.Alias,
+		FuncName:      commonPayload.FuncName,
 		AgentID:       []string{commonPayload.AgentID},
 		GseOpType:     gseOpType,
 		HostInstSeq:   commonPayload.HostInstSeq,
@@ -493,6 +495,7 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 	params := gesprocessor.BuildProcessOperateParams{
 		BizID:         payload.BizID,
 		Alias:         commonPayload.Alias,
+		FuncName:      commonPayload.FuncName,
 		HostInstSeq:   commonPayload.HostInstSeq,
 		ModuleInstSeq: commonPayload.ModuleInstSeq,
 		SetName:       commonPayload.SetName,

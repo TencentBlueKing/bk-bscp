@@ -115,7 +115,7 @@ func BuildNamespace(bizID uint32) string {
 	return fmt.Sprintf("%s%d", NamespacePrefix, bizID)
 }
 
-// BuildProcessName 构建下发的进程名称
+// BuildProcessName 构建下发的进程别名
 func BuildProcessName(alias string, hostInstSeq uint32) string {
 	return fmt.Sprintf("%s_%d", alias, hostInstSeq)
 }

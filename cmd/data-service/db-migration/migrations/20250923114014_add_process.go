@@ -57,6 +57,7 @@ func mig20250923114014Up(tx *gorm.DB) error {
 		ProcNum           uint      `gorm:"column:proc_num;type:int unsigned;not null;comment:进程数量"`                                                                       // 进程数量
 		CloudID           uint      `gorm:"column:cloud_id;type:bigint;not null;comment:管控区域"`                                                                             // 管控区域
 		AgentID           string    `gorm:"column:agent_id;type:varchar(255);not null"`
+		FuncName          string    `gorm:"column:func_name;type:varchar(128);comment:进程二进制文件名" json:"func_name"` // 进程二进制文件名
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`

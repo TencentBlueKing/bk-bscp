@@ -59,6 +59,7 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID
 		ServiceName:   process.Spec.ServiceName,
 		Environment:   process.Spec.Environment,
 		Alias:         process.Spec.Alias,
+		FuncName:      process.Spec.FuncName,
 		InnerIP:       process.Spec.InnerIP,
 		AgentID:       process.Attachment.AgentID,
 		CcProcessID:   fmt.Sprintf("%d", process.Attachment.CcProcessID),

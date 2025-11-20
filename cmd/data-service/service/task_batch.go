@@ -257,6 +257,7 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 			ServiceName:   processPayload.ServiceName,
 			Environment:   processPayload.Environment,
 			Alias:         processPayload.Alias,
+			FuncName:      processPayload.FuncName,
 			InnerIp:       processPayload.InnerIP,
 			AgentId:       processPayload.AgentID,
 			CcProcessId:   processPayload.CcProcessID,

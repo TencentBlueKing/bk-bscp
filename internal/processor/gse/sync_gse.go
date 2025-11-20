@@ -124,12 +124,12 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 	instMap := make(map[string]*table.ProcessInstance, len(insts))
 
 	for _, inst := range insts {
-		key := fmt.Sprintf("%s:%s:%s", process.Attachment.AgentID, gse.BuildNamespace(bizID),
-			gse.BuildProcessName(process.Spec.Alias, inst.Spec.HostInstSeq))
+		key := gse.BuildResultKey(process.Attachment.AgentID, bizID, process.Spec.Alias, inst.Spec.HostInstSeq)
 		instMap[key] = inst
 		processOperate, err := BuildProcessOperate(BuildProcessOperateParams{
 			BizID:         bizID,
 			Alias:         process.Spec.Alias,
+			FuncName:      process.Spec.FuncName,
 			AgentID:       []string{process.Attachment.AgentID},
 			HostInstSeq:   inst.Spec.HostInstSeq,
 			ModuleInstSeq: inst.Spec.ModuleInstSeq,
