@@ -14,7 +14,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -24,7 +23,6 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	commonExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
-	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -208,7 +206,7 @@ func (s *Service) GetTaskBatchDetail(
 	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
 	var detail *pbtb.TaskDetail
 	for _, task := range pagination.Items {
-		detail, err = convertTaskToDetail(task, s.dao, req.BizId)
+		detail, err = convertTaskToDetail(task)
 		if err != nil {
 			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
 			return nil, fmt.Errorf("convert task to detail failed: %v", err)
@@ -259,7 +257,7 @@ func (s *Service) GetTaskBatchDetail(
 }
 
 // convertTaskToDetail 将 task 转换为 pb 数据结构 TaskDetail
-func convertTaskToDetail(task *taskTypes.Task, dao dao.Set, bizID uint32) (*pbtb.TaskDetail, error) {
+func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	if task == nil {
 		return nil, fmt.Errorf("task is nil")
 	}
@@ -269,25 +267,6 @@ func convertTaskToDetail(task *taskTypes.Task, dao dao.Set, bizID uint32) (*pbtb
 	err := task.GetCommonPayload(&processPayload)
 	if err != nil {
 		return nil, fmt.Errorf("get common payload failed: %v", err)
-	}
-
-	// 从任意step中获取payload
-	if len(task.Steps) == 0 {
-		return nil, fmt.Errorf("task has not registered any step")
-	}
-	stepPayloadStr := task.Steps[0].Payload
-	var stepPayload *process.OperatePayload
-	err = json.Unmarshal([]byte(stepPayloadStr), &stepPayload)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal step payload failed: %v", err)
-	}
-	// 获取进程信息
-	process, err := dao.Process().GetByID(kit.New(), bizID, stepPayload.ProcessID)
-	if err != nil {
-		return nil, fmt.Errorf("get process failed: %v", err)
-	}
-	if process == nil {
-		return nil, fmt.Errorf("process not found")
 	}
 
 	// 构建返回的 TaskDetail
