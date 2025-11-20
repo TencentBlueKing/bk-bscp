@@ -28,7 +28,9 @@ var (
 	ClientQuery                 *clientQuery
 	Commit                      *commit
 	Config                      *config
+	ConfigInstance              *configInstance
 	ConfigItem                  *configItem
+	ConfigTemplate              *configTemplate
 	Content                     *content
 	Credential                  *credential
 	CredentialScope             *credentialScope
@@ -71,7 +73,9 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	ClientQuery = &Q.ClientQuery
 	Commit = &Q.Commit
 	Config = &Q.Config
+	ConfigInstance = &Q.ConfigInstance
 	ConfigItem = &Q.ConfigItem
+	ConfigTemplate = &Q.ConfigTemplate
 	Content = &Q.Content
 	Credential = &Q.Credential
 	CredentialScope = &Q.CredentialScope
@@ -115,7 +119,9 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		ClientQuery:                 newClientQuery(db, opts...),
 		Commit:                      newCommit(db, opts...),
 		Config:                      newConfig(db, opts...),
+		ConfigInstance:              newConfigInstance(db, opts...),
 		ConfigItem:                  newConfigItem(db, opts...),
+		ConfigTemplate:              newConfigTemplate(db, opts...),
 		Content:                     newContent(db, opts...),
 		Credential:                  newCredential(db, opts...),
 		CredentialScope:             newCredentialScope(db, opts...),
@@ -160,7 +166,9 @@ type Query struct {
 	ClientQuery                 clientQuery
 	Commit                      commit
 	Config                      config
+	ConfigInstance              configInstance
 	ConfigItem                  configItem
+	ConfigTemplate              configTemplate
 	Content                     content
 	Credential                  credential
 	CredentialScope             credentialScope
@@ -206,7 +214,9 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		ClientQuery:                 q.ClientQuery.clone(db),
 		Commit:                      q.Commit.clone(db),
 		Config:                      q.Config.clone(db),
+		ConfigInstance:              q.ConfigInstance.clone(db),
 		ConfigItem:                  q.ConfigItem.clone(db),
+		ConfigTemplate:              q.ConfigTemplate.clone(db),
 		Content:                     q.Content.clone(db),
 		Credential:                  q.Credential.clone(db),
 		CredentialScope:             q.CredentialScope.clone(db),
@@ -259,7 +269,9 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		ClientQuery:                 q.ClientQuery.replaceDB(db),
 		Commit:                      q.Commit.replaceDB(db),
 		Config:                      q.Config.replaceDB(db),
+		ConfigInstance:              q.ConfigInstance.replaceDB(db),
 		ConfigItem:                  q.ConfigItem.replaceDB(db),
+		ConfigTemplate:              q.ConfigTemplate.replaceDB(db),
 		Content:                     q.Content.replaceDB(db),
 		Credential:                  q.Credential.replaceDB(db),
 		CredentialScope:             q.CredentialScope.replaceDB(db),
@@ -302,7 +314,9 @@ type queryCtx struct {
 	ClientQuery                 IClientQueryDo
 	Commit                      ICommitDo
 	Config                      IConfigDo
+	ConfigInstance              IConfigInstanceDo
 	ConfigItem                  IConfigItemDo
+	ConfigTemplate              IConfigTemplateDo
 	Content                     IContentDo
 	Credential                  ICredentialDo
 	CredentialScope             ICredentialScopeDo
@@ -345,7 +359,9 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		ClientQuery:                 q.ClientQuery.WithContext(ctx),
 		Commit:                      q.Commit.WithContext(ctx),
 		Config:                      q.Config.WithContext(ctx),
+		ConfigInstance:              q.ConfigInstance.WithContext(ctx),
 		ConfigItem:                  q.ConfigItem.WithContext(ctx),
+		ConfigTemplate:              q.ConfigTemplate.WithContext(ctx),
 		Content:                     q.Content.WithContext(ctx),
 		Credential:                  q.Credential.WithContext(ctx),
 		CredentialScope:             q.CredentialScope.WithContext(ctx),
