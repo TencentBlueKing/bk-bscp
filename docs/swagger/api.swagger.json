@@ -18291,14 +18291,6 @@
             "$ref": "#/definitions/pbtbChoice"
           },
           "description": "实例ID查询选项"
-        },
-        "statusChoices": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/pbtbChoice"
-          },
-          "description": "任务状态查询选项"
         }
       },
       "title": "TaskDetailFilterOptions 任务详情过滤选项"

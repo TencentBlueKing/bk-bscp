@@ -417,14 +417,6 @@ func parseTimeIfNotEmpty(timeStr, fieldName string) (*time.Time, error) {
 
 // getTaskDetailFilterOptions 获取任务详情过滤选项
 func getTaskDetailFilterOptions() *pbtb.TaskDetailFilterOptions {
-	// 任务状态选项（四种归类后的状态）
-	statusChoices := []*pbtb.Choice{
-		{Id: taskTypes.TaskStatusInit, Name: "任务初始化"},
-		{Id: taskTypes.TaskStatusRunning, Name: "任务运行中"},
-		{Id: taskTypes.TaskStatusSuccess, Name: "任务成功"},
-		{Id: taskTypes.TaskStatusFailure, Name: "任务失败"},
-	}
-
 	// todo: 等表设计支持从 CommonPayload 查询后再填充
 	return &pbtb.TaskDetailFilterOptions{
 		SetNameChoices:     []*pbtb.Choice{},
@@ -433,6 +425,5 @@ func getTaskDetailFilterOptions() *pbtb.TaskDetailFilterOptions {
 		AliasChoices:       []*pbtb.Choice{},
 		CcProcessIdChoices: []*pbtb.Choice{},
 		InstIdChoices:      []*pbtb.Choice{},
-		StatusChoices:      statusChoices,
 	}
 }

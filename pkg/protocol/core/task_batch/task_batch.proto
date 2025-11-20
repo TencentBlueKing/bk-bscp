@@ -114,6 +114,4 @@ message TaskDetailFilterOptions {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID查询选项" }];
   repeated Choice inst_id_choices = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "实例ID查询选项" }];
-  repeated Choice status_choices = 7
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态查询选项" }];
 }
