@@ -157,15 +157,19 @@
             </TableColumn>
             <TableColumn>
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
-                <div v-if="rowIndex + 1 > rowData.num!" class="op-btns">
+                <div v-if="rowIndex + 1 === row.proc_inst.length" class="op-btns">
                   <bk-button
                     text
                     theme="primary"
-                    :disabled="rowData.spec.status === 'stopped'"
+                    :disabled="!rowData.spec.actions.stop"
                     @click="handleOpInst(row.id, rowData.id, 'stop')">
                     {{ t('停止') }}
                   </bk-button>
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'unregister')">
+                  <bk-button
+                    text
+                    theme="primary"
+                    :disabled="!rowData.spec.actions.unregister"
+                    @click="handleOpInst(row.id, rowData.id, 'unregister')">
                     {{ t('取消托管') }}
                   </bk-button>
                 </div>

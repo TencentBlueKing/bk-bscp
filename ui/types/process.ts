@@ -38,6 +38,10 @@ export interface IProcInst {
   id: number;
   num?: number;
   spec: {
+    actions: {
+      stop: boolean;
+      unregister: boolean;
+    };
     host_inst_seq: string;
     module_inst_seq: string;
     status: string;

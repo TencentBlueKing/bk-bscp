@@ -7,7 +7,7 @@
       <searchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
-        :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP/执行结果')"
+        :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP')"
         class="search-select"
         @search="handleSearch" />
     </div>
@@ -147,11 +147,6 @@
       field: 'ip',
       children: [],
     },
-    {
-      label: t('执行结果'),
-      field: 'status',
-      children: [],
-    },
   ]);
   const panels = ref([
     {
@@ -245,7 +240,6 @@
   };
 
   const handleSearch = (list: { [key: string]: string | string[] }) => {
-    console.log(list);
     searchValue.value = {
       setNames: list.set_name || [],
       moduleNames: list.module_name || [],
@@ -254,7 +248,6 @@
       ccProcessIds: list.cc_process_id || [],
       instIds: list.module_inst_seq || [],
       ips: list.ip || [],
-      statuses: list.status || [],
     };
     isSearchEmpty.value = Object.keys(list).length > 0;
     pagination.value.current = 1;
