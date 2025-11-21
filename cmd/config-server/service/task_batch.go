@@ -99,12 +99,6 @@ func (s *Service) GetTaskBatchDetail(
 		Count:         resp.Count,
 		Statistics:    resp.GetStatistics(),
 		FilterOptions: resp.GetFilterOptions(),
-		TaskObject:    resp.GetTaskObject(),
-		TaskAction:    resp.GetTaskAction(),
-		TaskData:      resp.GetTaskData(),
-		ExecutionTime: resp.GetExecutionTime(),
-		StartAt:       resp.GetStartAt(),
-		EndAt:         resp.GetEndAt(),
-		Creator:       resp.GetCreator(),
+		TaskBatch:     resp.GetTaskBatch(),
 	}, nil
 }

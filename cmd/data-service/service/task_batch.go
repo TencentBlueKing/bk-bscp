@@ -240,17 +240,7 @@ func (s *Service) GetTaskBatchDetail(
 		Count:         uint32(pagination.Count),
 		Statistics:    statistics,
 		FilterOptions: filterOptions,
-	}
-
-	// 填充 TaskBatch 相关字段
-	if pbTaskBatch != nil {
-		resp.TaskObject = pbTaskBatch.TaskObject
-		resp.TaskAction = pbTaskBatch.TaskAction
-		resp.TaskData = pbTaskBatch.TaskData
-		resp.ExecutionTime = pbTaskBatch.ExecutionTime
-		resp.StartAt = pbTaskBatch.StartAt
-		resp.EndAt = pbTaskBatch.EndAt
-		resp.Creator = pbTaskBatch.Creator
+		TaskBatch:     pbTaskBatch,
 	}
 
 	return resp, nil

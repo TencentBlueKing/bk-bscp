@@ -15364,36 +15364,9 @@
           "$ref": "#/definitions/pbtbTaskDetailFilterOptions",
           "description": "任务详情过滤选项"
         },
-        "taskObject": {
-          "type": "string",
-          "description": "任务对象"
-        },
-        "taskAction": {
-          "type": "string",
-          "description": "任务动作"
-        },
-        "taskData": {
-          "$ref": "#/definitions/pbtbProcessTaskData",
-          "description": "任务数据（包含操作范围）"
-        },
-        "executionTime": {
-          "type": "number",
-          "format": "float",
-          "description": "执行耗时(秒)"
-        },
-        "startAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "开始时间"
-        },
-        "endAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "结束时间"
-        },
-        "creator": {
-          "type": "string",
-          "description": "创建人"
+        "taskBatch": {
+          "$ref": "#/definitions/pbtbTaskBatch",
+          "description": "任务批次信息"
         }
       }
     },
@@ -17242,6 +17215,14 @@
         },
         "name": {
           "type": "string"
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "展示操作按钮是否可以操作(key可以是unregister,stop)",
+          "title": "展示操作按钮是否可以操作,是一个map，key代表动作，value代表是否可以操作"
         }
       },
       "title": "ProcessSpec source resource reference: pkg/dal/table/process_instance.go"
