@@ -298,9 +298,10 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 // 2. 更新进程数量
 // 3. 更新源数据
 func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.BkEventObj) {
-	var p bkcmdb.ProcessInfo
-	if err := resource.Decode(&p); err != nil {
-		logs.Errorf("[CMDB][ProcessSync] decode process failed, err=%v, resource=%v", err, resource)
+	p := new(bkcmdb.ProcessInfo)
+	if err := resource.Decode(p); err != nil {
+		logs.Errorf("[CMDB][ProcessSync] decode process failed, err=%v, resourceType=%s, EventType=%s",
+			err, resource.BkResource.String(), resource.BkEventType)
 		return
 	}
 
@@ -330,7 +331,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 		}
 	case bkcmdb.EventUpdate:
 		tx := c.dao.GenQuery().Begin()
-		err := c.handleProcessUpdate(kt, tx, &p, procs)
+		err := c.handleProcessUpdate(kt, tx, p, procs)
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)

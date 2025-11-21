@@ -117,7 +117,7 @@ func (dao *processDao) GetProcByBizScvProc(kit *kit.Kit, bizID uint32, svcInstID
 
 	return dao.genQ.Process.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(bizID), m.ServiceInstanceID.Eq(svcInstID), m.CcProcessID.Eq(processID),
-			m.CcSyncStatus.Neq(string(table.Deleted))).
+			m.CcSyncStatus.Neq(table.Deleted.String())).
 		Take()
 }
 
@@ -191,7 +191,8 @@ func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tena
 	bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 
-	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID)).Find()
+	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Find()
 }
 
 // BatchUpdateWithTx implements Process.
