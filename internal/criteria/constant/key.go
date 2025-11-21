@@ -216,10 +216,12 @@ const (
 
 	// StatusNeverSynced 从未同步过
 	StatusNeverSynced = "NeverSynced"
-	// StatusFinished 同步完成
-	StatusFinished = "Finished"
+	// StatusSuccess 同步成功
+	StatusSuccess = "Success"
 	// StatusSyncing 同步中
 	StatusRunning = "Running"
+	// StatusFailure 同步失败
+	StatusFailure = "Failure"
 )
 
 // 操作记录资源实例相关
