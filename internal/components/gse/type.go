@@ -640,3 +640,17 @@ type ProcessInstance struct {
 	LastStartTime int64   `json:"last_start_time"` // 最后启动时间
 	ReportTime    int64   `json:"report_time"`     // 上报时间
 }
+
+// StoppingContent 停止状态返回的内容
+type StoppingContent struct {
+	Value []StoppingItem `json:"value"`
+}
+
+type StoppingItem struct {
+	ProcName   string `json:"procName"`
+	SetupPath  string `json:"setupPath"`
+	FuncID     string `json:"funcID"`
+	InstanceID string `json:"instanceID"`
+	Result     string `json:"result"`
+	IsAuto     bool   `json:"isAuto"`
+}

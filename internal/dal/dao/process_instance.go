@@ -120,7 +120,7 @@ func (dao *processInstanceDao) GetByProcessIDs(kit *kit.Kit, bizID uint32, proce
 	m := dao.genQ.ProcessInstance
 	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Find()
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Order(m.HostInstSeq).Find()
 	if err != nil {
 		return nil, err
 	}

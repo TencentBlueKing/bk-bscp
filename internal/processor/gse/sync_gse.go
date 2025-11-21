@@ -154,7 +154,7 @@ func parseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 
 	switch v.ErrorCode {
 	case gse.ErrCodeSuccess:
-		var contents ProcessReport
+		var contents gse.ProcessStatusContent
 		if err := json.Unmarshal([]byte(v.Content), &contents); err != nil {
 			logs.Warnf("unmarshal success content failed for %s: %v", key, err)
 			return status, managed
@@ -176,7 +176,7 @@ func parseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 		}
 
 	case gse.ErrCodeStopping:
-		var contents ProcResult
+		var contents gse.StoppingContent
 		if err := json.Unmarshal([]byte(v.Content), &contents); err != nil {
 			logs.Warnf("unmarshal stopping content failed for %s: %v", key, err)
 			return status, managed

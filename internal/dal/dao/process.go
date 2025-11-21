@@ -255,7 +255,7 @@ func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessS
 			)`
 	conds = append(conds, q.Where(utils.RawCond(sql, "deleted", "running", "managed")))
 
-	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
+	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.ID.Desc())
 
 	if opt.All {
 		result, err := d.Find()

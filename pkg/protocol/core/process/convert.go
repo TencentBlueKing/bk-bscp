@@ -148,10 +148,12 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 
 	result := make([]*Process, 0, len(procs))
 	for _, p := range procs {
+
 		pbProc := PbProcess(p)
 		if insts, ok := procInstMap[p.ID]; ok {
 			pbProc.ProcInst = pbpi.PbProcInsts(insts)
-			// 新增逻辑：根据实例状态计算 Process 状态
+
+			// 根据实例状态计算 Process 状态
 			statusSet := make(map[string]struct{})
 			managedStatusSet := make(map[string]struct{})
 			for _, inst := range insts {
@@ -167,6 +169,29 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 			// 生成对应的按钮
 			pbProc.Spec.Actions = buildProcessActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
 				pbProc.Spec.CcSyncStatus)
+
+			// 处理单个实例按钮（仅缩容时）,只有最后一个实例返回按钮操作权限
+			if p.Spec.ProcNum < uint(len(insts)) {
+				last := pbProc.ProcInst[len(pbProc.ProcInst)-1] // 最后一个实例
+				instStatus := last.Spec.Status
+				instManagedStatus := last.Spec.ManagedStatus
+
+				stopAllowed, _ := CanProcessOperate(table.StopProcessOperate,
+					instStatus, instManagedStatus, "")
+
+				unregisterAllowed, _ := CanProcessOperate(table.UnregisterProcessOperate,
+					instStatus, instManagedStatus, "")
+
+				// 如果两个都不能操作，则强制开放 unregister = true
+				if !stopAllowed && !unregisterAllowed {
+					unregisterAllowed = true
+				}
+
+				last.Spec.Actions = map[string]bool{
+					"stop":       stopAllowed,
+					"unregister": unregisterAllowed,
+				}
+			}
 
 		} else {
 			pbProc.ProcInst = []*pbpi.ProcInst{}

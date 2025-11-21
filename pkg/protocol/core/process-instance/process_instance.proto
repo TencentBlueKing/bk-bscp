@@ -29,6 +29,10 @@ message ProcInstSpec {
   google.protobuf.Timestamp status_updated_at = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态更新时间" }];
   string name = 6;
+  // 展示操作按钮是否可以操作,是一个map，key代表动作，value代表是否可以操作
+  map<string, bool> actions = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "展示操作按钮是否可以操作(key可以是unregister,stop)"
+  }];
 }
 
 message ProcInstAttachment {
