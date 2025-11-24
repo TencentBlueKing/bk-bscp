@@ -59,11 +59,6 @@ func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
 		return nil
 	}
 
-	var procNum uint = 1
-	if spec.ProcNum != 0 {
-		procNum = spec.ProcNum
-	}
-
 	return &ProcessSpec{
 		SetName:         spec.SetName,
 		ModuleName:      spec.ModuleName,
@@ -74,7 +69,7 @@ func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
 		CcSyncStatus:    spec.CcSyncStatus.String(),
 		CcSyncUpdatedAt: timestamppb.New(spec.CcSyncUpdatedAt),
 		SourceData:      spec.SourceData,
-		ProcNum:         uint32(procNum),
+		ProcNum:         uint32(spec.ProcNum),
 	}
 }
 

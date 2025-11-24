@@ -76,7 +76,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 3. 主机
 	setTemplateIDs := []int{}
 	for _, set := range listSets {
-		if set.SetTemplateID > 0 && !slices.Contains(setTemplateIDs, set.SetTemplateID) {
+		if !slices.Contains(setTemplateIDs, set.SetTemplateID) {
 			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
 		}
 	}
@@ -292,7 +292,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 					for _, proc := range svc.ProcInst {
 						hinfo, ok := hostMap[proc.HostID]
 						if !ok {
-							log.Printf("[syncCMDB][WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s: hostID=%d not found in hostMap",
+							log.Printf("[syncCMDB][WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: not found in hostMap",
 								bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID)
 							continue
 						}
