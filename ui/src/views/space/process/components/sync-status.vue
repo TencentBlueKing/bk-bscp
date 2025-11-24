@@ -11,7 +11,10 @@
         @click="handleSyncStatus">
         <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncStatus === 'Finished'" class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
+      <span v-if="syncStatus === 'Success' || syncStatus === 'Failure'" class="sync-time">
+        {{ $t('最近一次同步：{n}', { n: time }) }}
+        <span :class="syncStatus">[{{ syncStatus === 'Success' ? $t('成功') : $t('失败') }}]</span>
+      </span>
       <span v-else-if="syncStatus === 'Running'">
         <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
       </span>
@@ -57,7 +60,7 @@
       // 首次请求仅更新，不触发 refresh
       if (firstSync.value) {
         firstSync.value = false;
-      } else if (syncStatus.value === 'Finished') {
+      } else if (syncStatus.value === 'Success' || syncStatus.value === 'Failure') {
         emits('refresh');
       }
 
@@ -121,6 +124,12 @@
     }
     .sync-time {
       color: #979ba5;
+      .Success {
+        color: #3fc06d;
+      }
+      .Failure {
+        color: #e24343;
+      }
     }
   }
 </style>
