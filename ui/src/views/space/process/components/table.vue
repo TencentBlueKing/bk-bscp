@@ -157,7 +157,7 @@
             </TableColumn>
             <TableColumn>
               <template #default="{ row: rowData }: { row: IProcInst }">
-                <div v-if="Object.keys(rowData.spec.actions).length" class="op-btns">
+                <div v-if="rowData.spec.actions" class="op-btns">
                   <bk-button
                     text
                     theme="primary"
