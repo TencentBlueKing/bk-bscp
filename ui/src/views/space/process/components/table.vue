@@ -62,7 +62,7 @@
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')">
         <template #default="{ row }: { row: IProcessItem }">
-          {{ datetimeFormat(row.spec.cc_sync_updated_at) }}
+          {{ timeAgo(row.spec.cc_sync_updated_at) }}
         </template>
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')">
@@ -224,7 +224,8 @@
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
   import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
-  import { datetimeFormat } from '../../../../utils';
+  import { timeAgo } from '../../../../utils';
+  import { useRouter } from 'vue-router';
   import BatchOpBtns from './batch-op-btns.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UpdateManagedInfo from './update-managed-info.vue';
@@ -242,6 +243,7 @@
   const { pagination, updatePagination } = useTablePagination('clientSearch');
 
   const { t } = useI18n();
+  const router = useRouter();
   const searchField = ref([
     {
       label: t('内网IP'),
@@ -446,8 +448,13 @@
         processInstanceId: processInstanceId.value,
         operateType: op,
       };
-      await processOperate(spaceId.value, query);
-      loadProcessList();
+      const res = await processOperate(spaceId.value, query);
+      if (op === 'start' || op === 'stop') {
+        // 启动或停止跳转任务详情页
+        router.push({ name: 'task-detail', params: { taskId: res.batchID } });
+      } else {
+        loadProcessList();
+      }
     } catch (error) {
       console.error(error);
     } finally {

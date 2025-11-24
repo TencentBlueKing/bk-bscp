@@ -12,16 +12,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { onBeforeMount } from 'vue';
-  import { useRouter } from 'vue-router';
   import { useI18n } from 'vue-i18n';
 
-  const props = defineProps<{
+  defineProps<{
     taskDetail: Record<string, any>;
   }>();
 
   const { t } = useI18n();
-  const router = useRouter();
 
   const infoList = [
     {
@@ -57,12 +54,6 @@
       value: 'end_at',
     },
   ];
-
-  onBeforeMount(() => {
-    if (!props.taskDetail.id) {
-      router.push({ name: 'task-list' });
-    }
-  });
 </script>
 
 <style scoped lang="scss">

@@ -1357,9 +1357,10 @@ export default {
   部分运行: 'Partially Running',
   启动中: 'Starting',
   重启中: 'Restarting',
-  未运行: 'Not Running',
+  未运行: 'Stopped',
   重载中: 'Reloading',
   已停止: 'Stopped',
+  停止中: 'Stopping',
   启动托管中: 'Starting Managed',
   停止托管中: 'Stopping Managed',
   托管中: 'Managed',
@@ -1376,6 +1377,7 @@ export default {
   停止: 'Stop',
   内网IP: 'Internal IP',
   'CC 中更新了数量，已不存在这条实例记录，建议停止': 'The number of CC has been updated, this instance record no longer exists, it is recommended to stop',
+  前: 'ago',
 
   // 任务历史
   任务历史: 'Task history',

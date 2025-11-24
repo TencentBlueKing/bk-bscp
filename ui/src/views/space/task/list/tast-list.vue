@@ -17,7 +17,7 @@
         :max-height="tableMaxHeight">
         <TableColumn col-key="id" title="ID">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            <bk-button theme="primary" text @click="handleJump(row)">{{ row.id }}</bk-button>
+            <bk-button theme="primary" text @click="handleJump(row.id)">{{ row.id }}</bk-button>
           </template>
         </TableColumn>
         <TableColumn col-key="task_object" :title="t('任务对象')">
@@ -110,10 +110,8 @@
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
   import UserName from '../../../../components/user-name.vue';
-  import useTaskStore from '../../../../store/task';
 
   const { t } = useI18n();
-  const taskStore = useTaskStore();
   const router = useRouter();
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -188,37 +186,7 @@
       .join('.');
   };
 
-  const handleJump = (data: ITaskHistoryItem) => {
-    const {
-      id,
-      task_object,
-      task_data: { environment, operate_range },
-      creator,
-      start_at,
-      end_at,
-      execution_time,
-      task_action,
-      status,
-    } = data;
-
-    const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
-    const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
-
-    taskStore.$patch({
-      taskDetail: {
-        id,
-        task_type: `${typePrefix}${actionText}`,
-        task_object,
-        environment,
-        operate_range: mergeOpRange(operate_range),
-        creator,
-        start_at: datetimeFormat(start_at),
-        end_at: datetimeFormat(end_at),
-        execution_time: `${execution_time}s`,
-        status,
-      },
-    });
-
+  const handleJump = (id: number) => {
     router.push({ name: 'task-detail', params: { taskId: id } });
   };
 

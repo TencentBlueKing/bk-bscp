@@ -8,14 +8,14 @@
     <template #content>
       <div class="detail-content">
         <Info :task-detail="taskDetail" />
-        <DetailList :task-detail="taskDetail"/>
+        <DetailList />
       </div>
     </template>
   </DetailLayout>
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, watch } from 'vue';
   import { TASK_STATUS_MAP } from '../../../../constants/task';
   import { useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
@@ -31,16 +31,20 @@
     theme: '',
   });
 
-  onMounted(() => {
-    suffix.value.text = TASK_STATUS_MAP[taskDetail.value.status as keyof typeof TASK_STATUS_MAP];
-    if (taskDetail.value.status === 'succeed') {
-      suffix.value.theme = 'success';
-    } else if (taskDetail.value.status === 'failed') {
-      suffix.value.theme = 'danger';
-    } else {
-      suffix.value.theme = 'info';
-    }
-  });
+  watch(
+    () => taskDetail.value.status,
+    () => {
+      suffix.value.text = TASK_STATUS_MAP[taskDetail.value.status as keyof typeof TASK_STATUS_MAP];
+      if (taskDetail.value.status === 'succeed') {
+        suffix.value.theme = 'success';
+      } else if (taskDetail.value.status === 'failed') {
+        suffix.value.theme = 'danger';
+      } else {
+        suffix.value.theme = 'info';
+      }
+    },
+    { immediate: true },
+  );
 
   const handleClose = () => {
     router.push({ name: 'task-list' });

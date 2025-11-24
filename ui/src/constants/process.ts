@@ -13,9 +13,9 @@ export const PROCESS_STATUS_MAP = {
   partly_running: localT('部分运行'),
   starting: localT('启动中'),
   restarting: localT('重启中'),
-  stopping: localT('未运行'),
+  stopping: localT('停止中'),
   reloading: localT('重载中'),
-  stopped: localT('已停止'),
+  stopped: localT('未运行'),
 };
 
 // 进程托管状态

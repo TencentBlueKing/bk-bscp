@@ -97,16 +97,18 @@
   import { useI18n } from 'vue-i18n';
   import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
-  import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
+  import { TASK_DETAIL_STATUS_MAP, TASK_ACTION_MAP } from '../../../../constants/task';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import searchSelector from '../../../../components/search-selector.vue';
+  import useTaskStore from '../../../../store/task';
+  import { datetimeFormat } from '../../../../utils';
+  import type { IOperateRange } from '../../../../../types/task';
 
-  defineProps<{
-    taskDetail: Record<string, any>;
-  }>();
-
+  const taskStore = useTaskStore();
+  const { taskDetail } = storeToRefs(taskStore);
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { t } = useI18n();
   const route = useRoute();
@@ -215,11 +217,47 @@
       searchField.value.forEach((item) => {
         item.children = res.filter_options[`${item.field}_choices`];
       });
+
+      const {
+        id,
+        task_object,
+        task_data: { environment, operate_range },
+        creator,
+        start_at,
+        end_at,
+        execution_time,
+        task_action,
+        status,
+      } = res.task_batch;
+
+      const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
+      const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
+
+      taskStore.$patch({
+        taskDetail: {
+          id,
+          task_type: `${typePrefix}${actionText}`,
+          task_object,
+          environment,
+          operate_range: mergeOpRange(operate_range),
+          creator,
+          start_at: datetimeFormat(start_at),
+          end_at: datetimeFormat(end_at),
+          execution_time: `${execution_time}s`,
+          status,
+        },
+      });
     } catch (error) {
       console.error(error);
     } finally {
       loading.value = false;
     }
+  };
+
+  const mergeOpRange = (operateRange: IOperateRange) => {
+    return Object.values(operateRange)
+      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
+      .join('.');
   };
 
   const handleChangePanel = (status: string) => {

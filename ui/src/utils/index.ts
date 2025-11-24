@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Cookies from 'js-cookie';
+import { localT } from '../i18n/index';
 
 dayjs.extend(utc);
 
@@ -112,4 +113,18 @@ export const downloadFile = (content: any, mimeType: string, fileName: string) =
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(downloadUrl);
+};
+
+export const timeAgo = (dateString: string) => {
+  const diff = (Date.now() - new Date(dateString).getTime()) / 1000;
+  const units = [
+    { sec: 31536000, name: localT('年') },
+    { sec: 2592000, name: localT('月') },
+    { sec: 86400, name: localT('天') },
+    { sec: 3600, name: 'hour' },
+    { sec: 60, name: 'min' },
+  ];
+  const unit = units.find((u) => diff >= u.sec);
+  const value = Math.floor(diff / unit!.sec);
+  return `${value} ${unit!.name} ${localT('前')}`;
 };
