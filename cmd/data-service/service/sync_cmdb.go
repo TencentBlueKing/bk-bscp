@@ -80,23 +80,33 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 		g.Go(func() error {
 			cmdbimpl := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
 			if err := cmdbimpl.SyncSingleBiz(gctx); err != nil {
-				logs.Errorf("biz: %d sync cmdb data failed: %v", bizID, err)
-				return err
+				logs.Errorf(
+					"[syncBiz][cmdb][error] biz=%d sync cmdb failed: err=%v type=%T",
+					bizID, err, err,
+				)
+				return fmt.Errorf("cmdb sync failed for biz=%d: %w", bizID, err)
 			}
+			logs.Infof("[syncBiz][cmdb][success] biz=%d sync cmdb done", bizID)
 
 			gseimpl := gseProc.NewSyncGESService(bizID, s.gseSvc, s.dao)
 			if err := gseimpl.SyncSingleBiz(gctx); err != nil {
-				logs.Errorf("biz: %d sync gse data failed: %v", bizID, err)
-				return err
+				logs.Errorf(
+					"[syncBiz][gse][error] biz=%d sync gse failed: err=%v type=%T",
+					bizID, err, err,
+				)
+				return fmt.Errorf("gse sync failed for biz=%d: %w", bizID, err)
 			}
+			logs.Infof("[syncBiz][gse][success] biz=%d sync gse done", bizID)
 
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
+		logs.Errorf("[syncBiz][group][error] some biz failed: %v", err)
 		return err
 	}
+	logs.Infof("[syncBiz][group][success] all biz sync completed")
 
 	return nil
 }
@@ -142,15 +152,14 @@ func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq)
 // simplifyTaskStatus 简化任务状态
 func simplifyTaskStatus(status string) string {
 	switch status {
-	case types.TaskStatusInit, types.TaskStatusRunning:
+	case types.TaskStatusInit, types.TaskStatusRunning, types.TaskStatusNotStarted:
 		return constant.StatusRunning
-
-	case types.TaskStatusSuccess,
-		types.TaskStatusFailure,
+	case types.TaskStatusSuccess:
+		return constant.StatusSuccess
+	case types.TaskStatusFailure,
 		types.TaskStatusTimeout,
-		types.TaskStatusRevoked,
-		types.TaskStatusNotStarted:
-		return constant.StatusFinished
+		types.TaskStatusRevoked:
+		return constant.StatusFailure
 	}
 
 	return constant.StatusNeverSynced
