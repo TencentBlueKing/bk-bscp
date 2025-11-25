@@ -9608,6 +9608,129 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/list": {
+      "post": {
+        "summary": "配置实例列表",
+        "operationId": "Config_ListConfigInstances",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigInstancesResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigInstancesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/compare": {
+      "post": {
+        "summary": "配置对比",
+        "operationId": "Config_CompareConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCompareConfigResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCompareConfigBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/push": {
+      "post": {
+        "summary": "配置下发",
+        "operationId": "Config_PushConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPushConfigResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigPushConfigBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -9714,6 +9837,20 @@
         "templateSetIsEmpty": {
           "type": "boolean",
           "description": "模板套餐是否为空：是=true，否=false"
+        }
+      }
+    },
+    "CompareConfigRespConfigContent": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "配置内容"
+        },
+        "createTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "创建时间"
         }
       }
     },
@@ -10346,6 +10483,26 @@
         "dataType": {
           "type": "string",
           "description": "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
+        }
+      }
+    },
+    "ConfigCompareConfigBody": {
+      "type": "object",
+      "properties": {
+        "ccProcessId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "CC进程ID"
+        },
+        "moduleInstSeq": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模块下的递增ID序号"
+        },
+        "configVersionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模版版本ID"
         }
       }
     },
@@ -11226,6 +11383,30 @@
         }
       }
     },
+    "ConfigListConfigInstancesBody": {
+      "type": "object",
+      "properties": {
+        "configTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板ID"
+        },
+        "search": {
+          "$ref": "#/definitions/pbcinConfigInstanceSearchCondition",
+          "description": "搜索过滤条件"
+        },
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "起始位置，从0开始"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页条数"
+        }
+      }
+    },
     "ConfigListConfigItemByTupleBody": {
       "type": "object",
       "properties": {
@@ -11855,6 +12036,19 @@
         "groupName": {
           "type": "string",
           "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+        }
+      }
+    },
+    "ConfigPushConfigBody": {
+      "type": "object",
+      "properties": {
+        "configTemplateGroups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/PushConfigReqConfigTemplateGroup"
+          },
+          "description": "配置模版组"
         }
       }
     },
@@ -12620,6 +12814,25 @@
           "type": "boolean"
         }
       }
+    },
+    "PushConfigReqConfigTemplateGroup": {
+      "type": "object",
+      "properties": {
+        "configTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模版ID"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "CC进程ID列表"
+        }
+      },
+      "title": "配置模版组，支持多个配置模版同时下发"
     },
     "ReleaseStatusReleasedGroup": {
       "type": "object",
@@ -13722,6 +13935,171 @@
       },
       "title": "ListConfigItemCounts source resource reference: pkg/dal/table/config_item.go"
     },
+    "pbcinChoice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "选项ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "选项名称"
+        }
+      },
+      "title": "Choice 查询枚举值选项"
+    },
+    "pbcinConfigInstance": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置实例ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbcinConfigInstanceSpec"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbcinConfigInstanceAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        }
+      }
+    },
+    "pbcinConfigInstanceAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "configTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板ID"
+        },
+        "configTemplate": {
+          "$ref": "#/definitions/pbtemplateTemplate",
+          "description": "配置模板信息"
+        },
+        "configVersionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板版本ID"
+        },
+        "templateRevision": {
+          "$ref": "#/definitions/pbtrTemplateRevision",
+          "description": "配置模板版本信息"
+        },
+        "ccProcessId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "CC进程ID"
+        },
+        "procInst": {
+          "$ref": "#/definitions/pbpiProcInst",
+          "description": "进程实例信息"
+        },
+        "moduleInstSeq": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模块下进程实例序列号"
+        },
+        "appId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "应用ID"
+        },
+        "releaseId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "发布版本ID"
+        },
+        "releaseConfigItemId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "发布配置项ID"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "租户ID"
+        }
+      }
+    },
+    "pbcinConfigInstanceFilterOptions": {
+      "type": "object",
+      "properties": {
+        "templateVersionChoices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcinChoice"
+          },
+          "description": "配置模版版本查询选项"
+        }
+      },
+      "title": "ConfigInstanceFilterOptions 配置实例过滤选项"
+    },
+    "pbcinConfigInstanceSearchCondition": {
+      "type": "object",
+      "properties": {
+        "sets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "集群名称"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "模块名称"
+        },
+        "serviceInstances": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "服务名称"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "进程ID"
+        },
+        "processAliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "进程别名"
+        },
+        "configTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板ID"
+        },
+        "configVersionIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "配置版本ID列表"
+        }
+      }
+    },
+    "pbcinConfigInstanceSpec": {
+      "type": "object"
+    },
     "pbclientClient": {
       "type": "object",
       "properties": {
@@ -14793,6 +15171,19 @@
         }
       }
     },
+    "pbcsCompareConfigResp": {
+      "type": "object",
+      "properties": {
+        "oldConfigContent": {
+          "$ref": "#/definitions/CompareConfigRespConfigContent",
+          "description": "旧配置内容"
+        },
+        "newConfigContent": {
+          "$ref": "#/definitions/CompareConfigRespConfigContent",
+          "description": "新配置内容"
+        }
+      }
+    },
     "pbcsCompareKvConflictsResp": {
       "type": "object",
       "properties": {
@@ -15779,6 +16170,40 @@
         }
       }
     },
+    "pbcsListConfigInstancesResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置实例总数"
+        },
+        "templateName": {
+          "type": "string",
+          "description": "模版名称"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "文件名称"
+        },
+        "templateVersionName": {
+          "type": "string",
+          "description": "即将下发的模版版本，仅最新版本可下发"
+        },
+        "configInstances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcinConfigInstance"
+          },
+          "description": "配置实例列表"
+        },
+        "filterOptions": {
+          "$ref": "#/definitions/pbcinConfigInstanceFilterOptions",
+          "description": "配置实例过滤选项"
+        }
+      }
+    },
     "pbcsListConfigItemByTupleReqItem": {
       "type": "object",
       "properties": {
@@ -16753,6 +17178,16 @@
         "havePull": {
           "type": "boolean",
           "description": "是否被客户端拉取过"
+        }
+      }
+    },
+    "pbcsPushConfigResp": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "批任务ID"
         }
       }
     },

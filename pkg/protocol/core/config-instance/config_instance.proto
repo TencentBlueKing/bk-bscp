@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "pkg/protocol/core/process-instance/process_instance.proto";
+import "pkg/protocol/core/template-revision/template_revision.proto";
+import "pkg/protocol/core/template/template.proto";
+
+package pbcin;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-instance;pbcin";
+
+message ConfigInstance {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例ID" }];
+  ConfigInstanceSpec spec = 2;
+  ConfigInstanceAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+}
+
+message ConfigInstanceSpec {
+}
+
+message ConfigInstanceAttachment {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
+  pbtemplate.Template config_template = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板信息" }];
+  uint32 config_version_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板版本ID" }];
+  pbtr.TemplateRevision template_revision = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板版本信息" }];
+  uint32 cc_process_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  pbpi.ProcInst proc_inst = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例信息" }];
+  uint32 module_inst_seq = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下进程实例序列号" }];
+  uint32 app_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "应用ID" }];
+  uint32 release_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "发布版本ID" }];
+  uint32 release_config_item_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "发布配置项ID" }];
+  uint32 batch_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "批次ID" }];
+  string task_id = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID" }];
+  string status = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "生成状态, success, failed, generating" }];
+  string tenant_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
+}
+
+message ConfigInstanceSearchCondition {
+  repeated string sets = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
+  repeated string modules = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
+  repeated string service_instances = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
+  repeated uint32 cc_process_ids = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
+  repeated string process_aliases = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  uint32 config_template_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
+  repeated uint32 config_version_ids = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置版本ID列表" }];
+}
+
+// Choice 查询枚举值选项
+message Choice {
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "选项ID" }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "选项名称" }];
+}
+
+// ConfigInstanceFilterOptions 配置实例过滤选项
+message ConfigInstanceFilterOptions {
+  repeated Choice template_version_choices = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本查询选项" }];
+}
