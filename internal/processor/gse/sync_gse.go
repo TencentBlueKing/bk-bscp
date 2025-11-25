@@ -81,7 +81,11 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			continue
 		}
 
-		req, instMap := buildGSEOperateReq(process, insts, uint32(s.bizID))
+		req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
+		if err != nil {
+			logs.Errorf("biz %d: build GSE operate request failed, processID=%d, err=%v", s.bizID, process.ID, err)
+			continue
+		}
 
 		proc, err := s.svc.OperateProcMulti(kit.Ctx, &gse.MultiProcOperateReq{
 			ProcOperateReq: req,
@@ -119,10 +123,13 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 }
 
 func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, bizID uint32) (
-	[]gse.ProcessOperate, map[string]*table.ProcessInstance) {
+	[]gse.ProcessOperate, map[string]*table.ProcessInstance, error) {
 	req := make([]gse.ProcessOperate, 0, len(insts))
 	instMap := make(map[string]*table.ProcessInstance, len(insts))
-
+	var processInfo table.ProcessInfo
+	if err := json.Unmarshal([]byte(process.Spec.SourceData), &processInfo); err != nil {
+		return nil, nil, fmt.Errorf("unmarshal process source data failed: %w", err)
+	}
 	for _, inst := range insts {
 		key := gse.BuildResultKey(process.Attachment.AgentID, bizID, process.Spec.Alias, inst.Spec.HostInstSeq)
 		instMap[key] = inst
@@ -136,15 +143,15 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 			SetName:       process.Spec.SetName,
 			ModuleName:    process.Spec.ModuleName,
 			GseOpType:     gse.OpTypeQuery,
+			ProcessInfo:   processInfo,
 		})
 		if err != nil {
-			logs.Errorf("build process operate failed, err: %+v", err)
-			continue
+			return nil, nil, fmt.Errorf("build process operate failed: %w", err)
 		}
 		req = append(req, *processOperate)
 	}
 
-	return req, instMap
+	return req, instMap, nil
 }
 
 // parseGSEProcResult 解析 GSE 返回结果
