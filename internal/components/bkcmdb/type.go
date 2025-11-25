@@ -293,13 +293,13 @@ type BizTopoReq struct {
 
 // BizTopoNode 业务拓扑节点信息
 type BizTopoNode struct {
-	BkInstID   int           `json:"bk_inst_id"`   // 实例ID
-	BkInstName string        `json:"bk_inst_name"` // 实例展示名
-	BkObjIcon  string        `json:"bk_obj_icon"`  // 模型图标
-	BkObjID    string        `json:"bk_obj_id"`    // 模型ID
-	BkObjName  string        `json:"bk_obj_name"`  // 模型展示名
-	Child      []BizTopoNode `json:"child"`        // 子节点（递归）
-	Default    int           `json:"default"`      // 业务类型 / 集群类型
+	BkInstID   int            `json:"bk_inst_id"`   // 实例ID
+	BkInstName string         `json:"bk_inst_name"` // 实例展示名
+	BkObjIcon  string         `json:"bk_obj_icon"`  // 模型图标
+	BkObjID    string         `json:"bk_obj_id"`    // 模型ID
+	BkObjName  string         `json:"bk_obj_name"`  // 模型展示名
+	Child      []*BizTopoNode `json:"child"`        // 子节点（递归）
+	Default    int            `json:"default"`      // 业务类型 / 集群类型
 }
 
 // ServiceTemplateReq 请求参数
@@ -330,8 +330,8 @@ type PageParam struct {
 
 // ServiceTemplateListResp 响应结果
 type ServiceTemplateListResp struct {
-	Count int               `json:"count"` // 总数
-	Info  []ServiceTemplate `json:"info"`  // 返回结果
+	Count int                `json:"count"` // 总数
+	Info  []*ServiceTemplate `json:"info"`  // 返回结果
 }
 
 // PropertyField 通用属性字段
@@ -348,8 +348,8 @@ type ListProcTemplateReq struct {
 }
 
 type ListProcTemplateResp struct {
-	Count int            `json:"count"` // 总数
-	Info  []ProcTemplate `json:"info"`  // 返回结果
+	Count int             `json:"count"` // 总数
+	Info  []*ProcTemplate `json:"info"`  // 返回结果
 }
 
 // ListProcessInstanceReq xxx
@@ -579,8 +579,8 @@ type HostTopoReq struct {
 }
 
 type HostTopoInfoResp struct {
-	Count int            `json:"count"` // 总数
-	Data  []HostTopoInfo `json:"data"`  // 返回结果
+	Count int             `json:"count"` // 总数
+	Data  []*HostTopoInfo `json:"data"`  // 返回结果
 }
 
 // HostTopoInfo 主机与拓扑绑定信息

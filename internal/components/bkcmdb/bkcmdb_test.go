@@ -60,7 +60,7 @@ func TestSearchBizInstTopo(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.SearchBizInstTopo(context.Background(), BizTopoReq{
+	resp, err := cmdb.SearchBizInstTopo(context.Background(), &BizTopoReq{
 		BkBizID: 2,
 	})
 
@@ -94,7 +94,7 @@ func TestListServiceTemplate(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.ListServiceTemplate(context.Background(), ListServiceTemplateReq{
+	resp, err := cmdb.ListServiceTemplate(context.Background(), &ListServiceTemplateReq{
 		BkBizID: 2,
 		// ServiceCategoryID:  0,
 		// Search:             "",
@@ -137,7 +137,7 @@ func TestListProcTemplate(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.ListProcTemplate(context.Background(), ListProcTemplateReq{
+	resp, err := cmdb.ListProcTemplate(context.Background(), &ListProcTemplateReq{
 		BkBizID:           2,
 		ServiceTemplateID: 9,
 		// ProcessTemplateID: 1,
@@ -245,7 +245,7 @@ func TestFindModuleBatch(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.FindModuleBatch(context.Background(), ModuleReq{
+	resp, err := cmdb.FindModuleBatch(context.Background(), &ModuleReq{
 		BkBizID: 0,
 		BkIDs:   []int{},
 		Fields:  []string{},
@@ -308,7 +308,7 @@ func TestFindHostTopoRelation(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.FindHostTopoRelation(context.Background(), HostTopoReq{
+	resp, err := cmdb.FindHostTopoRelation(context.Background(), &HostTopoReq{
 		BkBizID:     2,
 		BkSetIDs:    []int{},
 		BkModuleIDs: []int{},

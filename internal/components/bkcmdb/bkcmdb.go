@@ -174,21 +174,16 @@ func (bkcmdb *CMDBService) FindHostByTopo(ctx context.Context, req HostListReq) 
 }
 
 // SearchBizInstTopo 查询业务实例拓扑
-func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req BizTopoReq) (
-	*CMDBResponse, error) {
+func (bkcmdb *CMDBService) SearchBizInstTopo(ctx context.Context, req *BizTopoReq) (
+	[]*BizTopoNode, error) {
 	url := fmt.Sprintf(searchBizInstTopo, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	var nodes []*BizTopoNode
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &nodes); err != nil {
 		return nil, err
 	}
 
-	var nodes []BizTopoNode
-	if err := resp.Decode(&nodes); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
-	}
-
-	return resp, nil
+	return nodes, nil
 }
 
 // GetServiceTemplate 获取服务模板
@@ -210,17 +205,12 @@ func (bkcmdb *CMDBService) GetServiceTemplate(ctx context.Context, req ServiceTe
 }
 
 // ListServiceTemplate 服务模板列表查询
-func (bkcmdb *CMDBService) ListServiceTemplate(ctx context.Context, req ListServiceTemplateReq) (
-	*CMDBResponse, error) {
+func (bkcmdb *CMDBService) ListServiceTemplate(ctx context.Context, req *ListServiceTemplateReq) (
+	*ServiceTemplateListResp, error) {
 	url := fmt.Sprintf(listServiceTemplate, bkcmdb.Host)
-	resp := new(CMDBResponse)
+	resp := new(ServiceTemplateListResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var serviceTemplateListResp ServiceTemplateListResp
-	if err := resp.Decode(&serviceTemplateListResp); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -244,18 +234,13 @@ func (bkcmdb *CMDBService) GetProcTemplate(ctx context.Context, req GetProcTempl
 }
 
 // ListProcTemplate 查询进程模板列表
-func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req ListProcTemplateReq) (
-	*CMDBResponse, error) {
+func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req *ListProcTemplateReq) (
+	*ListProcTemplateResp, error) {
 	url := fmt.Sprintf(listProcTemplate, bkcmdb.Host)
 
-	resp := new(CMDBResponse)
+	resp := new(ListProcTemplateResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var listProcTemplateResp ListProcTemplateResp
-	if err := resp.Decode(&listProcTemplateResp); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil
@@ -337,21 +322,16 @@ func (bkcmdb *CMDBService) ListServiceInstanceBySetTemplate(ctx context.Context,
 }
 
 // FindModuleBatch 批量查询某业务的模块详情
-func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req ModuleReq) (
-	*CMDBResponse, error) {
+func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req *ModuleReq) (
+	[]*ModuleInfo, error) {
 	url := fmt.Sprintf(findModuleBatch, bkcmdb.Host, req.BkBizID)
 
-	resp := new(CMDBResponse)
-	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
+	var resp []*ModuleInfo
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
 		return nil, err
 	}
 
-	var moduleInfo []ModuleInfo
-	if err := resp.Decode(&moduleInfo); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
-	}
-
-	return nil, nil
+	return resp, nil
 }
 
 // ListServiceInstance 查询服务实例列表
@@ -386,18 +366,13 @@ func (bkcmdb *CMDBService) FindSetBatch(ctx context.Context, req SetListReq) (*C
 }
 
 // FindHostTopoRelation 获取主机与拓扑的关系
-func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context, req HostTopoReq) (
-	*CMDBResponse, error) {
+func (bkcmdb *CMDBService) FindHostTopoRelation(ctx context.Context, req *HostTopoReq) (
+	*HostTopoInfoResp, error) {
 	url := fmt.Sprintf(findHostTopoRelation, bkcmdb.Host)
 
-	resp := new(CMDBResponse)
+	resp := new(HostTopoInfoResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
-	}
-
-	var hostTopoInfoResp HostTopoInfoResp
-	if err := resp.Decode(&hostTopoInfoResp); err != nil {
-		return nil, fmt.Errorf("unmarshal parses the JSON-encoded data failed: %v", err)
 	}
 
 	return resp, nil

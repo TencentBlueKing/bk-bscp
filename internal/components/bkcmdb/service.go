@@ -31,20 +31,17 @@ type Service interface {
 	FindHostByTopo(ctx context.Context, req HostListReq) (
 		*CMDBResponse, error)
 	// SearchBizInstTopo 查询业务实例拓扑
-	SearchBizInstTopo(ctx context.Context, req BizTopoReq) (
-		*CMDBResponse, error)
+	SearchBizInstTopo(ctx context.Context, req *BizTopoReq) ([]*BizTopoNode, error)
 	// GetServiceTemplate 获取服务模板
 	GetServiceTemplate(ctx context.Context, req ServiceTemplateReq) (
 		*CMDBResponse, error)
 	// ListServiceTemplate 服务模板列表查询
-	ListServiceTemplate(ctx context.Context, req ListServiceTemplateReq) (
-		*CMDBResponse, error)
+	ListServiceTemplate(ctx context.Context, req *ListServiceTemplateReq) (*ServiceTemplateListResp, error)
 	// GetProcTemplate 获取进程模板
 	GetProcTemplate(ctx context.Context, req GetProcTemplateReq) (
 		*CMDBResponse, error)
 	// ListProcTemplate 查询进程模板列表
-	ListProcTemplate(ctx context.Context, req ListProcTemplateReq) (
-		*CMDBResponse, error)
+	ListProcTemplate(ctx context.Context, req *ListProcTemplateReq) (*ListProcTemplateResp, error)
 	// ListProcessInstance 查询进程实例列表
 	ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
 		[]*ListProcessInstance, error)
@@ -61,16 +58,14 @@ type Service interface {
 	ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceReq) (
 		*CMDBResponse, error)
 	// FindModuleBatch 批量查询某业务的模块详情
-	FindModuleBatch(ctx context.Context, req ModuleReq) (
-		*CMDBResponse, error)
+	FindModuleBatch(ctx context.Context, req *ModuleReq) ([]*ModuleInfo, error)
 	// ListServiceInstance 查询服务实例列表
 	ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
 		*ServiceInstanceResp, error)
 	// FindSetBatch 批量查询某业务的集群详情
 	FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error)
 	// FindHostTopoRelation 获取主机与拓扑的关系
-	FindHostTopoRelation(ctx context.Context, req HostTopoReq) (
-		*CMDBResponse, error)
+	FindHostTopoRelation(ctx context.Context, req *HostTopoReq) (*HostTopoInfoResp, error)
 	// FindModuleWithRelation 根据条件查询业务下的模块
 	FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
 		*CMDBResponse, error)
