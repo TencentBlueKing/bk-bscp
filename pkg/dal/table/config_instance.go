@@ -45,12 +45,12 @@ type ConfigInstanceAttachment struct {
 	ReleaseID uint32 `json:"release_id" gorm:"column:release_id"`
 	// ReleaseConfigItem 每个配置实例关联的配置项
 	ReleaseConfigItemID uint32 `json:"release_config_item_id" gorm:"column:release_config_item_id"`
-	// TenantID is the tenant ID.
-	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 	// BatchID is the batch ID.
 	BatchID uint32 `json:"batch_id" gorm:"column:batch_id"`
 	// TaskID is the task ID.
 	TaskID string `json:"task_id" gorm:"column:task_id"`
+	// TenantID is the tenant ID.
+	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the config instance's database table name.

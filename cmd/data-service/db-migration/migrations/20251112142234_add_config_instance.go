@@ -46,7 +46,7 @@ func mig20251112142234Up(tx *gorm.DB) error {
 		AppID               uint   `gorm:"column:app_id;type:bigint unsigned;not null;comment:应用ID"`
 		ReleaseID           uint   `gorm:"column:release_id;type:bigint unsigned;not null;comment:发布版本ID"`
 		ReleaseConfigItemID uint   `gorm:"column:release_config_item_id;type:bigint unsigned;not null;comment:发布配置项ID"`
-		BatchID             uint   `gorm:"column:batch_id;type:bigint unsigned;not null;comment:批次ID"`
+		TaskBatchID         uint   `gorm:"column:task_batch_id;type:bigint unsigned;not null;comment:任务批次ID"`
 		TaskID              string `gorm:"column:task_id;type:varchar(255);not null;comment:任务ID"`
 		TenantID            string `gorm:"column:tenant_id;type:varchar(255);not null;default:default;comment:租户ID"`
 

@@ -36,9 +36,9 @@ func newConfigInstance(db *gorm.DB, opts ...gen.DOOption) configInstance {
 	_configInstance.AppID = field.NewUint32(tableName, "app_id")
 	_configInstance.ReleaseID = field.NewUint32(tableName, "release_id")
 	_configInstance.ReleaseConfigItemID = field.NewUint32(tableName, "release_config_item_id")
-	_configInstance.TenantID = field.NewString(tableName, "tenant_id")
 	_configInstance.BatchID = field.NewUint32(tableName, "batch_id")
 	_configInstance.TaskID = field.NewString(tableName, "task_id")
+	_configInstance.TenantID = field.NewString(tableName, "tenant_id")
 	_configInstance.Creator = field.NewString(tableName, "creator")
 	_configInstance.Reviser = field.NewString(tableName, "reviser")
 	_configInstance.CreatedAt = field.NewTime(tableName, "created_at")
@@ -62,9 +62,9 @@ type configInstance struct {
 	AppID               field.Uint32
 	ReleaseID           field.Uint32
 	ReleaseConfigItemID field.Uint32
-	TenantID            field.String
 	BatchID             field.Uint32
 	TaskID              field.String
+	TenantID            field.String
 	Creator             field.String
 	Reviser             field.String
 	CreatedAt           field.Time
@@ -94,9 +94,9 @@ func (c *configInstance) updateTableName(table string) *configInstance {
 	c.AppID = field.NewUint32(table, "app_id")
 	c.ReleaseID = field.NewUint32(table, "release_id")
 	c.ReleaseConfigItemID = field.NewUint32(table, "release_config_item_id")
-	c.TenantID = field.NewString(table, "tenant_id")
 	c.BatchID = field.NewUint32(table, "batch_id")
 	c.TaskID = field.NewString(table, "task_id")
+	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
 	c.CreatedAt = field.NewTime(table, "created_at")
@@ -139,9 +139,9 @@ func (c *configInstance) fillFieldMap() {
 	c.fieldMap["app_id"] = c.AppID
 	c.fieldMap["release_id"] = c.ReleaseID
 	c.fieldMap["release_config_item_id"] = c.ReleaseConfigItemID
-	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["batch_id"] = c.BatchID
 	c.fieldMap["task_id"] = c.TaskID
+	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser
 	c.fieldMap["created_at"] = c.CreatedAt
