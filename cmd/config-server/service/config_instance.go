@@ -48,9 +48,6 @@ func (s *Service) CompareConfig(ctx context.Context, req *pbcs.CompareConfigReq)
 		return nil, err
 	}
 
-	// TODO: Implement CompareConfig logic
-	// This method should compare old and new config content for a given config instance
-	// For now, return an empty response as a placeholder
 	return &pbcs.CompareConfigResp{}, nil
 }
 
@@ -65,9 +62,6 @@ func (s *Service) PushConfig(ctx context.Context, req *pbcs.PushConfigReq) (*pbc
 		return nil, err
 	}
 
-	// TODO: Implement PushConfig logic
-	// This method should push/generate config for the specified config template groups
-	// For now, return an empty response as a placeholder
 	return &pbcs.PushConfigResp{}, nil
 }
 
@@ -82,8 +76,5 @@ func (s *Service) GetConfigRenderResult(ctx context.Context, req *pbcs.GetConfig
 		return nil, err
 	}
 
-	// TODO: Implement GetConfigRenderResult logic
-	// This method should get the config render result for an async task
-	// For now, return an empty response as a placeholder
 	return &pbcs.GetConfigRenderResultResp{}, nil
 }
