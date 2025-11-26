@@ -9609,6 +9609,113 @@
         ]
       }
     },
+    "/api/v1/config/biz_id/{bizId}/topo": {
+      "get": {
+        "summary": "按业务拓扑",
+        "operationId": "Config_BizTopo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBizTopoResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/service_template": {
+      "get": {
+        "summary": "按服务模板",
+        "operationId": "Config_ServiceTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsServiceTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}": {
+      "get": {
+        "summary": "进程模板列表",
+        "operationId": "Config_ProcessTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsProcessTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "serviceTemplateId",
+            "description": "服务模板ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/config_instances/list": {
       "post": {
         "summary": "配置实例列表",
@@ -9693,7 +9800,7 @@
     },
     "/api/v1/config/biz_id/{bizId}/config_instances/push": {
       "post": {
-        "summary": "配置下发",
+        "summary": "配置生成/下发",
         "operationId": "Config_PushConfig",
         "responses": {
           "200": {
@@ -9725,6 +9832,54 @@
             "schema": {
               "$ref": "#/definitions/ConfigPushConfigBody"
             }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/task_batch/{batchId}/render_task/{taskId}/result": {
+      "get": {
+        "summary": "获取异步任务的配置渲染结果",
+        "operationId": "Config_GetConfigRenderResult",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetConfigRenderResultResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "batchId",
+            "description": "任务批次ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "taskId",
+            "description": "任务ID",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -14023,6 +14178,19 @@
           "format": "int64",
           "description": "发布配置项ID"
         },
+        "batchId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "批次ID"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "任务ID"
+        },
+        "status": {
+          "type": "string",
+          "description": "生成状态, success, failed, generating"
+        },
         "tenantId": {
           "type": "string",
           "description": "租户ID"
@@ -14937,6 +15105,18 @@
         }
       }
     },
+    "pbcsBizTopoResp": {
+      "type": "object",
+      "properties": {
+        "bizTopoNodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctBizTopoNode"
+          }
+        }
+      }
+    },
     "pbcsCheckAppTemplateBindingResp": {
       "type": "object",
       "properties": {
@@ -15541,6 +15721,16 @@
           "$ref": "#/definitions/pbcontentContentSpec"
         }
       }
+    },
+    "pbcsGetConfigRenderResultResp": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "配置渲染内容"
+        }
+      },
+      "title": "获取异步任务的配置渲染结果响应"
     },
     "pbcsGetHookInfoSpec": {
       "type": "object",
@@ -17160,6 +17350,18 @@
         }
       }
     },
+    "pbcsProcessTemplateResp": {
+      "type": "object",
+      "properties": {
+        "processTemplates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctProcTemplate"
+          }
+        }
+      }
+    },
     "pbcsPublishHookRevisionResp": {
       "type": "object"
     },
@@ -17204,6 +17406,18 @@
           "type": "integer",
           "format": "int64",
           "description": "重试的任务数量"
+        }
+      }
+    },
+    "pbcsServiceTemplateResp": {
+      "type": "object",
+      "properties": {
+        "serviceTemplates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctServiceTemplate"
+          }
         }
       }
     },
@@ -17301,6 +17515,167 @@
     },
     "pbcsUpdateTemplateVariableResp": {
       "type": "object"
+    },
+    "pbctBizTopoNode": {
+      "type": "object",
+      "properties": {
+        "bkInstId": {
+          "type": "integer",
+          "format": "int64",
+          "title": "实例ID"
+        },
+        "bkInstName": {
+          "type": "string",
+          "title": "实例展示名"
+        },
+        "bkObjIcon": {
+          "type": "string",
+          "title": "模型图标"
+        },
+        "bkObjId": {
+          "type": "string",
+          "title": "模型ID"
+        },
+        "bkObjName": {
+          "type": "string",
+          "title": "模型展示名"
+        },
+        "child": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctBizTopoNode"
+          },
+          "title": "子节点（递归）"
+        },
+        "default": {
+          "type": "integer",
+          "format": "int64",
+          "title": "业务类型 / 集群类型"
+        },
+        "serviceTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "title": "服务模板ID"
+        },
+        "hostCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "主机数量"
+        },
+        "processCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "进程数量"
+        }
+      },
+      "title": "BizTopoNode 业务拓扑节点信息"
+    },
+    "pbctProcTemplate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "bkProcessName": {
+          "type": "string"
+        },
+        "bkBizId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "serviceTemplateId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "property": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/pbctPropertyField"
+          },
+          "title": "map 类型"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "modifier": {
+          "type": "string"
+        },
+        "createTime": {
+          "type": "string"
+        },
+        "lastTime": {
+          "type": "string"
+        },
+        "bkSupplierAccount": {
+          "type": "string"
+        }
+      },
+      "title": "ProcTemplate 进程模板数据"
+    },
+    "pbctPropertyField": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "任意值序列化为 JSON 字符串"
+        },
+        "asDefaultValue": {
+          "type": "boolean",
+          "title": "是否作为默认值"
+        }
+      },
+      "title": "PropertyField 属性字段"
+    },
+    "pbctServiceTemplate": {
+      "type": "object",
+      "properties": {
+        "bkBizId": {
+          "type": "integer",
+          "format": "int64",
+          "title": "业务ID"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "title": "服务模板ID"
+        },
+        "name": {
+          "type": "string",
+          "title": "服务模板名称"
+        },
+        "serviceCategoryId": {
+          "type": "integer",
+          "format": "int64",
+          "title": "服务分类ID"
+        },
+        "creator": {
+          "type": "string",
+          "title": "创建者"
+        },
+        "modifier": {
+          "type": "string",
+          "title": "最后修改人员"
+        },
+        "createTime": {
+          "type": "string",
+          "title": "创建时间"
+        },
+        "lastTime": {
+          "type": "string",
+          "title": "更新时间"
+        },
+        "bkSupplierAccount": {
+          "type": "string",
+          "title": "开发商账号"
+        },
+        "hostApplyEnabled": {
+          "type": "boolean",
+          "title": "是否启用主机属性自动应用"
+        }
+      },
+      "title": "ServiceTemplate 服务模板信息"
     },
     "pbgroupGroup": {
       "type": "object",

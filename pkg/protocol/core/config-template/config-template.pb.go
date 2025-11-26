@@ -374,6 +374,7 @@ func (x *ProcTemplate) GetBkSupplierAccount() string {
 	return ""
 }
 
+// PropertyField 属性字段
 type PropertyField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

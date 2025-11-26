@@ -15,12 +15,15 @@
 | POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback | [Config_ApprovalCallback](#config-approval-callback) | itsm v4 回调接口 |
 | POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
+| GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 按业务拓扑 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
+| GET | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 进程模板列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
+| GET | /api/v1/config/biz_id/{bizId}/service_template | [Config_ServiceTemplate](#config-service-template) | 按服务模板 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key} | [Config_UpdateKv](#config-update-kv) | 更新键值配置项 |
 
 ### healthz
@@ -216,6 +219,38 @@ Content-Type: application/json
     }
   ]
 }
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-biz-topo"></span> 按业务拓扑 (*Config_BizTopo*)
+
+```
+GET /api/v1/config/biz_id/{bizId}/topo
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz_id/{bizId}/topo HTTP/1.1
+Content-Type: application/json
+
+
 ```
 
 #### 输出示例
@@ -478,6 +513,39 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-process-template"></span> 进程模板列表 (*Config_ProcessTemplate*)
+
+```
+GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| serviceTemplateId | int64 (formatted integer) | ✓ | 服务模板ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-publish"></span> 发布指定版本 (*Config_Publish*)
 
 ```
@@ -523,6 +591,38 @@ Content-Type: application/json
   ],
   "memo": ""
 }
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-service-template"></span> 按服务模板 (*Config_ServiceTemplate*)
+
+```
+GET /api/v1/config/biz_id/{bizId}/service_template
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz_id/{bizId}/service_template HTTP/1.1
+Content-Type: application/json
+
+
 ```
 
 #### 输出示例
@@ -1093,6 +1193,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-biz-topo-resp"></span> pbcsBizTopoResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizTopoNodes | \[\][PbctBizTopoNode](#pbct-biz-topo-node)| `[]*PbctBizTopoNode` |  | |  |  |
+
+
+
 ### <span id="pbcs-create-kv-resp"></span> pbcsCreateKvResp
 
 
@@ -1148,6 +1263,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-process-template-resp"></span> pbcsProcessTemplateResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| processTemplates | \[\][PbctProcTemplate](#pbct-proc-template)| `[]*PbctProcTemplate` |  | |  |  |
+
+
+
 ### <span id="pbcs-publish-resp"></span> pbcsPublishResp
 
 
@@ -1165,12 +1295,115 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-service-template-resp"></span> pbcsServiceTemplateResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| serviceTemplates | \[\][PbctServiceTemplate](#pbct-service-template)| `[]*PbctServiceTemplate` |  | |  |  |
+
+
+
 ### <span id="pbcs-update-kv-resp"></span> pbcsUpdateKvResp
 
 
   
 
 [interface{}](#interface)
+
+### <span id="pbct-biz-topo-node"></span> pbctBizTopoNode
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bkInstId | int64 (formatted integer)| `int64` |  | |  |  |
+| bkInstName | string| `string` |  | |  |  |
+| bkObjIcon | string| `string` |  | |  |  |
+| bkObjId | string| `string` |  | |  |  |
+| bkObjName | string| `string` |  | |  |  |
+| child | \[\][PbctBizTopoNode](#pbct-biz-topo-node)| `[]*PbctBizTopoNode` |  | |  |  |
+| default | int64 (formatted integer)| `int64` |  | |  |  |
+| hostCount | int64 (formatted integer)| `int64` |  | |  |  |
+| processCount | int64 (formatted integer)| `int64` |  | |  |  |
+| serviceTemplateId | int64 (formatted integer)| `int64` |  | |  |  |
+
+
+
+### <span id="pbct-proc-template"></span> pbctProcTemplate
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bkBizId | int64 (formatted integer)| `int64` |  | |  |  |
+| bkProcessName | string| `string` |  | |  |  |
+| bkSupplierAccount | string| `string` |  | |  |  |
+| createTime | string| `string` |  | |  |  |
+| creator | string| `string` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | |  |  |
+| lastTime | string| `string` |  | |  |  |
+| modifier | string| `string` |  | |  |  |
+| property | map of [PbctPropertyField](#pbct-property-field)| `map[string]PbctPropertyField` |  | |  |  |
+| serviceTemplateId | int64 (formatted integer)| `int64` |  | |  |  |
+
+
+
+### <span id="pbct-property-field"></span> pbctPropertyField
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| asDefaultValue | boolean| `bool` |  | |  |  |
+| value | string| `string` |  | |  |  |
+
+
+
+### <span id="pbct-service-template"></span> pbctServiceTemplate
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bkBizId | int64 (formatted integer)| `int64` |  | |  |  |
+| bkSupplierAccount | string| `string` |  | |  |  |
+| createTime | string| `string` |  | |  |  |
+| creator | string| `string` |  | |  |  |
+| hostApplyEnabled | boolean| `bool` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | |  |  |
+| lastTime | string| `string` |  | |  |  |
+| modifier | string| `string` |  | |  |  |
+| name | string| `string` |  | |  |  |
+| serviceCategoryId | int64 (formatted integer)| `int64` |  | |  |  |
+
+
 
 ### <span id="pbkv-kv"></span> pbkvKv
 
