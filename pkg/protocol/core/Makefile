@@ -32,6 +32,7 @@ all:
 	@cd process-instance && make
 	@cd task_batch && make
 	@cd config-template && make
+	@cd config-instance && make
 
 clean:
 	@cd base && make clean
@@ -67,3 +68,4 @@ clean:
 	@cd process-instance && make clean
 	@cd task_batch && make clean
 	@cd config-template && make clean
+	@cd config-instance && make clean
