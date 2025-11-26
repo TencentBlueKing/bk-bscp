@@ -222,6 +222,7 @@ const (
 	Config_CompareConfig_FullMethodName                      = "/pbcs.Config/CompareConfig"
 	Config_PushConfig_FullMethodName                         = "/pbcs.Config/PushConfig"
 	Config_GetConfigRenderResult_FullMethodName              = "/pbcs.Config/GetConfigRenderResult"
+	Config_ListConfigTemplate_FullMethodName                 = "/pbcs.Config/ListConfigTemplate"
 )
 
 // ConfigClient is the client API for Config service.
@@ -613,6 +614,8 @@ type ConfigClient interface {
 	PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error)
 	// 获取异步任务的配置渲染结果
 	GetConfigRenderResult(ctx context.Context, in *GetConfigRenderResultReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error)
+	// 配置模板列表
+	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
 }
 
 type configClient struct {
@@ -2378,6 +2381,15 @@ func (c *configClient) GetConfigRenderResult(ctx context.Context, in *GetConfigR
 	return out, nil
 }
 
+func (c *configClient) ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error) {
+	out := new(ListConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Config_ListConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2767,6 +2779,8 @@ type ConfigServer interface {
 	PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error)
 	// 获取异步任务的配置渲染结果
 	GetConfigRenderResult(context.Context, *GetConfigRenderResultReq) (*GetConfigRenderResultResp, error)
+	// 配置模板列表
+	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3357,6 +3371,9 @@ func (UnimplementedConfigServer) PushConfig(context.Context, *PushConfigReq) (*P
 }
 func (UnimplementedConfigServer) GetConfigRenderResult(context.Context, *GetConfigRenderResultReq) (*GetConfigRenderResultResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigRenderResult not implemented")
+}
+func (UnimplementedConfigServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6880,6 +6897,24 @@ func _Config_GetConfigRenderResult_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListConfigTemplate(ctx, req.(*ListConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7666,6 +7701,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConfigRenderResult",
 			Handler:    _Config_GetConfigRenderResult_Handler,
+		},
+		{
+			MethodName: "ListConfigTemplate",
+			Handler:    _Config_ListConfigTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

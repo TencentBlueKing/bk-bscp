@@ -21,6 +21,34 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
+// ListConfigTemplate implements pbcs.ConfigServer.
+func (s *Service) ListConfigTemplate(ctx context.Context, req *pbcs.ListConfigTemplateReq) (
+	*pbcs.ListConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.ListConfigTemplate(grpcKit.RpcCtx(), &pbds.ListConfigTemplateReq{
+		BizId:  req.GetBizId(),
+		Search: req.GetSearch(),
+		All:    req.GetAll(),
+		Limit:  req.GetLimit(),
+		Start:  req.GetStart(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ListConfigTemplateResp{
+		Count:   resp.GetCount(),
+		Details: resp.GetDetails(),
+	}, nil
+}
+
 // BizTopo implements pbcs.ConfigServer.
 func (s *Service) BizTopo(ctx context.Context, req *pbcs.BizTopoReq) (*pbcs.BizTopoResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)

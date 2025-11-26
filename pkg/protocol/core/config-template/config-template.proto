@@ -1,8 +1,38 @@
 syntax = "proto3";
 
+import "pkg/protocol/core/base/base.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
 package pbct;
 
 option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template;pbct";
+
+// ConfigTemplate source resource reference: pkg/dal/table/config_template.go
+message ConfigTemplate {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
+  ConfigTemplateSpec spec = 2;
+  ConfigTemplateAttachment attachment = 3;
+  pbbase.Revision revision = 4;
+}
+
+// ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go
+message ConfigTemplateSpec {
+  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string file_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+}
+
+// ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go
+message ConfigTemplateAttachment {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联的模板ID" }];
+  repeated uint32 cc_template_process_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联cc服务模版下的模板进程ID" }];
+  repeated uint32 cc_process_instance_ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "关联cc中未通过服务模板创建的进程实例ID"
+  }];
+  string tenant_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];
+}
 
 // BizTopoNode 业务拓扑节点信息
 message BizTopoNode {
@@ -50,4 +80,11 @@ message ProcTemplate {
 message PropertyField {
   string value = 1;           // 任意值序列化为 JSON 字符串
   bool as_default_value = 2;  // 是否作为默认值
+}
+
+// TemplateSearchCond 配置模板搜索条件
+message TemplateSearchCond {
+  string template_name = 1;
+  string file_name = 2;
+  string reviser = 3;
 }

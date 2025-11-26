@@ -284,10 +284,14 @@ const (
 	ConfigRetryClientIp = "config_retry_client_ip: %s"
 	// OperateObject 等 xx 个对象进行操作
 	OperateObject = "operate_objects: %d" // nolint
+	// ConfigTemplateName 配置模板名称
+	ConfigTemplateName = "config_template_name: %s"
 )
 
 // 配置模板管理相关常量
 const (
 	// BK_MODULE_OBJ_ID cmdb模块节点对象ID
 	BK_MODULE_OBJ_ID = "module"
+	// CONFIG_DELIVERY 默认模板配置空间
+	CONFIG_DELIVERY = "config_delivery"
 )

@@ -83,6 +83,8 @@ type Set interface {
 	ProcessInstance() ProcessInstance
 	TaskBatch() TaskBatch
 	BizHost() BizHost
+	ConfigTemplate() ConfigTemplate
+	ConfigInstance() ConfigInstance
 }
 
 // NewDaoSet create the DAO set instance.
@@ -576,5 +578,23 @@ func (s *set) TaskBatch() TaskBatch {
 func (s *set) BizHost() BizHost {
 	return &bizHostDao{
 		genQ: s.genQ,
+	}
+}
+
+// ConfigInstance implements Set.
+func (s *set) ConfigInstance() ConfigInstance {
+	return &configInstanceDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
+// ConfigTemplate implements Set.
+func (s *set) ConfigTemplate() ConfigTemplate {
+	return &configTemplateDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
 	}
 }

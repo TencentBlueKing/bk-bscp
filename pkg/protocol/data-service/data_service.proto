@@ -329,6 +329,8 @@ service Data {
   rpc BizTopo(BizTopoReq) returns (BizTopoResp) {}
   rpc ServiceTemplate(ServiceTemplateReq) returns (ServiceTemplateResp) {}
   rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {}
+
+  rpc ListConfigTemplate(ListConfigTemplateReq) returns (ListConfigTemplateResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2423,4 +2425,17 @@ message ProcessTemplateReq {
 
 message ProcessTemplateResp {
   repeated pbct.ProcTemplate process_templates = 1;
+}
+
+message ListConfigTemplateReq {
+  uint32 biz_id = 1;
+  uint32 start = 2;
+  uint32 limit = 3;
+  bool all = 4;
+  pbct.TemplateSearchCond search = 5;
+}
+
+message ListConfigTemplateResp {
+  uint32 count = 1;
+  repeated pbct.ConfigTemplate details = 2;
 }

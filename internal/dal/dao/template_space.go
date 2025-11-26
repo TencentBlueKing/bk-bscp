@@ -46,6 +46,8 @@ type TemplateSpace interface {
 	ListByIDs(kit *kit.Kit, ids []uint32) ([]*table.TemplateSpace, error)
 	// Get one template spaces by template space id.
 	Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error)
+	// GetBizTemplateSpaceByName Get template space by name.
+	GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint32, name string) (*table.TemplateSpace, error)
 }
 
 var _ TemplateSpace = new(templateSpaceDao)
@@ -54,6 +56,14 @@ type templateSpaceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetBizTemplateSpaceByName Get template space by name.
+func (dao *templateSpaceDao) GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint32, name string) (
+	*table.TemplateSpace, error) {
+	m := dao.genQ.TemplateSpace
+
+	return dao.genQ.TemplateSpace.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
 }
 
 // Get implements TemplateSpace.

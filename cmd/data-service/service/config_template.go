@@ -15,6 +15,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"path"
+
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
@@ -22,7 +26,52 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbct "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
+
+// ListConfigTemplate implements pbds.DataServer.
+func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTemplateReq) (
+	*pbds.ListConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 根据业务查询模板空间和模板套餐下的模板配置
+	spec, err := s.dao.TemplateSpace().GetBizTemplateSpaceByName(grpcKit, req.GetBizId(), constant.CONFIG_DELIVERY)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &pbds.ListConfigTemplateResp{}, nil
+		}
+		return nil, err
+	}
+
+	// 2. 根据模板空间查询模板
+	templates, count, err := s.dao.Template().List(grpcKit, req.GetBizId(), spec.ID,
+		&types.BasePage{
+			All:   req.GetAll(),
+			Start: req.GetStart(),
+			Limit: uint(req.GetLimit()),
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	templateIDs := []uint32{}
+	fileNames := make(map[uint32]string)
+	for _, template := range templates {
+		templateIDs = append(templateIDs, template.ID)
+		fileNames[template.ID] = path.Join(template.Spec.Path, template.Spec.Name)
+	}
+
+	// 3. 根据模板ID查询配置模板列表
+	configTemplates, err := s.dao.ConfigTemplate().ListAllByTemplateIDs(grpcKit, req.GetBizId(), templateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ListConfigTemplateResp{
+		Count:   uint32(count),
+		Details: pbct.PbConfigTemplates(configTemplates, fileNames),
+	}, nil
+}
 
 // BizTopo implements pbds.DataServer.
 func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizTopoResp, error) {

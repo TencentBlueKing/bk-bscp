@@ -17,8 +17,63 @@ import (
 	"encoding/json"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
+
+// PbConfigTemplate convert table.ConfigTemplate to pb ConfigTemplate
+func PbConfigTemplate(ct *table.ConfigTemplate, fileName string) *ConfigTemplate {
+	if ct == nil {
+		return nil
+	}
+
+	return &ConfigTemplate{
+		Id:         ct.ID,
+		Spec:       PbConfigTemplateSpec(ct.Spec, fileName),
+		Attachment: PbConfigTemplateAttachment(ct.Attachment),
+		Revision:   pbbase.PbRevision(ct.Revision),
+	}
+}
+
+// PbConfigTemplateSpec convert table.ConfigTemplateSpec to pb ConfigTemplateSpec
+func PbConfigTemplateSpec(spec *table.ConfigTemplateSpec, fileName string) *ConfigTemplateSpec {
+	if spec == nil {
+		return nil
+	}
+
+	return &ConfigTemplateSpec{
+		Name:     spec.Name,
+		FileName: fileName,
+	}
+}
+
+// PbConfigTemplateAttachment convert table.ConfigTemplateAttachment to pb ConfigTemplateAttachment
+func PbConfigTemplateAttachment(att *table.ConfigTemplateAttachment) *ConfigTemplateAttachment {
+	if att == nil {
+		return nil
+	}
+
+	return &ConfigTemplateAttachment{
+		BizId:                att.BizID,
+		TemplateId:           att.TemplateID,
+		CcTemplateProcessIds: att.CcTemplateProcessIDs,
+		CcProcessInstanceIds: att.CcProcessInstanceIDs,
+		TenantId:             att.TenantID,
+	}
+}
+
+// PbConfigTemplates convert []*table.ConfigTemplate to []*pb ConfigTemplate
+func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string) []*ConfigTemplate {
+	if src == nil {
+		return nil
+	}
+	res := make([]*ConfigTemplate, 0, len(src))
+	for _, ct := range src {
+		res = append(res, PbConfigTemplate(ct, fileNames[ct.Attachment.TemplateID]))
+	}
+	return res
+}
 
 // ConvertBizTopoNodes 批量转换
 func ConvertBizTopoNodes(src []*bkcmdb.BizTopoNode) []*BizTopoNode {

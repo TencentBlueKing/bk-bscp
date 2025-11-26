@@ -1654,6 +1654,13 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       get: "/api/v1/config/biz_id/{biz_id}/task_batch/{batch_id}/render_task/{task_id}/result"
     };
   }
+  // 配置模板列表
+  rpc ListConfigTemplate(ListConfigTemplateReq) returns (ListConfigTemplateResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/config_template/list"
+      body: "*"
+    };
+  }
 }
 
 message UpdateCredentialScopeReq {
@@ -4740,8 +4747,10 @@ message ProcessTemplateResp {
 
 message ListConfigInstancesReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
-  uint32 config_template_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
-  pbcin.ConfigInstanceSearchCondition search = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索过滤条件" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
+  pbcin.ConfigInstanceSearchCondition search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索过滤条件" }];
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "起始位置，从0开始" }];
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
 }
@@ -4750,7 +4759,9 @@ message ListConfigInstancesResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例总数" }];
   string template_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模版名称" }];
   string file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名称" }];
-  string template_version_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "即将下发的模版版本，仅最新版本可下发" }];
+  string template_version_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "即将下发的模版版本，仅最新版本可下发"
+  }];
   repeated pbcin.ConfigInstance config_instances = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例列表" }];
   pbcin.ConfigInstanceFilterOptions filter_options = 6
@@ -4760,27 +4771,35 @@ message ListConfigInstancesResp {
 message CompareConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 cc_process_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  uint32 module_inst_seq = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的递增ID序号" }];
-  uint32 config_version_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本ID" }];
+  uint32 module_inst_seq = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的递增ID序号" }];
+  uint32 config_version_id = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本ID" }];
 }
 
 message CompareConfigResp {
   message ConfigContent {
     string content = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置内容" }];
-    google.protobuf.Timestamp create_time = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
+    google.protobuf.Timestamp create_time = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建时间" }];
   }
-  ConfigContent old_config_content = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "旧配置内容" }];
-  ConfigContent new_config_content = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "新配置内容" }];
+  ConfigContent old_config_content = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "旧配置内容" }];
+  ConfigContent new_config_content = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "新配置内容" }];
 }
 
 message PushConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   // 配置模版组，支持多个配置模版同时下发
   message ConfigTemplateGroup {
-    uint32 config_template_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
-    repeated uint32 cc_process_ids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
+    uint32 config_template_id = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+    repeated uint32 cc_process_ids = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
   }
-  repeated ConfigTemplateGroup config_template_groups = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版组" }];
+  repeated ConfigTemplateGroup config_template_groups = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版组" }];
 }
 
 message PushConfigResp {
@@ -4797,4 +4816,18 @@ message GetConfigRenderResultReq {
 // 获取异步任务的配置渲染结果响应
 message GetConfigRenderResultResp {
   string content = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置渲染内容" }];
+}
+
+message ListConfigTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 start = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  pbct.TemplateSearchCond search = 5;
+}
+
+message ListConfigTemplateResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbct.ConfigTemplate details = 2;
 }
