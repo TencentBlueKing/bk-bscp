@@ -2,7 +2,7 @@
   <section class="list-wrap">
     <div class="title">{{ $t('配置模板管理') }}</div>
     <div class="op-wrap">
-      <bk-button class="create-btn" theme="primary">{{ $t('新建') }}</bk-button>
+      <bk-button class="create-btn" theme="primary" @click="isShowCreateTemplate = true">{{ $t('新建') }}</bk-button>
       <SearchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
@@ -15,7 +15,7 @@
       <PrimaryTable :data="tableList" class="border" row-key="id" cell-empty-content="--">
         <TableColumn :title="t('模板名称')">
           <template #default="{ row }">
-            <bk-button theme="primary" text>{{ row.template }}</bk-button>
+            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.template }}</bk-button>
           </template>
         </TableColumn>
         <TableColumn :title="t('文件名')">
@@ -71,6 +71,8 @@
     </div>
   </section>
   <AssociatedProcess :is-show="isShowAssociatedProcess" :bk-biz-id="spaceId" />
+  <CreateConfigTemplate v-if="isShowCreateTemplate" @close="isShowCreateTemplate = false" />
+  <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
 </template>
 
 <script lang="ts" setup>
@@ -82,6 +84,8 @@
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import AssociatedProcess from './associated-process/index.vue';
   import useGlobalStore from '../../../../store/global';
+  import CreateConfigTemplate from './create-config-template.vue';
+  import ConfigTemplateDetails from './config-template-details.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
@@ -96,6 +100,8 @@
   const isSearchEmpty = ref(false);
   const opPopRef = ref();
   const isShowAssociatedProcess = ref(false);
+  const isShowCreateTemplate = ref(false);
+  const isShowDetails = ref(false);
 
   const handleSearch = (list: { [key: string]: string }) => {
     searchQuery.value = list;
@@ -108,6 +114,12 @@
 
   const handlePageLimitChange = (limit: number) => {
     updatePagination('limit', limit);
+  };
+
+  // 查看模板详情
+  const handleViewTemplate = (row: { [key: string]: any }) => {
+    console.log('view template', row);
+    isShowDetails.value = true;
   };
 
   const tableList = ref([

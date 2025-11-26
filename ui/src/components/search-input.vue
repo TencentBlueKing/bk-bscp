@@ -3,7 +3,7 @@
     <bk-input
       v-model="inputVal"
       :placeholder="props.placeholder"
-      :clearable="true"
+      :clearable="clearable"
       @clear="triggerSearch"
       @input="triggerSearch">
       <template #suffix>
@@ -23,9 +23,11 @@
       modelValue: string;
       placeholder?: string;
       width?: number;
+      clearable?: boolean;
     }>(),
     {
       placeholder: localT('请输入'),
+      clearable: true,
     },
   );
 
