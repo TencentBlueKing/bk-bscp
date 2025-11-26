@@ -19,7 +19,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.1
-	github.com/samber/lo v1.39.0
+	github.com/samber/lo v1.52.0
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.16.0
@@ -37,6 +37,12 @@ require (
 )
 
 require (
+	github.com/bluele/gcache v0.0.2 // indirect
+	github.com/go-resty/resty/v2 v2.12.0 // indirect
+)
+
+require (
+	github.com/TencentBlueKing/bk-bscp v0.0.0-20251125112710-f6401c701478
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -74,7 +80,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

@@ -179,7 +179,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 }
 
 func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, error) {
-	return pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
+	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
 		resp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
 			BkSupplierAccount: "0",
 			BkBizID:           s.bizID,
@@ -196,7 +196,7 @@ func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, e
 }
 
 func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkcmdb.ModuleInfo, error) {
-	return pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
+	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
 		resp, err := s.svc.SearchModule(ctx, bkcmdb.SearchModuleReq{
 			BkSupplierAccount: "0",
 			BkBizID:           s.bizID,
@@ -216,7 +216,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 	var all []bkcmdb.HostInfo
 
 	for _, id := range setTemplateIDs {
-		hosts, err := pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
+		hosts, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
 			resp, err := s.svc.FindHostBySetTemplate(ctx, bkcmdb.FindHostBySetTemplateReq{
 				BkBizID:          s.bizID,
 				BkSetTemplateIDs: []int{id},
@@ -249,7 +249,7 @@ func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID
 	var all []bkcmdb.ServiceInstanceInfo
 
 	for _, id := range moduleID {
-		svcInst, err := pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ServiceInstanceInfo, int, error) {
+		svcInst, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ServiceInstanceInfo, int, error) {
 			resp, err := s.svc.ListServiceInstance(ctx, bkcmdb.ServiceInstanceListReq{
 				BkBizID:    s.bizID,
 				BkModuleID: id,
@@ -344,8 +344,8 @@ func buildProcess(bizs Bizs) []*table.Process {
 	return processBatch
 }
 
-// pageFetcher 封装分页逻辑的通用函数
-func pageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
+// PageFetcher 封装分页逻辑的通用函数
+func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
 	var (
 		start = 0
 		limit = 100

@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package pbct;
+
+option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template;pbct";
+
+// BizTopoNode 业务拓扑节点信息
+message BizTopoNode {
+  uint32 bk_inst_id = 1;           // 实例ID
+  string bk_inst_name = 2;         // 实例展示名
+  string bk_obj_icon = 3;          // 模型图标
+  string bk_obj_id = 4;            // 模型ID
+  string bk_obj_name = 5;          // 模型展示名
+  repeated BizTopoNode child = 6;  // 子节点（递归）
+  uint32 default = 7;              // 业务类型 / 集群类型
+  uint32 service_template_id = 8;  // 服务模板ID
+  uint32 host_count = 9;           // 主机数量
+  uint32 process_count = 10;       // 进程数量
+}
+
+// ServiceTemplate 服务模板信息
+message ServiceTemplate {
+  uint32 bk_biz_id = 1;            // 业务ID
+  uint32 id = 2;                   // 服务模板ID
+  string name = 3;                 // 服务模板名称
+  uint32 service_category_id = 4;  // 服务分类ID
+  string creator = 5;              // 创建者
+  string modifier = 6;             // 最后修改人员
+  string create_time = 7;          // 创建时间
+  string last_time = 8;            // 更新时间
+  string bk_supplier_account = 9;  // 开发商账号
+  bool host_apply_enabled = 10;    // 是否启用主机属性自动应用
+}
+
+// ProcTemplate 进程模板数据
+message ProcTemplate {
+  uint32 id = 1;
+  string bk_process_name = 2;
+  uint32 bk_biz_id = 3;
+  uint32 service_template_id = 4;
+  map<string, PropertyField> property = 5;  // map 类型
+  string creator = 6;
+  string modifier = 7;
+  string create_time = 8;
+  string last_time = 9;
+  string bk_supplier_account = 10;
+}
+
+// PropertyField 属性字段
+message PropertyField {
+  string value = 1;           // 任意值序列化为 JSON 字符串
+  bool as_default_value = 2;  // 是否作为默认值
+}

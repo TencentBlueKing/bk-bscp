@@ -5,6 +5,7 @@ import "pkg/protocol/core/audit/audit.proto";
 import "pkg/protocol/core/app-template-binding/app_template_binding.proto";
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/config-item/config_item.proto";
+import "pkg/protocol/core/config-template/config-template.proto";
 import "pkg/protocol/core/client/client.proto";
 import "pkg/protocol/core/client-event/client_event.proto";
 import "pkg/protocol/core/client-query/client_query.proto";
@@ -324,6 +325,10 @@ service Data {
   rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
   // 获取同步的状态
   rpc CmdbGseStatus(CmdbGseStatusReq) returns (CmdbGseStatusResp) {}
+
+  rpc BizTopo(BizTopoReq) returns (BizTopoResp) {}
+  rpc ServiceTemplate(ServiceTemplateReq) returns (ServiceTemplateResp) {}
+  rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2354,7 +2359,7 @@ message GetTaskBatchDetailReq {
   repeated string process_aliases = 8;  // 进程别名列表
   repeated uint32 cc_process_ids = 9;   // CC进程ID列表
   repeated uint32 inst_ids = 10;        // 模块下的递增ID序号列表
-  string status = 11;                    // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE
+  string status = 11;                   // 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE
 }
 
 message GetTaskBatchDetailResp {
@@ -2393,4 +2398,29 @@ message RetryTasksReq {
 
 message RetryTasksResp {
   uint32 retry_count = 1;  // 重试的任务数量
+}
+
+message BizTopoReq {
+  uint32 biz_id = 1;
+}
+
+message BizTopoResp {
+  repeated pbct.BizTopoNode biz_topo_nodes = 1;
+}
+
+message ServiceTemplateReq {
+  uint32 biz_id = 1;
+}
+
+message ServiceTemplateResp {
+  repeated pbct.ServiceTemplate service_templates = 1;
+}
+
+message ProcessTemplateReq {
+  uint32 biz_id = 1;
+  uint32 service_template_id = 2;
+}
+
+message ProcessTemplateResp {
+  repeated pbct.ProcTemplate process_templates = 1;
 }

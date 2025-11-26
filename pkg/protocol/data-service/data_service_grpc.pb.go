@@ -228,6 +228,9 @@ const (
 	Data_GetTaskBatchDetail_FullMethodName                = "/pbds.Data/GetTaskBatchDetail"
 	Data_RetryTasks_FullMethodName                        = "/pbds.Data/RetryTasks"
 	Data_CmdbGseStatus_FullMethodName                     = "/pbds.Data/CmdbGseStatus"
+	Data_BizTopo_FullMethodName                           = "/pbds.Data/BizTopo"
+	Data_ServiceTemplate_FullMethodName                   = "/pbds.Data/ServiceTemplate"
+	Data_ProcessTemplate_FullMethodName                   = "/pbds.Data/ProcessTemplate"
 )
 
 // DataClient is the client API for Data service.
@@ -472,6 +475,9 @@ type DataClient interface {
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
+	BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error)
+	ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error)
+	ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error)
 }
 
 type dataClient struct {
@@ -2246,6 +2252,33 @@ func (c *dataClient) CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, op
 	return out, nil
 }
 
+func (c *dataClient) BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error) {
+	out := new(BizTopoResp)
+	err := c.cc.Invoke(ctx, Data_BizTopo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error) {
+	out := new(ServiceTemplateResp)
+	err := c.cc.Invoke(ctx, Data_ServiceTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error) {
+	out := new(ProcessTemplateResp)
+	err := c.cc.Invoke(ctx, Data_ProcessTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2488,6 +2521,9 @@ type DataServer interface {
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
+	BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error)
+	ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error)
+	ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3081,6 +3117,15 @@ func (UnimplementedDataServer) RetryTasks(context.Context, *RetryTasksReq) (*Ret
 }
 func (UnimplementedDataServer) CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CmdbGseStatus not implemented")
+}
+func (UnimplementedDataServer) BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BizTopo not implemented")
+}
+func (UnimplementedDataServer) ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ServiceTemplate not implemented")
+}
+func (UnimplementedDataServer) ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessTemplate not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6622,6 +6667,60 @@ func _Data_CmdbGseStatus_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_BizTopo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BizTopoReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).BizTopo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_BizTopo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).BizTopo(ctx, req.(*BizTopoReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ServiceTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ServiceTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ServiceTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ServiceTemplate(ctx, req.(*ServiceTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ProcessTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ProcessTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ProcessTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ProcessTemplate(ctx, req.(*ProcessTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7412,6 +7511,18 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CmdbGseStatus",
 			Handler:    _Data_CmdbGseStatus_Handler,
+		},
+		{
+			MethodName: "BizTopo",
+			Handler:    _Data_BizTopo_Handler,
+		},
+		{
+			MethodName: "ServiceTemplate",
+			Handler:    _Data_ServiceTemplate_Handler,
+		},
+		{
+			MethodName: "ProcessTemplate",
+			Handler:    _Data_ProcessTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

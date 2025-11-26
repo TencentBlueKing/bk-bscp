@@ -285,3 +285,9 @@ const (
 	// OperateObject 等 xx 个对象进行操作
 	OperateObject = "operate_objects: %d" // nolint
 )
+
+// 配置模板管理相关常量
+const (
+	// BK_MODULE_OBJ_ID cmdb模块节点对象ID
+	BK_MODULE_OBJ_ID = "module"
+)

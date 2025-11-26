@@ -215,6 +215,9 @@ const (
 	Config_SyncCmdbGseStatus_FullMethodName                  = "/pbcs.Config/SyncCmdbGseStatus"
 	Config_CmdbGseStatus_FullMethodName                      = "/pbcs.Config/CmdbGseStatus"
 	Config_RetryTasks_FullMethodName                         = "/pbcs.Config/RetryTasks"
+	Config_BizTopo_FullMethodName                            = "/pbcs.Config/BizTopo"
+	Config_ServiceTemplate_FullMethodName                    = "/pbcs.Config/ServiceTemplate"
+	Config_ProcessTemplate_FullMethodName                    = "/pbcs.Config/ProcessTemplate"
 )
 
 // ConfigClient is the client API for Config service.
@@ -592,6 +595,12 @@ type ConfigClient interface {
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
+	// 按业务拓扑
+	BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error)
+	// 按服务模板
+	ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error)
+	// 进程模板列表
+	ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error)
 }
 
 type configClient struct {
@@ -2294,6 +2303,33 @@ func (c *configClient) RetryTasks(ctx context.Context, in *RetryTasksReq, opts .
 	return out, nil
 }
 
+func (c *configClient) BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error) {
+	out := new(BizTopoResp)
+	err := c.cc.Invoke(ctx, Config_BizTopo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error) {
+	out := new(ServiceTemplateResp)
+	err := c.cc.Invoke(ctx, Config_ServiceTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error) {
+	out := new(ProcessTemplateResp)
+	err := c.cc.Invoke(ctx, Config_ProcessTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2669,6 +2705,12 @@ type ConfigServer interface {
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
+	// 按业务拓扑
+	BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error)
+	// 按服务模板
+	ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error)
+	// 进程模板列表
+	ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3238,6 +3280,15 @@ func (UnimplementedConfigServer) CmdbGseStatus(context.Context, *CmdbGseStatusRe
 }
 func (UnimplementedConfigServer) RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RetryTasks not implemented")
+}
+func (UnimplementedConfigServer) BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BizTopo not implemented")
+}
+func (UnimplementedConfigServer) ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ServiceTemplate not implemented")
+}
+func (UnimplementedConfigServer) ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessTemplate not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -6635,6 +6686,60 @@ func _Config_RetryTasks_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_BizTopo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BizTopoReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).BizTopo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_BizTopo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).BizTopo(ctx, req.(*BizTopoReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ServiceTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ServiceTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ServiceTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ServiceTemplate(ctx, req.(*ServiceTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ProcessTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ProcessTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ProcessTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ProcessTemplate(ctx, req.(*ProcessTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7393,6 +7498,18 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RetryTasks",
 			Handler:    _Config_RetryTasks_Handler,
+		},
+		{
+			MethodName: "BizTopo",
+			Handler:    _Config_BizTopo_Handler,
+		},
+		{
+			MethodName: "ServiceTemplate",
+			Handler:    _Config_ServiceTemplate_Handler,
+		},
+		{
+			MethodName: "ProcessTemplate",
+			Handler:    _Config_ProcessTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -5,6 +5,7 @@ import "pkg/protocol/core/audit/audit.proto";
 import "pkg/protocol/core/app-template-binding/app_template_binding.proto";
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/config-item/config_item.proto";
+import "pkg/protocol/core/config-template/config-template.proto";
 import "pkg/protocol/core/content/content.proto";
 import "pkg/protocol/core/group/group.proto";
 import "pkg/protocol/core/credential/credential.proto";
@@ -1597,6 +1598,25 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/task_batch/{batch_id}/retry"
       body: "*"
+    };
+  }
+
+  // 按业务拓扑
+  rpc BizTopo(BizTopoReq) returns (BizTopoResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/topo"
+    };
+  }
+  // 按服务模板
+  rpc ServiceTemplate(ServiceTemplateReq) returns (ServiceTemplateResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/service_template"
+    };
+  }
+  // 进程模板列表
+  rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"
     };
   }
 }
@@ -4655,4 +4675,30 @@ message ProcessFilterOptionsResp {
   repeated pbproc.ProcessFilterOption service_instances = 3;
   repeated pbproc.ProcessFilterOption process_aliases = 4;
   repeated pbproc.ProcessFilterOption cc_process_ids = 5;
+}
+
+message BizTopoReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message BizTopoResp {
+  repeated pbct.BizTopoNode biz_topo_nodes = 1;
+}
+
+message ServiceTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message ServiceTemplateResp {
+  repeated pbct.ServiceTemplate service_templates = 1;
+}
+
+message ProcessTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 service_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务模板ID" }];
+}
+
+message ProcessTemplateResp {
+  repeated pbct.ProcTemplate process_templates = 1;
 }
