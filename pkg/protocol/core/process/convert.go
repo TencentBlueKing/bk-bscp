@@ -89,6 +89,7 @@ func (p *ProcessAttachment) ProcessAttachment() *table.ProcessAttachment {
 		HostID:            p.HostId,
 		CloudID:           p.CloudId,
 		AgentID:           p.AgentId,
+		ProcessTemplateID: p.ProcessTemplateId,
 	}
 }
 
@@ -108,6 +109,7 @@ func PbProcessAttachment(attachment *table.ProcessAttachment) *ProcessAttachment
 		HostId:            attachment.HostID,
 		CloudId:           attachment.CloudID,
 		AgentId:           attachment.AgentID,
+		ProcessTemplateId: attachment.ProcessTemplateID,
 	}
 }
 

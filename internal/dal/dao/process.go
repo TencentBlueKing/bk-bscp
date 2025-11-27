@@ -321,6 +321,10 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 		conds = append(conds, status...)
 	}
 
+	if len(search.GetProcessTemplateIds()) != 0 {
+		conds = append(conds, m.ProcessTemplateID.In(search.GetProcessTemplateIds()...))
+	}
+
 	return conds, nil
 }
 

@@ -49,11 +49,12 @@ type SvcInst struct {
 
 // ProcInst 进程实例
 type ProcInst struct {
-	ID       int
-	HostID   int
-	Name     string
-	FuncName string
-	ProcNum  int
+	ID                int
+	HostID            int
+	ProcessTemplateID int
+	Name              string
+	FuncName          string
+	ProcNum           int
 	table.ProcessInfo
 }
 

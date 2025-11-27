@@ -61,6 +61,8 @@ message ProcessAttachment {
   uint32 host_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机ID" }];
   uint32 cloud_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cloud_id" }];
   string agent_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "agent_id" }];
+  uint32 process_template_id = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID" }];
 }
 
 // ProcessSearchCondition 进程搜索条件
@@ -83,6 +85,8 @@ message ProcessSearchCondition {
   repeated string cc_sync_statuses = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
   string environment = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+  repeated uint32 process_template_ids = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID" }];
 }
 
 // ProcessFilterOption 进程过滤选项

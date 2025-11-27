@@ -155,10 +155,11 @@ type ProcessAttachment struct {
 	CcProcessID       uint32 `gorm:"column:cc_process_id" json:"cc_process_id"`             // cc进程ID
 	SetID             uint32 `gorm:"column:set_id" json:"set_id"`                           // 集群ID
 	ModuleID          uint32 `gorm:"column:module_id" json:"module_id"`                     // 模块ID
-	ServiceInstanceID uint32 `gorm:"column:service_instance_id" json:"service_instance_id"` // 服务实例
+	ServiceInstanceID uint32 `gorm:"column:service_instance_id" json:"service_instance_id"` // 服务实例ID
 	HostID            uint32 `gorm:"column:host_id" json:"host_id"`                         // 主机ID
 	CloudID           uint32 `gorm:"column:cloud_id" json:"cloud_id"`                       // 管控区域
-	AgentID           string `gorm:"column:agent_id" json:"agent_id"`
+	AgentID           string `gorm:"column:agent_id" json:"agent_id"`                       // Agent ID
+	ProcessTemplateID uint32 `gorm:"column:process_template_id" json:"process_template_id"` // 进程模板ID
 }
 
 // CCSyncStatus cc同步状态
