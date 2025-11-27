@@ -64,13 +64,10 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	}
 
 	// 根据配置模版版本过滤配置实例
-	finalConfigInstances, err = filterConfigInstancesByVersion(finalConfigInstances, req.ConfigTemplateVersionIds)
-	if err != nil {
-		return nil, err
-	}
+	finalConfigInstances = filterConfigInstancesByVersion(finalConfigInstances, req.ConfigTemplateVersionIds)
 
 	// 获取关联数据
-	relatedData, err := getRelatedData(kt, s.dao, req.BizId, configTemplate, finalConfigInstances)
+	relatedData, err := getRelatedData(kt, s.dao, configTemplate, finalConfigInstances)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +249,6 @@ type relatedData struct {
 func getRelatedData(
 	kt *kit.Kit,
 	dao dao.Set,
-	bizID uint32,
 	configTemplate *table.ConfigTemplate,
 	configInstances []*table.ConfigInstance,
 ) (*relatedData, error) {
@@ -332,9 +328,9 @@ func buildConfigInstanceKey(ccProcessID, configTemplateID, moduleInstSeq uint32)
 }
 
 // filterConfigInstancesByVersion 根据配置模版版本过滤配置实例
-func filterConfigInstancesByVersion(configInstances []*table.ConfigInstance, configTemplateVersionIds []uint32) ([]*table.ConfigInstance, error) {
+func filterConfigInstancesByVersion(configInstances []*table.ConfigInstance, configTemplateVersionIds []uint32) []*table.ConfigInstance {
 	if len(configTemplateVersionIds) == 0 {
-		return configInstances, nil
+		return configInstances
 	}
 
 	// 构建版本ID的映射，用于快速查找
@@ -352,7 +348,7 @@ func filterConfigInstancesByVersion(configInstances []*table.ConfigInstance, con
 		}
 	}
 
-	return filteredInstances, nil
+	return filteredInstances
 }
 
 // buildFilterOptions 构建过滤选项

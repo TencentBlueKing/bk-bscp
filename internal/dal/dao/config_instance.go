@@ -25,8 +25,6 @@ import (
 type ConfigInstanceSearchCondition struct {
 	CcProcessIds     []uint32
 	ConfigTemplateId uint32
-	ModuleInstSeq    uint32
-	ConfigVersionIds []uint32
 }
 
 // ConfigInstance supplies all the config instance related operations.
@@ -50,13 +48,9 @@ func (dao *configInstanceDao) List(kit *kit.Kit, bizID uint32, search *ConfigIns
 	m := dao.genQ.ConfigInstance
 	q := dao.genQ.ConfigInstance.WithContext(kit.Ctx)
 
-	var err error
 	var conds []rawgen.Condition
 	if search != nil {
-		conds, err = dao.handleSearch(search)
-		if err != nil {
-			return nil, 0, err
-		}
+		conds = dao.handleSearch(search)
 	}
 
 	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.ID.Desc())
@@ -71,7 +65,7 @@ func (dao *configInstanceDao) List(kit *kit.Kit, bizID uint32, search *ConfigIns
 	return d.FindByPage(opt.Offset(), opt.LimitInt())
 }
 
-func (dao *configInstanceDao) handleSearch(search *ConfigInstanceSearchCondition) ([]rawgen.Condition, error) {
+func (dao *configInstanceDao) handleSearch(search *ConfigInstanceSearchCondition) []rawgen.Condition {
 	var conds []rawgen.Condition
 	m := dao.genQ.ConfigInstance
 
@@ -85,15 +79,5 @@ func (dao *configInstanceDao) handleSearch(search *ConfigInstanceSearchCondition
 		conds = append(conds, m.CcProcessID.In(search.CcProcessIds...))
 	}
 
-	// ConfigVersionIds 过滤
-	if len(search.ConfigVersionIds) > 0 {
-		conds = append(conds, m.ConfigVersionID.In(search.ConfigVersionIds...))
-	}
-
-	// ModuleInstSeq 过滤
-	if search.ModuleInstSeq > 0 {
-		conds = append(conds, m.ModuleInstSeq.Eq(search.ModuleInstSeq))
-	}
-
-	return conds, nil
+	return conds
 }
