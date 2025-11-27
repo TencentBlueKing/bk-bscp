@@ -55,6 +55,7 @@ type Process interface {
 	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
 	// GetBySetIDWithTx queries all process IDs under a set.
 	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
+	//
 }
 
 var _ Process = new(processDao)

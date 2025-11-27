@@ -35,11 +35,11 @@ type ConfigTemplateSpec struct {
 type ConfigTemplateAttachment struct {
 	BizID      uint32 `json:"biz_id" gorm:"column:biz_id"` // TemplateID 关联 BSCP templates 表
 	TemplateID uint32 `json:"template_id" gorm:"column:template_id"`
-	// CcTemplateProcessIDs 关联cc服务模版下的模板进程，模版进程的实例数量等于所有使用了服务模版的模块的主机数量
+	// CcTemplateProcessIDs 关联cc服务模版下的模板进程
 	CcTemplateProcessIDs types.Uint32Slice `json:"cc_template_process_ids" gorm:"column:cc_template_process_ids;type:json;default:'[]'"`
-	// ProcessInstanceIDs 关联cc中未通过服务模板创建的进程实例
-	CcProcessInstanceIDs types.Uint32Slice `json:"cc_process_instance_ids" gorm:"column:cc_process_instance_ids;type:json;default:'[]'"`
-	TenantID             string            `json:"tenant_id" gorm:"column:tenant_id"`
+	// CcProcessIDs 关联cc中未通过服务模板创建的进程
+	CcProcessIDs types.Uint32Slice `json:"cc_process_ids" gorm:"column:cc_process_ids;type:json;default:'[]'"`
+	TenantID     string            `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // TableName is the config template's database table name.

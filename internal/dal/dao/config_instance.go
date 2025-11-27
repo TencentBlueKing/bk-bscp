@@ -12,10 +12,28 @@
 
 package dao
 
-import "github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+import (
+	rawgen "gorm.io/gen"
 
-// ConfigInstance is config instance DAO interface definition.
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
+)
+
+// ConfigInstanceSearchCondition 配置实例搜索条件（内部使用，包含所有字段）
+type ConfigInstanceSearchCondition struct {
+	CcProcessIds     []uint32
+	ConfigTemplateId uint32
+	ModuleInstSeq    uint32
+	ConfigVersionIds []uint32
+}
+
+// ConfigInstance supplies all the config instance related operations.
 type ConfigInstance interface {
+	// List lists config instances with options.
+	List(kit *kit.Kit, bizID uint32, search *ConfigInstanceSearchCondition,
+		opt *types.BasePage) ([]*table.ConfigInstance, int64, error)
 }
 
 var _ ConfigInstance = new(configInstanceDao)
@@ -24,4 +42,59 @@ type configInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// List implements ConfigInstance.
+// todo：支持查询出指定的字段
+func (dao *configInstanceDao) List(kit *kit.Kit, bizID uint32, search *ConfigInstanceSearchCondition,
+	opt *types.BasePage) ([]*table.ConfigInstance, int64, error) {
+	m := dao.genQ.ConfigInstance
+	q := dao.genQ.ConfigInstance.WithContext(kit.Ctx)
+
+	var err error
+	var conds []rawgen.Condition
+	if search != nil {
+		conds, err = dao.handleSearch(search)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.ID.Desc())
+
+	if opt.All {
+		result, err := d.Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+	return d.FindByPage(opt.Offset(), opt.LimitInt())
+}
+
+func (dao *configInstanceDao) handleSearch(search *ConfigInstanceSearchCondition) ([]rawgen.Condition, error) {
+	var conds []rawgen.Condition
+	m := dao.genQ.ConfigInstance
+
+	// ConfigTemplateId 过滤
+	if search.ConfigTemplateId > 0 {
+		conds = append(conds, m.ConfigTemplateID.Eq(search.ConfigTemplateId))
+	}
+
+	// CcProcessIds 过滤
+	if len(search.CcProcessIds) > 0 {
+		conds = append(conds, m.CcProcessID.In(search.CcProcessIds...))
+	}
+
+	// ConfigVersionIds 过滤
+	if len(search.ConfigVersionIds) > 0 {
+		conds = append(conds, m.ConfigVersionID.In(search.ConfigVersionIds...))
+	}
+
+	// ModuleInstSeq 过滤
+	if search.ModuleInstSeq > 0 {
+		conds = append(conds, m.ModuleInstSeq.Eq(search.ModuleInstSeq))
+	}
+
+	return conds, nil
 }

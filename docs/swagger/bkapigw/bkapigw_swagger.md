@@ -20,6 +20,7 @@
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
+| POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
 | GET | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 进程模板列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
@@ -440,6 +441,51 @@ Content-Type: application/json
       "type": ""
     }
   ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-config-template"></span> 配置模板列表 (*Config_ListConfigTemplate*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/config_template/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| search | [PbctTemplateSearchCond](#pbct-template-search-cond) |  |  |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/config_template/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "search": {
+    "fileName": "",
+    "reviser": "",
+    "templateName": ""
+  },
+  "start": 0
 }
 ```
 
@@ -967,6 +1013,24 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-config-template-body"></span> ConfigListConfigTemplateBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| all | boolean| `bool` |  | | 是否获取所有 |  |
+| limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
+| search | [PbctTemplateSearchCond](#pbct-template-search-cond)| `PbctTemplateSearchCond` |  | |  |  |
+| start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
+
+
+
 ### <span id="config-list-kvs-body"></span> ConfigListKvsBody
 
 
@@ -1245,6 +1309,22 @@ Content-Type: application/json
 
 [interface{}](#interface)
 
+### <span id="pbcs-list-config-template-resp"></span> pbcsListConfigTemplateResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 总数 |  |
+| details | \[\][PbctConfigTemplate](#pbct-config-template)| `[]*PbctConfigTemplate` |  | |  |  |
+
+
+
 ### <span id="pbcs-list-kvs-resp"></span> pbcsListKvsResp
 
 
@@ -1341,6 +1421,59 @@ Content-Type: application/json
 
 
 
+### <span id="pbct-config-template"></span> pbctConfigTemplate
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbctConfigTemplateAttachment](#pbct-config-template-attachment)| `PbctConfigTemplateAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 配置模板ID |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spec | [PbctConfigTemplateSpec](#pbct-config-template-spec)| `PbctConfigTemplateSpec` |  | |  |  |
+
+
+
+### <span id="pbct-config-template-attachment"></span> pbctConfigTemplateAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+| ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | 关联cc中未通过服务模板创建的进程实例ID |  |
+| ccTemplateProcessIds | []int64 (formatted integer)| `[]int64` |  | | 关联cc服务模版下的模板进程ID |  |
+| templateId | int64 (formatted integer)| `int64` |  | | 关联的模板ID |  |
+| tenantId | string| `string` |  | | 租户ID |  |
+
+
+
+### <span id="pbct-config-template-spec"></span> pbctConfigTemplateSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| fileName | string| `string` |  | | 文件名 |  |
+| name | string| `string` |  | | 配置模版名称 |  |
+
+
+
 ### <span id="pbct-proc-template"></span> pbctProcTemplate
 
 
@@ -1402,6 +1535,23 @@ Content-Type: application/json
 | modifier | string| `string` |  | |  |  |
 | name | string| `string` |  | |  |  |
 | serviceCategoryId | int64 (formatted integer)| `int64` |  | |  |  |
+
+
+
+### <span id="pbct-template-search-cond"></span> pbctTemplateSearchCond
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| fileName | string| `string` |  | |  |  |
+| reviser | string| `string` |  | |  |  |
+| templateName | string| `string` |  | |  |  |
 
 
 

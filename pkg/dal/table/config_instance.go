@@ -17,14 +17,8 @@ import "github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 // ConfigInstance defines a config instance's detail information
 type ConfigInstance struct {
 	ID         uint32                    `json:"id" gorm:"primaryKey"`
-	Spec       *ConfigInstanceSpec       `json:"spec" gorm:"embedded"`
 	Attachment *ConfigInstanceAttachment `json:"attachment" gorm:"embedded"`
 	Revision   *Revision                 `json:"revision" gorm:"embedded"`
-}
-
-// ConfigInstanceSpec defines all the specifics for config instance set by user.
-type ConfigInstanceSpec struct {
-	// todo: to be added
 }
 
 // ConfigInstanceAttachment defines the config instance attachments.

@@ -566,6 +566,15 @@ func (s *set) ProcessInstance() ProcessInstance {
 	}
 }
 
+// ConfigInstance implements Set.
+func (s *set) ConfigInstance() ConfigInstance {
+	return &configInstanceDao{
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		genQ:     s.genQ,
+	}
+}
+
 func (s *set) TaskBatch() TaskBatch {
 	return &taskBatchDao{
 		idGen:    s.idGen,
@@ -578,15 +587,6 @@ func (s *set) TaskBatch() TaskBatch {
 func (s *set) BizHost() BizHost {
 	return &bizHostDao{
 		genQ: s.genQ,
-	}
-}
-
-// ConfigInstance implements Set.
-func (s *set) ConfigInstance() ConfigInstance {
-	return &configInstanceDao{
-		idGen:    s.idGen,
-		auditDao: s.auditDao,
-		genQ:     s.genQ,
 	}
 }
 

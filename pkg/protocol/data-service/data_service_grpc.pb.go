@@ -232,6 +232,7 @@ const (
 	Data_ServiceTemplate_FullMethodName                   = "/pbds.Data/ServiceTemplate"
 	Data_ProcessTemplate_FullMethodName                   = "/pbds.Data/ProcessTemplate"
 	Data_ListConfigTemplate_FullMethodName                = "/pbds.Data/ListConfigTemplate"
+	Data_ListConfigInstances_FullMethodName               = "/pbds.Data/ListConfigInstances"
 )
 
 // DataClient is the client API for Data service.
@@ -480,6 +481,8 @@ type DataClient interface {
 	ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error)
 	ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error)
 	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
+	// 配置实例列表
+	ListConfigInstances(ctx context.Context, in *ListConfigInstancesReq, opts ...grpc.CallOption) (*ListConfigInstancesResp, error)
 }
 
 type dataClient struct {
@@ -2290,6 +2293,15 @@ func (c *dataClient) ListConfigTemplate(ctx context.Context, in *ListConfigTempl
 	return out, nil
 }
 
+func (c *dataClient) ListConfigInstances(ctx context.Context, in *ListConfigInstancesReq, opts ...grpc.CallOption) (*ListConfigInstancesResp, error) {
+	out := new(ListConfigInstancesResp)
+	err := c.cc.Invoke(ctx, Data_ListConfigInstances_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2536,6 +2548,8 @@ type DataServer interface {
 	ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error)
 	ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error)
 	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
+	// 配置实例列表
+	ListConfigInstances(context.Context, *ListConfigInstancesReq) (*ListConfigInstancesResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3141,6 +3155,9 @@ func (UnimplementedDataServer) ProcessTemplate(context.Context, *ProcessTemplate
 }
 func (UnimplementedDataServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) ListConfigInstances(context.Context, *ListConfigInstancesReq) (*ListConfigInstancesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigInstances not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6754,6 +6771,24 @@ func _Data_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListConfigInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigInstancesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListConfigInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListConfigInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListConfigInstances(ctx, req.(*ListConfigInstancesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7560,6 +7595,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConfigTemplate",
 			Handler:    _Data_ListConfigTemplate_Handler,
+		},
+		{
+			MethodName: "ListConfigInstances",
+			Handler:    _Data_ListConfigInstances_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

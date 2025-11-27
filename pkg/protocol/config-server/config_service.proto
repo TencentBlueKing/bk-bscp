@@ -4749,20 +4749,17 @@ message ListConfigInstancesReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 config_template_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
-  pbcin.ConfigInstanceSearchCondition search = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索过滤条件" }];
-  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "起始位置，从0开始" }];
-  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  repeated uint32 config_template_version_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板版本ID列表" }];
+  pbcin.ConfigInstanceSearchCondition search = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程搜索过滤条件" }];
+  uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "起始位置，从0开始" }];
+  uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
 }
 
 message ListConfigInstancesResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例总数" }];
-  string template_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模版名称" }];
-  string file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名称" }];
-  string template_version_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "即将下发的模版版本，仅最新版本可下发"
-  }];
-  repeated pbcin.ConfigInstance config_instances = 5
+  repeated pbcin.ConfigInstance config_instances = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例列表" }];
   pbcin.ConfigInstanceFilterOptions filter_options = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例过滤选项" }];

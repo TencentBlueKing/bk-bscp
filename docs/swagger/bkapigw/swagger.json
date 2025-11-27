@@ -617,6 +617,47 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/config_template/list": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "配置模板列表",
+        "operationId": "Config_ListConfigTemplate",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigTemplateBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}": {
       "get": {
         "tags": [
@@ -1008,6 +1049,29 @@
         }
       }
     },
+    "ConfigListConfigTemplateBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "search": {
+          "$ref": "#/definitions/pbctTemplateSearchCond"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "ConfigListKvsBody": {
       "type": "object",
       "properties": {
@@ -1366,6 +1430,23 @@
     "pbcsDeleteKvResp": {
       "type": "object"
     },
+    "pbcsListConfigTemplateResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctConfigTemplate"
+          }
+        }
+      }
+    },
     "pbcsListKvsResp": {
       "type": "object",
       "properties": {
@@ -1492,6 +1573,76 @@
         }
       }
     },
+    "pbctConfigTemplate": {
+      "type": "object",
+      "title": "ConfigTemplate source resource reference: pkg/dal/table/config_template.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbctConfigTemplateAttachment"
+        },
+        "id": {
+          "description": "配置模板ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbctConfigTemplateSpec"
+        }
+      }
+    },
+    "pbctConfigTemplateAttachment": {
+      "type": "object",
+      "title": "ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go",
+      "properties": {
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "ccProcessIds": {
+          "description": "关联cc中未通过服务模板创建的进程实例ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "ccTemplateProcessIds": {
+          "description": "关联cc服务模版下的模板进程ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "templateId": {
+          "description": "关联的模板ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "tenantId": {
+          "description": "租户ID",
+          "type": "string"
+        }
+      }
+    },
+    "pbctConfigTemplateSpec": {
+      "type": "object",
+      "title": "ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go",
+      "properties": {
+        "fileName": {
+          "description": "文件名",
+          "type": "string"
+        },
+        "name": {
+          "description": "配置模版名称",
+          "type": "string"
+        }
+      }
+    },
     "pbctProcTemplate": {
       "type": "object",
       "title": "ProcTemplate 进程模板数据",
@@ -1595,6 +1746,21 @@
           "type": "integer",
           "format": "int64",
           "title": "服务分类ID"
+        }
+      }
+    },
+    "pbctTemplateSearchCond": {
+      "type": "object",
+      "title": "TemplateSearchCond 配置模板搜索条件",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "reviser": {
+          "type": "string"
+        },
+        "templateName": {
+          "type": "string"
         }
       }
     },

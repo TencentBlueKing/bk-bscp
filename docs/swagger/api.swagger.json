@@ -9886,6 +9886,47 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_template/list": {
+      "post": {
+        "summary": "配置模板列表",
+        "operationId": "Config_ListConfigTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigTemplateBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -11546,9 +11587,17 @@
           "format": "int64",
           "description": "配置模板ID"
         },
+        "configTemplateVersionIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "配置模板版本ID列表"
+        },
         "search": {
           "$ref": "#/definitions/pbcinConfigInstanceSearchCondition",
-          "description": "搜索过滤条件"
+          "description": "进程搜索过滤条件"
         },
         "start": {
           "type": "integer",
@@ -11625,6 +11674,29 @@
             "type": "string"
           },
           "description": "文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
+        }
+      }
+    },
+    "ConfigListConfigTemplateBody": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "当前页码"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页条数"
+        },
+        "all": {
+          "type": "boolean",
+          "default": "false",
+          "description": "是否获取所有"
+        },
+        "search": {
+          "$ref": "#/definitions/pbctTemplateSearchCond"
         }
       }
     },
@@ -14107,25 +14179,6 @@
     "pbcinConfigInstance": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "integer",
-          "format": "int64",
-          "description": "配置实例ID"
-        },
-        "spec": {
-          "$ref": "#/definitions/pbcinConfigInstanceSpec"
-        },
-        "attachment": {
-          "$ref": "#/definitions/pbcinConfigInstanceAttachment"
-        },
-        "revision": {
-          "$ref": "#/definitions/pbbaseRevision"
-        }
-      }
-    },
-    "pbcinConfigInstanceAttachment": {
-      "type": "object",
-      "properties": {
         "bizId": {
           "type": "integer",
           "format": "int64",
@@ -14136,64 +14189,46 @@
           "format": "int64",
           "description": "配置模板ID"
         },
-        "configTemplate": {
-          "$ref": "#/definitions/pbtemplateTemplate",
-          "description": "配置模板信息"
+        "configTemplateName": {
+          "type": "string",
+          "description": "配置模板名称"
         },
-        "configVersionId": {
+        "set": {
+          "type": "string",
+          "description": "集群名称"
+        },
+        "module": {
+          "type": "string",
+          "description": "模块名称"
+        },
+        "serviceInstance": {
+          "type": "string",
+          "description": "服务实例名称"
+        },
+        "processAlias": {
+          "type": "string",
+          "description": "进程别名"
+        },
+        "moduleInstSeq": {
           "type": "integer",
           "format": "int64",
-          "description": "配置模板版本ID"
+          "description": "模块实例序列号"
         },
-        "templateRevision": {
-          "$ref": "#/definitions/pbtrTemplateRevision",
-          "description": "配置模板版本信息"
+        "configVersionName": {
+          "type": "string",
+          "description": "配置模版版本名称"
+        },
+        "configVersionMemo": {
+          "type": "string",
+          "description": "配置模版版本描述"
         },
         "ccProcessId": {
           "type": "integer",
           "format": "int64",
           "description": "CC进程ID"
         },
-        "procInst": {
-          "$ref": "#/definitions/pbpiProcInst",
-          "description": "进程实例信息"
-        },
-        "moduleInstSeq": {
-          "type": "integer",
-          "format": "int64",
-          "description": "模块下进程实例序列号"
-        },
-        "appId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "应用ID"
-        },
-        "releaseId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "发布版本ID"
-        },
-        "releaseConfigItemId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "发布配置项ID"
-        },
-        "batchId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "批次ID"
-        },
-        "taskId": {
-          "type": "string",
-          "description": "任务ID"
-        },
-        "status": {
-          "type": "string",
-          "description": "生成状态, success, failed, generating"
-        },
-        "tenantId": {
-          "type": "string",
-          "description": "租户ID"
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
         }
       }
     },
@@ -14249,24 +14284,9 @@
             "type": "string"
           },
           "description": "进程别名"
-        },
-        "configTemplateId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "配置模板ID"
-        },
-        "configVersionIds": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "description": "配置版本ID列表"
         }
-      }
-    },
-    "pbcinConfigInstanceSpec": {
-      "type": "object"
+      },
+      "title": "ConfigInstanceSearchCondition 配置实例搜索条件"
     },
     "pbclientClient": {
       "type": "object",
@@ -16368,18 +16388,6 @@
           "format": "int64",
           "description": "配置实例总数"
         },
-        "templateName": {
-          "type": "string",
-          "description": "模版名称"
-        },
-        "fileName": {
-          "type": "string",
-          "description": "文件名称"
-        },
-        "templateVersionName": {
-          "type": "string",
-          "description": "即将下发的模版版本，仅最新版本可下发"
-        },
         "configInstances": {
           "type": "array",
           "items": {
@@ -16451,6 +16459,23 @@
         "totalQuantity": {
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "pbcsListConfigTemplateResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctConfigTemplate"
+          }
         }
       }
     },
@@ -17571,6 +17596,76 @@
       },
       "title": "BizTopoNode 业务拓扑节点信息"
     },
+    "pbctConfigTemplate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbctConfigTemplateSpec"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbctConfigTemplateAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        }
+      },
+      "title": "ConfigTemplate source resource reference: pkg/dal/table/config_template.go"
+    },
+    "pbctConfigTemplateAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "关联的模板ID"
+        },
+        "ccTemplateProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "关联cc服务模版下的模板进程ID"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "关联cc中未通过服务模板创建的进程实例ID"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "租户ID"
+        }
+      },
+      "title": "ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go"
+    },
+    "pbctConfigTemplateSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "配置模版名称"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "文件名"
+        }
+      },
+      "title": "ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go"
+    },
     "pbctProcTemplate": {
       "type": "object",
       "properties": {
@@ -17676,6 +17771,21 @@
         }
       },
       "title": "ServiceTemplate 服务模板信息"
+    },
+    "pbctTemplateSearchCond": {
+      "type": "object",
+      "properties": {
+        "templateName": {
+          "type": "string"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "reviser": {
+          "type": "string"
+        }
+      },
+      "title": "TemplateSearchCond 配置模板搜索条件"
     },
     "pbgroupGroup": {
       "type": "object",
@@ -18148,6 +18258,11 @@
         "agentId": {
           "type": "string",
           "description": "agent_id"
+        },
+        "processTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "进程模板ID"
         }
       }
     },
@@ -18234,6 +18349,14 @@
         "environment": {
           "type": "string",
           "description": "环境"
+        },
+        "processTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "进程模板ID"
         }
       },
       "title": "ProcessSearchCondition 进程搜索条件"

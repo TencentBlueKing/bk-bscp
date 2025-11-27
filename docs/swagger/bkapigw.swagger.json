@@ -649,6 +649,47 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_template/list": {
+      "post": {
+        "summary": "配置模板列表",
+        "operationId": "Config_ListConfigTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigTemplateBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -808,6 +849,29 @@
         "groupName": {
           "type": "string",
           "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
+        }
+      }
+    },
+    "ConfigListConfigTemplateBody": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "当前页码"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页条数"
+        },
+        "all": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否获取所有"
+        },
+        "search": {
+          "$ref": "#/definitions/pbctTemplateSearchCond"
         }
       }
     },
@@ -1169,6 +1233,23 @@
     "pbcsDeleteKvResp": {
       "type": "object"
     },
+    "pbcsListConfigTemplateResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctConfigTemplate"
+          }
+        }
+      }
+    },
     "pbcsListKvsResp": {
       "type": "object",
       "properties": {
@@ -1295,6 +1376,76 @@
       },
       "title": "BizTopoNode 业务拓扑节点信息"
     },
+    "pbctConfigTemplate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模板ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbctConfigTemplateSpec"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbctConfigTemplateAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        }
+      },
+      "title": "ConfigTemplate source resource reference: pkg/dal/table/config_template.go"
+    },
+    "pbctConfigTemplateAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "关联的模板ID"
+        },
+        "ccTemplateProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "关联cc服务模版下的模板进程ID"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "关联cc中未通过服务模板创建的进程实例ID"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "租户ID"
+        }
+      },
+      "title": "ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go"
+    },
+    "pbctConfigTemplateSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "配置模版名称"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "文件名"
+        }
+      },
+      "title": "ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go"
+    },
     "pbctProcTemplate": {
       "type": "object",
       "properties": {
@@ -1400,6 +1551,21 @@
         }
       },
       "title": "ServiceTemplate 服务模板信息"
+    },
+    "pbctTemplateSearchCond": {
+      "type": "object",
+      "properties": {
+        "templateName": {
+          "type": "string"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "reviser": {
+          "type": "string"
+        }
+      },
+      "title": "TemplateSearchCond 配置模板搜索条件"
     },
     "pbkvKv": {
       "type": "object",

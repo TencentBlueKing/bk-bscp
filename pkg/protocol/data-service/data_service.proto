@@ -33,6 +33,7 @@ import "pkg/protocol/core/strategy/strategy.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "pkg/protocol/core/config-instance/config_instance.proto";
 
 package pbds;
 
@@ -331,6 +332,8 @@ service Data {
   rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {}
 
   rpc ListConfigTemplate(ListConfigTemplateReq) returns (ListConfigTemplateResp) {}
+  // 配置实例列表
+  rpc ListConfigInstances(ListConfigInstancesReq) returns (ListConfigInstancesResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2438,4 +2441,19 @@ message ListConfigTemplateReq {
 message ListConfigTemplateResp {
   uint32 count = 1;
   repeated pbct.ConfigTemplate details = 2;
+}
+
+message ListConfigInstancesReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+  repeated uint32 config_template_version_ids = 3;
+  pbcin.ConfigInstanceSearchCondition search = 4;
+  uint32 start = 5;
+  uint32 limit = 6;
+}
+
+message ListConfigInstancesResp {
+  uint32 count = 1;
+  repeated pbcin.ConfigInstance config_instances = 2;
+  pbcin.ConfigInstanceFilterOptions filter_options = 6;
 }

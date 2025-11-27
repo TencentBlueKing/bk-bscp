@@ -17,7 +17,9 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // ListConfigInstances implements pbcs.ConfigServer.
@@ -31,10 +33,25 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbcs.ListConfigI
 		return nil, err
 	}
 
-	// TODO: Implement ListConfigInstances logic
-	// This method should list config instances based on the search conditions
-	// For now, return an empty response as a placeholder
-	return &pbcs.ListConfigInstancesResp{}, nil
+	// 调用 data-service 获取配置实例列表
+	dsResp, err := s.client.DS.ListConfigInstances(grpcKit.RpcCtx(), &pbds.ListConfigInstancesReq{
+		BizId:                    req.GetBizId(),
+		ConfigTemplateId:         req.GetConfigTemplateId(),
+		ConfigTemplateVersionIds: req.GetConfigTemplateVersionIds(),
+		Search:                   req.GetSearch(),
+		Start:                    req.GetStart(),
+		Limit:                    req.GetLimit(),
+	})
+	if err != nil {
+		logs.Errorf("list config instances from data-service failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	return &pbcs.ListConfigInstancesResp{
+		Count:           dsResp.GetCount(),
+		ConfigInstances: dsResp.GetConfigInstances(),
+		FilterOptions:   dsResp.GetFilterOptions(),
+	}, nil
 }
 
 // CompareConfig implements pbcs.ConfigServer.

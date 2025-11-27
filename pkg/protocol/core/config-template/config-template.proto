@@ -28,7 +28,7 @@ message ConfigTemplateAttachment {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联的模板ID" }];
   repeated uint32 cc_template_process_ids = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联cc服务模版下的模板进程ID" }];
-  repeated uint32 cc_process_instance_ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  repeated uint32 cc_process_ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "关联cc中未通过服务模板创建的进程实例ID"
   }];
   string tenant_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "租户ID" }];

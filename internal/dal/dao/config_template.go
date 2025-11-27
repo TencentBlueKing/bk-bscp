@@ -29,6 +29,8 @@ type ConfigTemplate interface {
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, configTemplate *table.ConfigTemplate) (uint32, error)
 	// ListAllByTemplateIDs list all configItem by templateIDs.
 	ListAllByTemplateIDs(kit *kit.Kit, bizID uint32, templateIDs []uint32) ([]*table.ConfigTemplate, error)
+	// GetByID get config template by id.
+	GetByID(kit *kit.Kit, bizID uint32, configTemplateID uint32) (*table.ConfigTemplate, error)
 }
 
 var _ ConfigTemplate = new(configTemplateDao)
@@ -76,4 +78,13 @@ func (dao *configTemplateDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, ct *ta
 	}
 
 	return id, nil
+}
+
+// GetByID implements ConfigTemplate.
+func (dao *configTemplateDao) GetByID(kit *kit.Kit, bizID uint32, configTemplateID uint32) (*table.ConfigTemplate, error) {
+	m := dao.genQ.ConfigTemplate
+
+	return dao.genQ.ConfigTemplate.WithContext(kit.Ctx).
+		Where(m.ID.Eq(configTemplateID), m.BizID.Eq(bizID)).
+		Take()
 }

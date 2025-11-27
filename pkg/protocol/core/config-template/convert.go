@@ -58,7 +58,7 @@ func PbConfigTemplateAttachment(att *table.ConfigTemplateAttachment) *ConfigTemp
 		BizId:                att.BizID,
 		TemplateId:           att.TemplateID,
 		CcTemplateProcessIds: att.CcTemplateProcessIDs,
-		CcProcessInstanceIds: att.CcProcessInstanceIDs,
+		CcProcessIds:         att.CcProcessIDs,
 		TenantId:             att.TenantID,
 	}
 }
