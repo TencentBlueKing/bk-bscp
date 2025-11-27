@@ -21,7 +21,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
-// ConfigInstanceSearchCondition 配置实例搜索条件（内部使用，包含所有字段）
+// ConfigInstanceSearchCondition 配置实例搜索条件
 type ConfigInstanceSearchCondition struct {
 	CcProcessIds     []uint32
 	ConfigTemplateId uint32
@@ -45,7 +45,6 @@ type configInstanceDao struct {
 }
 
 // List implements ConfigInstance.
-// todo：支持查询出指定的字段
 func (dao *configInstanceDao) List(kit *kit.Kit, bizID uint32, search *ConfigInstanceSearchCondition,
 	opt *types.BasePage) ([]*table.ConfigInstance, int64, error) {
 	m := dao.genQ.ConfigInstance
