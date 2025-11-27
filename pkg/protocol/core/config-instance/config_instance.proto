@@ -12,19 +12,22 @@ message ConfigInstance {
   uint32 config_template_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
   string config_template_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板名称" }];
-  string set = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
-  string module = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
-  string service_instance = 6
+  string file_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名称" }];
+  string set = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
+  string module = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
+  string service_instance = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称" }];
-  string process_alias = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
-  uint32 module_inst_seq = 8
+  string process_alias = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  uint32 module_inst_seq = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块实例序列号" }];
-  string config_version_name = 9
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本名称" }];
-  string config_version_memo = 10
+  string config_version_name = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版关联的版本号名称" }];
+  string config_version_memo = 11
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
-  uint32 cc_process_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  pbbase.Revision revision = 16;
+  string latest_template_revision_name = 12 
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "即将下发的配置模版版本号" }];
+  uint32 cc_process_id = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  pbbase.Revision revision = 14 ;
 }
 
 // ConfigInstanceSearchCondition 配置实例搜索条件

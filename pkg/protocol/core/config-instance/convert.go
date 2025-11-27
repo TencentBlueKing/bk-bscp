@@ -53,20 +53,24 @@ func PbConfigInstanceWithDetails(
 	process *table.Process,
 	configVersionName string,
 	configVersionMemo string,
+	configFileName string,
+	latestTemplateRevisionName string,
 ) *ConfigInstance {
 	if ci == nil {
 		return nil
 	}
 
 	pbCI := &ConfigInstance{
-		BizId:              ci.Attachment.BizID,
-		ConfigTemplateId:   ci.Attachment.ConfigTemplateID,
-		ConfigTemplateName: configTemplateName,
-		ModuleInstSeq:      ci.Attachment.ModuleInstSeq,
-		CcProcessId:        ci.Attachment.CcProcessID,
-		ConfigVersionName:  configVersionName,
-		ConfigVersionMemo:  configVersionMemo,
-		Revision:           pbbase.PbRevision(ci.Revision),
+		BizId:                      ci.Attachment.BizID,
+		ConfigTemplateId:           ci.Attachment.ConfigTemplateID,
+		ConfigTemplateName:         configTemplateName,
+		FileName:                   configFileName,
+		ModuleInstSeq:              ci.Attachment.ModuleInstSeq,
+		CcProcessId:                ci.Attachment.CcProcessID,
+		ConfigVersionName:          configVersionName,
+		ConfigVersionMemo:          configVersionMemo,
+		LatestTemplateRevisionName: latestTemplateRevisionName,
+		Revision:                   pbbase.PbRevision(ci.Revision),
 	}
 
 	// Fill process related fields

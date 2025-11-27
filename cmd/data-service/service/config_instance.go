@@ -30,7 +30,13 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	kt := kit.FromGrpcContext(ctx)
 
 	if req.ConfigTemplateId == 0 {
-		return nil, nil
+		return &pbds.ListConfigInstancesResp{
+			Count:           0,
+			ConfigInstances: make([]*pbcin.ConfigInstance, 0),
+			FilterOptions: &pbcin.ConfigInstanceFilterOptions{
+				TemplateVersionChoices: make([]*pbcin.Choice, 0),
+			},
+		}, nil
 	}
 
 	// 获取配置模板信息
@@ -43,6 +49,15 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	filteredProcesses, err := getFilteredProcesses(kt, req.BizId, s.dao, configTemplate, req.Search)
 	if err != nil {
 		return nil, err
+	}
+	if len(filteredProcesses) == 0 {
+		return &pbds.ListConfigInstancesResp{
+			Count:           0,
+			ConfigInstances: make([]*pbcin.ConfigInstance, 0),
+			FilterOptions: &pbcin.ConfigInstanceFilterOptions{
+				TemplateVersionChoices: make([]*pbcin.Choice, 0),
+			},
+		}, nil
 	}
 
 	// 查询进程实例列表
@@ -241,8 +256,10 @@ func getActualConfigInstances(
 
 // relatedData 配置实例相关数据
 type relatedData struct {
-	configTemplateName string
-	configVersionMap   map[uint32]*table.TemplateRevision
+	configTemplateName         string
+	configFileName             string
+	latestTemplateRevisionName string // 即将下发的配置模版版本号，每次配置下发都是用模版的最新版本
+	configVersionMap           map[uint32]*table.TemplateRevision
 }
 
 // getRelatedData 获取关联数据
@@ -252,15 +269,25 @@ func getRelatedData(
 	configTemplate *table.ConfigTemplate,
 	configInstances []*table.ConfigInstance,
 ) (*relatedData, error) {
-	// 收集所有的 ConfigVersionID 用于批量查询版本信息
+	// 查询template表，获取文件名及关联的最新版本
+	template, err := dao.Template().GetByID(kt, configTemplate.Attachment.BizID, configTemplate.Attachment.TemplateID)
+	if err != nil {
+		return nil, fmt.Errorf("get template failed, err: %v", err)
+	}
+
+	// 获取模版关联的最新版本
+	latestRevision, err := dao.TemplateRevision().GetLatestTemplateRevision(kt, configTemplate.Attachment.BizID, configTemplate.Attachment.TemplateID)
+	if err != nil {
+		return nil, fmt.Errorf("get latest template revision failed, err: %v", err)
+	}
+
+	// 若是已存在的配置实例则ConfigVersionID不为0，根据ConfigVersionID查询版本信息，用于展示配置实例关联的版本及版本描述
 	configVersionIDs := make([]uint32, 0, len(configInstances))
 	for _, ci := range configInstances {
 		if ci.Attachment != nil && ci.Attachment.ConfigVersionID > 0 {
 			configVersionIDs = append(configVersionIDs, ci.Attachment.ConfigVersionID)
 		}
 	}
-
-	// 查询配置模版版本信息
 	configVersionMap := make(map[uint32]*table.TemplateRevision)
 	if len(configVersionIDs) > 0 {
 		templateRevisions, err := dao.TemplateRevision().ListByIDs(kt, configVersionIDs)
@@ -273,8 +300,10 @@ func getRelatedData(
 	}
 
 	return &relatedData{
-		configTemplateName: configTemplate.Spec.Name,
-		configVersionMap:   configVersionMap,
+		configTemplateName:         configTemplate.Spec.Name,
+		configFileName:             template.Spec.Name,
+		latestTemplateRevisionName: latestRevision.Spec.RevisionName,
+		configVersionMap:           configVersionMap,
 	}, nil
 }
 
@@ -300,11 +329,13 @@ func buildPbConfigInstances(configInstances []*table.ConfigInstance,
 		var (
 			configVersionName = "-"
 			configVersionMemo = ""
+			configFileName    = ""
 		)
 		if ci.Attachment.ConfigVersionID > 0 {
 			if templateRevision, exists := data.configVersionMap[ci.Attachment.ConfigVersionID]; exists {
 				configVersionName = templateRevision.Spec.RevisionName
 				configVersionMemo = templateRevision.Spec.RevisionMemo
+				configFileName = templateRevision.Spec.Name
 			}
 		}
 
@@ -315,6 +346,8 @@ func buildPbConfigInstances(configInstances []*table.ConfigInstance,
 			process,
 			configVersionName,
 			configVersionMemo,
+			configFileName,
+			data.latestTemplateRevisionName,
 		)
 		pbConfigInstances = append(pbConfigInstances, pbCI)
 	}
@@ -365,7 +398,6 @@ func buildFilterOptions(
 		}
 	}
 
-	// 如果没有版本ID，返回空的过滤选项。理论上这种情况不存在，构建配置实例时，会提供默认的版本ID为0
 	if len(versionIDMap) == 0 {
 		return &pbcin.ConfigInstanceFilterOptions{
 			TemplateVersionChoices: []*pbcin.Choice{

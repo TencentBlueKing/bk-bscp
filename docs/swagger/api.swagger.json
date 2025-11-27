@@ -14193,6 +14193,10 @@
           "type": "string",
           "description": "配置模板名称"
         },
+        "fileName": {
+          "type": "string",
+          "description": "文件名称"
+        },
         "set": {
           "type": "string",
           "description": "集群名称"
@@ -14216,11 +14220,15 @@
         },
         "configVersionName": {
           "type": "string",
-          "description": "配置模版版本名称"
+          "description": "配置模版关联的版本号名称"
         },
         "configVersionMemo": {
           "type": "string",
           "description": "配置模版版本描述"
+        },
+        "latestTemplateRevisionName": {
+          "type": "string",
+          "description": "即将下发的配置模版版本号"
         },
         "ccProcessId": {
           "type": "integer",
