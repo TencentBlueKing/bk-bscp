@@ -6,20 +6,18 @@
     :confirm-text="$t('保存')"
     @closed="handleClose"
     @confirm="handleConfirm">
-    <div class="content-wrap">
-      <SelectProcess :bk-biz-id="bkBizId"/>
-      <ResultPreivew />
-    </div>
+    <SelectProcess :bk-biz-id="bkBizId" :template="template" />
   </bk-dialog>
 </template>
 
 <script lang="ts" setup>
-  import ResultPreivew from './result-preivew.vue';
+  import { IConfigTemplateItem } from '../../../../../../types/config-template';
   import SelectProcess from './select-process.vue';
 
   defineProps<{
     isShow: boolean;
     bkBizId: string;
+    template: IConfigTemplateItem;
   }>();
   const emits = defineEmits(['update:isShow', 'confirm']);
 
@@ -32,19 +30,7 @@
   };
 </script>
 
-<style scoped lang="scss">
-  .content-wrap {
-    display: flex;
-    width: 100%;
-    height: 500px;
-    .associated-wrap,
-    .preview-wrap {
-      padding: 20px 24px;
-      width: 50%;
-      height: 100%;
-    }
-  }
-</style>
+<style scoped lang="scss"></style>
 
 <style lang="scss">
   .associated-process-dialog {

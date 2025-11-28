@@ -135,7 +135,6 @@
       }
       .editor-wrap {
         flex: 1;
-        background: black;
         min-width: 0;
       }
     }

@@ -1,9 +1,47 @@
 import http from '../request';
 
 /**
- * 获取进程列表（树状）
- * @param bizId 业务ID
- * @param view_type 查看类型
+ * 获取拓扑树节点
+ * @param biz_id
+ * @returns
  */
-export const getProcessTree = (biz_id: string, view_type: string) =>
-  http.get(`/config/biz_id/${biz_id}/process/${view_type}/tree`).then((res) => res.data);
+export const getTopoTreeNodes = (biz_id: string) => http.get(`/config/biz_id/${biz_id}/topo`).then((res) => res.data);
+
+/**
+ * 获取服务模板树节点
+ * @param biz_id
+ * @returns
+ */
+export const getServiceTemplateTreeNodes = (biz_id: string) =>
+  http.get(`/config/biz_id/${biz_id}/service_template`).then((res) => res.data);
+
+/**
+ * 根据模块获取服务实例列表
+ * @param biz_id
+ * @param module_id
+ */
+export const getServiceInstanceFormModule = (biz_id: string, module_id: number) =>
+  http.get(`/config/biz_id/${biz_id}/service_instance/${module_id}`).then((res) => res.data);
+
+/**
+ * 根据服务实例查询实例进程列表
+ * @param biz_id
+ * @param service_template_id
+ */
+export const getProcessListFormServiceInstance = (biz_id: string, service_instance_id: number) =>
+  http.get(`/config/biz_id/${biz_id}/process_instance/${service_instance_id}`).then((res) => res.data);
+
+/**
+ * 根据服务模板查询实例进程列表
+ * @param biz_id
+ * @param service_template_id
+ */
+export const getProcessListFormServiceTemplate = (biz_id: string, service_template_id: number) =>
+  http.get(`/config/biz_id/${biz_id}/process_template/${service_template_id}`).then((res) => res.data);
+
+/**
+ * 获取配置模板列表
+ * @param biz_id
+ */
+export const getConfigTemplateList = (biz_id: string, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_template/list`, query).then((res) => res.data);

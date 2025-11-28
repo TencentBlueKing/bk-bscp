@@ -12,25 +12,30 @@
         @search="handleSearch" />
     </div>
     <div class="list-content">
-      <PrimaryTable :data="tableList" class="border" row-key="id" cell-empty-content="--">
+      <PrimaryTable :data="templateList" :loading="tableLoading" class="border" row-key="id" cell-empty-content="--">
         <TableColumn :title="t('模板名称')">
-          <template #default="{ row }">
-            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.template }}</bk-button>
+          <template #default="{ row }: { row: IConfigTemplateItem }">
+            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
           </template>
         </TableColumn>
-        <TableColumn :title="t('文件名')">
-          <template #default="{ row }">
-            {{ row.file }}
-          </template>
-        </TableColumn>
+        <TableColumn :title="t('文件名')" col-key="spec.file_name"> </TableColumn>
         <TableColumn :title="t('关联进程实例')">
-          <template #default="{ row }">
+          <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="associated-instance">
-              <bk-button theme="primary" text :disabled="row.processInstance === 0">
-                {{ row.processInstance }}
+              <bk-button
+                theme="primary"
+                text
+                :disabled="row.instCount! + row.templateCount! === 0"
+                v-bk-tooltips="{
+                  content: `${t('模板进程')}: ${row.templateCount}\n${t('实例进程')}: ${row.instCount}`,
+                  disabled: row.instCount! + row.templateCount! === 0,
+                  placement: 'right',
+                }"
+                @click="handleAssociatedProcess(row)">
+                {{ row.instCount! + row.templateCount! }}
               </bk-button>
               <bk-tag
-                v-if="row.processInstance === 0"
+                v-if="row.instCount! + row.templateCount! === 0"
                 :class="['associated-btn']"
                 theme="info"
                 @click="isShowAssociatedProcess = true">
@@ -39,12 +44,20 @@
             </div>
           </template>
         </TableColumn>
-        <TableColumn :title="t('更新人')"></TableColumn>
-        <TableColumn :title="t('更新时间')"></TableColumn>
+        <TableColumn :title="t('更新人')">
+          <template #default="{ row }: { row: IConfigTemplateItem }">
+            <UserName :name="row.revision.reviser" />
+          </template>
+        </TableColumn>
+        <TableColumn :title="t('更新时间')">
+          <template #default="{ row }: { row: IConfigTemplateItem }">
+            <span>{{ datetimeFormat(row.revision.update_at) }}</span>
+          </template>
+        </TableColumn>
         <TableColumn :title="t('操作')">
-          <template #default>
+          <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="op-btns">
-              <bk-button theme="primary" text>{{ t('编辑') }}</bk-button>
+              <bk-button theme="primary" text @click="handleEdit(row)">{{ t('编辑') }}</bk-button>
               <bk-button theme="primary" text>{{ t('配置下发') }}</bk-button>
               <bk-button theme="primary" text>{{ t('版本管理') }}</bk-button>
               <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
@@ -58,6 +71,12 @@
             </div>
           </template>
         </TableColumn>
+        <template #empty>
+          <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearSearch"></TableEmpty>
+        </template>
+        <template #loading>
+          <bk-loading />
+        </template>
       </PrimaryTable>
       <bk-pagination
         class="table-pagination"
@@ -70,30 +89,38 @@
         @limit-change="handlePageLimitChange" />
     </div>
   </section>
-  <AssociatedProcess :is-show="isShowAssociatedProcess" :bk-biz-id="spaceId" />
+  <AssociatedProcess
+    v-model:is-show="isShowAssociatedProcess"
+    :bk-biz-id="spaceId"
+    :template="opTemplate as IConfigTemplateItem" />
   <CreateConfigTemplate v-if="isShowCreateTemplate" @close="isShowCreateTemplate = false" />
   <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
+  import { getConfigTemplateList } from '../../../../api/config-template';
+  import type { IConfigTemplateItem } from '../../../../../types/config-template';
+  import { datetimeFormat } from '../../../../utils';
   import SearchSelector from '../../../../components/search-selector.vue';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import AssociatedProcess from './associated-process/index.vue';
   import useGlobalStore from '../../../../store/global';
   import CreateConfigTemplate from './create-config-template.vue';
   import ConfigTemplateDetails from './config-template-details.vue';
+  import TableEmpty from '../../../../components/table/table-empty.vue';
+  import UserName from '../../../../components/user-name.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
   const { spaceId } = storeToRefs(useGlobalStore());
 
   const searchField = [
-    { field: 'template', label: t('模板名称') },
-    { field: 'file', label: t('文件名') },
+    { field: 'template_name', label: t('模板名称') },
+    { field: 'file_name', label: t('文件名') },
     { field: 'reviser', label: t('更新人') },
   ];
   const searchQuery = ref<{ [key: string]: string }>({});
@@ -102,6 +129,38 @@
   const isShowAssociatedProcess = ref(false);
   const isShowCreateTemplate = ref(false);
   const isShowDetails = ref(false);
+  const templateList = ref<IConfigTemplateItem[]>([]);
+  const searchValue = ref<{ [key: string]: string }>();
+  const searchSelectorRef = ref();
+  const tableLoading = ref(false);
+  const opTemplate = ref<IConfigTemplateItem>();
+
+  onMounted(() => {
+    loadConfigTemplateList();
+  });
+
+  const loadConfigTemplateList = async () => {
+    try {
+      tableLoading.value = true;
+      const paramas = {
+        start: 0,
+        limit: 10,
+      };
+      const res = await getConfigTemplateList(spaceId.value, paramas);
+      templateList.value = res.details.map((item: IConfigTemplateItem) => {
+        return {
+          instCount: item.attachment.cc_process_instance_ids.length,
+          templateCount: item.attachment.cc_template_process_ids.length,
+          ...item,
+        };
+      });
+      pagination.value.count = res.count;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      tableLoading.value = false;
+    }
+  };
 
   const handleSearch = (list: { [key: string]: string }) => {
     searchQuery.value = list;
@@ -109,45 +168,35 @@
   };
 
   const handlePageChange = (page: number) => {
-    updatePagination('current', page);
+    pagination.value.current = page;
   };
 
   const handlePageLimitChange = (limit: number) => {
     updatePagination('limit', limit);
+    loadConfigTemplateList();
   };
 
   // 查看模板详情
-  const handleViewTemplate = (row: { [key: string]: any }) => {
-    console.log('view template', row);
+  const handleViewTemplate = (template: IConfigTemplateItem) => {
+    opTemplate.value = template;
     isShowDetails.value = true;
   };
 
-  const tableList = ref([
-    {
-      id: 1,
-      template: '配置模板A',
-      file: 'config_a.yaml',
-      processInstance: 0,
-      reviser: '张三',
-      updateTime: '2024-06-01 10:00:00',
-    },
-    {
-      id: 2,
-      template: '配置模板B',
-      file: 'config_b.json',
-      processInstance: 3,
-      reviser: '李四',
-      updateTime: '2024-06-02 14:30:00',
-    },
-    {
-      id: 3,
-      template: '配置模板C',
-      file: 'config_c.ini',
-      processInstance: 8,
-      reviser: '王五',
-      updateTime: '2024-06-03 09:15:00',
-    },
-  ]);
+  const handleClearSearch = () => {
+    searchValue.value = {};
+    isSearchEmpty.value = false;
+    searchSelectorRef.value.clear();
+    loadConfigTemplateList();
+  };
+
+  const handleAssociatedProcess = (template: IConfigTemplateItem) => {
+    opTemplate.value = template;
+    isShowAssociatedProcess.value = true;
+  };
+
+  const handleEdit = (template: IConfigTemplateItem) => {
+    opTemplate.value = template;
+  };
 </script>
 
 <style scoped lang="scss">

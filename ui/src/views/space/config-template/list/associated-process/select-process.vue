@@ -1,54 +1,258 @@
 <template>
-  <div class="associated-wrap">
-    <div class="header">
-      <span class="title">
-        {{ $t('关联进程实例') }}
-      </span>
-      <span class="line"></span>
-      <span>模板文件 1 (/tmp/file1.ini)</span>
+  <div class="content-wrap">
+    <div class="associated-wrap">
+      <div class="header">
+        <span class="title">
+          {{ $t('关联进程实例') }}
+        </span>
+        <span class="line"></span>
+        <span>{{ `${template.spec.name} (${template.spec.file_name})` }}</span>
+      </div>
+      <div class="associated-content">
+        <div class="label">{{ $t('选择关联进程') }}</div>
+        <bk-radio-group v-model="processType" type="card">
+          <bk-radio-button label="by_topo">{{ $t('按业务拓扑') }}</bk-radio-button>
+          <bk-radio-button label="by_service">{{ $t('按服务模版') }}</bk-radio-button>
+        </bk-radio-group>
+        <SearchInput v-model="searchValue" class="search-input" />
+        <bk-loading class="tree-loading" :loading="treeLoading">
+          <TopoTree
+            v-show="processType === 'by_topo'"
+            class="topo-tree"
+            :node-list="topoTreeData"
+            :bk-biz-id="bkBizId"
+            @checked="handleCheckNode" />
+          <TopoTree
+            v-show="processType === 'by_service'"
+            class="template-tree"
+            :node-list="templateTreeData"
+            :bk-biz-id="bkBizId"
+            @checked="handleCheckNode" />
+        </bk-loading>
+      </div>
     </div>
-    <div class="associated-content">
-      <div class="label">{{ $t('选择关联进程') }}</div>
-      <bk-radio-group v-model="processType" type="card" @change="loadProcessTree">
-        <bk-radio-button label="by_topo">{{ $t('按业务拓扑') }}</bk-radio-button>
-        <bk-radio-button label="by_service">{{ $t('按服务模版') }}</bk-radio-button>
-      </bk-radio-group>
-      <SearchInput v-model="searchValue" class="search-input" />
-      <ProcessTree class="process-tree" :tree="processTreeData" />
+    <div class="preview-wrap">
+      <div class="title">
+        {{ $t('结果预览') }}
+      </div>
+      <div v-if="templateProcess.length + instanceProcess.length" class="scroll-container">
+        <!-- 模板进程 -->
+        <ResultPreview
+          v-show="templateProcess.length"
+          :process="templateProcess"
+          :is-template="true"
+          @remove="removeTemplateProcess" />
+        <!-- 实例进程 -->
+        <ResultPreview
+          v-show="instanceProcess.length"
+          :process="instanceProcess"
+          :is-template="false"
+          @remove="removeInstanceProcess" />
+      </div>
+      <bk-exception
+        v-else
+        class="exception-wrap-item exception-part"
+        :description="$t('请选择关联进程')"
+        scene="part"
+        type="empty" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
-  import { getProcessTree } from '../../../../../api/config-template';
-  import type { IProcessTreeNode } from '../../../../../../types/config-template';
+  import { getTopoTreeNodes, getServiceTemplateTreeNodes } from '../../../../../api/config-template';
+  import type {
+    ITopoTreeNode,
+    ITopoTreeNodeRes,
+    ITemplateTreeNodeRes,
+    IConfigTemplateItem,
+  } from '../../../../../../types/config-template';
   import SearchInput from '../../../../../components/search-input.vue';
-  import ProcessTree from './process-tree.vue';
+  import TopoTree from './topo-tree.vue';
+  import ResultPreview from './result-preview.vue';
 
   const props = defineProps<{
     bkBizId: string;
+    template: IConfigTemplateItem;
   }>();
 
   const processType = ref('by_topo');
   const searchValue = ref('');
-  const processTreeData = ref<IProcessTreeNode[]>([]);
+  const topoTreeData = ref<ITopoTreeNode[]>([]);
+  const templateTreeData = ref<ITopoTreeNode[]>([]);
+  const treeLoading = ref(false);
+  const templateProcess = ref<ITopoTreeNode[]>([]);
+  const instanceProcess = ref<ITopoTreeNode[]>([]);
 
   onMounted(() => {
-    loadProcessTree();
+    loadAllTreeNodes();
   });
 
-  const loadProcessTree = async () => {
+  const loadAllTreeNodes = async () => {
     try {
-      const res = await getProcessTree(props.bkBizId, processType.value);
-      processTreeData.value = res.topology;
+      treeLoading.value = true;
+      const [topoRes, templateRes] = await Promise.all([
+        getTopoTreeNodes(props.bkBizId),
+        getServiceTemplateTreeNodes(props.bkBizId),
+      ]);
+      const topoData = topoRes.biz_topo_nodes[0].child.length ? topoRes.biz_topo_nodes[0].child : [];
+      topoTreeData.value = filterTopoData(topoData);
+      filterTemplateData(templateRes.service_templates);
     } catch (error) {
       console.error(error);
+    } finally {
+      treeLoading.value = false;
     }
+  };
+
+  // 处理topo树结构
+  const filterTopoData = (nodes: ITopoTreeNodeRes[], topoLevel = -1, parent: ITopoTreeNode | null = null) => {
+    topoLevel += 1;
+    return nodes.map((node) => {
+      const topo: ITopoTreeNode = {
+        child: [], // 递归填充
+        topoParentName: parent?.topoName || '',
+        topoVisible: true,
+        topoExpand: false,
+        topoLoading: false,
+        topoLevel,
+        topoProcess: false,
+        topoType: '',
+        topoProcessCount: node.process_count,
+        topoChecked: false,
+        topoName: node.bk_inst_name,
+        service_template_id: node.service_template_id,
+        bk_inst_id: node.bk_inst_id,
+      };
+      if (node.bk_obj_id === 'set') {
+        topo.topoType = 'set';
+      } else if (node.bk_obj_id === 'module') {
+        topo.topoType = node.service_template_id ? 'serviceTemplate' : 'module';
+      }
+      if (node.child?.length) {
+        topo.child = filterTopoData(node.child, topoLevel, topo);
+      }
+      return topo;
+    });
+  };
+  // 处理服务模板树结构
+  const filterTemplateData = (templateData: ITemplateTreeNodeRes[]) => {
+    templateTreeData.value = templateData.map((item: ITemplateTreeNodeRes) => {
+      return {
+        child: [],
+        topoParentName: item.name,
+        topoVisible: true,
+        topoExpand: false,
+        topoLoading: false,
+        topoLevel: 0,
+        topoName: item.name,
+        topoProcess: false,
+        topoType: 'serviceTemplate',
+        topoChecked: false,
+        service_template_id: item.id,
+      };
+    });
+  };
+
+  // 绑定关系回填
+  // const recoverBindRelationship = (processList) => {
+  //   try {
+  //     const templateProcessList = [];
+  //     const instanceProcessList = [];
+  //     processList.forEach((item) => {
+  //       const info = item.process_obj_info;
+  //       if (item.process_object_type === 'TEMPLATE') {
+  //         templateProcessList.push({
+  //           __IS_RECOVER: true,
+  //           id: item.process_object_id,
+  //           topoName: info.process_object_name,
+  //           topoTemplateName: info.service_template_name,
+  //         });
+  //       } else if (item.process_object_type === 'INSTANCE') {
+  //         instanceProcessList.push({
+  //           __IS_RECOVER: true,
+  //           property: {
+  //             bk_process_id: item.process_object_id,
+  //           },
+  //           topoName: info.bk_process_name,
+  //           topoReduceName: `${info.bk_set_name}/${info.bk_module_name}/${info.bk_service_name}`,
+  //           topoParent: {
+  //             topoName: info.bk_service_name,
+  //           },
+  //         });
+  //       }
+  //     });
+  //     templateProcess.value = templateProcessList;
+  //     instProcess.value = instanceProcessList;
+  //   } catch (e) {
+  //     console.warn('绑定关系回填失败', e);
+  //   }
+  // };
+
+  // 选择进程节点
+  const handleCheckNode = (topoNode: ITopoTreeNode) => {
+    if (topoNode.topoType === 'templateProcess') {
+      if (topoNode.topoChecked) {
+        // 选择进程
+        // 查看已选择的模板进程是否包含当前进程（业务拓扑、服务模板两棵树有重复的进程）
+        let findItem;
+        let findIndex;
+        for (let i = 0; i < templateProcess.value.length; i++) {
+          const item = templateProcess.value[i];
+          if (item.processId === topoNode.processId) {
+            findItem = item;
+            findIndex = i;
+            break;
+          }
+        }
+        if (findItem) {
+          findItem.topoChecked = false;
+          templateProcess.value.splice(findIndex as number, 1, topoNode);
+        } else {
+          templateProcess.value.push(topoNode);
+        }
+      } else {
+        // 取消选择
+        const index = templateProcess.value.findIndex((item) => item === topoNode);
+        templateProcess.value.splice(index, 1);
+      }
+    } else if (topoNode.topoType === 'instanceProcess') {
+      if (topoNode.topoChecked) {
+        // 选择进程
+        instanceProcess.value.push(topoNode);
+      } else {
+        // 取消选择
+        const index = instanceProcess.value.findIndex((item) => item.processId === topoNode.processId);
+        instanceProcess.value.splice(index, 1);
+      }
+    }
+  };
+
+  // 移除模板进程
+  const removeTemplateProcess = (item: ITopoTreeNode, index: number) => {
+    item.topoChecked = false;
+    templateProcess.value.splice(index, 1);
+  };
+  // 移除实例进程
+  const removeInstanceProcess = (item: ITopoTreeNode, index: number) => {
+    item.topoChecked = false;
+    instanceProcess.value.splice(index, 1);
   };
 </script>
 
 <style scoped lang="scss">
+  .content-wrap {
+    display: flex;
+    width: 100%;
+    height: 500px;
+    .associated-wrap,
+    .preview-wrap {
+      padding: 20px 24px;
+      width: 50%;
+      height: 100%;
+    }
+  }
   .associated-wrap {
     .header {
       display: flex;
@@ -71,17 +275,34 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      height: 100%;
-
+      height: calc(100% - 24px);
       .label {
         font-size: 14px;
         color: #4d4f56;
         line-height: 22px;
       }
-      .process-tree {
+      .tree-loading {
+        height: 100%;
         flex: 1;
         overflow: auto;
       }
+    }
+  }
+
+  .preview-wrap {
+    background-color: #f5f6fa;
+    .title {
+      font-size: 16px;
+      color: #313238;
+      line-height: 24px;
+    }
+    .scroll-container {
+      height: calc(100% - 20px);
+      overflow: auto;
+    }
+    .exception-wrap-item {
+      height: calc(100% - 20px);
+      padding-top: 100px;
     }
   }
 </style>
