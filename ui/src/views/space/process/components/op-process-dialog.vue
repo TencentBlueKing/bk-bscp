@@ -46,7 +46,6 @@
 
   const handleConfirm = () => {
     emits('confirm', props.info.op);
-    emits('close');
   };
 </script>
 

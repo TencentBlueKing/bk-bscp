@@ -450,8 +450,11 @@
       };
       const res = await processOperate(spaceId.value, query);
       if (op === 'start' || op === 'stop') {
+        isShowOpProcess.value = false;
         // 启动或停止跳转任务详情页
-        router.push({ name: 'task-detail', params: { taskId: res.batchID } });
+        setTimeout(() => {
+          router.push({ name: 'task-detail', params: { taskId: res.batchID } });
+        }, 300);
       } else {
         loadProcessList();
       }
