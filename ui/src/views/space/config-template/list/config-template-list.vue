@@ -38,7 +38,7 @@
                 v-if="row.instCount! + row.templateCount! === 0"
                 :class="['associated-btn']"
                 theme="info"
-                @click="isShowAssociatedProcess = true">
+                @click="handleAssociatedProcess(row)">
                 {{ t('立即关联') }}
               </bk-tag>
             </div>

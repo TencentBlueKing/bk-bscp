@@ -14,7 +14,7 @@
           <bk-radio-button label="by_topo">{{ $t('按业务拓扑') }}</bk-radio-button>
           <bk-radio-button label="by_service">{{ $t('按服务模版') }}</bk-radio-button>
         </bk-radio-group>
-        <SearchInput v-model="searchValue" class="search-input" />
+        <SearchInput v-model="searchValue" class="search-input" @search="handleSearch" />
         <bk-loading class="tree-loading" :loading="treeLoading">
           <TopoTree
             v-show="processType === 'by_topo'"
@@ -28,6 +28,7 @@
             :node-list="templateTreeData"
             :bk-biz-id="bkBizId"
             @checked="handleCheckNode" />
+          <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearSearch" />
         </bk-loading>
       </div>
     </div>
@@ -35,7 +36,7 @@
       <div class="title">
         {{ $t('结果预览') }}
       </div>
-      <div v-if="templateProcess.length + instanceProcess.length" class="scroll-container">
+      <div v-if="isShowProcessTree" class="scroll-container">
         <!-- 模板进程 -->
         <ResultPreview
           v-show="templateProcess.length"
@@ -60,7 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import { getTopoTreeNodes, getServiceTemplateTreeNodes } from '../../../../../api/config-template';
   import type {
     ITopoTreeNode,
@@ -71,6 +72,7 @@
   import SearchInput from '../../../../../components/search-input.vue';
   import TopoTree from './topo-tree.vue';
   import ResultPreview from './result-preview.vue';
+  import TableEmpty from '../../../../../components/table/table-empty.vue';
 
   const props = defineProps<{
     bkBizId: string;
@@ -84,9 +86,23 @@
   const treeLoading = ref(false);
   const templateProcess = ref<ITopoTreeNode[]>([]);
   const instanceProcess = ref<ITopoTreeNode[]>([]);
+  const searchTimer = ref();
+  const isSearchEmpty = ref(false);
 
   onMounted(() => {
     loadAllTreeNodes();
+  });
+
+  const isShowProcessTree = computed(() => {
+    const list = processType.value === 'by_topo' ? topoTreeData.value : templateTreeData.value;
+
+    // 无搜索：只要有数据就展示
+    if (searchValue.value === '') {
+      return list.length > 0;
+    }
+
+    // 有搜索：只要某个节点可见即可
+    return list.some((item) => item.topoVisible);
   });
 
   const loadAllTreeNodes = async () => {
@@ -113,6 +129,7 @@
       const topo: ITopoTreeNode = {
         child: [], // 递归填充
         topoParentName: parent?.topoName || '',
+        topoParent: parent,
         topoVisible: true,
         topoExpand: false,
         topoLoading: false,
@@ -142,6 +159,7 @@
       return {
         child: [],
         topoParentName: item.name,
+        topoParent: null,
         topoVisible: true,
         topoExpand: false,
         topoLoading: false,
@@ -238,6 +256,42 @@
   const removeInstanceProcess = (item: ITopoTreeNode, index: number) => {
     item.topoChecked = false;
     instanceProcess.value.splice(index, 1);
+  };
+
+  // 搜索树节点
+  const handleSearch = (keyword: string) => {
+    isSearchEmpty.value = !!keyword;
+    treeLoading.value = true;
+    searchTimer.value && clearTimeout(searchTimer.value);
+    searchTimer.value = setTimeout(() => {
+      searchTree(processType.value === 'by_topo' ? topoTreeData.value : templateTreeData.value, keyword);
+      treeLoading.value = false;
+    }, 300);
+  };
+  const searchTree = (list: ITopoTreeNode[], keyword: string) => {
+    list.forEach((item) => {
+      item.topoExpand = false;
+      const isMatched = item.topoName.includes(keyword);
+      item.topoVisible = isMatched;
+      if (isMatched) {
+        setParentVisible(item.topoParent as ITopoTreeNode, keyword);
+      }
+      if (item.child.length) {
+        searchTree(item.child, keyword);
+      }
+    });
+  };
+  const setParentVisible = (node: ITopoTreeNode, keyword: string) => {
+    if (node) {
+      node.topoVisible = true;
+      node.topoExpand = Boolean(keyword);
+      setParentVisible(node.topoParent as ITopoTreeNode, keyword);
+    }
+  };
+
+  const handleClearSearch = () => {
+    searchValue.value = '';
+    handleSearch(searchValue.value);
   };
 </script>
 

@@ -78,8 +78,8 @@
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
-  const highlight = ref('python');
-  const highlightOptions = ['python', 'shell'];
+  const highlight = ref('Python');
+  const highlightOptions = ['Python', 'Shell', 'Bat', 'Powershell'];
   const suffix = ref('');
 
   // 打开全屏

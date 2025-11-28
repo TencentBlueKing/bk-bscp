@@ -15,6 +15,7 @@ export interface ITopoTreeNodeRes {
 export interface ITopoTreeNode {
   child: ITopoTreeNode[];
   topoParentName: string;
+  topoParent: ITopoTreeNode | null;
   topoVisible: boolean;
   topoExpand: boolean;
   topoLoading: boolean;
