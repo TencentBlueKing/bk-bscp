@@ -160,6 +160,7 @@ type ProcessAttachment struct {
 	CloudID           uint32 `gorm:"column:cloud_id" json:"cloud_id"`                       // 管控区域
 	AgentID           string `gorm:"column:agent_id" json:"agent_id"`                       // Agent ID
 	ProcessTemplateID uint32 `gorm:"column:process_template_id" json:"process_template_id"` // 进程模板ID
+	ServiceTemplateID uint32 `gorm:"column:service_template_id" json:"service_template_id"` // 服务模板ID
 }
 
 // CCSyncStatus cc同步状态

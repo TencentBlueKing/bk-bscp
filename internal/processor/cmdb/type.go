@@ -25,10 +25,11 @@ type Set struct {
 
 // Module 模块
 type Module struct {
-	ID      int
-	Name    string
-	Host    []Host
-	SvcInst []SvcInst
+	ID                int
+	ServiceTemplateID int
+	Name              string
+	Host              []Host
+	SvcInst           []SvcInst
 }
 
 // Host 主机

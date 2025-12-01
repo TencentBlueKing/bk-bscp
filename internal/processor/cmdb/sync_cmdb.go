@@ -68,7 +68,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			return errM
 		}
 		for _, m := range listModules {
-			module := Module{ID: m.BkModuleID, Name: m.BkModuleName}
+			module := Module{ID: m.BkModuleID, Name: m.BkModuleName, ServiceTemplateID: m.ServiceTemplateID}
 			sets[i].Module = append(sets[i].Module, module)
 		}
 	}
@@ -202,7 +202,7 @@ func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkc
 			BkSupplierAccount: "0",
 			BkBizID:           s.bizID,
 			BkSetID:           setID,
-			Fields:            []string{"bk_module_id", "bk_module_name"},
+			Fields:            []string{"bk_module_id", "bk_module_name", "service_template_id"},
 		})
 		if err != nil {
 			return nil, 0, err
@@ -316,6 +316,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 								CloudID:           uint32(hinfo.CloudId),
 								AgentID:           hinfo.AgentID,
 								ProcessTemplateID: uint32(proc.ProcessTemplateID),
+								ServiceTemplateID: uint32(mod.ServiceTemplateID),
 							},
 							Spec: &table.ProcessSpec{
 								SetName:         set.Name,
