@@ -115,7 +115,8 @@ export const downloadFile = (content: any, mimeType: string, fileName: string) =
   URL.revokeObjectURL(downloadUrl);
 };
 
-export const timeAgo = (dateString: string) => {
+export const timeAgo = (dateString: string | null) => {
+  if (!dateString) return '--';
   const diff = (Date.now() - new Date(dateString).getTime()) / 1000;
   const units = [
     { sec: 31536000, name: localT('年') },

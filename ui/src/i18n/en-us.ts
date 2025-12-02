@@ -1378,6 +1378,9 @@ export default {
   内网IP: 'Internal IP',
   'CC 中更新了数量，已不存在这条实例记录，建议停止': 'The number of CC has been updated, this instance record no longer exists, it is recommended to stop',
   前: 'ago',
+  年: 'year',
+  月: 'month',
+  天: 'day',
 
   // 任务历史
   任务历史: 'Task history',
