@@ -43,8 +43,7 @@ type Service interface {
 	// ListProcTemplate 查询进程模板列表
 	ListProcTemplate(ctx context.Context, req *ListProcTemplateReq) (*ListProcTemplateResp, error)
 	// ListProcessInstance 查询进程实例列表
-	ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
-		[]*ListProcessInstance, error)
+	ListProcessInstance(ctx context.Context, req *ListProcessInstanceReq) ([]*ListProcessInstance, error)
 	// FindHostBySetTemplate 查询集群模板下的主机
 	FindHostBySetTemplate(ctx context.Context, req FindHostBySetTemplateReq) (
 		*FindHostBySetTemplateResp, error)
@@ -60,8 +59,7 @@ type Service interface {
 	// FindModuleBatch 批量查询某业务的模块详情
 	FindModuleBatch(ctx context.Context, req *ModuleReq) ([]*ModuleInfo, error)
 	// ListServiceInstance 查询服务实例列表
-	ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
-		*ServiceInstanceResp, error)
+	ListServiceInstance(ctx context.Context, req *ServiceInstanceListReq) (*ServiceInstanceResp, error)
 	// FindSetBatch 批量查询某业务的集群详情
 	FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error)
 	// FindHostTopoRelation 获取主机与拓扑的关系

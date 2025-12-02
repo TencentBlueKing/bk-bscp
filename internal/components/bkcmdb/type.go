@@ -360,8 +360,8 @@ type ListProcessInstanceReq struct {
 
 // ListProcessInstance 进程数据
 type ListProcessInstance struct {
-	Property ProcessInfo `json:"property"` // 进程属性信息
-	Relation Relation    `json:"relation"` // 进程与服务实例的关联信息
+	Property *ProcessInfo `json:"property"` // 进程属性信息
+	Relation *Relation    `json:"relation"` // 进程与服务实例的关联信息
 }
 
 // BindInfo 绑定信息
@@ -431,33 +431,33 @@ type ProcessReq struct {
 
 // ProcessInfo 进程信息
 type ProcessInfo struct {
-	AutoStart         bool       `json:"auto_start"`           // 是否自动拉起
-	BkBizID           int        `json:"bk_biz_id"`            // 业务id
-	BkFuncName        string     `json:"bk_func_name"`         // 进程名称
-	BkProcessID       int        `json:"bk_process_id"`        // 进程id
-	BkProcessName     string     `json:"bk_process_name"`      // 进程别名
-	BkStartParamRegex string     `json:"bk_start_param_regex"` // 进程启动参数
-	BkSupplierAccount string     `json:"bk_supplier_account"`  // 开发商账号
-	CreateTime        string     `json:"create_time"`          // 创建时间
-	Description       string     `json:"description"`          // 描述
-	FaceStopCmd       string     `json:"face_stop_cmd"`        // 强制停止命令
-	LastTime          string     `json:"last_time"`            // 更新时间
-	PidFile           string     `json:"pid_file"`             // PID文件路径
-	Priority          int        `json:"priority"`             // 启动优先级
-	ProcNum           int        `json:"proc_num"`             // 启动数量
-	ReloadCmd         string     `json:"reload_cmd"`           // 进程重载命令
-	RestartCmd        string     `json:"restart_cmd"`          // 重启命令
-	StartCmd          string     `json:"start_cmd"`            // 启动命令
-	StopCmd           string     `json:"stop_cmd"`             // 停止命令
-	Timeout           int        `json:"timeout"`              // 操作超时时长
-	User              string     `json:"user"`                 // 启动用户
-	WorkPath          string     `json:"work_path"`            // 工作路径
-	BkCreatedAt       string     `json:"bk_created_at"`        // 创建时间
-	BkCreatedBy       string     `json:"bk_created_by"`        // 创建人
-	BkUpdatedAt       string     `json:"bk_updated_at"`        // 更新时间
-	BkUpdatedBy       string     `json:"bk_updated_by"`        // 更新人
-	BindInfo          []BindInfo `json:"bind_info"`            // 绑定信息列表
-	ServiceInstanceID int        `json:"service_instance_id"`  // 服务实例ID
+	AutoStart         bool        `json:"auto_start"`           // 是否自动拉起
+	BkBizID           int         `json:"bk_biz_id"`            // 业务id
+	BkFuncName        string      `json:"bk_func_name"`         // 进程名称
+	BkProcessID       int         `json:"bk_process_id"`        // 进程id
+	BkProcessName     string      `json:"bk_process_name"`      // 进程别名
+	BkStartParamRegex string      `json:"bk_start_param_regex"` // 进程启动参数
+	BkSupplierAccount string      `json:"bk_supplier_account"`  // 开发商账号
+	CreateTime        string      `json:"create_time"`          // 创建时间
+	Description       string      `json:"description"`          // 描述
+	FaceStopCmd       string      `json:"face_stop_cmd"`        // 强制停止命令
+	LastTime          string      `json:"last_time"`            // 更新时间
+	PidFile           string      `json:"pid_file"`             // PID文件路径
+	Priority          int         `json:"priority"`             // 启动优先级
+	ProcNum           int         `json:"proc_num"`             // 启动数量
+	ReloadCmd         string      `json:"reload_cmd"`           // 进程重载命令
+	RestartCmd        string      `json:"restart_cmd"`          // 重启命令
+	StartCmd          string      `json:"start_cmd"`            // 启动命令
+	StopCmd           string      `json:"stop_cmd"`             // 停止命令
+	Timeout           int         `json:"timeout"`              // 操作超时时长
+	User              string      `json:"user"`                 // 启动用户
+	WorkPath          string      `json:"work_path"`            // 工作路径
+	BkCreatedAt       string      `json:"bk_created_at"`        // 创建时间
+	BkCreatedBy       string      `json:"bk_created_by"`        // 创建人
+	BkUpdatedAt       string      `json:"bk_updated_at"`        // 更新时间
+	BkUpdatedBy       string      `json:"bk_updated_by"`        // 更新人
+	BindInfo          []*BindInfo `json:"bind_info"`            // 绑定信息列表
+	ServiceInstanceID int         `json:"service_instance_id"`  // 服务实例ID
 }
 
 // ServiceInstanceRequest 查询服务实例请求参数
@@ -468,8 +468,8 @@ type ServiceInstanceReq struct {
 }
 
 type ServiceInstanceResp struct {
-	Count int                   `json:"count"` // 总数
-	Info  []ServiceInstanceInfo `json:"info"`  // 返回结果
+	Count int                    `json:"count"` // 总数
+	Info  []*ServiceInstanceInfo `json:"info"`  // 返回结果
 }
 
 // ServiceInstanceInfo 服务实例信息

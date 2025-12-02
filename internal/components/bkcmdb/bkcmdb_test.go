@@ -264,7 +264,7 @@ func TestListServiceInstance(t *testing.T) {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.ListServiceInstance(context.Background(), ServiceInstanceListReq{
+	resp, err := cmdb.ListServiceInstance(context.Background(), &ServiceInstanceListReq{
 		BkBizID:    3,
 		BkModuleID: 0,
 		BkHostIDs:  []int{},

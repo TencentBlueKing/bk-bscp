@@ -113,7 +113,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 5. 进程
 	listProcMap := map[int][]ProcInst{}
 	for _, inst := range listSvcInsts {
-		procs, err := s.svc.ListProcessInstance(ctx, bkcmdb.ListProcessInstanceReq{
+		procs, err := s.svc.ListProcessInstance(ctx, &bkcmdb.ListProcessInstanceReq{
 			BkBizID: s.bizID, ServiceInstanceID: inst.ID,
 		})
 		if err != nil {
@@ -246,12 +246,12 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 }
 
 func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID []int) (
-	[]bkcmdb.ServiceInstanceInfo, error) {
-	var all []bkcmdb.ServiceInstanceInfo
+	[]*bkcmdb.ServiceInstanceInfo, error) {
+	var all []*bkcmdb.ServiceInstanceInfo
 
 	for _, id := range moduleID {
-		svcInst, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ServiceInstanceInfo, int, error) {
-			resp, err := s.svc.ListServiceInstance(ctx, bkcmdb.ServiceInstanceListReq{
+		svcInst, err := PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ServiceInstanceInfo, int, error) {
+			resp, err := s.svc.ListServiceInstance(ctx, &bkcmdb.ServiceInstanceListReq{
 				BkBizID:    s.bizID,
 				BkModuleID: id,
 				Page:       page,

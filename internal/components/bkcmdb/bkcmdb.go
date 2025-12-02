@@ -247,7 +247,7 @@ func (bkcmdb *CMDBService) ListProcTemplate(ctx context.Context, req *ListProcTe
 }
 
 // ListProcessInstance 查询进程实例列表
-func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req ListProcessInstanceReq) (
+func (bkcmdb *CMDBService) ListProcessInstance(ctx context.Context, req *ListProcessInstanceReq) (
 	[]*ListProcessInstance, error) {
 	url := fmt.Sprintf(listProcessInstance, bkcmdb.Host)
 
@@ -335,7 +335,7 @@ func (bkcmdb *CMDBService) FindModuleBatch(ctx context.Context, req *ModuleReq) 
 }
 
 // ListServiceInstance 查询服务实例列表
-func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context, req ServiceInstanceListReq) (
+func (bkcmdb *CMDBService) ListServiceInstance(ctx context.Context, req *ServiceInstanceListReq) (
 	*ServiceInstanceResp, error) {
 	url := fmt.Sprintf(listServiceInstance, bkcmdb.Host)
 
