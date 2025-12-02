@@ -65,3 +65,24 @@ export interface IConfigTemplateItem {
   instCount?: number;
   templateCount?: number;
 }
+
+export interface IConfigTemplateEditParams {
+  name: string;
+  memo: string;
+  file_type: string;
+  charset: string;
+  file_name: string;
+  file_path: string;
+  file_mode: string;
+  user: string;
+  user_group: string;
+  privilege: string;
+  fileAP: string;
+  revision_name: string;
+}
+
+export interface IConfigTemplateVariableItem {
+  key: string;
+  memo: string;
+  type: string;
+}

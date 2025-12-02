@@ -45,3 +45,39 @@ export const getProcessListFormServiceTemplate = (biz_id: string, service_templa
  */
 export const getConfigTemplateList = (biz_id: string, query: any) =>
   http.post(`/config/biz_id/${biz_id}/config_template/list`, query).then((res) => res.data);
+
+/**
+ * 创建配置模板
+ * @param biz_id
+ * @param data
+ */
+export const createConfigTemplate = (biz_id: string, data: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_template`, data).then((res) => res.data);
+
+/**
+ * 获取配置模板变量
+ * @param biz_id
+ */
+export const getConfigTemplateVariable = (biz_id: string) =>
+  http.get(`/config/biz_id/${biz_id}/config_template/variable`).then((res) => res.data);
+
+/**
+ * 绑定进程实例
+ * @param biz_id
+ * @param config_template_id
+ * @param data
+ */
+export const bindProcessInstance = (biz_id: string, config_template_id: number, data: any) =>
+  http
+    .post(`/config/biz_id/${biz_id}/config_template/${config_template_id}/bind_process_instance`, data)
+    .then((res) => res.data);
+
+/**
+ * 预览绑定进程实例
+ * @param biz_id
+ * @param config_template_id
+ */
+export const getPreviewProcessInstance = (biz_id: string, config_template_id: number) =>
+  http
+    .get(`/config/biz_id/${biz_id}/config_template/${config_template_id}/preview_bind_process_instance`)
+    .then((res) => res.data);

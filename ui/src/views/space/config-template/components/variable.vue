@@ -8,37 +8,56 @@
     </div>
     <div class="variable-content">
       <SearchInput v-model="searchValue" :clearable="false" />
-      <PrimaryTable class="variable-table" :data="variableData" size="small">
-        <TableColumn title="KEY" col-key="key" />
-        <TableColumn :title="$t('类型')" col-key="type" />
-        <TableColumn :title="$t('描述')" col-key="memo" width="120" ellipsis />
-        <TableColumn :title="$t('操作')" col-key="action">
-          <template #default="{ row }">
-            <div class="op-btns">
-              <edit-line class="icon" @click="handleEdit(row)" />
-              <Del class="icon" @click="handleDelete(row)" />
-            </div>
-          </template>
-        </TableColumn>
-      </PrimaryTable>
+      <bk-loading color="#242424" :loading="loading">
+        <PrimaryTable class="variable-table" :data="variableList" size="small">
+          <TableColumn title="KEY" col-key="key" width="100" />
+          <TableColumn :title="$t('类型')" col-key="type" />
+          <TableColumn :title="$t('描述')" col-key="memo" width="120" ellipsis />
+          <TableColumn :title="$t('操作')" col-key="action">
+            <template #default="{ row }">
+              <div class="op-btns">
+                <edit-line class="icon" @click="handleEdit(row)" />
+                <Del class="icon" @click="handleDelete(row)" />
+              </div>
+            </template>
+          </TableColumn>
+        </PrimaryTable>
+      </bk-loading>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { AngleDownLine, EditLine, Del } from 'bkui-vue/lib/icon';
+  import { getConfigTemplateVariable } from '../../../../api/config-template';
+  import type { IConfigTemplateVariableItem } from '../../../../../types/config-template';
   import SearchInput from '../../../../components/search-input.vue';
 
   const emits = defineEmits(['close']);
+  const props = defineProps<{
+    bkBizId: string;
+  }>();
+
   const searchValue = ref('');
-  const variableData = ref([
-    { key: '变量1', type: '字符串', memo: '这是变量1的描述' },
-    { key: '变量2', type: '数字', memo: '这是变量2的描述' },
-    { key: '变量3', type: '布尔值', memo: '这是变量3的描述' },
-    { key: '变量4', type: '数组', memo: '这是变量4的描述' },
-    { key: '变量5', type: '对象', memo: '这是变量5的描述' },
-  ]);
+  const variableList = ref<IConfigTemplateVariableItem[]>([]);
+  const loading = ref(false);
+
+  onMounted(() => {
+    loadVariableList();
+  });
+
+  const loadVariableList = async () => {
+    try {
+      loading.value = true;
+      const res = await getConfigTemplateVariable(props.bkBizId);
+      variableList.value = res.config_template_variables;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const handleEdit = (row: any) => {
     console.log('Insert variable:', row);

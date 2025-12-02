@@ -2,40 +2,15 @@
   <DetailLayout :name="$t('新建配置模板')" :show-footer="false" @close="handleClose">
     <template #content>
       <section class="content-wrap">
-        <div class="content">
-          <div class="form-wrap">
-            <div class="title">{{ $t('模板信息') }}</div>
-            <div class="attribution">
-              <span class="label">{{ $t('模板归属') }}</span>
-              <span class="value">config_delivery/默认模板</span>
-            </div>
-            <bk-form ref="formRef" form-type="vertical" :model="formData" :rules="rules">
-              <bk-form-item :label="$t('模板名称')" property="template_name" required>
-                <bk-input v-model="formData.template_name"></bk-input>
-              </bk-form-item>
-              <bk-form-item :label="$t('配置文件名')" property="file_name" required>
-                <bk-input v-model="formData.file_name"></bk-input>
-              </bk-form-item>
-              <bk-form-item :label="$t('配置文件描述')" property="memo">
-                <bk-input v-model="formData.memo" type="textarea" :rows="3" :maxlength="200"></bk-input>
-              </bk-form-item>
-              <bk-form-item :label="$t('文件权限')" property="privilege" required>
-                <PermissionInputPicker v-model="formData.privilege" class="permission-input" />
-              </bk-form-item>
-              <bk-form-item :label="$t('用户')" property="user" required>
-                <bk-input v-model="formData.user" class="permission-input" />
-              </bk-form-item>
-              <bk-form-item :label="$t('用户组')" property="user_group" required>
-                <bk-input v-model="formData.user_group" class="permission-input" />
-              </bk-form-item>
-            </bk-form>
-          </div>
-          <div class="editor-wrap">
-            <ConfigContent :content="formData.content" />
-          </div>
-        </div>
+        <ConfigTemplateForm
+          ref="formRef"
+          :bk-biz-id="bkBizId"
+          :attribution="attribution"
+          :local-val="formData"
+          :content="content"
+          @change="handleFormChange" />
         <div class="btns">
-          <bk-button theme="primary" @click="handleConfirm">{{ $t('创建') }}</bk-button>
+          <bk-button theme="primary" @click="handleCreateConfirm">{{ $t('创建') }}</bk-button>
           <bk-button @click="handleClose">{{ $t('取消') }}</bk-button>
         </div>
       </section>
@@ -45,51 +20,58 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
-  import PermissionInputPicker from '../../../../components/permission-input-picker.vue';
-  import ConfigContent from '../components/config-content.vue';
+  import ConfigTemplateForm from './config-template-form.vue';
+  import { getConfigTemplateEditParams } from '../../../../utils/config-template';
+  import { updateTemplateContent } from '../../../../api/template';
+  import { createConfigTemplate } from '../../../../api/config-template';
+  import type { IConfigTemplateEditParams } from '../../../../../types/config-template';
+  import { Message } from 'bkui-vue';
+  import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
 
   const emits = defineEmits(['close', 'created']);
+  const props = defineProps<{
+    attribution: string;
+    bkBizId: string;
+    templateId: number;
+  }>();
 
+  const formData = ref<IConfigTemplateEditParams>(getConfigTemplateEditParams());
+  const content = ref('');
   const formRef = ref();
-  const formData = ref({
-    privilege: '644',
-    user: 'root',
-    user_group: 'root',
-    template_name: '',
-    file_name: '',
-    memo: '',
-    content: '',
-  });
-  const rules = {
-    memo: [
-      {
-        validator: (value: string) => value.length <= 200,
-        message: t('最大长度200个字符'),
-      },
-    ],
-    revision_name: [
-      {
-        validator: (value: string) => value.length <= 128,
-        message: t('最大长度128个字符'),
-      },
-      {
-        validator: (value: string) => {
-          if (value.length > 0) {
-            return /^[\u4e00-\u9fa5a-zA-Z0-9][\u4e00-\u9fa5a-zA-Z0-9_-]*[\u4e00-\u9fa5a-zA-Z0-9]?$/.test(value);
-          }
-          return true;
-        },
-        message: t('仅允许使用中文、英文、数字、下划线、中划线，且必须以中文、英文、数字开头和结尾'),
-      },
-    ],
+  const pending = ref(false);
+
+  const handleFormChange = (data: IConfigTemplateEditParams, formContent: string) => {
+    formData.value = data;
+    content.value = formContent;
   };
 
-  const handleConfirm = async () => {
-    await formRef.value.validate();
+  const handleCreateConfirm = async () => {
+    try {
+      const isValid = await formRef.value.validate();
+      if (!isValid) return;
+      pending.value = true;
+      const sign = await formRef.value.getSignature();
+      const size = new Blob([content.value]).size;
+      await updateTemplateContent(props.bkBizId, Number(props.bkBizId), content.value, sign);
+      const params = {
+        ...formData.value,
+        ...{ sign, byte_size: size },
+      };
+      await createConfigTemplate(props.bkBizId, params);
+      emits('created');
+      Message({
+        theme: 'success',
+        message: t('新建配置文件成功'),
+      });
+      handleClose();
+    } catch (e) {
+      console.log(e);
+    } finally {
+      pending.value = false;
+    }
   };
 
   const handleClose = () => {

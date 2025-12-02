@@ -38,11 +38,14 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onBeforeUnmount } from 'vue';
+  import { ref, onBeforeUnmount, onMounted } from 'vue';
   import { AngleDownLine } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../components/code-editor/index.vue';
 
   const emits = defineEmits(['close']);
+  defineProps<{
+    bkBizId: string;
+  }>();
 
   const codeEditorRef = ref();
   const inst = ref('');
@@ -61,11 +64,27 @@ class Monkey:
         self.eat(9.25)
         return "Yum yum"`);
 
+  const loading = ref(false);
+
   onBeforeUnmount(() => {
     if (codeEditorRef.value) {
       codeEditorRef.value.destroy();
     }
   });
+
+  onMounted(() => {
+    loadBindProcessInstance();
+  });
+
+  const loadBindProcessInstance = async () => {
+    try {
+      loading.value = true;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
+  };
 </script>
 
 <style scoped lang="scss">

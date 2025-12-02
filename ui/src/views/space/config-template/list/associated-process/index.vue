@@ -6,18 +6,18 @@
     :confirm-text="$t('保存')"
     @closed="handleClose"
     @confirm="handleConfirm">
-    <SelectProcess :bk-biz-id="bkBizId" :template="template" />
+    <SelectProcess :bk-biz-id="bkBizId" :template-name="templateName" :template-id="templateId"/>
   </bk-dialog>
 </template>
 
 <script lang="ts" setup>
-  import { IConfigTemplateItem } from '../../../../../../types/config-template';
   import SelectProcess from './select-process.vue';
 
   defineProps<{
     isShow: boolean;
     bkBizId: string;
-    template: IConfigTemplateItem;
+    templateId: number;
+    templateName: string;
   }>();
   const emits = defineEmits(['update:isShow', 'confirm']);
 

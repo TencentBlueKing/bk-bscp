@@ -6,7 +6,7 @@
           {{ $t('关联进程实例') }}
         </span>
         <span class="line"></span>
-        <span>{{ `${template.spec.name} (${template.spec.file_name})` }}</span>
+        <span>{{ templateName }}</span>
       </div>
       <div class="associated-content">
         <div class="label">{{ $t('选择关联进程') }}</div>
@@ -16,19 +16,21 @@
         </bk-radio-group>
         <SearchInput v-model="searchValue" class="search-input" @search="handleSearch" />
         <bk-loading class="tree-loading" :loading="treeLoading">
-          <TopoTree
-            v-show="processType === 'by_topo'"
-            class="topo-tree"
-            :node-list="topoTreeData"
-            :bk-biz-id="bkBizId"
-            @checked="handleCheckNode" />
-          <TopoTree
-            v-show="processType === 'by_service'"
-            class="template-tree"
-            :node-list="templateTreeData"
-            :bk-biz-id="bkBizId"
-            @checked="handleCheckNode" />
-          <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearSearch" />
+          <template v-if="isShowProcessTree">
+            <TopoTree
+              v-show="processType === 'by_topo'"
+              class="topo-tree"
+              :node-list="topoTreeData"
+              :bk-biz-id="bkBizId"
+              @checked="handleCheckNode" />
+            <TopoTree
+              v-show="processType === 'by_service'"
+              class="template-tree"
+              :node-list="templateTreeData"
+              :bk-biz-id="bkBizId"
+              @checked="handleCheckNode" />
+          </template>
+          <TableEmpty v-else :is-search-empty="isSearchEmpty" @clear="handleClearSearch" />
         </bk-loading>
       </div>
     </div>
@@ -36,7 +38,7 @@
       <div class="title">
         {{ $t('结果预览') }}
       </div>
-      <div v-if="isShowProcessTree" class="scroll-container">
+      <div v-if="templateProcess.length + instanceProcess.length > 0" class="scroll-container">
         <!-- 模板进程 -->
         <ResultPreview
           v-show="templateProcess.length"
@@ -62,13 +64,12 @@
 
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
-  import { getTopoTreeNodes, getServiceTemplateTreeNodes } from '../../../../../api/config-template';
-  import type {
-    ITopoTreeNode,
-    ITopoTreeNodeRes,
-    ITemplateTreeNodeRes,
-    IConfigTemplateItem,
-  } from '../../../../../../types/config-template';
+  import {
+    getTopoTreeNodes,
+    getServiceTemplateTreeNodes,
+    getPreviewProcessInstance,
+  } from '../../../../../api/config-template';
+  import type { ITopoTreeNode, ITopoTreeNodeRes, ITemplateTreeNodeRes } from '../../../../../../types/config-template';
   import SearchInput from '../../../../../components/search-input.vue';
   import TopoTree from './topo-tree.vue';
   import ResultPreview from './result-preview.vue';
@@ -76,7 +77,8 @@
 
   const props = defineProps<{
     bkBizId: string;
-    template: IConfigTemplateItem;
+    templateName: string;
+    templateId: number;
   }>();
 
   const processType = ref('by_topo');
@@ -108,13 +110,15 @@
   const loadAllTreeNodes = async () => {
     try {
       treeLoading.value = true;
-      const [topoRes, templateRes] = await Promise.all([
+      const [topoRes, templateRes, bindProcessRes] = await Promise.all([
         getTopoTreeNodes(props.bkBizId),
         getServiceTemplateTreeNodes(props.bkBizId),
+        getPreviewProcessInstance(props.bkBizId, props.templateId),
       ]);
       const topoData = topoRes.biz_topo_nodes[0].child.length ? topoRes.biz_topo_nodes[0].child : [];
       topoTreeData.value = filterTopoData(topoData);
       filterTemplateData(templateRes.service_templates);
+      console.log(bindProcessRes);
     } catch (error) {
       console.error(error);
     } finally {

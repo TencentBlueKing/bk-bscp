@@ -92,8 +92,15 @@
   <AssociatedProcess
     v-model:is-show="isShowAssociatedProcess"
     :bk-biz-id="spaceId"
-    :template="opTemplate as IConfigTemplateItem" />
-  <CreateConfigTemplate v-if="isShowCreateTemplate" @close="isShowCreateTemplate = false" />
+    :template-id="opTemplate?.attachment.template_id as number"
+    :template-name="`${opTemplate?.spec.name} (${opTemplate?.spec.file_name})`" />
+  <CreateConfigTemplate
+    v-if="isShowCreateTemplate"
+    :attribution="attribution"
+    :bk-biz-id="spaceId"
+    :template-id="1"
+    @close="isShowCreateTemplate = false"
+    @created="refresh" />
   <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
 </template>
 
@@ -134,6 +141,7 @@
   const searchSelectorRef = ref();
   const tableLoading = ref(false);
   const opTemplate = ref<IConfigTemplateItem>();
+  const attribution = ref('');
 
   onMounted(() => {
     loadConfigTemplateList();
@@ -154,6 +162,7 @@
           ...item,
         };
       });
+      attribution.value = `${res.template_space_name}/${res.template_set_name}`;
       pagination.value.count = res.count;
     } catch (error) {
       console.error(error);
@@ -196,6 +205,11 @@
 
   const handleEdit = (template: IConfigTemplateItem) => {
     opTemplate.value = template;
+  };
+
+  const refresh = () => {
+    pagination.value.current = 1;
+    loadConfigTemplateList();
   };
 </script>
 

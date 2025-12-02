@@ -43,8 +43,11 @@
           <bk-button @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
         </div>
       </div>
-      <ProcessPreview v-if="suffix === 'preview'" @close="suffix = ''" />
-      <Variable v-if="suffix === 'variable'" @close="suffix = ''" />
+      <ProcessPreview
+        v-show="suffix === 'preview'"
+        :bk-biz-id="bkBizId"
+        @close="suffix = ''" />
+      <Variable v-show="suffix === 'variable'" :bk-biz-id="bkBizId" @close="suffix = ''" />
     </div>
   </Teleport>
 </template>
@@ -60,10 +63,12 @@
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['change', 'update:charset']);
+  const emits = defineEmits(['change']);
   const props = withDefaults(
     defineProps<{
       content: string;
+      bkBizId: string;
+      templateId?: number;
       editable?: boolean;
       charset?: string;
       sizeLimit?: number;
