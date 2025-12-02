@@ -118,6 +118,10 @@ export const downloadFile = (content: any, mimeType: string, fileName: string) =
 export const timeAgo = (dateString: string | null) => {
   if (!dateString) return '--';
   const diff = (Date.now() - new Date(dateString).getTime()) / 1000;
+  // 小于 1 分钟也按 1 min 前算
+  if (diff < 60) {
+    return `1 min ${localT('前')}`;
+  }
   const units = [
     { sec: 31536000, name: localT('年') },
     { sec: 2592000, name: localT('月') },

@@ -76,7 +76,8 @@
         color: #4d4f56;
       }
       .value {
-        width: 200px;
+        min-width: 200px;
+        max-width: calc(100vw - 800px);
         color: #313238;
       }
       .theme {

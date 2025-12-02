@@ -81,7 +81,6 @@
   font-size: 12px !important;
   &.border {
     border: 1px solid #dcdee5;
-    border-bottom: none;
   }
   th {
     color: #313238 !important;
@@ -90,9 +89,13 @@
   td {
     color: #4d4f56 !important;
   }
+  .t-table__body tr:last-child td {
+    border-bottom: none;
+  }
   .tips-title {
     text-decoration-style: dashed;
     text-decoration-line: underline;
+    text-underline-offset: 4px;
     cursor: pointer;
   }
   .t-loading__gradient-conic {

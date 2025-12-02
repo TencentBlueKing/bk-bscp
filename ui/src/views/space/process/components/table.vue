@@ -72,7 +72,7 @@
           </span>
         </template>
       </TableColumn>
-      <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
+      <TableColumn :title="t('操作')" :width="220" fixed="right" col-key="operation">
         <template #default="{ row }: { row: IProcessItem }">
           <div class="op-btns">
             <bk-badge v-if="row.spec.cc_sync_status === 'updated'" position="top-right" theme="danger" dot>
@@ -102,7 +102,11 @@
       </TableColumn>
       <template #expandedRow="{ row }: { row: IProcessItem }">
         <div class="second-table">
-          <PrimaryTable :data="row.proc_inst" row-key="id" :row-class-name="getSecondTableRowClass">
+          <PrimaryTable
+            class="instance-table"
+            :data="row.proc_inst"
+            row-key="id"
+            :row-class-name="getSecondTableRowClass">
             <TableColumn col-key="spec.host_inst_seq" :title="t('实例')">
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
                 <div class="instance">
@@ -190,6 +194,7 @@
       </template>
     </PrimaryTable>
     <bk-pagination
+      v-show="pagination.count > 0"
       class="table-pagination"
       :model-value="pagination.current"
       :count="pagination.count"
@@ -416,7 +421,7 @@
     if (row.num && rowIndex + 1 > row.num) {
       return 'warn';
     }
-    return 'default';
+    return 'default-row';
   };
 
   const getManagedStatusTheme = (status: string) => {
@@ -609,6 +614,28 @@
     }
     .t-table__expanded-row {
       background: #fafbfd;
+    }
+  }
+
+  .instance-table {
+    .t-table__header {
+      tr {
+        th {
+          height: 32px;
+          padding: 0 !important;
+          line-height: 32px !important;
+        }
+      }
+    }
+    .default-row {
+      td {
+        height: 32px;
+        padding: 0 !important;
+        line-height: 32px !important;
+      }
+      &:last-child {
+        border-bottom: none;
+      }
     }
   }
 </style>

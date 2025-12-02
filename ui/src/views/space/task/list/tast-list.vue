@@ -84,6 +84,7 @@
         </template>
       </PrimaryTable>
       <bk-pagination
+        v-show="pagination.count > 0"
         class="table-pagination"
         :model-value="pagination.current"
         :count="pagination.count"

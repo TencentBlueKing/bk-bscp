@@ -15,6 +15,7 @@
       <div class="panels-list">
         <div
           v-for="panel in panels"
+          v-show="panel.count > 0"
           :key="panel.status"
           :class="['panel', { active: activePanels === panel.status }]"
           @click="handleChangePanel(panel.status)">
@@ -39,7 +40,7 @@
             </template>
           </TableColumn>
           <TableColumn :title="$t('模块')" col-key="process_payload.module_name"></TableColumn>
-          <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name"></TableColumn>
+          <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name" ellipsis></TableColumn>
           <TableColumn :title="$t('进程别名')" col-key="process_payload.alias"></TableColumn>
           <TableColumn :title="$t('CC 进程 ID')" col-key="process_payload.cc_process_id"></TableColumn>
           <TableColumn :title="$t('模块下唯一标识')" col-key="process_payload.module_inst_seq"></TableColumn>
