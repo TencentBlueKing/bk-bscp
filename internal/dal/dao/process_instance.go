@@ -40,6 +40,8 @@ type ProcessInstance interface {
 	GetMaxHostInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
 	// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
 	DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error
+	// BatchUpdateWithTx batch updates process instances.
+	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -48,6 +50,28 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// BatchUpdateWithTx implements ProcessInstance.
+func (dao *processInstanceDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+
+	// 按批次更新，每次最多 500 条
+	batchSize := 500
+	for i := 0; i < len(data); i += batchSize {
+		end := min(i+batchSize, len(data))
+		batch := data[i:end]
+
+		if err := q.Save(batch...); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
@@ -136,6 +160,7 @@ func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.Proce
 	if _, err := q.Where(m.ID.Eq(processInstance.ID)).Updates(processInstance); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -175,7 +200,6 @@ func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.P
 
 // BatchCreateWithTx implements ProcessInstance.
 func (dao *processInstanceDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
-	// generate an config item id and update to config item.
 	if len(data) == 0 {
 		return nil
 	}

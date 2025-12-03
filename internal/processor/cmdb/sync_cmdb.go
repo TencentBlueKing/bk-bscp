@@ -326,7 +326,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 								Alias:           proc.Name,
 								InnerIP:         hinfo.IP,
 								CcSyncStatus:    table.Synced,
-								CcSyncUpdatedAt: now,
+								CcSyncUpdatedAt: nil,
 								SourceData:      sourceData,
 								PrevData:        "{}",
 								ProcNum:         uint(proc.ProcNum),
@@ -516,6 +516,7 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 
 		newP.Spec.CcSyncStatus = status
 		newP.Spec.PrevData = oldP.Spec.SourceData
+		newP.Spec.CcSyncUpdatedAt = nil
 		toAdd = &table.Process{
 			Attachment: newP.Attachment,
 			Spec:       newP.Spec,
@@ -541,12 +542,13 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 		oldP.Spec.PrevData = oldP.Spec.SourceData
 		oldP.Spec.SourceData = newP.Spec.SourceData
 		oldP.Spec.CcSyncStatus = table.Updated
-		oldP.Spec.CcSyncUpdatedAt = now
+		oldP.Spec.CcSyncUpdatedAt = nil
 	}
 
 	// 更新 ProcNum
 	if numChanged {
 		oldP.Spec.ProcNum = newP.Spec.ProcNum
+		oldP.Spec.CcSyncUpdatedAt = nil
 	}
 
 	// 查询指定进程的实例数量

@@ -40,6 +40,8 @@ const (
 
 	defaultMaxWait  = 30 * time.Second
 	defaultInterval = 2 * time.Second
+	// Maximum number of times to tolerate ErrorCode 115 before treating as complete
+	maxInProgressRetries = 5
 )
 
 // NewSyncGESService 初始化同步gse
@@ -101,6 +103,7 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			continue
 		}
 
+		updatedInsts := make([]*table.ProcessInstance, 0, len(result))
 		for key, val := range result {
 			inst := instMap[key]
 			if inst == nil {
@@ -111,12 +114,42 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			status, managed := parseGSEProcResult(key, val)
 			inst.Spec.Status = status
 			inst.Spec.ManagedStatus = managed
+			updatedInsts = append(updatedInsts, inst)
+		}
 
-			if err := s.dao.ProcessInstance().Update(kit, inst); err != nil {
-				logs.Errorf("biz %d: update instance failed for key=%s, err=%v", s.bizID, key, err)
+		// 开启事务并入库
+		tx := s.dao.GenQuery().Begin()
+
+		// 若事务失败需要回滚
+		committed := false
+		defer func() {
+			if !committed {
+				if rErr := tx.Rollback(); rErr != nil {
+					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+				}
+			}
+		}()
+
+		if len(updatedInsts) > 0 {
+			if err := s.dao.ProcessInstance().BatchUpdateWithTx(kit, tx, updatedInsts); err != nil {
+				logs.Errorf("biz %d: batch update instances failed, err=%v", s.bizID, err)
+				continue
 			}
 		}
 
+		// Update the process's cc_sync_updated_at timestamp to reflect when GSE sync completed
+		now := time.Now().UTC()
+		process.Spec.CcSyncUpdatedAt = &now
+		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, []*table.Process{process}); err != nil {
+			logs.Errorf("biz %d: update process sync time failed, err=%v", s.bizID, err)
+			continue
+		}
+
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("biz %d: commit tx failed: %v", s.bizID, err)
+			continue
+		}
+		committed = true
 	}
 
 	return nil
@@ -195,9 +228,6 @@ func parseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 			}
 		}
 
-	case gse.ErrCodeInProgress:
-		status = table.ProcessStatusStarting
-
 	default:
 		logs.Warnf("key=%s, unknown gse code: %d", key, v.ErrorCode)
 	}
@@ -207,6 +237,7 @@ func parseGSEProcResult(key string, v gse.ProcResult) (status table.ProcessStatu
 
 func waitForProcResult(ctx context.Context, svc *gse.Service, taskID string, maxWait, interval time.Duration) (map[string]gse.ProcResult, error) {
 	var result map[string]gse.ProcResult
+	inProgressCount := 0
 
 	err := wait.PollUntilContextTimeout(
 		ctx,
@@ -228,11 +259,29 @@ func waitForProcResult(ctx context.Context, svc *gse.Service, taskID string, max
 				return false, fmt.Errorf("decode gse result failed, taskID=%s, err=%v", taskID, err)
 			}
 
+			// 是否存在正在执行的进程即 115 状态码
+			hasInProgress := false
+			// 所有正在执行的进程即 115 状态码
+			var inProgressProcs []gse.ProcResult
+
 			// 检查是否还有实例在进行中
 			for _, proc := range result {
 				if gse.IsInProgress(proc.ErrorCode) { // 进程仍在执行中
-					return false, nil // 继续轮询
+					hasInProgress = true
+					inProgressProcs = append(inProgressProcs, proc)
 				}
+			}
+
+			if hasInProgress {
+				inProgressCount++
+				if inProgressCount > maxInProgressRetries {
+					// 详细日志：包含业务ID、任务ID、计数，以及只包含115的进程条目
+					logs.Warnf("task=%s: seen ErrorCode==115 for %d times — still in progress; listing procs with 115: %+v",
+						taskID, inProgressCount, inProgressProcs)
+					// 超过5次依旧是正在执行 → 直接认为完成
+					return true, nil
+				}
+				return false, nil // 继续轮询
 			}
 
 			return true, nil // 全部完成

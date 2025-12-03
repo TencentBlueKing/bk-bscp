@@ -222,7 +222,7 @@ func (dao *processDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*
 
 // BatcheUpsertWithTx implements Process.
 func (dao *processDao) BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
-	q := tx.Process.WithContext(kit.Ctx)
+	q := tx.Process.WithContext(kit.Ctx).Where(dao.genQ.Process.CcSyncStatus.Neq(table.Deleted.String()))
 
 	return q.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "biz_id"}, {Name: "cc_process_id"}},

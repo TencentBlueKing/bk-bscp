@@ -96,7 +96,7 @@ type ProcessSpec struct {
 	Alias           string       `gorm:"column:alias" json:"alias"`                           // 进程别名
 	InnerIP         string       `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
 	CcSyncStatus    CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
-	CcSyncUpdatedAt time.Time    `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
+	CcSyncUpdatedAt *time.Time   `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
 	SourceData      string       `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
 	PrevData        string       `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
 	ProcNum         uint         `gorm:"column:proc_num" json:"proc_num"`                     // 进程数量

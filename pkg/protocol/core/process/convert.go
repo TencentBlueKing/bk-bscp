@@ -14,6 +14,8 @@
 package pbproc
 
 import (
+	"time"
+
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -47,7 +49,7 @@ func (p *ProcessSpec) ProcessSpec() *table.ProcessSpec {
 		Alias:           p.Alias,
 		InnerIP:         p.InnerIp,
 		CcSyncStatus:    table.CCSyncStatus(p.CcSyncStatus),
-		CcSyncUpdatedAt: p.CcSyncUpdatedAt.AsTime().UTC(),
+		CcSyncUpdatedAt: timePtrFromProto(p.CcSyncUpdatedAt),
 		SourceData:      p.SourceData,
 		ProcNum:         uint(p.ProcNum),
 	}
@@ -67,10 +69,27 @@ func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
 		Alias:           spec.Alias,
 		InnerIp:         spec.InnerIP,
 		CcSyncStatus:    spec.CcSyncStatus.String(),
-		CcSyncUpdatedAt: timestamppb.New(spec.CcSyncUpdatedAt),
+		CcSyncUpdatedAt: toProtoTimestamp(spec.CcSyncUpdatedAt),
 		SourceData:      spec.SourceData,
 		ProcNum:         uint32(spec.ProcNum),
 	}
+}
+
+// timePtrFromProto 将 protobuf 的 *timestamppb.Timestamp 转换为 Go 的 *time.Time
+func timePtrFromProto(ts *timestamppb.Timestamp) *time.Time {
+	if ts == nil {
+		return nil
+	}
+	t := ts.AsTime().UTC()
+	return &t
+}
+
+// toProtoTimestamp 将 Go 的 *time.Time 转换为 protobuf 的 *timestamppb.Timestamp
+func toProtoTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
 }
 
 // ProcessAttachment convert pb process to table ProcessAttachment
