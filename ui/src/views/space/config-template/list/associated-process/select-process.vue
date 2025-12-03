@@ -18,14 +18,18 @@
         <bk-loading class="tree-loading" :loading="treeLoading">
           <template v-if="isShowProcessTree">
             <TopoTree
-              v-show="processType === 'by_topo'"
               class="topo-tree"
+              v-show="processType === 'by_topo'"
+              v-model:template-process="templateProcess"
+              v-model:instance-process="instanceProcess"
               :node-list="topoTreeData"
               :bk-biz-id="bkBizId"
               @checked="handleCheckNode" />
             <TopoTree
-              v-show="processType === 'by_service'"
               class="template-tree"
+              v-show="processType === 'by_service'"
+              v-model:template-process="templateProcess"
+              v-model:instance-process="instanceProcess"
               :node-list="templateTreeData"
               :bk-biz-id="bkBizId"
               @checked="handleCheckNode" />
@@ -67,9 +71,14 @@
   import {
     getTopoTreeNodes,
     getServiceTemplateTreeNodes,
-    getPreviewProcessInstance,
+    getBindProcessInstance,
   } from '../../../../../api/config-template';
-  import type { ITopoTreeNode, ITopoTreeNodeRes, ITemplateTreeNodeRes } from '../../../../../../types/config-template';
+  import type {
+    ITopoTreeNode,
+    ITopoTreeNodeRes,
+    ITemplateTreeNodeRes,
+    IProcessPreviewItem,
+  } from '../../../../../../types/config-template';
   import SearchInput from '../../../../../components/search-input.vue';
   import TopoTree from './topo-tree.vue';
   import ResultPreview from './result-preview.vue';
@@ -80,14 +89,15 @@
     templateName: string;
     templateId: number;
   }>();
+  const emits = defineEmits(['change']);
 
   const processType = ref('by_topo');
   const searchValue = ref('');
   const topoTreeData = ref<ITopoTreeNode[]>([]);
   const templateTreeData = ref<ITopoTreeNode[]>([]);
   const treeLoading = ref(false);
-  const templateProcess = ref<ITopoTreeNode[]>([]);
-  const instanceProcess = ref<ITopoTreeNode[]>([]);
+  const templateProcess = ref<IProcessPreviewItem[]>([]);
+  const instanceProcess = ref<IProcessPreviewItem[]>([]);
   const searchTimer = ref();
   const isSearchEmpty = ref(false);
 
@@ -110,15 +120,14 @@
   const loadAllTreeNodes = async () => {
     try {
       treeLoading.value = true;
-      const [topoRes, templateRes, bindProcessRes] = await Promise.all([
+      const [topoRes, templateRes, bindRes] = await Promise.all([
         getTopoTreeNodes(props.bkBizId),
         getServiceTemplateTreeNodes(props.bkBizId),
-        getPreviewProcessInstance(props.bkBizId, props.templateId),
+        getBindProcessInstance(props.bkBizId, props.templateId),
       ]);
-      const topoData = topoRes.biz_topo_nodes[0].child.length ? topoRes.biz_topo_nodes[0].child : [];
-      topoTreeData.value = filterTopoData(topoData);
+      topoTreeData.value = filterTopoData(topoRes.biz_topo_nodes);
       filterTemplateData(templateRes.service_templates);
-      console.log(bindProcessRes);
+      recoverBindRelationship(bindRes);
     } catch (error) {
       console.error(error);
     } finally {
@@ -178,39 +187,28 @@
   };
 
   // 绑定关系回填
-  // const recoverBindRelationship = (processList) => {
-  //   try {
-  //     const templateProcessList = [];
-  //     const instanceProcessList = [];
-  //     processList.forEach((item) => {
-  //       const info = item.process_obj_info;
-  //       if (item.process_object_type === 'TEMPLATE') {
-  //         templateProcessList.push({
-  //           __IS_RECOVER: true,
-  //           id: item.process_object_id,
-  //           topoName: info.process_object_name,
-  //           topoTemplateName: info.service_template_name,
-  //         });
-  //       } else if (item.process_object_type === 'INSTANCE') {
-  //         instanceProcessList.push({
-  //           __IS_RECOVER: true,
-  //           property: {
-  //             bk_process_id: item.process_object_id,
-  //           },
-  //           topoName: info.bk_process_name,
-  //           topoReduceName: `${info.bk_set_name}/${info.bk_module_name}/${info.bk_service_name}`,
-  //           topoParent: {
-  //             topoName: info.bk_service_name,
-  //           },
-  //         });
-  //       }
-  //     });
-  //     templateProcess.value = templateProcessList;
-  //     instProcess.value = instanceProcessList;
-  //   } catch (e) {
-  //     console.warn('绑定关系回填失败', e);
-  //   }
-  // };
+  const recoverBindRelationship = (bindRes: any) => {
+    try {
+      bindRes.template_processes.forEach((item: any) => {
+        templateProcess.value.push({
+          __IS_RECOVER: true,
+          id: item.id,
+          topoName: item.process_name,
+          topoParentName: item.name,
+        });
+      });
+      bindRes.instance_processes.forEach((item: any) => {
+        instanceProcess.value.push({
+          __IS_RECOVER: true,
+          id: item.id,
+          topoName: item.process_name,
+          topoParentName: item.name,
+        });
+      });
+    } catch (e) {
+      console.warn('绑定关系回填失败', e);
+    }
+  };
 
   // 选择进程节点
   const handleCheckNode = (topoNode: ITopoTreeNode) => {
@@ -222,43 +220,63 @@
         let findIndex;
         for (let i = 0; i < templateProcess.value.length; i++) {
           const item = templateProcess.value[i];
-          if (item.processId === topoNode.processId) {
+          if (item.id === topoNode.processId) {
             findItem = item;
             findIndex = i;
             break;
           }
         }
         if (findItem) {
-          findItem.topoChecked = false;
-          templateProcess.value.splice(findIndex as number, 1, topoNode);
+          topoNode.topoChecked = false;
+          templateProcess.value.splice(findIndex as number, 1, findItem);
         } else {
-          templateProcess.value.push(topoNode);
+          templateProcess.value.push({
+            __IS_RECOVER: false,
+            id: topoNode.processId!,
+            topoName: topoNode.topoName,
+            topoParentName: topoNode.topoParentName,
+            topoNode,
+          });
         }
       } else {
         // 取消选择
-        const index = templateProcess.value.findIndex((item) => item === topoNode);
+        const index = templateProcess.value.findIndex((item) => item.id === topoNode.processId);
         templateProcess.value.splice(index, 1);
       }
     } else if (topoNode.topoType === 'instanceProcess') {
       if (topoNode.topoChecked) {
         // 选择进程
-        instanceProcess.value.push(topoNode);
+        instanceProcess.value.push({
+          __IS_RECOVER: false,
+          id: topoNode.processId!,
+          topoName: topoNode.topoName,
+          topoParentName: topoNode.topoParentName,
+          topoNode,
+        });
       } else {
         // 取消选择
-        const index = instanceProcess.value.findIndex((item) => item.processId === topoNode.processId);
+        const index = instanceProcess.value.findIndex((item) => item.id === topoNode.processId);
         instanceProcess.value.splice(index, 1);
       }
     }
+    emits('change', {
+      cc_template_process_ids: templateProcess.value.map((item) => item.id),
+      cc_process_ids: instanceProcess.value.map((item) => item.id),
+    });
   };
 
   // 移除模板进程
-  const removeTemplateProcess = (item: ITopoTreeNode, index: number) => {
-    item.topoChecked = false;
+  const removeTemplateProcess = (item: IProcessPreviewItem, index: number) => {
+    if (item.topoNode) {
+      item.topoNode.topoChecked = false;
+    }
     templateProcess.value.splice(index, 1);
   };
   // 移除实例进程
-  const removeInstanceProcess = (item: ITopoTreeNode, index: number) => {
-    item.topoChecked = false;
+  const removeInstanceProcess = (item: IProcessPreviewItem, index: number) => {
+    if (item.topoNode) {
+      item.topoNode.topoChecked = false;
+    }
     instanceProcess.value.splice(index, 1);
   };
 

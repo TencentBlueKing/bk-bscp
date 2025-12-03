@@ -1,5 +1,5 @@
 <template>
-  <DetailLayout :name="$t('新建配置模板')" :show-footer="false" @close="handleClose">
+  <DetailLayout :name="$t('编辑配置模板')" :show-footer="false" @close="handleClose">
     <template #content>
       <section class="content-wrap">
         <ConfigTemplateForm
@@ -8,10 +8,10 @@
           :attribution="attribution"
           :local-val="formData"
           :content="content"
-          :edit="false"
+          :edit="true"
           @change="handleFormChange" />
         <div class="btns">
-          <bk-button theme="primary" @click="handleCreateConfirm">{{ $t('创建') }}</bk-button>
+          <bk-button theme="primary" @click="handleCreateConfirm">{{ $t('确认') }}</bk-button>
           <bk-button @click="handleClose">{{ $t('取消') }}</bk-button>
         </div>
       </section>
@@ -36,6 +36,7 @@
   const props = defineProps<{
     attribution: string;
     bkBizId: string;
+    templateId: number;
   }>();
 
   const formData = ref<IConfigTemplateEditParams>(getConfigTemplateEditParams());

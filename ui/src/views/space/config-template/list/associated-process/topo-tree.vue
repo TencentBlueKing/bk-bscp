@@ -51,6 +51,8 @@
         <TopoTree
           v-if="topoNode.child && topoNode.child.length"
           v-show="topoNode.topoExpand"
+          v-model:template-process="templateProcess"
+          v-model:instance-process="instanceProcess"
           :node-list="topoNode.child"
           :bk-biz-id="bkBizId"
           @checked="handleCheckNode" />
@@ -66,7 +68,7 @@
     getProcessListFormServiceInstance,
     getProcessListFormServiceTemplate,
   } from '../../../../../api/config-template';
-  import type { ITopoTreeNode } from '../../../../../../types/config-template';
+  import type { ITopoTreeNode, IProcessPreviewItem } from '../../../../../../types/config-template';
   import { AngleDownFill, Spinner } from 'bkui-vue/lib/icon';
 
   defineOptions({
@@ -75,9 +77,13 @@
   const props = defineProps<{
     nodeList: ITopoTreeNode[];
     bkBizId: string;
+    templateProcess: IProcessPreviewItem[];
+    instanceProcess: IProcessPreviewItem[];
   }>();
-  const emit = defineEmits(['checked', 'update:templateProcess', 'update:instanceProcess']);
+  const emits = defineEmits(['checked', 'update:templateProcess', 'update:instanceProcess']);
   const treeNodeList = ref<ITopoTreeNode[]>(props.nodeList);
+  const templateProcess = ref<IProcessPreviewItem[]>(props.templateProcess);
+  const instanceProcess = ref<IProcessPreviewItem[]>(props.instanceProcess);
 
   watch(
     () => props.nodeList,
@@ -122,23 +128,6 @@
           const res = await getProcessListFormServiceInstance(props.bkBizId, topoNode.service_instance_id!);
 
           topoNode.child = res.process_instances.map((item: any) => {
-            // // 替换回填的进程对象
-            // let findItem;
-            // let findIndex;
-            // for (let i = 0; i < props.instProcessIds.length; i++) {
-            //   const selectedItem = props.instProcessIds[i];
-            //   if (selectedItem.property.bk_process_id === item.property.bk_process_id) {
-            //     findItem = selectedItem;
-            //     findIndex = i;
-            //     break;
-            //   }
-            // }
-            // if (findItem) {
-            //   item.topoChecked = true;
-            //   const copyProcess = [...this.instanceProcess];
-            //   copyProcess.splice(findIndex, 1, item);
-            //   this.$emit('update:instanceProcess', copyProcess)
-            // }
             return {
               topoParentName: topoNode.topoName,
               topoVisible: true,
@@ -152,11 +141,18 @@
               processId: item.property.bk_process_id,
             };
           });
+          instanceProcess.value.forEach((process) => {
+            const findNode = topoNode.child.find((node) => process.__IS_RECOVER && node.processId === process.id);
+            if (findNode) {
+              findNode.topoChecked = true;
+              process.topoNode = findNode;
+              emits('update:instanceProcess', instanceProcess.value);
+            }
+          });
         }
         // ------- 3. 服务模板 → 模板进程 -------
         else if (topoNode.topoType === 'serviceTemplate') {
           const res = await getProcessListFormServiceTemplate(props.bkBizId, topoNode.service_template_id);
-
           topoNode.child = res.process_templates.map((item: any) => {
             return {
               topoParentName: topoNode.topoName,
@@ -171,20 +167,18 @@
               topoChecked: false,
               processId: item.id,
             };
-
-            // let findIndex = props.templateProcess.findIndex((p) => p.__IS_RECOVER && p.id === item.id);
-
-            // if (findIndex > -1) {
-            //   item.topoChecked = true;
-            //   const copy = [...props.templateProcess];
-            //   copy.splice(findIndex, 1, item);
-            //   emit('update:templateProcess', copy);
-            // }
           });
-          console.log(topoNode, res);
+          templateProcess.value.forEach((process) => {
+            const findNode = topoNode.child.find((node) => process.__IS_RECOVER && node.processId === process.id);
+            if (findNode) {
+              process.topoNode = findNode;
+              findNode.topoChecked = true;
+              emits('update:templateProcess', templateProcess.value);
+            }
+          });
         }
       } catch (e) {
-        console.warn(e);
+        console.error(e);
       } finally {
         topoNode.topoLoading = false;
       }
@@ -199,7 +193,7 @@
   };
 
   const handleCheckNode = (topoNode: ITopoTreeNode) => {
-    emit('checked', topoNode);
+    emits('checked', topoNode);
   };
 </script>
 

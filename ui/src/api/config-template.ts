@@ -77,7 +77,7 @@ export const bindProcessInstance = (biz_id: string, config_template_id: number, 
  * @param biz_id
  * @param config_template_id
  */
-export const getPreviewProcessInstance = (biz_id: string, config_template_id: number) =>
+export const getBindProcessInstance = (biz_id: string, config_template_id: number) =>
   http
     .get(`/config/biz_id/${biz_id}/config_template/${config_template_id}/preview_bind_process_instance`)
     .then((res) => res.data);

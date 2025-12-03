@@ -15,7 +15,7 @@
       <PrimaryTable :data="templateList" :loading="tableLoading" class="border" row-key="id" cell-empty-content="--">
         <TableColumn :title="t('模板名称')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
-            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
+            <bk-button theme="primary" text @click="handleViewTemplate(row.id)">{{ row.spec.name }}</bk-button>
           </template>
         </TableColumn>
         <TableColumn :title="t('文件名')" col-key="spec.file_name"> </TableColumn>
@@ -57,8 +57,8 @@
         <TableColumn :title="t('操作')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="op-btns">
-              <bk-button theme="primary" text @click="handleEdit(row)">{{ t('编辑') }}</bk-button>
-              <bk-button theme="primary" text>{{ t('配置下发') }}</bk-button>
+              <bk-button theme="primary" text @click="handleEdit(row.id)">{{ t('编辑') }}</bk-button>
+              <bk-button theme="primary" text @click="handleConfigIssue(row.id)">{{ t('配置下发') }}</bk-button>
               <bk-button theme="primary" text>{{ t('版本管理') }}</bk-button>
               <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
                 <div class="more-actions">
@@ -92,16 +92,24 @@
   <AssociatedProcess
     v-model:is-show="isShowAssociatedProcess"
     :bk-biz-id="spaceId"
-    :template-id="opTemplate?.attachment.template_id as number"
-    :template-name="`${opTemplate?.spec.name} (${opTemplate?.spec.file_name})`" />
+    :template-id="opTemplate.id"
+    :template-name="opTemplate.templateName"
+    @confirm="refresh" />
   <CreateConfigTemplate
     v-if="isShowCreateTemplate"
     :attribution="attribution"
     :bk-biz-id="spaceId"
-    :template-id="1"
     @close="isShowCreateTemplate = false"
     @created="refresh" />
+  <EditConfigTemplate
+    v-if="isShowEditTemplate"
+    :attribution="attribution"
+    :bk-biz-id="spaceId"
+    :template-id="opTemplate.id"
+    @close="isShowEditTemplate = false"
+    @edited="refresh" />
   <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
+  <ConfigIssued v-if="isShowConfigIssued" @close="isShowConfigIssued = false" />
 </template>
 
 <script lang="ts" setup>
@@ -117,9 +125,11 @@
   import AssociatedProcess from './associated-process/index.vue';
   import useGlobalStore from '../../../../store/global';
   import CreateConfigTemplate from './create-config-template.vue';
+  import EditConfigTemplate from './edit-config-template.vue';
   import ConfigTemplateDetails from './config-template-details.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UserName from '../../../../components/user-name.vue';
+  import ConfigIssued from '../config-issued/index.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
@@ -135,12 +145,17 @@
   const opPopRef = ref();
   const isShowAssociatedProcess = ref(false);
   const isShowCreateTemplate = ref(false);
+  const isShowEditTemplate = ref(false);
   const isShowDetails = ref(false);
+  const isShowConfigIssued = ref(false);
   const templateList = ref<IConfigTemplateItem[]>([]);
   const searchValue = ref<{ [key: string]: string }>();
   const searchSelectorRef = ref();
   const tableLoading = ref(false);
-  const opTemplate = ref<IConfigTemplateItem>();
+  const opTemplate = ref({
+    id: 0,
+    templateName: '',
+  });
   const attribution = ref('');
 
   onMounted(() => {
@@ -157,7 +172,7 @@
       const res = await getConfigTemplateList(spaceId.value, paramas);
       templateList.value = res.details.map((item: IConfigTemplateItem) => {
         return {
-          instCount: item.attachment.cc_process_instance_ids.length,
+          instCount: item.attachment.cc_process_ids.length,
           templateCount: item.attachment.cc_template_process_ids.length,
           ...item,
         };
@@ -186,8 +201,8 @@
   };
 
   // 查看模板详情
-  const handleViewTemplate = (template: IConfigTemplateItem) => {
-    opTemplate.value = template;
+  const handleViewTemplate = (id: number) => {
+    opTemplate.value.id = id;
     isShowDetails.value = true;
   };
 
@@ -199,12 +214,22 @@
   };
 
   const handleAssociatedProcess = (template: IConfigTemplateItem) => {
-    opTemplate.value = template;
+    opTemplate.value = {
+      id: template.id,
+      templateName: `${template.spec.name} (${template.spec.file_name})`,
+    };
     isShowAssociatedProcess.value = true;
   };
 
-  const handleEdit = (template: IConfigTemplateItem) => {
-    opTemplate.value = template;
+  const handleEdit = (id: number) => {
+    opTemplate.value.id = id;
+    isShowEditTemplate.value = true;
+  };
+
+  // 配置下发
+  const handleConfigIssue = (id: number) => {
+    opTemplate.value.id = id;
+    isShowConfigIssued.value = true;
   };
 
   const refresh = () => {

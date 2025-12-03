@@ -28,11 +28,11 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { AngleDownFill, Close } from 'bkui-vue/lib/icon';
-  import { ITopoTreeNode } from '../../../../../../types/config-template';
+  import { IProcessPreviewItem } from '../../../../../../types/config-template';
 
   defineProps<{
     isTemplate: boolean; // 是否是模板进程
-    process: ITopoTreeNode[];
+    process: IProcessPreviewItem[];
   }>();
   const emits = defineEmits(['remove']);
 

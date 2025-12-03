@@ -208,7 +208,7 @@ const routes = [
             component: () => import('./views/space/config-template/list/config-template-list.vue'),
           },
           {
-            path: 'version_manage/:scriptId',
+            path: 'version_manage/:templateId',
             name: 'config-template-version-manage',
             meta: {
               navModule: 'config-template',

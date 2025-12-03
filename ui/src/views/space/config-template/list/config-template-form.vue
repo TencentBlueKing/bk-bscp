@@ -52,6 +52,7 @@
     localVal: IConfigTemplateEditParams;
     content: string;
     bkBizId: string;
+    edit: boolean;
   }>();
   const emits = defineEmits(['change']);
 

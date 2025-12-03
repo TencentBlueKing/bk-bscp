@@ -6,27 +6,43 @@
     :confirm-text="$t('保存')"
     @closed="handleClose"
     @confirm="handleConfirm">
-    <SelectProcess :bk-biz-id="bkBizId" :template-name="templateName" :template-id="templateId"/>
+    <SelectProcess
+      :bk-biz-id="bkBizId"
+      :template-name="templateName"
+      :template-id="templateId"
+      @change="selectProcess = $event" />
   </bk-dialog>
 </template>
 
 <script lang="ts" setup>
+  import { ref } from 'vue';
+  import { bindProcessInstance } from '../../../../../api/config-template';
   import SelectProcess from './select-process.vue';
 
-  defineProps<{
+  const props = defineProps<{
     isShow: boolean;
     bkBizId: string;
     templateId: number;
     templateName: string;
   }>();
   const emits = defineEmits(['update:isShow', 'confirm']);
+  const selectProcess = ref<{
+    cc_process_ids: number[];
+    cc_template_process_ids: number[];
+  }>();
 
   const handleClose = () => {
     emits('update:isShow', false);
   };
 
-  const handleConfirm = () => {
-    emits('confirm');
+  const handleConfirm = async () => {
+    try {
+      await bindProcessInstance(props.bkBizId, props.templateId, selectProcess.value);
+      emits('update:isShow', false);
+      emits('confirm');
+    } catch (error) {
+      console.error(error);
+    }
   };
 </script>
 

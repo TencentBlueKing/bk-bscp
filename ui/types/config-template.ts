@@ -44,10 +44,19 @@ export interface ITemplateTreeNodeRes {
   service_category_id: number;
 }
 
+export interface IProcessPreviewItem {
+  __IS_RECOVER: boolean;
+  id: number;
+  topoName: string;
+  topoParentName: string;
+  topoNode?: ITopoTreeNode;
+}
+
 export interface IConfigTemplateItem {
+  id: number;
   attachment: {
     biz_id: number;
-    cc_process_instance_ids: number[];
+    cc_process_ids: number[];
     cc_template_process_ids: number[];
     template_id: number;
     tenant_id: string;
