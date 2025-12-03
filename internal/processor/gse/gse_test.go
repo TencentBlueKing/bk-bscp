@@ -86,6 +86,7 @@ func TestBuildProcessOperate(t *testing.T) {
 				Alias:         "test-process",
 				HostInstSeq:   1,
 				ModuleInstSeq: 5,
+				FuncName:      "test-process",
 				SetName:       "test-set",
 				ModuleName:    "test-module",
 				AgentID:       []string{"agent-001"},

@@ -20,8 +20,30 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
+
+var (
+	// defaultRenderer is a singleton Renderer instance reused across multiple calls
+	defaultRenderer     *Renderer
+	defaultRendererOnce sync.Once
+	defaultRendererErr  error
+)
+
+// GetDefaultRenderer returns a singleton Renderer instance
+// It initializes the renderer on first call and reuses it for subsequent calls
+func GetDefaultRenderer() (*Renderer, error) {
+	defaultRendererOnce.Do(func() {
+		defaultRenderer, defaultRendererErr = NewRenderer()
+		if defaultRendererErr != nil {
+			logs.Errorf("failed to initialize default renderer: %+v", defaultRendererErr)
+		}
+	})
+	return defaultRenderer, nil
+}
 
 // Renderer handles Mako template rendering by calling Python scripts
 type Renderer struct {
