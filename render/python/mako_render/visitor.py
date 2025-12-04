@@ -31,7 +31,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
         "socket": dir(__import__("socket")),
         "webbrowser": dir(__import__("webbrowser")),
         "threading": dir(__import__("threading")),
-        "sqlite3": dir(__import__("sqlite3")),  # 原项目有 bug，使用了 threading，这里修正为 sqlite3
+        "sqlite3": dir(__import__("sqlite3")),
         "signal": dir(__import__("signal")),
         "imaplib": dir(__import__("imaplib")),
         "fcntl": dir(__import__("fcntl")),

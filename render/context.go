@@ -260,7 +260,10 @@ func BuildProcessContextParamsFromSource(
 			cloudID = int(process.Attachment.CloudID)
 		}
 	}
-	bizID := process.Attachment.BizID
+	var bizID uint32
+	if process != nil && process.Attachment != nil {
+		bizID = process.Attachment.BizID
+	}
 	// 获取 CC XML 和全局变量（参考 Python 代码中的 cache_topo_tree_attr 方法）
 	var ccXML string
 	var globalVars map[string]interface{}

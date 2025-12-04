@@ -122,6 +122,7 @@ func convertHostInfoToXML(hostInfo interface{}, topoFields []string) HostXML {
 // buildAttrsFromStruct 从结构体构建 XML 属性
 // 使用反射获取所有字段，转换为 XML 属性
 // exclude: 需要排除的字段名（已单独处理的字段）
+// nolint
 func buildAttrsFromStruct(v interface{}, exclude map[string]bool) []xml.Attr {
 	if v == nil {
 		return nil

@@ -42,7 +42,7 @@ func GetDefaultRenderer() (*Renderer, error) {
 			logs.Errorf("failed to initialize default renderer: %+v", defaultRendererErr)
 		}
 	})
-	return defaultRenderer, nil
+	return defaultRenderer, defaultRendererErr
 }
 
 // Renderer handles Mako template rendering by calling Python scripts
