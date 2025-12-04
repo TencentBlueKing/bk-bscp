@@ -32,7 +32,7 @@ func newConfigTemplate(db *gorm.DB, opts ...gen.DOOption) configTemplate {
 	_configTemplate.BizID = field.NewUint32(tableName, "biz_id")
 	_configTemplate.TemplateID = field.NewUint32(tableName, "template_id")
 	_configTemplate.CcTemplateProcessIDs = field.NewField(tableName, "cc_template_process_ids")
-	_configTemplate.CcProcessInstanceIDs = field.NewField(tableName, "cc_process_instance_ids")
+	_configTemplate.CcProcessIDs = field.NewField(tableName, "cc_process_ids")
 	_configTemplate.TenantID = field.NewString(tableName, "tenant_id")
 	_configTemplate.Creator = field.NewString(tableName, "creator")
 	_configTemplate.Reviser = field.NewString(tableName, "reviser")
@@ -53,7 +53,7 @@ type configTemplate struct {
 	BizID                field.Uint32
 	TemplateID           field.Uint32
 	CcTemplateProcessIDs field.Field
-	CcProcessInstanceIDs field.Field
+	CcProcessIDs         field.Field
 	TenantID             field.String
 	Creator              field.String
 	Reviser              field.String
@@ -80,7 +80,7 @@ func (c *configTemplate) updateTableName(table string) *configTemplate {
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.TemplateID = field.NewUint32(table, "template_id")
 	c.CcTemplateProcessIDs = field.NewField(table, "cc_template_process_ids")
-	c.CcProcessInstanceIDs = field.NewField(table, "cc_process_instance_ids")
+	c.CcProcessIDs = field.NewField(table, "cc_process_ids")
 	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
@@ -120,7 +120,7 @@ func (c *configTemplate) fillFieldMap() {
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["template_id"] = c.TemplateID
 	c.fieldMap["cc_template_process_ids"] = c.CcTemplateProcessIDs
-	c.fieldMap["cc_process_instance_ids"] = c.CcProcessInstanceIDs
+	c.fieldMap["cc_process_ids"] = c.CcProcessIDs
 	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser
