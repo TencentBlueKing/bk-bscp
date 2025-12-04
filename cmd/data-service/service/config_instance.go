@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	taskpkg "github.com/Tencent/bk-bcs/bcs-common/common/task"
@@ -33,6 +34,7 @@ import (
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
+	"github.com/TencentBlueKing/bk-bscp/render"
 )
 
 // ListConfigInstances implements pbds.DataServer.
@@ -819,4 +821,99 @@ func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConf
 		ConfigInstanceKey:    taskPayload.ConfigPayload.ConfigInstanceKey,
 		Content:              taskPayload.ConfigPayload.ConfigContent,
 	}, nil
+}
+
+// PreviewConfig 预览配置渲染结果
+// 与 task 框架中的渲染逻辑保持一致，使用相同的参数和渲染方法
+func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq) (*pbds.PreviewConfigResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 参数校验
+	if req.GetBizId() == 0 {
+		return nil, fmt.Errorf("biz_id is required")
+	}
+	if req.GetTemplateContent() == "" {
+		return nil, fmt.Errorf("template_content is required")
+	}
+	if req.GetCcProcessId() == 0 {
+		return nil, fmt.Errorf("cc_process_id is required")
+	}
+
+	// 2. 通过 cc_process_id 查询 Process
+	processes, _, err := s.dao.Process().List(grpcKit, req.GetBizId(), &pbproc.ProcessSearchCondition{
+		CcProcessIds: []uint32{req.GetCcProcessId()},
+	}, &types.BasePage{
+		All: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("query process by cc_process_id failed: %w", err)
+	}
+	if len(processes) == 0 {
+		return nil, fmt.Errorf("process not found for cc_process_id: %d", req.GetCcProcessId())
+	}
+	process := processes[0]
+
+	// 3. 查询 ProcessInstance（用于获取序列号）
+	var processInstance *table.ProcessInstance
+	processInstances, err := s.dao.ProcessInstance().GetByProcessIDs(grpcKit, req.GetBizId(), []uint32{process.ID})
+	if err != nil {
+		return nil, fmt.Errorf("query process instance failed: %w", err)
+	}
+	if len(processInstances) > 0 {
+		// 如果提供了 module_inst_seq，优先使用匹配的实例
+		if req.GetModuleInstSeq() > 0 {
+			for _, inst := range processInstances {
+				if inst.Spec != nil && inst.Spec.ModuleInstSeq == req.GetModuleInstSeq() {
+					processInstance = inst
+					break
+				}
+			}
+		}
+		// 如果没有匹配的实例，使用第一个
+		if processInstance == nil && len(processInstances) > 0 {
+			processInstance = processInstances[0]
+		}
+	}
+
+	// 4. 构建渲染上下文参数（使用公共函数，与 task 框架保持一致）
+	source := &previewRequestSource{
+		process:         process,
+		processInstance: processInstance,
+		req:             req,
+	}
+	contextParams := render.BuildProcessContextParamsFromSource(ctx, source, s.cmdb)
+
+	// 5. 渲染模板
+	renderedContent, err := render.Template(req.GetTemplateContent(), contextParams)
+	if err != nil {
+		logs.Errorf("render template failed, template content: %s, err: %v, rid: %s", req.GetTemplateContent(), err, grpcKit.Rid)
+		return nil, fmt.Errorf("render template failed: %v", err)
+	}
+
+	return &pbds.PreviewConfigResp{
+		Content: renderedContent,
+	}, nil
+}
+
+// previewRequestSource 实现 render.ProcessInfoSource 接口，用于 PreviewConfig
+type previewRequestSource struct {
+	process         *table.Process
+	processInstance *table.ProcessInstance
+	req             *pbds.PreviewConfigReq
+}
+
+func (p *previewRequestSource) GetProcess() *table.Process {
+	return p.process
+}
+
+func (p *previewRequestSource) GetProcessInstance() *table.ProcessInstance {
+	return p.processInstance
+}
+
+func (p *previewRequestSource) GetModuleInstSeq() uint32 {
+	return p.req.GetModuleInstSeq()
+}
+
+func (p *previewRequestSource) NeedHelp() bool {
+	return strings.Contains(p.req.GetTemplateContent(), "${HELP}")
 }

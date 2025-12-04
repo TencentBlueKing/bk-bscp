@@ -16,6 +16,122 @@ sys.path.insert(0, str(Path(__file__).parent))
 from types import SimpleNamespace
 from lxml import etree
 from mako_render import mako_render
+from mako_render.patch import patch, default_black_list
+
+# HELP_TEMPLATE 用于生成帮助文档，显示所有可用的变量和对象
+# 参考 Python 代码：config_version.py 第 37-141 行
+HELP_TEMPLATE = """
+<%
+import datetime
+%>
+***********************************
+* NOW: ${datetime.datetime.now()} *
+***********************************
+
+********************
+* Global Variables *
+********************
+
+% for k, v in global_variables.items():
+    % if k == "global_variables":
+        <% continue %>
+    % endif
+    % if k == "cc_xml":
+        <% continue %>
+    % endif
+<%text>${</%text> ${k} <%text>}</%text> = ${v}
+% endfor
+
+*****************
+* 'this' object *
+*****************
+
+===========
+this.attrib
+===========
+
+% if len(this.attrib):
+    % for k, v in this.attrib.items():
+<%text>${</%text> this.attrib["${k}"] <%text>}</%text> = ${v}
+    % endfor
+% else:
+<empty>
+% endif
+
+===========
+this.cc_set
+===========
+
+% for k, v in this.cc_set.attrib.items():
+<%text>${</%text> this.cc_set.attrib["${k}"] <%text>}</%text> = ${v}
+% endfor
+
+==============
+this.cc_module
+==============
+
+% for k, v in this.cc_module.attrib.items():
+<%text>${</%text> this.cc_module.attrib["${k}"] <%text>}</%text> = ${v}
+% endfor
+
+============
+this.cc_host
+============
+
+% for k, v in this.cc_host.attrib.items():
+<%text>${</%text> this.cc_host.attrib["${k}"] <%text>}</%text> = ${v}
+% endfor
+
+
+***************
+* 'cc' object *
+***************
+
+=====================
+find all host element
+=====================
+
+<%text>
+% for host in cc.findall('.//Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+</%text>
+
+% for host in cc.findall('.//Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+
+==========================================
+find all host element of module "gamesvr"
+==========================================
+
+<%text>
+% for host in cc.findall('.//Module[@ModuleName="gamesvr"]/Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+</%text>
+% for host in cc.findall('.//Module[@ModuleName="gamesvr"]/Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+
+==================================
+find all host element of set "qq"
+==================================
+
+<%text>
+% for host in cc.findall('.//Set[@SetName="qq"]//Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+</%text>
+
+% for host in cc.findall('.//Set[@SetName="qq"]//Host'):
+    ${host.attrib['InnerIP'] }
+% endfor
+
+************
+* end help *
+************
+"""
 
 
 def main():
@@ -26,7 +142,14 @@ def main():
     1. Via stdin: JSON containing 'template' and 'context' keys
     2. Via file: --template-file and --context-file arguments
     3. Via inline: --template and --context arguments
+    
+    Security:
+    - 在启动时应用运行时补丁（patch），拦截危险函数调用
+    - 使用 MakoSandbox 上下文管理器跟踪用户代码执行
     """
+    # 应用运行时补丁，拦截黑名单中的危险函数调用
+    # 参考原项目：bk-process-config-manager/apps/utils/mako_utils/patch.py
+    patch(default_black_list)
     parser = argparse.ArgumentParser(
         description='Render Mako templates with given context'
     )
@@ -144,12 +267,80 @@ def main():
                     this_obj.attrib = {}
 
                 ctx['this'] = this_obj
+
+            # 4. 补充内置字段（从 biz_global_variables 中提取属性值）
+            # 完全按照 Python 代码逻辑实现（config_version.py 第 350-356 行）
+            # for bk_obj_id, bk_obj_variables in biz_global_variables.items():
+            #     for variable in bk_obj_variables:
+            #         if bk_obj_id == CMDBHandler.BK_GLOBAL_OBJ_ID:
+            #             continue
+            #         bk_property_id = variable["bk_property_id"]
+            #         context[bk_property_id] = getattr(this_context, f"cc_{bk_obj_id}").attrib.get(bk_property_id)
+            biz_global_variables = ctx.get('biz_global_variables')
+            if biz_global_variables and isinstance(biz_global_variables, dict) and 'this' in ctx:
+                this_context = ctx.get('this')
+                # CMDBHandler.BK_GLOBAL_OBJ_ID = "global" (参考 cmdb.py 第 68 行)
+                BK_GLOBAL_OBJ_ID = "global"
+                
+                for bk_obj_id, bk_obj_variables in biz_global_variables.items():
+                    # 跳过全局对象ID（与 Python 代码一致）
+                    if bk_obj_id == BK_GLOBAL_OBJ_ID:
+                        continue
+                    
+                    # 跳过 topo_variables（这是字段列表，不是对象类型，Go 实现中添加的辅助字段）
+                    if bk_obj_id == "topo_variables":
+                        continue
+                    
+                    # 获取对应的 cc 对象（this.cc_set, this.cc_module, this.cc_host）
+                    cc_obj_attr = f"cc_{bk_obj_id}"
+                    cc_obj = getattr(this_context, cc_obj_attr, None) if hasattr(this_context, cc_obj_attr) else None
+                    
+                    if cc_obj is None:
+                        continue
+                    
+                    # 从 cc_obj 的 attrib 中提取属性值
+                    # 完全按照 Python 代码逻辑：context[bk_property_id] = getattr(this_context, f"cc_{bk_obj_id}").attrib.get(bk_property_id)
+                    if hasattr(cc_obj, 'attrib'):
+                        for variable in bk_obj_variables:
+                            if isinstance(variable, dict):
+                                bk_property_id = variable.get("bk_property_id")
+                                if bk_property_id:
+                                    # 从 XML 元素的属性中获取值
+                                    # lxml Element 的 attrib 支持 .get() 方法，如果属性不存在返回 None
+                                    attr_value = cc_obj.attrib.get(bk_property_id)
+                                    # Python 代码中即使 attr_value 为 None 也会设置，但这里只设置非 None 值
+                                    # 因为 Python 代码中 .get() 可能返回 None，但实际 XML 属性通常不会为 None
+                                    if attr_value is not None:
+                                        ctx[bk_property_id] = attr_value
             
             return ctx
 
         context = build_cc_context(context)
 
+        # Python 代码中最后会设置：context["global_variables"] = context
+        # 这允许模板中通过 global_variables 访问所有变量
+        # 注意：在 Python 端设置可以避免 JSON 编码时的循环引用问题
+        context["global_variables"] = context
+
+        # 生成 HELP（如果请求）
+        # 参考原项目：bk-process-config-manager/apps/gsekit/configfile/config_version.py
+        # mako_render 内部已经使用 MakoSandbox 上下文管理器，提供安全保护
+        with_help = context.get('_with_help', False) or "${HELP}" in template_content
+        if with_help:
+            try:
+                # mako_render 内部会使用 MakoSandbox 上下文管理器
+                # 配合 patch.py 中的运行时拦截，提供双重安全保护
+                context["HELP"] = mako_render(HELP_TEMPLATE, context)
+            except Exception as e:
+                # 如果生成 HELP 失败，记录错误但不中断渲染
+                context["HELP"] = f"Error generating help: {str(e)}"
+
         # Render template
+        # mako_render 内部已经使用 MakoSandbox 上下文管理器，提供安全保护
+        # 安全机制包括：
+        # 1. 编译时检查：通过 AST 访问器检查模板语法树（checker.py + visitor.py）
+        # 2. 运行时拦截：通过 monkey patch 拦截危险函数调用（patch.py）
+        # 3. 上下文跟踪：通过 MakoSandbox 跟踪用户代码执行（context.py）
         rendered_output = mako_render(template_content, context)
         
         # Output result to stdout without trailing newline

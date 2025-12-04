@@ -218,16 +218,21 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbcs.PreviewConfigReq)
 		return nil, fmt.Errorf("cc_process_id is required")
 	}
 
-	// TODO: 调用渲染接口进行配置渲染
+	// 调用 data-service 的 PreviewConfig 进行配置渲染
 	// 注意：此处不使用task框架，直接同步等待渲染完成或超时
-	// 1. 根据cc_process_id和module_inst_seq获取配置实例信息
-	// 2. 使用template_content和实例变量进行模版渲染
-	// 3. 返回渲染后的内容
-
-	// 临时返回模版内容
-	renderedContent := req.TemplateContent
+	dsResp, err := s.client.DS.PreviewConfig(grpcKit.RpcCtx(), &pbds.PreviewConfigReq{
+		BizId:           req.GetBizId(),
+		TemplateContent: req.GetTemplateContent(),
+		CcProcessId:     req.GetCcProcessId(),
+		ModuleInstSeq:   req.GetModuleInstSeq(),
+	})
+	if err != nil {
+		logs.Errorf("preview config from data-service failed, biz_id: %d, cc_process_id: %d, err: %v, rid: %s",
+			req.BizId, req.CcProcessId, err, grpcKit.Rid)
+		return nil, err
+	}
 
 	return &pbcs.PreviewConfigResp{
-		Content: renderedContent,
+		Content: dsResp.GetContent(),
 	}, nil
 }

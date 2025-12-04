@@ -42,6 +42,8 @@ func RegisterExecutor(
 
 	// 注册 配置生成执行器
 	configGenerateExecutor := config.NewGenerateConfigExecutor(dao, repo)
+	// 设置 CMDB 服务，用于获取 CC 拓扑 XML
+	configGenerateExecutor.SetCMDBService(bkcmdbService)
 	config.RegisterExecutor(configGenerateExecutor)
 }
 

@@ -322,7 +322,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 								SetName:         set.Name,
 								ModuleName:      mod.Name,
 								ServiceName:     svc.Name,
-								Environment:     translateEnv(set.SetEnv),
+								Environment:     set.SetEnv,
 								Alias:           proc.Name,
 								InnerIP:         hinfo.IP,
 								CcSyncStatus:    table.Synced,
@@ -452,19 +452,6 @@ func (s *syncCMDBService) diffProcesses(kit *kit.Kit, tx *gen.QueryTx, dbProcess
 	}
 
 	return toAdd, toUpdate, toDelete, procInsts, nil
-}
-
-func translateEnv(env string) string {
-	switch env {
-	case "1":
-		return "测试"
-	case "2":
-		return "体验"
-	case "3":
-		return "正式"
-	default:
-		return "未知"
-	}
 }
 
 // CompareProcessInfo returns true if jsonStr (旧的 JSON 字符串) 等价于 jsonStr2 (新的 JSON 字符串).

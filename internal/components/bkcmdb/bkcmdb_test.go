@@ -15,22 +15,58 @@ package bkcmdb
 
 import (
 	"context"
+	"os"
 	"testing"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/davecgh/go-spew/spew"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
-var cfg *cc.CMDBConfig
-
-func init() {
-	cfg = &cc.CMDBConfig{
-		AppCode: "bk-bscp", AppSecret: "", Host: "", UseEsb: false, BkUserName: "",
+// getCMDBConfig 从环境变量获取 CMDB 配置
+// 需要设置以下环境变量：
+//   - APP_CODE: CMDB 应用代码（可选，默认为 "bk-bscp"）
+//   - APP_SECRET: CMDB 应用密钥（可选，默认为空）
+//   - HOST: CMDB 服务地址（如果为空，测试会跳过）
+//   - BK_USER_NAME: CMDB 用户名（可选，默认为空）
+//   - USE_ESB: 是否使用 ESB（可选，默认为 false）
+func getCMDBConfig(t *testing.T) *cc.CMDBConfig {
+	appCode := os.Getenv("APP_CODE")
+	if appCode == "" {
+		appCode = "bk-bscp" // 默认值
 	}
+
+	appSecret := os.Getenv("APP_SECRET")
+	cmdbHost := os.Getenv("CMDB_HOST")
+	bkUserName := os.Getenv("BK_USER_NAME")
+	useEsb := os.Getenv("USE_ESB")
+
+	// 设置GobalSettings中的CMDBConfig
+	cc.SetG(cc.GlobalSettings{
+		FeatureFlags: cc.FeatureFlags{
+			EnableMultiTenantMode: false,
+		},
+	})
+
+	// 如果 Host 为空，跳过测试（因为无法进行真实的 API 调用）
+	if cmdbHost == "" {
+		t.Skip("Skipping test: HOST environment variable not set")
+	}
+	t.Logf("CMDB_HOST: %s, appCode: %s, appSecret: %s, bkUserName: %s, useEsb: %s", cmdbHost, appCode, appSecret, bkUserName, useEsb)
+
+	cfg := &cc.CMDBConfig{
+		AppCode:    appCode,
+		AppSecret:  appSecret,
+		Host:       cmdbHost,
+		BkUserName: bkUserName,
+		UseEsb:     useEsb == "true",
+	}
+
+	return cfg
 }
 
 func TestFindHostByTopo(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -39,7 +75,7 @@ func TestFindHostByTopo(t *testing.T) {
 		BkBizID:  2,
 		BkObjID:  "module",
 		BkInstID: 2,
-		// Fields:   []string{},
+		Fields:   []string{"bk_host_id", "bk_host_name", "bk_host_innerip", "bk_cloud_id"},
 		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
@@ -55,7 +91,7 @@ func TestFindHostByTopo(t *testing.T) {
 }
 
 func TestSearchBizInstTopo(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -72,7 +108,7 @@ func TestSearchBizInstTopo(t *testing.T) {
 }
 
 func TestGetServiceTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -89,7 +125,7 @@ func TestGetServiceTemplate(t *testing.T) {
 }
 
 func TestListServiceTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -114,7 +150,7 @@ func TestListServiceTemplate(t *testing.T) {
 }
 
 func TestGetProcTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -132,7 +168,7 @@ func TestGetProcTemplate(t *testing.T) {
 }
 
 func TestListProcTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -151,7 +187,7 @@ func TestListProcTemplate(t *testing.T) {
 }
 
 func TestFindHostBySetTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -177,7 +213,7 @@ func TestFindHostBySetTemplate(t *testing.T) {
 }
 
 func TestListSetTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -199,7 +235,7 @@ func TestListSetTemplate(t *testing.T) {
 }
 
 func TestListProcessDetailByIds(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -218,7 +254,7 @@ func TestListProcessDetailByIds(t *testing.T) {
 }
 
 func TestListServiceInstanceBySetTemplate(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -240,7 +276,7 @@ func TestListServiceInstanceBySetTemplate(t *testing.T) {
 }
 
 func TestFindModuleBatch(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -259,7 +295,7 @@ func TestFindModuleBatch(t *testing.T) {
 }
 
 func TestListServiceInstance(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -284,26 +320,26 @@ func TestListServiceInstance(t *testing.T) {
 }
 
 func TestFindSetBatch(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
 
-	resp, err := cmdb.FindSetBatch(context.Background(), SetListReq{
+	setInfos, err := cmdb.FindSetBatch(context.Background(), SetListReq{
 		BkBizID: 2,
 		BkIDs:   []int{},
-		Fields:  []string{},
+		Fields:  []string{"bk_set_id", "bk_set_name", "bk_set_env", "bk_biz_id"},
 	})
 
 	if err != nil {
 		t.Fatalf("FindSetBatch error: %v", err)
 	}
 	// 打印结果
-	t.Logf("结果: %v", spew.Sdump(resp))
+	t.Logf("结果: %v", spew.Sdump(setInfos))
 }
 
 func TestFindHostTopoRelation(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -327,7 +363,7 @@ func TestFindHostTopoRelation(t *testing.T) {
 }
 
 func TestFindModuleWithRelation(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -336,7 +372,7 @@ func TestFindModuleWithRelation(t *testing.T) {
 		BkBizID:              2,
 		BkSetIDs:             []int{},
 		BkServiceTemplateIDs: []int{},
-		Fields:               []string{},
+		Fields:               []string{"bk_module_id", "bk_module_name", "bk_set_id", "bk_biz_id"},
 		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
@@ -351,7 +387,7 @@ func TestFindModuleWithRelation(t *testing.T) {
 }
 
 func TestSearchSet(t *testing.T) {
-	cmdb, err := New(cfg, nil)
+	cmdb, err := New(getCMDBConfig(t), nil)
 	if err != nil {
 		t.Fatalf("initialize cmdb service error: %v", err)
 	}
@@ -359,7 +395,7 @@ func TestSearchSet(t *testing.T) {
 	resp, err := cmdb.SearchSet(context.Background(), SearchSetReq{
 		BkSupplierAccount: "0",
 		BkBizID:           2,
-		Fields:            []string{},
+		Fields:            []string{"bk_set_id", "bk_set_name", "bk_set_env", "bk_biz_id"},
 		Page: &PageParam{
 			Start: 0,
 			Limit: 20,
@@ -369,6 +405,39 @@ func TestSearchSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SearchSet error: %v", err)
 	}
+	// 打印结果
+	t.Logf("结果: %v", spew.Sdump(resp))
+}
+
+func TestFindTopoBrief(t *testing.T) {
+	cmdb, err := New(getCMDBConfig(t), nil)
+	if err != nil {
+		t.Fatalf("initialize cmdb service error: %v", err)
+	}
+
+	resp, err := cmdb.FindTopoBrief(context.Background(), 2)
+	if err != nil {
+		t.Fatalf("FindTopoBrief error: %v", err)
+	}
+
+	// 打印结果
+	t.Logf("结果: %v", spew.Sdump(resp))
+}
+
+func TestSearchObjectAttr(t *testing.T) {
+	cmdb, err := New(getCMDBConfig(t), nil)
+	if err != nil {
+		t.Fatalf("initialize cmdb service error: %v", err)
+	}
+
+	resp, err := cmdb.SearchObjectAttr(context.Background(), SearchObjectAttrReq{
+		BkObjID: "module",
+		BkBizID: 2,
+	})
+	if err != nil {
+		t.Fatalf("SearchObjectAttr error: %v", err)
+	}
+
 	// 打印结果
 	t.Logf("结果: %v", spew.Sdump(resp))
 }

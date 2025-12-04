@@ -518,6 +518,74 @@ type ModuleInfo struct {
 	BkCreatedBy       string `json:"bk_created_by"`       // 创建人
 }
 
+// TopoBriefBizInfo 拓扑简要信息中的业务信息
+type TopoBriefBizInfo struct {
+	ID                int    `json:"id"`                  // 业务ID
+	Name              string `json:"nm"`                  // 业务名称
+	Default           int    `json:"dft"`                 // 默认标识
+	BkSupplierAccount string `json:"bk_supplier_account"` // 开发商账号
+}
+
+// TopoBriefNode 拓扑简要节点（Set 或 Module）
+type TopoBriefNode struct {
+	Obj     string           `json:"obj"` // 对象类型: "set" 或 "module"
+	ID      int              `json:"id"`  // 实例ID
+	Name    string           `json:"nm"`  // 名称
+	Default int              `json:"dft"` // 默认标识
+	Nodes   []*TopoBriefNode `json:"nds"` // 子节点（Module 的 nds 为 null）
+}
+
+// TopoBriefResp 拓扑简要信息响应
+type TopoBriefResp struct {
+	Biz   TopoBriefBizInfo `json:"biz"`  // 业务信息
+	Idle  []*TopoBriefNode `json:"idle"` // 空闲机池节点列表
+	Nodes []*TopoBriefNode `json:"nds"`  // 业务节点列表
+}
+
+// SearchObjectAttrReq 查询对象属性请求参数
+type SearchObjectAttrReq struct {
+	BkObjID string `json:"bk_obj_id"` // 对象模型ID，如 "set", "module", "host"
+	BkBizID int    `json:"bk_biz_id"` // 业务ID
+}
+
+// ObjectAttrOption 对象属性选项（用于枚举类型）
+type ObjectAttrOption struct {
+	ID        string `json:"id"`         // 选项ID
+	IsDefault bool   `json:"is_default"` // 是否默认值
+	Name      string `json:"name"`       // 选项名称
+	Type      string `json:"type"`       // 选项类型
+}
+
+// ObjectAttrInfo 对象属性信息
+type ObjectAttrInfo struct {
+	BkBizID             int         `json:"bk_biz_id"`              // 业务ID（0表示系统属性）
+	ID                  int         `json:"id"`                     // 属性ID
+	BkSupplierAccount   string      `json:"bk_supplier_account"`    // 开发商账号
+	BkObjID             string      `json:"bk_obj_id"`              // 对象模型ID
+	BkPropertyID        string      `json:"bk_property_id"`         // 属性ID
+	BkPropertyName      string      `json:"bk_property_name"`       // 属性名称
+	BkPropertyGroup     string      `json:"bk_property_group"`      // 属性分组
+	BkPropertyIndex     int         `json:"bk_property_index"`      // 属性索引
+	Unit                string      `json:"unit"`                   // 单位
+	Placeholder         string      `json:"placeholder"`            // 占位符
+	Editable            bool        `json:"editable"`               // 是否可编辑
+	IsPre               bool        `json:"ispre"`                  // 是否预定义
+	IsRequired          bool        `json:"isrequired"`             // 是否必填
+	IsReadonly          bool        `json:"isreadonly"`             // 是否只读
+	IsOnly              bool        `json:"isonly"`                 // 是否唯一
+	BkIsSystem          bool        `json:"bk_issystem"`            // 是否系统属性
+	BkIsAPI             bool        `json:"bk_isapi"`               // 是否API属性
+	BkPropertyType      string      `json:"bk_property_type"`       // 属性类型
+	Option              interface{} `json:"option"`                 // 选项（可能是字符串或数组）
+	IsMultiple          *bool       `json:"ismultiple,omitempty"`   // 是否多选（可选字段）
+	Description         string      `json:"description"`            // 描述
+	BkTemplateID        int         `json:"bk_template_id"`         // 模板ID
+	Creator             string      `json:"creator"`                // 创建者
+	CreateTime          string      `json:"create_time"`            // 创建时间
+	LastTime            string      `json:"last_time"`              // 更新时间
+	BkPropertyGroupName string      `json:"bk_property_group_name"` // 属性分组名称
+}
+
 // ServiceInstanceListReq 查询服务实例请求参数
 type ServiceInstanceListReq struct {
 	BkBizID    int        `json:"bk_biz_id"`              // 业务id，必填

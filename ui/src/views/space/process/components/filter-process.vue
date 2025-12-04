@@ -61,15 +61,15 @@
   const envList = [
     {
       label: t('正式'),
-      value: '正式',
+      value: '3',
     },
     {
       label: t('体验'),
-      value: '体验',
+      value: '2',
     },
     {
       label: t('测试'),
-      value: '测试',
+      value: '1',
     },
   ];
   const filterList = ref<IProcessFilterItem[]>([
@@ -99,7 +99,7 @@
       list: [],
     },
   ]);
-  const activeEnv = ref('正式');
+  const activeEnv = ref('3');
   const filterValues = ref<{
     sets: string[];
     modules: string[];

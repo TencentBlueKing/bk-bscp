@@ -1,6 +1,6 @@
 # Render Package
 
-Go 包，用于调用 Python Mako 模板渲染模块。
+Go 包，用于调用 Python Mako 模板渲染模块，提供安全的模板渲染能力。
 
 ## 功能特性
 
@@ -9,6 +9,7 @@ Go 包，用于调用 Python Mako 模板渲染模块。
 - **支持超时控制**：可配置渲染操作的超时时间
 - **临时文件支持**：对于大型上下文数据，支持通过临时文件传递
 - **完善的错误处理**：详细的错误信息和 stderr 输出
+- **三层安全机制**：编译时检查、运行时拦截、上下文跟踪，全面保护模板渲染安全
 
 ## 安装
 
@@ -202,12 +203,57 @@ render/
 3. **设置合理的超时**：根据模板复杂度调整超时时间
 4. **使用 Context**：在 HTTP 请求等场景中使用 `RenderWithContext`
 
+## 安全机制
+
+本包实现了三层安全机制来保护 Mako 模板渲染：
+
+### 1. 编译时检查
+- 在模板编译前，通过 AST 访问器检查模板语法树
+- 拦截危险模块的导入和使用（如 `os`, `subprocess`, `socket` 等）
+- 拦截危险函数的使用（如 `open`, `eval`, `exec`, `compile`, `help` 等）
+- 检查失败时直接抛出异常，阻止模板编译
+
+### 2. 运行时拦截
+- 通过 monkey patch 拦截危险函数调用
+- 只拦截用户代码中的调用，不影响 Mako 内部操作
+- 支持拦截的模块：`os`, `subprocess`, `socket`, `sys`, `shutil` 等
+
+### 3. 上下文跟踪
+- 使用 `MakoSandbox` 上下文管理器跟踪用户代码执行
+- 通过线程 ID 精确识别用户代码，避免误拦截
+
+### 安全示例
+
+以下操作会被拦截：
+
+```go
+// 编译时拦截
+template := "${open}"           // 错误：发现非法名称使用:[open]
+template := "${help()}"         // 错误：发现非法名称使用:[help]
+template := "<% import os %>"   // 错误：发现非法导入:[os]
+
+// 运行时拦截
+template := "<% os.system(\"ls\") %>"  // 错误：I am watching you!
+```
+
+以下操作是允许的：
+
+```go
+template := "${HELP}"                    // 正常：HELP 在白名单中
+template := "${datetime.datetime.now()}" // 正常：datetime 在白名单中
+template := "${len([1, 2, 3])}"          // 正常：len 是安全函数
+```
+
+详细的安全机制说明请参考：[render/python/MAKO_SANDBOX.md](python/MAKO_SANDBOX.md)
+
 ## 注意事项
 
 1. 确保 Python 脚本路径正确（默认为 `render/python/main.py`）
 2. uv 会自动管理 Python 依赖，首次运行可能需要安装依赖
 3. 渲染失败时检查 stderr 输出以获取详细错误信息
 4. Python 进程每次调用都会重新启动，如需高性能场景可考虑实现进程池
+5. **安全机制默认启用**：所有模板渲染都会自动应用安全保护，无需额外配置
+6. **编译时检查失败会阻止渲染**：如果模板包含危险代码，会在编译阶段被拦截
 
 ## 故障排查
 

@@ -15,15 +15,18 @@ package config
 import (
 	"fmt"
 	"io"
-	"time"
+	"strings"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/render"
 )
 
 const (
@@ -49,6 +52,11 @@ func NewGenerateConfigExecutor(dao dao.Set, repo repository.Provider) *GenerateC
 	}
 }
 
+// SetCMDBService 设置 CMDB 服务（用于获取 CC 拓扑 XML）
+func (e *GenerateConfigExecutor) SetCMDBService(cmdbService bkcmdb.Service) {
+	e.Executor.CMDBService = cmdbService
+}
+
 // GenerateConfigPayload generate config payload
 type GenerateConfigPayload struct {
 	BizID   uint32
@@ -56,6 +64,7 @@ type GenerateConfigPayload struct {
 
 	// 任务类型
 	OperateType table.ConfigOperateType
+
 	// 操作人
 	OperatorUser string
 
@@ -72,6 +81,37 @@ type GenerateConfigPayload struct {
 	ConfigTemplateName string
 	ProcessAlias       string
 	ModuleInstSeq      uint32
+}
+
+// 实现 render.ProcessInfoSource 接口
+func (p *GenerateConfigPayload) GetProcess() *table.Process {
+	return p.Process
+}
+
+func (p *GenerateConfigPayload) GetProcessInstance() *table.ProcessInstance {
+	return p.ProcessInstance
+}
+
+func (p *GenerateConfigPayload) GetModuleInstSeq() uint32 {
+	return p.ModuleInstSeq
+}
+
+func (p *GenerateConfigPayload) GetProcessAlias() string {
+	return p.ProcessAlias
+}
+
+func (p *GenerateConfigPayload) GetCcProcessID() uint32 {
+	return p.CcProcessID
+}
+
+func (p *GenerateConfigPayload) GetBizID() uint32 {
+	return p.BizID
+}
+
+func (p *GenerateConfigPayload) GetTemplateContent() string {
+	// GenerateConfigPayload 中没有直接存储模板内容
+	// 需要在调用时传入
+	return ""
 }
 
 // GenerateConfig generate config
@@ -113,8 +153,27 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 			configContent = string(content)
 		}
 	}
-	// TODO: 渲染模版
-	renderedContent := configContent + time.Now().Format("20060102150405")
+
+	// 3. 构建渲染上下文并渲染模板
+	var renderedContent string
+	if configContent != "" {
+		source := &payloadWithTemplate{
+			payload:         payload,
+			templateContent: configContent,
+		}
+		contextParams := render.BuildProcessContextParamsFromSource(c.Context(), source, e.Executor.CMDBService)
+		logs.V(3).Infof("build process context params from source, context params: %+v, template id: %d",
+			contextParams, payload.TemplateRevision.Attachment.TemplateID)
+		// 使用公共方法渲染模板
+		var err error
+		renderedContent, err = render.Template(configContent, contextParams)
+		if err != nil {
+			logs.Errorf("render template failed, template id: %d, error: %v",
+				payload.TemplateRevision.Attachment.TemplateID, err)
+			return fmt.Errorf("render template failed, template id: %d, error: %w",
+				payload.TemplateRevision.Attachment.TemplateID, err)
+		}
+	}
 
 	// 将渲染结果存储到 CommonPayload 中
 	commonPayload := &common.TaskPayload{}
@@ -132,6 +191,28 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	}
 
 	return nil
+}
+
+// payloadWithTemplate 包装 GenerateConfigPayload 和模板内容，实现 ProcessInfoSource 接口
+type payloadWithTemplate struct {
+	payload         *GenerateConfigPayload
+	templateContent string
+}
+
+func (p *payloadWithTemplate) GetProcess() *table.Process {
+	return p.payload.GetProcess()
+}
+
+func (p *payloadWithTemplate) GetProcessInstance() *table.ProcessInstance {
+	return p.payload.GetProcessInstance()
+}
+
+func (p *payloadWithTemplate) GetModuleInstSeq() uint32 {
+	return p.payload.GetModuleInstSeq()
+}
+
+func (p *payloadWithTemplate) NeedHelp() bool {
+	return strings.Contains(p.templateContent, "${HELP}")
 }
 
 // generateConfigKey 生成配置的key

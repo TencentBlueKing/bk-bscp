@@ -29,17 +29,17 @@ type Service interface {
 	ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error)
 	// 查询拓扑节点下的主机
 	FindHostByTopo(ctx context.Context, req HostListReq) (
-		*CMDBResponse, error)
+		*HostListResp, error)
 	// SearchBizInstTopo 查询业务实例拓扑
 	SearchBizInstTopo(ctx context.Context, req *BizTopoReq) ([]*BizTopoNode, error)
 	// GetServiceTemplate 获取服务模板
 	GetServiceTemplate(ctx context.Context, req ServiceTemplateReq) (
-		*CMDBResponse, error)
+		*ServiceTemplate, error)
 	// ListServiceTemplate 服务模板列表查询
 	ListServiceTemplate(ctx context.Context, req *ListServiceTemplateReq) (*ServiceTemplateListResp, error)
 	// GetProcTemplate 获取进程模板
 	GetProcTemplate(ctx context.Context, req GetProcTemplateReq) (
-		*CMDBResponse, error)
+		*ProcTemplate, error)
 	// ListProcTemplate 查询进程模板列表
 	ListProcTemplate(ctx context.Context, req *ListProcTemplateReq) (*ListProcTemplateResp, error)
 	// ListProcessInstance 查询进程实例列表
@@ -49,24 +49,24 @@ type Service interface {
 		*FindHostBySetTemplateResp, error)
 	// ListSetTemplate 查询集群模板
 	ListSetTemplate(ctx context.Context, req ListSetTemplateReq) (
-		*CMDBResponse, error)
+		*ListSetTemplateResp, error)
 	// ListProcessDetailByIds 查询某业务下进程ID对应的进程详情
 	ListProcessDetailByIds(ctx context.Context, req ProcessReq) (
 		[]*ProcessInfo, error)
 	// ListServiceInstanceBySetTemplate 通过集群模版查询关联的服务实例列表
 	ListServiceInstanceBySetTemplate(ctx context.Context, req ServiceInstanceReq) (
-		*CMDBResponse, error)
+		[]ServiceInstanceInfo, error)
 	// FindModuleBatch 批量查询某业务的模块详情
 	FindModuleBatch(ctx context.Context, req *ModuleReq) ([]*ModuleInfo, error)
 	// ListServiceInstance 查询服务实例列表
 	ListServiceInstance(ctx context.Context, req *ServiceInstanceListReq) (*ServiceInstanceResp, error)
 	// FindSetBatch 批量查询某业务的集群详情
-	FindSetBatch(ctx context.Context, req SetListReq) (*CMDBResponse, error)
+	FindSetBatch(ctx context.Context, req SetListReq) ([]SetInfo, error)
 	// FindHostTopoRelation 获取主机与拓扑的关系
 	FindHostTopoRelation(ctx context.Context, req *HostTopoReq) (*HostTopoInfoResp, error)
 	// FindModuleWithRelation 根据条件查询业务下的模块
 	FindModuleWithRelation(ctx context.Context, req ModuleListReq) (
-		*CMDBResponse, error)
+		*ModuleListResp, error)
 	// SearchSet 查询集群
 	SearchSet(ctx context.Context, req SearchSetReq) (*Sets, error)
 	// SearchBusinessByAccount 查询业务
@@ -82,6 +82,10 @@ type Service interface {
 	WatchHostRelationResource(ctx context.Context, req *WatchResourceRequest) (*WatchResourceData[HostRelationDetail], error)
 	// FindHostBizRelations 查询主机业务关系信息
 	FindHostBizRelations(ctx context.Context, req *FindHostBizRelationsRequest) ([]HostBizRelation, error)
+	// FindTopoBrief 查询业务拓扑简要信息（缓存接口）
+	FindTopoBrief(ctx context.Context, bizID int) (*TopoBriefResp, error)
+	// SearchObjectAttr 查询对象属性
+	SearchObjectAttr(ctx context.Context, req SearchObjectAttrReq) ([]ObjectAttrInfo, error)
 }
 
 // New cmdb service
