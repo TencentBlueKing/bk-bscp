@@ -233,6 +233,8 @@ func buildAttrsFromStruct(v interface{}, exclude map[string]bool) []xml.Attr {
 		// 2. 旧字段名（CC1.0）：通过 map_cc3_field_to_cc1 映射（如 SetName）
 
 		// 设置新字段名（CC3.0）
+		// 注意：attrValue 可能包含 XML 特殊字符（<, >, &, ", '），但 xml.MarshalIndent 会自动转义这些字符
+		// 因此即使 CMDB 数据包含这些字符，生成的 XML 也是安全且有效的
 		attrs = append(attrs, xml.Attr{
 			Name:  xml.Name{Local: fieldName},
 			Value: attrValue,

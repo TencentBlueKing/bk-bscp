@@ -82,11 +82,18 @@ def mako_render(content: str, context: Dict[str, Any], enable_safety_check: bool
         raise Exception(f"Mako render failed: {str(error)}")
     except Exception as error:
         # Print detailed error traceback for non-Mako exceptions
-        traceback = RichTraceback()
-        error_message = traceback.message
-        for _traceback in traceback.traceback:
-            __, lineno, function, line = _traceback
-            if function == "render_body":
-                error_message = f"第{lineno}行：{line}，错误：{traceback.message}"
+        # RichTraceback() 只适用于 Mako 异常，对于非 Mako 异常需要特殊处理
+        error_message = str(error)
+        try:
+            traceback = RichTraceback()
+            error_message = traceback.message
+            for _traceback in traceback.traceback:
+                __, lineno, function, line = _traceback
+                if function == "render_body":
+                    error_message = f"第{lineno}行：{line}，错误：{traceback.message}"
+        except (AttributeError, TypeError, Exception):
+            # 如果 RichTraceback() 不可用或失败，使用标准异常信息
+            # 这通常发生在非 Mako 异常的情况下
+            error_message = f"{error.__class__.__name__}: {str(error)}"
         print(f"Error: {error_message}", file=sys.stderr)
         raise Exception(f"Mako render failed: {error_message}")

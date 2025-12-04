@@ -83,35 +83,24 @@ type GenerateConfigPayload struct {
 	ModuleInstSeq      uint32
 }
 
-// 实现 render.ProcessInfoSource 接口
+// GetProcess 获取 Process
 func (p *GenerateConfigPayload) GetProcess() *table.Process {
 	return p.Process
 }
 
+// GetProcessInstance 获取进程实例
 func (p *GenerateConfigPayload) GetProcessInstance() *table.ProcessInstance {
 	return p.ProcessInstance
 }
 
+// GetModuleInstSeq 获取模块实例序列号
 func (p *GenerateConfigPayload) GetModuleInstSeq() uint32 {
 	return p.ModuleInstSeq
 }
 
-func (p *GenerateConfigPayload) GetProcessAlias() string {
-	return p.ProcessAlias
-}
-
-func (p *GenerateConfigPayload) GetCcProcessID() uint32 {
-	return p.CcProcessID
-}
-
-func (p *GenerateConfigPayload) GetBizID() uint32 {
-	return p.BizID
-}
-
-func (p *GenerateConfigPayload) GetTemplateContent() string {
-	// GenerateConfigPayload 中没有直接存储模板内容
-	// 需要在调用时传入
-	return ""
+// NeedHelp 是否需要生成 HELP
+func (p *GenerateConfigPayload) NeedHelp() bool {
+	return false
 }
 
 // GenerateConfig generate config

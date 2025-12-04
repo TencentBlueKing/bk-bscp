@@ -9,7 +9,7 @@ Runtime patching for dangerous functions
 import functools
 from importlib import import_module
 
-from .context import get_thread_id, in_user_code_thread_ids
+from .context import get_thread_id, is_thread_id_in_list
 from .exceptions import ForbiddenMakoTemplateException
 
 
@@ -45,7 +45,7 @@ def patch(black_list):
                     # 只有当线程 ID 存在且在用户代码线程列表中时才拦截
                     # 这样可以避免拦截 Mako 内部或其他系统代码的调用
                     # 注意：如果 thread_id 为 None，说明不在跟踪范围内，允许执行
-                    if thread_id is not None and thread_id in in_user_code_thread_ids:
+                    if thread_id is not None and is_thread_id_in_list(thread_id):
                         raise ForbiddenMakoTemplateException("I am watching you!")
                     else:
                         return call(*args, **kwargs)

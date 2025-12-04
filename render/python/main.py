@@ -291,6 +291,10 @@ def main():
                     if bk_obj_id == "topo_variables":
                         continue
                     
+                    # 验证 bk_obj_variables 是否为列表或元组
+                    if not isinstance(bk_obj_variables, (list, tuple)):
+                        continue
+                    
                     # 获取对应的 cc 对象（this.cc_set, this.cc_module, this.cc_host）
                     cc_obj_attr = f"cc_{bk_obj_id}"
                     cc_obj = getattr(this_context, cc_obj_attr, None) if hasattr(this_context, cc_obj_attr) else None

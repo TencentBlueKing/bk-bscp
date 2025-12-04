@@ -123,6 +123,9 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 		Sets: setsXML,
 	}
 
+	// xml.MarshalIndent 会自动转义 XML 特殊字符（<, >, &, ", '）在属性值中
+	// 这确保了即使 CMDB 数据包含这些特殊字符，生成的 XML 也是有效且安全的
+	// 参考：https://pkg.go.dev/encoding/xml#Marshal
 	xmlData, err := xml.MarshalIndent(application, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("marshal XML failed: %w", err)
