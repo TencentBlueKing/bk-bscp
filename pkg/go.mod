@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	github.com/TencentBlueKing/bk-bscp v0.0.0-20251125112710-f6401c701478
+	github.com/TencentBlueKing/bk-bscp v0.0.0-20251203022142-616d68f9022b
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

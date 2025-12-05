@@ -226,13 +226,21 @@ const (
 	Config_PushConfig_FullMethodName                         = "/pbcs.Config/PushConfig"
 	Config_GetConfigRenderResult_FullMethodName              = "/pbcs.Config/GetConfigRenderResult"
 	Config_ListConfigTemplate_FullMethodName                 = "/pbcs.Config/ListConfigTemplate"
+	Config_CreateConfigTemplate_FullMethodName               = "/pbcs.Config/CreateConfigTemplate"
+	Config_UpdateConfigTemplate_FullMethodName               = "/pbcs.Config/UpdateConfigTemplate"
+	Config_GetConfigTemplate_FullMethodName                  = "/pbcs.Config/GetConfigTemplate"
+	Config_ConfigTemplateVariable_FullMethodName             = "/pbcs.Config/ConfigTemplateVariable"
+	Config_BindProcessInstance_FullMethodName                = "/pbcs.Config/BindProcessInstance"
+	Config_PreviewBindProcessInstance_FullMethodName         = "/pbcs.Config/PreviewBindProcessInstance"
+	Config_ProcessInstance_FullMethodName                    = "/pbcs.Config/ProcessInstance"
+	Config_ServiceInstance_FullMethodName                    = "/pbcs.Config/ServiceInstance"
 )
 
 // ConfigClient is the client API for Config service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(ctx context.Context, in *CreateAppReq, opts ...grpc.CallOption) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(ctx context.Context, in *UpdateAppReq, opts ...grpc.CallOption) (*app.App, error)
@@ -603,11 +611,11 @@ type ConfigClient interface {
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
-	// 按业务拓扑
+	// 根据业务查询拓扑
 	BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error)
-	// 按服务模板
+	// 根据业务查询服务模板列表
 	ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error)
-	// 进程模板列表
+	// 根据服务模板查询模板进程列表
 	ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error)
 	// 配置实例列表
 	ListConfigInstances(ctx context.Context, in *ListConfigInstancesReq, opts ...grpc.CallOption) (*ListConfigInstancesResp, error)
@@ -625,6 +633,22 @@ type ConfigClient interface {
 	GetConfigRenderResult(ctx context.Context, in *GetConfigRenderResultReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error)
 	// 配置模板列表
 	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
+	// 创建配置模板
+	CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error)
+	// 编辑配置模板
+	UpdateConfigTemplate(ctx context.Context, in *UpdateConfigTemplateReq, opts ...grpc.CallOption) (*UpdateConfigTemplateResp, error)
+	// 获取配置模板
+	GetConfigTemplate(ctx context.Context, in *GetConfigTemplateReq, opts ...grpc.CallOption) (*GetConfigTemplateResp, error)
+	// 配置模板变量
+	ConfigTemplateVariable(ctx context.Context, in *ConfigTemplateVariableReq, opts ...grpc.CallOption) (*ConfigTemplateVariableResp, error)
+	// 绑定配置模板与进程实例
+	BindProcessInstance(ctx context.Context, in *BindProcessInstanceReq, opts ...grpc.CallOption) (*BindProcessInstanceResp, error)
+	// 预览绑定配置模板与进程实例
+	PreviewBindProcessInstance(ctx context.Context, in *PreviewBindProcessInstanceReq, opts ...grpc.CallOption) (*PreviewBindProcessInstanceResp, error)
+	// 根据服务实例查询实例进程列表
+	ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error)
+	// 根据模块获取服务实例列表
+	ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error)
 }
 
 type configClient struct {
@@ -2426,11 +2450,83 @@ func (c *configClient) ListConfigTemplate(ctx context.Context, in *ListConfigTem
 	return out, nil
 }
 
+func (c *configClient) CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error) {
+	out := new(CreateConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Config_CreateConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpdateConfigTemplate(ctx context.Context, in *UpdateConfigTemplateReq, opts ...grpc.CallOption) (*UpdateConfigTemplateResp, error) {
+	out := new(UpdateConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Config_UpdateConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetConfigTemplate(ctx context.Context, in *GetConfigTemplateReq, opts ...grpc.CallOption) (*GetConfigTemplateResp, error) {
+	out := new(GetConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Config_GetConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ConfigTemplateVariable(ctx context.Context, in *ConfigTemplateVariableReq, opts ...grpc.CallOption) (*ConfigTemplateVariableResp, error) {
+	out := new(ConfigTemplateVariableResp)
+	err := c.cc.Invoke(ctx, Config_ConfigTemplateVariable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) BindProcessInstance(ctx context.Context, in *BindProcessInstanceReq, opts ...grpc.CallOption) (*BindProcessInstanceResp, error) {
+	out := new(BindProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Config_BindProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) PreviewBindProcessInstance(ctx context.Context, in *PreviewBindProcessInstanceReq, opts ...grpc.CallOption) (*PreviewBindProcessInstanceResp, error) {
+	out := new(PreviewBindProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Config_PreviewBindProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error) {
+	out := new(ProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Config_ProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error) {
+	out := new(ServiceInstanceResp)
+	err := c.cc.Invoke(ctx, Config_ServiceInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	// 创建服务
+	//  创建服务
 	CreateApp(context.Context, *CreateAppReq) (*CreateAppResp, error)
 	// 更新服务
 	UpdateApp(context.Context, *UpdateAppReq) (*app.App, error)
@@ -2801,11 +2897,11 @@ type ConfigServer interface {
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
 	// 重试失败的任务
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
-	// 按业务拓扑
+	// 根据业务查询拓扑
 	BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error)
-	// 按服务模板
+	// 根据业务查询服务模板列表
 	ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error)
-	// 进程模板列表
+	// 根据服务模板查询模板进程列表
 	ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error)
 	// 配置实例列表
 	ListConfigInstances(context.Context, *ListConfigInstancesReq) (*ListConfigInstancesResp, error)
@@ -2823,6 +2919,22 @@ type ConfigServer interface {
 	GetConfigRenderResult(context.Context, *GetConfigRenderResultReq) (*GetConfigRenderResultResp, error)
 	// 配置模板列表
 	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
+	// 创建配置模板
+	CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error)
+	// 编辑配置模板
+	UpdateConfigTemplate(context.Context, *UpdateConfigTemplateReq) (*UpdateConfigTemplateResp, error)
+	// 获取配置模板
+	GetConfigTemplate(context.Context, *GetConfigTemplateReq) (*GetConfigTemplateResp, error)
+	// 配置模板变量
+	ConfigTemplateVariable(context.Context, *ConfigTemplateVariableReq) (*ConfigTemplateVariableResp, error)
+	// 绑定配置模板与进程实例
+	BindProcessInstance(context.Context, *BindProcessInstanceReq) (*BindProcessInstanceResp, error)
+	// 预览绑定配置模板与进程实例
+	PreviewBindProcessInstance(context.Context, *PreviewBindProcessInstanceReq) (*PreviewBindProcessInstanceResp, error)
+	// 根据服务实例查询实例进程列表
+	ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error)
+	// 根据模块获取服务实例列表
+	ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3425,6 +3537,30 @@ func (UnimplementedConfigServer) GetConfigRenderResult(context.Context, *GetConf
 }
 func (UnimplementedConfigServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) UpdateConfigTemplate(context.Context, *UpdateConfigTemplateReq) (*UpdateConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) GetConfigTemplate(context.Context, *GetConfigTemplateReq) (*GetConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) ConfigTemplateVariable(context.Context, *ConfigTemplateVariableReq) (*ConfigTemplateVariableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfigTemplateVariable not implemented")
+}
+func (UnimplementedConfigServer) BindProcessInstance(context.Context, *BindProcessInstanceReq) (*BindProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BindProcessInstance not implemented")
+}
+func (UnimplementedConfigServer) PreviewBindProcessInstance(context.Context, *PreviewBindProcessInstanceReq) (*PreviewBindProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewBindProcessInstance not implemented")
+}
+func (UnimplementedConfigServer) ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessInstance not implemented")
+}
+func (UnimplementedConfigServer) ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ServiceInstance not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -7020,6 +7156,150 @@ func _Config_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_CreateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateConfigTemplate(ctx, req.(*CreateConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpdateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpdateConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateConfigTemplate(ctx, req.(*UpdateConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetConfigTemplate(ctx, req.(*GetConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ConfigTemplateVariable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigTemplateVariableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ConfigTemplateVariable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ConfigTemplateVariable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ConfigTemplateVariable(ctx, req.(*ConfigTemplateVariableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_BindProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).BindProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_BindProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).BindProcessInstance(ctx, req.(*BindProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_PreviewBindProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewBindProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).PreviewBindProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_PreviewBindProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).PreviewBindProcessInstance(ctx, req.(*PreviewBindProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ProcessInstance(ctx, req.(*ProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ServiceInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ServiceInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ServiceInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ServiceInstance(ctx, req.(*ServiceInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7822,6 +8102,38 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConfigTemplate",
 			Handler:    _Config_ListConfigTemplate_Handler,
+		},
+		{
+			MethodName: "CreateConfigTemplate",
+			Handler:    _Config_CreateConfigTemplate_Handler,
+		},
+		{
+			MethodName: "UpdateConfigTemplate",
+			Handler:    _Config_UpdateConfigTemplate_Handler,
+		},
+		{
+			MethodName: "GetConfigTemplate",
+			Handler:    _Config_GetConfigTemplate_Handler,
+		},
+		{
+			MethodName: "ConfigTemplateVariable",
+			Handler:    _Config_ConfigTemplateVariable_Handler,
+		},
+		{
+			MethodName: "BindProcessInstance",
+			Handler:    _Config_BindProcessInstance_Handler,
+		},
+		{
+			MethodName: "PreviewBindProcessInstance",
+			Handler:    _Config_PreviewBindProcessInstance_Handler,
+		},
+		{
+			MethodName: "ProcessInstance",
+			Handler:    _Config_ProcessInstance_Handler,
+		},
+		{
+			MethodName: "ServiceInstance",
+			Handler:    _Config_ServiceInstance_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

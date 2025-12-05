@@ -55,6 +55,8 @@ type Process interface {
 	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
 	// GetBySetIDWithTx queries all process IDs under a set.
 	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
+	ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error)
+	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
 }
 
 var _ Process = new(processDao)
@@ -63,6 +65,26 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ProcessCountByServiceTemplate implements Process.
+func (dao *processDao) ProcessCountByServiceTemplate(kit *kit.Kit, bizID uint32, serviceTemplateID uint32) (int64, error) {
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	return q.Where(m.BizID.Eq(bizID),
+		m.ServiceTemplateID.Eq(serviceTemplateID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Count()
+}
+
+// ProcessCountByServiceInstance implements Process.
+func (dao *processDao) ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error) {
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	return q.Where(m.BizID.Eq(bizID),
+		m.ServiceInstanceID.Eq(serviceInstanceID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Count()
 }
 
 // GetBySetIDWithTx queries all process IDs under a set.

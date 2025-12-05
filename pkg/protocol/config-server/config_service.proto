@@ -1602,20 +1602,20 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
-  // 按业务拓扑
+  // 根据业务查询拓扑
   rpc BizTopo(BizTopoReq) returns (BizTopoResp) {
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/topo"
     };
   }
-  // 按服务模板
+  // 根据业务查询服务模板列表
   rpc ServiceTemplate(ServiceTemplateReq) returns (ServiceTemplateResp) {
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/service_template"
     };
   }
 
-  // 进程模板列表
+  // 根据服务模板查询模板进程列表
   rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"
@@ -1688,6 +1688,58 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/config_template/list"
       body: "*"
+    };
+  }
+  // 创建配置模板
+  rpc CreateConfigTemplate(CreateConfigTemplateReq) returns (CreateConfigTemplateResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/config_template"
+      body: "*"
+    };
+  }
+  // 编辑配置模板
+  rpc UpdateConfigTemplate(UpdateConfigTemplateReq) returns (UpdateConfigTemplateResp) {
+    option (google.api.http) = {
+      put: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"
+      body: "*"
+    };
+  }
+  // 获取配置模板
+  rpc GetConfigTemplate(GetConfigTemplateReq) returns (GetConfigTemplateResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"
+    };
+  }
+  // 配置模板变量
+  rpc ConfigTemplateVariable(ConfigTemplateVariableReq) returns (ConfigTemplateVariableResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/config_template/variable"
+    };
+  }
+  // 绑定配置模板与进程实例
+  rpc BindProcessInstance(BindProcessInstanceReq) returns (BindProcessInstanceResp) {
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/bind_process_instance"
+      body: "*"
+    };
+  }
+  // 预览绑定配置模板与进程实例
+  rpc PreviewBindProcessInstance(PreviewBindProcessInstanceReq) returns (PreviewBindProcessInstanceResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/preview_bind_process_instance"
+    };
+  }
+
+  // 根据服务实例查询实例进程列表
+  rpc ProcessInstance(ProcessInstanceReq) returns (ProcessInstanceResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/process_instance/{service_instance_id}"
+    };
+  }
+  // 根据模块获取服务实例列表
+  rpc ServiceInstance(ServiceInstanceReq) returns (ServiceInstanceResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/service_instance/{module_id}"
     };
   }
 }
@@ -4838,7 +4890,8 @@ message GenerateConfigResp {
 
 message PushConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
-  uint32 batch_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成操作产生的批任务ID" }];
+  uint32 batch_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成操作产生的批任务ID" }];
 }
 
 message PushConfigResp {
@@ -4853,14 +4906,22 @@ message GetConfigRenderResultReq {
 
 // 获取异步任务的配置渲染结果响应
 message GetConfigRenderResultResp {
-  uint32 config_template_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
-  string config_template_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
-  string config_file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件名称" }];
-  string config_file_path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件路径" }];
-  string config_file_owner = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件所有者" }];
-  string config_file_group = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件所属组" }];
-  string config_file_permission = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件权限" }];
-  string config_instance_key = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例标识" }];
+  uint32 config_template_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+  string config_template_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string config_file_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件名称" }];
+  string config_file_path = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件路径" }];
+  string config_file_owner = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件所有者" }];
+  string config_file_group = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件所属组" }];
+  string config_file_permission = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件权限" }];
+  string config_instance_key = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例标识" }];
   string content = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置渲染内容" }];
 }
 
@@ -4876,6 +4937,12 @@ message ListConfigTemplateReq {
 message ListConfigTemplateResp {
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated pbct.ConfigTemplate details = 2;
+  message Item {
+    uint32 id = 1;
+    string name = 2;
+  }
+  Item template_space = 3;
+  Item template_set = 4;
 }
 
 message ConfigGenerateStatusReq {
@@ -4885,8 +4952,10 @@ message ConfigGenerateStatusReq {
 
 message ConfigGenerateStatusResp {
   message ConfigGenerateStatus {
-    string config_instance_key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例标识" }];
-    string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成任务状态状态" }];
+    string config_instance_key = 1
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置实例标识" }];
+    string status = 2
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成任务状态状态" }];
     string task_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID" }];
   }
   repeated ConfigGenerateStatus config_generate_statuses = 1
@@ -4895,12 +4964,127 @@ message ConfigGenerateStatusResp {
 
 message PreviewConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
-  string template_content = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版内容" }];
+  string template_content = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版内容" }];
   uint32 cc_process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  uint32 module_inst_seq = 4
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的递增ID序号(未提供则默认渲染序列号最小的实例)" }];
+  uint32 module_inst_seq = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "模块下的递增ID序号(未提供则默认渲染序列号最小的实例)"
+  }];
 }
 
 message PreviewConfigResp {
   string content = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置渲染内容" }];
+}
+
+message ProcessInstanceReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 service_instance_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例ID" }];
+}
+
+message ProcessInstanceResp {
+  repeated pbct.ListProcessInstance process_instances = 1;
+}
+
+message ServiceInstanceReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 module_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块ID" }];
+}
+
+message ServiceInstanceResp {
+  repeated pbct.ServiceInstanceInfo service_instances = 1;
+}
+
+message CreateConfigTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string file_path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版描述" }];
+  string revision_name = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本号" }];
+  string user = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string user_group = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string privilege = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+  string sign = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string md5 = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
+  string charset = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  string highlight_style = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
+  string file_mode = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  uint32 template_space_id = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "模板空间ID",
+  }];
+}
+
+message CreateConfigTemplateResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+}
+
+message UpdateConfigTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+  string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版描述" }];
+  string revision_name = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本号" }];
+  string user = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string user_group = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string privilege = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+  string sign = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string md5 = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
+  string charset = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  string highlight_style = 13
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
+  string file_mode = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+}
+
+message UpdateConfigTemplateResp {}
+
+message GetConfigTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+}
+
+message GetConfigTemplateResp {
+  pbct.BindTemplate bind_template = 1;
+}
+
+message ConfigTemplateVariableReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message ConfigTemplateVariableResp {
+  repeated pbct.ConfigTemplateVariable config_template_variables = 1;
+}
+
+message BindProcessInstanceReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+  repeated uint32 cc_template_process_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版关联的CC模板进程ID列表" }];
+  repeated uint32 cc_process_ids = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版关联的CC进程实例ID列表" }];
+}
+
+message BindProcessInstanceResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+}
+
+message PreviewBindProcessInstanceReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+}
+
+message PreviewBindProcessInstanceResp {
+  repeated pbct.BindProcessInstance template_processes = 1;
+  repeated pbct.BindProcessInstance instance_processes = 2;
 }

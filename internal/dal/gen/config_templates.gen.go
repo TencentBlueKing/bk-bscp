@@ -29,6 +29,7 @@ func newConfigTemplate(db *gorm.DB, opts ...gen.DOOption) configTemplate {
 	_configTemplate.ALL = field.NewAsterisk(tableName)
 	_configTemplate.ID = field.NewUint32(tableName, "id")
 	_configTemplate.Name = field.NewString(tableName, "name")
+	_configTemplate.HighlightStyle = field.NewString(tableName, "highlight_style")
 	_configTemplate.BizID = field.NewUint32(tableName, "biz_id")
 	_configTemplate.TemplateID = field.NewUint32(tableName, "template_id")
 	_configTemplate.CcTemplateProcessIDs = field.NewField(tableName, "cc_template_process_ids")
@@ -50,6 +51,7 @@ type configTemplate struct {
 	ALL                  field.Asterisk
 	ID                   field.Uint32
 	Name                 field.String
+	HighlightStyle       field.String
 	BizID                field.Uint32
 	TemplateID           field.Uint32
 	CcTemplateProcessIDs field.Field
@@ -77,6 +79,7 @@ func (c *configTemplate) updateTableName(table string) *configTemplate {
 	c.ALL = field.NewAsterisk(table)
 	c.ID = field.NewUint32(table, "id")
 	c.Name = field.NewString(table, "name")
+	c.HighlightStyle = field.NewString(table, "highlight_style")
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.TemplateID = field.NewUint32(table, "template_id")
 	c.CcTemplateProcessIDs = field.NewField(table, "cc_template_process_ids")
@@ -114,9 +117,10 @@ func (c *configTemplate) GetFieldByName(fieldName string) (field.OrderExpr, bool
 }
 
 func (c *configTemplate) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 11)
+	c.fieldMap = make(map[string]field.Expr, 12)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["name"] = c.Name
+	c.fieldMap["highlight_style"] = c.HighlightStyle
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["template_id"] = c.TemplateID
 	c.fieldMap["cc_template_process_ids"] = c.CcTemplateProcessIDs

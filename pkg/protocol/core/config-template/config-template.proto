@@ -19,6 +19,38 @@ message ConfigTemplate {
 message ConfigTemplateSpec {
   string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
   string file_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string highlight_style = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "语法高亮" }];
+}
+
+// BindTemplate xxx
+message BindTemplate {
+  string template_space_name = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名称" }];
+  string template_set_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名称" }];
+  string file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string file_path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版描述" }];
+  string revision_name = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本号" }];
+  string user = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string user_group = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string privilege = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
+  string sign = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
+  uint64 byte_size = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
+  string md5 = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件md5" }];
+  string charset = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  string highlight_style = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
+  string file_mode = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  repeated uint32 cc_template_process_ids = 16
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "关联cc服务模版下的模板进程ID" }];
+  repeated uint32 cc_process_ids = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "关联cc中未通过服务模板创建的进程实例ID"
+  }];
+  string name = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
 }
 
 // ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go
@@ -44,22 +76,13 @@ message BizTopoNode {
   repeated BizTopoNode child = 6;  // 子节点（递归）
   uint32 default = 7;              // 业务类型 / 集群类型
   uint32 service_template_id = 8;  // 服务模板ID
-  uint32 host_count = 9;           // 主机数量
-  uint32 process_count = 10;       // 进程数量
+  uint32 process_count = 9;        // 进程数量
 }
 
 // ServiceTemplate 服务模板信息
 message ServiceTemplate {
-  uint32 bk_biz_id = 1;            // 业务ID
-  uint32 id = 2;                   // 服务模板ID
-  string name = 3;                 // 服务模板名称
-  uint32 service_category_id = 4;  // 服务分类ID
-  string creator = 5;              // 创建者
-  string modifier = 6;             // 最后修改人员
-  string create_time = 7;          // 创建时间
-  string last_time = 8;            // 更新时间
-  string bk_supplier_account = 9;  // 开发商账号
-  bool host_apply_enabled = 10;    // 是否启用主机属性自动应用
+  uint32 id = 2;    // 服务模板ID
+  string name = 3;  // 服务模板名称
 }
 
 // ProcTemplate 进程模板数据
@@ -68,18 +91,6 @@ message ProcTemplate {
   string bk_process_name = 2;
   uint32 bk_biz_id = 3;
   uint32 service_template_id = 4;
-  map<string, PropertyField> property = 5;  // map 类型
-  string creator = 6;
-  string modifier = 7;
-  string create_time = 8;
-  string last_time = 9;
-  string bk_supplier_account = 10;
-}
-
-// PropertyField 属性字段
-message PropertyField {
-  string value = 1;           // 任意值序列化为 JSON 字符串
-  bool as_default_value = 2;  // 是否作为默认值
 }
 
 // TemplateSearchCond 配置模板搜索条件
@@ -87,4 +98,46 @@ message TemplateSearchCond {
   string template_name = 1;
   string file_name = 2;
   string reviser = 3;
+}
+
+// ServiceInstanceInfo 服务实例信息
+message ServiceInstanceInfo {
+  int32 id = 1;              // 服务实例ID
+  string name = 2;           // 服务实例名称
+  uint32 process_count = 3;  // 进程数量
+}
+
+// Relation 进程与服务实例关联信息
+message Relation {
+  int32 bk_biz_id = 1;
+  int32 bk_process_id = 2;
+  int32 service_instance_id = 3;
+  int32 process_template_id = 4;
+  int32 bk_host_id = 5;
+  string bk_supplier_account = 6;
+}
+
+// ProcessInfo 进程信息
+message ProcessInfo {
+  string bk_func_name = 1;
+  int32 bk_process_id = 2;
+  string bk_process_name = 3;
+}
+
+// ListProcessInstance 进程数据
+message ListProcessInstance {
+  ProcessInfo property = 1;
+  Relation relation = 2;
+}
+
+message ConfigTemplateVariable {
+  string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量键" }];
+  string type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量类型" }];
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量描述" }];
+}
+
+message BindProcessInstance {
+  uint32 id = 1;
+  string process_name = 2;
+  string name = 3;
 }

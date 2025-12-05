@@ -14,11 +14,8 @@
 package pbct
 
 import (
-	"encoding/json"
-
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
 
@@ -43,8 +40,9 @@ func PbConfigTemplateSpec(spec *table.ConfigTemplateSpec, fileName string) *Conf
 	}
 
 	return &ConfigTemplateSpec{
-		Name:     spec.Name,
-		FileName: fileName,
+		Name:           spec.Name,
+		FileName:       fileName,
+		HighlightStyle: string(spec.HighlightStyle),
 	}
 }
 
@@ -133,16 +131,8 @@ func ConvertServiceTemplate(s *bkcmdb.ServiceTemplate) *ServiceTemplate {
 	}
 
 	return &ServiceTemplate{
-		BkBizId:           uint32(s.BkBizID),
-		Id:                uint32(s.ID),
-		Name:              s.Name,
-		ServiceCategoryId: uint32(s.ServiceCategoryID),
-		Creator:           s.Creator,
-		Modifier:          s.Modifier,
-		CreateTime:        s.CreateTime,
-		LastTime:          s.LastTime,
-		BkSupplierAccount: s.BkSupplierAccount,
-		HostApplyEnabled:  s.HostApplyEnabled,
+		Id:   uint32(s.ID),
+		Name: s.Name,
 	}
 }
 
@@ -164,40 +154,99 @@ func ConvertProcTemplate(p *bkcmdb.ProcTemplate) *ProcTemplate {
 		return nil
 	}
 
-	// map[string]PropertyField -> map[string]*PropertyField
-	pbProperty := make(map[string]*PropertyField, len(p.Property))
-	for k, v := range p.Property {
-		pbProperty[k] = ConvertPropertyField(v)
-	}
-
 	return &ProcTemplate{
 		Id:                uint32(p.ID),
 		BkProcessName:     p.BkProcessName,
 		BkBizId:           uint32(p.BkBizID),
 		ServiceTemplateId: uint32(p.ServiceTemplateID),
-		Property:          pbProperty,
-		Creator:           p.Creator,
-		Modifier:          p.Modifier,
-		CreateTime:        p.CreateTime,
-		LastTime:          p.LastTime,
-		BkSupplierAccount: p.BkSupplierAccount,
 	}
 }
 
-// ConvertPropertyField 将 PropertyField 转为 pb.PropertyField
-func ConvertPropertyField(src bkcmdb.PropertyField) *PropertyField {
-	valueStr := ""
-	if src.Value != "" {
-		b, err := json.Marshal(src.Value)
-		if err != nil {
-			logs.Errorf("ConvertPropertyField json marshal value failed, err: %v", err)
-			return nil
-		}
-		valueStr = string(b)
+// ConvertServiceInstances 批量转换： []*bkcmdb.ServiceInstanceInfo → []*pb.ServiceInstanceInfo
+func ConvertServiceInstances(src []*bkcmdb.ServiceInstanceInfo) []*ServiceInstanceInfo {
+	if src == nil {
+		return nil
 	}
 
-	return &PropertyField{
-		Value:          valueStr,
-		AsDefaultValue: src.AsDefaultValue,
+	res := make([]*ServiceInstanceInfo, 0, len(src))
+	for _, inst := range src {
+		res = append(res, ConvertServiceInstance(inst))
 	}
+	return res
+}
+
+// ConvertServiceInstance 单个转换 *bkcmdb.ServiceInstanceInfo → *pb.ServiceInstanceInfo
+func ConvertServiceInstance(s *bkcmdb.ServiceInstanceInfo) *ServiceInstanceInfo {
+	if s == nil {
+		return nil
+	}
+
+	// map[string]string 转换（protobuf 支持直接赋值）
+	labels := make(map[string]string, len(s.Labels))
+	for k, v := range s.Labels {
+		labels[k] = v
+	}
+
+	return &ServiceInstanceInfo{
+		Id:   int32(s.ID),
+		Name: s.Name,
+	}
+}
+
+// ConvertProcessInfo converts *bkcmdb.ProcessInfo → *pb.ProcessInfo
+func ConvertProcessInfo(src *bkcmdb.ProcessInfo) *ProcessInfo {
+	if src == nil {
+		return nil
+	}
+
+	return &ProcessInfo{
+		BkFuncName:    src.BkFuncName,
+		BkProcessId:   int32(src.BkProcessID),
+		BkProcessName: src.BkProcessName,
+	}
+}
+
+// ConvertRelation converts *bkcmdb.Relation → *pb.Relation
+func ConvertRelation(src *bkcmdb.Relation) *Relation {
+	if src == nil {
+		return nil
+	}
+
+	return &Relation{
+		BkBizId:           int32(src.BkBizID),
+		BkProcessId:       int32(src.BkProcessID),
+		ServiceInstanceId: int32(src.ServiceInstanceID),
+		ProcessTemplateId: int32(src.ProcessTemplateID),
+		BkHostId:          int32(src.BkHostID),
+		BkSupplierAccount: src.BkSupplierAccount,
+	}
+}
+
+// ConvertProcessInstance converts *bkcmdb.ListProcessInstance → *pb.ListProcessInstance
+func ConvertProcessInstance(src *bkcmdb.ListProcessInstance) *ListProcessInstance {
+	if src == nil {
+		return nil
+	}
+
+	return &ListProcessInstance{
+		Property: ConvertProcessInfo(src.Property),
+		Relation: ConvertRelation(src.Relation),
+	}
+}
+
+// ConvertProcessInstances converts []*bkcmdb.ListProcessInstance to []*ListProcessInstance
+func ConvertProcessInstances(src []*bkcmdb.ListProcessInstance) []*ListProcessInstance {
+	if src == nil {
+		return nil
+	}
+
+	result := make([]*ListProcessInstance, 0, len(src))
+	for _, item := range src {
+		converted := ConvertProcessInstance(item)
+		if converted != nil {
+			result = append(result, converted)
+		}
+	}
+
+	return result
 }

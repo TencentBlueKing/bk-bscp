@@ -50,8 +50,12 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 	}
 
 	processIDs := make([]uint32, 0, len(res))
+	ccProcessIDs := map[uint32]uint32{}
+	ccTemplateProcessIDs := map[uint32]uint32{}
 	for _, v := range res {
 		processIDs = append(processIDs, v.ID)
+		ccProcessIDs[v.ID] = v.Attachment.CcProcessID
+		ccTemplateProcessIDs[v.ID] = v.Attachment.ProcessTemplateID
 	}
 
 	procInst, err := s.dao.ProcessInstance().GetByProcessIDs(kt, req.GetBizId(), processIDs)
@@ -65,7 +69,29 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		procInstMap[inst.Attachment.ProcessID] = append(procInstMap[inst.Attachment.ProcessID], inst)
 	}
 
-	processes := pbproc.PbProcessesWithInstances(res, procInstMap)
+	// 查询实例进程关联的模板ID
+	bindTemplateIds := map[uint32][]uint32{}
+	for k, v := range ccProcessIDs {
+		templateIDs, errP := s.dao.ConfigTemplate().ListByCCProcessID(kt, req.GetBizId(), v)
+		if errP != nil {
+			return nil, errP
+		}
+		bindTemplateIds[k] = append(bindTemplateIds[k], templateIDs...)
+	}
+	// 查询模板进程关联的模板ID
+	for k, v := range ccTemplateProcessIDs {
+		templateIDs, errT := s.dao.ConfigTemplate().ListByCCTemplateProcessID(kt, req.GetBizId(), v)
+		if errT != nil {
+			return nil, errT
+		}
+		bindTemplateIds[k] = append(bindTemplateIds[k], templateIDs...)
+	}
+
+	for k, ids := range bindTemplateIds {
+		bindTemplateIds[k] = uniqueUint32(ids)
+	}
+
+	processes := pbproc.PbProcessesWithInstances(res, procInstMap, bindTemplateIds)
 
 	filterOptions, err := s.buildfilterOptions(kt, req.GetBizId())
 	if err != nil {
@@ -77,6 +103,18 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		Process:       processes,
 		FilterOptions: filterOptions,
 	}, nil
+}
+
+func uniqueUint32(arr []uint32) []uint32 {
+	m := make(map[uint32]struct{})
+	res := make([]uint32, 0, len(arr))
+	for _, v := range arr {
+		if _, ok := m[v]; !ok {
+			m[v] = struct{}{}
+			res = append(res, v)
+		}
+	}
+	return res
 }
 
 func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterOptions, error) {

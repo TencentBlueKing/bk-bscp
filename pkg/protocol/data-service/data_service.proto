@@ -330,8 +330,17 @@ service Data {
   rpc BizTopo(BizTopoReq) returns (BizTopoResp) {}
   rpc ServiceTemplate(ServiceTemplateReq) returns (ServiceTemplateResp) {}
   rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {}
+  rpc ServiceInstance(ServiceInstanceReq) returns (ServiceInstanceResp) {}
+  rpc ProcessInstance(ProcessInstanceReq) returns (ProcessInstanceResp) {}
 
   rpc ListConfigTemplate(ListConfigTemplateReq) returns (ListConfigTemplateResp) {}
+  rpc CreateConfigTemplate(CreateConfigTemplateReq) returns (CreateConfigTemplateResp) {}
+  rpc UpdateConfigTemplate(UpdateConfigTemplateReq) returns (UpdateConfigTemplateResp) {}
+  rpc GetConfigTemplate(GetConfigTemplateReq) returns (GetConfigTemplateResp) {}
+  rpc ConfigTemplateVariable(ConfigTemplateVariableReq) returns (ConfigTemplateVariableResp) {}
+  rpc BindProcessInstance(BindProcessInstanceReq) returns (BindProcessInstanceResp) {}
+  rpc PreviewBindProcessInstance(PreviewBindProcessInstanceReq) returns (PreviewBindProcessInstanceResp) {}
+
   // 配置实例列表
   rpc ListConfigInstances(ListConfigInstancesReq) returns (ListConfigInstancesResp) {}
   // 配置生成
@@ -2438,6 +2447,24 @@ message ProcessTemplateResp {
   repeated pbct.ProcTemplate process_templates = 1;
 }
 
+message ServiceInstanceReq {
+  uint32 biz_id = 1;
+  uint32 module_id = 2;
+}
+
+message ServiceInstanceResp {
+  repeated pbct.ServiceInstanceInfo service_instances = 1;
+}
+
+message ProcessInstanceReq {
+  uint32 biz_id = 1;
+  uint32 service_instance_id = 2;
+}
+
+message ProcessInstanceResp {
+  repeated pbct.ListProcessInstance process_instances = 1;
+}
+
 message ListConfigTemplateReq {
   uint32 biz_id = 1;
   uint32 start = 2;
@@ -2449,6 +2476,12 @@ message ListConfigTemplateReq {
 message ListConfigTemplateResp {
   uint32 count = 1;
   repeated pbct.ConfigTemplate details = 2;
+  message Item {
+    uint32 id = 1;
+    string name = 2;
+  }
+  Item template_space = 3;
+  Item template_set = 4;
 }
 
 message ListConfigInstancesReq {
@@ -2521,4 +2554,84 @@ message PreviewConfigReq {
 
 message PreviewConfigResp {
   string content = 1;
+}
+
+message CreateConfigTemplateReq {
+  uint32 biz_id = 1;
+  string name = 2;
+  string file_name = 3;
+  string file_path = 4;
+  string memo = 5;
+  string revision_name = 6;
+  string user = 7;
+  string user_group = 8;
+  string privilege = 9;
+  string sign = 10;
+  uint64 byte_size = 11;
+  string md5 = 12;
+  string charset = 13;
+  string highlight_style = 14;
+  string file_mode = 15;
+  uint32 template_space_id = 16;
+}
+
+message CreateConfigTemplateResp {
+  uint32 id = 1;
+}
+
+message ConfigTemplateVariableReq {
+  uint32 id = 1;
+}
+
+message ConfigTemplateVariableResp {
+  repeated pbct.ConfigTemplateVariable config_template_variables = 1;
+}
+
+message BindProcessInstanceReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+  repeated uint32 cc_template_process_ids = 3;
+  repeated uint32 cc_process_ids = 4;
+}
+
+message BindProcessInstanceResp {
+  uint32 id = 1;
+}
+
+message PreviewBindProcessInstanceReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+}
+
+message PreviewBindProcessInstanceResp {
+  repeated pbct.BindProcessInstance template_processes = 1;
+  repeated pbct.BindProcessInstance instance_processes = 2;
+}
+
+message UpdateConfigTemplateReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+  string name = 3;
+  string memo = 4;
+  string revision_name = 5;
+  string user = 6;
+  string user_group = 7;
+  string privilege = 8;
+  string sign = 9;
+  uint64 byte_size = 10;
+  string md5 = 11;
+  string charset = 12;
+  string highlight_style = 13;
+  string file_mode = 14;
+}
+
+message UpdateConfigTemplateResp {}
+
+message GetConfigTemplateReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+}
+
+message GetConfigTemplateResp {
+  pbct.BindTemplate bind_template = 1;
 }

@@ -215,3 +215,12 @@ const (
 	// TicketRevokedStatus 被撤销
 	TicketRevokedStatus = "REVOKED"
 )
+
+// 配置模板管理相关常量
+const (
+	// BK_MODULE_OBJ_ID cmdb模块节点对象ID
+	BK_MODULE_OBJ_ID = "module"
+	BK_BIZ_OBJ_ID    = "biz"
+	// CONFIG_DELIVERY 默认模板配置空间
+	CONFIG_DELIVERY = "config_delivery"
+)

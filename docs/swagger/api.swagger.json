@@ -9283,7 +9283,7 @@
     },
     "/api/v1/config/biz_id/{bizId}/process/list": {
       "post": {
-        "summary": "进程管理\n进程列表",
+        "summary": "进程管理\r\n进程列表",
         "operationId": "Config_ListProcess",
         "responses": {
           "200": {
@@ -17837,11 +17837,6 @@
           "format": "int64",
           "title": "服务模板ID"
         },
-        "hostCount": {
-          "type": "integer",
-          "format": "int64",
-          "title": "主机数量"
-        },
         "processCount": {
           "type": "integer",
           "format": "int64",
@@ -17980,11 +17975,6 @@
     "pbctServiceTemplate": {
       "type": "object",
       "properties": {
-        "bkBizId": {
-          "type": "integer",
-          "format": "int64",
-          "title": "业务ID"
-        },
         "id": {
           "type": "integer",
           "format": "int64",
@@ -17993,35 +17983,6 @@
         "name": {
           "type": "string",
           "title": "服务模板名称"
-        },
-        "serviceCategoryId": {
-          "type": "integer",
-          "format": "int64",
-          "title": "服务分类ID"
-        },
-        "creator": {
-          "type": "string",
-          "title": "创建者"
-        },
-        "modifier": {
-          "type": "string",
-          "title": "最后修改人员"
-        },
-        "createTime": {
-          "type": "string",
-          "title": "创建时间"
-        },
-        "lastTime": {
-          "type": "string",
-          "title": "更新时间"
-        },
-        "bkSupplierAccount": {
-          "type": "string",
-          "title": "开发商账号"
-        },
-        "hostApplyEnabled": {
-          "type": "boolean",
-          "title": "是否启用主机属性自动应用"
         }
       },
       "title": "ServiceTemplate 服务模板信息"

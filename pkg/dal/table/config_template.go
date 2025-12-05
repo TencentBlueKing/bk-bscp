@@ -14,7 +14,10 @@ package table
 
 import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/types"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // ConfigTemplate defines a config template's detail information
@@ -28,7 +31,8 @@ type ConfigTemplate struct {
 // ConfigTemplateSpec defines all the specifics for config template set by user.
 type ConfigTemplateSpec struct {
 	// 配置模版名称, 需要区别于templates表的name字段。templates表的name用于和path共同组成文件的路径
-	Name string `json:"name" gorm:"column:name"`
+	Name           string         `json:"name" gorm:"column:name"`
+	HighlightStyle HighlightStyle `json:"highlight_style" gorm:"column:highlight_style"`
 }
 
 // ConfigTemplateAttachment defines the config template attachments.
@@ -60,4 +64,36 @@ func (c *ConfigTemplate) AppID() uint32 {
 // ResID AuditRes interface
 func (c *ConfigTemplate) ResID() uint32 {
 	return c.ID
+}
+
+const (
+	// HighlightStylePython Python
+	HighlightStylePython HighlightStyle = "python"
+	// HighlightStyleShell Shell
+	HighlightStyleShell HighlightStyle = "shell"
+	// HighlightStylePowershell PowerShell
+	HighlightStylePowershell HighlightStyle = "powershell"
+	// HighlightStyleJSON JSON
+	HighlightStyleJSON HighlightStyle = "json"
+	// HighlightStyleYAML YAML
+	HighlightStyleYAML HighlightStyle = "yaml"
+)
+
+// HighlightStyle style type
+type HighlightStyle string
+
+// Validate the highlight style is supported or not.
+func (h HighlightStyle) Validate(kit *kit.Kit) error {
+	switch h {
+	case HighlightStylePython,
+		HighlightStyleShell,
+		HighlightStylePowershell,
+		HighlightStyleJSON,
+		HighlightStyleYAML:
+		return nil
+
+	default:
+		return errf.Errorf(errf.InvalidArgument,
+			i18n.T(kit, "unsupported highlight style: %s", h))
+	}
 }

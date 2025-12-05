@@ -728,7 +728,7 @@
         },
         "replaceAll": {
           "type": "boolean",
-          "default": false,
+          "default": "false",
           "description": "是否替换全部：如果为true会覆盖已有的文件，不存在的则删除"
         },
         "variables": {
@@ -867,7 +867,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": false,
+          "default": "false",
           "description": "是否获取所有"
         },
         "search": {
@@ -880,7 +880,7 @@
       "properties": {
         "all": {
           "type": "boolean",
-          "default": false,
+          "default": "false",
           "description": "是否获取所有"
         },
         "key": {
@@ -1363,11 +1363,6 @@
           "format": "int64",
           "title": "服务模板ID"
         },
-        "hostCount": {
-          "type": "integer",
-          "format": "int64",
-          "title": "主机数量"
-        },
         "processCount": {
           "type": "integer",
           "format": "int64",
@@ -1506,11 +1501,6 @@
     "pbctServiceTemplate": {
       "type": "object",
       "properties": {
-        "bkBizId": {
-          "type": "integer",
-          "format": "int64",
-          "title": "业务ID"
-        },
         "id": {
           "type": "integer",
           "format": "int64",
@@ -1519,35 +1509,6 @@
         "name": {
           "type": "string",
           "title": "服务模板名称"
-        },
-        "serviceCategoryId": {
-          "type": "integer",
-          "format": "int64",
-          "title": "服务分类ID"
-        },
-        "creator": {
-          "type": "string",
-          "title": "创建者"
-        },
-        "modifier": {
-          "type": "string",
-          "title": "最后修改人员"
-        },
-        "createTime": {
-          "type": "string",
-          "title": "创建时间"
-        },
-        "lastTime": {
-          "type": "string",
-          "title": "更新时间"
-        },
-        "bkSupplierAccount": {
-          "type": "string",
-          "title": "开发商账号"
-        },
-        "hostApplyEnabled": {
-          "type": "boolean",
-          "title": "是否启用主机属性自动应用"
         }
       },
       "title": "ServiceTemplate 服务模板信息"
