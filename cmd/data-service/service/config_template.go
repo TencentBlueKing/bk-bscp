@@ -16,16 +16,25 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
-	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbct "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template"
+	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
@@ -34,16 +43,42 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	*pbds.ListConfigTemplateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	// 1. 根据业务查询模板空间和模板套餐下的模板配置
+	now := time.Now().UTC()
+	// 1. 确保 config_delivery 模板空间存在
+	templateSpace, err := s.getOrCreateTemplateSpace(grpcKit, req.GetBizId(), now)
+	if err != nil {
+		logs.Errorf("getOrCreateTemplateSpace failed, err=%v, rid=%s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 3. 确保默认套餐存在
+	templateSet, err := s.getOrCreateDefaultTemplateSet(grpcKit, req.GetBizId(), templateSpace.ID, now)
+	if err != nil {
+		logs.Errorf("[ConfigTemplate] getOrCreateDefaultTemplateSet failed, err=%v, rid=%s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	resp := &pbds.ListConfigTemplateResp{
+		TemplateSpace: &pbds.ListConfigTemplateResp_Item{
+			Id:   templateSpace.ID,
+			Name: templateSpace.Spec.Name,
+		},
+		TemplateSet: &pbds.ListConfigTemplateResp_Item{
+			Id:   templateSet.ID,
+			Name: templateSet.Spec.Name,
+		},
+	}
+
+	// 3. 根据业务查询模板空间和模板套餐下的模板配置
 	spec, err := s.dao.TemplateSpace().GetBizTemplateSpaceByName(grpcKit, req.GetBizId(), constant.CONFIG_DELIVERY)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &pbds.ListConfigTemplateResp{}, nil
+			return resp, nil
 		}
 		return nil, err
 	}
 
-	// 2. 根据模板空间查询模板
+	// 4. 根据模板空间查询模板
 	templates, count, err := s.dao.Template().List(grpcKit, req.GetBizId(), spec.ID,
 		&types.BasePage{
 			All:   req.GetAll(),
@@ -61,16 +96,15 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 		fileNames[template.ID] = path.Join(template.Spec.Path, template.Spec.Name)
 	}
 
-	// 3. 根据模板ID查询配置模板列表
+	// 5. 根据模板ID查询配置模板列表
 	configTemplates, err := s.dao.ConfigTemplate().ListAllByTemplateIDs(grpcKit, req.GetBizId(), templateIDs)
 	if err != nil {
 		return nil, err
 	}
+	resp.Count = uint32(count)
+	resp.Details = pbct.PbConfigTemplates(configTemplates, fileNames)
 
-	return &pbds.ListConfigTemplateResp{
-		Count:   uint32(count),
-		Details: pbct.PbConfigTemplates(configTemplates, fileNames),
-	}, nil
+	return resp, nil
 }
 
 // BizTopo implements pbds.DataServer.
@@ -87,61 +121,73 @@ func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizT
 	// 2. 转换为 pb 结构
 	pbTopo := pbct.ConvertBizTopoNodes(topo)
 
-	// 3. 获取模板ID并回填到拓扑树中
-	err = s.fillServiceTemplateIDToTopo(grpcKit.Ctx, pbTopo, int(req.GetBizId()))
+	// 3. 去掉业务层，只保留 set 层
+	// pbTopo[0] 为 biz，其子节点即 set 层
+	if len(pbTopo) == 0 || pbTopo[0].BkObjId != constant.BK_BIZ_OBJ_ID {
+		return nil, fmt.Errorf("unexpected biz topo format")
+	}
+	setTopo := pbTopo[0].Child
+
+	// 4. 获取模板ID并回填到拓扑树中
+	err = s.fillServiceTemplateIDToTopo(grpcKit.Ctx, setTopo, int(req.GetBizId()))
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. moduleID → hostIDs
-	hostMap, err := s.getModuleHostIDsMap(grpcKit.Ctx, int(req.GetBizId()))
-	if err != nil {
+	// 5. 查询表获取进程数并回填到拓扑树中
+	if err := s.fillProcessCount(grpcKit, int(req.GetBizId()), setTopo); err != nil {
 		return nil, err
 	}
-
-	// 5. moduleID → processIDs
-	procMap, err := s.getModuleProcessIDsMap(grpcKit, int(req.GetBizId()))
-	if err != nil {
-		return nil, err
-	}
-
-	// 6. 回填主机数、进程数到拓扑树中
-	fillCountsToTopoNodes(pbTopo, []map[int][]int{hostMap, procMap}, []string{"host_count", "process_count"})
 
 	return &pbds.BizTopoResp{
-		BizTopoNodes: pbTopo,
+		BizTopoNodes: setTopo,
 	}, nil
 }
 
-// ServiceTemplate implements pbds.DataServer.
-func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplateReq) (*pbds.ServiceTemplateResp, error) {
-	grpcKit := kit.FromGrpcContext(ctx)
+func (s *Service) fillProcessCount(kit *kit.Kit, bizID int, topo []*pbct.BizTopoNode) error {
+	for _, set := range topo {
+		var setTotal uint32
+		for _, module := range set.Child {
+			if module.BkObjId != constant.BK_MODULE_OBJ_ID {
+				continue
+			}
+			var (
+				cnt int64
+				err error
+			)
 
-	resp, err := s.fetchAllServiceTemplate(grpcKit.Ctx, int(req.GetBizId()))
-	if err != nil {
-		return nil, err
+			// 情况 1：模板模块（使用服务模板统计）
+			if module.ServiceTemplateId != 0 {
+				cnt, err = s.dao.Process().ProcessCountByServiceTemplate(kit, uint32(bizID), module.ServiceTemplateId)
+				if err != nil {
+					return err
+				}
+				module.ProcessCount = uint32(cnt)
+				setTotal += uint32(cnt)
+				continue
+			}
+
+			// 普通模块（使用 ServiceInstance → ProcessInstance）
+			svcInsts, err := s.processCountByServiceInstance(kit, bizID, int(module.BkInstId))
+			if err != nil {
+				return err
+			}
+
+			// 累加每个 ServiceInstanceInfo.ProcessCount
+			mTotal := uint32(0)
+			for _, inst := range svcInsts {
+				mTotal += inst.ProcessCount
+			}
+
+			module.ProcessCount = mTotal
+			setTotal += mTotal
+		}
+
+		// set 层聚合模块进程数
+		set.ProcessCount = setTotal
 	}
 
-	return &pbds.ServiceTemplateResp{
-		ServiceTemplates: pbct.ConvertServiceTemplates(resp),
-	}, nil
-}
-
-// ProcessTemplate implements pbds.DataServer.
-func (s *Service) ProcessTemplate(ctx context.Context, req *pbds.ProcessTemplateReq) (*pbds.ProcessTemplateResp, error) {
-	grpcKit := kit.FromGrpcContext(ctx)
-
-	resp, err := s.cmdb.ListProcTemplate(grpcKit.Ctx, &bkcmdb.ListProcTemplateReq{
-		BkBizID:           int(req.GetBizId()),
-		ServiceTemplateID: int(req.GetServiceTemplateId()),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &pbds.ProcessTemplateResp{
-		ProcessTemplates: pbct.ConvertProcTemplates(resp.Info),
-	}, nil
+	return nil
 }
 
 // fillServiceTemplateIDToTopo 在业务拓扑树中回填 service_template_id
@@ -184,13 +230,11 @@ func (s *Service) fillServiceTemplateIDToTopo(ctx context.Context, topo []*pbct.
 
 // fillServiceTemplateIDs 回填 service_template_id 到拓扑树中
 func fillServiceTemplateIDs(topo []*pbct.BizTopoNode, modIDToServTplID map[int]int) {
-	for _, biz := range topo {
-		for _, set := range biz.Child {
-			for _, module := range set.Child {
-				if module.BkObjId == constant.BK_MODULE_OBJ_ID {
-					if tplID, ok := modIDToServTplID[int(module.BkInstId)]; ok {
-						module.ServiceTemplateId = uint32(tplID)
-					}
+	for _, set := range topo {
+		for _, module := range set.Child {
+			if module.BkObjId == constant.BK_MODULE_OBJ_ID {
+				if tplID, ok := modIDToServTplID[int(module.BkInstId)]; ok {
+					module.ServiceTemplateId = uint32(tplID)
 				}
 			}
 		}
@@ -201,82 +245,15 @@ func fillServiceTemplateIDs(topo []*pbct.BizTopoNode, modIDToServTplID map[int]i
 func listTargetObjNodeFromTopo(topo []*pbct.BizTopoNode, targetObj string) []*pbct.BizTopoNode {
 	modules := make([]*pbct.BizTopoNode, 0)
 
-	for _, biz := range topo {
-		for _, set := range biz.Child {
-			for _, module := range set.Child {
-				if module.BkObjId == targetObj {
-					modules = append(modules, module)
-				}
+	for _, set := range topo {
+		for _, module := range set.Child {
+			if module.BkObjId == targetObj {
+				modules = append(modules, module)
 			}
 		}
 	}
 
 	return modules
-}
-
-func (s *Service) getModuleHostIDsMap(ctx context.Context, bizID int) (map[int][]int, error) {
-	moduleHostMap := make(map[int][]int)
-	// 批量查询主机-模块关系
-	hosts, err := s.fetchAllHost(ctx, bizID)
-	if err != nil {
-		return nil, fmt.Errorf("find host topo relation failed: %w", err)
-	}
-
-	if len(hosts) == 0 {
-		return moduleHostMap, nil
-	}
-
-	for _, rel := range hosts {
-		moduleID := rel.BkModuleID
-		hostID := rel.BkHostID
-		moduleHostMap[moduleID] = append(moduleHostMap[moduleID], hostID)
-	}
-	return moduleHostMap, nil
-}
-
-func (s *Service) getModuleProcessIDsMap(kit *kit.Kit, bizID int) (map[int][]int, error) {
-	procList, err := s.dao.Process().ListActiveProcesses(kit, uint32(bizID))
-	if err != nil {
-		return nil, fmt.Errorf("ListProcessByBizID failed: %w", err)
-	}
-
-	moduleProcMap := make(map[int][]int)
-	for _, p := range procList {
-		moduleProcMap[int(p.Attachment.ModuleID)] = append(moduleProcMap[int(p.Attachment.ModuleID)],
-			int(p.Attachment.CcProcessID))
-	}
-	return moduleProcMap, nil
-}
-
-// fillCountsToTopoNodes 在拓扑树中回填指定字段的计数信息（如主机数、进程数等）
-func fillCountsToTopoNodes(nodes []*pbct.BizTopoNode, maps []map[int][]int, fields []string) {
-
-	for _, biz := range nodes {
-		for _, set := range biz.Child {
-			for _, module := range set.Child {
-				if module.BkObjId != constant.BK_MODULE_OBJ_ID {
-					continue
-				}
-
-				moduleID := int(module.BkInstId)
-
-				for i, mp := range maps {
-					field := fields[i]
-
-					if ids, ok := mp[moduleID]; ok {
-						count := len(ids)
-
-						switch field {
-						case "host_count":
-							module.HostCount = uint32(count)
-						case "process_count":
-							module.ProcessCount = uint32(count)
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 // fetchAllModuleDetails 由于cmdb限制一次查询模块详情的数量，故此处做批量查询
@@ -319,21 +296,6 @@ func batchSliceFetcher[T any, R any](ids []T, batchSize int, fetch func(batch []
 	return all, nil
 }
 
-// fetchAllHost 由于cmdb限制一次查询主机详情的数量，故此处做批量查询
-func (s *Service) fetchAllHost(ctx context.Context, bizID int) ([]*bkcmdb.HostTopoInfo, error) {
-	return cmdb.PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.HostTopoInfo, int, error) {
-		resp, err := s.cmdb.FindHostTopoRelation(ctx, &bkcmdb.HostTopoReq{
-			BkBizID: bizID,
-			Page:    page,
-		})
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return resp.Data, resp.Count, nil
-	})
-}
-
 // fetchAllServiceTemplate 由于cmdb限制一次查询服务模板的数量，故此处做批量查询
 func (s *Service) fetchAllServiceTemplate(ctx context.Context, bizID int) ([]*bkcmdb.ServiceTemplate, error) {
 	return cmdb.PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ServiceTemplate, int, error) {
@@ -347,4 +309,590 @@ func (s *Service) fetchAllServiceTemplate(ctx context.Context, bizID int) ([]*bk
 
 		return resp.Info, resp.Count, nil
 	})
+}
+
+// CreateConfigTemplate implements pbds.DataServer.
+func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConfigTemplateReq) (*pbds.CreateConfigTemplateResp, error) {
+	kit := kit.FromGrpcContext(ctx)
+
+	// 1. 开启事务
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			}
+		}
+	}()
+
+	now := time.Now().UTC()
+
+	// 2. 校验同一空间下不能出现相同绝对路径的配置文件且同路径下不能出现同名的文件夹和文件
+	items, _, err := s.dao.Template().List(kit, req.GetBizId(),
+		req.GetTemplateSpaceId(), &types.BasePage{All: true})
+	if err != nil {
+		return nil, err
+	}
+	existingPaths := []string{}
+	for _, v := range items {
+		existingPaths = append(existingPaths, path.Join(v.Spec.Path, v.Spec.Name))
+	}
+
+	if tools.CheckPathConflict(path.Join(req.GetFilePath(), req.GetFileName()), existingPaths) {
+		return nil, errors.New(i18n.T(kit, "the config file %s already exists in this space and cannot be created again",
+			path.Join(req.GetFilePath(), req.GetFileName())))
+	}
+
+	// 3. 通过空间和名称查询套餐
+	templateSet, err := s.dao.TemplateSet().GetByUniqueKey(kit, req.GetBizId(), req.GetTemplateSpaceId(), constant.DefaultTmplSetName)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 创建模板和模板版本，并添加至默认套餐中
+	templateId, err := s.createTemplateAndRevision(kit, tx, req.GetTemplateSpaceId(), templateSet, req, now)
+	if err != nil {
+		logs.Errorf("[ConfigTemplate] createTemplateAndRevision failed, err=%v, rid=%s", err, kit.Rid)
+		return nil, err
+	}
+
+	// 5. 创建配置模板
+	configTemplate := &table.ConfigTemplate{
+		Spec: &table.ConfigTemplateSpec{
+			Name:           req.GetName(),
+			HighlightStyle: table.HighlightStyle(req.GetHighlightStyle()),
+		},
+		Attachment: &table.ConfigTemplateAttachment{
+			BizID:                req.GetBizId(),
+			TemplateID:           templateId,
+			TenantID:             kit.TenantID,
+			CcTemplateProcessIDs: []uint32{},
+			CcProcessIDs:         []uint32{},
+		},
+		Revision: &table.Revision{
+			Creator:   kit.User,
+			CreatedAt: now,
+		},
+	}
+	id, err := s.dao.ConfigTemplate().CreateWithTx(kit, tx, configTemplate)
+	if err != nil {
+		logs.Errorf("[ConfigTemplate] create config template failed, err: %v, rid: %s", err, kit.Rid)
+		return nil, err
+	}
+
+	// 6. 提交事务
+	if e := tx.Commit(); e != nil {
+		logs.Errorf("[ConfigTemplate] commit transaction failed, err: %v, rid: %s", e, kit.Rid)
+		return nil, e
+	}
+	committed = true
+
+	return &pbds.CreateConfigTemplateResp{
+		Id: id,
+	}, nil
+}
+
+// createTemplateAndRevision 创建模板和模板版本以及把模板移入指定的套餐中
+func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templateSpaceID uint32,
+	templateSet *table.TemplateSet, req *pbds.CreateConfigTemplateReq, now time.Time) (uint32, error) {
+
+	// 1. 创建模板文件
+	template := &table.Template{
+		Spec: &table.TemplateSpec{
+			Name: req.GetFileName(),
+			Path: req.GetFilePath(),
+			Memo: req.GetMemo(),
+		},
+		Attachment: &table.TemplateAttachment{
+			BizID:           req.GetBizId(),
+			TemplateSpaceID: templateSpaceID,
+			TenantID:        kit.TenantID,
+		},
+		Revision: &table.Revision{
+			Creator:   kit.User,
+			CreatedAt: now,
+		},
+	}
+	templateID, err := s.dao.Template().CreateWithTx(kit, tx, template, false)
+	if err != nil {
+		logs.Errorf("create template failed, err: %v, rid: %s", err, kit.Rid)
+		return 0, err
+	}
+	// 2. 创建模板版本
+	var revisionName = req.GetRevisionName()
+	if revisionName == "" {
+		revisionName = tools.GenerateRevisionName()
+	}
+	templateRevision := &table.TemplateRevision{
+		Spec: &table.TemplateRevisionSpec{
+			RevisionName: revisionName,
+			Name:         revisionName,
+			Path:         req.GetFilePath(),
+			FileType:     table.Text,
+			FileMode:     table.FileMode(req.GetFileMode()),
+			Permission: &table.FilePermission{
+				User:      req.GetUser(),
+				UserGroup: req.GetUserGroup(),
+				Privilege: req.GetPrivilege(),
+			},
+			ContentSpec: &table.ContentSpec{
+				Signature: req.GetSign(),
+				ByteSize:  req.GetByteSize(),
+				Md5:       req.GetMd5(),
+			},
+			Charset: table.FileCharset(req.GetCharset()),
+		},
+		Attachment: &table.TemplateRevisionAttachment{
+			BizID:           req.GetBizId(),
+			TemplateSpaceID: templateSpaceID,
+			TemplateID:      templateID,
+		},
+		Revision: &table.CreatedRevision{
+			Creator:   kit.User,
+			CreatedAt: now,
+		},
+	}
+
+	if _, err = s.dao.TemplateRevision().CreateWithTx(kit, tx, templateRevision, false); err != nil {
+		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kit.Rid)
+		return 0, err
+	}
+
+	templateSet.Spec.TemplateIDs = tools.MergeAndDeduplicate(templateSet.Spec.TemplateIDs, []uint32{templateID})
+
+	// 3. 添加至模板套餐中
+	err = s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kit, tx, []*table.TemplateSet{templateSet}, true)
+	if err != nil {
+		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kit.Rid)
+		return 0, errf.Errorf(errf.DBOpFailed, i18n.T(kit, "batch add templates to template sets failed, err: %s", err))
+	}
+
+	return templateID, nil
+}
+
+// getOrCreateTemplateSpace 获取或创建 config_delivery 模板空间
+func (s *Service) getOrCreateTemplateSpace(kit *kit.Kit, bizID uint32, now time.Time) (*table.TemplateSpace, error) {
+	space, err := s.dao.TemplateSpace().GetBizTemplateSpaceByName(
+		kit, bizID, constant.CONFIG_DELIVERY,
+	)
+	if err == nil {
+		return space, nil
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	// create
+	spec := &table.TemplateSpace{
+		Spec: &table.TemplateSpaceSpec{Name: constant.CONFIG_DELIVERY},
+		Attachment: &table.TemplateSpaceAttachment{
+			BizID: bizID, TenantID: kit.TenantID,
+		},
+		Revision: &table.Revision{
+			Creator: kit.User, CreatedAt: now,
+		},
+	}
+
+	id, err := s.dao.TemplateSpace().Create(kit, spec)
+	if err != nil {
+		return nil, err
+	}
+	space.ID = id
+
+	return space, nil
+}
+
+// getOrCreateDefaultTemplateSet 获取或创建默认模板套餐
+func (s *Service) getOrCreateDefaultTemplateSet(kit *kit.Kit, bizID, spaceID uint32, now time.Time) (
+	*table.TemplateSet, error) {
+
+	set, err := s.dao.TemplateSet().GetSetBySpaceID(kit, bizID, spaceID)
+	if err == nil {
+		return set, nil
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	set = &table.TemplateSet{
+		Spec: &table.TemplateSetSpec{
+			Name: constant.DefaultTmplSetName,
+		},
+		Attachment: &table.TemplateSetAttachment{
+			BizID: bizID, TemplateSpaceID: spaceID, TenantID: kit.TenantID,
+		},
+		Revision: &table.Revision{
+			Creator: kit.User, CreatedAt: now,
+		},
+	}
+	id, err := s.dao.TemplateSet().Create(kit, set)
+	if err != nil {
+		return nil, err
+	}
+	set.ID = id
+
+	return set, nil
+}
+
+// ServiceTemplate implements pbds.DataServer.
+func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplateReq) (*pbds.ServiceTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	resp, err := s.fetchAllServiceTemplate(grpcKit.Ctx, int(req.GetBizId()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ServiceTemplateResp{
+		ServiceTemplates: pbct.ConvertServiceTemplates(resp),
+	}, nil
+}
+
+// ProcessTemplate implements pbds.DataServer.
+func (s *Service) ProcessTemplate(ctx context.Context, req *pbds.ProcessTemplateReq) (*pbds.ProcessTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	resp, err := s.cmdb.ListProcTemplate(grpcKit.Ctx, &bkcmdb.ListProcTemplateReq{
+		BkBizID:           int(req.GetBizId()),
+		ServiceTemplateID: int(req.GetServiceTemplateId()),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ProcessTemplateResp{
+		ProcessTemplates: pbct.ConvertProcTemplates(resp.Info),
+	}, nil
+}
+
+// ServiceInstance 根据业务ID和模块ID查询服务实例列表
+func (s *Service) ServiceInstance(ctx context.Context, req *pbds.ServiceInstanceReq) (*pbds.ServiceInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	svcInstances, err := s.processCountByServiceInstance(grpcKit, int(req.GetBizId()), int(req.GetModuleId()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ServiceInstanceResp{
+		ServiceInstances: svcInstances,
+	}, nil
+}
+
+// 根据 ServiceInstanceID 统计模块进程数
+func (s *Service) processCountByServiceInstance(kit *kit.Kit, bizID, moduleID int) ([]*pbct.ServiceInstanceInfo, error) {
+
+	svcInstances, err := s.cmdb.ListServiceInstance(kit.Ctx, &bkcmdb.ServiceInstanceListReq{
+		BkBizID:    bizID,
+		BkModuleID: moduleID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	svcInsts := pbct.ConvertServiceInstances(svcInstances.Info)
+
+	for _, inst := range svcInsts {
+		count, err := s.dao.Process().ProcessCountByServiceInstance(kit, uint32(bizID), uint32(inst.Id))
+		if err != nil {
+			return nil, err
+		}
+		inst.ProcessCount = uint32(count)
+	}
+
+	return svcInsts, nil
+}
+
+// ProcessInstance implements pbds.DataServer.
+func (s *Service) ProcessInstance(ctx context.Context, req *pbds.ProcessInstanceReq) (*pbds.ProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	resp, err := s.cmdb.ListProcessInstance(grpcKit.Ctx, &bkcmdb.ListProcessInstanceReq{
+		BkBizID:           int(req.GetBizId()),
+		ServiceInstanceID: int(req.GetServiceInstanceId()),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ProcessInstanceResp{
+		ProcessInstances: pbct.ConvertProcessInstances(resp),
+	}, nil
+}
+
+// ConfigTemplateVariable implements pbds.DataServer.
+func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTemplateVariableReq) (*pbds.ConfigTemplateVariableResp, error) {
+	configTemplateVariables := make([]*pbct.ConfigTemplateVariable, 0)
+
+	configTemplateVariables = append(configTemplateVariables, &pbct.ConfigTemplateVariable{
+		Key:  "BK_APP_ID",
+		Type: "集群列表",
+		Memo: "测试测试",
+	})
+
+	return &pbds.ConfigTemplateVariableResp{
+		ConfigTemplateVariables: configTemplateVariables,
+	}, nil
+}
+
+// BindProcessInstance implements pbds.DataServer.
+func (s *Service) BindProcessInstance(ctx context.Context, req *pbds.BindProcessInstanceReq) (*pbds.BindProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 获取配置模板
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, err
+	}
+
+	configTemplate.Attachment.CcTemplateProcessIDs = req.GetCcTemplateProcessIds()
+	configTemplate.Attachment.CcProcessIDs = req.GetCcProcessIds()
+
+	// 2. 更新配置模板
+	if err = s.dao.ConfigTemplate().Update(grpcKit, configTemplate); err != nil {
+		return nil, err
+	}
+
+	return &pbds.BindProcessInstanceResp{
+		Id: configTemplate.ID,
+	}, nil
+}
+
+// PreviewBindProcessInstance implements pbds.DataServer.
+func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.PreviewBindProcessInstanceReq) (*pbds.PreviewBindProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 获取配置模板
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, err
+	}
+
+	instanceProcesses := make([]*pbct.BindProcessInstance, 0)
+	if len(configTemplate.Attachment.CcProcessIDs) != 0 {
+		process, _, err := s.dao.Process().List(grpcKit, req.GetBizId(), &pbproc.ProcessSearchCondition{
+			CcProcessIds: configTemplate.Attachment.CcProcessIDs,
+		}, &types.BasePage{
+			All:    true,
+			TopIds: []uint32{},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range process {
+			instanceProcesses = append(instanceProcesses, &pbct.BindProcessInstance{
+				Name:        v.Spec.ServiceName,
+				Id:          v.Attachment.CcProcessID,
+				ProcessName: v.Spec.Alias,
+			})
+		}
+	}
+
+	templateProcesses := make([]*pbct.BindProcessInstance, 0)
+	ids := configTemplate.Attachment.CcTemplateProcessIDs
+	if len(ids) != 0 {
+		processes, _, err := s.dao.Process().List(grpcKit, req.GetBizId(), &pbproc.ProcessSearchCondition{
+			ProcessTemplateIds: ids,
+		}, &types.BasePage{
+			All:    true,
+			TopIds: []uint32{},
+		})
+		if err != nil {
+			return nil, err
+		}
+		// 已查到的 ID
+		foundIDs := make(map[uint32]struct{})
+		for _, p := range processes {
+			templateProcesses = append(templateProcesses, &pbct.BindProcessInstance{
+				Name:        p.Spec.ModuleName,
+				Id:          p.Attachment.ProcessTemplateID,
+				ProcessName: p.Spec.Alias,
+			})
+			foundIDs[p.Attachment.ProcessTemplateID] = struct{}{}
+		}
+		// 查找缺失的 ID
+		missing := make([]uint32, 0)
+		for _, id := range ids {
+			if _, ok := foundIDs[id]; !ok {
+				missing = append(missing, id)
+			}
+		}
+		if len(missing) > 0 {
+			// 对于缺失 ID 调用cc接口补全
+			for _, v := range missing {
+				// 获取进程模板信息
+				procTemplate, err := s.cmdb.GetProcTemplate(grpcKit.Ctx, bkcmdb.GetProcTemplateReq{
+					BkBizID:           int(req.GetBizId()),
+					ProcessTemplateID: int(v),
+				})
+				if err != nil {
+					return nil, err
+				}
+				// 获取服务模板信息
+				svcTemplate, err := s.cmdb.GetServiceTemplate(grpcKit.Ctx, bkcmdb.ServiceTemplateReq{
+					ServiceTemplateID: procTemplate.ServiceTemplateID,
+				})
+				if err != nil {
+					return nil, err
+				}
+				templateProcesses = append(templateProcesses, &pbct.BindProcessInstance{
+					Id:          v,
+					ProcessName: procTemplate.BkProcessName,
+					Name:        svcTemplate.Name,
+				})
+			}
+		}
+
+	}
+
+	return &pbds.PreviewBindProcessInstanceResp{
+		TemplateProcesses: templateProcesses,
+		InstanceProcesses: instanceProcesses,
+	}, nil
+}
+
+// UpdateConfigTemplate implements pbds.DataServer.
+func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConfigTemplateReq) (*pbds.UpdateConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	now := time.Now().UTC()
+
+	// 1. 获取配置模板
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 查询模板文件
+	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 获取最新模板版本文件
+	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	spec := revision.Spec
+	spec.Charset = table.FileCharset(req.GetCharset())
+	spec.FileMode = table.FileMode(req.GetFileMode())
+	spec.ContentSpec = &table.ContentSpec{
+		Signature: req.GetSign(),
+		ByteSize:  req.GetByteSize(),
+		Md5:       req.GetMd5(),
+	}
+	spec.Permission = &table.FilePermission{
+		User:      req.GetUser(),
+		UserGroup: req.GetUserGroup(),
+		Privilege: req.GetPrivilege(),
+	}
+	templateRevision := &table.TemplateRevision{
+		Spec:       spec,
+		Attachment: revision.Attachment,
+		Revision: &table.CreatedRevision{
+			Creator:   grpcKit.User,
+			CreatedAt: now,
+		},
+	}
+
+	tx := s.dao.GenQuery().Begin()
+
+	// Use defer to ensure transaction is properly handled
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+			}
+		}
+	}()
+
+	// 如果文件权限和内容没变化不更新模板版本数据
+	if !reflect.DeepEqual(revision.Spec.ContentSpec, spec.ContentSpec) || !reflect.DeepEqual(revision.Spec.Permission, spec.Permission) {
+		// 生成新的版本文件
+		_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true)
+		if err != nil {
+			logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
+			return nil, err
+		}
+	}
+
+	template.Revision.Reviser = grpcKit.User
+	template.Revision.UpdatedAt = time.Now().UTC()
+
+	err = s.dao.Template().UpdateWithTx(grpcKit, tx, &table.Template{
+		ID: template.ID,
+		Spec: &table.TemplateSpec{
+			Memo: req.GetMemo(),
+			Path: template.Spec.Path,
+			Name: template.Spec.Name,
+		},
+		Attachment: template.Attachment,
+		Revision:   template.Revision,
+	})
+	if err != nil {
+		logs.Errorf("update template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	if e := tx.Commit(); e != nil {
+		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, grpcKit.Rid)
+		return nil, e
+	}
+	committed = true
+
+	return &pbds.UpdateConfigTemplateResp{}, nil
+}
+
+// GetConfigTemplate implements pbds.DataServer.
+func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemplateReq) (*pbds.GetConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 获取配置模板
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 查询模板文件
+	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 获取最新模板版本文件
+	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &pbct.BindTemplate{
+		TemplateSpaceName:    constant.CONFIG_DELIVERY,
+		TemplateSetName:      constant.DefaultTmplSetName,
+		FileName:             template.Spec.Name,
+		FilePath:             template.Spec.Path,
+		Memo:                 template.Spec.Memo,
+		RevisionName:         configTemplate.Spec.Name,
+		User:                 revision.Spec.Permission.User,
+		UserGroup:            revision.Spec.Permission.UserGroup,
+		Privilege:            revision.Spec.Permission.Privilege,
+		Sign:                 revision.Spec.ContentSpec.Signature,
+		ByteSize:             revision.Spec.ContentSpec.ByteSize,
+		Md5:                  revision.Spec.ContentSpec.Md5,
+		Charset:              string(revision.Spec.Charset),
+		HighlightStyle:       string(configTemplate.Spec.HighlightStyle),
+		FileMode:             string(revision.Spec.FileMode),
+		CcTemplateProcessIds: configTemplate.Attachment.CcTemplateProcessIDs,
+		CcProcessIds:         configTemplate.Attachment.CcProcessIDs,
+		Name:                 configTemplate.Spec.Name,
+	}
+
+	return &pbds.GetConfigTemplateResp{
+		BindTemplate: resp,
+	}, nil
 }

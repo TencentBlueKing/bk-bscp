@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/search"
+	cs "github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -48,6 +49,8 @@ type TemplateSpace interface {
 	Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error)
 	// GetBizTemplateSpaceByName Get template space by name.
 	GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint32, name string) (*table.TemplateSpace, error)
+	// CreateWithTx one template space instance with transaction.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, templateSpace *table.TemplateSpace) (uint32, error)
 }
 
 var _ TemplateSpace = new(templateSpaceDao)
@@ -56,6 +59,63 @@ type templateSpaceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// CreateWithTx implements TemplateSpace.
+func (dao *templateSpaceDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateSpace) (uint32, error) {
+	if err := g.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+
+	tmplSpaceID, err := dao.idGen.One(kit, table.Name(g.TableName()))
+	if err != nil {
+		return 0, err
+	}
+	g.ID = tmplSpaceID
+
+	sg := &table.TemplateSet{
+		Spec: &table.TemplateSetSpec{
+			Name:   constant.DefaultTmplSetName,
+			Memo:   constant.DefaultTmplSetMemo,
+			Public: true,
+		},
+		Attachment: &table.TemplateSetAttachment{
+			BizID:           g.Attachment.BizID,
+			TemplateSpaceID: g.ID,
+		},
+		Revision: &table.Revision{
+			Creator: g.Revision.Creator,
+			Reviser: g.Revision.Reviser,
+		},
+	}
+	tmplSetID, err := dao.idGen.One(kit, table.Name(sg.TableName()))
+	if err != nil {
+		return 0, err
+	}
+	sg.ID = tmplSetID
+
+	tmplSetAD := dao.auditDao.Decorator(kit, sg.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			g.Spec.Name, sg.Spec.Name),
+		Status: enumor.Success,
+		Detail: sg.Spec.Memo,
+	}).PrepareCreate(sg)
+
+	// 多个使用事务处理
+	if err := tx.TemplateSpace.WithContext(kit.Ctx).Create(g); err != nil {
+		return 0, err
+	}
+
+	// 连带创建模版空间下的默认套餐
+	if err := tx.TemplateSet.WithContext(kit.Ctx).Create(sg); err != nil {
+		return 0, err
+	}
+
+	if err := tmplSetAD.Do(tx.Query); err != nil {
+		return 0, err
+	}
+
+	return g.ID, nil
 }
 
 // GetBizTemplateSpaceByName Get template space by name.
@@ -200,6 +260,8 @@ func (dao *templateSpaceDao) List(
 			conds = append(conds, do)
 		}
 	}
+
+	conds = append(conds, m.Name.Neq(cs.CONFIG_DELIVERY))
 
 	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.Name)
 	if opt.All {

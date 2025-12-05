@@ -56,7 +56,7 @@ func (p *ProcessSpec) ProcessSpec() *table.ProcessSpec {
 }
 
 // PbProcessSpec convert table ProcessSpec to pb ProcessSpec
-func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
+func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32) *ProcessSpec {
 	if spec == nil {
 		return nil
 	}
@@ -72,6 +72,7 @@ func PbProcessSpec(spec *table.ProcessSpec) *ProcessSpec {
 		CcSyncUpdatedAt: toProtoTimestamp(spec.CcSyncUpdatedAt),
 		SourceData:      spec.SourceData,
 		ProcNum:         uint32(spec.ProcNum),
+		BindTemplateIds: bindTemplateIds,
 	}
 }
 
@@ -133,31 +134,32 @@ func PbProcessAttachment(attachment *table.ProcessAttachment) *ProcessAttachment
 }
 
 // PbClient convert table Process to pb Process
-func PbProcess(c *table.Process) *Process {
+func PbProcess(c *table.Process, bindTemplateIds []uint32) *Process {
 	if c == nil {
 		return nil
 	}
 
 	return &Process{
 		Id:         c.ID,
-		Spec:       PbProcessSpec(c.Spec),
+		Spec:       PbProcessSpec(c.Spec, bindTemplateIds),
 		Attachment: PbProcessAttachment(c.Attachment),
 	}
 }
 
 // PbProcesses convert table Process to pb Process
-func PbProcesses(c []*table.Process) []*Process {
+func PbProcesses(c []*table.Process, bindTemplateIds map[uint32][]uint32) []*Process {
 	if c == nil {
 		return make([]*Process, 0)
 	}
 	result := make([]*Process, 0)
 	for _, v := range c {
-		result = append(result, PbProcess(v))
+		result = append(result, PbProcess(v, bindTemplateIds[v.ID]))
 	}
 	return result
 }
 
-func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*table.ProcessInstance) []*Process {
+func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*table.ProcessInstance,
+	bindTemplateIds map[uint32][]uint32) []*Process {
 	if procs == nil {
 		return []*Process{}
 	}
@@ -165,7 +167,7 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 	result := make([]*Process, 0, len(procs))
 	for _, p := range procs {
 
-		pbProc := PbProcess(p)
+		pbProc := PbProcess(p, bindTemplateIds[p.ID])
 		if insts, ok := procInstMap[p.ID]; ok {
 			pbProc.ProcInst = pbpi.PbProcInsts(insts)
 

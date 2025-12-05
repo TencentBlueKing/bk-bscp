@@ -46,6 +46,14 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbcs.ListConfigTe
 	return &pbcs.ListConfigTemplateResp{
 		Count:   resp.GetCount(),
 		Details: resp.GetDetails(),
+		TemplateSpace: &pbcs.ListConfigTemplateResp_Item{
+			Id:   resp.GetTemplateSpace().GetId(),
+			Name: resp.GetTemplateSpace().GetName(),
+		},
+		TemplateSet: &pbcs.ListConfigTemplateResp_Item{
+			Id:   resp.GetTemplateSet().GetId(),
+			Name: resp.GetTemplateSet().GetName(),
+		},
 	}, nil
 }
 
@@ -114,5 +122,218 @@ func (s *Service) ProcessTemplate(ctx context.Context, req *pbcs.ProcessTemplate
 
 	return &pbcs.ProcessTemplateResp{
 		ProcessTemplates: resp.GetProcessTemplates(),
+	}, nil
+}
+
+// ProcessInstance implements pbcs.ConfigServer.
+func (s *Service) ProcessInstance(ctx context.Context, req *pbcs.ProcessInstanceReq) (*pbcs.ProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.ProcessInstance(grpcKit.RpcCtx(), &pbds.ProcessInstanceReq{
+		BizId:             req.GetBizId(),
+		ServiceInstanceId: req.GetServiceInstanceId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ProcessInstanceResp{
+		ProcessInstances: resp.GetProcessInstances(),
+	}, nil
+}
+
+// ServiceInstance implements pbcs.ConfigServer.
+func (s *Service) ServiceInstance(ctx context.Context, req *pbcs.ServiceInstanceReq) (*pbcs.ServiceInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.ServiceInstance(grpcKit.RpcCtx(), &pbds.ServiceInstanceReq{
+		BizId:    req.GetBizId(),
+		ModuleId: req.GetModuleId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ServiceInstanceResp{
+		ServiceInstances: resp.GetServiceInstances(),
+	}, nil
+}
+
+// CreateConfigTemplate implements pbcs.ConfigServer.
+func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbcs.CreateConfigTemplateReq) (*pbcs.CreateConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.CreateConfigTemplate(grpcKit.RpcCtx(), &pbds.CreateConfigTemplateReq{
+		BizId:           req.GetBizId(),
+		Name:            req.GetName(),
+		FileName:        req.GetFileName(),
+		FilePath:        req.GetFilePath(),
+		Memo:            req.GetMemo(),
+		User:            req.GetUser(),
+		UserGroup:       req.GetUserGroup(),
+		Privilege:       req.GetPrivilege(),
+		Sign:            req.GetSign(),
+		ByteSize:        req.GetByteSize(),
+		Md5:             req.GetMd5(),
+		Charset:         req.GetCharset(),
+		HighlightStyle:  req.GetHighlightStyle(),
+		FileMode:        req.GetFileMode(),
+		RevisionName:    req.GetRevisionName(),
+		TemplateSpaceId: req.GetTemplateSpaceId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.CreateConfigTemplateResp{
+		Id: resp.GetId(),
+	}, nil
+}
+
+// ConfigTemplateVariable implements pbcs.ConfigServer.
+func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbcs.ConfigTemplateVariableReq) (*pbcs.ConfigTemplateVariableResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.ConfigTemplateVariable(grpcKit.RpcCtx(), &pbds.ConfigTemplateVariableReq{
+		Id: req.GetBizId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ConfigTemplateVariableResp{
+		ConfigTemplateVariables: resp.GetConfigTemplateVariables(),
+	}, nil
+}
+
+// BindProcessInstance implements pbcs.ConfigServer.
+func (s *Service) BindProcessInstance(ctx context.Context, req *pbcs.BindProcessInstanceReq) (
+	*pbcs.BindProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.BindProcessInstance(grpcKit.RpcCtx(), &pbds.BindProcessInstanceReq{
+		BizId:                req.GetBizId(),
+		ConfigTemplateId:     req.GetConfigTemplateId(),
+		CcTemplateProcessIds: req.GetCcTemplateProcessIds(),
+		CcProcessIds:         req.GetCcProcessIds(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.BindProcessInstanceResp{
+		Id: resp.GetId(),
+	}, nil
+}
+
+// PreviewBindProcessInstance implements pbcs.ConfigServer.
+func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbcs.PreviewBindProcessInstanceReq) (*pbcs.PreviewBindProcessInstanceResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.DS.PreviewBindProcessInstance(grpcKit.RpcCtx(), &pbds.PreviewBindProcessInstanceReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.PreviewBindProcessInstanceResp{
+		TemplateProcesses: resp.GetTemplateProcesses(),
+		InstanceProcesses: resp.GetInstanceProcesses(),
+	}, nil
+}
+
+// UpdateConfigTemplate implements pbcs.ConfigServer.
+func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConfigTemplateReq) (*pbcs.UpdateConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	_, err := s.client.DS.UpdateConfigTemplate(grpcKit.RpcCtx(), &pbds.UpdateConfigTemplateReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+		Name:             req.GetName(),
+		Memo:             req.GetMemo(),
+		User:             req.GetUser(),
+		UserGroup:        req.GetUserGroup(),
+		Privilege:        req.GetPrivilege(),
+		Sign:             req.GetSign(),
+		ByteSize:         req.GetByteSize(),
+		Md5:              req.GetMd5(),
+		Charset:          req.GetCharset(),
+		HighlightStyle:   req.GetHighlightStyle(),
+		FileMode:         req.GetFileMode(),
+		RevisionName:     req.GetRevisionName(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.UpdateConfigTemplateResp{}, nil
+}
+
+// GetConfigTemplate implements pbcs.ConfigServer.
+func (s *Service) GetConfigTemplate(ctx context.Context, req *pbcs.GetConfigTemplateReq) (*pbcs.GetConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetConfigTemplate(grpcKit.RpcCtx(), &pbds.GetConfigTemplateReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetConfigTemplateResp{
+		BindTemplate: resp.GetBindTemplate(),
 	}, nil
 }

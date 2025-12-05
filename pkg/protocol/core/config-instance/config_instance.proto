@@ -11,7 +11,8 @@ message ConfigInstance {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 config_template_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
-  string config_template_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板名称" }];
+  string config_template_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板名称" }];
   string file_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名称" }];
   string set = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
   string module = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
@@ -24,10 +25,10 @@ message ConfigInstance {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版关联的版本号名称" }];
   string config_version_memo = 11
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
-  string latest_template_revision_name = 12 
+  string latest_template_revision_name = 12
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "即将下发的配置模版版本号" }];
   uint32 cc_process_id = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  pbbase.Revision revision = 14 ;
+  pbbase.Revision revision = 14;
 }
 
 // ConfigInstanceSearchCondition 配置实例搜索条件

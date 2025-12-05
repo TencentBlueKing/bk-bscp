@@ -40,6 +40,8 @@ import (
 type TemplateSet interface {
 	// Create one template set instance.
 	Create(kit *kit.Kit, templateSet *table.TemplateSet) (uint32, error)
+	// Create one template set instance.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, templateSet *table.TemplateSet) (uint32, error)
 	// Update one template set's info.
 	Update(kit *kit.Kit, templateSet *table.TemplateSet) error
 	// UpdateWithTx update one template set's info with transaction.
@@ -85,6 +87,9 @@ type TemplateSet interface {
 	BatchAddTmplsToTmplSetsWithTx(kit *kit.Kit, tx *gen.QueryTx, templateSet []*table.TemplateSet, needAudit bool) error
 	// ListByTemplateSpaceIdAndIds list template sets by template set ids and template_space_id.
 	ListByTemplateSpaceIdAndIds(kit *kit.Kit, templateSpaceID uint32, ids []uint32) ([]*table.TemplateSet, error)
+
+	// GetSetBySpaceID get template set by template space id
+	GetSetBySpaceID(kit *kit.Kit, bizID, templateSpaceID uint32) (*table.TemplateSet, error)
 }
 
 var _ TemplateSet = new(templateSetDao)
@@ -93,6 +98,62 @@ type templateSetDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// CreateWithTx implements TemplateSet.
+func (dao *templateSetDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateSet) (uint32, error) {
+	if err := g.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+
+	if err := dao.validateAttachmentExist(kit, g.Attachment); err != nil {
+		return 0, err
+	}
+
+	if err := dao.validateTemplatesExist(kit, g.Spec.TemplateIDs); err != nil {
+		return 0, err
+	}
+
+	// generate a template set id and update to template set.
+	id, err := dao.idGen.One(kit, table.Name(g.TableName()))
+	if err != nil {
+		return 0, err
+	}
+	g.ID = id
+
+	ts := dao.genQ.TemplateSpace
+	tsCtx := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
+	tsRecord, err := tsCtx.Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return 0, err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateSetName,
+			tsRecord.Spec.Name, g.Spec.Name),
+		Status: enumor.Success,
+		Detail: g.Spec.Memo,
+	}).PrepareCreate(g)
+
+	// 多个使用事务处理
+	q := tx.TemplateSet.WithContext(kit.Ctx)
+	if err := q.Create(g); err != nil {
+		return 0, err
+	}
+
+	if err := ad.Do(tx.Query); err != nil {
+		return 0, err
+	}
+
+	return g.ID, nil
+}
+
+// GetSetBySpaceID implements TemplateSet.
+func (dao *templateSetDao) GetSetBySpaceID(kit *kit.Kit, bizID uint32, templateSpaceID uint32) (
+	*table.TemplateSet, error) {
+	m := dao.genQ.TemplateSet
+
+	return dao.genQ.TemplateSet.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.TemplateSpaceID.Eq(templateSpaceID)).Take()
 }
 
 // ListByTemplateSpaceIdAndIds list template sets by template set ids and template_space_id.

@@ -16,11 +16,16 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/datatypes"
+	rawgen "gorm.io/gen"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 // ConfigTemplate is config template DAO interface definition.
@@ -31,6 +36,10 @@ type ConfigTemplate interface {
 	ListAllByTemplateIDs(kit *kit.Kit, bizID uint32, templateIDs []uint32) ([]*table.ConfigTemplate, error)
 	// GetByID get config template by id.
 	GetByID(kit *kit.Kit, bizID uint32, configTemplateID uint32) (*table.ConfigTemplate, error)
+	// Update one configTemplate instance.
+	Update(kit *kit.Kit, configTemplate *table.ConfigTemplate) error
+	ListByCCProcessID(kit *kit.Kit, bizID uint32, ccProcessID uint32) ([]uint32, error)
+	ListByCCTemplateProcessID(kit *kit.Kit, bizID uint32, ccProcessTemplateID uint32) ([]uint32, error)
 }
 
 var _ ConfigTemplate = new(configTemplateDao)
@@ -39,6 +48,75 @@ type configTemplateDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ListByCCProcessID implements ConfigTemplate.
+func (dao *configTemplateDao) ListByCCProcessID(kit *kit.Kit, bizID uint32, ccProcessID uint32) ([]uint32, error) {
+	m := dao.genQ.ConfigTemplate
+
+	var ids []uint32
+
+	err := dao.genQ.ConfigTemplate.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID)).
+		Where(rawgen.Cond(datatypes.JSONArrayQuery(m.CcProcessIDs.ColumnName().String()).Contains(ccProcessID))...).
+		Pluck(m.ID, &ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// ListByCCTemplateProcessID implements ConfigTemplate.
+func (dao *configTemplateDao) ListByCCTemplateProcessID(kit *kit.Kit, bizID uint32, ccProcessTemplateID uint32) ([]uint32, error) {
+	m := dao.genQ.ConfigTemplate
+
+	var ids []uint32
+
+	err := dao.genQ.ConfigTemplate.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID)).
+		Where(rawgen.Cond(datatypes.JSONArrayQuery(m.CcTemplateProcessIDs.ColumnName().String()).Contains(ccProcessTemplateID))...).
+		Pluck(m.ID, &ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// Update implements ConfigTemplate.
+func (dao *configTemplateDao) Update(kit *kit.Kit, ct *table.ConfigTemplate) error {
+	if ct == nil {
+		return errf.New(errf.InvalidParameter, "config item is nil")
+	}
+
+	m := dao.genQ.ConfigTemplate
+	q := dao.genQ.ConfigTemplate.WithContext(kit.Ctx)
+
+	ad := dao.auditDao.Decorator(kit, ct.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigTemplateName, ct.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareUpdate(ct)
+
+	updateTx := func(tx *gen.Query) error {
+		q = tx.ConfigTemplate.WithContext(kit.Ctx)
+		if _, err := q.Omit(m.BizID, m.ID).
+			Where(m.BizID.Eq(ct.Attachment.BizID), m.ID.Eq(ct.ID)).Updates(ct); err != nil {
+			return err
+		}
+
+		if err := ad.Do(tx); err != nil {
+			return fmt.Errorf("audit update config template failed, err: %v", err)
+		}
+		return nil
+	}
+
+	if err := dao.genQ.Transaction(updateTx); err != nil {
+		logs.Errorf("update config template: %d failed, err: %v, rid: %v", ct.ID, err, kit.Rid)
+		return err
+	}
+
+	return nil
 }
 
 // ListAllByTemplateIDs implements ConfigTemplate.

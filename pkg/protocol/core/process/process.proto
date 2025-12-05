@@ -48,6 +48,8 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
   string managed_status = 14
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
+  repeated uint32 bind_template_ids = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定模板ID" }];
 }
 
 message ProcessAttachment {
