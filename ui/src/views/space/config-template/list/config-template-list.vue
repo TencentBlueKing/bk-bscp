@@ -109,7 +109,6 @@
     @close="isShowEditTemplate = false"
     @edited="refresh" />
   <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
-  <ConfigIssued v-if="isShowConfigIssued" @close="isShowConfigIssued = false" />
 </template>
 
 <script lang="ts" setup>
@@ -120,6 +119,7 @@
   import { getConfigTemplateList } from '../../../../api/config-template';
   import type { IConfigTemplateItem } from '../../../../../types/config-template';
   import { datetimeFormat } from '../../../../utils';
+  import { useRouter } from 'vue-router';
   import SearchSelector from '../../../../components/search-selector.vue';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import AssociatedProcess from './associated-process/index.vue';
@@ -129,11 +129,11 @@
   import ConfigTemplateDetails from './config-template-details.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UserName from '../../../../components/user-name.vue';
-  import ConfigIssued from '../config-issued/index.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
   const { spaceId } = storeToRefs(useGlobalStore());
+  const router = useRouter();
 
   const searchField = [
     { field: 'template_name', label: t('模板名称') },
@@ -147,7 +147,6 @@
   const isShowCreateTemplate = ref(false);
   const isShowEditTemplate = ref(false);
   const isShowDetails = ref(false);
-  const isShowConfigIssued = ref(false);
   const templateList = ref<IConfigTemplateItem[]>([]);
   const searchValue = ref<{ [key: string]: string }>();
   const searchSelectorRef = ref();
@@ -228,8 +227,12 @@
 
   // 配置下发
   const handleConfigIssue = (id: number) => {
-    opTemplate.value.id = id;
-    isShowConfigIssued.value = true;
+    router.push({
+      name: 'config-issued',
+      query: {
+        templateIds: [id],
+      },
+    });
   };
 
   const refresh = () => {

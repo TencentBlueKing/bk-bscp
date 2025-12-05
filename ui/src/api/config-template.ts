@@ -55,6 +55,15 @@ export const createConfigTemplate = (biz_id: string, data: any) =>
   http.post(`/config/biz_id/${biz_id}/config_template`, data).then((res) => res.data);
 
 /**
+ * 编辑配置模板
+ * @param biz_id
+ * @param config_template_id
+ * @param data
+ */
+export const editConfigTemplate = (biz_id: string, config_template_id: number, data: any) =>
+  http.put(`/config/biz_id/${biz_id}/config_template/${config_template_id}`, data).then((res) => res.data);
+
+/**
  * 获取配置模板变量
  * @param biz_id
  */
@@ -81,3 +90,11 @@ export const getBindProcessInstance = (biz_id: string, config_template_id: numbe
   http
     .get(`/config/biz_id/${biz_id}/config_template/${config_template_id}/preview_bind_process_instance`)
     .then((res) => res.data);
+
+/**
+ * 获取配置实例列表
+ * @param biz_id
+ * @param query
+ */
+export const getConfigInstanceList = (biz_id: string, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/list`, query).then((res) => res.data);

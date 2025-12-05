@@ -14,7 +14,7 @@
         <bk-select
           v-model="filterValues[filter.value as keyof typeof filterValues]"
           v-for="filter in filterList"
-          class="bk-select"
+          :class="['bk-select', { issued: isIssued }]"
           :key="filter.value"
           :placeholder="filter.label"
           multiple
@@ -23,7 +23,7 @@
             {{ item.name }}
           </bk-option>
         </bk-select>
-        <bk-button class="transfer-button" text theme="primary" @click="filterType = 'expression'">
+        <bk-button class="op-btn" text theme="primary" @click="filterType = 'expression'">
           <transfer class="icon" />{{ t('表达式') }}
         </bk-button>
       </template>
@@ -32,33 +32,59 @@
           v-model="filterValues[filter.value as keyof typeof filterValues]"
           v-for="filter in filterList"
           :key="filter.value"
-          class="bk-input"
+          :class="['bk-input', { issued: isIssued }]"
           placeholder="*"
           show-overflow-tooltips
           @change="handleInputChange(filter.value, $event)" />
-        <bk-button class="transfer-button" text theme="primary" @click="filterType = 'filter'">
+        <bk-button class="op-btn" text theme="primary" @click="filterType = 'filter'">
           <transfer class="icon" />{{ t('筛选') }}
         </bk-button>
       </template>
+      <bk-button v-if="isIssued" class="op-btn" text theme="primary" @click="handleClearFilter">
+        <Del class="icon" />
+        {{ t('清空') }}
+      </bk-button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
-  import { Transfer } from 'bkui-vue/lib/icon';
+  import { ref, onMounted, computed, watch } from 'vue';
+  import { Transfer, Del } from 'bkui-vue/lib/icon';
   import { getProcessFilter } from '../../../../api/process';
   import type { IProcessFilterItem } from '../../../../../types/process';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
 
-  const props = defineProps<{
-    bizId: string;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      bkBizId: string;
+      isIssued?: boolean; // 是否是配置下发
+      processIds?: string[];
+    }>(),
+    {
+      isIssued: false,
+    },
+  );
   const emits = defineEmits(['search']);
 
-  const envList = [t('正式'), t('体验'), t('测试')];
+  watch(
+    () => props.processIds,
+    () => {
+      if (props.processIds && props.processIds?.length > 0) {
+        filterValues.value.cc_process_ids = props.processIds;
+        emits('search', { ...filterValues.value, env: activeEnv.value });
+      }
+    },
+  );
+
+  const envList = computed(() => {
+    if (props.isIssued) {
+      return [t('正式'), t('体验')];
+    }
+    return [t('正式'), t('体验'), t('测试')];
+  });
   const filterList = ref<IProcessFilterItem[]>([
     {
       label: t('全部集群 (*)'),
@@ -76,12 +102,12 @@
       list: [],
     },
     {
-      label: t('全部进程别名 (*)'),
+      label: t('全部进程 (*)'),
       value: 'process_aliases',
       list: [],
     },
     {
-      label: t('全部 CC 进程 ID (*)'),
+      label: t('全部 process_id (*)'),
       value: 'cc_process_ids',
       list: [],
     },
@@ -108,9 +134,9 @@
 
   const loadPerocessFilterList = async () => {
     try {
-      const res = await getProcessFilter(props.bizId);
+      const res = await getProcessFilter(props.bkBizId);
       filterList.value.map((filter: IProcessFilterItem) => {
-        filter.list = res[filter.value as keyof typeof res] as Array<{ name: string; id: string }>;
+        filter.list = res[filter.value as keyof typeof res] as Array<{ name: string; id: number }>;
         return filter;
       });
     } catch (error) {
@@ -179,8 +205,11 @@
     .bk-select,
     .bk-input {
       width: 136px;
+      &.issued {
+        width: 162px;
+      }
     }
-    .transfer-button {
+    .op-btn {
       font-size: 14px;
       .icon {
         margin-right: 8px;

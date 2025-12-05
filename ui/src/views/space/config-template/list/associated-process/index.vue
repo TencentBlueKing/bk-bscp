@@ -36,6 +36,7 @@
   };
 
   const handleConfirm = async () => {
+    console.log(selectProcess.value);
     try {
       await bindProcessInstance(props.bkBizId, props.templateId, selectProcess.value);
       emits('update:isShow', false);

@@ -253,11 +253,11 @@
         .process-count {
           flex-shrink: 0;
           padding: 0 2px;
-          min-width: 16px;
+          min-width: 30px;
           line-height: 16px;
           text-align: center;
           font-size: 12px;
-          color: #63656e;
+          color: #979ba5;
           background: #f0f1f5;
           border-radius: 2px;
         }

@@ -95,3 +95,34 @@ export interface IConfigTemplateVariableItem {
   memo: string;
   type: string;
 }
+
+export interface ITemplateProcessItem {
+  biz_id: number;
+  cc_process_id: number;
+  config_template_id: number;
+  config_template_name: string;
+  config_version_memo: string;
+  config_version_name: string;
+  file_name: string;
+  latest_template_revision_name: string;
+  module: string;
+  module_inst_seq: number;
+  process_alias: string;
+  service_instance: string;
+  set: string;
+  revision: {
+    creator: string;
+    reviser: string;
+    createAt: string;
+    updateAt: string;
+  } | null;
+}
+
+export interface ITemplateProcess {
+  list: ITemplateProcessItem[];
+  versions: {
+    id: string;
+    name: string;
+  }[];
+  id: number;
+}

@@ -1,7 +1,7 @@
 <template>
   <div class="status-and-screen">
     <SyncStatus :biz-id="spaceId" @refresh="handlePageChange(1)" />
-    <FilterProcess ref="filterRef" :biz-id="spaceId" @search="handleFilter" />
+    <FilterProcess ref="filterRef" :bk-biz-id="spaceId" @search="handleFilter" />
   </div>
   <div class="op-wrap">
     <BatchOpBtns :count="selectedIds.length" @click="handleBatchOpProcess" />
@@ -90,7 +90,9 @@
                 {{ t('停止') }}
               </bk-button>
             </template>
-            <bk-button text theme="primary" :disabled="!row.spec.actions.push">{{ t('配置下发') }}</bk-button>
+            <bk-button text theme="primary" :disabled="!row.spec.actions.push" @click="handleConfigIssued(row)">
+              {{ t('配置下发') }}
+            </bk-button>
             <TableMoreAction
               :actions="row.spec.actions"
               @kill="handleOpProcess(row, 'kill')"
@@ -212,6 +214,7 @@
   import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
   import { datetimeFormat } from '../../../../utils';
+  import { useRouter } from 'vue-router';
   import BatchOpBtns from './batch-op-btns.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UpdateManagedInfo from './update-managed-info.vue';
@@ -225,10 +228,10 @@
   import SearchSelector from '../../../../components/search-selector.vue';
 
   const { spaceId } = storeToRefs(useGlobalStore());
-
   const { pagination, updatePagination } = useTablePagination('clientSearch');
-
   const { t } = useI18n();
+  const router = useRouter();
+
   const searchField = [
     {
       label: t('内网IP'),
@@ -280,6 +283,7 @@
   const selectedIds = ref<number[]>([]);
   const tableLoading = ref(false);
   const tableRef = ref();
+  const isShowConfigIssued = ref(false);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -451,6 +455,18 @@
   // 清空筛选条件
   const handleClearFilter = () => {
     filterRef.value.clear();
+  };
+
+  // 配置下发
+  const handleConfigIssued = (process: IProcessItem) => {
+    router.push({
+      name: 'config-issued',
+      query: {
+        processIds: [process.id],
+        templateIds: process.spec.bind_template_ids,
+      },
+    });
+    isShowConfigIssued.value = true;
   };
 </script>
 

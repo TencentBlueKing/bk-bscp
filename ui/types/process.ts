@@ -20,6 +20,7 @@ export interface IProcessItem {
     status: string;
     prev_data: string;
     proc_num: number;
+    bind_template_ids: number[];
   };
 }
 
@@ -55,5 +56,5 @@ export interface IProcInst {
 export interface IProcessFilterItem {
   label: string;
   value: string;
-  list: Array<{ name: string; id: string }>;
+  list: Array<{ name: string; id: number }>;
 }

@@ -192,7 +192,7 @@ const routes = [
         component: () => import('./views/space/process/index.vue'),
       },
       {
-        path: 'config_template',
+        path: 'config-template',
         name: 'config-template-management',
         meta: {
           navModule: 'config-template',
@@ -208,12 +208,20 @@ const routes = [
             component: () => import('./views/space/config-template/list/config-template-list.vue'),
           },
           {
-            path: 'version_manage/:templateId',
+            path: 'version-manage/:templateId',
             name: 'config-template-version-manage',
             meta: {
               navModule: 'config-template',
             },
             component: () => import('./views/space/config-template/version-manage/index.vue'),
+          },
+          {
+            path: 'config-issued',
+            name: 'config-issued',
+            meta: {
+              navModule: 'config-template',
+            },
+            component: () => import('./views/space/config-template/config-issued/index.vue'),
           },
         ],
       },

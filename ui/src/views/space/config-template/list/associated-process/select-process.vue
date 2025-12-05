@@ -271,6 +271,10 @@
       item.topoNode.topoChecked = false;
     }
     templateProcess.value.splice(index, 1);
+    emits('change', {
+      cc_template_process_ids: templateProcess.value.map((item) => item.id),
+      cc_process_ids: instanceProcess.value.map((item) => item.id),
+    });
   };
   // 移除实例进程
   const removeInstanceProcess = (item: IProcessPreviewItem, index: number) => {
@@ -278,6 +282,10 @@
       item.topoNode.topoChecked = false;
     }
     instanceProcess.value.splice(index, 1);
+    emits('change', {
+      cc_template_process_ids: templateProcess.value.map((item) => item.id),
+      cc_process_ids: instanceProcess.value.map((item) => item.id),
+    });
   };
 
   // 搜索树节点
