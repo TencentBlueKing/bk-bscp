@@ -21,6 +21,8 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -49,6 +51,7 @@ func NewService(appCode, appSecret, host string) *Service {
 
 // nolint: unparam
 func (gse *Service) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
+	kit := kit.FromGrpcContext(ctx)
 	authHeader := components.MakeBKAPIGWAuthHeader(
 		gse.appCode,
 		gse.appSecret,
@@ -58,6 +61,7 @@ func (gse *Service) doRequest(ctx context.Context, method HTTPMethod, url string
 	// 构造请求
 	request := components.GetClient().R().
 		SetContext(ctx).
+		SetHeader(constant.BkTenantID, kit.TenantID).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(body)
 

@@ -16,20 +16,21 @@ package gse
 import (
 	"context"
 	"fmt"
+)
 
-	"github.com/TencentBlueKing/bk-bscp/internal/components"
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+const (
+	asyncExtensionsTransferFile     = "%s/api/v2/task/extensions/async_transfer_file"
+	asyncTerminateTransferFile      = "%s/api/v2/task/extensions/async_terminate_transfer_file"
+	getExtensionsTransferFileResult = "%s/api/v2/task/extensions/get_transfer_file_result"
 )
 
 // TransferFileReq defines transfer file task request
 type TransferFileReq struct {
-	TimeOutSeconds int                `json:"timeout_seconds"`
-	AutoMkdir      bool               `json:"auto_mkdir"`
-	UploadSpeed    int                `json:"upload_speed"`
-	DownloadSpeed  int                `json:"download_speed"`
-	Tasks          []TransferFileTask `json:"tasks"`
+	TimeOutSeconds int                `json:"timeout_seconds"` // 任务超时秒数，超时后任务会被强制终止，必须大于0
+	AutoMkdir      bool               `json:"auto_mkdir"`      // 目录创建策略，true: 自动创建，false: 即使目录不存在也不自动创建
+	UploadSpeed    int                `json:"upload_speed"`    // 文件上传速度限制(MB)
+	DownloadSpeed  int                `json:"download_speed"`  // 文件下载速度限制(MB)，0:无限制
+	Tasks          []TransferFileTask `json:"tasks"`           // 文件任务配置信息
 }
 
 // TransferFileTask defines transfer file task
@@ -75,59 +76,6 @@ type TerminateTransferFileTaskReq struct {
 	TaskID string              `json:"task_id"`
 }
 
-// CreateTransferFileTask create sync transfer file task
-func CreateTransferFileTask(ctx context.Context, sourceAgentID, sourceContainerID, sourceFileDir, sourceUser,
-	filename string, targetFileDir string, targetsAgents []TransferFileAgent) (string, error) {
-
-	// 1. if sourceContainerID is set, means source is node, else is container
-	// 2. if targetContainerID is set, means target is node, else is container
-
-	url := fmt.Sprintf("%s/api/v2/task/extensions/async_transfer_file", cc.FeedServer().GSE.Host)
-	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
-		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
-	kit := kit.FromGrpcContext(ctx)
-	resp, err := components.GetClient().R().
-		SetContext(ctx).
-		SetHeader(constant.BkTenantID, kit.TenantID).
-		SetHeader("X-Bkapi-Authorization", authHeader).
-		SetBody(TransferFileReq{
-			TimeOutSeconds: 600,
-			AutoMkdir:      true,
-			UploadSpeed:    0,
-			DownloadSpeed:  0,
-			Tasks: []TransferFileTask{
-				{
-					Source: TransferFileSource{
-						FileName: filename,
-						StoreDir: sourceFileDir,
-						Agent: TransferFileAgent{
-							User:          sourceUser,
-							BkAgentID:     sourceAgentID,
-							BkContainerID: sourceContainerID,
-						},
-					},
-					Target: TransferFileTarget{
-						FileName: filename,
-						StoreDir: targetFileDir,
-						Agents:   targetsAgents,
-					},
-				},
-			},
-		}).
-		Post(url)
-
-	if err != nil {
-		return "", err
-	}
-
-	data := &CommonTaskRespData{}
-	if err := components.UnmarshalBKResult(resp, data); err != nil {
-		return "", err
-	}
-
-	return data.Result.TaskID, nil
-}
-
 // TransferFileResultData defines transfer file task result data
 type TransferFileResultData struct {
 	Version string                         `json:"version"`
@@ -162,58 +110,51 @@ type TransferFileResultDataResultContent struct {
 	Size              int64  `json:"size"`
 }
 
-// TransferFileResult query transfer file task result
-func TransferFileResult(ctx context.Context, taskID string) ([]TransferFileResultDataResult, error) {
+// AsyncExtensionsTransferFile 启动文件分发任务, 可支持扩展型目标, 包括容器和主机
+func (gse *Service) AsyncExtensionsTransferFile(ctx context.Context, req *TransferFileReq) (*CommonTaskRespData, error) {
+	// 1. if sourceContainerID is set, means source is container, else is node
+	// 2. if targetContainerID is set, means target is container, else is node
+	url := fmt.Sprintf(asyncExtensionsTransferFile, gse.host)
 
-	url := fmt.Sprintf("%s/api/v2/task/extensions/get_transfer_file_result", cc.FeedServer().GSE.Host)
-	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
-		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
-	kit := kit.FromGrpcContext(ctx)
-	resp, err := components.GetClient().R().
-		SetContext(ctx).
-		SetHeader(constant.BkTenantID, kit.TenantID).
-		SetHeader("X-Bkapi-Authorization", authHeader).
-		SetBody(map[string]interface{}{
-			"task_id": taskID,
-		}).
-		Post(url)
-
-	if err != nil {
+	resp := new(CommonTaskRespData)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
 
-	data := &TransferFileResultData{}
-	if err := components.UnmarshalBKResult(resp, data); err != nil {
-		return nil, err
-	}
-
-	return data.Result, nil
+	return resp, nil
 }
 
-// TerminateTransferFileTask terminate transfer file task
-func TerminateTransferFileTask(ctx context.Context, taskID string, targetsAgents []TransferFileAgent) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/task/extensions/async_terminate_transfer_file", cc.FeedServer().GSE.Host)
-	authHeader := fmt.Sprintf("{\"bk_app_code\": \"%s\", \"bk_app_secret\": \"%s\"}",
-		cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret)
-	kit := kit.FromGrpcContext(ctx)
-	resp, err := components.GetClient().R().
-		SetContext(ctx).
-		SetHeader(constant.BkTenantID, kit.TenantID).
-		SetHeader("X-Bkapi-Authorization", authHeader).
-		SetBody(TerminateTransferFileTaskReq{
-			TaskID: taskID,
-			Agents: targetsAgents,
-		}).
-		Post(url)
+// AsyncTerminateTransferFile 终止文件分发任务, 可支持扩展型目标, 包括容器和主机
+func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req *TerminateTransferFileTaskReq) (*CommonTaskRespData, error) {
+	url := fmt.Sprintf(asyncTerminateTransferFile, gse.host)
 
-	if err != nil {
-		return "", err
+	resp := new(CommonTaskRespData)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
 	}
 
-	data := &CommonTaskRespData{}
-	if err := components.UnmarshalBKResult(resp, data); err != nil {
-		return "", err
+	return resp, nil
+}
+
+// GetExtensionsTransferFileResult 查询文件传输结果, 可支持扩展型目标, 包括容器和主机
+func (gse *Service) GetExtensionsTransferFileResult(ctx context.Context, req *GetTransferFileResultReq) (*TransferFileResultData, error) {
+	url := fmt.Sprintf(getExtensionsTransferFileResult, gse.host)
+
+	resp := new(TransferFileResultData)
+	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
+		return nil, err
 	}
 
-	return data.Result.TaskID, nil
+	return resp, nil
+}
+
+// GetTransferFileResultReq defines get transfer file result request
+type GetTransferFileResultReq struct {
+	TaskID string      `json:"task_id"` // 启动任务时返回的任务 ID
+	Agents []AgentList `json:"agents"`  // 目标节点 Agent ID 列表, 单 ID 最大长度不超过64个字符
+}
+
+type AgentList struct {
+	BkAgentID     string `json:"bk_agent_id"`     // 目标 Agent ID，最大长度不超过64个字符
+	BkContainerID string `json:"bk_container_id"` // 目标容器 ID, 空则为主机
 }

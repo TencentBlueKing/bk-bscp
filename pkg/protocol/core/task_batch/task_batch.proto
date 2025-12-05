@@ -54,7 +54,7 @@ message TaskPayload {
   string alias = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
   string inner_ip = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "IP" }];
   string agent_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "Agent ID" }];
-  string cc_process_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  uint32 cc_process_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
   uint32 host_inst_seq = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机级别的序号" }];
   uint32 module_inst_seq = 10

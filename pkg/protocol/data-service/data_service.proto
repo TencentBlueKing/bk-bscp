@@ -342,6 +342,8 @@ service Data {
   rpc GetConfigGenerateResult(GetConfigGenerateResultReq) returns (GetConfigGenerateResultResp) {}
   // 配置预览
   rpc PreviewConfig(PreviewConfigReq) returns (PreviewConfigResp) {}
+  // 配置下发
+  rpc PushConfig(PushConfigReq) returns (PushConfigResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2521,4 +2523,13 @@ message PreviewConfigReq {
 
 message PreviewConfigResp {
   string content = 1;
+}
+
+message PushConfigReq {
+  uint32 biz_id = 1;
+  uint32 batch_id = 2;
+}
+
+message PushConfigResp {
+  uint32 batch_id = 1;
 }

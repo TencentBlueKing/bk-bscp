@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
 
@@ -163,6 +165,10 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 				payload.TemplateRevision.Attachment.TemplateID, err)
 		}
 	}
+	renderedContent = renderedContent + time.Now().Format("2006-01-02 15:04:05")
+
+	// 计算渲染后配置内容的 SHA256 签名
+	configContentSignature := tools.SHA256(renderedContent)
 
 	// 将渲染结果存储到 CommonPayload 中
 	commonPayload := &common.TaskPayload{}
@@ -175,6 +181,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 		payload.ModuleInstSeq,
 	)
 	commonPayload.ConfigPayload.ConfigContent = renderedContent
+	commonPayload.ConfigPayload.ConfigContentSignature = configContentSignature
 	if err := c.SetCommonPayload(commonPayload); err != nil {
 		return fmt.Errorf("[Finalize STEP]: set common payload failed: %w", err)
 	}
@@ -228,8 +235,8 @@ func (e *GenerateConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 	return nil
 }
 
-// RegisterExecutor register executor
-func RegisterExecutor(e *GenerateConfigExecutor) {
+// RegisterStepExecutor register step executor
+func RegisterGenerateConfigExecutor(e *GenerateConfigExecutor) {
 	istep.Register(GenerateConfigStepName, istep.StepExecutorFunc(e.GenerateConfig))
 	istep.RegisterCallback(ConfigGenerateCallbackName, istep.CallbackExecutorFunc(e.Callback))
 }

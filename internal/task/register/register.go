@@ -44,7 +44,11 @@ func RegisterExecutor(
 	configGenerateExecutor := config.NewGenerateConfigExecutor(dao, repo)
 	// 设置 CMDB 服务，用于获取 CC 拓扑 XML
 	configGenerateExecutor.SetCMDBService(bkcmdbService)
-	config.RegisterExecutor(configGenerateExecutor)
+	config.RegisterGenerateConfigExecutor(configGenerateExecutor)
+
+	// 注册 配置下发执行器
+	configPushExecutor := config.NewPushConfigExecutor(dao, gseService, repo)
+	config.RegisterPushConfigExecutor(configPushExecutor)
 }
 
 // RegisterHello register

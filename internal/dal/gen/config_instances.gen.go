@@ -33,9 +33,7 @@ func newConfigInstance(db *gorm.DB, opts ...gen.DOOption) configInstance {
 	_configInstance.ConfigVersionID = field.NewUint32(tableName, "config_version_id")
 	_configInstance.CcProcessID = field.NewUint32(tableName, "cc_process_id")
 	_configInstance.ModuleInstSeq = field.NewUint32(tableName, "module_inst_seq")
-	_configInstance.AppID = field.NewUint32(tableName, "app_id")
-	_configInstance.ReleaseID = field.NewUint32(tableName, "release_id")
-	_configInstance.ReleaseConfigItemID = field.NewUint32(tableName, "release_config_item_id")
+	_configInstance.GenerateTaskID = field.NewString(tableName, "task_id")
 	_configInstance.TenantID = field.NewString(tableName, "tenant_id")
 	_configInstance.Creator = field.NewString(tableName, "creator")
 	_configInstance.Reviser = field.NewString(tableName, "reviser")
@@ -50,21 +48,19 @@ func newConfigInstance(db *gorm.DB, opts ...gen.DOOption) configInstance {
 type configInstance struct {
 	configInstanceDo configInstanceDo
 
-	ALL                 field.Asterisk
-	ID                  field.Uint32
-	BizID               field.Uint32
-	ConfigTemplateID    field.Uint32
-	ConfigVersionID     field.Uint32
-	CcProcessID         field.Uint32
-	ModuleInstSeq       field.Uint32
-	AppID               field.Uint32
-	ReleaseID           field.Uint32
-	ReleaseConfigItemID field.Uint32
-	TenantID            field.String
-	Creator             field.String
-	Reviser             field.String
-	CreatedAt           field.Time
-	UpdatedAt           field.Time
+	ALL              field.Asterisk
+	ID               field.Uint32
+	BizID            field.Uint32
+	ConfigTemplateID field.Uint32
+	ConfigVersionID  field.Uint32
+	CcProcessID      field.Uint32
+	ModuleInstSeq    field.Uint32
+	GenerateTaskID   field.String
+	TenantID         field.String
+	Creator          field.String
+	Reviser          field.String
+	CreatedAt        field.Time
+	UpdatedAt        field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -87,9 +83,7 @@ func (c *configInstance) updateTableName(table string) *configInstance {
 	c.ConfigVersionID = field.NewUint32(table, "config_version_id")
 	c.CcProcessID = field.NewUint32(table, "cc_process_id")
 	c.ModuleInstSeq = field.NewUint32(table, "module_inst_seq")
-	c.AppID = field.NewUint32(table, "app_id")
-	c.ReleaseID = field.NewUint32(table, "release_id")
-	c.ReleaseConfigItemID = field.NewUint32(table, "release_config_item_id")
+	c.GenerateTaskID = field.NewString(table, "task_id")
 	c.TenantID = field.NewString(table, "tenant_id")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
@@ -123,16 +117,14 @@ func (c *configInstance) GetFieldByName(fieldName string) (field.OrderExpr, bool
 }
 
 func (c *configInstance) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 14)
+	c.fieldMap = make(map[string]field.Expr, 12)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["config_template_id"] = c.ConfigTemplateID
 	c.fieldMap["config_version_id"] = c.ConfigVersionID
 	c.fieldMap["cc_process_id"] = c.CcProcessID
 	c.fieldMap["module_inst_seq"] = c.ModuleInstSeq
-	c.fieldMap["app_id"] = c.AppID
-	c.fieldMap["release_id"] = c.ReleaseID
-	c.fieldMap["release_config_item_id"] = c.ReleaseConfigItemID
+	c.fieldMap["task_id"] = c.GenerateTaskID
 	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser

@@ -294,7 +294,7 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	// 等待查询任务完成
-	result, err := e.WaitTaskFinish(c.Context(),
+	result, err := e.WaitProcOperateTaskFinish(c.Context(),
 		resp.TaskID, payload.BizID,
 		commonPayload.ProcessPayload.HostInstSeq,
 		commonPayload.ProcessPayload.Alias,
@@ -467,7 +467,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		return fmt.Errorf("[Operate STEP]: failed to operate process via gseService.OperateProcMulti: %w", err)
 	}
 
-	result, err := e.WaitTaskFinish(c.Context(), resp.TaskID,
+	result, err := e.WaitProcOperateTaskFinish(c.Context(), resp.TaskID,
 		payload.BizID,
 		commonPayload.ProcessPayload.HostInstSeq,
 		commonPayload.ProcessPayload.Alias,
@@ -677,7 +677,7 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 	if err != nil {
 		return "", "", fmt.Errorf("failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
-	result, err := e.WaitTaskFinish(
+	result, err := e.WaitProcOperateTaskFinish(
 		c.Context(),
 		resp.TaskID,
 		bizID,

@@ -29,6 +29,7 @@ import (
 	gseProc "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -116,10 +117,10 @@ func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq)
 
 	// 获取通过业务查询是否有同步任务
 	task, err := s.taskManager.ListTask(ctx, &iface.ListOption{
-		TaskType:      cmdbGse.TaskType,
+		TaskType:      common.SyncCMDBGSETaskType,
 		TaskName:      cmdbGse.BuildSyncCMDBGSETaskName(req.GetBizId()),
 		TaskIndex:     fmt.Sprintf("%d", req.GetBizId()),
-		TaskIndexType: cmdbGse.TaskIndexType,
+		TaskIndexType: common.BizIDTaskIndexType,
 		Offset:        0,
 		Limit:         1,
 	})

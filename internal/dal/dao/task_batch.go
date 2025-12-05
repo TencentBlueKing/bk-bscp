@@ -48,6 +48,8 @@ type TaskBatch interface {
 	ResetCountsForRetry(kit *kit.Kit, batchID uint32, totalCount uint32) error
 	// AddFailedCount 增加失败计数（用于任务创建失败的场景），同时增加 CompletedCount 和 FailedCount
 	AddFailedCount(kit *kit.Kit, batchID uint32, count uint32) error
+	// HasRunningConfigPushTasks 检查是否有指定配置模板的运行中的配置下发任务
+	HasRunningConfigPushTasks(kit *kit.Kit, bizID uint32, configTemplateIDs []uint32) (bool, error)
 }
 
 var _ TaskBatch = new(taskBatchDao)
@@ -291,6 +293,57 @@ func (dao *taskBatchDao) AddFailedCount(kit *kit.Kit, batchID uint32, count uint
 	}
 
 	return nil
+}
+
+// HasRunningConfigPushTasks 检查是否有指定配置模板的运行中的配置下发任务
+// 通过查询 task_batch 表的 task_data 字段来判断
+func (dao *taskBatchDao) HasRunningConfigPushTasks(kit *kit.Kit, bizID uint32, configTemplateIDs []uint32) (bool, error) {
+	if len(configTemplateIDs) == 0 {
+		return false, nil
+	}
+
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	// 查询运行中的配置下发任务批次
+	batches, err := q.Where(
+		m.BizID.Eq(bizID),
+		m.TaskAction.Eq(string(table.TaskActionConfigPublish)),
+		m.Status.Eq(string(table.TaskBatchStatusRunning)),
+	).Find()
+	if err != nil {
+		return false, fmt.Errorf("query running config push tasks failed: %w", err)
+	}
+
+	// 如果没有运行中的任务，直接返回
+	if len(batches) == 0 {
+		return false, nil
+	}
+
+	// 构建待检查的配置模板ID集合，用于判断配置模版是否在运行中的任务中
+	templateIDSet := make(map[uint32]struct{}, len(configTemplateIDs))
+	for _, id := range configTemplateIDs {
+		templateIDSet[id] = struct{}{}
+	}
+
+	// 遍历运行中的批次，检查是否有冲突的配置模板
+	for _, batch := range batches {
+		// 解析 task_data 中的配置模板ID列表
+		taskData, err := batch.Spec.GetTaskExecutionData()
+		if err != nil {
+			return false, fmt.Errorf("get task execution data failed: %w", err)
+		}
+
+		// 检查是否有交集
+		for _, runningTemplateID := range taskData.ConfigTemplateIDs {
+			if _, exists := templateIDSet[runningTemplateID]; exists {
+				// 找到冲突的配置模版
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 // buildFilterConditions 构建任务批次过滤条件

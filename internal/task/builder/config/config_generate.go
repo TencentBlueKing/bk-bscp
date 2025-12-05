@@ -25,13 +25,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
-const (
-	// TaskType 任务类型
-	TaskType = "config_generate"
-	// TaskIndexType 任务索引类型
-	TaskIndexType = "task_batch"
-)
-
 // GenerateConfigTask task generate config
 type GenerateConfigTask struct {
 	*common.Builder
@@ -111,22 +104,23 @@ func (t *GenerateConfigTask) FinalizeTask(task *types.Task) error {
 			FuncName:      t.process.Spec.FuncName,
 			InnerIP:       t.process.Spec.InnerIP,
 			AgentID:       t.process.Attachment.AgentID,
-			CcProcessID:   fmt.Sprintf("%d", t.process.Attachment.CcProcessID),
+			CcProcessID:   t.process.Attachment.CcProcessID,
 			HostInstSeq:   t.processInstance.Spec.HostInstSeq,
 			ModuleInstSeq: t.processInstance.Spec.ModuleInstSeq,
 			ConfigData:    t.process.Spec.SourceData,
 			CloudID:       int(t.process.Attachment.CloudID),
 		},
 		ConfigPayload: &executorCommon.ConfigPayload{
-			ConfigTemplateID:     t.configTemplateID,
-			ConfigTemplateName:   t.configTemplateName,
-			ConfigFileName:       t.configTemplate.Spec.Name,
-			ConfigFilePath:       t.templateRevision.Spec.Path,
-			ConfigFileOwner:      t.templateRevision.Spec.Permission.User,
-			ConfigFileGroup:      t.templateRevision.Spec.Permission.UserGroup,
-			ConfigFilePermission: t.templateRevision.Spec.Permission.Privilege,
-			ConfigInstanceKey:    key,
-			ConfigContent:        "",
+			ConfigTemplateID:        t.configTemplateID,
+			ConfigTemplateVersionID: t.templateRevision.ID,
+			ConfigTemplateName:      t.configTemplateName,
+			ConfigFileName:          t.configTemplate.Spec.Name,
+			ConfigFilePath:          t.templateRevision.Spec.Path,
+			ConfigFileOwner:         t.templateRevision.Spec.Permission.User,
+			ConfigFileGroup:         t.templateRevision.Spec.Permission.UserGroup,
+			ConfigFilePermission:    t.templateRevision.Spec.Permission.Privilege,
+			ConfigInstanceKey:       key,
+			ConfigContent:           "",
 		},
 	}); err != nil {
 		return err
@@ -164,8 +158,8 @@ func (t *GenerateConfigTask) TaskInfo() types.TaskInfo {
 	taskName := fmt.Sprintf("%s_%s_%s_%d", t.operateType, t.configTemplateName, t.processAlias, t.moduleInstSeq)
 	return types.TaskInfo{
 		TaskName:      taskName,
-		TaskType:      TaskType,
-		TaskIndexType: TaskIndexType,
+		TaskType:      common.ConfigGenerateTaskType,
+		TaskIndexType: common.TaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", t.batchID),
 		Creator:       t.operatorUser,
 	}

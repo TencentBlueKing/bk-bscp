@@ -237,6 +237,7 @@ const (
 	Data_ConfigGenerateStatus_FullMethodName              = "/pbds.Data/ConfigGenerateStatus"
 	Data_GetConfigGenerateResult_FullMethodName           = "/pbds.Data/GetConfigGenerateResult"
 	Data_PreviewConfig_FullMethodName                     = "/pbds.Data/PreviewConfig"
+	Data_PushConfig_FullMethodName                        = "/pbds.Data/PushConfig"
 )
 
 // DataClient is the client API for Data service.
@@ -495,6 +496,8 @@ type DataClient interface {
 	GetConfigGenerateResult(ctx context.Context, in *GetConfigGenerateResultReq, opts ...grpc.CallOption) (*GetConfigGenerateResultResp, error)
 	// 配置预览
 	PreviewConfig(ctx context.Context, in *PreviewConfigReq, opts ...grpc.CallOption) (*PreviewConfigResp, error)
+	// 配置下发
+	PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error)
 }
 
 type dataClient struct {
@@ -2350,6 +2353,15 @@ func (c *dataClient) PreviewConfig(ctx context.Context, in *PreviewConfigReq, op
 	return out, nil
 }
 
+func (c *dataClient) PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error) {
+	out := new(PushConfigResp)
+	err := c.cc.Invoke(ctx, Data_PushConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2606,6 +2618,8 @@ type DataServer interface {
 	GetConfigGenerateResult(context.Context, *GetConfigGenerateResultReq) (*GetConfigGenerateResultResp, error)
 	// 配置预览
 	PreviewConfig(context.Context, *PreviewConfigReq) (*PreviewConfigResp, error)
+	// 配置下发
+	PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3226,6 +3240,9 @@ func (UnimplementedDataServer) GetConfigGenerateResult(context.Context, *GetConf
 }
 func (UnimplementedDataServer) PreviewConfig(context.Context, *PreviewConfigReq) (*PreviewConfigResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PreviewConfig not implemented")
+}
+func (UnimplementedDataServer) PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushConfig not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6929,6 +6946,24 @@ func _Data_PreviewConfig_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_PushConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).PushConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_PushConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).PushConfig(ctx, req.(*PushConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7755,6 +7790,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PreviewConfig",
 			Handler:    _Data_PreviewConfig_Handler,
+		},
+		{
+			MethodName: "PushConfig",
+			Handler:    _Data_PushConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

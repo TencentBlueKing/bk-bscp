@@ -235,45 +235,6 @@ type ProcessMonitorPolicy struct {
 	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60（可选）
 }
 
-// FileTaskRequest 启动文件分发任务的请求参数
-type FileTaskReq struct {
-	Tasks          []FileTask `json:"tasks"`                     // 文件任务配置列表
-	TimeoutSeconds int        `json:"timeout_seconds,omitempty"` // 任务超时时长，单位秒，>0，默认1000
-	AutoMkdir      bool       `json:"auto_mkdir,omitempty"`      // 是否自动创建目录，默认 true
-	UploadSpeed    int        `json:"upload_speed,omitempty"`    // 上传速度限制 (MB)，0 表示无限制
-	DownloadSpeed  int        `json:"download_speed,omitempty"`  // 下载速度限制 (MB)，0 表示无限制
-}
-
-// FileTask 单个文件传输任务
-type FileTask struct {
-	Source FileSource `json:"source"` // 源文件定义
-	Target FileTarget `json:"target"` // 目标文件定义
-}
-
-// FileSource 文件源定义
-type FileSource struct {
-	FileName string    `json:"file_name"`     // 源文件名，例如 xxxx.tar.gz
-	StoreDir string    `json:"store_dir"`     // 源文件所在目录，例如 /data/store/
-	MD5      string    `json:"md5,omitempty"` // 文件 MD5，可选，传输完成后校验
-	Agent    FileAgent `json:"agent"`         // 源端 Agent 信息
-}
-
-// FileTarget 文件传输目标定义
-type FileTarget struct {
-	FileName   string      `json:"file_name,omitempty"`  // 传输后的文件名，默认与源文件一致
-	StoreDir   string      `json:"store_dir,omitempty"`  // 传输后的存放目录，默认与源目录一致
-	Owner      string      `json:"owner,omitempty"`      // 文件所有者，默认空
-	Permission int         `json:"permission,omitempty"` // 文件权限，整型表示，默认 0
-	Agents     []FileAgent `json:"agents"`               // 目标 Agent 信息列表
-}
-
-// FileAgent Agent 定义
-type FileAgent struct {
-	BkAgentID string `json:"bk_agent_id"`   // Agent ID，最长不超过64字符
-	User      string `json:"user"`          // 目标机器上存在的用户名
-	Pwd       string `json:"pwd,omitempty"` // 对应用户名的密码，可选
-}
-
 // TaskResp xxx
 type TaskResp struct {
 	Result struct {

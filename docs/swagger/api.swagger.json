@@ -19443,7 +19443,8 @@
           "description": "Agent ID"
         },
         "ccProcessId": {
-          "type": "string",
+          "type": "integer",
+          "format": "int64",
           "description": "CC进程ID"
         },
         "hostInstSeq": {

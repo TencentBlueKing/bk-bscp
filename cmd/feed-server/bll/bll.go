@@ -24,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/lcache"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/observer"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/release"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
@@ -92,7 +93,8 @@ func New(sd serviced.Discover, authorizer iamauth.Authorizer, name string) (*BLL
 
 	gseConf := cc.FeedServer().GSE
 	if gseConf.Enabled {
-		scheduler, err := asyncdownload.NewScheduler(mc, redLock)
+		gseService := gse.NewService(cc.FeedServer().Esb.AppCode, cc.FeedServer().Esb.AppSecret, gseConf.Host)
+		scheduler, err := asyncdownload.NewScheduler(mc, redLock, gseService)
 		if err != nil {
 			return nil, err
 		}

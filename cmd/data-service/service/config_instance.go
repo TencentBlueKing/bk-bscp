@@ -26,7 +26,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
-	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -297,7 +297,7 @@ func (s *Service) GenerateConfig(
 		ProcessAlias: make([]string, 0, len(processIDs)),
 		CCProcessID:  processIDs,
 	}
-	taskBatch.Spec.SetTaskData(&table.ProcessTaskData{
+	taskBatch.Spec.SetTaskData(&table.TaskExecutionData{
 		Environment:  environment,
 		OperateRange: operateRange,
 	})
@@ -778,7 +778,7 @@ func (s *Service) ConfigGenerateStatus(
 	configGenerateStatuses := make([]*pbds.ConfigGenerateStatusResp_ConfigGenerateStatus, 0, len(allTasks))
 	for _, task := range allTasks {
 		// 解析 CommonPayload，构建 ConfigGenerateStatus
-		commonPayload := &common.TaskPayload{}
+		commonPayload := &executorCommon.TaskPayload{}
 		err := task.GetCommonPayload(commonPayload)
 		if err != nil {
 			logs.Errorf("get common payload failed, err: %v, rid: %s", err, kt.Rid)
@@ -819,7 +819,7 @@ func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConf
 	}
 
 	// 从 CommonPayload 中提取配置生成结果
-	var taskPayload common.TaskPayload
+	var taskPayload executorCommon.TaskPayload
 	err = taskInfo.GetCommonPayload(&taskPayload)
 	if err != nil {
 		logs.Errorf("get common payload failed, taskID: %s, err: %v, rid: %s", req.TaskId, err, kt.Rid)
@@ -939,4 +939,288 @@ func (p *previewRequestSource) GetModuleInstSeq() uint32 {
 
 func (p *previewRequestSource) NeedHelp() bool {
 	return strings.Contains(p.req.GetTemplateContent(), "${HELP}")
+}
+
+// verifyBatch 验证批次类型
+func verifyBatch(dao dao.Set, kt *kit.Kit, batchID uint32) (*table.TaskBatch, error) {
+	batch, err := dao.TaskBatch().GetByID(kt, batchID)
+	if err != nil {
+		return nil, fmt.Errorf("get batch failed, batch_id: %d, err: %v", batchID, err)
+	}
+
+	if batch.Spec.TaskAction != table.TaskActionConfigGenerate {
+		return nil, fmt.Errorf("batch %d is not a config generate batch", batchID)
+	}
+
+	return batch, nil
+}
+
+// getSuccessTasks 获取批次中的成功任务
+func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
+	storage := taskpkg.GetGlobalStorage()
+	if storage == nil {
+		return nil, fmt.Errorf("task storage not initialized")
+	}
+
+	const pageSize = 100
+	var tasks []*taskTypes.Task
+	offset := int64(0)
+
+	for {
+		listOpt := &istore.ListOption{
+			TaskIndex: fmt.Sprintf("%d", batchID),
+			Limit:     pageSize,
+			Offset:    offset,
+		}
+
+		pagination, err := storage.ListTask(kt.Ctx, listOpt)
+		if err != nil {
+			logs.Errorf("list tasks failed, offset: %d, err: %v, rid: %s", offset, err, kt.Rid)
+			return nil, fmt.Errorf("list tasks failed: %v", err)
+		}
+
+		if len(pagination.Items) == 0 {
+			break
+		}
+
+		// 筛选成功的任务
+		for _, task := range pagination.Items {
+			if task.GetStatus() == taskTypes.TaskStatusSuccess {
+				tasks = append(tasks, task)
+			}
+		}
+
+		if len(pagination.Items) < int(pageSize) {
+			break
+		}
+		offset += pageSize
+	}
+
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("no success tasks found for batch %d", batchID)
+	}
+
+	logs.Infof("found %d success tasks for batch %d, rid: %s", len(tasks), batchID, kt.Rid)
+	return tasks, nil
+}
+
+// createBatch 创建下发批次
+func createBatch(dao dao.Set, kt *kit.Kit, bizID uint32, srcBatch *table.TaskBatch,
+	taskCount uint32, configTemplateIDs []uint32) (uint32, error) {
+	now := time.Now()
+
+	// 获取源批次的任务数据
+	taskData, err := srcBatch.Spec.GetTaskExecutionData()
+	if err != nil {
+		return 0, fmt.Errorf("get source batch task data failed: %v", err)
+	}
+
+	// 添加配置模板ID列表，用于并发操作时判断配置模版是否在运行中的任务中
+	taskData.ConfigTemplateIDs = configTemplateIDs
+
+	batch := &table.TaskBatch{
+		Attachment: &table.TaskBatchAttachment{
+			BizID: bizID,
+		},
+		Spec: &table.TaskBatchSpec{
+			TaskObject: table.TaskObjectConfigFile,
+			TaskAction: table.TaskActionConfigPublish,
+			Status:     table.TaskBatchStatusRunning,
+			StartAt:    &now,
+			TotalCount: taskCount,
+		},
+		Revision: &table.Revision{
+			Creator:   kt.User,
+			Reviser:   kt.User,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
+
+	// 设置任务数据
+	batch.Spec.SetTaskData(taskData)
+
+	batchID, err := dao.TaskBatch().Create(kt, batch)
+	if err != nil {
+		return 0, fmt.Errorf("create batch failed, err: %v", err)
+	}
+
+	return batchID, nil
+}
+
+// validateOperate 验证配置下发是否合法
+func validateOperate(
+	dao dao.Set,
+	kt *kit.Kit,
+	bizID uint32,
+	configTemplateIDs []uint32,
+	templateVersionMap map[uint32]uint32, // key: configTemplateID, value: versionID
+) error {
+	hasRunning, err := dao.TaskBatch().HasRunningConfigPushTasks(kt, bizID, configTemplateIDs)
+	if err != nil {
+		return fmt.Errorf("check running config push tasks failed: %v", err)
+	}
+	if hasRunning {
+		return fmt.Errorf("config template already has running push tasks, please wait for completion")
+	}
+
+	// 检查配置模板版本是否为最新版本
+	for configTemplateID, versionID := range templateVersionMap {
+		// 获取配置模板信息
+		configTemplate, err := dao.ConfigTemplate().GetByID(kt, bizID, configTemplateID)
+		if err != nil {
+			return fmt.Errorf("get config template %d failed: %v", configTemplateID, err)
+		}
+
+		// 获取模板的最新版本
+		latestRevision, err := dao.TemplateRevision().GetLatestTemplateRevision(kt, bizID, configTemplate.Attachment.TemplateID)
+		if err != nil {
+			return fmt.Errorf("get latest template revision for config template %d failed: %v", configTemplateID, err)
+		}
+
+		// 检查版本是否为最新
+		if versionID != latestRevision.ID {
+			return fmt.Errorf("config template %d version is not the latest, current: %d, latest: %d, please regenerate config",
+				configTemplateID, versionID, latestRevision.ID)
+		}
+	}
+
+	return nil
+}
+
+// dispatchTasks 创建配置下发任务
+func dispatchTasks(
+	dao dao.Set,
+	taskMgr *task.TaskManager,
+	kt *kit.Kit,
+	bizID uint32,
+	batchID uint32,
+	tasks []*taskTypes.Task,
+	payloadCache map[string]*executorCommon.TaskPayload,
+) uint32 {
+	var count uint32
+
+	for _, t := range tasks {
+		payload, exists := payloadCache[t.GetTaskID()]
+		if !exists {
+			logs.Warnf("skip task %s, payload not found in cache, rid: %s", t.GetTaskID(), kt.Rid)
+			continue
+		}
+		taskObj, err := task.NewByTaskBuilder(
+			config.NewPushConfigTask(
+				dao,
+				bizID,
+				batchID,
+				table.ConfigPush,
+				kt.User,
+				t.GetTaskID(),
+				payload,
+			),
+		)
+		if err != nil {
+			logs.Errorf("create task failed, task_id: %s, err: %v, rid: %s", t.GetTaskID(), err, kt.Rid)
+			continue
+		}
+
+		taskMgr.Dispatch(taskObj)
+		count++
+	}
+
+	return count
+}
+
+// PushConfig implements pbds.DataServer.
+// PushConfig 配置下发
+func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbds.PushConfigResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	// 验证批次
+	batch, err := verifyBatch(s.dao, kt, req.GetBatchId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取成功任务
+	tasks, err := getSuccessTasks(kt, req.GetBatchId())
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("no success tasks found for batch %d", req.GetBatchId())
+	}
+
+	// 获取配置生成任务的 payload，收集配置模板ID和版本信息
+	payloadCache := make(map[string]*executorCommon.TaskPayload)
+	templateVersionMap := make(map[uint32]uint32) // key: configTemplateID, value: versionID
+	validTasks := make([]*taskTypes.Task, 0, len(tasks))
+	for _, t := range tasks {
+		payload := &executorCommon.TaskPayload{}
+		if err = t.GetCommonPayload(payload); err != nil {
+			logs.Warnf("skip task %s, get common payload failed: %v, rid: %s", t.GetTaskID(), err, kt.Rid)
+			continue
+		}
+
+		// 验证 payload 完整性
+		if payload.ConfigPayload == nil {
+			return nil, fmt.Errorf("config payload is nil for task %s", t.GetTaskID())
+		}
+		if payload.ProcessPayload == nil {
+			return nil, fmt.Errorf("process payload is nil for task %s", t.GetTaskID())
+		}
+
+		configTemplateID := payload.ConfigPayload.ConfigTemplateID
+		if configTemplateID == 0 {
+			return nil, fmt.Errorf("config template id is not valid for task %s", t.GetTaskID())
+		}
+
+		payloadCache[t.GetTaskID()] = payload
+		validTasks = append(validTasks, t)
+
+		// 收集配置模板ID和版本信息
+		if _, exists := templateVersionMap[configTemplateID]; !exists {
+			templateVersionMap[configTemplateID] = payload.ConfigPayload.ConfigTemplateVersionID
+		}
+	}
+
+	if len(validTasks) == 0 {
+		return nil, fmt.Errorf("no valid tasks found for batch %d", req.GetBatchId())
+	}
+
+	configTemplateIDs := make([]uint32, 0, len(templateVersionMap))
+	for id := range templateVersionMap {
+		configTemplateIDs = append(configTemplateIDs, id)
+	}
+	// 1. 检查配置模板是否有运行中的配置下发任务
+	// 2. 检查下发的配置模板版本是否为最新版本
+	err = validateOperate(s.dao, kt, req.GetBizId(), configTemplateIDs, templateVersionMap)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建任务批次
+	batchID, err := createBatch(s.dao, kt, req.GetBizId(), batch, uint32(len(validTasks)), configTemplateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 分发任务
+	var dispatched uint32
+	defer func() {
+		if failed := uint32(len(validTasks)) - dispatched; failed > 0 {
+			logs.Warnf("batch %d partially dispatched: %d/%d tasks, %d failed, rid: %s",
+				batchID, dispatched, len(validTasks), failed, kt.Rid)
+			if err := s.dao.TaskBatch().AddFailedCount(kt, batchID, failed); err != nil {
+				logs.Errorf("add failed count for batch %d failed, err: %v, rid: %s", batchID, err, kt.Rid)
+			}
+		}
+	}()
+
+	dispatched = dispatchTasks(s.dao, s.taskManager, kt, req.GetBizId(), batchID, validTasks, payloadCache)
+
+	logs.Infof("push batch created, batch_id: %d, source_batch_id: %d, task_count: %d, rid: %s",
+		batchID, req.GetBatchId(), dispatched, kt.Rid)
+
+	return &pbds.PushConfigResp{
+		BatchId: batchID,
+	}, nil
 }

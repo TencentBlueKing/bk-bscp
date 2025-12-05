@@ -42,12 +42,8 @@ type ConfigInstanceAttachment struct {
 	CcProcessID uint32 `json:"cc_process_id" gorm:"column:cc_process_id"`
 	// InstID 模块下的进程实例序列号
 	ModuleInstSeq uint32 `json:"module_inst_seq" gorm:"column:module_inst_seq"`
-	// AppID 每个配置实例关联一个应用
-	AppID uint32 `json:"app_id" gorm:"column:app_id"`
-	// ReleaseID 每个配置实例关联一个发布版本
-	ReleaseID uint32 `json:"release_id" gorm:"column:release_id"`
-	// ReleaseConfigItem 每个配置实例关联的配置项
-	ReleaseConfigItemID uint32 `json:"release_config_item_id" gorm:"column:release_config_item_id"`
+	// GenerateTaskID 配置生成任务ID，用于追溯配置生成任务
+	GenerateTaskID string `json:"generate_task_id" gorm:"column:task_id"`
 	// TenantID is the tenant ID.
 	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
 }

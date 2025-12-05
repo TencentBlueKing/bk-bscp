@@ -24,13 +24,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
-const (
-	// TaskType 任务类型
-	TaskType = "process_operate"
-	// TaskIndexType 任务索引类型
-	TaskIndexType = "task_batch"
-)
-
 // OperateTask task operate
 type OperateTask struct {
 	*common.Builder
@@ -159,8 +152,8 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 func (t *OperateTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
 		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.operateType, t.processInstanceID),
-		TaskType:      TaskType,
-		TaskIndexType: TaskIndexType,                // 任务一个索引类型，比如key，uuid等，
+		TaskType:      common.ProcessOperateTaskType,
+		TaskIndexType: common.TaskIndexType,         // 任务一个索引类型，比如key，uuid等，
 		TaskIndex:     fmt.Sprintf("%d", t.batchID), // 任务索引，代表一批任务
 		Creator:       t.operatorUser,
 	}
