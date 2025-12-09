@@ -1,11 +1,11 @@
 <template>
   <DetailLayout :name="$t('配置模板详情')" :show-footer="false" @close="handleClose">
-    <template #suffix>
+    <template #header-suffix>
       <div class="header-suffix">
         <div class="suffix-left">
           <span class="line"></span>
-          <span>模板文件1</span>
-          <bk-tag>当前版本: 105</bk-tag>
+          <span class="name">{{ templateDetail.name }}</span>
+          <bk-tag>{{ $t('当前版本') }}: {{ templateDetail.revision_name }}</bk-tag>
         </div>
         <div class="suffix-right">
           <bk-button theme="primary" text>{{ $t('编辑') }}</bk-button>
@@ -36,11 +36,11 @@
             <div class="title">{{ $t('模板信息') }}</div>
             <div class="info-item" v-for="item in infoList" :key="item.label">
               <span class="label">{{ item.label }}</span>
-              <span class="value">{{ item.value }}</span>
+              <span class="value">{{ templateDetail[item.value as keyof typeof templateDetail] }}</span>
             </div>
           </div>
           <div class="editor-wrap">
-            <ConfigContent :content="formData.content" />
+            <ConfigContent :bk-biz-id="bkBizId" :content="editorContent" :editable="false" />
           </div>
         </div>
       </section>
@@ -49,24 +49,36 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { getConfigTemplateDetail } from '../../../../api/config-template';
+  import { downloadTemplateContent } from '../../../../api/template';
+  import { Ellipsis } from 'bkui-vue/lib/icon';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import ConfigContent from '../components/config-content.vue';
 
   const { t } = useI18n();
 
   const emits = defineEmits(['close', 'created']);
-
-  const formData = ref({
-    privilege: '644',
-    user: 'root',
-    user_group: 'root',
-    template_name: '',
+  const props = defineProps<{
+    bkBizId: string;
+    templateId: number;
+    templateSpaceId: number;
+  }>();
+  const templateDetail = ref({
+    name: '',
     file_name: '',
     memo: '',
-    content: '',
+    privilege: '',
+    user: '',
+    user_group: '',
+    revision_name: '',
+    sign: '',
+    attribution: '',
+    highlight_style: '',
   });
+  const editorContent = ref('');
+
   const operationList = [
     {
       name: t('版本管理'),
@@ -80,44 +92,91 @@
   const infoList = [
     {
       label: t('模板归属'),
-      value: 'config_delivery/默认模板',
+      value: 'attribution',
     },
     {
       label: t('模板名称'),
-      value: '模板文件1',
+      value: 'name',
     },
     {
       label: t('配置文件名'),
-      value: 'nginx.conf',
+      value: 'file_name',
     },
     {
       label: t('配置文件描述'),
-      value: '这是一个用于演示的配置文件描述',
+      value: 'memo',
     },
     {
       label: t('文件权限'),
-      value: '644',
+      value: 'privilege',
     },
     {
       label: t('用户'),
-      value: 'root',
+      value: 'user',
     },
     {
       label: t('用户组'),
-      value: 'root',
+      value: 'user_group',
     },
   ];
+
+  onMounted(() => {
+    getDetail();
+  });
 
   const handleOpTemplate = (id: string) => {
     console.log('op template', id);
   };
 
+  const getDetail = async () => {
+    const res = await getConfigTemplateDetail(props.bkBizId, props.templateId);
+    const detail = res.bind_template;
+    templateDetail.value = {
+      name: detail.name || '',
+      file_name: detail.file_path + detail.file_name,
+      memo: detail.memo,
+      privilege: detail.privilege,
+      user: detail.user,
+      user_group: detail.user_group,
+      revision_name: detail.revision_name,
+      sign: detail.sign,
+      highlight_style: detail.highlight_style,
+      attribution: `${detail.template_space_name}/${detail.template_set_name}`,
+    };
+    editorContent.value = await downloadTemplateContent(props.bkBizId, props.templateSpaceId, detail.sign);
+  };
+
   const handleClose = () => {
-    emits('close', false);
+    emits('close');
   };
 </script>
 
 <style scoped lang="scss">
+  .header-suffix {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    .suffix-left {
+      display: flex;
+      align-items: center;
+      .line {
+        width: 1px;
+        height: 16px;
+        background: #dcdee5;
+        margin-right: 12px;
+      }
+      .name {
+        font-size: 14px;
+        color: #4d4f56;
+        margin-right: 16px;
+      }
+    }
+    .suffix-right {
+      display: flex;
+      align-items: center;
+    }
+  }
   .content-wrap {
     padding: 24px;
     height: 100%;
@@ -144,6 +203,7 @@
           margin-bottom: 24px;
           .label {
             color: #979ba5;
+            margin-bottom: 4px;
           }
           .value {
             color: #313238;

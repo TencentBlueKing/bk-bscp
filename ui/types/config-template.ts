@@ -73,6 +73,7 @@ export interface IConfigTemplateItem {
   };
   instCount?: number;
   templateCount?: number;
+  isAssociated: boolean;
 }
 
 export interface IConfigTemplateEditParams {

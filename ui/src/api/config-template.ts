@@ -55,13 +55,29 @@ export const createConfigTemplate = (biz_id: string, data: any) =>
   http.post(`/config/biz_id/${biz_id}/config_template`, data).then((res) => res.data);
 
 /**
- * 编辑配置模板
+ * 删除配置模板
+ * @param biz_id
+ * @param config_template_id
+ */
+export const deleteConfigTemplate = (biz_id: string, config_template_id: number) =>
+  http.delete(`/config/biz_id/${biz_id}/config_template/${config_template_id}`).then((res) => res.data);
+
+/**
+ * 新建配置模板版本版本
  * @param biz_id
  * @param config_template_id
  * @param data
  */
-export const editConfigTemplate = (biz_id: string, config_template_id: number, data: any) =>
+export const createConfigTemplateVersion = (biz_id: string, config_template_id: number, data: any) =>
   http.put(`/config/biz_id/${biz_id}/config_template/${config_template_id}`, data).then((res) => res.data);
+
+/**
+ * 获取配置模板详情
+ * @param biz_id
+ * @param config_template_id
+ */
+export const getConfigTemplateDetail = (biz_id: string, config_template_id: number) =>
+  http.get(`/config/biz_id/${biz_id}/config_template/${config_template_id}`).then((res) => res.data);
 
 /**
  * 获取配置模板变量

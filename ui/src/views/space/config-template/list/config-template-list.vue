@@ -25,17 +25,17 @@
               <bk-button
                 theme="primary"
                 text
-                :disabled="row.instCount! + row.templateCount! === 0"
+                :disabled="!row.isAssociated"
                 v-bk-tooltips="{
                   content: `${t('模板进程')}: ${row.templateCount}\n${t('实例进程')}: ${row.instCount}`,
-                  disabled: row.instCount! + row.templateCount! === 0,
+                  disabled: !row.isAssociated,
                   placement: 'right',
                 }"
                 @click="handleAssociatedProcess(row)">
                 {{ row.instCount! + row.templateCount! }}
               </bk-button>
               <bk-tag
-                v-if="row.instCount! + row.templateCount! === 0"
+                v-if="!row.isAssociated"
                 :class="['associated-btn']"
                 theme="info"
                 @click="handleAssociatedProcess(row)">
@@ -46,7 +46,7 @@
         </TableColumn>
         <TableColumn :title="t('更新人')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
-            <UserName :name="row.revision.reviser" />
+            <UserName :name="row.revision.reviser || '--'" />
           </template>
         </TableColumn>
         <TableColumn :title="t('更新时间')">
@@ -58,14 +58,26 @@
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="op-btns">
               <bk-button theme="primary" text @click="handleEdit(row.id)">{{ t('编辑') }}</bk-button>
-              <bk-button theme="primary" text @click="handleConfigIssue(row.id)">{{ t('配置下发') }}</bk-button>
-              <bk-button theme="primary" text>{{ t('版本管理') }}</bk-button>
+              <bk-button
+                theme="primary"
+                :disabled="!row.isAssociated"
+                text
+                v-bk-tooltips="{
+                  content: $t('未关联进程，无法进行配置下发'),
+                  disabled: row.isAssociated,
+                }"
+                @click="handleConfigIssue(row.id)">
+                {{ t('配置下发') }}
+              </bk-button>
+              <bk-button theme="primary" text @click="handleGoVersionManage(row)">
+                {{ t('版本管理') }}
+              </bk-button>
               <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
                 <div class="more-actions">
                   <Ellipsis class="ellipsis-icon" />
                 </div>
                 <template #content>
-                  <div class="delete-btn">{{ t('删除') }}</div>
+                  <div class="delete-btn" @click="handleDelete(row)">{{ t('删除') }}</div>
                 </template>
               </bk-popover>
             </div>
@@ -99,16 +111,24 @@
     v-if="isShowCreateTemplate"
     :attribution="attribution"
     :bk-biz-id="spaceId"
+    :template-space-id="templateSpaceId"
     @close="isShowCreateTemplate = false"
     @created="refresh" />
-  <EditConfigTemplate
-    v-if="isShowEditTemplate"
-    :attribution="attribution"
+  <ConfigTemplateDetails
+    v-if="isShowDetails"
     :bk-biz-id="spaceId"
     :template-id="opTemplate.id"
-    @close="isShowEditTemplate = false"
-    @edited="refresh" />
-  <ConfigTemplateDetails v-if="isShowDetails" @close="isShowDetails = false" />
+    :template-space-id="templateSpaceId"
+    @close="isShowDetails = false" />
+  <DeleteConfirmDialog
+    v-model:is-show="isShowDeleteDialog"
+    :title="t('确认删除模板文件?')"
+    @confirm="handleDeletConfirm">
+    <div class="delete-content">
+      <span class="label">{{ t('模板名称') }} :</span>
+      <span class="value">{{ opTemplate.templateName }}</span>
+    </div>
+  </DeleteConfirmDialog>
 </template>
 
 <script lang="ts" setup>
@@ -116,7 +136,7 @@
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
-  import { getConfigTemplateList } from '../../../../api/config-template';
+  import { getConfigTemplateList, deleteConfigTemplate } from '../../../../api/config-template';
   import type { IConfigTemplateItem } from '../../../../../types/config-template';
   import { datetimeFormat } from '../../../../utils';
   import { useRouter } from 'vue-router';
@@ -125,10 +145,10 @@
   import AssociatedProcess from './associated-process/index.vue';
   import useGlobalStore from '../../../../store/global';
   import CreateConfigTemplate from './create-config-template.vue';
-  import EditConfigTemplate from './edit-config-template.vue';
   import ConfigTemplateDetails from './config-template-details.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UserName from '../../../../components/user-name.vue';
+  import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
@@ -145,7 +165,6 @@
   const opPopRef = ref();
   const isShowAssociatedProcess = ref(false);
   const isShowCreateTemplate = ref(false);
-  const isShowEditTemplate = ref(false);
   const isShowDetails = ref(false);
   const templateList = ref<IConfigTemplateItem[]>([]);
   const searchValue = ref<{ [key: string]: string }>();
@@ -156,6 +175,9 @@
     templateName: '',
   });
   const attribution = ref('');
+  const templateSpaceId = ref(0);
+  const isShowDeleteDialog = ref(false);
+  const deletePendding = ref(false);
 
   onMounted(() => {
     loadConfigTemplateList();
@@ -171,13 +193,15 @@
       const res = await getConfigTemplateList(spaceId.value, paramas);
       templateList.value = res.details.map((item: IConfigTemplateItem) => {
         return {
+          ...item,
           instCount: item.attachment.cc_process_ids.length,
           templateCount: item.attachment.cc_template_process_ids.length,
-          ...item,
+          isAssociated: item.attachment.cc_process_ids.length + item.attachment.cc_template_process_ids.length > 0,
         };
       });
-      attribution.value = `${res.template_space_name}/${res.template_set_name}`;
+      attribution.value = `${res.template_space.name}/${res.template_set.name}`;
       pagination.value.count = res.count;
+      templateSpaceId.value = res.template_space.id;
     } catch (error) {
       console.error(error);
     } finally {
@@ -222,7 +246,6 @@
 
   const handleEdit = (id: number) => {
     opTemplate.value.id = id;
-    isShowEditTemplate.value = true;
   };
 
   // 配置下发
@@ -235,9 +258,41 @@
     });
   };
 
+  const handleGoVersionManage = (configTemplate: IConfigTemplateItem) => {
+    router.push({
+      name: 'config-template-version-manage',
+      params: {
+        templateSpaceId: templateSpaceId.value,
+        templateId: configTemplate.attachment.template_id,
+        configTemplateId: configTemplate.id,
+      },
+    });
+  };
+
   const refresh = () => {
     pagination.value.current = 1;
     loadConfigTemplateList();
+  };
+
+  const handleDelete = (template: IConfigTemplateItem) => {
+    isShowDeleteDialog.value = true;
+    opTemplate.value = {
+      id: template.id,
+      templateName: template.spec.name,
+    };
+  };
+
+  const handleDeletConfirm = async () => {
+    try {
+      deletePendding.value = true;
+      await deleteConfigTemplate(spaceId.value, opTemplate.value.id);
+      isShowDeleteDialog.value = false;
+      refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      deletePendding.value = false;
+    }
   };
 </script>
 
@@ -326,5 +381,14 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .delete-content {
+    .label {
+      margin-right: 8px;
+    }
+    .value {
+      color: #313238;
+    }
   }
 </style>

@@ -89,6 +89,7 @@ class Monkey:
 
 <style scoped lang="scss">
   .preview-wrap {
+    flex-shrink: 0;
     width: 417px;
     height: 100%;
     border-radius: 4px;

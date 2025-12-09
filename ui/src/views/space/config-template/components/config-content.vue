@@ -34,7 +34,7 @@
             ref="codeEditorRef"
             :model-value="props.content"
             :editable="editable"
-            :language="props.language"
+            :language="highlight"
             @update:model-value="emits('change', $event)" />
         </div>
         <div class="editor-footer">
@@ -43,10 +43,7 @@
           <bk-button @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
         </div>
       </div>
-      <ProcessPreview
-        v-show="suffix === 'preview'"
-        :bk-biz-id="bkBizId"
-        @close="suffix = ''" />
+      <ProcessPreview v-show="suffix === 'preview'" :bk-biz-id="bkBizId" @close="suffix = ''" />
       <Variable v-show="suffix === 'variable'" :bk-biz-id="bkBizId" @close="suffix = ''" />
     </div>
   </Teleport>
@@ -72,7 +69,6 @@
       editable?: boolean;
       charset?: string;
       sizeLimit?: number;
-      language?: string;
     }>(),
     {
       editable: true,
@@ -83,8 +79,8 @@
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
-  const highlight = ref('Python');
-  const highlightOptions = ['Python', 'Shell', 'Bat', 'Powershell'];
+  const highlight = ref('python');
+  const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
   const suffix = ref('');
 
   // 打开全屏

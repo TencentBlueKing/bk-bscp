@@ -36,6 +36,7 @@
   const props = defineProps<{
     attribution: string;
     bkBizId: string;
+    templateSpaceId: number;
   }>();
 
   const formData = ref<IConfigTemplateEditParams>(getConfigTemplateEditParams());
@@ -55,10 +56,11 @@
       pending.value = true;
       const sign = await formRef.value.getSignature();
       const size = new Blob([content.value]).size;
-      await updateTemplateContent(props.bkBizId, Number(props.bkBizId), content.value, sign);
+      await updateTemplateContent(props.bkBizId, props.templateSpaceId, content.value, sign);
       const params = {
         ...formData.value,
         ...{ sign, byte_size: size },
+        template_space_id: props.templateSpaceId,
       };
       await createConfigTemplate(props.bkBizId, params);
       emits('created');

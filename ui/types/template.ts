@@ -130,6 +130,7 @@ export interface ITemplateVersionItem {
     path: string;
     file_type: string;
     file_mode: string;
+    template_name: string;
     permission: {
       user: string;
       user_group: string;
@@ -162,6 +163,7 @@ export interface ITemplateVersionEditingData {
   privilege: string;
   sign: string;
   byte_size: number;
+  name?: string;
 }
 
 // 业务下所有模板套餐列表（按模板空间分组）
