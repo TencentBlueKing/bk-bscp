@@ -877,7 +877,7 @@ func (s *Service) ListTemplateByTuple(ctx context.Context, req *pbds.ListTemplat
 		templatesData = append(templatesData,
 			&pbds.ListTemplateByTupleReqResp_Item{
 				Template:         pbtemplate.PbTemplate(item),
-				TemplateRevision: pbtr.PbTemplateRevision(templateRevision[item.ID]),
+				TemplateRevision: pbtr.PbTemplateRevision(templateRevision[item.ID], ""),
 			})
 	}
 

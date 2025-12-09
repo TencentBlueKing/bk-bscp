@@ -778,7 +778,9 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		return nil, err
 	}
 
-	spec := revision.Spec
+	spec := *revision.Spec
+	spec.RevisionName = req.GetRevisionName()
+	spec.RevisionMemo = req.GetMemo()
 	spec.Charset = table.FileCharset(req.GetCharset())
 	spec.FileMode = table.FileMode(req.GetFileMode())
 	spec.ContentSpec = &table.ContentSpec{
@@ -792,7 +794,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		Privilege: req.GetPrivilege(),
 	}
 	templateRevision := &table.TemplateRevision{
-		Spec:       spec,
+		Spec:       &spec,
 		Attachment: revision.Attachment,
 		Revision: &table.CreatedRevision{
 			Creator:   grpcKit.User,
@@ -823,8 +825,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	}
 
 	template.Revision.Reviser = grpcKit.User
-	template.Revision.UpdatedAt = time.Now().UTC()
-
+	template.Revision.UpdatedAt = now
+	// 更新模板文件
 	err = s.dao.Template().UpdateWithTx(grpcKit, tx, &table.Template{
 		ID: template.ID,
 		Spec: &table.TemplateSpec{
@@ -837,6 +839,24 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	})
 	if err != nil {
 		logs.Errorf("update template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 更新配置模板
+	err = s.dao.ConfigTemplate().UpdateWithTx(grpcKit, tx, &table.ConfigTemplate{
+		ID: configTemplate.ID,
+		Spec: &table.ConfigTemplateSpec{
+			Name:           req.GetName(),
+			HighlightStyle: table.HighlightStyle(req.GetHighlightStyle()),
+		},
+		Attachment: configTemplate.Attachment,
+		Revision: &table.Revision{
+			Reviser:   grpcKit.User,
+			UpdatedAt: now,
+		},
+	})
+	if err != nil {
+		logs.Errorf("update config template failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
@@ -895,4 +915,62 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 	return &pbds.GetConfigTemplateResp{
 		BindTemplate: resp,
 	}, nil
+}
+
+// DeleteConfigTemplate implements pbds.DataServer.
+func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbds.DeleteConfigTemplateReq) (*pbds.DeleteConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 1. 获取配置模板
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, err
+	}
+
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, grpcKit.Rid)
+			}
+		}
+	}()
+
+	// 2. 删除模板文件
+	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.dao.Template().DeleteWithTx(grpcKit, tx, template); err != nil {
+		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 3. 删除模板版本
+	if err = s.dao.TemplateRevision().DeleteForTmplWithTx(grpcKit, tx, req.GetBizId(), template.ID); err != nil {
+		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 4. 从套餐中删除
+	if err = s.dao.TemplateSet().DeleteTmplFromAllTmplSetsWithTx(grpcKit, tx, req.GetBizId(), template.ID); err != nil {
+		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 5. 删除配置模板
+	if err = s.dao.ConfigTemplate().DeleteWithTx(grpcKit, tx, configTemplate); err != nil {
+		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+	committed = true
+
+	return &pbds.DeleteConfigTemplateResp{}, nil
 }

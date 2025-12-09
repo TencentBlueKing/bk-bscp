@@ -1742,6 +1742,12 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       get: "/api/v1/config/biz_id/{biz_id}/service_instance/{module_id}"
     };
   }
+  // 删除配置模板
+  rpc DeleteConfigTemplate(DeleteConfigTemplateReq) returns (DeleteConfigTemplateResp) {
+    option (google.api.http) = {
+      delete: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"
+    };
+  }
 }
 
 message UpdateCredentialScopeReq {
@@ -5088,3 +5094,11 @@ message PreviewBindProcessInstanceResp {
   repeated pbct.BindProcessInstance template_processes = 1;
   repeated pbct.BindProcessInstance instance_processes = 2;
 }
+
+message DeleteConfigTemplateReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+}
+
+message DeleteConfigTemplateResp {}

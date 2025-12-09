@@ -337,3 +337,25 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbcs.GetConfigTemp
 		BindTemplate: resp.GetBindTemplate(),
 	}, nil
 }
+
+// DeleteConfigTemplate implements pbcs.ConfigServer.
+func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbcs.DeleteConfigTemplateReq) (*pbcs.DeleteConfigTemplateResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	_, err := s.client.DS.DeleteConfigTemplate(grpcKit.RpcCtx(), &pbds.DeleteConfigTemplateReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.DeleteConfigTemplateResp{}, nil
+}

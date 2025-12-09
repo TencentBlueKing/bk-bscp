@@ -40,6 +40,10 @@ type ConfigTemplate interface {
 	Update(kit *kit.Kit, configTemplate *table.ConfigTemplate) error
 	ListByCCProcessID(kit *kit.Kit, bizID uint32, ccProcessID uint32) ([]uint32, error)
 	ListByCCTemplateProcessID(kit *kit.Kit, bizID uint32, ccProcessTemplateID uint32) ([]uint32, error)
+	// UpdateWithTx update one configTemplate instance within a transaction.
+	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, configTemplate *table.ConfigTemplate) error
+	// DeleteWithTx delete one template instance with transaction.
+	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, configTemplate *table.ConfigTemplate) error
 }
 
 var _ ConfigTemplate = new(configTemplateDao)
@@ -48,6 +52,57 @@ type configTemplateDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// DeleteWithTx implements ConfigTemplate.
+func (dao *configTemplateDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, ct *table.ConfigTemplate) error {
+
+	// 删除操作, 获取当前记录做审计
+	m := tx.ConfigTemplate
+	q := tx.ConfigTemplate.WithContext(kit.Ctx)
+	oldOne, err := q.Where(m.ID.Eq(ct.ID), m.BizID.Eq(ct.Attachment.BizID)).Take()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, ct.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigTemplateName, ct.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareDelete(oldOne)
+	if err := ad.Do(tx.Query); err != nil {
+		return err
+	}
+
+	if _, err := q.Where(m.BizID.Eq(ct.Attachment.BizID)).Delete(ct); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateWithTx implements ConfigTemplate.
+func (dao *configTemplateDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, ct *table.ConfigTemplate) error {
+	if ct == nil {
+		return errf.New(errf.InvalidParameter, "config template is nil")
+	}
+
+	m := tx.ConfigTemplate
+
+	ad := dao.auditDao.Decorator(kit, ct.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ConfigTemplateName, ct.Spec.Name),
+		Status:           enumor.Success,
+	}).PrepareUpdate(ct)
+	if err := ad.Do(tx.Query); err != nil {
+		return fmt.Errorf("audit update config template failed, err: %v", err)
+	}
+
+	q := tx.ConfigTemplate.WithContext(kit.Ctx)
+	if _, err := q.Omit(m.BizID, m.ID).
+		Where(m.BizID.Eq(ct.Attachment.BizID), m.ID.Eq(ct.ID)).Updates(ct); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ListByCCProcessID implements ConfigTemplate.

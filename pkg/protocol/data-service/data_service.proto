@@ -353,6 +353,8 @@ service Data {
   rpc PreviewConfig(PreviewConfigReq) returns (PreviewConfigResp) {}
   // 配置下发
   rpc PushConfig(PushConfigReq) returns (PushConfigResp) {}
+  // 删除模板配置
+  rpc DeleteConfigTemplate(DeleteConfigTemplateReq) returns (DeleteConfigTemplateResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2646,3 +2648,10 @@ message PushConfigReq {
 message PushConfigResp {
   uint32 batch_id = 1;
 }
+
+message DeleteConfigTemplateReq {
+  uint32 biz_id = 1;
+  uint32 config_template_id = 2;
+}
+
+message DeleteConfigTemplateResp {}

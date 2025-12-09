@@ -234,6 +234,7 @@ const (
 	Config_PreviewBindProcessInstance_FullMethodName         = "/pbcs.Config/PreviewBindProcessInstance"
 	Config_ProcessInstance_FullMethodName                    = "/pbcs.Config/ProcessInstance"
 	Config_ServiceInstance_FullMethodName                    = "/pbcs.Config/ServiceInstance"
+	Config_DeleteConfigTemplate_FullMethodName               = "/pbcs.Config/DeleteConfigTemplate"
 )
 
 // ConfigClient is the client API for Config service.
@@ -649,6 +650,8 @@ type ConfigClient interface {
 	ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error)
 	// 根据模块获取服务实例列表
 	ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error)
+	// 删除配置模板
+	DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error)
 }
 
 type configClient struct {
@@ -2522,6 +2525,15 @@ func (c *configClient) ServiceInstance(ctx context.Context, in *ServiceInstanceR
 	return out, nil
 }
 
+func (c *configClient) DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error) {
+	out := new(DeleteConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Config_DeleteConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -2935,6 +2947,8 @@ type ConfigServer interface {
 	ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error)
 	// 根据模块获取服务实例列表
 	ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error)
+	// 删除配置模板
+	DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3561,6 +3575,9 @@ func (UnimplementedConfigServer) ProcessInstance(context.Context, *ProcessInstan
 }
 func (UnimplementedConfigServer) ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ServiceInstance not implemented")
+}
+func (UnimplementedConfigServer) DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigTemplate not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -7300,6 +7317,24 @@ func _Config_ServiceInstance_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_DeleteConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteConfigTemplate(ctx, req.(*DeleteConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8134,6 +8169,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ServiceInstance",
 			Handler:    _Config_ServiceInstance_Handler,
+		},
+		{
+			MethodName: "DeleteConfigTemplate",
+			Handler:    _Config_DeleteConfigTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -38,6 +38,7 @@ message TemplateRevisionSpec {
   pbci.FilePermission permission = 7;
   pbcontent.ContentSpec content_spec = 8;
   string charset = 9;
+  string template_name = 10;
 }
 
 // TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go

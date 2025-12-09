@@ -231,7 +231,7 @@ func (s *Service) GetLatestTemplateVersionsInSpace(ctx context.Context, req *pbd
 
 		for _, v := range set.Spec.TemplateIDs {
 			revision := templateRevisionMap[v]
-			revisions = append(revisions, pbtr.PbTemplateRevision(revision).Spec)
+			revisions = append(revisions, pbtr.PbTemplateRevision(revision, "").Spec)
 		}
 		items = append(items, &pbds.GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec{
 			Name:             set.Spec.Name,
