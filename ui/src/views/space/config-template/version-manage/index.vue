@@ -72,7 +72,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import { ArrowsLeft } from 'bkui-vue/lib/icon';
   import useGlobalStore from '../../../../store/global';
-  import useTemplateStore from '../../../../store/template';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import { ITemplateVersionItem } from '../../../../../types/template';
   import { ICommonQuery } from '../../../../../types/index';
@@ -81,19 +80,14 @@
   import VersionFullTable from './version-full-table.vue';
   import VersionDetailTable from './version-detail/version-detail-table.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
+  import useConfigTemplateStore from '../../../../store/config-template';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
-
-  const getRouteId = (id: string) => {
-    if (id && typeof Number(id) === 'number') {
-      return Number(id);
-    }
-    return 0;
-  };
-
   const { spaceId } = storeToRefs(useGlobalStore());
-  const { versionListPageShouldOpenEdit, versionListPageShouldOpenView } = storeToRefs(useTemplateStore());
+  const configTemplateStore = useConfigTemplateStore();
+  const { createVerson } = storeToRefs(configTemplateStore);
+
   const route = useRoute();
   const router = useRouter();
   const templateName = ref('');
@@ -119,6 +113,13 @@
     { field: 'reviser', label: t('更新人') },
   ];
 
+  const getRouteId = (id: string) => {
+    if (id && typeof Number(id) === 'number') {
+      return Number(id);
+    }
+    return 0;
+  };
+
   const templateId = computed(() => getRouteId(route.params.templateId as string));
   const templateSpaceId = computed(() => getRouteId(route.params.templateSpaceId as string));
   const configTemplateId = computed(() => getRouteId(route.params.configTemplateId as string));
@@ -126,13 +127,11 @@
   onMounted(async () => {
     getTemplateDetail();
     await getVersionList();
-    if (versionListPageShouldOpenView.value) {
-      versionListPageShouldOpenView.value = false;
-      handleOpenDetailTable(versionList.value[0].id, 'view');
-    }
-    if (versionListPageShouldOpenEdit.value) {
-      versionListPageShouldOpenEdit.value = false;
-      handleOpenDetailTable(versionList.value[0].id, 'create');
+    if (createVerson.value) {
+      openSelectVersionDialog();
+      configTemplateStore.$patch((state) => {
+        state.createVerson = false;
+      });
     }
   });
 

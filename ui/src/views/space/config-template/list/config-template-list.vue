@@ -57,7 +57,7 @@
         <TableColumn :title="t('操作')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="op-btns">
-              <bk-button theme="primary" text @click="handleEdit(row.id)">{{ t('编辑') }}</bk-button>
+              <bk-button theme="primary" text @click="handleEdit(row)">{{ t('编辑') }}</bk-button>
               <bk-button
                 theme="primary"
                 :disabled="!row.isAssociated"
@@ -149,10 +149,12 @@
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import UserName from '../../../../components/user-name.vue';
   import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
+  import useConfigTemplateStore from '../../../../store/config-template';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
   const { spaceId } = storeToRefs(useGlobalStore());
+  const configTemplateStore = useConfigTemplateStore();
   const router = useRouter();
 
   const searchField = [
@@ -244,8 +246,19 @@
     isShowAssociatedProcess.value = true;
   };
 
-  const handleEdit = (id: number) => {
-    opTemplate.value.id = id;
+  const handleEdit = (configTemplate: IConfigTemplateItem) => {
+    configTemplateStore.$patch((state) => {
+      state.createVerson = true;
+    });
+    // 跳转到版本管理新建版本
+    router.push({
+      name: 'config-template-version-manage',
+      params: {
+        templateSpaceId: templateSpaceId.value,
+        templateId: configTemplate.attachment.template_id,
+        configTemplateId: configTemplate.id,
+      },
+    });
   };
 
   // 配置下发
