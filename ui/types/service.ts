@@ -33,10 +33,11 @@ export interface ISingleLineKVDIffItem {
 export interface IDiffDetail {
   contentType: 'file' | 'text' | 'singleLineKV';
   id: number | string;
-  is_secret: boolean;
-  secret_hidden: boolean;
+  is_secret?: boolean;
+  secret_hidden?: boolean;
   base: {
     content: string | IFileConfigContentSummary;
+    createTime?: string;
     language?: string;
     variables?: IVariableEditParams[];
     permission?: {
@@ -49,6 +50,7 @@ export interface IDiffDetail {
     content: string | IFileConfigContentSummary;
     language?: string;
     variables?: IVariableEditParams[];
+    createTime?: string;
     permission?: {
       privilege: string;
       user: string;

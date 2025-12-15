@@ -111,6 +111,9 @@ export interface ITemplateProcessItem {
   process_alias: string;
   service_instance: string;
   set: string;
+  status: string;
+  generation_time: string;
+  config_version_id: number;
   revision: {
     creator: string;
     reviser: string;
@@ -126,4 +129,34 @@ export interface ITemplateProcess {
     name: string;
   }[];
   id: number;
+  revisionId: number;
+  revisionName: string;
+}
+
+// 配置生成请求体
+export interface IGenerateConfigParams {
+  configTemplateGroups: {
+    configTemplateId: number;
+    configTemplateVersionId: number;
+    ccProcessIds: number[];
+  }[];
+}
+
+// 配置生成状态
+export interface IGenerateConfigStatus {
+  config_instance_key: string;
+  status: string;
+  task_id: string;
+}
+
+// 配置对比
+export interface ICompareConfigType {
+  oldConfigContent: {
+    content: string;
+    createTime: string;
+  };
+  newConfigContent: {
+    content: string;
+    createTime: string;
+  };
 }

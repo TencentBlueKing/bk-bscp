@@ -1,4 +1,5 @@
 import http from '../request';
+import { IGenerateConfigParams } from '../../types/config-template';
 
 /**
  * 获取拓扑树节点
@@ -114,3 +115,33 @@ export const getBindProcessInstance = (biz_id: string, config_template_id: numbe
  */
 export const getConfigInstanceList = (biz_id: string, query: any) =>
   http.post(`/config/biz_id/${biz_id}/config_instances/list`, query).then((res) => res.data);
+
+/**
+ * 配置对比
+ * @param biz_id
+ */
+export const compareConfigInstance = (biz_id: string, data: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/compare`, data).then((res) => res.data);
+
+/**
+ * 配置生成
+ * @param biz_id
+ * @param data
+ */
+export const generateConfig = (biz_id: string, data: IGenerateConfigParams) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/generate`, data).then((res) => res.data);
+
+/**
+ * 查看配置生成状态
+ * @param biz_id
+ */
+export const getGenerateStatus = (biz_id: string, batch_id: number) =>
+  http.post(`/config/biz_id/${biz_id}/config_generate/status`, { batch_id }).then((res) => res.data);
+
+/**
+ * 配置下发
+ * @param biz_id
+ * @param batch_id
+ */
+export const issueConfig = (biz_id: string, batch_id: number) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/push`, { batch_id }).then((res) => res.data);

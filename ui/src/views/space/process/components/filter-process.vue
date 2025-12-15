@@ -19,7 +19,11 @@
           :placeholder="filter.label"
           multiple
           @change="emits('search', { ...filterValues, env: activeEnv })">
-          <bk-option v-for="item in filter.list" :key="item.id" :value="item.name" :name="item.name">
+          <bk-option
+            v-for="item in filter.list"
+            :key="item.id"
+            :value="filter.value === 'cc_process_ids' ? item.id : item.name"
+            :name="item.name">
             {{ item.name }}
           </bk-option>
         </bk-select>
@@ -73,7 +77,7 @@
     () => props.processIds,
     () => {
       if (props.processIds && props.processIds?.length > 0) {
-        filterValues.value.cc_process_ids = props.processIds;
+        filterValues.value.cc_process_ids = props.processIds.map((id) => Number(id));
         emits('search', { ...filterValues.value, env: activeEnv.value });
       }
     },
@@ -118,7 +122,7 @@
     modules: string[];
     service_instances: string[];
     process_aliases: string[];
-    cc_process_ids: string[];
+    cc_process_ids: number[];
   }>({
     sets: [],
     modules: [],
@@ -161,6 +165,7 @@
   };
 
   const handleInputChange = (key: string, value: string) => {
+    // @ts-ignore
     filterValues.value[key as keyof typeof filterValues.value] = value.split(',');
     emits('search', { ...filterValues.value, env: activeEnv.value });
   };

@@ -115,7 +115,6 @@
   .text-diff-legend {
     display: flex;
     align-items: center;
-    width: 1197.72px;
     height: 47.5px;
     background: #1d1d1d;
     box-shadow: 0 -1px 0 0 #313238;

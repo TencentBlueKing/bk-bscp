@@ -42,7 +42,7 @@
             :base="props.diff.base.content as IFileConfigContentSummary"
             :current-permission="props.diff.current.permission as IPermissionType"
             :base-permission="props.diff.base.permission as IPermissionType"
-            :id="props.id" />
+            :id="props.id as number" />
           <Text
             v-else-if="props.diff.contentType === 'text'"
             :language="props.diff.current.language"
@@ -87,7 +87,7 @@
   const props = defineProps<{
     panelName?: String;
     diff: IDiffDetail;
-    id: number; // 服务ID或模板空间ID
+    id?: number; // 服务ID或模板空间ID
     loading: boolean;
     selectedKvConfigId?: number; // 选中的kv类型配置id
   }>();
