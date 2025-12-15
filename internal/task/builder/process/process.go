@@ -24,13 +24,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
-const (
-	// TaskType 任务类型
-	TaskType = "process_operate"
-	// TaskIndexType 任务索引类型
-	TaskIndexType = "task_batch"
-)
-
 // OperateTask task operate
 type OperateTask struct {
 	*common.Builder
@@ -90,9 +83,20 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
 		// TODO：这里可以增加时间间隔判断，比如cmdb这条数据更新时间再1min以内则不用判断
-		// 1、对比CMDB进程配置
+		// 校验操作是否合法
+		processStep.ValidateOperateProcess(
+			t.bizID,
+			t.batchID,
+			t.processID,
+			t.processInstanceID,
+			t.operateType,
+			t.originalProcManagedStatus,
+			t.originalProcStatus,
+		),
+		// 对比CMDB进程配置
 		processStep.CompareWithCMDBProcessInfo(
 			t.bizID,
+			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.needCompareCMDB,
@@ -100,27 +104,30 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.originalProcStatus,
 		),
 
-		// 2、对比GSE进程状态
+		// 对比GSE进程状态
 		processStep.CompareWithGSEProcessStatus(
 			t.bizID,
+			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
 		),
 
-		// 3、对比GSE进程配置
+		// 对比GSE进程配置
 		processStep.CompareWithGSEProcessConfig(
 			t.bizID,
+			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
 		),
 
-		// 4、执行进程操作
+		// 执行进程操作
 		processStep.OperateProcess(
 			t.bizID,
+			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.operateType,
@@ -128,9 +135,10 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.originalProcStatus,
 		),
 
-		// 5、进程操作完成，更新进程实例状态
+		// 进程操作完成，更新进程实例状态
 		processStep.FinalizeOperateProcess(
 			t.bizID,
+			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.operateType,
@@ -144,8 +152,8 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 func (t *OperateTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
 		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.operateType, t.processInstanceID),
-		TaskType:      TaskType,
-		TaskIndexType: TaskIndexType,                // 任务一个索引类型，比如key，uuid等，
+		TaskType:      common.ProcessOperateTaskType,
+		TaskIndexType: common.TaskIndexType,         // 任务一个索引类型，比如key，uuid等，
 		TaskIndex:     fmt.Sprintf("%d", t.batchID), // 任务索引，代表一批任务
 		Creator:       t.operatorUser,
 	}

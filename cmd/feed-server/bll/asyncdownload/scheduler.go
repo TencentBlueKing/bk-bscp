@@ -45,6 +45,7 @@ var (
 
 // Scheduler scheduled task to process download jobs
 type Scheduler struct {
+	gseService        *gse.Service
 	ctx               context.Context
 	cancel            context.CancelFunc
 	bds               bedis.Client
@@ -57,7 +58,7 @@ type Scheduler struct {
 }
 
 // NewScheduler create a async download scheduler
-func NewScheduler(mc *metric, redLock *lock.RedisLock) (*Scheduler, error) {
+func NewScheduler(mc *metric, redLock *lock.RedisLock, gseService *gse.Service) (*Scheduler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	bds, err := bedis.NewRedisCache(cc.FeedServer().RedisCluster)
 	if err != nil {
@@ -225,14 +226,36 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		})
 	}
 
-	taskID, err := gse.CreateTransferFileTask(a.ctx, a.serverAgentID, a.serverContainerID, sourceDir,
-		cc.FeedServer().GSE.AgentUser, signature, job.TargetFileDir, targetAgents)
+	transferFileReq := &gse.TransferFileReq{
+		TimeOutSeconds: 600,
+		AutoMkdir:      true,
+		UploadSpeed:    0,
+		DownloadSpeed:  0,
+		Tasks: []gse.TransferFileTask{
+			{
+				Source: gse.TransferFileSource{
+					FileName: signature,
+					StoreDir: sourceDir,
+					Agent: gse.TransferFileAgent{
+						BkAgentID:     a.serverAgentID,
+						BkContainerID: a.serverContainerID,
+						User:          cc.FeedServer().GSE.AgentUser,
+					},
+				},
+				Target: gse.TransferFileTarget{
+					FileName: signature,
+					StoreDir: job.TargetFileDir,
+					Agents:   targetAgents,
+				},
+			},
+		},
+	}
+	resp, err := a.gseService.AsyncExtensionsTransferFile(a.ctx, transferFileReq)
 	if err != nil {
 		return fmt.Errorf("create gse transfer file task failed, %s", err.Error())
 	}
-
 	// 4. 更新任务状态
-	job.GSETaskID = taskID
+	job.GSETaskID = resp.Result.TaskID
 
 	if err := a.updateAsyncDownloadJobStatus(a.ctx, job); err != nil {
 		return err
@@ -392,7 +415,10 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 				BkContainerID: content.DestContainerID,
 			})
 		}
-		if _, err := gse.TerminateTransferFileTask(a.ctx, job.JobID, timeoutTargets); err != nil {
+		if _, err := a.gseService.AsyncTerminateTransferFile(a.ctx, &gse.TerminateTransferFileTaskReq{
+			TaskID: job.GSETaskID,
+			Agents: timeoutTargets,
+		}); err != nil {
 			logs.Errorf("cancel timeout transfer file task %s failed, err: %s", job.JobID, err.Error())
 		}
 		return nil
@@ -404,7 +430,9 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 }
 
 func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
-	gseTaskResults, err := gse.TransferFileResult(a.ctx, job.GSETaskID)
+	resp, err := a.gseService.GetExtensionsTransferFileResult(a.ctx, &gse.GetTransferFileResultReq{
+		TaskID: job.GSETaskID,
+	})
 	if err != nil {
 		return err
 	}
@@ -412,7 +440,7 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 	// ! make sure that success + failed + downloading + timeout = all targets
 	// success/failed/timeout is the final status, downloading is the intermediate status
 	// so when set a target as success/failed/timeout, need to delete if from downloading list
-	for _, result := range gseTaskResults {
+	for _, result := range resp.Result {
 		// upload result would not append to the targets list
 		// if upload task failed, set all the task to failed
 		// case in gse, if upload failed, all the download tasks must be failed

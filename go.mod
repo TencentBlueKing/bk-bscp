@@ -11,7 +11,7 @@ replace (
 require (
 	github.com/RichardKnop/machinery/v2 v2.0.16
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20250928112818-5b9818cc2e76
-	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20251104021313-4a3025811231
+	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20251106062355-b5fb6f6fd54b
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v1.0.1
 	github.com/bluele/gcache v0.0.2
@@ -260,7 +260,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/hints v1.1.2 // indirect
 	k8s.io/api v0.29.3
-	k8s.io/apimachinery v0.29.3 // indirect
+	k8s.io/apimachinery v0.29.3
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	moul.io/http2curl v1.0.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

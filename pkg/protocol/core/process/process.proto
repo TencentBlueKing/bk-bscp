@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
 import "pkg/protocol/core/process-instance/process_instance.proto";
+import "pkg/protocol/core/task_batch/task_batch.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -47,6 +48,8 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
   string managed_status = 14
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
+  repeated uint32 bind_template_ids = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定模板ID" }];
 }
 
 message ProcessAttachment {
@@ -60,15 +63,16 @@ message ProcessAttachment {
   uint32 host_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "主机ID" }];
   uint32 cloud_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cloud_id" }];
   string agent_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "agent_id" }];
+  uint32 process_template_id = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID" }];
 }
 
 // ProcessSearchCondition 进程搜索条件
 message ProcessSearchCondition {
-  repeated string set_names = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
-  repeated string module_names = 2
+  repeated string sets = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
+  repeated string modules = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
-  repeated string service_instance_names = 3
+  repeated string service_instances = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
   repeated uint32 cc_process_ids = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
@@ -83,10 +87,24 @@ message ProcessSearchCondition {
   repeated string cc_sync_statuses = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
   string environment = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+  repeated uint32 process_template_ids = 11
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID" }];
 }
 
 // ProcessFilterOption 进程过滤选项
 message ProcessFilterOption {
   uint32 id = 1;
   string name = 2;
+}
+
+// FilterOptions 查询过滤选项
+message FilterOptions {
+  repeated pbtb.Choice inner_ips = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内网IP" }];
+  repeated pbtb.Choice process_statuses = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态" }];
+  repeated pbtb.Choice managed_statuses = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态" }];
+  repeated pbtb.Choice cc_sync_statuses = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态" }];
 }

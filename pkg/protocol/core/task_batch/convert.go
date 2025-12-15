@@ -36,9 +36,9 @@ func PbTaskBatch(tb *table.TaskBatch) *TaskBatch {
 		result.TaskAction = string(tb.Spec.TaskAction)
 		result.Status = string(tb.Spec.Status)
 
-		// 解析 TaskData 从 JSON 字符串到 ProcessTaskData 对象
-		if taskData, err := tb.Spec.GetProcessTaskData(); err != nil {
-			logs.Errorf("get process task data failed, err: %v, task_data: %s", err, tb.Spec.TaskData)
+		// 解析 TaskData 从 JSON 字符串到 TaskExecutionData 对象
+		if taskData, err := tb.Spec.GetTaskExecutionData(); err != nil {
+			logs.Errorf("get task execution data failed, err: %v, task_data: %s", err, tb.Spec.TaskData)
 		} else if taskData != nil {
 			result.TaskData = &ProcessTaskData{
 				Environment: taskData.Environment,

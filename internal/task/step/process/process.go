@@ -30,9 +30,39 @@ const (
 	MaxTries = 3
 )
 
+// ValidateOperateProcess 校验操作是否合法
+func ValidateOperateProcess(
+	bizID uint32,
+	batchID uint32,
+	processID uint32,
+	processInstanceID uint32,
+	operateType table.ProcessOperateType,
+	originalProcManagedStatus table.ProcessManagedStatus,
+	originalProcStatus table.ProcessStatus,
+) *types.Step {
+	logs.V(3).Infof("validate operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
+		bizID, processID, processInstanceID, operateType)
+	validate := types.NewStep(process.ValidateOperateProcessStepName.String(),
+		process.ValidateOperateProcessStepName.String()).
+		SetAlias("validate_operate_process").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(0) // 校验操作是否合法，不需要重试
+	lo.Must0(validate.SetPayload(process.OperatePayload{
+		BizID:                     bizID,
+		BatchID:                   batchID,
+		ProcessID:                 processID,
+		ProcessInstanceID:         processInstanceID,
+		OperateType:               operateType,
+		OriginalProcManagedStatus: originalProcManagedStatus,
+		OriginalProcStatus:        originalProcStatus,
+	}))
+	return validate
+}
+
 // CompareWithCMDBProcessInfo 对比CMDB进程信息
 func CompareWithCMDBProcessInfo(
 	bizID uint32,
+	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
 	needCompareCMDB bool,
@@ -50,6 +80,7 @@ func CompareWithCMDBProcessInfo(
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		BizID:                     bizID,
+		BatchID:                   batchID,
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		NeedCompareCMDB:           needCompareCMDB,
@@ -63,6 +94,7 @@ func CompareWithCMDBProcessInfo(
 // CompareWithGSEProcessStatus 对比GSE进程状态
 func CompareWithGSEProcessStatus(
 	bizID uint32,
+	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
@@ -79,6 +111,7 @@ func CompareWithGSEProcessStatus(
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		BizID:                     bizID,
+		BatchID:                   batchID,
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
@@ -91,6 +124,7 @@ func CompareWithGSEProcessStatus(
 // CompareWithGSEProcessConfig 对比GSE进程配置
 func CompareWithGSEProcessConfig(
 	bizID uint32,
+	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
@@ -107,6 +141,7 @@ func CompareWithGSEProcessConfig(
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		BizID:                     bizID,
+		BatchID:                   batchID,
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
@@ -119,6 +154,7 @@ func CompareWithGSEProcessConfig(
 // OperateProcess 进程操作
 func OperateProcess(
 	bizID uint32,
+	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
 	operateType table.ProcessOperateType,
@@ -131,10 +167,11 @@ func OperateProcess(
 	operate := types.NewStep(process.OperateProcessStepName.String(), process.OperateProcessStepName.String()).
 		SetAlias("operate_process").
 		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxTries(0) // 进程操作只操作一次，避免重复操作
 
 	lo.Must0(operate.SetPayload(process.OperatePayload{
 		BizID:                     bizID,
+		BatchID:                   batchID,
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OperateType:               operateType,
@@ -147,6 +184,7 @@ func OperateProcess(
 // FinalizeOperateProcess 进程操作完成
 func FinalizeOperateProcess(
 	bizID uint32,
+	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
 	operateType table.ProcessOperateType,
@@ -163,6 +201,7 @@ func FinalizeOperateProcess(
 
 	lo.Must0(finalize.SetPayload(process.OperatePayload{
 		BizID:                     bizID,
+		BatchID:                   batchID,
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OperateType:               operateType,

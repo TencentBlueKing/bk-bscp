@@ -18,15 +18,9 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
 	gseSvc "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/gse"
-)
-
-const (
-	// TaskType 同步cmdb和gse
-	TaskType = "sync_cmdb_gse"
-	// TaskIndexType 任务索引类型
-	TaskIndexType = "biz_id"
 )
 
 type syncCMDBGSETask struct {
@@ -63,8 +57,8 @@ func (s *syncCMDBGSETask) Steps() ([]*types.Step, error) {
 func (s *syncCMDBGSETask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
 		TaskName:      BuildSyncCMDBGSETaskName(s.bizID),
-		TaskType:      TaskType,
-		TaskIndexType: TaskIndexType,
+		TaskType:      common.SyncCMDBGSETaskType,
+		TaskIndexType: common.BizIDTaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", s.bizID),
 		Creator:       s.operatorUser,
 	}

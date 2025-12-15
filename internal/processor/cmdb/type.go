@@ -25,10 +25,11 @@ type Set struct {
 
 // Module 模块
 type Module struct {
-	ID      int
-	Name    string
-	Host    []Host
-	SvcInst []SvcInst
+	ID                int
+	ServiceTemplateID int
+	Name              string
+	Host              []Host
+	SvcInst           []SvcInst
 }
 
 // Host 主机
@@ -49,10 +50,12 @@ type SvcInst struct {
 
 // ProcInst 进程实例
 type ProcInst struct {
-	ID      int
-	HostID  int
-	Name    string
-	ProcNum int
+	ID                int
+	HostID            int
+	ProcessTemplateID int
+	Name              string
+	FuncName          string
+	ProcNum           int
 	table.ProcessInfo
 }
 

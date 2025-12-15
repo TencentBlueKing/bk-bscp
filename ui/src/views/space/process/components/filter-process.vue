@@ -3,10 +3,10 @@
     <div class="env-tabs">
       <div
         v-for="env in envList"
-        :key="env"
-        :class="['env', { active: activeEnv === env }]"
-        @click="handleChangeEnv(env)">
-        {{ env }}
+        :key="env.value"
+        :class="['env', { active: activeEnv === env.value }]"
+        @click="handleChangeEnv(env.value)">
+        {{ env.label }}
       </div>
     </div>
     <div class="filter">
@@ -18,7 +18,7 @@
           :key="filter.value"
           :placeholder="filter.label"
           multiple
-          @change="emits('search', { ...filterValues, env: activeEnv })">
+          @change="emits('search', { ...filterValues, environment: activeEnv })">
           <bk-option
             v-for="item in filter.list"
             :key="item.id"
@@ -33,7 +33,7 @@
       </template>
       <template v-else>
         <bk-input
-          v-model="filterValues[filter.value as keyof typeof filterValues]"
+          :model-value="filterValues[filter.value as keyof typeof filterValues]"
           v-for="filter in filterList"
           :key="filter.value"
           :class="['bk-input', { issued: isIssued }]"
@@ -85,9 +85,31 @@
 
   const envList = computed(() => {
     if (props.isIssued) {
-      return [t('正式'), t('体验')];
+      return [
+        {
+          label: t('正式'),
+          value: '3',
+        },
+        {
+          label: t('体验'),
+          value: '2',
+        },
+      ];
     }
-    return [t('正式'), t('体验'), t('测试')];
+    return [
+      {
+        label: t('正式'),
+        value: '3',
+      },
+      {
+        label: t('体验'),
+        value: '2',
+      },
+      {
+        label: t('测试'),
+        value: '1',
+      },
+    ];
   });
   const filterList = ref<IProcessFilterItem[]>([
     {
@@ -116,7 +138,7 @@
       list: [],
     },
   ]);
-  const activeEnv = ref(t('正式'));
+  const activeEnv = ref('3');
   const filterValues = ref<{
     sets: string[];
     modules: string[];
@@ -148,9 +170,9 @@
     }
   };
 
-  const handleChangeEnv = (env: string) => {
-    activeEnv.value = env;
-    emits('search', { ...filterValues.value, env });
+  const handleChangeEnv = (environment: string) => {
+    activeEnv.value = environment;
+    emits('search', { ...filterValues.value, environment });
   };
 
   const handleClearFilter = () => {
@@ -161,13 +183,13 @@
       process_aliases: [],
       cc_process_ids: [],
     };
-    emits('search', { ...filterValues.value, env: activeEnv.value });
+    emits('search', { ...filterValues.value, environment: activeEnv.value });
   };
 
   const handleInputChange = (key: string, value: string) => {
     // @ts-ignore
-    filterValues.value[key as keyof typeof filterValues.value] = value.split(',');
-    emits('search', { ...filterValues.value, env: activeEnv.value });
+    filterValues.value[key as keyof typeof filterValues.value] = value.length > 0 ? value.split(',') : [];
+    emits('search', { ...filterValues.value, environment: activeEnv.value });
   };
 
   defineExpose({

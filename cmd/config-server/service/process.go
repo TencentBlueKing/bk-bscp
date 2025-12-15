@@ -33,10 +33,10 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 	}
 
 	resp, err := s.client.DS.OperateProcess(grpcKit.RpcCtx(), &pbds.OperateProcessReq{
-		BizId:       req.GetBizId(),
-		ProcessIds:  req.GetProcessIds(),
-		InstId:      req.GetInstId(),
-		OperateType: req.GetOperateType(),
+		BizId:             req.GetBizId(),
+		ProcessIds:        req.GetProcessIds(),
+		ProcessInstanceId: req.GetProcessInstanceId(),
+		OperateType:       req.GetOperateType(),
 	})
 	if err != nil {
 		return nil, err
@@ -70,8 +70,9 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	}
 
 	return &pbcs.ListProcessResp{
-		Count:   resp.Count,
-		Process: resp.GetProcess(),
+		Count:         resp.Count,
+		Process:       resp.GetProcess(),
+		FilterOptions: resp.GetFilterOptions(),
 	}, nil
 }
 

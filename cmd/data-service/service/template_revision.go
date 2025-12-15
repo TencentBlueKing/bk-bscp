@@ -124,9 +124,24 @@ func (s *Service) ListTemplateRevisions(ctx context.Context,
 		return nil, err
 	}
 
+	templateIDs := []uint32{}
+	for _, v := range details {
+		templateIDs = append(templateIDs, v.Attachment.TemplateID)
+	}
+
+	configTemplates, err := s.dao.ConfigTemplate().ListAllByTemplateIDs(kt, req.BizId, templateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	templateNames := map[uint32]string{}
+	for _, v := range configTemplates {
+		templateNames[v.Attachment.TemplateID] = v.Spec.Name
+	}
+
 	resp := &pbds.ListTemplateRevisionsResp{
 		Count:   uint32(count),
-		Details: pbtr.PbTemplateRevisions(details),
+		Details: pbtr.PbTemplateRevisions(details, templateNames),
 	}
 	return resp, nil
 }
@@ -164,7 +179,7 @@ func (s *Service) ListTemplateRevisionsByIDs(ctx context.Context, req *pbds.List
 	}
 
 	resp := &pbds.ListTemplateRevisionsByIDsResp{
-		Details: pbtr.PbTemplateRevisions(details),
+		Details: pbtr.PbTemplateRevisions(details, map[uint32]string{}),
 	}
 	return resp, nil
 }

@@ -213,6 +213,15 @@ const (
 	TicketSuspendedStatus = "SUSPENDED"
 	// TicketRevokedStatus 被撤销
 	TicketRevokedStatus = "REVOKED"
+
+	// StatusNeverSynced 从未同步过
+	StatusNeverSynced = "NeverSynced"
+	// StatusSuccess 同步成功
+	StatusSuccess = "Success"
+	// StatusSyncing 同步中
+	StatusRunning = "Running"
+	// StatusFailure 同步失败
+	StatusFailure = "Failure"
 )
 
 // 操作记录资源实例相关
@@ -275,4 +284,6 @@ const (
 	ConfigRetryClientIp = "config_retry_client_ip: %s"
 	// OperateObject 等 xx 个对象进行操作
 	OperateObject = "operate_objects: %d" // nolint
+	// ConfigTemplateName 配置模板名称
+	ConfigTemplateName = "config_template_name: %s"
 )

@@ -16,6 +16,8 @@ package gse
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 // GESResponse 通用响应结构
@@ -62,14 +64,14 @@ const (
 		8:重新加载进程（reload）,调用spec.control中的reload_cmd启动进程；
 		9:杀死进程（kill）,调用spec.control中的kill_cmd启动进程，杀死成功会取消托管
 	*/
-	OpTypeStart      = 0
-	OpTypeStop       = 1
-	OpTypeQuery      = 2
-	OpTypeRegister   = 3
-	OpTypeUnregister = 4
-	OpTypeRestart    = 7
-	OpTypeReload     = 8
-	OpTypeKill       = 9
+	OpTypeStart      OpType = 0
+	OpTypeStop       OpType = 1
+	OpTypeQuery      OpType = 2
+	OpTypeRegister   OpType = 3
+	OpTypeUnregister OpType = 4
+	OpTypeRestart    OpType = 7
+	OpTypeReload     OpType = 8
+	OpTypeKill       OpType = 9
 )
 
 const (
@@ -113,29 +115,49 @@ func BuildNamespace(bizID uint32) string {
 	return fmt.Sprintf("%s%d", NamespacePrefix, bizID)
 }
 
-// BuildProcessName 构建 GSE 进程名称
-// 支持可选的 processInstanceID 参数：
-//   - 如果提供 processInstanceID，格式为：{alias}_{processInstanceID}
-//     示例：http-server-test1_1
-//   - 如果不提供 processInstanceID，格式为：{alias}
-//     示例：http-server-test1
-func BuildProcessName(alias string, processInstanceID ...uint32) string {
-	if len(processInstanceID) > 0 && processInstanceID[0] > 0 {
-		return fmt.Sprintf("%s_%d", alias, processInstanceID[0])
-	}
-	return alias
+// BuildProcessName 构建下发的进程别名
+func BuildProcessName(alias string, hostInstSeq uint32) string {
+	return fmt.Sprintf("%s_%d", alias, hostInstSeq)
 }
 
 // BuildResultKey 构建 GSE 进程操作结果的查询 key
-// 支持可选的 processInstanceID 参数：
-//   - 如果提供 processInstanceID，格式为：{agentID}:{namespace}:{alias}_{processInstanceID}
-//     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1_1
-//   - 如果不提供 processInstanceID，格式为：{agentID}:{namespace}:{alias}
-//     示例：020000000242010a00002f17521298676503:GSEKIT_BIZ_3:http-server-test1
-func BuildResultKey(agentID string, bizID uint32, alias string, processInstanceID ...uint32) string {
+func BuildResultKey(agentID string, bizID uint32, alias string, hostInstSeq uint32) string {
 	namespace := BuildNamespace(bizID)
-	processName := BuildProcessName(alias, processInstanceID...)
+	processName := BuildProcessName(alias, hostInstSeq)
 	return fmt.Sprintf("%s:%s:%s", agentID, namespace, processName)
+}
+
+// ConvertProcessOperateTypeToOpType 将 ProcessOperateType 转换为 GSE OpType
+// GSE 操作类型定义：
+// 0: 启动进程（start）- 调用 spec.control 中的 start_cmd，启动成功会注册托管
+// 1: 停止进程（stop）- 调用 spec.control 中的 stop_cmd，停止成功会取消托管
+// 2: 进程状态查询
+// 3: 注册托管进程 - 令 gse_agent 对该进程进行托管
+// 4: 取消托管进程 - 令 gse_agent 对该进程不再托管
+// 7: 重启进程（restart）- 调用 spec.control 中的 restart_cmd
+// 8: 重新加载进程（reload）- 调用 spec.control 中的 reload_cmd
+// 9: 杀死进程（kill）- 调用 spec.control 中的 kill_cmd，杀死成功会取消托管
+func ConvertProcessOperateTypeToOpType(operateType table.ProcessOperateType) (OpType, error) {
+	switch operateType {
+	case table.StartProcessOperate:
+		return OpTypeStart, nil
+	case table.StopProcessOperate:
+		return OpTypeStop, nil
+	case table.QueryStatusProcessOperate:
+		return OpTypeQuery, nil
+	case table.RegisterProcessOperate:
+		return OpTypeRegister, nil
+	case table.UnregisterProcessOperate:
+		return OpTypeUnregister, nil
+	case table.RestartProcessOperate:
+		return OpTypeRestart, nil
+	case table.ReloadProcessOperate:
+		return OpTypeReload, nil
+	case table.KillProcessOperate:
+		return OpTypeKill, nil
+	default:
+		return OpType(0), fmt.Errorf("unsupported operation type: %s", operateType)
+	}
 }
 
 // IsSuccess 判断错误码是否表示成功
@@ -211,45 +233,6 @@ type ProcessMonitorPolicy struct {
 	StartCheckSecs int `json:"start_check_secs,omitempty"` // 启动后检查存活的时间（秒），默认 5（可选）
 	StopCheckSecs  int `json:"stop_check_secs,omitempty"`  // 停止后检查存活的时间（秒）(可选)
 	OpTimeout      int `json:"op_timeout,omitempty"`       // 命令执行超时时间（秒），默认 60（可选）
-}
-
-// FileTaskRequest 启动文件分发任务的请求参数
-type FileTaskReq struct {
-	Tasks          []FileTask `json:"tasks"`                     // 文件任务配置列表
-	TimeoutSeconds int        `json:"timeout_seconds,omitempty"` // 任务超时时长，单位秒，>0，默认1000
-	AutoMkdir      bool       `json:"auto_mkdir,omitempty"`      // 是否自动创建目录，默认 true
-	UploadSpeed    int        `json:"upload_speed,omitempty"`    // 上传速度限制 (MB)，0 表示无限制
-	DownloadSpeed  int        `json:"download_speed,omitempty"`  // 下载速度限制 (MB)，0 表示无限制
-}
-
-// FileTask 单个文件传输任务
-type FileTask struct {
-	Source FileSource `json:"source"` // 源文件定义
-	Target FileTarget `json:"target"` // 目标文件定义
-}
-
-// FileSource 文件源定义
-type FileSource struct {
-	FileName string    `json:"file_name"`     // 源文件名，例如 xxxx.tar.gz
-	StoreDir string    `json:"store_dir"`     // 源文件所在目录，例如 /data/store/
-	MD5      string    `json:"md5,omitempty"` // 文件 MD5，可选，传输完成后校验
-	Agent    FileAgent `json:"agent"`         // 源端 Agent 信息
-}
-
-// FileTarget 文件传输目标定义
-type FileTarget struct {
-	FileName   string      `json:"file_name,omitempty"`  // 传输后的文件名，默认与源文件一致
-	StoreDir   string      `json:"store_dir,omitempty"`  // 传输后的存放目录，默认与源目录一致
-	Owner      string      `json:"owner,omitempty"`      // 文件所有者，默认空
-	Permission int         `json:"permission,omitempty"` // 文件权限，整型表示，默认 0
-	Agents     []FileAgent `json:"agents"`               // 目标 Agent 信息列表
-}
-
-// FileAgent Agent 定义
-type FileAgent struct {
-	BkAgentID string `json:"bk_agent_id"`   // Agent ID，最长不超过64字符
-	User      string `json:"user"`          // 目标机器上存在的用户名
-	Pwd       string `json:"pwd,omitempty"` // 对应用户名的密码，可选
 }
 
 // TaskResp xxx
@@ -617,4 +600,18 @@ type ProcessInstance struct {
 	RegisterTime  int64   `json:"register_time"`   // 注册时间
 	LastStartTime int64   `json:"last_start_time"` // 最后启动时间
 	ReportTime    int64   `json:"report_time"`     // 上报时间
+}
+
+// StoppingContent 停止状态返回的内容
+type StoppingContent struct {
+	Value []StoppingItem `json:"value"`
+}
+
+type StoppingItem struct {
+	ProcName   string `json:"procName"`
+	SetupPath  string `json:"setupPath"`
+	FuncID     string `json:"funcID"`
+	InstanceID string `json:"instanceID"`
+	Result     string `json:"result"`
+	IsAuto     bool   `json:"isAuto"`
 }

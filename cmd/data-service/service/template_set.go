@@ -484,7 +484,7 @@ func (s *Service) ListTemplateSetsAndRevisions(ctx context.Context, req *pbds.Li
 	templateRevisionsMap := make(map[uint32][]*pbtr.TemplateRevision, 0)
 	for _, v := range revisions {
 		templateRevisionsMap[v.Attachment.TemplateID] = append(templateRevisionsMap[v.Attachment.TemplateID],
-			pbtr.PbTemplateRevision(v))
+			pbtr.PbTemplateRevision(v, ""))
 	}
 
 	result := make([]*pbds.ListTemplateSetsAndRevisionsResp_Detail, 0)

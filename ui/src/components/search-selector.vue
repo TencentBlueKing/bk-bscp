@@ -35,6 +35,7 @@
     children?: any[];
     placeholder?: string;
     async?: boolean;
+    multiple?: boolean;
   }
 
   interface ISearchItem {
@@ -76,6 +77,7 @@
           children: item.children,
           placeholder: t('请选择/请输入'),
           async: false,
+          multiple: item.children && item.children.length > 0,
         };
       });
     },
@@ -100,10 +102,16 @@
 
   const handleChange = (val: ISearchItem[]) => {
     searchValue.value = val;
-    const searchQuery: { [key: string]: string } = {};
-    val.forEach((item) => {
-      searchQuery[item.id] = item.values.map((value) => value.id).join(',');
-    });
+
+    // 多选模式下需要已数组格式搜索
+    const searchQuery = val.reduce<Record<string, string | string[]>>((acc, item) => {
+      const target = data.value.find((filter) => filter.id === item.id);
+      const ids = item.values.map((v) => v.id);
+
+      acc[item.id] = target?.multiple ? ids : ids.join(',');
+      return acc;
+    }, {});
+
     emits('search', searchQuery);
   };
 

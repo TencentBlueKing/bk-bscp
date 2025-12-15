@@ -19,15 +19,13 @@ import (
 )
 
 var (
-	operateProcMulti           = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_multi"
-	updateProcInfo             = "%s/api/v2/proc/update_proc_info"
-	asyncTransferFile          = "%s/api/v2/task/async_transfer_file"
-	asyncTerminateTransferFile = "%s/api/v2/task/async_terminate_transfer_file"
-	getTaskState               = "%s/api/v2/task/get_task_state"
-	getProcOperateResultV2     = "%s/api/bk-gse/prod/api/v2/proc/get_proc_operate_result_v2"
-	getProcStatusV2            = "%s/api/bk-gse/prod/api/v2/proc/get_proc_status_v2"
-	syncProcStatus             = "%s/api/bk-gse/prod/api/v2/proc/sync_proc_status"
-	operateProcV2              = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_v2"
+	operateProcMulti       = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_multi"
+	updateProcInfo         = "%s/api/v2/proc/update_proc_info"
+	getTaskState           = "%s/api/v2/task/get_task_state"
+	getProcOperateResultV2 = "%s/api/bk-gse/prod/api/v2/proc/get_proc_operate_result_v2"
+	getProcStatusV2        = "%s/api/bk-gse/prod/api/v2/proc/get_proc_status_v2"
+	syncProcStatus         = "%s/api/bk-gse/prod/api/v2/proc/sync_proc_status"
+	operateProcV2          = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_v2"
 )
 
 // OperateProcMulti 批量进程操作
@@ -58,40 +56,6 @@ func (gse *Service) UpdateProcInfo(ctx context.Context, req *UpdateProcInfoReq) 
 
 	UpdateProcInfoResp := make(map[string]ProcResult, 0)
 	if err := resp.Decode(&UpdateProcInfoResp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-// AsyncTransferFile 文件传输
-func (gse *Service) AsyncTransferFile(ctx context.Context, req *FileTaskReq) (*GESResponse, error) {
-	url := fmt.Sprintf(asyncTransferFile, gse.host)
-
-	resp := new(GESResponse)
-	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
-		return nil, err
-	}
-
-	var taskResp TaskResp
-	if err := resp.Decode(&taskResp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-// AsyncTerminateTransferFile 终止文件任务执行
-func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req *TaskReq) (*GESResponse, error) {
-	url := fmt.Sprintf(asyncTerminateTransferFile, gse.host)
-
-	resp := new(GESResponse)
-	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
-		return nil, err
-	}
-
-	var taskResp TaskResp
-	if err := resp.Decode(&taskResp); err != nil {
 		return nil, err
 	}
 

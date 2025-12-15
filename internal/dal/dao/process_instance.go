@@ -30,6 +30,18 @@ type ProcessInstance interface {
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 	// GetByProcessIDs gets process instances by proccessIDs.
 	GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
+	// GetCountTx 查询指定进程的实例数量.
+	GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error)
+	// Delete ..
+	Delete(kit *kit.Kit, bizID, id uint32) error
+	// GetMaxModuleInstSeqTx 查询模块下所有进程的最大 ModuleInstSeq
+	GetMaxModuleInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// GetMaxHostInstSeqTx 查询主机下所有进程的最大 HostInstSeq
+	GetMaxHostInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
+	DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error
+	// BatchUpdateWithTx batch updates process instances.
+	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -40,13 +52,99 @@ type processInstanceDao struct {
 	auditDao AuditDao
 }
 
+// BatchUpdateWithTx implements ProcessInstance.
+func (dao *processInstanceDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+
+	// 按批次更新，每次最多 500 条
+	batchSize := 500
+	for i := 0; i < len(data); i += batchSize {
+		end := min(i+batchSize, len(data))
+		batch := data[i:end]
+
+		if err := q.Save(batch...); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DeleteStoppedUnmanagedWithTx deletes process instances that are stopped or unmanaged.
+func (dao *processInstanceDao) DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
+	m := dao.genQ.ProcessInstance
+
+	_, err := tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...),
+			m.Status.In(table.ProcessStatusStopped.String(), ""), m.ManagedStatus.In(table.ProcessManagedStatusUnmanaged.String(), "")).
+		Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetCountTx implements ProcessInstance.
+func (dao *processInstanceDao) GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error) {
+	m := dao.genQ.ProcessInstance
+	return tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
+		Count()
+}
+
+// GetMaxModuleInstSeqTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxModuleInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+	var result struct {
+		MaxID int `gorm:"column:max_id"`
+	}
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.ModuleInstSeq.Max().As("max_id")).Scan(&result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxID, nil
+}
+
+// GetMaxHostInstSeqTx implements ProcessInstance.
+func (dao *processInstanceDao) GetMaxHostInstSeqTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error) {
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+	var result struct {
+		MaxID int `gorm:"column:max_id"`
+	}
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Select(m.HostInstSeq.Max().As("max_id")).Scan(&result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxID, nil
+}
+
+// Delete implements ProcessInstance.
+func (dao *processInstanceDao) Delete(kit *kit.Kit, bizID uint32, id uint32) error {
+	m := dao.genQ.ProcessInstance
+	_, err := dao.genQ.ProcessInstance.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetByProcessIDs implements ProcessInstance.
 func (dao *processInstanceDao) GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) (
 	[]*table.ProcessInstance, error) {
 	m := dao.genQ.ProcessInstance
 	q := dao.genQ.ProcessInstance.WithContext(kit.Ctx)
 
-	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Find()
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).Order(m.HostInstSeq).Find()
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +160,7 @@ func (dao *processInstanceDao) Update(kit *kit.Kit, processInstance *table.Proce
 	if _, err := q.Where(m.ID.Eq(processInstance.ID)).Updates(processInstance); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -101,7 +200,6 @@ func (dao *processInstanceDao) GetByID(kit *kit.Kit, bizID, id uint32) (*table.P
 
 // BatchCreateWithTx implements ProcessInstance.
 func (dao *processInstanceDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error {
-	// generate an config item id and update to config item.
 	if len(data) == 0 {
 		return nil
 	}

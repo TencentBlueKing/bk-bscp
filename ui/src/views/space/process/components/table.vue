@@ -20,11 +20,12 @@
       :row-class-name="getRowClassName"
       :loading="tableLoading"
       :max-height="tableMaxHeight"
+      :expanded-row-keys="expandedRowKeys"
       @select-change="handleSelectChange">
       <TableColumn col-key="row-select" type="multiple" width="32"></TableColumn>
       <TableColumn :title="t('集群')" col-key="spec.set_name" width="183">
         <template #default="{ row }: { row: IProcessItem }">
-          <bk-button text theme="primary">{{ row.spec.set_name }}</bk-button>
+          <bk-button text theme="primary" @click="handleExpandRow(row)">{{ row.spec.set_name }}</bk-button>
         </template>
       </TableColumn>
       <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis />
@@ -41,9 +42,7 @@
       <TableColumn col-key="spec.status" :title="t('进程状态')">
         <template #default="{ row }: { row: IProcessItem }">
           <div v-if="row.spec.status" class="process-status">
-            <Spinner
-              v-if="['running', 'starting', 'restarting', 'reloading'].includes(row.spec.status)"
-              class="spinner-icon" />
+            <Spinner v-if="['starting', 'restarting', 'reloading'].includes(row.spec.status)" class="spinner-icon" />
             <span v-else :class="['dot', row.spec.status]"></span>
             {{ PROCESS_STATUS_MAP[row.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
           </div>
@@ -53,14 +52,17 @@
       <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152">
         <template #default="{ row }: { row: IProcessItem }">
           <bk-tag v-if="row.spec.managed_status" :theme="getManagedStatusTheme(row.spec.managed_status)">
-            {{ PROCESS_MANAGED_STATUS_MAP[row.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
+            <span class="process-status">
+              <Spinner v-if="['starting', 'stopping'].includes(row.spec.managed_status)" class="spinner-icon" />
+              {{ PROCESS_MANAGED_STATUS_MAP[row.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP] }}
+            </span>
           </bk-tag>
           <span v-else>--</span>
         </template>
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')">
         <template #default="{ row }: { row: IProcessItem }">
-          {{ datetimeFormat(row.spec.cc_sync_updated_at) }}
+          {{ timeAgo(row.spec.cc_sync_updated_at) }}
         </template>
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')">
@@ -70,7 +72,7 @@
           </span>
         </template>
       </TableColumn>
-      <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
+      <TableColumn :title="t('操作')" :width="220" fixed="right" col-key="operation">
         <template #default="{ row }: { row: IProcessItem }">
           <div class="op-btns">
             <bk-badge v-if="row.spec.cc_sync_status === 'updated'" position="top-right" theme="danger" dot>
@@ -102,11 +104,15 @@
       </TableColumn>
       <template #expandedRow="{ row }: { row: IProcessItem }">
         <div class="second-table">
-          <PrimaryTable :data="row.proc_inst" row-key="id" :row-class-name="getSecondTableRowClass">
-            <TableColumn col-key="spec.inst_id" :title="t('实例')">
+          <PrimaryTable
+            class="instance-table"
+            :data="row.proc_inst"
+            row-key="id"
+            :row-class-name="getSecondTableRowClass">
+            <TableColumn col-key="spec.host_inst_seq" :title="t('实例')">
               <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
                 <div class="instance">
-                  <span>{{ row.spec.service_name }}</span>
+                  <span>{{ rowData.spec.name }}</span>
                   <span
                     v-if="rowIndex + 1 > rowData.num!"
                     class="error-icon"
@@ -116,17 +122,17 @@
                 </div>
               </template>
             </TableColumn>
-            <TableColumn col-key="spec.local_inst_id">
+            <TableColumn col-key="spec.host_inst_seq">
               <template #title>
                 <span class="tips-title" v-bk-tooltips="{ content: t('主机下唯一标识'), placement: 'top' }">
-                  LocalInstID
+                  HostInstSeq
                 </span>
               </template>
             </TableColumn>
-            <TableColumn col-key="spec.inst_id">
+            <TableColumn col-key="spec.module_inst_seq">
               <template #title>
                 <span class="tips-title" v-bk-tooltips="{ content: t('模块下唯一标识'), placement: 'top' }">
-                  InstID
+                  ModuleInstSeq
                 </span>
               </template>
             </TableColumn>
@@ -134,7 +140,7 @@
               <template #default="{ row: rowData }: { row: IProcInst }">
                 <div v-if="rowData.spec.status" class="process-status">
                   <Spinner
-                    v-if="['running', 'starting', 'restarting', 'reloading'].includes(rowData.spec.status)"
+                    v-if="['starting', 'restarting', 'reloading'].includes(rowData.spec.status)"
                     class="spinner-icon" />
                   <span v-else :class="['dot', rowData.spec.status]"></span>
                   {{ PROCESS_STATUS_MAP[rowData.spec.status as keyof typeof PROCESS_STATUS_MAP] }}
@@ -145,20 +151,31 @@
             <TableColumn col-key="spec.managed_status" :title="t('托管状态')">
               <template #default="{ row: rowData }: { row: IProcInst }">
                 <bk-tag v-if="rowData.spec.managed_status" :theme="getManagedStatusTheme(rowData.spec.managed_status)">
-                  {{
-                    PROCESS_MANAGED_STATUS_MAP[rowData.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP]
-                  }}
+                  <span class="process-status">
+                    <Spinner v-if="['starting', 'stopping'].includes(row.spec.managed_status)" class="spinner-icon" />
+                    {{
+                      PROCESS_MANAGED_STATUS_MAP[rowData.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP]
+                    }}
+                  </span>
                 </bk-tag>
                 <span v-else>--</span>
               </template>
             </TableColumn>
             <TableColumn>
-              <template #default="{ row: rowData, rowIndex }: { row: IProcInst; rowIndex: number }">
-                <div v-if="rowIndex + 1 > rowData.num!" class="op-btns">
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'stop')">
+              <template #default="{ row: rowData }: { row: IProcInst }">
+                <div v-if="rowData.spec.actions" class="op-btns">
+                  <bk-button
+                    text
+                    theme="primary"
+                    :disabled="!rowData.spec.actions.stop"
+                    @click="handleOpInst(row.id, rowData.id, 'stop')">
                     {{ t('停止') }}
                   </bk-button>
-                  <bk-button text theme="primary" @click="handleOpInst(row.id, rowData.id, 'unregister')">
+                  <bk-button
+                    text
+                    theme="primary"
+                    :disabled="!rowData.spec.actions.unregister"
+                    @click="handleOpInst(row.id, rowData.id, 'unregister')">
                     {{ t('取消托管') }}
                   </bk-button>
                 </div>
@@ -168,8 +185,8 @@
           </PrimaryTable>
         </div>
       </template>
-      <template #expand-icon="{ expanded }">
-        <angle-up-fill :class="['expand-icon', { expanded }]" />
+      <template #expand-icon="{ expanded, row }">
+        <angle-up-fill :class="['expand-icon', { expanded }]" @click="handleExpandRow(row)" />
       </template>
       <template #empty>
         <TableEmpty :is-search-empty="isSearchEmpty" @clear="handleClearFilter"></TableEmpty>
@@ -179,6 +196,7 @@
       </template>
     </PrimaryTable>
     <bk-pagination
+      v-show="pagination.count > 0"
       class="table-pagination"
       :model-value="pagination.current"
       :count="pagination.count"
@@ -213,7 +231,7 @@
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
   import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
-  import { datetimeFormat } from '../../../../utils';
+  import { timeAgo } from '../../../../utils';
   import { useRouter } from 'vue-router';
   import BatchOpBtns from './batch-op-btns.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
@@ -231,29 +249,28 @@
   const { pagination, updatePagination } = useTablePagination('clientSearch');
   const { t } = useI18n();
   const router = useRouter();
-
-  const searchField = [
+  const searchField = ref([
     {
       label: t('内网IP'),
-      field: 'inner_ip',
+      field: 'inner_ips',
       children: [],
     },
     {
       label: t('进程状态'),
-      field: 'process_status',
+      field: 'process_statuses',
       children: [],
     },
     {
       label: t('托管状态'),
-      field: 'host_status',
+      field: 'managed_statuses',
       children: [],
     },
     {
       label: t('CC 同步状态'),
-      field: 'cc_status',
+      field: 'cc_sync_statuses',
       children: [],
     },
-  ];
+  ]);
 
   const processList = ref<IProcessItem[]>([]);
   const isSearchEmpty = ref(false);
@@ -277,13 +294,14 @@
     new: '',
   });
   const processIds = ref<number[]>([]);
-  const instId = ref(0);
+  const processInstanceId = ref(0);
   const filterRef = ref();
-  const searchValue = ref<{ [key: string]: string }>();
+  const searchValue = ref<{ [key: string]: string[] }>();
   const selectedIds = ref<number[]>([]);
   const tableLoading = ref(false);
   const tableRef = ref();
   const isShowConfigIssued = ref(false);
+  const expandedRowKeys = ref<number[]>([]);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -296,6 +314,7 @@
   const loadProcessList = async () => {
     try {
       tableLoading.value = true;
+      expandedRowKeys.value = [];
       const params = {
         search: { ...filterConditions.value, ...searchValue.value },
         start: (pagination.value.current - 1) * pagination.value.limit,
@@ -310,6 +329,9 @@
         })),
       }));
       updatePagination('count', res.count);
+      searchField.value.forEach((item) => {
+        item.children = res.filter_options[item.field];
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -353,7 +375,7 @@
   // 实例表格操作
   const handleOpInst = (processId: number, id: number, op: string) => {
     processIds.value = [processId];
-    instId.value = id;
+    processInstanceId.value = id;
     handleConfirmOp(op);
   };
 
@@ -378,7 +400,7 @@
     }
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
+  const handleSearch = (list: { [key: string]: string[] }) => {
     searchValue.value = list;
     isSearchEmpty.value = Object.keys(list).length > 0;
     loadProcessList();
@@ -386,7 +408,7 @@
 
   const handleFilter = (filters: Record<string, any>) => {
     isSearchEmpty.value = Object.keys(filters).some((filter) => {
-      return filter !== 'env' && filters[filter].length > 0;
+      return filter !== 'environment' && filters[filter].length > 0;
     });
     filterConditions.value = filters;
     loadProcessList();
@@ -400,7 +422,7 @@
     if (row.num && rowIndex + 1 > row.num) {
       return 'warn';
     }
-    return 'default';
+    return 'default-row';
   };
 
   const getManagedStatusTheme = (status: string) => {
@@ -429,16 +451,24 @@
     try {
       const query = {
         processIds: processIds.value,
-        instId: instId.value,
+        processInstanceId: processInstanceId.value,
         operateType: op,
       };
-      await processOperate(spaceId.value, query);
-      loadProcessList();
+      const res = await processOperate(spaceId.value, query);
+      if (op === 'start' || op === 'stop') {
+        isShowOpProcess.value = false;
+        // 启动或停止跳转任务详情页
+        setTimeout(() => {
+          router.push({ name: 'task-detail', params: { taskId: res.batchID } });
+        }, 300);
+      } else {
+        loadProcessList();
+      }
     } catch (error) {
       console.error(error);
     } finally {
       processIds.value = [];
-      instId.value = 0;
+      processInstanceId.value = 0;
     }
   };
 
@@ -467,6 +497,15 @@
       },
     });
     isShowConfigIssued.value = true;
+  };
+  // 表格下拉展开收起
+  const handleExpandRow = (row: IProcessItem) => {
+    const index = expandedRowKeys.value.indexOf(row.id);
+    if (index > -1) {
+      expandedRowKeys.value.splice(index, 1);
+    } else {
+      expandedRowKeys.value.push(row.id);
+    }
   };
 </script>
 
@@ -545,7 +584,8 @@
         border: 3px solid #daf6e5;
         background: #3fc06d;
       }
-      &.stopped {
+      &.stopped,
+      &.stopping {
         border: 3px solid #ffebeb;
         background: #ea3636;
       }
@@ -586,6 +626,28 @@
     }
     .t-table__expanded-row {
       background: #fafbfd;
+    }
+  }
+
+  .instance-table {
+    .t-table__header {
+      tr {
+        th {
+          height: 32px;
+          padding: 0 !important;
+          line-height: 32px !important;
+        }
+      }
+    }
+    .default-row {
+      td {
+        height: 32px;
+        padding: 0 !important;
+        line-height: 32px !important;
+      }
+      &:last-child {
+        border-bottom: none;
+      }
     }
   }
 </style>

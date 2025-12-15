@@ -20,7 +20,6 @@ import (
 	"log"
 	"reflect"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
@@ -69,7 +68,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			return errM
 		}
 		for _, m := range listModules {
-			module := Module{ID: m.BkModuleID, Name: m.BkModuleName}
+			module := Module{ID: m.BkModuleID, Name: m.BkModuleName, ServiceTemplateID: m.ServiceTemplateID}
 			sets[i].Module = append(sets[i].Module, module)
 		}
 	}
@@ -77,7 +76,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 3. 主机
 	setTemplateIDs := []int{}
 	for _, set := range listSets {
-		if set.SetTemplateID > 0 && !slices.Contains(setTemplateIDs, set.SetTemplateID) {
+		if !slices.Contains(setTemplateIDs, set.SetTemplateID) {
 			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
 		}
 	}
@@ -114,7 +113,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 5. 进程
 	listProcMap := map[int][]ProcInst{}
 	for _, inst := range listSvcInsts {
-		procs, err := s.svc.ListProcessInstance(ctx, bkcmdb.ListProcessInstanceReq{
+		procs, err := s.svc.ListProcessInstance(ctx, &bkcmdb.ListProcessInstanceReq{
 			BkBizID: s.bizID, ServiceInstanceID: inst.ID,
 		})
 		if err != nil {
@@ -123,10 +122,12 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 
 		for _, proc := range procs {
 			listProcMap[inst.ID] = append(listProcMap[inst.ID], ProcInst{
-				ID:      proc.Property.BkProcessID,
-				HostID:  proc.Relation.BkHostID,
-				Name:    proc.Property.BkProcessName,
-				ProcNum: proc.Property.ProcNum,
+				ID:                proc.Property.BkProcessID,
+				HostID:            proc.Relation.BkHostID,
+				ProcessTemplateID: proc.Relation.ProcessTemplateID,
+				Name:              proc.Property.BkProcessName,
+				FuncName:          proc.Property.BkFuncName,
+				ProcNum:           proc.Property.ProcNum,
 				ProcessInfo: table.ProcessInfo{
 					BkStartParamRegex: proc.Property.BkStartParamRegex,
 					WorkPath:          proc.Property.WorkPath,
@@ -158,15 +159,14 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 构建并立即入库
 	bizs := Bizs{s.bizID: sets}
 
-	// 构建 Process 和 ProcessInstance 数据
-	processBatch, processInstanceBatch := buildProcessAndInstance(bizs)
+	processBatch := buildProcess(bizs)
 
 	// 开启事务并入库
 	tx := s.dao.GenQuery().Begin()
 
-	if err := s.syncProcessAndInstanceData(kit, tx, processBatch, processInstanceBatch); err != nil {
+	if err := s.syncProcessData(kit, tx, processBatch); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", s.bizID, rbErr)
+			logs.Errorf("[syncCMDB][ERROR] rollback failed for bizID=%d: %v", s.bizID, rbErr)
 		}
 		return fmt.Errorf("sync process and instance data failed for biz %d: %v", s.bizID, err)
 	}
@@ -174,13 +174,13 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 		return fmt.Errorf("commit failed for biz %d: %v", s.bizID, err)
 	}
 
-	logs.Infof("[INFO] bizID=%d process data synced, %d processes written", s.bizID, len(processBatch))
+	logs.Infof("[syncCMDB][INFO] bizID=%d process data synced, %d processes written", s.bizID, len(processBatch))
 
 	return nil
 }
 
 func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, error) {
-	return pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
+	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
 		resp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
 			BkSupplierAccount: "0",
 			BkBizID:           s.bizID,
@@ -197,12 +197,12 @@ func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, e
 }
 
 func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkcmdb.ModuleInfo, error) {
-	return pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
+	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
 		resp, err := s.svc.SearchModule(ctx, bkcmdb.SearchModuleReq{
 			BkSupplierAccount: "0",
 			BkBizID:           s.bizID,
 			BkSetID:           setID,
-			Fields:            []string{"bk_module_id", "bk_module_name"},
+			Fields:            []string{"bk_module_id", "bk_module_name", "service_template_id"},
 		})
 		if err != nil {
 			return nil, 0, err
@@ -217,7 +217,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 	var all []bkcmdb.HostInfo
 
 	for _, id := range setTemplateIDs {
-		hosts, err := pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
+		hosts, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
 			resp, err := s.svc.FindHostBySetTemplate(ctx, bkcmdb.FindHostBySetTemplateReq{
 				BkBizID:          s.bizID,
 				BkSetTemplateIDs: []int{id},
@@ -246,12 +246,12 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 }
 
 func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID []int) (
-	[]bkcmdb.ServiceInstanceInfo, error) {
-	var all []bkcmdb.ServiceInstanceInfo
+	[]*bkcmdb.ServiceInstanceInfo, error) {
+	var all []*bkcmdb.ServiceInstanceInfo
 
 	for _, id := range moduleID {
-		svcInst, err := pageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ServiceInstanceInfo, int, error) {
-			resp, err := s.svc.ListServiceInstance(ctx, bkcmdb.ServiceInstanceListReq{
+		svcInst, err := PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ServiceInstanceInfo, int, error) {
+			resp, err := s.svc.ListServiceInstance(ctx, &bkcmdb.ServiceInstanceListReq{
 				BkBizID:    s.bizID,
 				BkModuleID: id,
 				Page:       page,
@@ -271,19 +271,14 @@ func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID
 	return all, nil
 }
 
-// buildProcessAndInstance 处理进程和实例数据
-func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInstance) {
+// buildProcess 生成进程数据
+func buildProcess(bizs Bizs) []*table.Process {
 	now := time.Now()
 
-	var (
-		processBatch         []*table.Process
-		processInstanceBatch []*table.ProcessInstance
-	)
+	var processBatch []*table.Process
 
 	for bizID, sets := range bizs {
 		for _, set := range sets {
-			hostCounter := make(map[int]int)
-			moduleCounter := make(map[int]int)
 			for _, mod := range set.Module {
 				// 构建 HostID -> IP 映射
 				hostMap := make(map[int]HostInfo, len(mod.Host))
@@ -298,13 +293,13 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 					for _, proc := range svc.ProcInst {
 						hinfo, ok := hostMap[proc.HostID]
 						if !ok {
-							log.Printf("[WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s: hostID=%d not found in hostMap",
+							log.Printf("[syncCMDB][WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: not found in hostMap",
 								bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID)
 							continue
 						}
 						sourceData, err := proc.ProcessInfo.Value()
 						if err != nil {
-							log.Printf("[ERROR] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: failed to get process info: %v",
+							log.Printf("[syncCMDB][ERROR] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: failed to get process info: %v",
 								bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID, err)
 							continue
 						}
@@ -320,19 +315,22 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 								HostID:            uint32(proc.HostID),
 								CloudID:           uint32(hinfo.CloudId),
 								AgentID:           hinfo.AgentID,
+								ProcessTemplateID: uint32(proc.ProcessTemplateID),
+								ServiceTemplateID: uint32(mod.ServiceTemplateID),
 							},
 							Spec: &table.ProcessSpec{
 								SetName:         set.Name,
 								ModuleName:      mod.Name,
 								ServiceName:     svc.Name,
-								Environment:     translateEnv(set.SetEnv),
+								Environment:     set.SetEnv,
 								Alias:           proc.Name,
 								InnerIP:         hinfo.IP,
 								CcSyncStatus:    table.Synced,
-								CcSyncUpdatedAt: now,
+								CcSyncUpdatedAt: nil,
 								SourceData:      sourceData,
 								PrevData:        "{}",
 								ProcNum:         uint(proc.ProcNum),
+								FuncName:        proc.FuncName,
 							},
 							Revision: &table.Revision{
 								CreatedAt: now,
@@ -340,54 +338,17 @@ func buildProcessAndInstance(bizs Bizs) ([]*table.Process, []*table.ProcessInsta
 							},
 						})
 
-						instances := BuildInstances(bizID, proc.HostID, mod.ID, proc.ID, proc.ProcNum, now, hostCounter, moduleCounter)
-						processInstanceBatch = append(processInstanceBatch, instances...)
 					}
 				}
 			}
 		}
 	}
 
-	return processBatch, processInstanceBatch
+	return processBatch
 }
 
-// BuildInstances 生成进程实例
-func BuildInstances(bizID, hostID, modID, processID, procNum int, now time.Time, hostCounter map[int]int,
-	moduleCounter map[int]int) []*table.ProcessInstance {
-
-	num := procNum
-	if num <= 0 {
-		num = 1
-	}
-
-	instances := make([]*table.ProcessInstance, 0, num)
-	for range num {
-		// 先递增计数器
-		hostCounter[hostID]++
-		moduleCounter[modID]++
-
-		instances = append(instances, &table.ProcessInstance{
-			Attachment: &table.ProcessInstanceAttachment{
-				TenantID:    "default",
-				BizID:       uint32(bizID),
-				CcProcessID: uint32(processID),
-			},
-			Spec: &table.ProcessInstanceSpec{
-				StatusUpdatedAt: now,
-				LocalInstID:     strconv.Itoa(hostCounter[hostID]),  // 同主机递增
-				InstID:          strconv.Itoa(moduleCounter[modID]), // 同模块递增
-			},
-			Revision: &table.Revision{
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-		})
-	}
-	return instances
-}
-
-// pageFetcher 封装分页逻辑的通用函数
-func pageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
+// PageFetcher 封装分页逻辑的通用函数
+func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
 	var (
 		start = 0
 		limit = 100
@@ -418,9 +379,10 @@ func pageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([
 	return all, nil
 }
 
-// diffProcesses 函数比较当前进程列表 (dbProcesses) 和新进程列表 (newProcesses)
-func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) (toAdd, toUpdate []*table.Process,
-	toDelete []uint32, err error) {
+// diffProcesses 比较当前进程列表和cc进程列表的差异
+func (s *syncCMDBService) diffProcesses(kit *kit.Kit, tx *gen.QueryTx, dbProcesses []*table.Process,
+	newProcesses []*table.Process) (toAdd, toUpdate []*table.Process, toDelete []uint32,
+	procInsts []*table.ProcessInstance, err error) {
 
 	now := time.Now().UTC()
 
@@ -434,7 +396,8 @@ func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) 
 	for _, p := range newProcesses {
 		newMap[p.Attachment.CcProcessID] = p
 	}
-
+	hostCounter := make(map[[2]int]int)
+	moduleCounter := make(map[[2]int]int)
 	// 2. 遍历 newProcesses
 	for _, newP := range newProcesses {
 		oldP, exists := dbMap[newP.Attachment.CcProcessID]
@@ -442,18 +405,43 @@ func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) 
 			// 新增项：数据库中没有，直接加入新增列表
 			newP.Revision = &table.Revision{CreatedAt: now}
 			toAdd = append(toAdd, newP)
+
+			// 为新增进程生成实例（existCount = 0）
+			insts := buildInstances(
+				int(newP.Attachment.BizID),
+				int(newP.Attachment.HostID),
+				int(newP.Attachment.ModuleID),
+				int(newP.Attachment.CcProcessID),
+				int(newP.Spec.ProcNum),
+				0, 0, 0, // 没有旧实例
+				now, hostCounter, moduleCounter,
+			)
+
+			if len(insts) > 0 {
+				procInsts = append(procInsts, insts...)
+			}
+
 			continue
 		}
 
 		// 调用 BuildProcessChanges 比较差异
-		add, del, update, err := BuildProcessChanges(newP, oldP, now)
+		add, update, del, insts, err := BuildProcessChanges(kit, s.dao, tx, newP, oldP, now, hostCounter, moduleCounter)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 
-		toAdd = append(toAdd, add...)
-		toDelete = append(toDelete, del...)
-		toUpdate = append(toUpdate, update...)
+		if add != nil {
+			toAdd = append(toAdd, add)
+		}
+		if update != nil {
+			toUpdate = append(toUpdate, update)
+		}
+		if del != 0 {
+			toDelete = append(toDelete, del)
+		}
+		if len(insts) > 0 {
+			procInsts = append(procInsts, insts...)
+		}
 	}
 
 	// 3. 找出被删除的项（在 db 里有，但 new 里没有）
@@ -463,20 +451,7 @@ func diffProcesses(dbProcesses []*table.Process, newProcesses []*table.Process) 
 		}
 	}
 
-	return toAdd, toUpdate, toDelete, nil
-}
-
-func translateEnv(env string) string {
-	switch env {
-	case "1":
-		return "测试"
-	case "2":
-		return "体验"
-	case "3":
-		return "正式"
-	default:
-		return "未知"
-	}
+	return toAdd, toUpdate, toDelete, procInsts, nil
 }
 
 // CompareProcessInfo returns true if jsonStr (旧的 JSON 字符串) 等价于 jsonStr2 (新的 JSON 字符串).
@@ -494,22 +469,29 @@ func CompareProcessInfo(jsonStr, jsonStr2 string) (bool, error) {
 	return reflect.DeepEqual(oldInfo, newInfo), nil
 }
 
-// BuildProcessChanges 生成进程数据
-func BuildProcessChanges(newP *table.Process, oldP *table.Process, now time.Time) (toAdd []*table.Process,
-	toDelete []uint32, toUpdate []*table.Process, err error) {
+// BuildProcessChanges 生成进程及其实例的新增、更新或删除操
+func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table.Process, oldP *table.Process, now time.Time,
+	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (toAdd *table.Process, toUpdate *table.Process, toDelete uint32,
+	procInsts []*table.ProcessInstance, err error) {
 
 	// 1. 判断内容是否变化
 	equal, err := CompareProcessInfo(newP.Spec.SourceData, oldP.Spec.SourceData)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, 0, nil, fmt.Errorf("compare process info failed, err: %v", err)
 	}
 
 	// 名称不相等
 	nameChanged := newP.Spec.Alias != oldP.Spec.Alias
 	// 内容不相等
 	infoChanged := !equal
+
 	// 数量不相等
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
+
+	// 内容、别名、数量无变化
+	if !infoChanged && !nameChanged && !numChanged {
+		return nil, nil, 0, nil, nil
+	}
 
 	// 情况 1: 名称变化
 	if nameChanged {
@@ -519,48 +501,147 @@ func BuildProcessChanges(newP *table.Process, oldP *table.Process, now time.Time
 			status = table.Updated // 名称 + 内容 都变更
 		}
 
-		toDelete = append(toDelete, oldP.ID)
-
 		newP.Spec.CcSyncStatus = status
 		newP.Spec.PrevData = oldP.Spec.SourceData
-		toAdd = append(toAdd, &table.Process{
+		newP.Spec.CcSyncUpdatedAt = nil
+		toAdd = &table.Process{
 			Attachment: newP.Attachment,
 			Spec:       newP.Spec,
 			Revision:   &table.Revision{CreatedAt: now},
-		})
-
-		return toAdd, toDelete, toUpdate, err
-	}
-
-	// 情况 2: 内容变化或数量变化
-	// 名称相同 → 仅更新，不删除
-	if infoChanged || numChanged {
-		// 如果内容变化，则更新状态为 Updated
-		if infoChanged {
-			oldP.Spec.SourceData = newP.Spec.SourceData
-			oldP.Spec.PrevData = oldP.Spec.SourceData
-			oldP.Spec.CcSyncStatus = table.Updated
-			oldP.Spec.CcSyncUpdatedAt = now
 		}
 
-		// 如果数量变化，更新 ProcNum，但保持状态（除非 info 也变）
-		if numChanged {
-			oldP.Spec.ProcNum = newP.Spec.ProcNum
-		}
+		procInsts = buildInstances(
+			int(toAdd.Attachment.BizID),
+			int(toAdd.Attachment.HostID),
+			int(toAdd.Attachment.ModuleID),
+			int(toAdd.Attachment.CcProcessID),
+			int(toAdd.Spec.ProcNum),
+			0, 0, 0, // 新建，无旧实例
+			now, hostCounter, moduleCounter,
+		)
 
-		toUpdate = append(toUpdate, &table.Process{
-			ID:         oldP.ID,
-			Attachment: oldP.Attachment,
-			Spec:       oldP.Spec,
-			Revision:   &table.Revision{UpdatedAt: now},
-		})
+		return toAdd, nil, oldP.ID, procInsts, nil
 	}
 
-	return toAdd, toDelete, toUpdate, nil
+	// 如果内容变化，则更新状态为 Updated
+	// 先把旧内容保存到 PrevData，再更新 SourceData
+	if infoChanged {
+		oldP.Spec.PrevData = oldP.Spec.SourceData
+		oldP.Spec.SourceData = newP.Spec.SourceData
+		oldP.Spec.CcSyncStatus = table.Updated
+		oldP.Spec.CcSyncUpdatedAt = nil
+	}
+
+	// 更新 ProcNum
+	if numChanged {
+		oldP.Spec.ProcNum = newP.Spec.ProcNum
+		oldP.Spec.CcSyncUpdatedAt = nil
+	}
+
+	// 查询指定进程的实例数量
+	count, err := dao.ProcessInstance().GetCountTx(kit, tx, oldP.Attachment.BizID, oldP.ID)
+	if err != nil {
+		return nil, nil, 0, nil, fmt.Errorf("failed to get process instance count for processID=%d: %w", oldP.ID, err)
+	}
+
+	// 查询模块下所有进程的最大 ModuleInstSeq
+	maxModuleInstSeq, err := dao.ProcessInstance().GetMaxModuleInstSeqTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.ID})
+	if err != nil {
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max ModuleInstSeq for processID=%d: %w", oldP.ID, err)
+	}
+
+	// 查询主机下所有进程的最大 HostInstSeq
+	maxHostInstSeq, err := dao.ProcessInstance().GetMaxHostInstSeqTx(kit, tx, oldP.Attachment.BizID, []uint32{oldP.ID})
+	if err != nil {
+		return nil, nil, 0, nil, fmt.Errorf("failed to get max HostInstSeq for processID=%d: %w", oldP.ID, err)
+	}
+
+	procInsts = buildInstances(
+		int(oldP.Attachment.BizID),
+		int(oldP.Attachment.HostID),
+		int(oldP.Attachment.ModuleID),
+		int(oldP.Attachment.CcProcessID),
+		int(newP.Spec.ProcNum),
+		int(count),
+		maxModuleInstSeq,
+		maxHostInstSeq,
+		now, hostCounter, moduleCounter,
+	)
+
+	toUpdate = &table.Process{
+		ID:         oldP.ID,
+		Attachment: oldP.Attachment,
+		Spec:       oldP.Spec,
+		Revision:   &table.Revision{UpdatedAt: now},
+	}
+
+	return nil, toUpdate, 0, procInsts, nil
 }
 
-func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.QueryTx, processBatch []*table.Process,
-	processInstanceBatch []*table.ProcessInstance) error {
+// buildInstances 根据进程数量生成进程实例
+func buildInstances(bizID, hostID, modID, ccProcessID, procNum, existCount, maxModuleInstSeq, maxHostInstSeq int, now time.Time,
+	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
+
+	// 如果新的进程数量 <= 已存在数量，则无需新增实例
+	if procNum <= existCount {
+		return nil
+	}
+
+	// 需要新增的实例数量
+	newCount := procNum - existCount
+	if newCount <= 0 {
+		return nil
+	}
+
+	instances := make([]*table.ProcessInstance, 0, newCount)
+
+	// 维度 key： (ccProcessID, hostID) 和 (ccProcessID, modID)
+	hostKey := [2]int{ccProcessID, hostID}
+	modKey := [2]int{ccProcessID, modID}
+
+	// 从缓存取
+	startHostInstSeq := hostCounter[hostKey]
+	startModuleInstSeq := moduleCounter[modKey]
+
+	// 如果缓存未初始化，则从数据库最大值开始
+	if startHostInstSeq == 0 {
+		startHostInstSeq = maxHostInstSeq
+		hostCounter[hostKey] = startHostInstSeq
+	}
+	if startModuleInstSeq == 0 {
+		startModuleInstSeq = maxModuleInstSeq
+		moduleCounter[modKey] = startModuleInstSeq
+	}
+
+	for i := 1; i <= newCount; i++ {
+		hostCounter[hostKey]++
+		moduleCounter[modKey]++
+
+		hostInstSeq := hostCounter[hostKey]
+		moduleInstSeq := moduleCounter[modKey]
+
+		instances = append(instances, &table.ProcessInstance{
+			Attachment: &table.ProcessInstanceAttachment{
+				TenantID:    "default",
+				BizID:       uint32(bizID),
+				CcProcessID: uint32(ccProcessID),
+			},
+			Spec: &table.ProcessInstanceSpec{
+				StatusUpdatedAt: now,
+				HostInstSeq:     uint32(hostInstSeq),
+				ModuleInstSeq:   uint32(moduleInstSeq),
+			},
+			Revision: &table.Revision{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		})
+	}
+
+	return instances
+}
+
+func (s *syncCMDBService) syncProcessData(kit *kit.Kit, tx *gen.QueryTx, processBatch []*table.Process) error {
 	if len(processBatch) == 0 {
 		return nil
 	}
@@ -569,65 +650,91 @@ func (s *syncCMDBService) syncProcessAndInstanceData(kit *kit.Kit, tx *gen.Query
 	bizID := processBatch[0].Attachment.BizID
 
 	// 查询数据库中已有数据
-	dbProcesses, err := s.dao.Process().ListProcByBizIDWithTx(kit, tx, tenantID, bizID)
+	oldProcesses, err := s.dao.Process().ListProcByBizIDWithTx(kit, tx, tenantID, bizID)
 	if err != nil {
+		logs.Errorf("[syncCMDB][ERROR] list processes failed for tenantID=%s, bizID=%d: %v", tenantID, bizID, err)
 		return fmt.Errorf("list processes failed: %w", err)
 	}
 
 	// 比对
-	toAdd, toUpdate, toDelete, err := diffProcesses(dbProcesses, processBatch)
+	toAdd, toUpdate, toDelete, processInstanceBatch, err := s.diffProcesses(kit, tx, oldProcesses, processBatch)
 	if err != nil {
+		logs.Errorf("[syncCMDB][ERROR] diff processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, err)
 		return err
 	}
 	// 插入
 	if len(toAdd) > 0 {
-		if err := s.dao.Process().BatchCreateWithTx(kit, tx, toAdd); err != nil {
-			return fmt.Errorf("insert failed: %w", err)
+		if errC := s.dao.Process().BatchCreateWithTx(kit, tx, toAdd); errC != nil {
+			logs.Errorf("[syncCMDB][ERROR] insert processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, errC)
+			return fmt.Errorf("insert failed: %w", errC)
 		}
 	}
 
 	// 更新
 	if len(toUpdate) > 0 {
-		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, toUpdate); err != nil {
-			return fmt.Errorf("update failed: %w", err)
+		if errU := s.dao.Process().BatchUpdateWithTx(kit, tx, toUpdate); errU != nil {
+			logs.Errorf("[syncCMDB][ERROR] update processes failed tenantID=%s, bizID=%d: %v", tenantID, bizID, errU)
+			return fmt.Errorf("update failed: %w", errU)
 		}
 	}
 
 	// 删除
 	if len(toDelete) > 0 {
-		if err := s.dao.Process().UpdateSyncStatusWithTx(kit, tx, string(table.Deleted), toDelete); err != nil {
-			return fmt.Errorf("mark deleted failed: %w", err)
+		// 2. 删除process_instances表中的数据
+		if err = DeleteInstanceStoppedUnmanaged(kit, s.dao, tx, bizID, toDelete); err != nil {
+			logs.Errorf("[syncCMDB][ERROR] delete stopped/unmanaged failed tenantID=%s, bizID=%d, processes=%v: %v",
+				tenantID, bizID, toDelete, err)
+			return err
 		}
 	}
 
-	// 只有新增的进程才需要创建实例
-	if len(toAdd) == 0 {
-		return nil
-	}
-
-	// 构建新增进程的 ProcessID 映射
+	// 构建进程实例的ID
 	idMap := make(map[string]uint32)
-	for _, p := range toAdd {
-		key := fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, bizID, p.Attachment.CcProcessID)
-		idMap[key] = p.ID
+	for _, item := range toAdd {
+		key := fmt.Sprintf("%s-%d-%d", item.Attachment.TenantID, bizID, item.Attachment.CcProcessID)
+		idMap[key] = item.ID
 	}
 
-	// 回填 ProcessID 给 Instance，只处理新增进程对应的实例
-	var toWriteInstances []*table.ProcessInstance
+	for _, item := range toUpdate {
+		key := fmt.Sprintf("%s-%d-%d", item.Attachment.TenantID, bizID, item.Attachment.CcProcessID)
+		idMap[key] = item.ID
+	}
+
+	// 回填 ProcessID 给 Instance
 	for _, inst := range processInstanceBatch {
 		key := fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, bizID, inst.Attachment.CcProcessID)
 		if pid, ok := idMap[key]; ok && pid != 0 {
 			inst.Attachment.ProcessID = pid
-			toWriteInstances = append(toWriteInstances, inst)
 		}
 		// 如果找不到对应的新增进程，则跳过这个实例
 	}
 
-	// 只写入有有效 process_id 的实例（toWriteInstances）
-	if len(toWriteInstances) > 0 {
-		if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, toWriteInstances); err != nil {
-			return fmt.Errorf("insert process instances failed: %w", err)
-		}
+	if len(processInstanceBatch) == 0 {
+		logs.Infof("[syncCMDB] no process instances to insert (tenantID=%s, bizID=%d)", tenantID, bizID)
+		return nil
+	}
+
+	if err := s.dao.ProcessInstance().BatchCreateWithTx(kit, tx, processInstanceBatch); err != nil {
+		logs.Errorf("[syncCMDB][ERROR] insert process instances failed tenantID=%s, bizID=%d: %v",
+			tenantID, bizID, err)
+		return fmt.Errorf("insert process instances failed: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteInstanceStoppedUnmanaged 删除进程状态是已停止或者是空 和 托管状态是未托管或者是空的实例数据
+func DeleteInstanceStoppedUnmanaged(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
+	// 1. 删除processes表中的数据
+	err := dao.Process().UpdateSyncStatusWithTx(kit, tx, table.Deleted.String(), processIDs)
+	if err != nil {
+		return err
+	}
+
+	// 2. 删除process_instances表中的数据
+	err = dao.ProcessInstance().DeleteStoppedUnmanagedWithTx(kit, tx, bizID, processIDs)
+	if err != nil {
+		return err
 	}
 
 	return nil

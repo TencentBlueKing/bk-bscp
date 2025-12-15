@@ -6,8 +6,8 @@ import http from '../request';
  * @param params 查询参数
  * @returns
  */
-export const getTaskHistoryList = (biz_id: string, params: any) =>
-  http.get(`/config/biz_id/${biz_id}/task_batch/list`, { params }).then((res) => res.data);
+export const getTaskHistoryList = (biz_id: string, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/task_batch/list`, query).then((res) => res.data);
 
 /**
  * 获取任务详情列表
@@ -15,8 +15,8 @@ export const getTaskHistoryList = (biz_id: string, params: any) =>
  * @param taskId 任务id
  * @param param 查询参数
  */
-export const getTaskDetailList = (biz_id: string, taskId: number, params: any) =>
-  http.get(`/config/biz_id/${biz_id}/task_batch/${taskId}/detail`, { params }).then((res) => res.data);
+export const getTaskDetailList = (biz_id: string, taskId: number, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/task_batch/${taskId}/detail`, query).then((res) => res.data);
 
 /**
  * 重试失败任务

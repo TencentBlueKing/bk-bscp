@@ -47,8 +47,16 @@ type Process interface {
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
 	GetProcByBizScvProc(kit *kit.Kit, bizID, svcInstID, processID uint32) (*table.Process, error)
-	// 获取所有未删除的数据
+	// ListActiveProcesses 获取所有未删除的数据
 	ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error)
+	// GetByModuleID 查询模块下所有进程 ID.
+	GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32) ([]uint32, error)
+	// GetByHostIDWithTx 查询主机下所有进程 ID.
+	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
+	// GetBySetIDWithTx queries all process IDs under a set.
+	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
+	ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error)
+	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
 }
 
 var _ Process = new(processDao)
@@ -59,6 +67,71 @@ type processDao struct {
 	auditDao AuditDao
 }
 
+// ProcessCountByServiceTemplate implements Process.
+func (dao *processDao) ProcessCountByServiceTemplate(kit *kit.Kit, bizID uint32, serviceTemplateID uint32) (int64, error) {
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	return q.Where(m.BizID.Eq(bizID),
+		m.ServiceTemplateID.Eq(serviceTemplateID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Count()
+}
+
+// ProcessCountByServiceInstance implements Process.
+func (dao *processDao) ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error) {
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	return q.Where(m.BizID.Eq(bizID),
+		m.ServiceInstanceID.Eq(serviceInstanceID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Count()
+}
+
+// GetBySetIDWithTx queries all process IDs under a set.
+func (dao *processDao) GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, setID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.SetID.Eq(setID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetByHostIDWithTx implements Process.
+func (dao *processDao) GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, hostID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.HostID.Eq(hostID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetByModuleIDWithTx implements Process.
+func (dao *processDao) GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, moduleID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.ModuleID.Eq(moduleID)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // GetProcByBizScvProc implements Process.
 func (dao *processDao) GetProcByBizScvProc(kit *kit.Kit, bizID uint32, svcInstID uint32,
 	processID uint32) (*table.Process, error) {
@@ -66,7 +139,7 @@ func (dao *processDao) GetProcByBizScvProc(kit *kit.Kit, bizID uint32, svcInstID
 
 	return dao.genQ.Process.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(bizID), m.ServiceInstanceID.Eq(svcInstID), m.CcProcessID.Eq(processID),
-			m.CcSyncStatus.Neq(string(table.Deleted))).
+			m.CcSyncStatus.Neq(table.Deleted.String())).
 		Take()
 }
 
@@ -140,7 +213,8 @@ func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tena
 	bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 
-	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID)).Find()
+	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID),
+		m.CcSyncStatus.Neq(table.Deleted.String())).Find()
 }
 
 // BatchUpdateWithTx implements Process.
@@ -170,7 +244,7 @@ func (dao *processDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*
 
 // BatcheUpsertWithTx implements Process.
 func (dao *processDao) BatcheUpsertWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
-	q := tx.Process.WithContext(kit.Ctx)
+	q := tx.Process.WithContext(kit.Ctx).Where(dao.genQ.Process.CcSyncStatus.Neq(table.Deleted.String()))
 
 	return q.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "biz_id"}, {Name: "cc_process_id"}},
@@ -204,7 +278,7 @@ func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessS
 			)`
 	conds = append(conds, q.Where(utils.RawCond(sql, "deleted", "running", "managed")))
 
-	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
+	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.ID.Desc())
 
 	if opt.All {
 		result, err := d.Find()
@@ -225,16 +299,16 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 		conds = append(conds, m.Environment.Eq(search.GetEnvironment()))
 	}
 
-	if len(search.GetSetNames()) != 0 {
-		conds = append(conds, m.SetName.In(search.GetSetNames()...))
+	if len(search.GetSets()) != 0 {
+		conds = append(conds, m.SetName.In(search.GetSets()...))
 	}
 
-	if len(search.GetModuleNames()) != 0 {
-		conds = append(conds, m.ModuleName.In(search.GetModuleNames()...))
+	if len(search.GetModules()) != 0 {
+		conds = append(conds, m.ModuleName.In(search.GetModules()...))
 	}
 
-	if len(search.GetServiceInstanceNames()) != 0 {
-		conds = append(conds, m.ServiceName.In(search.GetServiceInstanceNames()...))
+	if len(search.GetServiceInstances()) != 0 {
+		conds = append(conds, m.ServiceName.In(search.GetServiceInstances()...))
 	}
 
 	if len(search.GetCcProcessIds()) != 0 {
@@ -267,6 +341,10 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 			return nil, err
 		}
 		conds = append(conds, status...)
+	}
+
+	if len(search.GetProcessTemplateIds()) != 0 {
+		conds = append(conds, m.ProcessTemplateID.In(search.GetProcessTemplateIds()...))
 	}
 
 	return conds, nil

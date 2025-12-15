@@ -60,30 +60,11 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 		return nil, err
 	}
 
-	// 构建过滤条件
-	filter := &dao.TaskBatchListFilter{
-		TaskObject: table.TaskObject(req.TaskObject),
-		TaskAction: table.TaskAction(req.TaskAction),
-		Status:     table.TaskBatchStatus(req.Status),
-		Executor:   req.Executor,
+	filter, err := buildTaskBatchListFilter(req)
+	if err != nil {
+		logs.Errorf("build task batch list filter failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, err
 	}
-
-	// 解析时间范围参数
-	if req.TimeRangeStart != "" {
-		timeRangeStart, err := parseTime(req.TimeRangeStart)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time_range_start format: %v", err)
-		}
-		filter.TimeRangeStart = &timeRangeStart
-	}
-	if req.TimeRangeEnd != "" {
-		timeRangeEnd, err := parseTime(req.TimeRangeEnd)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time_range_end format: %v", err)
-		}
-		filter.TimeRangeEnd = &timeRangeEnd
-	}
-
 	res, count, err := s.dao.TaskBatch().List(kt, req.BizId, filter, opt)
 	if err != nil {
 		logs.Errorf("list task batch failed, err: %v, rid: %s", err, kt.Rid)
@@ -154,6 +135,27 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 	}, nil
 }
 
+// buildTaskBatchListFilter 构建任务批次列表过滤条件
+func buildTaskBatchListFilter(req *pbds.ListTaskBatchReq) (*dao.TaskBatchListFilter, error) {
+	filter := &dao.TaskBatchListFilter{
+		TaskObjects: req.GetTaskObjects(),
+		TaskActions: req.GetTaskActions(),
+		Statuses:    req.GetStatuses(),
+		Executors:   req.GetExecutors(),
+	}
+
+	// 解析时间范围参数
+	var err error
+	if filter.TimeRangeStart, err = parseTimeIfNotEmpty(req.TimeRangeStart, "time_range_start"); err != nil {
+		return nil, err
+	}
+	if filter.TimeRangeEnd, err = parseTimeIfNotEmpty(req.TimeRangeEnd, "time_range_end"); err != nil {
+		return nil, err
+	}
+
+	return filter, nil
+}
+
 // GetTaskBatchDetail implements pbds.DataServer.
 func (s *Service) GetTaskBatchDetail(
 	ctx context.Context,
@@ -178,9 +180,21 @@ func (s *Service) GetTaskBatchDetail(
 		Limit:     limit,
 		Offset:    int64(req.GetStart()),
 	}
+
+	// 构建过滤条件
 	if req.GetStatus() != "" {
-		listOpt.StatusList = expandTaskStatusForQuery(req.GetStatus())
+		// 支持状态过滤
+		statusList := expandTaskStatusForQuery(req.GetStatus())
+		listOpt.StatusList = statusList
 	}
+	// TODO: 支持其他过滤条件
+	// - SetNames: 集群名称列表过滤
+	// - ModuleNames: 模块名称列表过滤
+	// - ServiceNames: 服务名称列表过滤
+	// - ProcessAliases: 进程别名列表过滤
+	// - CcProcessIds: CC进程ID列表过滤
+	// - InstIds: 实例ID列表过滤
+	// 这些过滤条件需要从 CommonPayload 中查询，等表设计支持后再实现
 
 	pagination, err := taskStorage.ListTask(ctx, listOpt)
 	if err != nil {
@@ -210,12 +224,26 @@ func (s *Service) GetTaskBatchDetail(
 	// 获取任务详情过滤选项
 	filterOptions := getTaskDetailFilterOptions()
 
-	return &pbds.GetTaskBatchDetailResp{
+	// 查询 TaskBatch 信息
+	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBatchId())
+	if err != nil {
+		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
+		return nil, fmt.Errorf("get task batch failed: %v", err)
+	}
+
+	// 转换为 proto TaskBatch 以获取字段
+	pbTaskBatch := pbtb.PbTaskBatch(taskBatch)
+
+	// 构建响应
+	resp := &pbds.GetTaskBatchDetailResp{
 		Tasks:         taskDetails,
 		Count:         uint32(pagination.Count),
 		Statistics:    statistics,
 		FilterOptions: filterOptions,
-	}, nil
+		TaskBatch:     pbTaskBatch,
+	}
+
+	return resp, nil
 }
 
 // convertTaskToDetail 将 task 转换为 pb 数据结构 TaskDetail
@@ -225,7 +253,7 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	}
 
 	// 解析 CommonPayload 为 ProcessPayload
-	var processPayload commonExecutor.ProcessPayload
+	var processPayload commonExecutor.TaskPayload
 	err := task.GetCommonPayload(&processPayload)
 	if err != nil {
 		return nil, fmt.Errorf("get common payload failed: %v", err)
@@ -233,22 +261,24 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 
 	// 构建返回的 TaskDetail
 	detail := &pbtb.TaskDetail{
+		TaskId:        task.TaskID,
 		Status:        convertTaskStatus(task.Status),
 		Message:       task.Message,
 		Creator:       task.Creator,
 		ExecutionTime: float32(task.ExecutionTime) / 1000.0,
-		ProcessPayload: &pbtb.ProcessPayload{
-			SetName:     processPayload.SetName,
-			ModuleName:  processPayload.ModuleName,
-			ServiceName: processPayload.ServiceName,
-			Environment: processPayload.Environment,
-			Alias:       processPayload.Alias,
-			InnerIp:     processPayload.InnerIP,
-			AgentId:     processPayload.AgentID,
-			CcProcessId: processPayload.CcProcessID,
-			LocalInstId: processPayload.LocalInstID,
-			InstId:      processPayload.InstID,
-			ConfigData:  processPayload.ConfigData,
+		TaskPayload: &pbtb.TaskPayload{
+			SetName:       processPayload.ProcessPayload.SetName,
+			ModuleName:    processPayload.ProcessPayload.ModuleName,
+			ServiceName:   processPayload.ProcessPayload.ServiceName,
+			Environment:   processPayload.ProcessPayload.Environment,
+			Alias:         processPayload.ProcessPayload.Alias,
+			FuncName:      processPayload.ProcessPayload.FuncName,
+			InnerIp:       processPayload.ProcessPayload.InnerIP,
+			AgentId:       processPayload.ProcessPayload.AgentID,
+			CcProcessId:   processPayload.ProcessPayload.CcProcessID,
+			HostInstSeq:   processPayload.ProcessPayload.HostInstSeq,
+			ModuleInstSeq: processPayload.ProcessPayload.ModuleInstSeq,
+			ConfigData:    processPayload.ProcessPayload.ConfigData,
 		},
 	}
 
@@ -364,16 +394,20 @@ func parseTime(timeStr string) (time.Time, error) {
 	return time.Parse(time.RFC3339, timeStr)
 }
 
+// parseTimeIfNotEmpty 如果时间字符串非空则解析，否则返回 nil
+func parseTimeIfNotEmpty(timeStr, fieldName string) (*time.Time, error) {
+	if timeStr == "" {
+		return nil, nil
+	}
+	t, err := parseTime(timeStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s format: %v", fieldName, err)
+	}
+	return &t, nil
+}
+
 // getTaskDetailFilterOptions 获取任务详情过滤选项
 func getTaskDetailFilterOptions() *pbtb.TaskDetailFilterOptions {
-	// 任务状态选项（四种归类后的状态）
-	statusChoices := []*pbtb.Choice{
-		{Id: taskTypes.TaskStatusInit, Name: "任务初始化"},
-		{Id: taskTypes.TaskStatusRunning, Name: "任务运行中"},
-		{Id: taskTypes.TaskStatusSuccess, Name: "任务成功"},
-		{Id: taskTypes.TaskStatusFailure, Name: "任务失败"},
-	}
-
 	// todo: 等表设计支持从 CommonPayload 查询后再填充
 	return &pbtb.TaskDetailFilterOptions{
 		SetNameChoices:     []*pbtb.Choice{},
@@ -382,6 +416,5 @@ func getTaskDetailFilterOptions() *pbtb.TaskDetailFilterOptions {
 		AliasChoices:       []*pbtb.Choice{},
 		CcProcessIdChoices: []*pbtb.Choice{},
 		InstIdChoices:      []*pbtb.Choice{},
-		StatusChoices:      statusChoices,
 	}
 }

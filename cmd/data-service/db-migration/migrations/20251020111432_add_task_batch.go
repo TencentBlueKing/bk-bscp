@@ -36,15 +36,19 @@ func init() {
 func mig20251020111432Up(tx *gorm.DB) error {
 	// TaskBatch : 任务主表
 	type TaskBatch struct {
-		ID         uint       `gorm:"type:bigint(1) unsigned not null;primaryKey;autoIncrement:false"`
-		TenantID   string     `gorm:"column:tenant_id;type:varchar(255);not null;index:idx_tenantID_bizID_ccProcessID,priority:1;default:default" json:"tenant_id"`
-		BizID      uint       `gorm:"column:biz_id;type:bigint unsigned;not null;index:idx_tenantID_bizID_ccProcessID,priority:2;comment:业务ID" json:"biz_id"` // 业务ID
-		TaskObject string     `gorm:"type:varchar(250) not null;comment:任务对象" json:"task_object"`                                                             // 任务对象
-		TaskAction string     `gorm:"type:varchar(250) not null;comment:任务动作" json:"task_action"`                                                             // 任务动作
-		TaskData   string     `gorm:"type:longtext not null;comment:任务数据" json:"task_data"`                                                                   // 任务数据
-		Status     string     `gorm:"type:varchar(250) not null;comment:任务状态" json:"status"`                                                                  // 任务状态
-		StartAt    *time.Time `gorm:"type:timestamp not null;comment:任务开始时间" json:"start_at"`                                                                 // 任务开始时间
-		EndAt      *time.Time `gorm:"type:timestamp null;comment:任务结束时间" json:"end_at"`                                                                       // 任务结束时间
+		ID             uint       `gorm:"type:bigint(1) unsigned not null;primaryKey;autoIncrement:false"`
+		TenantID       string     `gorm:"column:tenant_id;type:varchar(255);not null;index:idx_tenantID_bizID_ccProcessID,priority:1;default:default" json:"tenant_id"`
+		BizID          uint       `gorm:"column:biz_id;type:bigint unsigned;not null;index:idx_tenantID_bizID_ccProcessID,priority:2;comment:业务ID" json:"biz_id"` // 业务ID
+		TaskObject     string     `gorm:"type:varchar(250) not null;comment:任务对象" json:"task_object"`                                                             // 任务对象
+		TaskAction     string     `gorm:"type:varchar(250) not null;comment:任务动作" json:"task_action"`                                                             // 任务动作
+		TaskData       string     `gorm:"type:longtext not null;comment:任务数据" json:"task_data"`
+		TotalCount     uint       `gorm:"type:int unsigned not null;comment:总任务数" json:"total_count"`
+		CompletedCount uint       `gorm:"type:int unsigned not null;comment:已完成任务数" json:"completed_count"`
+		SuccessCount   uint       `gorm:"type:int unsigned not null;comment:成功任务数" json:"success_count"`
+		FailedCount    uint       `gorm:"type:int unsigned not null;comment:失败任务数" json:"failed_count"`
+		Status         string     `gorm:"type:varchar(250) not null;comment:任务状态" json:"status"`  // 任务状态
+		StartAt        *time.Time `gorm:"type:timestamp not null;comment:任务开始时间" json:"start_at"` // 任务开始时间
+		EndAt          *time.Time `gorm:"type:timestamp null;comment:任务结束时间" json:"end_at"`       // 任务结束时间
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`

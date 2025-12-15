@@ -7,7 +7,7 @@
       <searchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
-        :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP/执行结果')"
+        :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP')"
         class="search-select"
         @search="handleSearch" />
     </div>
@@ -15,6 +15,7 @@
       <div class="panels-list">
         <div
           v-for="panel in panels"
+          v-show="panel.count > 0"
           :key="panel.status"
           :class="['panel', { active: activePanels === panel.status }]"
           @click="handleChangePanel(panel.status)">
@@ -39,10 +40,10 @@
             </template>
           </TableColumn>
           <TableColumn :title="$t('模块')" col-key="process_payload.module_name"></TableColumn>
-          <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name"></TableColumn>
+          <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name" ellipsis></TableColumn>
           <TableColumn :title="$t('进程别名')" col-key="process_payload.alias"></TableColumn>
           <TableColumn :title="$t('CC 进程 ID')" col-key="process_payload.cc_process_id"></TableColumn>
-          <TableColumn title="Inst_id" col-key="process_payload.inst_id"></TableColumn>
+          <TableColumn :title="$t('模块下唯一标识')" col-key="process_payload.module_inst_seq"></TableColumn>
           <TableColumn :title="$t('内网 IP')" col-key="process_payload.inner_ip"></TableColumn>
           <TableColumn :title="$t('执行耗时')" col-key="execution_time">
             <template #default="{ row }"> {{ row.execution_time }}s </template>
@@ -53,12 +54,21 @@
                 <Spinner v-if="row.status === 'RUNNING'" class="spinner-icon" />
                 <span v-else :class="['dot', row.status]"></span>
                 <span>{{ TASK_DETAIL_STATUS_MAP[row.status as keyof typeof TASK_DETAIL_STATUS_MAP] }}</span>
+                <info-line
+                  v-if="row.status === 'FAILURE'"
+                  class="info-icon"
+                  v-bk-tooltips="{ content: row.message || '--' }" />
               </div>
             </template>
           </TableColumn>
           <TableColumn :title="$t('操作')" col-key="operation">
             <template #default="{ row }">
-              <bk-button v-if="row.status !== 'RUNNING'" theme="primary" text>{{ $t('查看配置') }}</bk-button>
+              <bk-button
+                v-if="['FAILURE', 'SUCCESS'].includes(row.status) && taskDetail.task_object !== 'process'"
+                theme="primary"
+                text>
+                {{ $t('查看配置') }}
+              </bk-button>
               <span v-else>--</span>
             </template>
           </TableColumn>
@@ -86,19 +96,23 @@
 <script lang="ts" setup>
   import { ref, onBeforeMount, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { Spinner } from 'bkui-vue/lib/icon';
+  import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
-  import { TASK_DETAIL_STATUS_MAP } from '../../../../constants/task';
+  import { TASK_DETAIL_STATUS_MAP, TASK_ACTION_MAP } from '../../../../constants/task';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import searchSelector from '../../../../components/search-selector.vue';
+  import useTaskStore from '../../../../store/task';
+  import { datetimeFormat } from '../../../../utils';
+  import type { IOperateRange } from '../../../../../types/task';
 
+  const taskStore = useTaskStore();
+  const { taskDetail } = storeToRefs(taskStore);
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { t } = useI18n();
   const route = useRoute();
-
-  const emits = defineEmits(['change']);
 
   const searchField = ref([
     {
@@ -127,18 +141,13 @@
       children: [],
     },
     {
-      label: t('Inst_id'),
-      field: 'inst_id',
+      label: t('模块下唯一标识'),
+      field: 'module_inst_seq',
       children: [],
     },
     {
       label: t('内网 IP'),
       field: 'ip',
-      children: [],
-    },
-    {
-      label: t('执行结果'),
-      field: 'status',
       children: [],
     },
   ]);
@@ -204,11 +213,40 @@
       if (loadPanelsFlag.value) {
         loadPanelsFlag.value = false;
         activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
-        emits('change', activePanels.value);
         loadTaskList();
       }
       searchField.value.forEach((item) => {
         item.children = res.filter_options[`${item.field}_choices`];
+      });
+
+      const {
+        id,
+        task_object,
+        task_data: { environment, operate_range },
+        creator,
+        start_at,
+        end_at,
+        execution_time,
+        task_action,
+        status,
+      } = res.task_batch;
+
+      const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
+      const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
+
+      taskStore.$patch({
+        taskDetail: {
+          id,
+          task_type: `${typePrefix}${actionText}`,
+          task_object,
+          environment,
+          operate_range: mergeOpRange(operate_range),
+          creator,
+          start_at: datetimeFormat(start_at),
+          end_at: datetimeFormat(end_at),
+          execution_time: `${execution_time}s`,
+          status,
+        },
       });
     } catch (error) {
       console.error(error);
@@ -217,11 +255,16 @@
     }
   };
 
+  const mergeOpRange = (operateRange: IOperateRange) => {
+    return Object.values(operateRange)
+      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
+      .join('.');
+  };
+
   const handleChangePanel = (status: string) => {
     if (activePanels.value === status) return;
     activePanels.value = status;
     updatePagination('current', 1);
-    emits('change', activePanels.value);
     loadTaskList();
   };
 
@@ -235,9 +278,19 @@
     loadTaskList();
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
-    searchValue.value = list;
+  const handleSearch = (list: { [key: string]: string | string[] }) => {
+    searchValue.value = {
+      setNames: list.set_name || [],
+      moduleNames: list.module_name || [],
+      serviceNames: list.service_name || [],
+      processAliases: list.alias || [],
+      ccProcessIds: list.cc_process_id || [],
+      instIds: list.module_inst_seq || [],
+      ips: list.ip || [],
+    };
     isSearchEmpty.value = Object.keys(list).length > 0;
+    pagination.value.current = 1;
+    updatePagination('limit', 10);
     loadTaskList();
   };
 
@@ -326,6 +379,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      .info-icon {
+        font-size: 14px;
+        color: #979ba5;
+      }
     }
     .dot {
       width: 8px;

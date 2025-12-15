@@ -18,14 +18,18 @@ import (
 	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
+	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	gseProc "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -75,14 +79,35 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 	for _, id := range bizIDs {
 		bizID := id
 		g.Go(func() error {
-			svc := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
-			return svc.SyncSingleBiz(gctx)
+			cmdbimpl := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
+			if err := cmdbimpl.SyncSingleBiz(gctx); err != nil {
+				logs.Errorf(
+					"[syncBiz][cmdb][error] biz=%d sync cmdb failed: err=%v type=%T",
+					bizID, err, err,
+				)
+				return fmt.Errorf("cmdb sync failed for biz=%d: %w", bizID, err)
+			}
+			logs.Infof("[syncBiz][cmdb][success] biz=%d sync cmdb done", bizID)
+
+			gseimpl := gseProc.NewSyncGESService(bizID, s.gseSvc, s.dao)
+			if err := gseimpl.SyncSingleBiz(gctx); err != nil {
+				logs.Errorf(
+					"[syncBiz][gse][error] biz=%d sync gse failed: err=%v type=%T",
+					bizID, err, err,
+				)
+				return fmt.Errorf("gse sync failed for biz=%d: %w", bizID, err)
+			}
+			logs.Infof("[syncBiz][gse][success] biz=%d sync gse done", bizID)
+
+			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
+		logs.Errorf("[syncBiz][group][error] some biz failed: %v", err)
 		return err
 	}
+	logs.Infof("[syncBiz][group][success] all biz sync completed")
 
 	return nil
 }
@@ -92,26 +117,51 @@ func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq)
 
 	// 获取通过业务查询是否有同步任务
 	task, err := s.taskManager.ListTask(ctx, &iface.ListOption{
-		TaskType:      cmdbGse.TaskType,
+		TaskType:      common.SyncCMDBGSETaskType,
 		TaskName:      cmdbGse.BuildSyncCMDBGSETaskName(req.GetBizId()),
 		TaskIndex:     fmt.Sprintf("%d", req.GetBizId()),
-		TaskIndexType: cmdbGse.TaskIndexType,
-		Offset:        1,
+		TaskIndexType: common.BizIDTaskIndexType,
+		Offset:        0,
 		Limit:         1,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	var status string
-	var lastSyncTime time.Time
-	for _, v := range task.Items {
-		status = v.GetStatus()
-		lastSyncTime = v.GetEndTime()
+	var (
+		rawStatus    string
+		lastSyncTime time.Time
+	)
+
+	if task.Count == 0 || len(task.Items) == 0 {
+		return &pbds.CmdbGseStatusResp{
+			LastSyncTime: nil,
+			Status:       constant.StatusNeverSynced,
+		}, nil
 	}
+
+	item := task.Items[0]
+	rawStatus = item.GetStatus()
+	lastSyncTime = item.GetEndTime()
 
 	return &pbds.CmdbGseStatusResp{
 		LastSyncTime: timestamppb.New(lastSyncTime),
-		Status:       status,
+		Status:       simplifyTaskStatus(rawStatus),
 	}, nil
+}
+
+// simplifyTaskStatus 简化任务状态
+func simplifyTaskStatus(status string) string {
+	switch status {
+	case types.TaskStatusInit, types.TaskStatusRunning, types.TaskStatusNotStarted:
+		return constant.StatusRunning
+	case types.TaskStatusSuccess:
+		return constant.StatusSuccess
+	case types.TaskStatusFailure,
+		types.TaskStatusTimeout,
+		types.TaskStatusRevoked:
+		return constant.StatusFailure
+	}
+
+	return constant.StatusNeverSynced
 }

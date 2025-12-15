@@ -53,7 +53,7 @@ func (m *TemplateRevisionSpec) TemplateRevisionSpec() *table.TemplateRevisionSpe
 }
 
 // PbTemplateRevisionSpec convert table TemplateRevisionSpec to pb TemplateRevisionSpec
-func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec) *TemplateRevisionSpec {
+func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec, templateName string) *TemplateRevisionSpec {
 	if spec == nil {
 		return nil
 	}
@@ -68,6 +68,7 @@ func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec) *TemplateRevisionS
 		Permission:   pbci.PbFilePermission(spec.Permission),
 		ContentSpec:  pbcontent.PbContentSpec(spec.ContentSpec),
 		Charset:      string(spec.Charset),
+		TemplateName: templateName,
 	}
 }
 
@@ -98,28 +99,28 @@ func PbTemplateRevisionAttachment(at *table.TemplateRevisionAttachment) *Templat
 }
 
 // PbTemplateRevisions convert table TemplateRevision to pb TemplateRevision
-func PbTemplateRevisions(s []*table.TemplateRevision) []*TemplateRevision {
+func PbTemplateRevisions(s []*table.TemplateRevision, templateNames map[uint32]string) []*TemplateRevision {
 	if s == nil {
 		return make([]*TemplateRevision, 0)
 	}
 
 	result := make([]*TemplateRevision, 0)
 	for _, one := range s {
-		result = append(result, PbTemplateRevision(one))
+		result = append(result, PbTemplateRevision(one, templateNames[one.Attachment.TemplateID]))
 	}
 
 	return result
 }
 
 // PbTemplateRevision convert table TemplateRevision to pb TemplateRevision
-func PbTemplateRevision(s *table.TemplateRevision) *TemplateRevision {
+func PbTemplateRevision(s *table.TemplateRevision, templateName string) *TemplateRevision {
 	if s == nil {
 		return nil
 	}
 
 	return &TemplateRevision{
 		Id:         s.ID,
-		Spec:       PbTemplateRevisionSpec(s.Spec),
+		Spec:       PbTemplateRevisionSpec(s.Spec, templateName),
 		Attachment: PbTemplateRevisionAttachment(s.Attachment),
 		Revision:   pbbase.PbCreatedRevision(s.Revision),
 	}

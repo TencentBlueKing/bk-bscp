@@ -16001,13 +16001,17 @@ func local_request_Config_ProcessFilterOptions_0(ctx context.Context, marshaler 
 
 }
 
-var (
-	filter_Config_ListTaskBatch_0 = &utilities.DoubleArray{Encoding: map[string]int{"biz_id": 0, "bizId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
-)
-
 func request_Config_ListTaskBatch_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListTaskBatchReq
 	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -16024,13 +16028,6 @@ func request_Config_ListTaskBatch_0(ctx context.Context, marshaler runtime.Marsh
 	protoReq.BizId, err = runtime.Uint32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Config_ListTaskBatch_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.ListTaskBatch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -16042,6 +16039,14 @@ func local_request_Config_ListTaskBatch_0(ctx context.Context, marshaler runtime
 	var protoReq ListTaskBatchReq
 	var metadata runtime.ServerMetadata
 
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -16059,25 +16064,22 @@ func local_request_Config_ListTaskBatch_0(ctx context.Context, marshaler runtime
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Config_ListTaskBatch_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := server.ListTaskBatch(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-var (
-	filter_Config_GetTaskBatchDetail_0 = &utilities.DoubleArray{Encoding: map[string]int{"biz_id": 0, "bizId": 1, "batch_id": 2, "batchId": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
-)
-
 func request_Config_GetTaskBatchDetail_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetTaskBatchDetailReq
 	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -16104,13 +16106,6 @@ func request_Config_GetTaskBatchDetail_0(ctx context.Context, marshaler runtime.
 	protoReq.BatchId, err = runtime.Uint32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "batch_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Config_GetTaskBatchDetail_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetTaskBatchDetail(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -16122,6 +16117,14 @@ func local_request_Config_GetTaskBatchDetail_0(ctx context.Context, marshaler ru
 	var protoReq GetTaskBatchDetailReq
 	var metadata runtime.ServerMetadata
 
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -16147,13 +16150,6 @@ func local_request_Config_GetTaskBatchDetail_0(ctx context.Context, marshaler ru
 	protoReq.BatchId, err = runtime.Uint32(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "batch_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Config_GetTaskBatchDetail_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.GetTaskBatchDetail(ctx, &protoReq)
@@ -16365,6 +16361,1386 @@ func local_request_Config_RetryTasks_0(ctx context.Context, marshaler runtime.Ma
 	}
 
 	msg, err := server.RetryTasks(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_BizTopo_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BizTopoReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.BizTopo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_BizTopo_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BizTopoReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.BizTopo(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ServiceTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.ServiceTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ServiceTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.ServiceTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ProcessTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProcessTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["service_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "service_template_id")
+	}
+
+	protoReq.ServiceTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "service_template_id", err)
+	}
+
+	msg, err := client.ProcessTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ProcessTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProcessTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["service_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "service_template_id")
+	}
+
+	protoReq.ServiceTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "service_template_id", err)
+	}
+
+	msg, err := server.ProcessTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ListConfigInstances_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConfigInstancesReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.ListConfigInstances(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ListConfigInstances_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConfigInstancesReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.ListConfigInstances(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ConfigGenerateStatus_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConfigGenerateStatusReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.ConfigGenerateStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ConfigGenerateStatus_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConfigGenerateStatusReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.ConfigGenerateStatus(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_PreviewConfig_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PreviewConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.PreviewConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_PreviewConfig_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PreviewConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.PreviewConfig(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_CompareConfig_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CompareConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.CompareConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_CompareConfig_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CompareConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.CompareConfig(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_GenerateConfig_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GenerateConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.GenerateConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_GenerateConfig_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GenerateConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.GenerateConfig(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_PushConfig_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PushConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.PushConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_PushConfig_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PushConfigReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.PushConfig(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_GetConfigRenderResult_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConfigRenderResultReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["task_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "task_id")
+	}
+
+	protoReq.TaskId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "task_id", err)
+	}
+
+	msg, err := client.GetConfigRenderResult(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_GetConfigRenderResult_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConfigRenderResultReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["task_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "task_id")
+	}
+
+	protoReq.TaskId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "task_id", err)
+	}
+
+	msg, err := server.GetConfigRenderResult(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ListConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.ListConfigTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ListConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.ListConfigTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_CreateConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.CreateConfigTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_CreateConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.CreateConfigTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_UpdateConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := client.UpdateConfigTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_UpdateConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := server.UpdateConfigTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_GetConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := client.GetConfigTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_GetConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := server.GetConfigTemplate(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ConfigTemplateVariable_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConfigTemplateVariableReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := client.ConfigTemplateVariable(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ConfigTemplateVariable_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConfigTemplateVariableReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	msg, err := server.ConfigTemplateVariable(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_BindProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BindProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := client.BindProcessInstance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_BindProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BindProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := server.BindProcessInstance(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_PreviewBindProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PreviewBindProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := client.PreviewBindProcessInstance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_PreviewBindProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq PreviewBindProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := server.PreviewBindProcessInstance(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["service_instance_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "service_instance_id")
+	}
+
+	protoReq.ServiceInstanceId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "service_instance_id", err)
+	}
+
+	msg, err := client.ProcessInstance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ProcessInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["service_instance_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "service_instance_id")
+	}
+
+	protoReq.ServiceInstanceId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "service_instance_id", err)
+	}
+
+	msg, err := server.ProcessInstance(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_ServiceInstance_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["module_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "module_id")
+	}
+
+	protoReq.ModuleId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "module_id", err)
+	}
+
+	msg, err := client.ServiceInstance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_ServiceInstance_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceInstanceReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["module_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "module_id")
+	}
+
+	protoReq.ModuleId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "module_id", err)
+	}
+
+	msg, err := server.ServiceInstance(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Config_DeleteConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client ConfigClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := client.DeleteConfigTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Config_DeleteConfigTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server ConfigServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteConfigTemplateReq
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["biz_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "biz_id")
+	}
+
+	protoReq.BizId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "biz_id", err)
+	}
+
+	val, ok = pathParams["config_template_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "config_template_id")
+	}
+
+	protoReq.ConfigTemplateId, err = runtime.Uint32(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "config_template_id", err)
+	}
+
+	msg, err := server.DeleteConfigTemplate(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -20950,7 +22326,7 @@ func RegisterConfigHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 
 	})
 
-	mux.Handle("GET", pattern_Config_ListTaskBatch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Config_ListTaskBatch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -20975,7 +22351,7 @@ func RegisterConfigHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 
 	})
 
-	mux.Handle("GET", pattern_Config_GetTaskBatchDetail_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Config_GetTaskBatchDetail_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -21072,6 +22448,506 @@ func RegisterConfigHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		}
 
 		forward_Config_RetryTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_BizTopo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/BizTopo", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/topo"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_BizTopo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_BizTopo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ServiceTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ServiceTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/service_template"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ServiceTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ServiceTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ProcessTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ProcessTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ProcessTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ProcessTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ListConfigInstances_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ListConfigInstances", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ListConfigInstances_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ListConfigInstances_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ConfigGenerateStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ConfigGenerateStatus", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_generate/status"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ConfigGenerateStatus_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ConfigGenerateStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_PreviewConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/PreviewConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/preview"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_PreviewConfig_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PreviewConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_CompareConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/CompareConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/compare"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_CompareConfig_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_CompareConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_GenerateConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/GenerateConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/generate"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_GenerateConfig_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GenerateConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_PushConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/PushConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/push"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_PushConfig_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PushConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_GetConfigRenderResult_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/GetConfigRenderResult", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/render_task/{task_id}/result"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_GetConfigRenderResult_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GetConfigRenderResult_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ListConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ListConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ListConfigTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ListConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_CreateConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/CreateConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_CreateConfigTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_CreateConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_Config_UpdateConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/UpdateConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_UpdateConfigTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_UpdateConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_GetConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/GetConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_GetConfigTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GetConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ConfigTemplateVariable_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ConfigTemplateVariable", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/variable"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ConfigTemplateVariable_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ConfigTemplateVariable_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_BindProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/BindProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/bind_process_instance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_BindProcessInstance_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_BindProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_PreviewBindProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/PreviewBindProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/preview_bind_process_instance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_PreviewBindProcessInstance_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PreviewBindProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/process_instance/{service_instance_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ProcessInstance_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ServiceInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/ServiceInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/service_instance/{module_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_ServiceInstance_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ServiceInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("DELETE", pattern_Config_DeleteConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/pbcs.Config/DeleteConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Config_DeleteConfigTemplate_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_DeleteConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -25142,7 +27018,7 @@ func RegisterConfigHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 
 	})
 
-	mux.Handle("GET", pattern_Config_ListTaskBatch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Config_ListTaskBatch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -25164,7 +27040,7 @@ func RegisterConfigHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 
 	})
 
-	mux.Handle("GET", pattern_Config_GetTaskBatchDetail_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Config_GetTaskBatchDetail_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -25249,6 +27125,446 @@ func RegisterConfigHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		}
 
 		forward_Config_RetryTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_BizTopo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/BizTopo", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/topo"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_BizTopo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_BizTopo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ServiceTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ServiceTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/service_template"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ServiceTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ServiceTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ProcessTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ProcessTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ProcessTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ProcessTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ListConfigInstances_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ListConfigInstances", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ListConfigInstances_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ListConfigInstances_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ConfigGenerateStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ConfigGenerateStatus", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_generate/status"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ConfigGenerateStatus_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ConfigGenerateStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_PreviewConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/PreviewConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/preview"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_PreviewConfig_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PreviewConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_CompareConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/CompareConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/compare"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_CompareConfig_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_CompareConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_GenerateConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/GenerateConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/generate"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_GenerateConfig_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GenerateConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_PushConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/PushConfig", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_instances/push"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_PushConfig_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PushConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_GetConfigRenderResult_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/GetConfigRenderResult", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/render_task/{task_id}/result"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_GetConfigRenderResult_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GetConfigRenderResult_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_ListConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ListConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/list"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ListConfigTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ListConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_CreateConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/CreateConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_CreateConfigTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_CreateConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_Config_UpdateConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/UpdateConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_UpdateConfigTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_UpdateConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_GetConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/GetConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_GetConfigTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_GetConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ConfigTemplateVariable_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ConfigTemplateVariable", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/variable"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ConfigTemplateVariable_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ConfigTemplateVariable_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_Config_BindProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/BindProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/bind_process_instance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_BindProcessInstance_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_BindProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_PreviewBindProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/PreviewBindProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/preview_bind_process_instance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_PreviewBindProcessInstance_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_PreviewBindProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ProcessInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ProcessInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/process_instance/{service_instance_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ProcessInstance_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ProcessInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Config_ServiceInstance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/ServiceInstance", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/service_instance/{module_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_ServiceInstance_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_ServiceInstance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("DELETE", pattern_Config_DeleteConfigTemplate_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/pbcs.Config/DeleteConfigTemplate", runtime.WithHTTPPathPattern("/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Config_DeleteConfigTemplate_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Config_DeleteConfigTemplate_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -25631,6 +27947,46 @@ var (
 	pattern_Config_CmdbGseStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "sync", "sync_status"}, ""))
 
 	pattern_Config_RetryTasks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "config", "biz_id", "task_batch", "batch_id", "retry"}, ""))
+
+	pattern_Config_BizTopo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "config", "biz_id", "topo"}, ""))
+
+	pattern_Config_ServiceTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "config", "biz_id", "service_template"}, ""))
+
+	pattern_Config_ProcessTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "process_template", "service_template_id"}, ""))
+
+	pattern_Config_ListConfigInstances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_instances", "list"}, ""))
+
+	pattern_Config_ConfigGenerateStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_generate", "status"}, ""))
+
+	pattern_Config_PreviewConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_instances", "preview"}, ""))
+
+	pattern_Config_CompareConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_instances", "compare"}, ""))
+
+	pattern_Config_GenerateConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_instances", "generate"}, ""))
+
+	pattern_Config_PushConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_instances", "push"}, ""))
+
+	pattern_Config_GetConfigRenderResult_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "config", "biz_id", "render_task", "task_id", "result"}, ""))
+
+	pattern_Config_ListConfigTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_template", "list"}, ""))
+
+	pattern_Config_CreateConfigTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "config", "biz_id", "config_template"}, ""))
+
+	pattern_Config_UpdateConfigTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "config_template", "config_template_id"}, ""))
+
+	pattern_Config_GetConfigTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "config_template", "config_template_id"}, ""))
+
+	pattern_Config_ConfigTemplateVariable_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 2, 5}, []string{"api", "v1", "config", "biz_id", "config_template", "variable"}, ""))
+
+	pattern_Config_BindProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "config", "biz_id", "config_template", "config_template_id", "bind_process_instance"}, ""))
+
+	pattern_Config_PreviewBindProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "config", "biz_id", "config_template", "config_template_id", "preview_bind_process_instance"}, ""))
+
+	pattern_Config_ProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "process_instance", "service_instance_id"}, ""))
+
+	pattern_Config_ServiceInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "service_instance", "module_id"}, ""))
+
+	pattern_Config_DeleteConfigTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "config", "biz_id", "config_template", "config_template_id"}, ""))
 )
 
 var (
@@ -26009,4 +28365,44 @@ var (
 	forward_Config_CmdbGseStatus_0 = runtime.ForwardResponseMessage
 
 	forward_Config_RetryTasks_0 = runtime.ForwardResponseMessage
+
+	forward_Config_BizTopo_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ServiceTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ProcessTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ListConfigInstances_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ConfigGenerateStatus_0 = runtime.ForwardResponseMessage
+
+	forward_Config_PreviewConfig_0 = runtime.ForwardResponseMessage
+
+	forward_Config_CompareConfig_0 = runtime.ForwardResponseMessage
+
+	forward_Config_GenerateConfig_0 = runtime.ForwardResponseMessage
+
+	forward_Config_PushConfig_0 = runtime.ForwardResponseMessage
+
+	forward_Config_GetConfigRenderResult_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ListConfigTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_CreateConfigTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_UpdateConfigTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_GetConfigTemplate_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ConfigTemplateVariable_0 = runtime.ForwardResponseMessage
+
+	forward_Config_BindProcessInstance_0 = runtime.ForwardResponseMessage
+
+	forward_Config_PreviewBindProcessInstance_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ProcessInstance_0 = runtime.ForwardResponseMessage
+
+	forward_Config_ServiceInstance_0 = runtime.ForwardResponseMessage
+
+	forward_Config_DeleteConfigTemplate_0 = runtime.ForwardResponseMessage
 )

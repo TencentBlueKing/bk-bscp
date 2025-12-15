@@ -18,15 +18,21 @@ message ProcInst {
 
 // ProcessSpec source resource reference: pkg/dal/table/process_instance.go
 message ProcInstSpec {
-  string local_inst_id = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "LocalInstID" }];
-  string inst_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "InstID" }];
+  uint32 host_inst_seq = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "HostInstSeq" }];
+  uint32 module_inst_seq = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "ModuleInstSeq" }];
   string status = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
   string managed_status = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
   google.protobuf.Timestamp status_updated_at = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态更新时间" }];
+  string name = 6;
+  // 展示操作按钮是否可以操作,是一个map，key代表动作，value代表是否可以操作
+  map<string, bool> actions = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "展示操作按钮是否可以操作(key可以是unregister,stop)"
+  }];
 }
 
 message ProcInstAttachment {

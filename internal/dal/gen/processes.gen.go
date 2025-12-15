@@ -37,6 +37,8 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.HostID = field.NewUint32(tableName, "host_id")
 	_process.CloudID = field.NewUint32(tableName, "cloud_id")
 	_process.AgentID = field.NewString(tableName, "agent_id")
+	_process.ProcessTemplateID = field.NewUint32(tableName, "process_template_id")
+	_process.ServiceTemplateID = field.NewUint32(tableName, "service_template_id")
 	_process.SetName = field.NewString(tableName, "set_name")
 	_process.ModuleName = field.NewString(tableName, "module_name")
 	_process.ServiceName = field.NewString(tableName, "service_name")
@@ -48,6 +50,7 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.SourceData = field.NewString(tableName, "source_data")
 	_process.PrevData = field.NewString(tableName, "prev_data")
 	_process.ProcNum = field.NewUint(tableName, "proc_num")
+	_process.FuncName = field.NewString(tableName, "func_name")
 	_process.Creator = field.NewString(tableName, "creator")
 	_process.Reviser = field.NewString(tableName, "reviser")
 	_process.CreatedAt = field.NewTime(tableName, "created_at")
@@ -72,6 +75,8 @@ type process struct {
 	HostID            field.Uint32
 	CloudID           field.Uint32
 	AgentID           field.String
+	ProcessTemplateID field.Uint32
+	ServiceTemplateID field.Uint32
 	SetName           field.String
 	ModuleName        field.String
 	ServiceName       field.String
@@ -83,6 +88,7 @@ type process struct {
 	SourceData        field.String
 	PrevData          field.String
 	ProcNum           field.Uint
+	FuncName          field.String
 	Creator           field.String
 	Reviser           field.String
 	CreatedAt         field.Time
@@ -113,6 +119,8 @@ func (p *process) updateTableName(table string) *process {
 	p.HostID = field.NewUint32(table, "host_id")
 	p.CloudID = field.NewUint32(table, "cloud_id")
 	p.AgentID = field.NewString(table, "agent_id")
+	p.ProcessTemplateID = field.NewUint32(table, "process_template_id")
+	p.ServiceTemplateID = field.NewUint32(table, "service_template_id")
 	p.SetName = field.NewString(table, "set_name")
 	p.ModuleName = field.NewString(table, "module_name")
 	p.ServiceName = field.NewString(table, "service_name")
@@ -124,6 +132,7 @@ func (p *process) updateTableName(table string) *process {
 	p.SourceData = field.NewString(table, "source_data")
 	p.PrevData = field.NewString(table, "prev_data")
 	p.ProcNum = field.NewUint(table, "proc_num")
+	p.FuncName = field.NewString(table, "func_name")
 	p.Creator = field.NewString(table, "creator")
 	p.Reviser = field.NewString(table, "reviser")
 	p.CreatedAt = field.NewTime(table, "created_at")
@@ -152,7 +161,7 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 25)
+	p.fieldMap = make(map[string]field.Expr, 28)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
@@ -163,6 +172,8 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["host_id"] = p.HostID
 	p.fieldMap["cloud_id"] = p.CloudID
 	p.fieldMap["agent_id"] = p.AgentID
+	p.fieldMap["process_template_id"] = p.ProcessTemplateID
+	p.fieldMap["service_template_id"] = p.ServiceTemplateID
 	p.fieldMap["set_name"] = p.SetName
 	p.fieldMap["module_name"] = p.ModuleName
 	p.fieldMap["service_name"] = p.ServiceName
@@ -174,6 +185,7 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["source_data"] = p.SourceData
 	p.fieldMap["prev_data"] = p.PrevData
 	p.fieldMap["proc_num"] = p.ProcNum
+	p.fieldMap["func_name"] = p.FuncName
 	p.fieldMap["creator"] = p.Creator
 	p.fieldMap["reviser"] = p.Reviser
 	p.fieldMap["created_at"] = p.CreatedAt

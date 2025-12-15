@@ -187,17 +187,18 @@ type TaskData interface {
 	String() string
 }
 
-// ProcessTaskData 进程组合任务数据
-type ProcessTaskData struct {
-	Environment  string       `json:"environment"`
-	OperateRange OperateRange `json:"operate_range"`
+// TaskExecutionData 任务执行数据，包含任务执行时需要的环境、操作范围等信息
+type TaskExecutionData struct {
+	Environment       string       `json:"environment"`
+	OperateRange      OperateRange `json:"operate_range"`
+	ConfigTemplateIDs []uint32     `json:"config_template_ids,omitempty"` // 配置模板ID列表（用于配置下发任务）
 }
 
-func (p *ProcessTaskData) String() string {
+func (t *TaskExecutionData) String() string {
 	// json marshal 会忽略零值字段
-	b, err := json.Marshal(p)
+	b, err := json.Marshal(t)
 	if err != nil {
-		logs.Errorf("marshal process task data failed, err: %v", err)
+		logs.Errorf("marshal task execution data failed, err: %v", err)
 		return ""
 	}
 	return string(b)
@@ -211,6 +212,12 @@ type TaskBatchSpec struct {
 	Status     TaskBatchStatus `json:"status" gorm:"column:status"`
 	StartAt    *time.Time      `json:"start_at" gorm:"column:start_at"`
 	EndAt      *time.Time      `json:"end_at" gorm:"column:end_at"`
+
+	// 任务计数字段，用于 Callback 机制更新批次状态
+	TotalCount     uint32 `json:"total_count" gorm:"column:total_count"`         // 总任务数
+	CompletedCount uint32 `json:"completed_count" gorm:"column:completed_count"` // 已完成任务数
+	SuccessCount   uint32 `json:"success_count" gorm:"column:success_count"`     // 成功任务数
+	FailedCount    uint32 `json:"failed_count" gorm:"column:failed_count"`       // 失败任务数
 }
 
 // 辅助方法：设置任务数据
@@ -218,9 +225,9 @@ func (t *TaskBatchSpec) SetTaskData(data TaskData) {
 	t.TaskData = data.String()
 }
 
-// 辅助方法：获取进程任务数据
-func (t *TaskBatchSpec) GetProcessTaskData() (*ProcessTaskData, error) {
-	var data ProcessTaskData
+// GetTaskExecutionData 获取任务执行数据
+func (t *TaskBatchSpec) GetTaskExecutionData() (*TaskExecutionData, error) {
+	var data TaskExecutionData
 	if err := json.Unmarshal([]byte(t.TaskData), &data); err != nil {
 		return nil, err
 	}

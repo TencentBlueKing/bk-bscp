@@ -16,7 +16,9 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/hello"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 )
@@ -24,7 +26,12 @@ import (
 // RegisterExecutor register executor.
 // RegisterExecutor 中可以补充参数，比如执行器依赖的配置，执行器依赖的第三方服务等
 // nolint: revive
-func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao dao.Set) {
+func RegisterExecutor(
+	gseService *gse.Service,
+	bkcmdbService bkcmdb.Service,
+	dao dao.Set,
+	repo repository.Provider,
+) {
 	// 注册 process 执行器
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, dao)
 	process.RegisterExecutor(processExecutor)
@@ -32,6 +39,16 @@ func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao
 	// 注册 同步cmdb和gse 执行器
 	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(bkcmdbService, gseService, dao)
 	cmdbGse.RegisterExecutor(cmdbGseExecutor)
+
+	// 注册 配置生成执行器
+	configGenerateExecutor := config.NewGenerateConfigExecutor(dao, repo)
+	// 设置 CMDB 服务，用于获取 CC 拓扑 XML
+	configGenerateExecutor.SetCMDBService(bkcmdbService)
+	config.RegisterGenerateConfigExecutor(configGenerateExecutor)
+
+	// 注册 配置下发执行器
+	configPushExecutor := config.NewPushConfigExecutor(dao, gseService, repo)
+	config.RegisterPushConfigExecutor(configPushExecutor)
 }
 
 // RegisterHello register

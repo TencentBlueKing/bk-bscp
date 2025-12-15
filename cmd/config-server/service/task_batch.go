@@ -42,12 +42,12 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbcs.ListTaskBatchReq)
 
 	resp, err := s.client.DS.ListTaskBatch(grpcKit.RpcCtx(), &pbds.ListTaskBatchReq{
 		BizId:          req.GetBizId(),
-		TaskObject:     req.GetTaskObject(),
+		TaskObjects:    req.GetTaskObjects(),
 		Start:          req.GetStart(),
 		Limit:          req.GetLimit(),
-		TaskAction:     req.GetTaskAction(),
-		Status:         req.GetStatus(),
-		Executor:       req.GetExecutor(),
+		TaskActions:    req.GetTaskActions(),
+		Statuses:       req.GetStatuses(),
+		Executors:      req.GetExecutors(),
 		Sort:           sortRule,
 		TimeRangeStart: req.GetTimeRangeStart(),
 		TimeRangeEnd:   req.GetTimeRangeEnd(),
@@ -78,11 +78,17 @@ func (s *Service) GetTaskBatchDetail(
 	}
 
 	resp, err := s.client.DS.GetTaskBatchDetail(grpcKit.RpcCtx(), &pbds.GetTaskBatchDetailReq{
-		BizId:   req.GetBizId(),
-		BatchId: req.GetBatchId(),
-		Start:   req.GetStart(),
-		Limit:   req.GetLimit(),
-		Status:  req.GetStatus(),
+		BizId:          req.GetBizId(),
+		BatchId:        req.GetBatchId(),
+		Start:          req.GetStart(),
+		Limit:          req.GetLimit(),
+		SetNames:       req.GetSetNames(),
+		ModuleNames:    req.GetModuleNames(),
+		ServiceNames:   req.GetServiceNames(),
+		ProcessAliases: req.GetProcessAliases(),
+		CcProcessIds:   req.GetCcProcessIds(),
+		InstIds:        req.GetInstIds(),
+		Status:         req.GetStatus(),
 	})
 	if err != nil {
 		return nil, err
@@ -93,5 +99,6 @@ func (s *Service) GetTaskBatchDetail(
 		Count:         resp.Count,
 		Statistics:    resp.GetStatistics(),
 		FilterOptions: resp.GetFilterOptions(),
+		TaskBatch:     resp.GetTaskBatch(),
 	}, nil
 }

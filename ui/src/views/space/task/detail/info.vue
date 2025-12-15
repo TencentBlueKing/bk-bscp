@@ -12,15 +12,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { onBeforeMount } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
-  import useTaskStore from '../../../../store/task';
+
+  defineProps<{
+    taskDetail: Record<string, any>;
+  }>();
 
   const { t } = useI18n();
-  const router = useRouter();
-  const { taskDetail } = storeToRefs(useTaskStore());
 
   const infoList = [
     {
@@ -56,12 +54,6 @@
       value: 'end_at',
     },
   ];
-
-  onBeforeMount(() => {
-    if (!taskDetail.value.id) {
-      router.push({ name: 'task-list' });
-    }
-  });
 </script>
 
 <style scoped lang="scss">
@@ -84,7 +76,8 @@
         color: #4d4f56;
       }
       .value {
-        width: 200px;
+        min-width: 200px;
+        max-width: calc(100vw - 800px);
         color: #313238;
       }
       .theme {

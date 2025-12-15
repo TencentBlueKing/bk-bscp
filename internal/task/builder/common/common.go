@@ -22,6 +22,28 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
+// 定义任务类型常量
+const (
+	// ConfigGenerateTaskType 配置生成任务类型
+	ConfigGenerateTaskType = "config_generate"
+	// ConfigPushTaskType 配置下发任务类型
+	ConfigPushTaskType = "config_push"
+
+	// ProcessOperateTaskType 进程操作任务类型
+	ProcessOperateTaskType = "process_operate"
+
+	// SyncCMDBGSETaskType 同步cmdb和gse任务类型
+	SyncCMDBGSETaskType = "sync_cmdb_gse"
+)
+
+// 定义任务索引类型常量
+const (
+	// TaskIndexType 任务批次索引类型
+	TaskIndexType = "task_batch"
+	// BizIDTaskIndexType 业务ID索引类型
+	BizIDTaskIndexType = "biz_id"
+)
+
 // Builder common builder
 type Builder struct {
 	dao dao.Set
@@ -53,18 +75,21 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID
 	if inst == nil {
 		return fmt.Errorf("no process instance found for id %d", processInstanceID)
 	}
-	return task.SetCommonPayload(&common.ProcessPayload{
-		SetName:     process.Spec.SetName,
-		ModuleName:  process.Spec.ModuleName,
-		ServiceName: process.Spec.ServiceName,
-		Environment: process.Spec.Environment,
-		Alias:       process.Spec.Alias,
-		InnerIP:     process.Spec.InnerIP,
-		AgentID:     process.Attachment.AgentID,
-		CcProcessID: fmt.Sprintf("%d", process.Attachment.CcProcessID),
-		LocalInstID: inst.Spec.LocalInstID,
-		InstID:      inst.Spec.InstID,
-		ConfigData:  process.Spec.SourceData,
-		CloudID:     int(process.Attachment.CloudID),
+	return task.SetCommonPayload(&common.TaskPayload{
+		ProcessPayload: &common.ProcessPayload{
+			SetName:       process.Spec.SetName,
+			ModuleName:    process.Spec.ModuleName,
+			ServiceName:   process.Spec.ServiceName,
+			Environment:   process.Spec.Environment,
+			Alias:         process.Spec.Alias,
+			FuncName:      process.Spec.FuncName,
+			InnerIP:       process.Spec.InnerIP,
+			AgentID:       process.Attachment.AgentID,
+			CcProcessID:   process.Attachment.CcProcessID,
+			HostInstSeq:   inst.Spec.HostInstSeq,
+			ModuleInstSeq: inst.Spec.ModuleInstSeq,
+			ConfigData:    process.Spec.SourceData,
+			CloudID:       int(process.Attachment.CloudID),
+		},
 	})
 }

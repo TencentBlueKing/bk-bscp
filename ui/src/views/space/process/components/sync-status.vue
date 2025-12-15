@@ -7,17 +7,19 @@
         class="sync-button"
         text
         theme="primary"
-        :disabled="syncStatus === 'RUNNING'"
+        :disabled="syncStatus === 'Running'"
         @click="handleSyncStatus">
         <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncStatus === 'RUNNING'">
+      <span v-if="syncStatus === 'Success' || syncStatus === 'Failure'" class="sync-time">
+        {{ $t('最近一次同步：{n}', { n: time }) }}
+        <span :class="syncStatus">[{{ syncStatus === 'Success' ? $t('成功') : $t('失败') }}]</span>
+      </span>
+      <span v-else-if="syncStatus === 'Running'">
         <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
       </span>
-      <span v-else class="sync-time">{{ $t('最近一次同步：{n}', { n: time }) }}</span>
     </div>
   </div>
-  <PrimartTable></PrimartTable>
 </template>
 
 <script lang="ts" setup>
@@ -31,9 +33,10 @@
   }>();
   const emits = defineEmits(['refresh']);
 
-  const syncStatus = ref('SUCCESS');
+  const syncStatus = ref('NeverSynced');
   const time = ref('');
   const statusTimer = ref(0);
+  const firstSync = ref(true);
 
   onMounted(() => {
     handleGetSyncStatus();
@@ -53,13 +56,19 @@
       const res = await getSyncStatus(props.bizId);
       time.value = datetimeFormat(res.last_sync_time);
       syncStatus.value = res.status;
-      if (syncStatus.value === 'RUNNING') {
-        statusTimer.value = setInterval(() => {
+
+      // 首次请求仅更新，不触发 refresh
+      if (firstSync.value) {
+        firstSync.value = false;
+      } else if (syncStatus.value === 'Success' || syncStatus.value === 'Failure') {
+        emits('refresh');
+      }
+
+      // 同步中，继续轮询
+      if (syncStatus.value === 'Running') {
+        statusTimer.value = setTimeout(() => {
           handleGetSyncStatus();
         }, 5000);
-      }
-      if (syncStatus.value === 'SUCCESS') {
-        emits('refresh');
       }
     } catch (error) {
       console.error(error);
@@ -115,6 +124,12 @@
     }
     .sync-time {
       color: #979ba5;
+      .Success {
+        color: #3fc06d;
+      }
+      .Failure {
+        color: #e24343;
+      }
     }
   }
 </style>

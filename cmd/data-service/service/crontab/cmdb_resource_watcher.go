@@ -198,19 +198,40 @@ func (c *cmdbResourceWatcher) handleSetEvent(kt *kit.Kit, resource bkcmdb.BkEven
 
 	logPrefix := fmt.Sprintf("[CMDB][SetSync][biz=%d][set=%d][event=%s]", bizID, setID, eventType)
 
-	update := func(data map[string]any, action string) {
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, data, c.dao.GenQuery().Process.SetID.Eq(setID)); err != nil {
-			logs.Errorf("%s failed to %s, data=%+v, err=%v", logPrefix, action, data, err)
-			return
-		}
-		logs.Infof("%s success: %s", logPrefix, action)
-	}
-
 	switch eventType {
 	case bkcmdb.EventUpdate:
-		update(map[string]any{"set_name": setName}, "update set name")
+		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, map[string]any{"set_name": setName},
+			c.dao.GenQuery().Process.SetID.Eq(setID)); err != nil {
+			logs.Errorf("update set name failed to %s, setName=%s, err=%v", logPrefix, setName, err)
+			return
+		}
+		logs.Infof("update set name success: %s", logPrefix)
 	case bkcmdb.EventDelete:
-		update(map[string]any{"cc_sync_status": table.Deleted}, "mark as deleted")
+		// 获取属于该集群下的进程
+		tx := c.dao.GenQuery().Begin()
+		processIDs, err := c.dao.Process().GetBySetIDWithTx(kt, tx, bizID, setID)
+		if err != nil {
+			logs.Errorf("[ERROR] failed to query processIDs for bizID=%d, setID=%d: %v", bizID, setID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, setID=%d, processIDs=%v: %v",
+				bizID, setID, processIDs, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
 	default:
 		logs.Warnf("%s unknown event type: %s", logPrefix, eventType.String())
 	}
@@ -232,20 +253,41 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 
 	logPrefix := fmt.Sprintf("[CMDB][ModuleSync][biz=%d][set=%d][module=%d][event=%s]", bizID, modID, setID, eventType)
 
-	update := func(data map[string]any, action string) {
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, data, c.dao.GenQuery().Process.SetID.Eq(setID),
-			c.dao.GenQuery().Process.ModuleID.Eq(modID)); err != nil {
-			logs.Errorf("%s failed to %s, data=%+v, err=%v", logPrefix, action, data, err)
-			return
-		}
-		logs.Infof("%s success: %s", logPrefix, action)
-	}
-
 	switch eventType {
 	case bkcmdb.EventUpdate:
-		update(map[string]any{"module_name": moduleName}, "update module name")
+		if err := c.dao.Process().UpdateSelectedFields(kt, bizID, map[string]any{"module_name": moduleName},
+			c.dao.GenQuery().Process.SetID.Eq(setID),
+			c.dao.GenQuery().Process.ModuleID.Eq(modID)); err != nil {
+			logs.Errorf("update module name failed to %s, module_name=%s, err=%v", logPrefix, moduleName, err)
+			return
+		}
+		logs.Infof("update module name success: %s", logPrefix)
 	case bkcmdb.EventDelete:
-		update(map[string]any{"cc_sync_status": table.Deleted}, "mark as deleted")
+		// 获取属于该模块下的进程
+		tx := c.dao.GenQuery().Begin()
+		processIDs, err := c.dao.Process().GetByModuleIDWithTx(kt, tx, bizID, modID)
+		if err != nil {
+			logs.Errorf("[ERROR] failed to query processIDs for bizID=%d, modID=%d: %v", bizID, modID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, modID=%d, processIDs=%v: %v",
+				bizID, modID, processIDs, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
 	default:
 		logs.Warnf("%s unknown event type: %s", logPrefix, eventType.String())
 	}
@@ -256,9 +298,10 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 // 2. 更新进程数量
 // 3. 更新源数据
 func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.BkEventObj) {
-	var p bkcmdb.ProcessInfo
-	if err := resource.Decode(&p); err != nil {
-		logs.Errorf("[CMDB][ProcessSync] decode process failed, err=%v, resource=%v", err, resource)
+	p := new(bkcmdb.ProcessInfo)
+	if err := resource.Decode(p); err != nil {
+		logs.Errorf("[CMDB][ProcessSync] decode process failed, err=%v, resourceType=%s, EventType=%s",
+			err, resource.BkResource.String(), resource.BkEventType)
 		return
 	}
 
@@ -274,7 +317,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 
 	// 如果是空全量同步
 	if procs == nil {
-		if err := c.svc.SynchronizeCmdbData(kt.RpcCtx(), []int{p.BkBizID}); err != nil {
+		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
 			logs.Errorf("sync cmdb data failed: %v", err)
 		}
 		return
@@ -288,13 +331,13 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 		}
 	case bkcmdb.EventUpdate:
 		tx := c.dao.GenQuery().Begin()
-		err := c.handleProcessUpdate(kt, tx, &p, procs)
+		err := c.handleProcessUpdate(kt, tx, p, procs)
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
 				return
 			}
-			logs.Errorf("sync process and instance data failed for biz %d: %v", bizID, err)
+			logs.Errorf("[ERROR] sync process and instance data failed for biz %d: %v", bizID, err)
 			return
 		}
 
@@ -304,13 +347,23 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 		}
 
 	case bkcmdb.EventDelete:
-		if err := c.dao.Process().UpdateSelectedFields(kt, bizID,
-			map[string]any{"cc_sync_status": table.Deleted},
-			c.dao.GenQuery().Process.ID.Eq(procs.ID),
-		); err != nil {
-			logs.Errorf("%s delete process failed: %v", logPrefix, err)
+		tx := c.dao.GenQuery().Begin()
+		err := cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, []uint32{procs.ID})
+		if err != nil {
+			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
+				bizID, procs.ID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
+				return
+			}
 			return
 		}
+
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("commit failed for biz %d: %v", bizID, err)
+			return
+		}
+
 	default:
 		logs.Warnf("%s unknown event: %s", logPrefix, resource.BkEventType)
 	}
@@ -334,14 +387,16 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	}
 	sourceData, err := json.Marshal(info)
 	if err != nil {
+		logs.Errorf("biz %d: marshal process info failed, processID=%d, err=%v, data=%+v",
+			old.Attachment.BizID, old.ID, err, info)
 		return err
 	}
 
 	now := time.Now().UTC()
-
+	newSpec := *old.Spec
 	newP := &table.Process{
 		Attachment: old.Attachment,
-		Spec:       old.Spec,
+		Spec:       &newSpec,
 		Revision: &table.Revision{
 			CreatedAt: now,
 		},
@@ -352,61 +407,65 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	newP.Spec.ProcNum = uint(p.ProcNum)
 	newP.Spec.SourceData = string(sourceData)
 
-	toAdd, toDelete, toUpdate, err := cmdb.BuildProcessChanges(newP, old, now)
+	toAdd, toUpdate, toDelete, procInst, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP, old, now, map[[2]int]int{}, map[[2]int]int{})
 	if err != nil {
+		logs.Errorf("biz %d: build process changes failed, processID=%d, err=%v, new=%+v, old=%+v",
+			old.Attachment.BizID, old.ID, err, newP, old)
 		return err
 	}
 
+	idMap := make(map[string]uint32)
+	// 插入
+	if toAdd != nil {
+		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{toAdd}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: insert process failed: name=%s, ccProcessID=%d, err=%v",
+				p.BkBizID, toAdd.Spec.Alias, toAdd.Attachment.CcProcessID, err)
+			return fmt.Errorf("insert failed: %w", err)
+		}
+		toAddKey := fmt.Sprintf("%s-%d-%d", toAdd.Attachment.TenantID, p.BkBizID, toAdd.Attachment.CcProcessID)
+		idMap[toAddKey] = toAdd.ID
+	}
+
+	// 更新
+	if toUpdate != nil {
+		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{toUpdate}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: update process failed: id=%d, name=%s, err=%v",
+				p.BkBizID, toUpdate.ID, toUpdate.Spec.Alias, err)
+			return fmt.Errorf("update failed: %w", err)
+		}
+		toUpdatekey := fmt.Sprintf("%s-%d-%d", toUpdate.Attachment.TenantID, p.BkBizID, toUpdate.Attachment.CcProcessID)
+		idMap[toUpdatekey] = toUpdate.ID
+	}
+
 	// 删除
-	if len(toDelete) > 0 {
-		if err := c.dao.Process().UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), toDelete); err != nil {
+	if toDelete > 0 {
+		if err := c.dao.Process().UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), []uint32{toDelete}); err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: mark deleted failed: processID=%d, err=%v",
+				old.Attachment.BizID, toDelete, err)
 			return fmt.Errorf("mark deleted failed: %w", err)
 		}
 	}
 
-	// 插入
-	if len(toAdd) > 0 {
-		if err := c.dao.Process().BatchCreateWithTx(kt, tx, toAdd); err != nil {
-			return fmt.Errorf("insert failed: %w", err)
-		}
-	}
-
-	// 更新
-	if len(toUpdate) > 0 {
-		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, toUpdate); err != nil {
-			return fmt.Errorf("update failed: %w", err)
-		}
-	}
-
-	// 构建要写入的实例
-	var toAddProcInst []*table.ProcessInstance
-	// 生成进程实例
-	idMap := make(map[string]uint32)
-	for _, p := range toAdd {
-		toAddProcInst = cmdb.BuildInstances(int(p.Attachment.BizID), int(p.Attachment.HostID), int(p.Attachment.ModuleID),
-			int(p.Attachment.CcProcessID), int(p.Spec.ProcNum), now, map[int]int{}, map[int]int{})
-
-		key := fmt.Sprintf("%s-%d-%d", p.Attachment.TenantID, p.Attachment.BizID, p.Attachment.CcProcessID)
-		idMap[key] = p.ID
-	}
-
-	// 构建要写入的实例
-	var toWriteInstances []*table.ProcessInstance
-	for _, inst := range toAddProcInst {
+	// 回填 ProcessID 给 Instance
+	for _, inst := range procInst {
 		key := fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, inst.Attachment.BizID, inst.Attachment.CcProcessID)
 		if pid, ok := idMap[key]; ok && pid != 0 {
 			inst.Attachment.ProcessID = pid
-			toWriteInstances = append(toWriteInstances, inst)
 		}
 	}
 
-	if len(toWriteInstances) == 0 {
+	if len(procInst) == 0 {
+		logs.Infof("[ProcessSync] biz=%d: no process instances to insert", old.Attachment.BizID)
 		return nil
 	}
 
-	if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, toWriteInstances); err != nil {
+	if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, procInst); err != nil {
+		logs.Errorf("biz %d: insert process instances failed, count=%d, err=%v, data=%+v",
+			old.Attachment.BizID, len(procInst), err, procInst)
 		return fmt.Errorf("insert process instances failed: %w", err)
 	}
+
+	logs.Infof("[ProcessSync] biz=%d: successfully handled process update")
 
 	return nil
 }

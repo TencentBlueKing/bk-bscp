@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	defaultSyncCmdbTime = 10 * time.Minute
+	defaultSyncCmdbTime = 20 * time.Minute
 )
 
 // NewSyncCMDB init sync ticket status
@@ -46,7 +46,7 @@ type syncCMDB struct {
 }
 
 func (s *syncCMDB) Run() {
-	logs.Infof("Start synchronizing cmdb data")
+	logs.Infof("[syncCMDBAndGSE] Start synchronizing CMDB & GSE data task")
 	notifier := shutdown.AddNotifier()
 	go func() {
 		ticker := time.NewTicker(defaultSyncCmdbTime)
@@ -58,21 +58,33 @@ func (s *syncCMDB) Run() {
 
 			select {
 			case <-notifier.Signal:
-				logs.Infof("stop synchronizing cmdb data success")
+				logs.Infof("[syncCMDBAndGSE] Stop synchronizing CMDB & GSE data success")
 				cancel()
 				notifier.Done()
 				return
 			case <-ticker.C:
 				if !s.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip sync cmdb")
+					logs.Warnf("[syncCMDBAndGSE] Current instance is slave, skip sync at=%s", time.Now().Format(time.RFC3339))
 					continue
 				}
 
-				err := s.svc.SynchronizeCmdbData(kt.Ctx, []int{})
-				if err != nil {
-					logs.Errorf("synchronizing cmdb data failed: %v", err)
+				start := time.Now()
+				rid := kt.Rid // 链路ID，便于排查
+				syncAt := start.Format(time.RFC3339)
+
+				if err := s.svc.SynchronizeCmdbData(kt.Ctx, []int{}); err != nil {
+					logs.Errorf(
+						"[syncCMDBAndGSE][error] rid=%s at=%s failed to synchronize cmdb/gse data: %v (type=%T)",
+						rid, syncAt, err, err,
+					)
+				} else {
+					cost := time.Since(start)
+					logs.Infof(
+						"[syncCMDBAndGSE][success] rid=%s at=%s cost=%s - synchronize cmdb/gse success",
+						rid, syncAt, cost,
+					)
 				}
-				logs.Infof("synchronizing cmdb success")
+
 			}
 		}
 	}()

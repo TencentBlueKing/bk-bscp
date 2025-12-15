@@ -11,6 +11,8 @@ export default defineStore('task', () => {
     start_at: '',
     end_at: '',
     execution_time: '',
+    task_object: '',
+    status: '',
   });
   return { taskDetail };
 });

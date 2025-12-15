@@ -17,7 +17,7 @@
         :max-height="tableMaxHeight">
         <TableColumn col-key="id" title="ID">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            <bk-button theme="primary" text @click="handleJump(row)">{{ row.id }}</bk-button>
+            <bk-button theme="primary" text @click="handleJump(row.id)">{{ row.id }}</bk-button>
           </template>
         </TableColumn>
         <TableColumn col-key="task_object" :title="t('任务对象')">
@@ -56,17 +56,24 @@
         </TableColumn>
         <TableColumn col-key="status" :title="t('执行结果')">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            <div class="status">
+            <div v-if="row.status" class="status">
               <span :class="['dot', row.status]"></span>
               <span>{{ TASK_STATUS_MAP[row.status as keyof typeof TASK_STATUS_MAP] }}</span>
             </div>
+            <span v-else>--</span>
           </template>
         </TableColumn>
         <TableColumn :title="t('操作')" :width="200" fixed="right" col-key="operation">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            <bk-button :disabled="row.status === 'success'" theme="primary" text @click="handleRetry(row)">
+            <bk-button
+              v-if="row.status !== 'running'"
+              :disabled="row.status === 'success'"
+              theme="primary"
+              text
+              @click="handleRetry(row)">
               {{ t('重试') }}
             </bk-button>
+            <span v-else>--</span>
           </template>
         </TableColumn>
         <template #empty>
@@ -77,6 +84,7 @@
         </template>
       </PrimaryTable>
       <bk-pagination
+        v-show="pagination.count > 0"
         class="table-pagination"
         :model-value="pagination.current"
         :count="pagination.count"
@@ -103,10 +111,8 @@
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
   import UserName from '../../../../components/user-name.vue';
-  import useTaskStore from '../../../../store/task';
 
   const { t } = useI18n();
-  const taskStore = useTaskStore();
   const router = useRouter();
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { spaceId } = storeToRefs(useGlobalStore());
@@ -122,7 +128,7 @@
   const tableList = ref<ITaskHistoryItem[]>([]);
   const loading = ref(false);
   const tableRef = ref();
-  const searchValue = ref<{ [key: string]: string }>();
+  const searchValue = ref<{ [key: string]: string | string[] }>();
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -162,9 +168,16 @@
     }
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
-    searchValue.value = list;
+  const handleSearch = (list: { [key: string]: string | string[] }) => {
+    searchValue.value = {
+      taskActions: list.task_action || [],
+      taskObjects: list.task_object || [],
+      executors: list.executor || [],
+      statuses: list.status || [],
+    };
     isSearchEmpty.value = Object.keys(list).length > 0;
+    pagination.value.current = 1;
+    updatePagination('limit', 10);
     loadTaskList();
   };
 
@@ -174,34 +187,7 @@
       .join('.');
   };
 
-  const handleJump = (data: ITaskHistoryItem) => {
-    const {
-      id,
-      task_object,
-      task_data: { environment, operate_range },
-      creator,
-      start_at,
-      end_at,
-      execution_time,
-      task_action,
-    } = data;
-
-    const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
-    const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
-
-    taskStore.$patch({
-      taskDetail: {
-        id,
-        task_type: `${typePrefix}${actionText}`,
-        environment,
-        operate_range: mergeOpRange(operate_range),
-        creator,
-        start_at: datetimeFormat(start_at),
-        end_at: datetimeFormat(end_at),
-        execution_time: `${execution_time}s`,
-      },
-    });
-
+  const handleJump = (id: number) => {
     router.push({ name: 'task-detail', params: { taskId: id } });
   };
 
@@ -264,7 +250,7 @@
       background: #f0f1f5;
       border: 1px solid #c4c6cc;
       border-radius: 50%;
-      &.success {
+      &.succeed {
         background: #cbf0da;
         border-color: #2caf5e;
       }

@@ -228,6 +228,25 @@ const (
 	Data_GetTaskBatchDetail_FullMethodName                = "/pbds.Data/GetTaskBatchDetail"
 	Data_RetryTasks_FullMethodName                        = "/pbds.Data/RetryTasks"
 	Data_CmdbGseStatus_FullMethodName                     = "/pbds.Data/CmdbGseStatus"
+	Data_BizTopo_FullMethodName                           = "/pbds.Data/BizTopo"
+	Data_ServiceTemplate_FullMethodName                   = "/pbds.Data/ServiceTemplate"
+	Data_ProcessTemplate_FullMethodName                   = "/pbds.Data/ProcessTemplate"
+	Data_ServiceInstance_FullMethodName                   = "/pbds.Data/ServiceInstance"
+	Data_ProcessInstance_FullMethodName                   = "/pbds.Data/ProcessInstance"
+	Data_ListConfigTemplate_FullMethodName                = "/pbds.Data/ListConfigTemplate"
+	Data_CreateConfigTemplate_FullMethodName              = "/pbds.Data/CreateConfigTemplate"
+	Data_UpdateConfigTemplate_FullMethodName              = "/pbds.Data/UpdateConfigTemplate"
+	Data_GetConfigTemplate_FullMethodName                 = "/pbds.Data/GetConfigTemplate"
+	Data_ConfigTemplateVariable_FullMethodName            = "/pbds.Data/ConfigTemplateVariable"
+	Data_BindProcessInstance_FullMethodName               = "/pbds.Data/BindProcessInstance"
+	Data_PreviewBindProcessInstance_FullMethodName        = "/pbds.Data/PreviewBindProcessInstance"
+	Data_ListConfigInstances_FullMethodName               = "/pbds.Data/ListConfigInstances"
+	Data_GenerateConfig_FullMethodName                    = "/pbds.Data/GenerateConfig"
+	Data_ConfigGenerateStatus_FullMethodName              = "/pbds.Data/ConfigGenerateStatus"
+	Data_GetConfigGenerateResult_FullMethodName           = "/pbds.Data/GetConfigGenerateResult"
+	Data_PreviewConfig_FullMethodName                     = "/pbds.Data/PreviewConfig"
+	Data_PushConfig_FullMethodName                        = "/pbds.Data/PushConfig"
+	Data_DeleteConfigTemplate_FullMethodName              = "/pbds.Data/DeleteConfigTemplate"
 )
 
 // DataClient is the client API for Data service.
@@ -472,6 +491,32 @@ type DataClient interface {
 	RetryTasks(ctx context.Context, in *RetryTasksReq, opts ...grpc.CallOption) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, opts ...grpc.CallOption) (*CmdbGseStatusResp, error)
+	BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error)
+	ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error)
+	ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error)
+	ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error)
+	ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error)
+	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
+	CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error)
+	UpdateConfigTemplate(ctx context.Context, in *UpdateConfigTemplateReq, opts ...grpc.CallOption) (*UpdateConfigTemplateResp, error)
+	GetConfigTemplate(ctx context.Context, in *GetConfigTemplateReq, opts ...grpc.CallOption) (*GetConfigTemplateResp, error)
+	ConfigTemplateVariable(ctx context.Context, in *ConfigTemplateVariableReq, opts ...grpc.CallOption) (*ConfigTemplateVariableResp, error)
+	BindProcessInstance(ctx context.Context, in *BindProcessInstanceReq, opts ...grpc.CallOption) (*BindProcessInstanceResp, error)
+	PreviewBindProcessInstance(ctx context.Context, in *PreviewBindProcessInstanceReq, opts ...grpc.CallOption) (*PreviewBindProcessInstanceResp, error)
+	// 配置实例列表
+	ListConfigInstances(ctx context.Context, in *ListConfigInstancesReq, opts ...grpc.CallOption) (*ListConfigInstancesResp, error)
+	// 配置生成
+	GenerateConfig(ctx context.Context, in *GenerateConfigReq, opts ...grpc.CallOption) (*GenerateConfigResp, error)
+	// 配置实例状态
+	ConfigGenerateStatus(ctx context.Context, in *ConfigGenerateStatusReq, opts ...grpc.CallOption) (*ConfigGenerateStatusResp, error)
+	// 查看配置生成结果
+	GetConfigGenerateResult(ctx context.Context, in *GetConfigGenerateResultReq, opts ...grpc.CallOption) (*GetConfigGenerateResultResp, error)
+	// 配置预览
+	PreviewConfig(ctx context.Context, in *PreviewConfigReq, opts ...grpc.CallOption) (*PreviewConfigResp, error)
+	// 配置下发
+	PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error)
+	// 删除模板配置
+	DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error)
 }
 
 type dataClient struct {
@@ -2246,6 +2291,177 @@ func (c *dataClient) CmdbGseStatus(ctx context.Context, in *CmdbGseStatusReq, op
 	return out, nil
 }
 
+func (c *dataClient) BizTopo(ctx context.Context, in *BizTopoReq, opts ...grpc.CallOption) (*BizTopoResp, error) {
+	out := new(BizTopoResp)
+	err := c.cc.Invoke(ctx, Data_BizTopo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ServiceTemplate(ctx context.Context, in *ServiceTemplateReq, opts ...grpc.CallOption) (*ServiceTemplateResp, error) {
+	out := new(ServiceTemplateResp)
+	err := c.cc.Invoke(ctx, Data_ServiceTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ProcessTemplate(ctx context.Context, in *ProcessTemplateReq, opts ...grpc.CallOption) (*ProcessTemplateResp, error) {
+	out := new(ProcessTemplateResp)
+	err := c.cc.Invoke(ctx, Data_ProcessTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error) {
+	out := new(ServiceInstanceResp)
+	err := c.cc.Invoke(ctx, Data_ServiceInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error) {
+	out := new(ProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Data_ProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error) {
+	out := new(ListConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Data_ListConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error) {
+	out := new(CreateConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Data_CreateConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) UpdateConfigTemplate(ctx context.Context, in *UpdateConfigTemplateReq, opts ...grpc.CallOption) (*UpdateConfigTemplateResp, error) {
+	out := new(UpdateConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Data_UpdateConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GetConfigTemplate(ctx context.Context, in *GetConfigTemplateReq, opts ...grpc.CallOption) (*GetConfigTemplateResp, error) {
+	out := new(GetConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Data_GetConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ConfigTemplateVariable(ctx context.Context, in *ConfigTemplateVariableReq, opts ...grpc.CallOption) (*ConfigTemplateVariableResp, error) {
+	out := new(ConfigTemplateVariableResp)
+	err := c.cc.Invoke(ctx, Data_ConfigTemplateVariable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) BindProcessInstance(ctx context.Context, in *BindProcessInstanceReq, opts ...grpc.CallOption) (*BindProcessInstanceResp, error) {
+	out := new(BindProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Data_BindProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) PreviewBindProcessInstance(ctx context.Context, in *PreviewBindProcessInstanceReq, opts ...grpc.CallOption) (*PreviewBindProcessInstanceResp, error) {
+	out := new(PreviewBindProcessInstanceResp)
+	err := c.cc.Invoke(ctx, Data_PreviewBindProcessInstance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ListConfigInstances(ctx context.Context, in *ListConfigInstancesReq, opts ...grpc.CallOption) (*ListConfigInstancesResp, error) {
+	out := new(ListConfigInstancesResp)
+	err := c.cc.Invoke(ctx, Data_ListConfigInstances_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GenerateConfig(ctx context.Context, in *GenerateConfigReq, opts ...grpc.CallOption) (*GenerateConfigResp, error) {
+	out := new(GenerateConfigResp)
+	err := c.cc.Invoke(ctx, Data_GenerateConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) ConfigGenerateStatus(ctx context.Context, in *ConfigGenerateStatusReq, opts ...grpc.CallOption) (*ConfigGenerateStatusResp, error) {
+	out := new(ConfigGenerateStatusResp)
+	err := c.cc.Invoke(ctx, Data_ConfigGenerateStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GetConfigGenerateResult(ctx context.Context, in *GetConfigGenerateResultReq, opts ...grpc.CallOption) (*GetConfigGenerateResultResp, error) {
+	out := new(GetConfigGenerateResultResp)
+	err := c.cc.Invoke(ctx, Data_GetConfigGenerateResult_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) PreviewConfig(ctx context.Context, in *PreviewConfigReq, opts ...grpc.CallOption) (*PreviewConfigResp, error) {
+	out := new(PreviewConfigResp)
+	err := c.cc.Invoke(ctx, Data_PreviewConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error) {
+	out := new(PushConfigResp)
+	err := c.cc.Invoke(ctx, Data_PushConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error) {
+	out := new(DeleteConfigTemplateResp)
+	err := c.cc.Invoke(ctx, Data_DeleteConfigTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2488,6 +2704,32 @@ type DataServer interface {
 	RetryTasks(context.Context, *RetryTasksReq) (*RetryTasksResp, error)
 	// 获取同步的状态
 	CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error)
+	BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error)
+	ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error)
+	ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error)
+	ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error)
+	ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error)
+	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
+	CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error)
+	UpdateConfigTemplate(context.Context, *UpdateConfigTemplateReq) (*UpdateConfigTemplateResp, error)
+	GetConfigTemplate(context.Context, *GetConfigTemplateReq) (*GetConfigTemplateResp, error)
+	ConfigTemplateVariable(context.Context, *ConfigTemplateVariableReq) (*ConfigTemplateVariableResp, error)
+	BindProcessInstance(context.Context, *BindProcessInstanceReq) (*BindProcessInstanceResp, error)
+	PreviewBindProcessInstance(context.Context, *PreviewBindProcessInstanceReq) (*PreviewBindProcessInstanceResp, error)
+	// 配置实例列表
+	ListConfigInstances(context.Context, *ListConfigInstancesReq) (*ListConfigInstancesResp, error)
+	// 配置生成
+	GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error)
+	// 配置实例状态
+	ConfigGenerateStatus(context.Context, *ConfigGenerateStatusReq) (*ConfigGenerateStatusResp, error)
+	// 查看配置生成结果
+	GetConfigGenerateResult(context.Context, *GetConfigGenerateResultReq) (*GetConfigGenerateResultResp, error)
+	// 配置预览
+	PreviewConfig(context.Context, *PreviewConfigReq) (*PreviewConfigResp, error)
+	// 配置下发
+	PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error)
+	// 删除模板配置
+	DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3081,6 +3323,63 @@ func (UnimplementedDataServer) RetryTasks(context.Context, *RetryTasksReq) (*Ret
 }
 func (UnimplementedDataServer) CmdbGseStatus(context.Context, *CmdbGseStatusReq) (*CmdbGseStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CmdbGseStatus not implemented")
+}
+func (UnimplementedDataServer) BizTopo(context.Context, *BizTopoReq) (*BizTopoResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BizTopo not implemented")
+}
+func (UnimplementedDataServer) ServiceTemplate(context.Context, *ServiceTemplateReq) (*ServiceTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ServiceTemplate not implemented")
+}
+func (UnimplementedDataServer) ProcessTemplate(context.Context, *ProcessTemplateReq) (*ProcessTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessTemplate not implemented")
+}
+func (UnimplementedDataServer) ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ServiceInstance not implemented")
+}
+func (UnimplementedDataServer) ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessInstance not implemented")
+}
+func (UnimplementedDataServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) UpdateConfigTemplate(context.Context, *UpdateConfigTemplateReq) (*UpdateConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) GetConfigTemplate(context.Context, *GetConfigTemplateReq) (*GetConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) ConfigTemplateVariable(context.Context, *ConfigTemplateVariableReq) (*ConfigTemplateVariableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfigTemplateVariable not implemented")
+}
+func (UnimplementedDataServer) BindProcessInstance(context.Context, *BindProcessInstanceReq) (*BindProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BindProcessInstance not implemented")
+}
+func (UnimplementedDataServer) PreviewBindProcessInstance(context.Context, *PreviewBindProcessInstanceReq) (*PreviewBindProcessInstanceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewBindProcessInstance not implemented")
+}
+func (UnimplementedDataServer) ListConfigInstances(context.Context, *ListConfigInstancesReq) (*ListConfigInstancesResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigInstances not implemented")
+}
+func (UnimplementedDataServer) GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateConfig not implemented")
+}
+func (UnimplementedDataServer) ConfigGenerateStatus(context.Context, *ConfigGenerateStatusReq) (*ConfigGenerateStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfigGenerateStatus not implemented")
+}
+func (UnimplementedDataServer) GetConfigGenerateResult(context.Context, *GetConfigGenerateResultReq) (*GetConfigGenerateResultResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigGenerateResult not implemented")
+}
+func (UnimplementedDataServer) PreviewConfig(context.Context, *PreviewConfigReq) (*PreviewConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewConfig not implemented")
+}
+func (UnimplementedDataServer) PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushConfig not implemented")
+}
+func (UnimplementedDataServer) DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigTemplate not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -6622,6 +6921,348 @@ func _Data_CmdbGseStatus_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_BizTopo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BizTopoReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).BizTopo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_BizTopo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).BizTopo(ctx, req.(*BizTopoReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ServiceTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ServiceTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ServiceTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ServiceTemplate(ctx, req.(*ServiceTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ProcessTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ProcessTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ProcessTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ProcessTemplate(ctx, req.(*ProcessTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ServiceInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ServiceInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ServiceInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ServiceInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ServiceInstance(ctx, req.(*ServiceInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ProcessInstance(ctx, req.(*ProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListConfigTemplate(ctx, req.(*ListConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_CreateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).CreateConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_CreateConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).CreateConfigTemplate(ctx, req.(*CreateConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_UpdateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).UpdateConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_UpdateConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).UpdateConfigTemplate(ctx, req.(*UpdateConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GetConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetConfigTemplate(ctx, req.(*GetConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ConfigTemplateVariable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigTemplateVariableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ConfigTemplateVariable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ConfigTemplateVariable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ConfigTemplateVariable(ctx, req.(*ConfigTemplateVariableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_BindProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).BindProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_BindProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).BindProcessInstance(ctx, req.(*BindProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_PreviewBindProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewBindProcessInstanceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).PreviewBindProcessInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_PreviewBindProcessInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).PreviewBindProcessInstance(ctx, req.(*PreviewBindProcessInstanceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ListConfigInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigInstancesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListConfigInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListConfigInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListConfigInstances(ctx, req.(*ListConfigInstancesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GenerateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GenerateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GenerateConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GenerateConfig(ctx, req.(*GenerateConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_ConfigGenerateStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigGenerateStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ConfigGenerateStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ConfigGenerateStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ConfigGenerateStatus(ctx, req.(*ConfigGenerateStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GetConfigGenerateResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigGenerateResultReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetConfigGenerateResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetConfigGenerateResult_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetConfigGenerateResult(ctx, req.(*GetConfigGenerateResultReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_PreviewConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).PreviewConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_PreviewConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).PreviewConfig(ctx, req.(*PreviewConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_PushConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).PushConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_PushConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).PushConfig(ctx, req.(*PushConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_DeleteConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConfigTemplateReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).DeleteConfigTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_DeleteConfigTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).DeleteConfigTemplate(ctx, req.(*DeleteConfigTemplateReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -7412,6 +8053,82 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CmdbGseStatus",
 			Handler:    _Data_CmdbGseStatus_Handler,
+		},
+		{
+			MethodName: "BizTopo",
+			Handler:    _Data_BizTopo_Handler,
+		},
+		{
+			MethodName: "ServiceTemplate",
+			Handler:    _Data_ServiceTemplate_Handler,
+		},
+		{
+			MethodName: "ProcessTemplate",
+			Handler:    _Data_ProcessTemplate_Handler,
+		},
+		{
+			MethodName: "ServiceInstance",
+			Handler:    _Data_ServiceInstance_Handler,
+		},
+		{
+			MethodName: "ProcessInstance",
+			Handler:    _Data_ProcessInstance_Handler,
+		},
+		{
+			MethodName: "ListConfigTemplate",
+			Handler:    _Data_ListConfigTemplate_Handler,
+		},
+		{
+			MethodName: "CreateConfigTemplate",
+			Handler:    _Data_CreateConfigTemplate_Handler,
+		},
+		{
+			MethodName: "UpdateConfigTemplate",
+			Handler:    _Data_UpdateConfigTemplate_Handler,
+		},
+		{
+			MethodName: "GetConfigTemplate",
+			Handler:    _Data_GetConfigTemplate_Handler,
+		},
+		{
+			MethodName: "ConfigTemplateVariable",
+			Handler:    _Data_ConfigTemplateVariable_Handler,
+		},
+		{
+			MethodName: "BindProcessInstance",
+			Handler:    _Data_BindProcessInstance_Handler,
+		},
+		{
+			MethodName: "PreviewBindProcessInstance",
+			Handler:    _Data_PreviewBindProcessInstance_Handler,
+		},
+		{
+			MethodName: "ListConfigInstances",
+			Handler:    _Data_ListConfigInstances_Handler,
+		},
+		{
+			MethodName: "GenerateConfig",
+			Handler:    _Data_GenerateConfig_Handler,
+		},
+		{
+			MethodName: "ConfigGenerateStatus",
+			Handler:    _Data_ConfigGenerateStatus_Handler,
+		},
+		{
+			MethodName: "GetConfigGenerateResult",
+			Handler:    _Data_GetConfigGenerateResult_Handler,
+		},
+		{
+			MethodName: "PreviewConfig",
+			Handler:    _Data_PreviewConfig_Handler,
+		},
+		{
+			MethodName: "PushConfig",
+			Handler:    _Data_PushConfig_Handler,
+		},
+		{
+			MethodName: "DeleteConfigTemplate",
+			Handler:    _Data_DeleteConfigTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

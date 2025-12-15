@@ -62,6 +62,11 @@ func G() GlobalSettings {
 	return *globalSettings
 }
 
+// SetG 设置全局配置
+func SetG(settings GlobalSettings) {
+	globalSettings = &settings
+}
+
 // ApiServer return api server Setting.
 func ApiServer() ApiServerSetting {
 	rt.lock.Lock()

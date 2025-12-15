@@ -42,39 +42,26 @@ const (
 	ReloadProcessOperate ProcessOperateType = "reload"
 	// KillOperate 强制停止操作
 	KillProcessOperate ProcessOperateType = "kill"
+	// PullProcessOperate 下发操作
+	PullProcessOperate ProcessOperateType = "pull"
 )
 
-// ToGSEOpType 转换为 GSE 操作类型
-// GSE 操作类型定义：
-// 0: 启动进程（start）- 调用 spec.control 中的 start_cmd，启动成功会注册托管
-// 1: 停止进程（stop）- 调用 spec.control 中的 stop_cmd，停止成功会取消托管
-// 2: 进程状态查询
-// 3: 注册托管进程 - 令 gse_agent 对该进程进行托管
-// 4: 取消托管进程 - 令 gse_agent 对该进程不再托管
-// 7: 重启进程（restart）- 调用 spec.control 中的 restart_cmd
-// 8: 重新加载进程（reload）- 调用 spec.control 中的 reload_cmd
-// 9: 杀死进程（kill）- 调用 spec.control 中的 kill_cmd，杀死成功会取消托管
-func (p ProcessOperateType) ToGSEOpType() (int, error) {
-	switch p {
+// ValidateOperateType 验证操作类型是否有效
+func ValidateOperateType(operateType ProcessOperateType) error {
+	switch operateType {
 	case StartProcessOperate:
-		return 0, nil
 	case StopProcessOperate:
-		return 1, nil
 	case QueryStatusProcessOperate:
-		return 2, nil
 	case RegisterProcessOperate:
-		return 3, nil
 	case UnregisterProcessOperate:
-		return 4, nil
 	case RestartProcessOperate:
-		return 7, nil
 	case ReloadProcessOperate:
-		return 8, nil
 	case KillProcessOperate:
-		return 9, nil
+		return nil
 	default:
-		return -1, fmt.Errorf("unsupported operation type: %s", p)
+		return fmt.Errorf("unsupported operation type: %s", operateType)
 	}
+	return nil
 }
 
 // Process defines an Process detail information
@@ -109,10 +96,11 @@ type ProcessSpec struct {
 	Alias           string       `gorm:"column:alias" json:"alias"`                           // 进程别名
 	InnerIP         string       `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
 	CcSyncStatus    CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
-	CcSyncUpdatedAt time.Time    `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
+	CcSyncUpdatedAt *time.Time   `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
 	SourceData      string       `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
 	PrevData        string       `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
 	ProcNum         uint         `gorm:"column:proc_num" json:"proc_num"`                     // 进程数量
+	FuncName        string       `gorm:"column:func_name" json:"func_name"`                   // 进程二进制文件名
 }
 
 func (p ProcessInfo) Value() (string, error) {
@@ -167,10 +155,12 @@ type ProcessAttachment struct {
 	CcProcessID       uint32 `gorm:"column:cc_process_id" json:"cc_process_id"`             // cc进程ID
 	SetID             uint32 `gorm:"column:set_id" json:"set_id"`                           // 集群ID
 	ModuleID          uint32 `gorm:"column:module_id" json:"module_id"`                     // 模块ID
-	ServiceInstanceID uint32 `gorm:"column:service_instance_id" json:"service_instance_id"` // 服务实例
+	ServiceInstanceID uint32 `gorm:"column:service_instance_id" json:"service_instance_id"` // 服务实例ID
 	HostID            uint32 `gorm:"column:host_id" json:"host_id"`                         // 主机ID
 	CloudID           uint32 `gorm:"column:cloud_id" json:"cloud_id"`                       // 管控区域
-	AgentID           string `gorm:"column:agent_id" json:"agent_id"`
+	AgentID           string `gorm:"column:agent_id" json:"agent_id"`                       // Agent ID
+	ProcessTemplateID uint32 `gorm:"column:process_template_id" json:"process_template_id"` // 进程模板ID
+	ServiceTemplateID uint32 `gorm:"column:service_template_id" json:"service_template_id"` // 服务模板ID
 }
 
 // CCSyncStatus cc同步状态
