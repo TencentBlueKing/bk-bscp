@@ -492,7 +492,7 @@
     router.push({
       name: 'config-issued',
       query: {
-        processIds: [process.id],
+        processIds: [process.attachment.cc_process_id],
         templateIds: process.spec.bind_template_ids,
       },
     });
@@ -640,6 +640,7 @@
       }
     }
     .default-row {
+      background: #fafbfd !important;
       td {
         height: 32px;
         padding: 0 !important;
@@ -648,6 +649,9 @@
       &:last-child {
         border-bottom: none;
       }
+    }
+    .t-table__empty-row {
+      background: #fafbfd !important;
     }
   }
 </style>

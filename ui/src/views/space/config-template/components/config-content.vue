@@ -38,7 +38,6 @@
             @update:model-value="emits('change', $event)" />
         </div>
         <div class="editor-footer">
-          <bk-button>{{ t('对比') }}</bk-button>
           <bk-button @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
           <bk-button @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
         </div>
@@ -50,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, onBeforeUnmount } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { FilliscreenLine, UnfullScreen } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../components/code-editor/index.vue';
@@ -82,6 +81,10 @@
   const highlight = ref('python');
   const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
   const suffix = ref('');
+
+  onBeforeUnmount(() => {
+    codeEditorRef.value.destroy();
+  });
 
   // 打开全屏
   const handleOpenFullScreen = () => {
@@ -167,7 +170,7 @@
     }
     .editor-footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: flex-start;
       height: 46px;
       align-items: center;
       gap: 8px;

@@ -91,15 +91,17 @@
           </TableColumn>
         </template>
         <template v-else>
-          <TableColumn :title="$t('版本ID')" col-key="config_version_name" />
+          <TableColumn :title="$t('版本ID')" col-key="latest_template_revision_id" />
           <TableColumn :title="$t('版本描述')" col-key="config_version_memo" />
         </template>
         <TableColumn :title="$t('操作')">
           <template #default="{ row }: { row: ITemplateProcessItem }">
             <div v-if="isGenerate" class="op-btns">
-              <bk-button theme="primary" text @click="emits('generate', row)">{{ $t('重新生成') }}</bk-button>
-              <bk-button theme="primary" text>{{ $t('重试') }}</bk-button>
-              <bk-button theme="primary" text>{{ $t('查看') }}</bk-button>
+              <bk-button v-if="row.status === 'SUCCESS'" theme="primary" text @click="emits('generate', row)">
+                {{ $t('重新生成') }}
+              </bk-button>
+              <bk-button v-if="row.status === 'FAILURE'" theme="primary" text>{{ $t('重试') }}</bk-button>
+              <bk-button theme="primary" text @click="handleView(row.task_id)">{{ $t('查看') }}</bk-button>
             </div>
             <bk-button v-else theme="primary" text @click="handleDiff(row)"> {{ $t('配置对比') }}</bk-button>
           </template>
@@ -112,6 +114,7 @@
     :space-id="props.bkBizId"
     :instance="diffSliderData.data"
     :file-path="diffSliderData.filePath" />
+  <ConfigDetail v-model:is-show="detailSliderData.open" :bk-biz-id="bkBizId" :tesk-id="detailSliderData.taskId" />
 </template>
 
 <script lang="ts" setup>
@@ -121,6 +124,7 @@
   import { GENERATE_STATUS } from '../../../../constants/config-template';
   import { datetimeFormat } from '../../../../utils';
   import ConfigDiff from './config-diff.vue';
+  import ConfigDetail from './config-detail.vue';
 
   const props = defineProps<{
     templateProcess: ITemplateProcess;
@@ -140,6 +144,13 @@
     data: { ccProcessId: 0, moduleInstSeq: 0, configVersionId: 0 },
     filePath: '',
   });
+  const detailSliderData = ref<{
+    open: boolean;
+    taskId: string;
+  }>({
+    open: false,
+    taskId: '',
+  });
 
   const templateName = computed(() => {
     if (!props.templateProcess.list.length) return '';
@@ -153,13 +164,21 @@
       data: {
         ccProcessId: row.cc_process_id,
         moduleInstSeq: row.module_inst_seq,
-        configVersionId: row.config_version_id,
+        configVersionId: row.latest_template_revision_id,
       },
     };
   };
 
   const handleSelectVersion = (val: string[]) => {
     emits('select', val);
+  };
+
+  // 查看配置文件详情
+  const handleView = (taskId: string) => {
+    detailSliderData.value = {
+      open: true,
+      taskId,
+    };
   };
 </script>
 

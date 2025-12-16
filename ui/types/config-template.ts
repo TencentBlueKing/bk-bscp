@@ -74,6 +74,7 @@ export interface IConfigTemplateItem {
   instCount?: number;
   templateCount?: number;
   isAssociated: boolean;
+  templateName?: string;
 }
 
 export interface IConfigTemplateEditParams {
@@ -113,7 +114,8 @@ export interface ITemplateProcessItem {
   set: string;
   status: string;
   generation_time: string;
-  config_version_id: number;
+  latest_template_revision_id: number;
+  task_id: string;
   revision: {
     creator: string;
     reviser: string;

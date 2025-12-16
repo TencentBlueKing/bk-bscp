@@ -3,6 +3,7 @@ export interface IProcessItem {
   attachment: {
     app_id: number;
     biz_id: number;
+    cc_process_id: number;
   };
   proc_inst: IProcInst[];
   spec: {

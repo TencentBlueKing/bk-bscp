@@ -40,29 +40,19 @@
 <script lang="ts" setup>
   import { ref, onBeforeUnmount, onMounted } from 'vue';
   import { AngleDownLine } from 'bkui-vue/lib/icon';
+  import { getProcessList } from '../../../../api/process';
   import CodeEditor from '../../../../components/code-editor/index.vue';
 
   const emits = defineEmits(['close']);
-  defineProps<{
+  const props = defineProps<{
     bkBizId: string;
+    templateId?: number;
   }>();
 
   const codeEditorRef = ref();
   const inst = ref('');
   const instOptions = ['nginx', 'mysql', 'redis', 'custom_process'];
-  const instContent = ref(`import banana
-
-
-class Monkey:
-    # Bananas the monkey can eat.
-    capacity = 10
-    def eat(self, n):
-        """Make the monkey eat n bananas!"""
-        self.capacity -= n * banana.size
-
-    def feeding_frenzy(self):
-        self.eat(9.25)
-        return "Yum yum"`);
+  const instContent = ref('');
 
   const loading = ref(false);
 
@@ -73,12 +63,14 @@ class Monkey:
   });
 
   onMounted(() => {
-    loadBindProcessInstance();
+    loadBindProcess();
   });
 
-  const loadBindProcessInstance = async () => {
+  const loadBindProcess = async () => {
     try {
       loading.value = true;
+      const res = getProcessList(props.bkBizId, { start: 0, all: true });
+      console.log('绑定的进程实例：', res);
     } catch (error) {
       console.error(error);
     } finally {

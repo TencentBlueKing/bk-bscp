@@ -119,6 +119,7 @@
     :bk-biz-id="spaceId"
     :template-id="opTemplate.id"
     :template-space-id="templateSpaceId"
+    @operate="handleDetailOperate"
     @close="isShowDetails = false" />
   <DeleteConfirmDialog
     v-model:is-show="isShowDeleteDialog"
@@ -305,6 +306,21 @@
       console.error(error);
     } finally {
       deletePendding.value = false;
+    }
+  };
+
+  // 详情页操作
+  const handleDetailOperate = (op: string) => {
+    const configTemplate = templateList.value.find((template) => template.id === opTemplate.value.id);
+    if (!configTemplate) return;
+    if (op === 'edit') {
+      handleEdit(configTemplate);
+    } else if (op === 'delete') {
+      handleDelete(configTemplate);
+    } else if (op === 'issue') {
+      handleConfigIssue(configTemplate.id);
+    } else if (op === 'version-manage') {
+      handleGoVersionManage(configTemplate);
     }
   };
 </script>

@@ -8,8 +8,8 @@
           <bk-tag>{{ $t('当前版本') }}: {{ templateDetail.revision_name }}</bk-tag>
         </div>
         <div class="suffix-right">
-          <bk-button theme="primary" text>{{ $t('编辑') }}</bk-button>
-          <bk-button theme="primary" text>{{ $t('配置下发') }}</bk-button>
+          <bk-button @click="handleOpTemplate('edit')">{{ $t('编辑') }}</bk-button>
+          <bk-button theme="primary" @click="handleOpTemplate('issue')">{{ $t('配置下发') }}</bk-button>
           <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
             <div class="more-actions">
               <Ellipsis class="ellipsis-icon" />
@@ -59,7 +59,7 @@
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['close', 'created']);
+  const emits = defineEmits(['close', 'operate']);
   const props = defineProps<{
     bkBizId: string;
     templateId: number;
@@ -124,8 +124,9 @@
     getDetail();
   });
 
-  const handleOpTemplate = (id: string) => {
-    console.log('op template', id);
+  const handleOpTemplate = (op: string) => {
+    emits('operate', op);
+    emits('close');
   };
 
   const getDetail = async () => {
@@ -175,6 +176,10 @@
     .suffix-right {
       display: flex;
       align-items: center;
+      .bk-button {
+        width: 88px;
+        margin-left: 8px;
+      }
     }
   }
   .content-wrap {
@@ -213,6 +218,45 @@
       .editor-wrap {
         flex: 1;
         min-width: 0;
+      }
+    }
+  }
+  .more-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    &:hover {
+      background: #dcdee5;
+      color: #3a84ff;
+    }
+    .ellipsis-icon {
+      font-size: 16px;
+      transform: rotate(90deg);
+      cursor: pointer;
+    }
+  }
+
+  .dropdown-ul {
+    margin: -12px;
+    font-size: 12px;
+    .dropdown-li {
+      padding: 0 12px;
+      min-width: 68px;
+      font-size: 12px;
+      line-height: 32px;
+      color: #4d4f56;
+      cursor: pointer;
+      &.disabled {
+        color: #c4c6cc;
+        cursor: not-allowed;
+      }
+      &:hover {
+        background: #f5f7fa;
       }
     }
   }

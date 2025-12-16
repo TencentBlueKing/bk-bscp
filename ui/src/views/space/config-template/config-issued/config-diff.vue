@@ -30,7 +30,7 @@
   </bk-sideslider>
 </template>
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
+  import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { IDiffDetail } from '../../../../../types/service';
   import { compareConfigInstance } from '../../../../api/config-template';
@@ -63,8 +63,16 @@
       createTime: '',
     },
   });
+  watch(
+    () => props.show,
+    (newVal) => {
+      if (newVal) {
+        loadGenerateResult();
+      }
+    },
+  );
 
-  onMounted(async () => {
+  const loadGenerateResult = async () => {
     try {
       const res = await compareConfigInstance(props.spaceId, props.instance);
       configDiffData.value = {
@@ -82,7 +90,7 @@
     } catch (error) {
       console.error(error);
     }
-  });
+  };
 
   const handleClose = () => {
     configDiffData.value = {
@@ -103,12 +111,13 @@
     height: calc(100vh - 52px);
   }
   .header {
+    display: flex;
+    align-items: center;
     .title {
       font-size: 16px;
       color: #313238;
     }
     .line {
-      display: inline-block;
       width: 1px;
       height: 16px;
       background: #c4c6cc;

@@ -55,7 +55,6 @@
       {{ t('配置下发') }}
     </bk-button>
     <bk-button v-else theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
-    <bk-button class="default-btn">{{ t('对比') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
   </div>

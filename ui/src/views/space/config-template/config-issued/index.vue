@@ -42,7 +42,9 @@
         </bk-button>
         <template v-else>
           <bk-button @click="stepsStatus.curStep = 1">{{ t('上一步') }}</bk-button>
-          <bk-button theme="primary" @click="handleIssue">{{ t('立即下发') }}</bk-button>
+          <bk-button :disabled="pending" :loading="pending" theme="primary" @click="handleIssue">
+            {{ t('立即下发') }}
+          </bk-button>
         </template>
         <bk-button @click="handleClose">{{ t('取消') }}</bk-button>
       </div>
@@ -173,6 +175,7 @@
             ) {
               process.status = item.status;
               process.generation_time = item.generation_time;
+              process.task_id = item.task_id;
             }
           });
         });

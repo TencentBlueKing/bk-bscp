@@ -145,3 +145,11 @@ export const getGenerateStatus = (biz_id: string, batch_id: number) =>
  */
 export const issueConfig = (biz_id: string, batch_id: number) =>
   http.post(`/config/biz_id/${biz_id}/config_instances/push`, { batch_id }).then((res) => res.data);
+
+/**
+ * 查看配置生成结果
+ * @param biz_id
+ * @param task_id
+ */
+export const getGenerateResult = (biz_id: string, task_id: string) =>
+  http.get(`/config/biz_id/${biz_id}/render_task/${task_id}/result`).then((res) => res.data);
