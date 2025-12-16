@@ -5,7 +5,7 @@
         <AngleDownFill :class="['angle-icon', isShow && 'expanded']" />
         <span class="template-name">{{ templateName }}</span>
         <span class="version">
-          ({{ $t('即将下发 ') }} <span>{{ `#${templateProcess.revisionName}` }}</span> {{ $t('版本') }})
+          ({{ $t('即将下发') }} <span>{{ `#${templateProcess.revisionName}` }}</span> {{ $t('版本') }})
         </span>
       </div>
       <div class="head-right">
@@ -31,14 +31,18 @@
           <bk-popover theme="light" trigger="click" placement="bottom">
             <span :class="['version-select-trigger', { checked: checkedVersion.length }]">
               <funnel class="funnel-icon" />
-              <span v-if="checkedVersion.length">{{ $t('已选{n}/{m}个版本', { n: 1, m: 2 }) }}</span>
+              <span v-if="checkedVersion.length">{{
+                $t('已选{n}/{m}个版本', { n: checkedVersion.length, m: templateProcess.versions.length })
+              }}</span>
               <span v-else>{{ $t('按版本选择') }}</span>
             </span>
             <template #content>
               <div class="version-select-content">
                 <div class="info">{{ $t('根据配置模板历史版本，筛选对应的实例') }}</div>
                 <bk-checkbox-group v-model="checkedVersion" @change="handleSelectVersion">
-                  <bk-checkbox v-for="version in templateProcess.versions" :key="version.id" :label="version.name" />
+                  <bk-checkbox v-for="version in templateProcess.versions" :key="version.id" :label="version.id">
+                    {{ version.name }}
+                  </bk-checkbox>
                 </bk-checkbox-group>
               </div>
             </template>
@@ -53,7 +57,7 @@
       </div>
     </div>
     <div v-show="isShow">
-      <PrimaryTable class="border" :data="templateProcess.list">
+      <PrimaryTable class="border" :data="templateProcess.list" row-key="cc_process_id">
         <TableColumn :title="$t('进程别名')" col-key="process_alias"></TableColumn>
         <TableColumn :title="$t('所属拓扑')" ellipsis>
           <template #default="{ row }: { row: ITemplateProcessItem }">

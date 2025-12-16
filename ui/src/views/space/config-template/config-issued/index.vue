@@ -105,8 +105,8 @@
     }
   };
 
-  const handleSelectVersion = (template: ITemplateProcess, revisionId: string) => {
-    console.log('handleSelectVersion', template, revisionId);
+  const handleSelectVersion = (template: ITemplateProcess, revisionId: number[]) => {
+    loadTemplateInstanceList(template.id, revisionId);
   };
 
   // 配置生成(全部)
@@ -193,7 +193,7 @@
   };
 
   // 获取单个配置模板实例列表
-  const loadTemplateInstanceList = async (templateId: number, versionIds: string[] = []) => {
+  const loadTemplateInstanceList = async (templateId: number, versionIds: number[] = []) => {
     try {
       pending.value = true;
       const params = {

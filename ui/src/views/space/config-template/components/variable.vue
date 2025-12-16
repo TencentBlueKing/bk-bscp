@@ -9,7 +9,7 @@
     <div class="variable-content">
       <SearchInput v-model="searchValue" :clearable="false" />
       <bk-loading color="#242424" :loading="loading">
-        <PrimaryTable class="variable-table" :data="variableList" size="small">
+        <PrimaryTable class="variable-table" :data="variableList" size="small" row-key="key">
           <TableColumn title="KEY" col-key="key" width="100" />
           <TableColumn :title="$t('类型')" col-key="type" />
           <TableColumn :title="$t('描述')" col-key="memo" width="120" ellipsis />

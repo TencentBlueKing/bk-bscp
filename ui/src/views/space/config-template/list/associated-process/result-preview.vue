@@ -8,7 +8,7 @@
     </div>
     <!-- 模板进程列表 -->
     <ul class="process-list" v-show="isShowProcess">
-      <template v-for="(item, index) in process" :key="item.processId">
+      <template v-for="(item, index) in process" :key="item.id">
         <li class="process-item">
           <div class="white-card">
             <div v-bk-overflow-tips class="white-card-left">{{ item.topoName }}</div>

@@ -66,7 +66,7 @@
       emits('created');
       Message({
         theme: 'success',
-        message: t('新建配置文件成功'),
+        message: t('新建配置模板成功'),
       });
       handleClose();
     } catch (e) {

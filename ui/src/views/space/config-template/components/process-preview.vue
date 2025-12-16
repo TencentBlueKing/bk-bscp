@@ -11,7 +11,7 @@
         <template #prefix>
           <span class="select-prefix">{{ $t('进程实例') }}</span>
         </template>
-        <bk-option v-for="(item, index) in instOptions" :id="item" :key="index" :name="item" />
+        <bk-option v-for="(item, index) in instOptions" :id="item.id" :key="index" :name="item.name" />
       </bk-select>
     </div>
     <div class="preview-content">
@@ -42,6 +42,7 @@
   import { AngleDownLine } from 'bkui-vue/lib/icon';
   import { getProcessList } from '../../../../api/process';
   import CodeEditor from '../../../../components/code-editor/index.vue';
+  import { IProcessItem } from '../../../../../types/process';
 
   const emits = defineEmits(['close']);
   const props = defineProps<{
@@ -51,7 +52,7 @@
 
   const codeEditorRef = ref();
   const inst = ref('');
-  const instOptions = ['nginx', 'mysql', 'redis', 'custom_process'];
+  const instOptions = ref<{ id: number; name: string }[]>([]);
   const instContent = ref('');
 
   const loading = ref(false);
@@ -69,8 +70,11 @@
   const loadBindProcess = async () => {
     try {
       loading.value = true;
-      const res = getProcessList(props.bkBizId, { start: 0, all: true });
-      console.log('绑定的进程实例：', res);
+      const res = await getProcessList(props.bkBizId, { start: 0, all: true });
+      instOptions.value = res.process.map((item: IProcessItem) => ({
+        id: item.attachment.cc_process_id,
+        name: item.spec.alias,
+      }));
     } catch (error) {
       console.error(error);
     } finally {

@@ -206,7 +206,7 @@
         });
       });
     } catch (e) {
-      console.warn('绑定关系回填失败', e);
+      console.error(e);
     }
   };
 
