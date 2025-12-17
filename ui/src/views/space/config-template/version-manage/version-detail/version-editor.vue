@@ -55,7 +55,7 @@
     <Variable v-show="suffix === 'variable'" :bk-biz-id="spaceId" @close="suffix = ''" />
   </div>
   <div class="action-btns">
-    <bk-button v-if="isViewMode" theme="primary">
+    <bk-button v-if="isViewMode" theme="primary" @click="handleConfigIssue">
       {{ t('配置下发') }}
     </bk-button>
     <bk-button v-else theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
@@ -69,16 +69,17 @@
   import SHA256 from 'crypto-js/sha256';
   import Message from 'bkui-vue/lib/message';
   import { ITemplateVersionEditingData } from '../../../../../../types/template';
-  import { IFileConfigContentSummary } from '../../../../../../types/config';
   import { stringLengthInBytes } from '../../../../../utils/index';
   import { updateTemplateContent, downloadTemplateContent } from '../../../../../api/template';
   import { createConfigTemplateVersion } from '../../../../../api/config-template';
+  import { useRouter } from 'vue-router';
   import CodeEditor from '../../../../../components/code-editor/index.vue';
   import PermissionInputPicker from '../../../../../components/permission-input-picker.vue';
   import ProcessPreview from '../../components/process-preview.vue';
   import Variable from '../../components/variable.vue';
 
   const { t } = useI18n();
+  const router = useRouter();
   const props = defineProps<{
     spaceId: string;
     templateSpaceId: number;
@@ -131,7 +132,6 @@
   });
   const formRef = ref();
   const stringContent = ref('');
-  const fileContent = ref<IFileConfigContentSummary | File>();
   const contentLoading = ref(false);
   const uploadPending = ref(false);
   const submitPending = ref(false);
@@ -183,7 +183,7 @@
     const signature = await getSignature();
     uploadPending.value = true;
     // @ts-ignore
-    return updateTemplateContent(props.spaceId, props.templateSpaceId, fileContent.value, signature).then(() => {
+    return updateTemplateContent(props.spaceId, props.templateSpaceId, stringContent.value, signature).then(() => {
       formData.value.byte_size = new Blob([stringContent.value]).size;
       formData.value.sign = signature;
       uploadPending.value = false;
@@ -221,6 +221,16 @@
     } finally {
       submitPending.value = false;
     }
+  };
+
+  // 配置下发
+  const handleConfigIssue = () => {
+    router.push({
+      name: 'config-issued',
+      query: {
+        templateIds: [props.configTemplateId],
+      },
+    });
   };
 </script>
 

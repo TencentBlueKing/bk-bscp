@@ -29,7 +29,7 @@
     <TableColumn :title="t('操作')" width="337">
       <template #default="{ row, rowIndex }">
         <div class="actions-wrapper">
-          <bk-button v-if="rowIndex === 0" text theme="primary" @click="handleOpenDiffSlider(row)">
+          <bk-button v-if="rowIndex === 0" text theme="primary" @click="handleConfigIssue">
             {{ t('配置下发') }}
           </bk-button>
           <bk-button text theme="primary" @click="handleOpenDiffSlider(row)">{{ t('版本对比') }}</bk-button>
@@ -74,6 +74,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useRouter } from 'vue-router';
   import { IPagination } from '../../../../../types/index';
   import { ITemplateVersionItem, DiffSliderDataType } from '../../../../../types/template';
   import { datetimeFormat } from '../../../../utils/index';
@@ -85,6 +86,8 @@
   import TableMoreActions from '../../../../components/table/table-more-actions.vue';
 
   const { t } = useI18n();
+  const router = useRouter();
+
   const props = defineProps<{
     spaceId: string;
     templateSpaceId: number;
@@ -168,6 +171,16 @@
     } finally {
       deleteOptions.value.pendding = false;
     }
+  };
+
+  // 配置下发
+  const handleConfigIssue = () => {
+    router.push({
+      name: 'config-issued',
+      query: {
+        templateIds: [props.configTemplateId],
+      },
+    });
   };
 </script>
 <style lang="scss" scoped>
