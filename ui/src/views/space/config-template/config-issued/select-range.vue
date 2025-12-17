@@ -18,7 +18,8 @@
         multiple
         @select="handleSelectTemplate"
         @deselect="handleRemoveTemplate"
-        @tag-remove="handleRemoveTemplate">
+        @tag-remove="handleRemoveTemplate"
+        @clear="emits('clearTemplate')">
         <bk-option v-for="item in templateList" :id="item.id" :key="item.id" :name="item.spec.name" />
       </bk-select>
     </div>
@@ -37,7 +38,7 @@
   const props = defineProps<{
     bkBizId: string;
   }>();
-  const emits = defineEmits(['selectRange', 'selectTemplate', 'removeTemplate']);
+  const emits = defineEmits(['selectRange', 'selectTemplate', 'removeTemplate', 'clearTemplate']);
 
   const selectedTemplate = ref<number[]>([]);
   const templateList = ref<IConfigTemplateItem[]>();

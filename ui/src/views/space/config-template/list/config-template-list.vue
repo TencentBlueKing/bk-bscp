@@ -72,14 +72,7 @@
               <bk-button theme="primary" text @click="handleGoVersionManage(row)">
                 {{ t('版本管理') }}
               </bk-button>
-              <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
-                <div class="more-actions">
-                  <Ellipsis class="ellipsis-icon" />
-                </div>
-                <template #content>
-                  <div class="delete-btn" @click="handleDelete(row)">{{ t('删除') }}</div>
-                </template>
-              </bk-popover>
+              <TableMoreActions :operation-list="tableMoreOperationList" @operation="handleDelete(row)" />
             </div>
           </template>
         </TableColumn>
@@ -134,7 +127,6 @@
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
-  import { Ellipsis } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { getConfigTemplateList, deleteConfigTemplate } from '../../../../api/config-template';
@@ -151,6 +143,7 @@
   import UserName from '../../../../components/user-name.vue';
   import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
   import useConfigTemplateStore from '../../../../store/config-template';
+  import TableMoreActions from '../../../../components/table/table-more-actions.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
@@ -163,9 +156,14 @@
     { field: 'file_name', label: t('文件名') },
     { field: 'reviser', label: t('更新人') },
   ];
+  const tableMoreOperationList = [
+    {
+      id: 'delete',
+      name: t('删除'),
+    },
+  ];
   const searchQuery = ref<{ [key: string]: string }>({});
   const isSearchEmpty = ref(false);
-  const opPopRef = ref();
   const isShowAssociatedProcess = ref(false);
   const isShowCreateTemplate = ref(false);
   const isShowDetails = ref(false);
@@ -190,8 +188,9 @@
     try {
       tableLoading.value = true;
       const paramas = {
-        start: 0,
-        limit: 10,
+        start: (pagination.value.current - 1) * pagination.value.limit,
+        limit: pagination.value.limit,
+        search: searchQuery.value,
       };
       const res = await getConfigTemplateList(spaceId.value, paramas);
       templateList.value = res.details.map((item: IConfigTemplateItem) => {
@@ -215,6 +214,7 @@
   const handleSearch = (list: { [key: string]: string }) => {
     searchQuery.value = list;
     isSearchEmpty.value = Object.keys(list).length > 0;
+    refresh();
   };
 
   const handlePageChange = (page: number) => {
@@ -236,7 +236,7 @@
     searchValue.value = {};
     isSearchEmpty.value = false;
     searchSelectorRef.value.clear();
-    loadConfigTemplateList();
+    refresh();
   };
 
   const handleAssociatedProcess = (template: IConfigTemplateItem) => {
@@ -365,37 +365,7 @@
       cursor: pointer;
     }
   }
-  .more-actions {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 8px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    &:hover {
-      background: #dcdee5;
-      color: #3a84ff;
-    }
-    .ellipsis-icon {
-      font-size: 16px;
-      transform: rotate(90deg);
-      cursor: pointer;
-    }
-  }
-  .delete-btn {
-    margin: -12px;
-    color: #4d4f56;
-    width: 70px;
-    cursor: pointer;
-    line-height: 32px;
-    height: 32px;
-    padding: 0 12px;
-    &:hover {
-      background: #f5f7fa;
-    }
-  }
+
   .table-pagination {
     padding: 14px 16px;
     height: 60px;

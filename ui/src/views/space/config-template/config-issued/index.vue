@@ -12,10 +12,11 @@
           :bk-biz-id="spaceId"
           @select-template="handleSelectTemplate"
           @remove-template="handleRemoveTemplate"
+          @clear-template="handleClearTemplate"
           @select-range="filterConditions = $event" />
         <div v-show="stepsStatus.curStep === 2" class="batch-op-btns">
           <bk-button class="retry-generate" @click="handleConfigGenerate">{{ $t('全部重新生成') }}</bk-button>
-          <bk-button class="retry-fail">{{ $t('重试所有失败项') }}</bk-button>
+          <bk-button class="retry-fail" @click="handleRetryAll">{{ $t('重试所有失败项') }}</bk-button>
         </div>
         <bk-loading class="process-table-wrap" :loading="pending">
           <div class="process-table-list">
@@ -26,7 +27,8 @@
               :template-process="template"
               :is-generate="stepsStatus.curStep === 2"
               @select="handleSelectVersion(template, $event)"
-              @generate="handleConfigGenerateSingle" />
+              @regenerate="handleConfigRegenerateOrRetry($event, 'regenerate')"
+              @retry="handleConfigRegenerateOrRetry($event, 'retry')" />
           </div>
         </bk-loading>
       </div>
@@ -62,8 +64,13 @@
     getConfigInstanceList,
     getGenerateStatus,
     issueConfig,
+    retryGenerateConfig,
   } from '../../../../api/config-template';
-  import type { IGenerateConfigStatus, ITemplateProcess } from '../../../../../types/config-template';
+  import type {
+    IGenerateConfigStatus,
+    ITemplateProcess,
+    ITemplateProcessItem,
+  } from '../../../../../types/config-template';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import SelectRange from './select-range.vue';
   import useGlobalStore from '../../../../store/global';
@@ -82,7 +89,7 @@
     controllable: true,
   });
   const pending = ref(false);
-  const generateId = ref(0);
+  const batchId = ref(0);
   const statusTimer = ref();
 
   watch(
@@ -124,7 +131,7 @@
         }),
       };
       const res = await generateConfig(spaceId.value, data);
-      generateId.value = res.batch_id;
+      batchId.value = res.batch_id;
       loadGenerateStatus();
     } catch (error) {
       console.error(error);
@@ -133,21 +140,32 @@
     }
   };
 
-  // 配置生成(单条)
-  const handleConfigGenerateSingle = async (template: ITemplateProcess) => {
+  // 配置生成重新生成或重试
+  const handleConfigRegenerateOrRetry = async (templateProcess: ITemplateProcessItem, type: string) => {
     try {
       pending.value = true;
       const data = {
-        configTemplateGroups: [
-          {
-            configTemplateId: template.id,
-            configTemplateVersionId: template.revisionId,
-            ccProcessIds: [...new Set(template.list.map((item) => item.cc_process_id))],
-          },
-        ],
+        batch_id: batchId.value,
+        task_id: templateProcess.task_id,
+        operation_type: type,
       };
-      const res = await generateConfig(spaceId.value, data);
-      generateId.value = res.batch_id;
+      await retryGenerateConfig(spaceId.value, data);
+      loadGenerateStatus();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      pending.value = false;
+    }
+  };
+
+  const handleRetryAll = async () => {
+    try {
+      pending.value = true;
+      const data = {
+        batch_id: batchId.value,
+        operation_type: 'retry',
+      };
+      await retryGenerateConfig(spaceId.value, data);
       loadGenerateStatus();
     } catch (error) {
       console.error(error);
@@ -162,7 +180,7 @@
       if (statusTimer.value) {
         clearTimeout(statusTimer.value);
       }
-      const res = await getGenerateStatus(spaceId.value, generateId.value);
+      const res = await getGenerateStatus(spaceId.value, batchId.value);
       const allStatus = res.config_generate_statuses;
       allStatus.forEach((item: any) => {
         const [templateId, processId, instId] = item.config_instance_key.split('-').map(Number);
@@ -252,11 +270,16 @@
     templateProcessList.value = templateProcessList.value.filter((t) => t.id !== id);
   };
 
+  const handleClearTemplate = () => {
+    selectedTemplateIds.value = [];
+    templateProcessList.value = [];
+  };
+
   // 配置下发
   const handleIssue = async () => {
     try {
       pending.value = true;
-      await issueConfig(spaceId.value, generateId.value);
+      await issueConfig(spaceId.value, batchId.value);
       handleClose();
     } catch (error) {
       console.error(error);

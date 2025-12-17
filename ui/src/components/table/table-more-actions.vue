@@ -5,7 +5,7 @@
     </div>
     <template #content>
       <ul class="dropdown-ul">
-        <li :class="getLiClass(item.id)" v-for="item in operationList" :key="item.name" @click="handleClick(item.id)">
+        <li :class="getLiClass(item)" v-for="item in operationList" :key="item.id" @click="handleClick(item)">
           <span>{{ item.name }}</span>
         </li>
       </ul>
@@ -15,57 +15,28 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { Ellipsis } from 'bkui-vue/lib/icon';
-  import { IProcessTableAction } from '../../../../../types/process';
 
-  const { t } = useI18n();
+  interface operationType {
+    name: string;
+    id: string;
+  }
 
-  const emits = defineEmits(['click', 'kill']);
   const props = defineProps<{
-    actions: IProcessTableAction;
+    operationList: operationType[];
+    enabled?: Record<string, boolean>;
   }>();
+  const emits = defineEmits(['operation']);
 
   const opPopRef = ref();
 
-  const operationList = [
-    {
-      name: t('重启'),
-      id: 'restart',
-    },
-    {
-      name: t('重载'),
-      id: 'reload',
-    },
-    {
-      name: t('强制停止'),
-      id: 'kill',
-    },
-    {
-      name: t('托管'),
-      id: 'register',
-    },
-    {
-      name: t('取消托管'),
-      id: 'unregister',
-    },
-    {
-      name: t('查看进程配置'),
-      id: 'viewConfig',
-    },
-  ];
-
-  const getLiClass = (id: string) => {
-    return ['dropdown-li', { disabled: !props.actions[id as keyof typeof props.actions] }];
+  const getLiClass = (operation: operationType) => {
+    return ['dropdown-li', { disabled: props.enabled && !props.enabled?.[operation.id] }];
   };
 
-  const handleClick = (id: string) => {
-    if (!props.actions[id as keyof typeof props.actions]) return;
-    if (id === 'kill') {
-      emits('kill');
-    } else {
-      emits('click', id);
-    }
+  const handleClick = (operation: operationType) => {
+    if (props.enabled && !props.enabled?.[operation.id]) return;
+    emits('operation', operation.id);
     opPopRef.value.hide();
   };
 </script>

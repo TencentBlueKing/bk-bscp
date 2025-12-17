@@ -1,6 +1,6 @@
 <template>
   <PrimaryTable class="version-table border" :data="props.list">
-    <TableColumn :title="t('版本 ID')" prop="spec.revision_name">
+    <TableColumn :title="t('版本号')" prop="spec.revision_name">
       <template #default="{ row }">
         <div class="revision_name">
           <bk-button v-if="row.spec" text theme="primary" @click="emits('select', row.id)">
@@ -34,21 +34,7 @@
           </bk-button>
           <bk-button text theme="primary" @click="handleOpenDiffSlider(row)">{{ t('版本对比') }}</bk-button>
           <bk-button text theme="primary" @click="emits('create', row.id)">{{ t('复制并新建') }}</bk-button>
-          <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
-            <div class="more-actions">
-              <Ellipsis class="ellipsis-icon" />
-            </div>
-            <template #content>
-              <ul class="dropdown-ul">
-                <li class="dropdown-li" @click="handleDownload(row)">
-                  {{ t('下载') }}
-                </li>
-                <li class="dropdown-li" @click="handleDeleteVersion(row)">
-                  {{ t('删除') }}
-                </li>
-              </ul>
-            </template>
-          </bk-popover>
+          <TableMoreActions :operation-list="operationList" @operation="handleOperation(row, $event)" />
         </div>
       </template>
     </TableColumn>
@@ -93,10 +79,10 @@
   import { datetimeFormat } from '../../../../utils/index';
   import { fileDownload } from '../../../../utils/file';
   import { downloadTemplateContent, deleteTemplateVersion } from '../../../../api/template';
-  import { Ellipsis } from 'bkui-vue/lib/icon';
   import UserName from '../../../../components/user-name.vue';
   import TemplateVersionDiff from '../../templates/version-manage/template-version-diff.vue';
   import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
+  import TableMoreActions from '../../../../components/table/table-more-actions.vue';
 
   const { t } = useI18n();
   const props = defineProps<{
@@ -127,6 +113,16 @@
     memo: '',
     pendding: false,
   });
+  const operationList = [
+    {
+      name: t('下载'),
+      id: 'download',
+    },
+    {
+      name: t('删除'),
+      id: 'delete',
+    },
+  ];
 
   const handleOpenDiffSlider = (version: ITemplateVersionItem) => {
     const { id, spec } = version;
@@ -134,6 +130,14 @@
       open: true,
       data: { id: props.templateId, versionId: id, name: spec.revision_name, permission: spec.permission },
     };
+  };
+
+  const handleOperation = (version: ITemplateVersionItem, operation: string) => {
+    if (operation === 'download') {
+      handleDownload(version);
+    } else {
+      handleDeleteVersion(version);
+    }
   };
 
   const handleDownload = async (version: ITemplateVersionItem) => {

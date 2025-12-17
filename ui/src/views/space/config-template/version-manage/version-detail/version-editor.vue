@@ -18,7 +18,7 @@
             <bk-form-item :label="t('模板名称')" property="name">
               <bk-input v-model="formData.name" />
             </bk-form-item>
-            <bk-form-item :label="t('版本ID')" property="revision_name">
+            <bk-form-item :label="t('版本号')" property="revision_name">
               <bk-input v-model="formData.revision_name" />
             </bk-form-item>
             <bk-form-item :label="t('版本描述')" property="revision_memo">
@@ -47,7 +47,11 @@
         </div>
       </div>
     </div>
-    <ProcessPreview v-show="suffix === 'preview'" :bk-biz-id="spaceId" @close="suffix = ''" />
+    <ProcessPreview
+      v-show="suffix === 'preview'"
+      :bk-biz-id="spaceId"
+      :config-content="stringContent"
+      @close="suffix = ''" />
     <Variable v-show="suffix === 'variable'" :bk-biz-id="spaceId" @close="suffix = ''" />
   </div>
   <div class="action-btns">

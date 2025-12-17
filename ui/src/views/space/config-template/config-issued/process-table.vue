@@ -95,16 +95,18 @@
           </TableColumn>
         </template>
         <template v-else>
-          <TableColumn :title="$t('版本ID')" col-key="latest_template_revision_id" />
+          <TableColumn :title="$t('版本号')" col-key="config_version_name" />
           <TableColumn :title="$t('版本描述')" col-key="config_version_memo" />
         </template>
         <TableColumn :title="$t('操作')">
           <template #default="{ row }: { row: ITemplateProcessItem }">
             <div v-if="isGenerate" class="op-btns">
-              <bk-button v-if="row.status === 'SUCCESS'" theme="primary" text @click="emits('generate', row)">
+              <bk-button v-if="row.status === 'SUCCESS'" theme="primary" text @click="emits('regenerate', row)">
                 {{ $t('重新生成') }}
               </bk-button>
-              <bk-button v-if="row.status === 'FAILURE'" theme="primary" text>{{ $t('重试') }}</bk-button>
+              <bk-button v-if="row.status === 'FAILURE'" theme="primary" text @click="emits('retry', row)">
+                {{ $t('重试') }}
+              </bk-button>
               <bk-button theme="primary" text @click="handleView(row.task_id)">{{ $t('查看') }}</bk-button>
             </div>
             <bk-button v-else theme="primary" text @click="handleDiff(row)"> {{ $t('配置对比') }}</bk-button>
@@ -135,7 +137,7 @@
     isGenerate: boolean;
     bkBizId: string;
   }>();
-  const emits = defineEmits(['select', 'generate']);
+  const emits = defineEmits(['select', 'regenerate', 'retry']);
 
   const isShow = ref(true);
   const checkedVersion = ref<string[]>([]);

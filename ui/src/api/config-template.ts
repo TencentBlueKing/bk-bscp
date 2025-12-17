@@ -153,3 +153,19 @@ export const issueConfig = (biz_id: string, batch_id: number) =>
  */
 export const getGenerateResult = (biz_id: string, task_id: string) =>
   http.get(`/config/biz_id/${biz_id}/render_task/${task_id}/result`).then((res) => res.data);
+
+/**
+ * 重试配置生成
+ * @param biz_id
+ * @param data
+ */
+export const retryGenerateConfig = (biz_id: string, data: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/operate`, data).then((res) => res.data);
+
+/**
+ * 配置预览
+ * @param biz_id
+ * @param data
+ */
+export const previewConfig = (biz_id: string, data: any) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/preview`, data).then((res) => res.data);

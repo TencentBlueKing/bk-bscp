@@ -7,7 +7,12 @@
         </div>
         <span class="title">{{ $t('预览') }}</span>
       </div>
-      <bk-select class="process-select" v-model="inst" :filterable="false" :clearable="false">
+      <bk-select
+        class="process-select"
+        v-model="inst"
+        :filterable="false"
+        :clearable="false"
+        @select="handleSelectProcess">
         <template #prefix>
           <span class="select-prefix">{{ $t('进程实例') }}</span>
         </template>
@@ -17,7 +22,7 @@
     <div class="preview-content">
       <CodeEditor
         v-if="inst"
-        :model-value="instContent"
+        :model-value="previewContent"
         :editable="false"
         line-numbers="off"
         :minimap="false"
@@ -41,19 +46,20 @@
   import { ref, onBeforeUnmount, onMounted } from 'vue';
   import { AngleDownLine } from 'bkui-vue/lib/icon';
   import { getProcessList } from '../../../../api/process';
+  import { previewConfig } from '../../../../api/config-template';
   import CodeEditor from '../../../../components/code-editor/index.vue';
-  import { IProcessItem } from '../../../../../types/process';
+  import type { IProcessItem } from '../../../../../types/process';
 
   const emits = defineEmits(['close']);
   const props = defineProps<{
     bkBizId: string;
-    templateId?: number;
+    configContent: string;
   }>();
 
   const codeEditorRef = ref();
   const inst = ref('');
   const instOptions = ref<{ id: number; name: string }[]>([]);
-  const instContent = ref('');
+  const previewContent = ref('');
 
   const loading = ref(false);
 
@@ -79,6 +85,20 @@
       console.error(error);
     } finally {
       loading.value = false;
+    }
+  };
+
+  const handleSelectProcess = async (id: number) => {
+    try {
+      const data = {
+        templateContent: props.configContent,
+        ccProcessId: id,
+      };
+      const res = await previewConfig(props.bkBizId, data);
+      console.log('res', res);
+      previewContent.value = res.content;
+    } catch (error) {
+      console.error(error);
     }
   };
 </script>

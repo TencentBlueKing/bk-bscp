@@ -96,9 +96,9 @@
               {{ t('配置下发') }}
             </bk-button>
             <TableMoreAction
-              :actions="row.spec.actions"
-              @kill="handleOpProcess(row, 'kill')"
-              @click="handleMoreActionClick(row, $event)" />
+              :enabled="row.spec.actions"
+              :operation-list="operationList"
+              @operation="handleMoreActionClick(row, $event)" />
           </div>
         </template>
       </TableColumn>
@@ -238,7 +238,7 @@
   import UpdateManagedInfo from './update-managed-info.vue';
   import OpProcessDialog from './op-process-dialog.vue';
   import BatchOpProcessDialog from './batch-op-process-dialog.vue';
-  import TableMoreAction from './table-more-action.vue';
+  import TableMoreAction from '../../../../components/table/table-more-actions.vue';
   import useGlobalStore from '../../../../store/global';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import SyncStatus from './sync-status.vue';
@@ -271,6 +271,33 @@
       children: [],
     },
   ]);
+
+  const operationList = [
+    {
+      name: t('重启'),
+      id: 'restart',
+    },
+    {
+      name: t('重载'),
+      id: 'reload',
+    },
+    {
+      name: t('强制停止'),
+      id: 'kill',
+    },
+    {
+      name: t('托管'),
+      id: 'register',
+    },
+    {
+      name: t('取消托管'),
+      id: 'unregister',
+    },
+    {
+      name: t('查看进程配置'),
+      id: 'viewConfig',
+    },
+  ];
 
   const processList = ref<IProcessItem[]>([]);
   const isSearchEmpty = ref(false);
@@ -443,6 +470,10 @@
   };
 
   const handleMoreActionClick = (data: IProcessItem, op: string) => {
+    if (op === 'kill') {
+      handleOpProcess(data, 'kill');
+      return;
+    }
     processIds.value = [data.id];
     handleConfirmOp(op);
   };

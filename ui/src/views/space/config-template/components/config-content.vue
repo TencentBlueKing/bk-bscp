@@ -42,7 +42,11 @@
           <bk-button @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
         </div>
       </div>
-      <ProcessPreview v-show="suffix === 'preview'" :bk-biz-id="bkBizId" @close="suffix = ''" />
+      <ProcessPreview
+        v-show="suffix === 'preview'"
+        :bk-biz-id="bkBizId"
+        :config-content="props.content"
+        @close="suffix = ''" />
       <Variable v-show="suffix === 'variable'" :bk-biz-id="bkBizId" @close="suffix = ''" />
     </div>
   </Teleport>
