@@ -201,7 +201,10 @@ func (s *Service) GetTaskBatchDetail(
 		logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, fmt.Errorf("list tasks failed: %v", err)
 	}
-
+	if pagination == nil {
+		logs.Errorf("list tasks returned nil pagination, rid: %s", kt.Rid)
+		return nil, fmt.Errorf("list tasks returned nil pagination")
+	}
 	// 解析每个 task 的 CommonPayload，构建 TaskDetail
 	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
 	var detail *pbtb.TaskDetail
@@ -257,6 +260,9 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	err := task.GetCommonPayload(&processPayload)
 	if err != nil {
 		return nil, fmt.Errorf("get common payload failed: %v", err)
+	}
+	if processPayload.ProcessPayload == nil {
+		return nil, fmt.Errorf("task %s process payload is nil", task.TaskID)
 	}
 
 	// 构建返回的 TaskDetail

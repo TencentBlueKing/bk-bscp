@@ -139,7 +139,6 @@ func (e *Executor) WaitProcOperateTaskFinish(
 func (e *Executor) WaitTransferFileTaskFinish(
 	ctx context.Context,
 	gseTaskID string,
-	agents []gse.AgentList,
 ) (*gse.TransferFileResultData, error) {
 	var (
 		result *gse.TransferFileResultData
@@ -150,7 +149,6 @@ func (e *Executor) WaitTransferFileTaskFinish(
 		// 获取gse侧文件传输任务结果
 		result, err = e.GseService.GetExtensionsTransferFileResult(ctx, &gse.GetTransferFileResultReq{
 			TaskID: gseTaskID,
-			Agents: agents,
 		})
 		if err != nil {
 			logs.Warnf("WaitTransferFileTaskFinish get gse task state error, gseTaskID %s, err=%+v", gseTaskID, err)

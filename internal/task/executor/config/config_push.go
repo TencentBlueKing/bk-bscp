@@ -149,7 +149,7 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	cfg := payload.GenerateTaskPayload.ConfigPayload
 	proc := payload.GenerateTaskPayload.ProcessPayload
 
-	logs.Infof("push config for batch %d, biz_id: %d, config_key: %s",
+	logs.Infof("[PushConfig STEP]: push config for batch %d, biz_id: %d, config_key: %s",
 		payload.BatchID, payload.BizID, cfg.ConfigInstanceKey)
 
 	kt := kit.New()
@@ -164,6 +164,7 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	// 获取源服务器信息
 	srcAgentID, srcContainerID, err := getServerInfo()
 	if err != nil {
+		logs.Errorf("[PushConfig STEP]: get server info failed: %v", err)
 		return fmt.Errorf("get server info failed: %w", err)
 	}
 
@@ -171,8 +172,6 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	req := &gse.TransferFileReq{
 		TimeOutSeconds: 600,
 		AutoMkdir:      true,
-		UploadSpeed:    0,
-		DownloadSpeed:  0,
 		Tasks: []gse.TransferFileTask{
 			{
 				Source: gse.TransferFileSource{
@@ -201,15 +200,15 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	// 调用 GSE 传输文件
 	resp, err := e.GseService.AsyncExtensionsTransferFile(kt.Ctx, req)
 	if err != nil {
+		logs.Errorf("[PushConfig STEP]: create transfer task failed: %v", err)
 		return fmt.Errorf("create transfer task failed: %w", err)
 	}
 
-	logs.Infof("gse task created, batch_id: %d, task_id: %s, target: %s/%s",
+	logs.Infof("[PushConfig STEP]: gse task created, batch_id: %d, task_id: %s, target: %s/%s",
 		payload.BatchID, resp.Result.TaskID, cfg.ConfigFilePath, cfg.ConfigFileName)
 
 	// 等待传输完成
-	agents := []gse.AgentList{{BkAgentID: proc.AgentID}}
-	result, err := e.WaitTransferFileTaskFinish(kt.Ctx, resp.Result.TaskID, agents)
+	result, err := e.WaitTransferFileTaskFinish(kt.Ctx, resp.Result.TaskID)
 	if err != nil {
 		return fmt.Errorf("wait transfer task failed: %w", err)
 	}
@@ -217,14 +216,14 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	// 检查传输结果
 	for _, r := range result.Result {
 		if r.ErrorCode != 0 {
-			logs.Errorf("transfer failed, agent: %s, code: %d, msg: %s",
+			logs.Errorf("[PushConfig STEP]: transfer failed, agent: %s, code: %d, msg: %s",
 				r.Content.DestAgentID, r.ErrorCode, r.ErrorMsg)
 			return fmt.Errorf("transfer failed, agent: %s, code: %d, msg: %s",
 				r.Content.DestAgentID, r.ErrorCode, r.ErrorMsg)
 		}
 	}
 
-	logs.Infof("transfer success, batch_id: %d, task_id: %s", payload.BatchID, resp.Result.TaskID)
+	logs.Infof("[PushConfig STEP]: transfer success, batch_id: %d, task_id: %s", payload.BatchID, resp.Result.TaskID)
 	return nil
 }
 

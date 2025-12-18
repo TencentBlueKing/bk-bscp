@@ -155,7 +155,7 @@ func (dao *configTemplateDao) Update(kit *kit.Kit, ct *table.ConfigTemplate) err
 
 	updateTx := func(tx *gen.Query) error {
 		q = tx.ConfigTemplate.WithContext(kit.Ctx)
-		if _, err := q.Omit(m.BizID, m.ID).
+		if _, err := q.Omit(m.BizID, m.ID).Select(m.Name, m.CcProcessIDs, m.CcTemplateProcessIDs, m.UpdatedAt, m.Reviser, m.HighlightStyle).
 			Where(m.BizID.Eq(ct.Attachment.BizID), m.ID.Eq(ct.ID)).Updates(ct); err != nil {
 			return err
 		}

@@ -355,6 +355,7 @@ service Data {
   rpc PushConfig(PushConfigReq) returns (PushConfigResp) {}
   // 删除模板配置
   rpc DeleteConfigTemplate(DeleteConfigTemplateReq) returns (DeleteConfigTemplateResp) {}
+  rpc OperateGenerateConfig(OperateGenerateConfigReq) returns (OperateGenerateConfigResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2528,6 +2529,7 @@ message ConfigGenerateStatusResp {
     string config_instance_key = 1;
     string status = 2;
     string task_id = 3;
+    google.protobuf.Timestamp generation_time = 4;
   }
   repeated ConfigGenerateStatus config_generate_statuses = 1;
 }
@@ -2627,6 +2629,7 @@ message UpdateConfigTemplateReq {
   string charset = 12;
   string highlight_style = 13;
   string file_mode = 14;
+  string revision_memo = 15;
 }
 
 message UpdateConfigTemplateResp {}
@@ -2655,3 +2658,12 @@ message DeleteConfigTemplateReq {
 }
 
 message DeleteConfigTemplateResp {}
+
+message OperateGenerateConfigReq {
+  uint32 biz_id = 1;
+  uint32 batch_id = 2;
+  string task_id = 3;
+  string operation_type = 4;
+}
+
+message OperateGenerateConfigResp {}

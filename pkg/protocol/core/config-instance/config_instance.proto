@@ -25,10 +25,10 @@ message ConfigInstance {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版关联的版本号名称" }];
   string config_version_memo = 11
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
-  string latest_template_revision_name = 12
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "即将下发的配置模版版本号" }];
-  uint32 cc_process_id = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-  pbbase.Revision revision = 14;
+  uint32 cc_process_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  pbbase.Revision revision = 13;
+  uint32 latest_template_revision_id = 14
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新的配置模版版本ID" }];
 }
 
 // ConfigInstanceSearchCondition 配置实例搜索条件
@@ -54,4 +54,8 @@ message Choice {
 message ConfigInstanceFilterOptions {
   repeated Choice template_version_choices = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本查询选项" }];
+  uint32 latest_template_revision_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新的配置模版版本ID" }];
+  string latest_template_revision_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新的配置模版版本号" }];
 }

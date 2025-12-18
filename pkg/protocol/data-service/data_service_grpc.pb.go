@@ -247,6 +247,7 @@ const (
 	Data_PreviewConfig_FullMethodName                     = "/pbds.Data/PreviewConfig"
 	Data_PushConfig_FullMethodName                        = "/pbds.Data/PushConfig"
 	Data_DeleteConfigTemplate_FullMethodName              = "/pbds.Data/DeleteConfigTemplate"
+	Data_OperateGenerateConfig_FullMethodName             = "/pbds.Data/OperateGenerateConfig"
 )
 
 // DataClient is the client API for Data service.
@@ -517,6 +518,7 @@ type DataClient interface {
 	PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error)
 	// 删除模板配置
 	DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error)
+	OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error)
 }
 
 type dataClient struct {
@@ -2462,6 +2464,15 @@ func (c *dataClient) DeleteConfigTemplate(ctx context.Context, in *DeleteConfigT
 	return out, nil
 }
 
+func (c *dataClient) OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error) {
+	out := new(OperateGenerateConfigResp)
+	err := c.cc.Invoke(ctx, Data_OperateGenerateConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2730,6 +2741,7 @@ type DataServer interface {
 	PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error)
 	// 删除模板配置
 	DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error)
+	OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3380,6 +3392,9 @@ func (UnimplementedDataServer) PushConfig(context.Context, *PushConfigReq) (*Pus
 }
 func (UnimplementedDataServer) DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OperateGenerateConfig not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -7263,6 +7278,24 @@ func _Data_DeleteConfigTemplate_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_OperateGenerateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OperateGenerateConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).OperateGenerateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_OperateGenerateConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).OperateGenerateConfig(ctx, req.(*OperateGenerateConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8129,6 +8162,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteConfigTemplate",
 			Handler:    _Data_DeleteConfigTemplate_Handler,
+		},
+		{
+			MethodName: "OperateGenerateConfig",
+			Handler:    _Data_OperateGenerateConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

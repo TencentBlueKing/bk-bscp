@@ -109,9 +109,10 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	// 1. 获取 payload
 	payload := &GenerateConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
+		logs.Errorf("[GenerateConfig STEP]: get payload failed, err=%v", err)
 		return err
 	}
-
+	kt := kit.FromGrpcContext(c.Context())
 	// 2. 从 TemplateRevision 中获取配置模版
 	var configContent string
 	if payload.TemplateRevision != nil && payload.TemplateRevision.Spec != nil &&
@@ -119,13 +120,18 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 		// 从仓库中下载实际的配置内容
 		signature := payload.TemplateRevision.Spec.ContentSpec.Signature
 		if signature != "" && e.Repo != nil {
-			kt := kit.New()
+
 			// 为模板空间创建 kit
 			k := kt.GetKitForRepoTmpl(payload.TemplateRevision.Attachment.TemplateSpaceID)
 
+			k.BizID = payload.BizID
 			// 从仓库下载配置内容
 			body, _, err := e.Repo.Download(k, signature)
 			if err != nil {
+				logs.Errorf("[GenerateConfig STEP]: download template config content from repo failed, "+
+					"template id: %d, signature: %s, error: %v",
+					payload.TemplateRevision.Attachment.TemplateID, signature, err)
+
 				return fmt.Errorf("download template config content from repo failed, "+
 					"template id: %d, signature: %s, error: %w",
 					payload.TemplateRevision.Attachment.TemplateID, signature, err)
@@ -135,6 +141,9 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 			// 读取内容
 			content, err := io.ReadAll(body)
 			if err != nil {
+				logs.Errorf("[GenerateConfig STEP]: read template config content failed, "+
+					"template id: %d, signature: %s, error: %v",
+					payload.TemplateRevision.Attachment.TemplateID, signature, err)
 				return fmt.Errorf("read template config content failed, "+
 					"template id: %d, signature: %s, error: %w",
 					payload.TemplateRevision.Attachment.TemplateID, signature, err)
@@ -151,14 +160,14 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 			payload:         payload,
 			templateContent: configContent,
 		}
-		contextParams := render.BuildProcessContextParamsFromSource(c.Context(), source, e.Executor.CMDBService)
+		contextParams := render.BuildProcessContextParamsFromSource(kt.Ctx, source, e.Executor.CMDBService)
 		logs.V(3).Infof("build process context params from source, context params: %+v, template id: %d",
 			contextParams, payload.TemplateRevision.Attachment.TemplateID)
 		// 使用公共方法渲染模板
 		var err error
 		renderedContent, err = render.Template(configContent, contextParams)
 		if err != nil {
-			logs.Errorf("render template failed, template id: %d, error: %v",
+			logs.Errorf("[GenerateConfig STEP]: render template failed, template id: %d, error: %v",
 				payload.TemplateRevision.Attachment.TemplateID, err)
 			return fmt.Errorf("render template failed, template id: %d, error: %w",
 				payload.TemplateRevision.Attachment.TemplateID, err)
@@ -171,8 +180,11 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	// 将渲染结果存储到 CommonPayload 中
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[Finalize STEP]: get common payload failed: %w", err)
+		logs.Errorf("[GenerateConfig STEP]: get common payload failed: %d, error: %v",
+			payload.TemplateRevision.Attachment.TemplateID, err)
+		return fmt.Errorf("[GenerateConfig STEP]: get common payload failed: %w", err)
 	}
+
 	commonPayload.ConfigPayload.ConfigInstanceKey = generateConfigKey(
 		payload.ConfigTemplateID,
 		payload.CcProcessID,
@@ -181,7 +193,9 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	commonPayload.ConfigPayload.ConfigContent = renderedContent
 	commonPayload.ConfigPayload.ConfigContentSignature = configContentSignature
 	if err := c.SetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[Finalize STEP]: set common payload failed: %w", err)
+		logs.Errorf("[GenerateConfig STEP]: set common payload failed: %d, error: %v",
+			payload.TemplateRevision.Attachment.TemplateID, err)
+		return fmt.Errorf("[GenerateConfig STEP]: set common payload failed: %w", err)
 	}
 
 	return nil

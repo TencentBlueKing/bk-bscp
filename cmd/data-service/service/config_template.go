@@ -427,7 +427,8 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 	templateRevision := &table.TemplateRevision{
 		Spec: &table.TemplateRevisionSpec{
 			RevisionName: revisionName,
-			Name:         revisionName,
+			RevisionMemo: req.GetMemo(),
+			Name:         req.GetFileName(),
 			Path:         req.GetFilePath(),
 			FileType:     table.Text,
 			FileMode:     table.FileMode(req.GetFileMode()),
@@ -780,7 +781,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 
 	spec := *revision.Spec
 	spec.RevisionName = req.GetRevisionName()
-	spec.RevisionMemo = req.GetMemo()
+	spec.RevisionMemo = req.GetRevisionMemo()
 	spec.Charset = table.FileCharset(req.GetCharset())
 	spec.FileMode = table.FileMode(req.GetFileMode())
 	spec.ContentSpec = &table.ContentSpec{

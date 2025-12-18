@@ -305,6 +305,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConf
 		HighlightStyle:   req.GetHighlightStyle(),
 		FileMode:         req.GetFileMode(),
 		RevisionName:     req.GetRevisionName(),
+		RevisionMemo:     req.GetRevisionMemo(),
 	})
 
 	if err != nil {

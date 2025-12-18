@@ -1666,6 +1666,15 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     };
   }
 
+  // 配置生成操作
+  rpc OperateGenerateConfig(OperateGenerateConfigReq) returns (OperateGenerateConfigResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/config_instances/operate"
+      body: "*"
+    };
+  }
+
   // 配置下发
   rpc PushConfig(PushConfigReq) returns (PushConfigResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
@@ -4963,6 +4972,8 @@ message ConfigGenerateStatusResp {
     string status = 2
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成任务状态状态" }];
     string task_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID" }];
+    google.protobuf.Timestamp generation_time = 4
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "生成时间" }];
   }
   repeated ConfigGenerateStatus config_generate_statuses = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置生成任务状态列表" }];
@@ -5048,6 +5059,8 @@ message UpdateConfigTemplateReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
   string file_mode = 14
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+  string revision_memo = 15
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
 }
 
 message UpdateConfigTemplateResp {}
@@ -5102,3 +5115,13 @@ message DeleteConfigTemplateReq {
 }
 
 message DeleteConfigTemplateResp {}
+
+message OperateGenerateConfigReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 batch_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次ID" }];
+  string task_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID" }];
+  string operation_type = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作类型：regenerate、retry" }];
+}
+
+message OperateGenerateConfigResp {}

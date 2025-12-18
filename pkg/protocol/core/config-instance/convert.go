@@ -47,30 +47,23 @@ func PbConfigInstance(ci *table.ConfigInstance) *ConfigInstance {
 }
 
 // PbConfigInstanceWithDetails convert table ConfigInstance to pb ConfigInstance with additional details
-func PbConfigInstanceWithDetails(
-	ci *table.ConfigInstance,
-	configTemplateName string,
-	process *table.Process,
-	configVersionName string,
-	configVersionMemo string,
-	configFileName string,
-	latestTemplateRevisionName string,
-) *ConfigInstance {
+func PbConfigInstanceWithDetails(ci *table.ConfigInstance, configTemplateName string, process *table.Process,
+	configVersionName string, configVersionMemo string, configFileName string, configVersionID uint32) *ConfigInstance {
 	if ci == nil {
 		return nil
 	}
 
 	pbCI := &ConfigInstance{
-		BizId:                      ci.Attachment.BizID,
-		ConfigTemplateId:           ci.Attachment.ConfigTemplateID,
-		ConfigTemplateName:         configTemplateName,
-		FileName:                   configFileName,
-		ModuleInstSeq:              ci.Attachment.ModuleInstSeq,
-		CcProcessId:                ci.Attachment.CcProcessID,
-		ConfigVersionName:          configVersionName,
-		ConfigVersionMemo:          configVersionMemo,
-		LatestTemplateRevisionName: latestTemplateRevisionName,
-		Revision:                   pbbase.PbRevision(ci.Revision),
+		BizId:                    ci.Attachment.BizID,
+		ConfigTemplateId:         ci.Attachment.ConfigTemplateID,
+		ConfigTemplateName:       configTemplateName,
+		FileName:                 configFileName,
+		ModuleInstSeq:            ci.Attachment.ModuleInstSeq,
+		CcProcessId:              ci.Attachment.CcProcessID,
+		ConfigVersionName:        configVersionName,
+		ConfigVersionMemo:        configVersionMemo,
+		Revision:                 pbbase.PbRevision(ci.Revision),
+		LatestTemplateRevisionId: configVersionID,
 	}
 
 	// Fill process related fields

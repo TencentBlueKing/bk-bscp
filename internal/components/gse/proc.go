@@ -19,13 +19,13 @@ import (
 )
 
 var (
-	operateProcMulti       = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_multi"
+	operateProcMulti       = "%s/api/v2/proc/operate_proc_multi"
 	updateProcInfo         = "%s/api/v2/proc/update_proc_info"
 	getTaskState           = "%s/api/v2/task/get_task_state"
-	getProcOperateResultV2 = "%s/api/bk-gse/prod/api/v2/proc/get_proc_operate_result_v2"
-	getProcStatusV2        = "%s/api/bk-gse/prod/api/v2/proc/get_proc_status_v2"
-	syncProcStatus         = "%s/api/bk-gse/prod/api/v2/proc/sync_proc_status"
-	operateProcV2          = "%s/api/bk-gse/prod/api/v2/proc/operate_proc_v2"
+	getProcOperateResultV2 = "%s/api/v2/proc/get_proc_operate_result_v2"
+	getProcStatusV2        = "%s/api/v2/proc/get_proc_status_v2"
+	syncProcStatus         = "%s/api/v2/proc/sync_proc_status"
+	operateProcV2          = "%s/api/v2/proc/operate_proc_v2"
 )
 
 // OperateProcMulti 批量进程操作

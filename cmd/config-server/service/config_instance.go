@@ -194,6 +194,7 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbcs.ConfigGene
 			ConfigInstanceKey: configGenerateStatus.GetConfigInstanceKey(),
 			Status:            configGenerateStatus.GetStatus(),
 			TaskId:            configGenerateStatus.GetTaskId(),
+			GenerationTime:    configGenerateStatus.GetGenerationTime(),
 		})
 	}
 	return &pbcs.ConfigGenerateStatusResp{
@@ -244,4 +245,28 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbcs.PreviewConfigReq)
 	return &pbcs.PreviewConfigResp{
 		Content: dsResp.GetContent(),
 	}, nil
+}
+
+// OperateGenerateConfig implements [pbcs.ConfigServer].
+func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbcs.OperateGenerateConfigReq) (*pbcs.OperateGenerateConfigResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	_, err := s.client.DS.OperateGenerateConfig(grpcKit.RpcCtx(), &pbds.OperateGenerateConfigReq{
+		BizId:         req.GetBizId(),
+		BatchId:       req.GetBatchId(),
+		TaskId:        req.GetTaskId(),
+		OperationType: req.GetOperationType(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.OperateGenerateConfigResp{}, nil
 }

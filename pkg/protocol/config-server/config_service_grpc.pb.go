@@ -223,6 +223,7 @@ const (
 	Config_PreviewConfig_FullMethodName                      = "/pbcs.Config/PreviewConfig"
 	Config_CompareConfig_FullMethodName                      = "/pbcs.Config/CompareConfig"
 	Config_GenerateConfig_FullMethodName                     = "/pbcs.Config/GenerateConfig"
+	Config_OperateGenerateConfig_FullMethodName              = "/pbcs.Config/OperateGenerateConfig"
 	Config_PushConfig_FullMethodName                         = "/pbcs.Config/PushConfig"
 	Config_GetConfigRenderResult_FullMethodName              = "/pbcs.Config/GetConfigRenderResult"
 	Config_ListConfigTemplate_FullMethodName                 = "/pbcs.Config/ListConfigTemplate"
@@ -628,6 +629,8 @@ type ConfigClient interface {
 	CompareConfig(ctx context.Context, in *CompareConfigReq, opts ...grpc.CallOption) (*CompareConfigResp, error)
 	// 配置生成
 	GenerateConfig(ctx context.Context, in *GenerateConfigReq, opts ...grpc.CallOption) (*GenerateConfigResp, error)
+	// 配置生成操作
+	OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error)
 	// 配置下发
 	PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error)
 	// 查看配置生成结果
@@ -2426,6 +2429,15 @@ func (c *configClient) GenerateConfig(ctx context.Context, in *GenerateConfigReq
 	return out, nil
 }
 
+func (c *configClient) OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error) {
+	out := new(OperateGenerateConfigResp)
+	err := c.cc.Invoke(ctx, Config_OperateGenerateConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) PushConfig(ctx context.Context, in *PushConfigReq, opts ...grpc.CallOption) (*PushConfigResp, error) {
 	out := new(PushConfigResp)
 	err := c.cc.Invoke(ctx, Config_PushConfig_FullMethodName, in, out, opts...)
@@ -2925,6 +2937,8 @@ type ConfigServer interface {
 	CompareConfig(context.Context, *CompareConfigReq) (*CompareConfigResp, error)
 	// 配置生成
 	GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error)
+	// 配置生成操作
+	OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error)
 	// 配置下发
 	PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error)
 	// 查看配置生成结果
@@ -3542,6 +3556,9 @@ func (UnimplementedConfigServer) CompareConfig(context.Context, *CompareConfigRe
 }
 func (UnimplementedConfigServer) GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateConfig not implemented")
+}
+func (UnimplementedConfigServer) OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OperateGenerateConfig not implemented")
 }
 func (UnimplementedConfigServer) PushConfig(context.Context, *PushConfigReq) (*PushConfigResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushConfig not implemented")
@@ -7119,6 +7136,24 @@ func _Config_GenerateConfig_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_OperateGenerateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OperateGenerateConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).OperateGenerateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_OperateGenerateConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).OperateGenerateConfig(ctx, req.(*OperateGenerateConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_PushConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PushConfigReq)
 	if err := dec(in); err != nil {
@@ -8125,6 +8160,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateConfig",
 			Handler:    _Config_GenerateConfig_Handler,
+		},
+		{
+			MethodName: "OperateGenerateConfig",
+			Handler:    _Config_OperateGenerateConfig_Handler,
 		},
 		{
 			MethodName: "PushConfig",

@@ -220,7 +220,10 @@ func (c *bkrepoClient) Download(kt *kit.Kit, sign string) (io.ReadCloser, int64,
 		return nil, 0, err
 	}
 	req.Header.Set(constant.RidKey, kt.Rid)
-	req.Header.Set(constant.BkTenantID, kt.TenantID)
+
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		req.Header.Set(constant.BkTenantID, kt.TenantID)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
