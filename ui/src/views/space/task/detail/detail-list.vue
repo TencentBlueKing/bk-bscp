@@ -4,7 +4,7 @@
       <bk-button class="retry-btn" :disabled="failureCount === 0" @click="handleRetry">
         {{ $t('重试所有失败') }}
       </bk-button>
-      <searchSelector
+      <SearchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
         :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP')"
@@ -34,17 +34,17 @@
           class="border"
           row-key="id"
           cell-empty-content="--">
-          <TableColumn :title="$t('集群')" col-key="process_payload.set_name">
+          <TableColumn :title="$t('集群')" col-key="task_payload.set_name">
             <template #default="{ row }">
-              <bk-button theme="primary" text>{{ row.process_payload.set_name || '--' }}</bk-button>
+              <bk-button theme="primary" text>{{ row.task_payload.set_name || '--' }}</bk-button>
             </template>
           </TableColumn>
-          <TableColumn :title="$t('模块')" col-key="process_payload.module_name"></TableColumn>
-          <TableColumn :title="$t('服务实例')" col-key="process_payload.service_name" ellipsis></TableColumn>
-          <TableColumn :title="$t('进程别名')" col-key="process_payload.alias"></TableColumn>
-          <TableColumn :title="$t('CC 进程 ID')" col-key="process_payload.cc_process_id"></TableColumn>
-          <TableColumn :title="$t('模块下唯一标识')" col-key="process_payload.module_inst_seq"></TableColumn>
-          <TableColumn :title="$t('内网 IP')" col-key="process_payload.inner_ip"></TableColumn>
+          <TableColumn :title="$t('模块')" col-key="task_payload.module_name"></TableColumn>
+          <TableColumn :title="$t('服务实例')" col-key="task_payload.service_name" ellipsis></TableColumn>
+          <TableColumn :title="$t('进程别名')" col-key="task_payload.alias"></TableColumn>
+          <TableColumn :title="$t('CC 进程 ID')" col-key="task_payload.cc_process_id"></TableColumn>
+          <TableColumn :title="$t('模块下唯一标识')" col-key="task_payload.module_inst_seq"></TableColumn>
+          <TableColumn :title="$t('内网 IP')" col-key="task_payload.inner_ip"></TableColumn>
           <TableColumn :title="$t('执行耗时')" col-key="execution_time">
             <template #default="{ row }"> {{ row.execution_time }}s </template>
           </TableColumn>
@@ -103,7 +103,7 @@
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import searchSelector from '../../../../components/search-selector.vue';
+  import SearchSelector from '../../../../components/search-selector.vue';
   import useTaskStore from '../../../../store/task';
   import { datetimeFormat } from '../../../../utils';
   import type { IOperateRange } from '../../../../../types/task';
