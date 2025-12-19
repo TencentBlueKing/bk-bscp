@@ -84,7 +84,7 @@ func (gse *Service) doRequest(ctx context.Context, method HTTPMethod, url string
 
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		logs.Errorf("unmarshal bk result failed, err: %v", err)
-		return err
+		return fmt.Errorf("unmarshal bk result failed, err: %v", err)
 	}
 
 	return nil

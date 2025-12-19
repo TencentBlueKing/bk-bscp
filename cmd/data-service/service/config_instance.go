@@ -1189,6 +1189,7 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 	for id := range templateVersionMap {
 		configTemplateIDs = append(configTemplateIDs, id)
 	}
+
 	// 1. 检查配置模板是否有运行中的配置下发任务
 	// 2. 检查下发的配置模板版本是否为最新版本
 	err = validateOperate(s.dao, kt, req.GetBizId(), configTemplateIDs, templateVersionMap)

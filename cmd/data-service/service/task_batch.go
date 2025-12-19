@@ -214,6 +214,9 @@ func (s *Service) GetTaskBatchDetail(
 			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
 			return nil, fmt.Errorf("convert task to detail failed: %v", err)
 		}
+		if detail == nil {
+			continue
+		}
 		taskDetails = append(taskDetails, detail)
 	}
 
@@ -262,7 +265,11 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 		return nil, fmt.Errorf("get common payload failed: %v", err)
 	}
 	if processPayload.ProcessPayload == nil {
-		return nil, fmt.Errorf("task %s process payload is nil", task.TaskID)
+		logs.Infof(
+			"skip task convert, process payload is nil, taskID: %s, taskType: %s",
+			task.TaskID, task.GetTaskType(),
+		)
+		return nil, nil
 	}
 
 	// 构建返回的 TaskDetail

@@ -114,7 +114,7 @@ func (t *GenerateConfigTask) FinalizeTask(task *types.Task) error {
 			ConfigTemplateID:        t.configTemplateID,
 			ConfigTemplateVersionID: t.templateRevision.ID,
 			ConfigTemplateName:      t.configTemplateName,
-			ConfigFileName:          t.configTemplate.Spec.Name,
+			ConfigFileName:          t.templateRevision.Spec.Name,
 			ConfigFilePath:          t.templateRevision.Spec.Path,
 			ConfigFileOwner:         t.templateRevision.Spec.Permission.User,
 			ConfigFileGroup:         t.templateRevision.Spec.Permission.UserGroup,

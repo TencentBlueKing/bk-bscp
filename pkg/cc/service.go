@@ -80,6 +80,7 @@ type GlobalSettings struct {
 	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
 	GSE          GSE               `yaml:"gse"`
 	CMDB         CMDBConfig        `yaml:"cmdb"`
+	BCS          BCS               `yaml:"bcs"`
 }
 
 // BaseConf 基础配置
@@ -334,6 +335,7 @@ type DataServiceSetting struct {
 	CMDB         CMDBConfig    `yaml:"cmdb"`
 	ITSM         ITSMConfig    `yaml:"itsm"`
 	Crontab      CrontabConfig `yaml:"crontab"`
+	GSE          GSE           `yaml:"gse"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -357,6 +359,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.FeatureFlags.trySetDefault()
 	s.Gorm.trySetDefault()
 	s.Crontab.trySetDefault()
+	s.GSE.getFromEnv()
 }
 
 // Validate DataServiceSetting option.

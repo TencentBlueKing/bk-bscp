@@ -37,10 +37,10 @@ type QueryPodData struct {
 // QueryPod 通过集群ID和 pod UID 查询 pod 信息
 func QueryPod(ctx context.Context, clusterID string, uid string) (*corev1.Pod, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/storage/k8s/dynamic/all_resources/clusters/%s/Pod?data.metadata.uid=%s",
-		cc.FeedServer().BCS.Host, clusterID, uid)
+		cc.G().BCS.Host, clusterID, uid)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
-		SetAuthToken(cc.FeedServer().BCS.Token).
+		SetAuthToken(cc.G().BCS.Token).
 		Get(url)
 
 	if err != nil {
@@ -73,10 +73,10 @@ type QueryNodeData struct {
 // QueryNode 通过集群ID和 Node name 查询 Node 信息
 func QueryNode(ctx context.Context, clusterID string, name string) (*corev1.Node, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/storage/k8s/dynamic/all_resources/clusters/%s/Node?data.metadata.name=%s",
-		cc.FeedServer().BCS.Host, clusterID, name)
+		cc.G().BCS.Host, clusterID, name)
 	resp, err := components.GetClient().R().
 		SetContext(ctx).
-		SetAuthToken(cc.FeedServer().BCS.Token).
+		SetAuthToken(cc.G().BCS.Token).
 		Get(url)
 
 	if err != nil {

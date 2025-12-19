@@ -159,7 +159,6 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	cacheDir := cc.G().GSE.CacheDir
 	srcDir := path.Join(cacheDir, strconv.Itoa(int(payload.BizID)))
 	fileName := cfg.ConfigContentSignature
-	srcPath := path.Join(srcDir, fileName)
 
 	// 获取源服务器信息
 	srcAgentID, srcContainerID, err := getServerInfo()
@@ -170,13 +169,13 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 
 	// 构建传输请求
 	req := &gse.TransferFileReq{
-		TimeOutSeconds: 600,
+		TimeOutSeconds: 3600,
 		AutoMkdir:      true,
 		Tasks: []gse.TransferFileTask{
 			{
 				Source: gse.TransferFileSource{
 					FileName: fileName,
-					StoreDir: srcPath,
+					StoreDir: srcDir,
 					Agent: gse.TransferFileAgent{
 						BkAgentID:     srcAgentID,
 						BkContainerID: srcContainerID,
@@ -279,16 +278,11 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 
 // getServerInfo 获取服务器 AgentID 和 ContainerID
 func getServerInfo() (agentID string, containerID string, err error) {
-	conf := cc.G().GSE
+	conf := cc.DataService().GSE
 
 	// 主机部署，直接返回配置的 AgentID
 	if conf.NodeAgentID != "" {
 		return conf.NodeAgentID, "", nil
-	}
-
-	// 容器部署，从 K8s 获取
-	if conf.ClusterID == "" || conf.PodID == "" {
-		return "", "", fmt.Errorf("cluster_id and pod_id required")
 	}
 
 	ctx := context.Background()

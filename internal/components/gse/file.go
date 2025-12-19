@@ -61,6 +61,11 @@ type TransferFileAgent struct {
 }
 
 // CommonTaskRespData defines gse common task response data
+type CommonTaskResp struct {
+	Code    int                `json:"code"`
+	Message string             `json:"message"`
+	Data    CommonTaskRespData `json:"data"`
+}
 type CommonTaskRespData struct {
 	Result CommonTaskRespResult `json:"result"`
 }
@@ -116,12 +121,12 @@ func (gse *Service) AsyncExtensionsTransferFile(ctx context.Context, req *Transf
 	// 2. if targetContainerID is set, means target is container, else is node
 	url := fmt.Sprintf(asyncExtensionsTransferFile, gse.host)
 
-	resp := new(CommonTaskRespData)
+	resp := new(CommonTaskResp)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return &resp.Data, nil
 }
 
 // AsyncTerminateTransferFile 终止文件分发任务, 可支持扩展型目标, 包括容器和主机
