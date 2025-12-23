@@ -183,3 +183,52 @@ func (e *Executor) WaitTransferFileTaskFinish(
 	}
 	return result, nil
 }
+
+// WaitExecuteScriptTaskFinish 等待执行脚本任务完成
+func (e *Executor) WaitExecuteScriptTaskFinish(ctx context.Context, gseTaskID, bkAgentID string) (*gse.ExecuteScriptResult, error) {
+	var (
+		result *gse.ExecuteScriptResult
+		err    error
+	)
+
+	err = task.LoopDoFunc(ctx, func() error {
+		// 获取gse侧执行脚本任务结果
+		result, err = e.GseService.GetExecuteScriptResult(ctx, &gse.GetExecuteScriptResultReq{
+			TaskID: gseTaskID,
+			AgentTasks: []gse.AgentTaskQuery{
+				{BkAgentID: bkAgentID, BkContainerID: "", AtomicTasks: []gse.AtomicTaskQuery{
+					{Offset: 0, Limit: 1},
+				}},
+			},
+		})
+		if err != nil {
+			logs.Warnf("WaitExecuteScriptTaskFinish get gse task state error, gseTaskID %s, err=%+v", gseTaskID, err)
+			return nil
+		}
+
+		// 检查所有目标的执行状态
+		allFinished := true
+		for _, r := range result.Result {
+			if gse.IsInProgress(r.ErrorCode) {
+				allFinished = false
+				logs.Infof("WaitExecuteScriptTaskFinish task %s is in progress, agentID: %s, ContainerID: %s, errorCode=%d",
+					gseTaskID, r.BkAgentID, r.BkContainerID, r.ErrorCode)
+				break
+			}
+		}
+
+		if allFinished {
+			logs.Infof("WaitExecuteScriptTaskFinish task %s finished", gseTaskID)
+			return task.ErrEndLoop
+		}
+
+		return nil
+	}, task.LoopInterval(2*time.Second))
+
+	if err != nil {
+		logs.Errorf("WaitExecuteScriptTaskFinish error, gseTaskID %s, err=%+v", gseTaskID, err)
+		return nil, err
+	}
+	return result, nil
+
+}

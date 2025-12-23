@@ -80,18 +80,7 @@ func (t *PushConfigTask) Steps() ([]*types.Step, error) {
 			t.generateTaskID,
 			t.generateTaskPayload,
 		),
-		// 2. 下载配置到本地
-		configStep.DownloadConfig(
-			t.bizID,
-			t.batchID,
-			t.operateType,
-			t.operatorUser,
-			t.generateTaskID,
-			t.generateTaskPayload,
-		),
-		// 3. 推送配置到目标机器
-		configStep.PushConfigToTarget(
-			t.bizID,
+		configStep.ReleaseConfig(t.bizID,
 			t.batchID,
 			t.operateType,
 			t.operatorUser,

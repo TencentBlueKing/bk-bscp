@@ -967,9 +967,11 @@ func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
 
 	for {
 		listOpt := &istore.ListOption{
-			TaskIndex: fmt.Sprintf("%d", batchID),
-			Limit:     pageSize,
-			Offset:    offset,
+			TaskIndex:     fmt.Sprintf("%d", batchID),
+			Limit:         pageSize,
+			Offset:        offset,
+			TaskIndexType: common.TaskIndexType,
+			TaskType:      common.ConfigGenerateTaskType,
 		}
 
 		pagination, err := storage.ListTask(kt.Ctx, listOpt)

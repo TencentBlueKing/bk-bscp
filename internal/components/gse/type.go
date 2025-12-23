@@ -615,3 +615,123 @@ type StoppingItem struct {
 	Result     string `json:"result"`
 	IsAuto     bool   `json:"isAuto"`
 }
+
+// ExecuteScriptReq 表示一次作业执行请求的整体结构
+type ExecuteScriptReq struct {
+	// Agents 执行脚本的目标机器列表
+	Agents []Agent `json:"agents"`
+	// Scripts 需要下发并执行的脚本列表
+	Scripts []Script `json:"scripts"`
+	// AtomicTasks 原子任务定义，每个任务通常对应一次命令执行
+	AtomicTasks []AtomicTask `json:"atomic_tasks"`
+	// AtomicTasksRelations 原子任务之间的依赖关系定义
+	AtomicTasksRelations []AtomicTaskRelation `json:"atomic_tasks_relations"`
+}
+
+// Agent 表示一台执行任务的 Agent 机器
+type Agent struct {
+	// BkAgentID Agent 在系统中的唯一标识
+	BkAgentID string `json:"bk_agent_id"`
+	// User 执行命令时使用的系统用户
+	User string `json:"user"`
+	// Pwd 对应用户的密码（可为空，表示免密或其他认证方式）
+	Pwd string `json:"pwd"`
+	// BkContainerID 目标容器 ID, 空则为主机
+	BkContainerID string `json:"bk_container_id"`
+}
+
+// Script 表示需要下发到目标机器的脚本信息
+type Script struct {
+	// ScriptName 脚本文件名
+	ScriptName string `json:"script_name"`
+	// ScriptStoreDir 脚本在目标机器上的存放目录
+	ScriptStoreDir string `json:"script_store_dir"`
+	// ScriptContent 脚本的具体内容
+	ScriptContent string `json:"script_content"`
+}
+
+// AtomicTask 表示一个最小执行单元（原子任务）
+type AtomicTask struct {
+	// AtomicTaskID 原子任务唯一 ID，用于依赖关系引用
+	AtomicTaskID int `json:"atomic_task_id"`
+	// Command 实际执行的命令或脚本路径
+	Command string `json:"command"`
+	// TimeoutSeconds 执行超时时间（单位：秒，0 表示不限制）
+	TimeoutSeconds int `json:"timeout_seconds"`
+}
+
+// AtomicTaskRelation 定义原子任务之间的依赖关系
+type AtomicTaskRelation struct {
+	// AtomicTaskID 当前原子任务 ID
+	AtomicTaskID int `json:"atomic_task_id"`
+	// AtomicTaskIDIdx 当前任务依赖的其他原子任务 ID 列表
+	// 只有依赖任务全部完成后，当前任务才可执行
+	AtomicTaskIDIdx []int `json:"atomic_task_id_idx"`
+}
+
+// GetExecuteScriptResultReq 定义“获取脚本执行结果”接口的请求参数结构
+type GetExecuteScriptResultReq struct {
+	// TaskID 任务 ID（由上游任务创建返回）
+	TaskID string `json:"task_id"`
+	// AgentTasks 按 Agent 维度查询的任务列表
+	AgentTasks []AgentTaskQuery `json:"agent_tasks"`
+}
+
+// AgentTaskQuery 单个 Agent 的查询条件
+type AgentTaskQuery struct {
+	// BkAgentID Agent 唯一标识
+	BkAgentID string `json:"bk_agent_id"`
+	// BkContainerID 容器 ID（非容器场景一般为全 0）
+	BkContainerID string `json:"bk_container_id"`
+	// AtomicTasks 需要查询的原子任务列表
+	AtomicTasks []AtomicTaskQuery `json:"atomic_tasks"`
+}
+
+// AtomicTaskQuery 原子任务查询条件
+type AtomicTaskQuery struct {
+	// AtomicTaskID 原子任务 ID
+	AtomicTaskID int `json:"atomic_task_id"`
+	// Offset 返回日志/屏幕输出的起始偏移
+	Offset int `json:"offset"`
+	// Limit 返回日志/屏幕输出的最大长度
+	Limit int `json:"limit"`
+}
+
+// GetExecuteScriptResultResp 执行结果响应
+type GetExecuteScriptResultResp struct {
+	Code    int                  `json:"code"`
+	Message string               `json:"message"`
+	Data    *ExecuteScriptResult `json:"data"`
+}
+
+// ExecuteScriptResult 响应数据主体
+type ExecuteScriptResult struct {
+	// Result 每个 Agent 原子任务的执行结果
+	Result []AgentAtomicTaskResult `json:"result"`
+}
+
+// AgentAtomicTaskResult Agent 上某个原子任务的执行结果
+type AgentAtomicTaskResult struct {
+	// BkAgentID Agent 唯一标识
+	BkAgentID string `json:"bk_agent_id"`
+	// BkContainerID 容器 ID
+	BkContainerID string `json:"bk_container_id"`
+	// Status 任务状态（如：0=成功，其他值表示运行中/失败，具体以 GSE 定义为准）
+	Status int `json:"status"`
+	// ErrorCode 错误码
+	ErrorCode int `json:"error_code"`
+	// ErrorMsg 错误信息
+	ErrorMsg string `json:"error_msg"`
+	// StartTime 任务开始时间（Unix 时间戳，单位以接口约定为准，通常为秒或毫秒）
+	StartTime int64 `json:"start_time"`
+	// EndTime 任务结束时间（Unix 时间戳）
+	EndTime int64 `json:"end_time"`
+	// ScriptExitCode 脚本退出码（0 表示成功）
+	ScriptExitCode int `json:"script_exit_code"`
+	// Tag 任务标签（可用于幂等或追踪）
+	Tag string `json:"tag"`
+	// Screen 脚本输出内容（受 offset/limit 影响）
+	Screen string `json:"screen"`
+	// AtomicTaskID 原子任务 ID
+	AtomicTaskID int `json:"atomic_task_id"`
+}

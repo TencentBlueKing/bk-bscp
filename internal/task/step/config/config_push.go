@@ -102,3 +102,30 @@ func PushConfigToTarget(
 	}))
 	return push
 }
+
+// ReleaseConfig 通过脚本方式下发配置步骤
+func ReleaseConfig(
+	bizID uint32,
+	batchID uint32,
+	operateType table.ConfigOperateType,
+	operatorUser string,
+	generateTaskID string,
+	generateTaskPayload *executorCommon.TaskPayload,
+) *types.Step {
+	logs.V(3).Infof("release config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
+
+	push := types.NewStep(config.ReleaseConfigStepName.String(), config.ReleaseConfigStepName.String()).
+		SetAlias("release_config").
+		SetMaxExecution(MaxExecutionTime).
+		SetMaxTries(0)
+
+	lo.Must0(push.SetPayload(config.PushConfigPayload{
+		BizID:               bizID,
+		BatchID:             batchID,
+		OperateType:         operateType,
+		OperatorUser:        operatorUser,
+		GenerateTaskID:      generateTaskID,
+		GenerateTaskPayload: generateTaskPayload,
+	}))
+	return push
+}

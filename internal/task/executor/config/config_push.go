@@ -14,10 +14,13 @@ package config
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
@@ -43,8 +46,15 @@ const (
 	DownloadConfigStepName istep.StepName = "DownloadConfig"
 	// PushConfigStepName push config step name
 	PushConfigStepName istep.StepName = "PushConfig"
+	// ReleaseConfigStepName release config step name
+	ReleaseConfigStepName istep.StepName = "ReleaseConfig"
 	// CallbackName push config callback name
 	CallbackName istep.CallbackName = "Callback"
+	// scriptStoreDir 脚本存放目录
+	scriptStoreDir = "/tmp/bkjob/root"
+	// scriptNameTmpl 脚本名称模板
+	scriptNameTmpl   = "bk_gse_script_%d.sh"
+	scriptTimeoutSec = 3600
 )
 
 // PushConfigExecutor 配置下发执行器
@@ -135,6 +145,92 @@ func (e *PushConfigExecutor) DownloadConfig(c *istep.Context) error {
 	}
 
 	logs.Infof("write config file success: %s", filePath)
+	return nil
+}
+
+// ReleaseConfig implements istep.Step.
+func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
+	logs.Infof("[ReleaseConfig STEP]: start release config")
+	payload := &PushConfigPayload{}
+	if err := c.GetPayload(payload); err != nil {
+		return err
+	}
+	commonPayload := &common.TaskPayload{}
+	if err := c.GetCommonPayload(commonPayload); err != nil {
+		return fmt.Errorf("get common payload failed: %w", err)
+	}
+
+	if commonPayload.ConfigPayload == nil {
+		return fmt.Errorf("config payload not found")
+	}
+
+	kt := kit.New()
+	kt.BizID = payload.BizID
+
+	script, err := buildConfigScript(
+		base64.StdEncoding.EncodeToString([]byte(commonPayload.ConfigPayload.ConfigContent)),
+		path.Join(commonPayload.ConfigPayload.ConfigFilePath, commonPayload.ConfigPayload.ConfigFileName),
+		commonPayload.ConfigPayload.ConfigFilePermission,
+		commonPayload.ConfigPayload.ConfigFileOwner,
+		commonPayload.ConfigPayload.ConfigFileGroup,
+	)
+	if err != nil {
+		logs.Errorf("[ReleaseConfig STEP]: build config script failed: %v", err)
+		return err
+	}
+
+	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix())
+
+	resp, err := e.GseService.AsyncExtensionsExecuteScript(kt.Ctx, &gse.ExecuteScriptReq{
+		Agents: []gse.Agent{
+			{
+				BkAgentID: payload.GenerateTaskPayload.ProcessPayload.AgentID,
+				User:      commonPayload.ConfigPayload.ConfigFileOwner,
+			},
+		},
+		Scripts: []gse.Script{
+			{ScriptName: scriptName, ScriptStoreDir: scriptStoreDir, ScriptContent: script},
+		},
+		AtomicTasks: []gse.AtomicTask{
+			{Command: path.Join(scriptStoreDir, scriptName), AtomicTaskID: 0, TimeoutSeconds: scriptTimeoutSec},
+		},
+		AtomicTasksRelations: []gse.AtomicTaskRelation{
+			{AtomicTaskID: 0, AtomicTaskIDIdx: []int{}},
+		},
+	})
+	if err != nil {
+		logs.Errorf("[ReleaseConfig STEP]: create execute script task failed: %v", err)
+		return fmt.Errorf("create execute script task failed: %w", err)
+	}
+
+	if resp == nil || resp.Result.TaskID == "" {
+		logs.Errorf("[ReleaseConfig STEP]: gse execute script response is nil, batch_id=%d", payload.BatchID)
+		return fmt.Errorf("gse execute script response is nil, batch_id=%d", payload.BatchID)
+	}
+
+	logs.Infof("[ReleaseConfig STEP]: gse task created, batch_id: %d, task_id: %s, target: %s/%s",
+		payload.BatchID, resp.Result.TaskID, commonPayload.ConfigPayload.ConfigFilePath,
+		commonPayload.ConfigPayload.ConfigFileName)
+
+	// 等待脚本执行完成
+	result, err := e.WaitExecuteScriptTaskFinish(kt.Ctx, resp.Result.TaskID, payload.GenerateTaskPayload.ProcessPayload.AgentID)
+	if err != nil {
+		return fmt.Errorf("wait script execution failed: %w", err)
+	}
+
+	// 检查脚本执行结果
+	for _, r := range result.Result {
+		if r.ErrorCode != 0 {
+			logs.Errorf("[ReleaseConfig STEP]: script execution failed, agent: %s, container: %s, code: %d, msg: %s",
+				r.BkAgentID, r.BkContainerID, r.ErrorCode, r.ErrorMsg)
+			return fmt.Errorf("script execution failed, agent: %s, container: %s, code: %d, msg: %s",
+				r.BkAgentID, r.BkContainerID, r.ErrorCode, r.ErrorMsg)
+		}
+	}
+
+	logs.Infof("[ReleaseConfig STEP]: script execution success, batch_id: %d, task_id: %s", payload.BatchID,
+		resp.Result.TaskID)
+
 	return nil
 }
 
@@ -240,11 +336,22 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 	isSuccess := cbErr == nil
 	// 更新批次状态
 	if err := e.Dao.TaskBatch().IncrementCompletedCount(kt, payload.BatchID, isSuccess); err != nil {
+		logs.Errorf(
+			"[PushConfig Callback]: increment completed count failed, batch_id=%d, success=%v, err=%v",
+			payload.BatchID,
+			isSuccess,
+			err,
+		)
 		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
 	}
 
 	// 仅配置下发成功才更新配置实例的状态
 	if !isSuccess {
+		logs.Warnf(
+			"[PushConfig Callback]: task failed, skip config instance upsert, batch_id=%d, err=%v",
+			payload.BatchID,
+			cbErr,
+		)
 		return nil
 	}
 
@@ -270,6 +377,12 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 		},
 	}
 	if err := e.Dao.ConfigInstance().Upsert(kt, instance); err != nil {
+		logs.Errorf(
+			"[PushConfig Callback]: upsert config instance failed, batch_id=%d, instance=%+v, err=%v",
+			payload.BatchID,
+			instance,
+			err,
+		)
 		return fmt.Errorf("upsert config instance failed: %w", err)
 	}
 
@@ -341,7 +454,60 @@ func getServerInfo() (agentID string, containerID string, err error) {
 // RegisterPushConfigExecutor 注册执行器
 func RegisterPushConfigExecutor(e *PushConfigExecutor) {
 	istep.Register(ValidatePushConfigStepName, istep.StepExecutorFunc(e.ValidatePushConfig))
-	istep.Register(DownloadConfigStepName, istep.StepExecutorFunc(e.DownloadConfig))
-	istep.Register(PushConfigStepName, istep.StepExecutorFunc(e.PushConfig))
+	istep.Register(ReleaseConfigStepName, istep.StepExecutorFunc(e.ReleaseConfig))
 	istep.RegisterCallback(CallbackName, istep.CallbackExecutorFunc(e.Callback))
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\'"\'"'`) + "'"
+}
+
+var fileModeRe = regexp.MustCompile(`^[0-7]{3,4}$`)
+
+// buildConfigScript 构建配置下发脚本
+func buildConfigScript(base64Content string, absPath string, fileMode string, owner string,
+	group string) (string, error) {
+
+	if !strings.HasPrefix(absPath, "/") {
+		return "", fmt.Errorf("absPath must be absolute")
+	}
+
+	if !fileModeRe.MatchString(fileMode) {
+		return "", fmt.Errorf("invalid fileMode: %s", fileMode)
+	}
+
+	return fmt.Sprintf(`#!/bin/bash
+set -euo pipefail
+
+TARGET_PATH=%s
+TARGET_DIR="$(dirname "$TARGET_PATH")"
+
+# 1. 创建目标目录
+mkdir -p -- "$TARGET_DIR"
+
+# 2. 写入配置文件（base64 解码）
+echo %s | base64 -d > "$TARGET_PATH"
+
+# 3. 设置权限和属主
+chmod %s "$TARGET_PATH"
+chown %s:%s "$TARGET_PATH"
+
+# 4. 校验（不影响主流程）
+set +e
+ls -l "$TARGET_PATH" || true
+md5sum "$TARGET_PATH" || true
+
+FILE_SIZE=$(stat -c%%s "$TARGET_PATH" 2>/dev/null || echo 0)
+if [ "$FILE_SIZE" -le 10240 ]; then
+    head -n 50 "$TARGET_PATH" || true
+else
+    echo "file too large ($FILE_SIZE bytes), skip preview"
+fi
+`,
+		shellQuote(absPath),
+		shellQuote(base64Content),
+		fileMode,
+		shellQuote(owner),
+		shellQuote(group),
+	), nil
 }
