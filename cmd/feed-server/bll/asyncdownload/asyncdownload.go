@@ -194,22 +194,51 @@ func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID 
 
 func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
-	fileKey := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:*", bizID, appID, path.Join(filePath, fileName))
-	// lock by file to prevent concurrency writing in other requests
+	startTime := time.Now()
+	rid := kt.Rid
+	fullPath := path.Join(filePath, fileName)
+	fileKey := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:*", bizID, appID, fullPath)
+
+	// 获取外层锁（按文件路径）- 关键：记录等待锁的时间
+	outerLockStart := time.Now()
 	ad.redLock.Acquire(fileKey)
+	outerLockWaitDuration := time.Since(outerLockStart)
+	if outerLockWaitDuration > 100*time.Millisecond {
+		logs.Warnf("[upsertAsyncDownloadJob] outer lock wait time long, rid: %s, biz_id: %d, file: %s, wait_duration: %v",
+			rid, bizID, fullPath, outerLockWaitDuration)
+	}
 	defer ad.redLock.Release(fileKey)
+
+	// 查找现有 job
+	keysStart := time.Now()
 	keys, err := ad.cs.Redis().Keys(kt.Ctx, fileKey)
+	keysDuration := time.Since(keysStart)
 	if err != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] redis keys failed, rid: %s, biz_id: %d, file: %s, duration: %v, err: %v",
+			rid, bizID, fullPath, keysDuration, err)
 		return "", err
 	}
+	if keysDuration > 100*time.Millisecond {
+		logs.Warnf("[upsertAsyncDownloadJob] redis keys slow, rid: %s, biz_id: %d, file: %s, found_keys: %d, duration: %v",
+			rid, bizID, fullPath, len(keys), keysDuration)
+	}
+
 	for _, key := range keys {
 		if jobID, ok := func() (string, bool) {
-			// lock by job to prevent concurrency writing in job manager
+			// 获取内层锁（按 job ID）- 关键：记录等待锁的时间
+			innerLockStart := time.Now()
 			ad.redLock.Acquire(key)
+			innerLockWaitDuration := time.Since(innerLockStart)
+			if innerLockWaitDuration > 100*time.Millisecond {
+				logs.Warnf("[upsertAsyncDownloadJob] inner lock wait time long, rid: %s, biz_id: %d, job_key: %s, wait_duration: %v",
+					rid, bizID, key, innerLockWaitDuration)
+			}
 			defer ad.redLock.Release(key)
+
 			data, e := ad.cs.Redis().Get(kt.Ctx, key)
 			if e != nil {
-				logs.Errorf("get key %s from redis failed, err %s", key, e.Error())
+				logs.Errorf("[upsertAsyncDownloadJob] redis get failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
+					rid, bizID, key, e)
 				return "", false
 			}
 			if data == "" {
@@ -217,38 +246,48 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 			}
 			job := &types.AsyncDownloadJob{}
 			if e := jsoni.UnmarshalFromString(data, &job); e != nil {
-				logs.Errorf("unmarshal job %s failed, err %s", key, e.Error())
+				logs.Errorf("[upsertAsyncDownloadJob] unmarshal job failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
+					rid, bizID, key, e)
 				return "", false
 			}
 			if job.Status == types.AsyncDownloadJobStatusPending {
 				// pending job exists, update it
+				updateStart := time.Now()
 				job.Targets = append(job.Targets, &types.AsyncDownloadTarget{
 					AgentID:     targetAgentID,
 					ContainerID: targetContainerID,
 				})
 				js, e := jsoni.Marshal(job)
 				if e != nil {
-					logs.Errorf("marshal job %s failed, err %s", key, e.Error())
+					logs.Errorf("[upsertAsyncDownloadJob] marshal job failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
+						rid, bizID, key, e)
 					return "", false
 				}
 				if e := ad.cs.Redis().Set(kt.Ctx, key, string(js), 30*60); e != nil {
-					logs.Errorf("set job %s to redis failed, err %s", key, e.Error())
+					logs.Errorf("[upsertAsyncDownloadJob] redis set failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
+						rid, bizID, key, e)
 					return "", false
 				}
+				updateDuration := time.Since(updateStart)
+				totalDuration := time.Since(startTime)
+				logs.Infof("[upsertAsyncDownloadJob] update existing job, rid: %s, biz_id: %d, job_id: %s, targets_count: %d, update_duration: %v, total_duration: %v",
+					rid, bizID, key, len(job.Targets), updateDuration, totalDuration)
 				return key, true
 			}
 			return "", false
 
 		}(); ok {
-			logs.Infof("async download, job %s exists, update it", jobID)
+			logs.Infof("[upsertAsyncDownloadJob] update existing job, rid: %s, biz_id: %d, job_id: %s",
+				rid, bizID, jobID)
 			return jobID, nil
 		}
 	}
 
 	// no pendeing job exists, create a new one
 	// it's not possible to create two same job in same time, so use time stamp as unique id would be friendly.
+	createStart := time.Now()
 	jobID := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:%s", bizID, appID,
-		path.Join(filePath, fileName), time.Now().Format("20060102150405"))
+		fullPath, time.Now().Format("20060102150405"))
 	job := &types.AsyncDownloadJob{
 		JobID:         jobID,
 		BizID:         bizID,
@@ -273,6 +312,8 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 	}
 	js, err := jsoni.Marshal(job)
 	if err != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] marshal new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
+			rid, bizID, jobID, err)
 		return "", err
 	}
 
@@ -280,8 +321,19 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
 		"targets": strconv.Itoa(len(job.Targets)), "status": job.Status}).Inc()
 
-	logs.Infof("async download, create new job %s", jobID)
-	return jobID, ad.cs.Redis().Set(kt.Ctx, jobID, string(js), 30*60)
+	err = ad.cs.Redis().Set(kt.Ctx, jobID, string(js), 30*60)
+	if err != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] redis set new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
+			rid, bizID, jobID, err)
+		return "", err
+	}
+
+	createDuration := time.Since(createStart)
+	totalDuration := time.Since(startTime)
+	logs.Infof("[upsertAsyncDownloadJob] create new job, rid: %s, biz_id: %d, job_id: %s, create_duration: %v, total_duration: %v (outer_lock_wait: %v, keys_duration: %v)",
+		rid, bizID, jobID, createDuration, totalDuration, outerLockWaitDuration, keysDuration)
+
+	return jobID, nil
 }
 
 func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,

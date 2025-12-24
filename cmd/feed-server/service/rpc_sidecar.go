@@ -721,37 +721,63 @@ func (s *Service) ListApps(ctx context.Context, req *pbfs.ListAppsReq) (*pbfs.Li
 
 // AsyncDownload 异步 p2p 下载，文件名为 sha256
 func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq) (*pbfs.AsyncDownloadResp, error) {
+	startTime := time.Now()
 	kit := kit.FromGrpcContext(ctx)
+	rid := kit.Rid
+
+	logs.Infof("[AsyncDownload] start, rid: %s, biz_id: %d, app_id: %d, file: %s/%s",
+		rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId,
+		req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name)
 
 	// 鉴权
+	authStart := time.Now()
 	credential := getCredential(ctx)
 	app, err := s.bll.AppCache().GetMeta(kit, req.BizId, req.FileMeta.ConfigItemAttachment.AppId)
+	authDuration := time.Since(authStart)
 	if err != nil {
+		logs.Errorf("[AsyncDownload] get app metadata failed, rid: %s, biz_id: %d, app_id: %d, duration: %v, err: %v",
+			rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId, authDuration, err)
 		return nil, status.Errorf(codes.Aborted, "get app %d metadata failed, %s",
 			req.FileMeta.ConfigItemAttachment.AppId, err.Error())
 	}
+	logs.Infof("[AsyncDownload] get app metadata success, rid: %s, biz_id: %d, app_id: %d, app_name: %s, duration: %v",
+		rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId, app.Name, authDuration)
+
 	if !credential.MatchApp(app.Name) {
+		logs.Errorf("[AsyncDownload] app permission denied, rid: %s, biz_id: %d, app_name: %s",
+			rid, req.BizId, app.Name)
 		return nil, status.Errorf(codes.PermissionDenied, "not have app %s permission", app.Name)
 	}
 
 	req.FileMeta.ConfigItemSpec.Path = tools.ConvertBackslashes(req.FileMeta.ConfigItemSpec.Path)
 
 	if !credential.MatchConfigItem(app.Name, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name) {
+		logs.Errorf("[AsyncDownload] config item permission denied, rid: %s, biz_id: %d, app_name: %s, path: %s, name: %s",
+			rid, req.BizId, app.Name, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name)
 		return nil, status.Error(codes.PermissionDenied, "no permission download file")
 	}
 
 	gseConf := cc.FeedServer().GSE
 	if !gseConf.Enabled {
+		logs.Errorf("[AsyncDownload] p2p download disabled, rid: %s, biz_id: %d",
+			rid, req.BizId)
 		return nil, status.Error(codes.FailedPrecondition, "p2p download is disabled in server")
 	}
 
 	// 获取客户端信息，check 是否支持 p2p 下载
+	agentInfoStart := time.Now()
 	clientAgentID, clientContainerID, err := s.getAsyncDownloadAgentInfo(ctx, req)
+	agentInfoDuration := time.Since(agentInfoStart)
 	if err != nil {
+		logs.Errorf("[AsyncDownload] get agent info failed, rid: %s, biz_id: %d, duration: %v, err: %v",
+			rid, req.BizId, agentInfoDuration, err)
 		return nil, err
 	}
+	logs.Infof("[AsyncDownload] get agent info success, rid: %s, biz_id: %d, agent_id: %s, container_id: %s, duration: %v",
+		rid, req.BizId, clientAgentID, clientContainerID, agentInfoDuration)
 
 	// 验证agentID是否属于指定的业务
+	verifyStart := time.Now()
 	if err = s.verifyAgentBelongsToBiz(
 		ctx,
 		clientAgentID,
@@ -759,21 +785,36 @@ func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq)
 		req.FileMeta.ConfigItemAttachment.AppId,
 		app.Name,
 	); err != nil {
+		verifyDuration := time.Since(verifyStart)
+		logs.Errorf("[AsyncDownload] verify agent belongs to biz failed, rid: %s, biz_id: %d, agent_id: %s, duration: %v, err: %v",
+			rid, req.BizId, clientAgentID, verifyDuration, err)
 		return nil, err
 	}
+	verifyDuration := time.Since(verifyStart)
+	logs.Infof("[AsyncDownload] verify agent belongs to biz success, rid: %s, biz_id: %d, agent_id: %s, duration: %v",
+		rid, req.BizId, clientAgentID, verifyDuration)
 
 	// 创建下载任务
+	createTaskStart := time.Now()
 	taskID, err := s.bll.AsyncDownload().CreateAsyncDownloadTask(kit, req.BizId,
 		req.FileMeta.ConfigItemAttachment.AppId, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name,
 		clientAgentID, clientContainerID, req.FileMeta.ConfigItemSpec.Permission.User, req.FileDir,
 		req.FileMeta.CommitSpec.Content.Signature)
+	createTaskDuration := time.Since(createTaskStart)
 	if err != nil {
+		logs.Errorf("[AsyncDownload] create download task failed, rid: %s, biz_id: %d, app_id: %d, duration: %v, err: %v",
+			rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId, createTaskDuration, err)
 		return nil, err
 	}
+	logs.Infof("[AsyncDownload] create download task success, rid: %s, biz_id: %d, app_id: %d, task_id: %s, duration: %v",
+		rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId, taskID, createTaskDuration)
 
+	totalDuration := time.Since(startTime)
 	r := &pbfs.AsyncDownloadResp{
 		TaskId: taskID,
 	}
+	logs.Infof("[AsyncDownload] completed, rid: %s, biz_id: %d, app_id: %d, task_id: %s, total_duration: %v",
+		rid, req.BizId, req.FileMeta.ConfigItemAttachment.AppId, taskID, totalDuration)
 	return r, nil
 }
 
