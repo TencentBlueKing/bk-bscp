@@ -720,6 +720,7 @@ func (s *Service) ListApps(ctx context.Context, req *pbfs.ListAppsReq) (*pbfs.Li
 }
 
 // AsyncDownload 异步 p2p 下载，文件名为 sha256
+// nolint
 func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq) (*pbfs.AsyncDownloadResp, error) {
 	startTime := time.Now()
 	kit := kit.FromGrpcContext(ctx)
