@@ -13,8 +13,6 @@
 package config
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
@@ -23,18 +21,19 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-// GenerateConfig xxx
-func GenerateConfig(bizID, batchID, configTemplateID uint32, configTemplateName string, operateType table.ConfigOperateType,
+// CheckConfig 通过脚本方式检查配置步骤
+func CheckConfig(bizID, batchID, configTemplateID uint32, configTemplateName string, operateType table.ConfigOperateType,
 	operatorUser string, template *table.Template, templateRevision *table.TemplateRevision, process *table.Process,
-	processInstance *table.ProcessInstance, generateConfigTimeout time.Duration) *types.Step {
-	logs.V(3).Infof("generate config: bizID: %d, configTemplateID: %d, processAlias: %s, moduleInstSeq: %d, operateType: %s",
-		bizID, configTemplateID, process.Spec.Alias, processInstance.Spec.ModuleInstSeq, operateType)
+	processInstance *table.ProcessInstance) *types.Step {
 
-	generate := types.NewStep(config.GenerateConfigStepName.String(), config.GenerateConfigStepName.String()).
-		SetAlias("generate_config").
-		SetMaxExecution(generateConfigTimeout).
+	logs.V(3).Infof("check config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
+
+	push := types.NewStep(config.CheckConfigStepName.String(), config.CheckConfigStepName.String()).
+		SetAlias("check_config").
+		SetMaxExecution(MaxExecutionTime).
 		SetMaxTries(0)
-	lo.Must0(generate.SetPayload(config.GenerateConfigPayload{
+
+	lo.Must0(push.SetPayload(config.CheckConfigPayload{
 		BizID:              bizID,
 		BatchID:            batchID,
 		ConfigTemplateID:   configTemplateID,
@@ -46,5 +45,5 @@ func GenerateConfig(bizID, batchID, configTemplateID uint32, configTemplateName 
 		Process:            process,
 		ProcessInstance:    processInstance,
 	}))
-	return generate
+	return push
 }

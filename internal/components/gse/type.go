@@ -626,6 +626,7 @@ type ExecuteScriptReq struct {
 	AtomicTasks []AtomicTask `json:"atomic_tasks"`
 	// AtomicTasksRelations 原子任务之间的依赖关系定义
 	AtomicTasksRelations []AtomicTaskRelation `json:"atomic_tasks_relations"`
+	WindowsInterpreter   string               `json:"windows_interpreter,omitempty"`
 }
 
 // Agent 表示一台执行任务的 Agent 机器

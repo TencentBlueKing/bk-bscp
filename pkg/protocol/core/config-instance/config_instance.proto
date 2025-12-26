@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 package pbcin;
@@ -58,4 +59,29 @@ message ConfigInstanceFilterOptions {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新的配置模版版本ID" }];
   string latest_template_revision_name = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最新的配置模版版本号" }];
+}
+
+message ConfigContent {
+  // 原始内容（例如文件内容、脚本、配置文本）
+  string content = 1;
+  // 内容的 MD5 / SHA256，用于快速比对（可选但实用）
+  string checksum = 2;
+}
+
+message ConfigVersion {
+  // 配置内容
+  ConfigContent data = 1;
+  // 下发 / 生效时间（Unix 时间戳，秒）
+  google.protobuf.Timestamp timestamp = 2;
+  // 操作人 / 系统标识（可选）
+  string operator = 3;
+}
+
+message ConfigTemplateGroup {
+  uint32 config_template_id = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID" }];
+  uint32 config_template_version_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本ID" }];
+  repeated uint32 cc_process_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
 }

@@ -35,6 +35,8 @@ func newConfigInstance(db *gorm.DB, opts ...gen.DOOption) configInstance {
 	_configInstance.ModuleInstSeq = field.NewUint32(tableName, "module_inst_seq")
 	_configInstance.GenerateTaskID = field.NewString(tableName, "task_id")
 	_configInstance.TenantID = field.NewString(tableName, "tenant_id")
+	_configInstance.Md5 = field.NewString(tableName, "md5")
+	_configInstance.Content = field.NewString(tableName, "content")
 	_configInstance.Creator = field.NewString(tableName, "creator")
 	_configInstance.Reviser = field.NewString(tableName, "reviser")
 	_configInstance.CreatedAt = field.NewTime(tableName, "created_at")
@@ -57,6 +59,8 @@ type configInstance struct {
 	ModuleInstSeq    field.Uint32
 	GenerateTaskID   field.String
 	TenantID         field.String
+	Md5              field.String
+	Content          field.String
 	Creator          field.String
 	Reviser          field.String
 	CreatedAt        field.Time
@@ -85,6 +89,8 @@ func (c *configInstance) updateTableName(table string) *configInstance {
 	c.ModuleInstSeq = field.NewUint32(table, "module_inst_seq")
 	c.GenerateTaskID = field.NewString(table, "task_id")
 	c.TenantID = field.NewString(table, "tenant_id")
+	c.Md5 = field.NewString(table, "md5")
+	c.Content = field.NewString(table, "content")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
 	c.CreatedAt = field.NewTime(table, "created_at")
@@ -117,7 +123,7 @@ func (c *configInstance) GetFieldByName(fieldName string) (field.OrderExpr, bool
 }
 
 func (c *configInstance) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 12)
+	c.fieldMap = make(map[string]field.Expr, 14)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["config_template_id"] = c.ConfigTemplateID
@@ -126,6 +132,8 @@ func (c *configInstance) fillFieldMap() {
 	c.fieldMap["module_inst_seq"] = c.ModuleInstSeq
 	c.fieldMap["task_id"] = c.GenerateTaskID
 	c.fieldMap["tenant_id"] = c.TenantID
+	c.fieldMap["md5"] = c.Md5
+	c.fieldMap["content"] = c.Content
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser
 	c.fieldMap["created_at"] = c.CreatedAt

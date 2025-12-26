@@ -40,6 +40,22 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
 
+type ConfigTaskMode int
+
+const (
+	ConfigTaskGenerate ConfigTaskMode = iota
+	ConfigTaskCheck
+)
+
+type configTaskInfo struct {
+	configTemplateID uint32
+	configTemplate   *table.ConfigTemplate
+	template         *table.Template
+	latestRevision   *table.TemplateRevision
+	process          *table.Process
+	processInstance  *table.ProcessInstance
+}
+
 // ListConfigInstances implements pbds.DataServer.
 func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigInstancesReq) (*pbds.ListConfigInstancesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -138,14 +154,14 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	}, nil
 }
 
-func validateRequest(req *pbds.GenerateConfigReq) error {
-	if req.BizId == 0 {
+func validateRequest(bizID uint32, ctgs []*pbcin.ConfigTemplateGroup) error {
+	if bizID == 0 {
 		return fmt.Errorf("biz id is required")
 	}
-	if len(req.ConfigTemplateGroups) == 0 {
+	if len(ctgs) == 0 {
 		return fmt.Errorf("at least one config template group is required")
 	}
-	for _, group := range req.ConfigTemplateGroups {
+	for _, group := range ctgs {
 		if group.ConfigTemplateId == 0 {
 			return fmt.Errorf("config template id is required")
 		}
@@ -160,205 +176,14 @@ func validateRequest(req *pbds.GenerateConfigReq) error {
 }
 
 // GenerateConfig implements pbds.DataServer.
-// nolint:funlen
 func (s *Service) GenerateConfig(ctx context.Context, req *pbds.GenerateConfigReq) (*pbds.GenerateConfigResp, error) {
-	kt := kit.FromGrpcContext(ctx)
-	// 校验
-	if err := validateRequest(req); err != nil {
+
+	id, err := s.runConfigTask(ctx, req.GetBizId(), req.GetConfigTemplateGroups(), ConfigTaskGenerate)
+	if err != nil {
 		return nil, err
 	}
 
-	// 预处理：收集所有任务信息并计算总任务数
-	type taskInfo struct {
-		configTemplateID uint32
-		configTemplate   *table.ConfigTemplate
-		template         *table.Template
-		latestRevision   *table.TemplateRevision
-		process          *table.Process
-		processInstance  *table.ProcessInstance
-	}
-	var taskInfos []taskInfo
-	// cc进程id去重集合
-	processIDSet := make(map[uint32]struct{})
-	// 环境信息，用于构建操作范围
-	environment := ""
-	for _, group := range req.ConfigTemplateGroups {
-		configTemplateID := group.ConfigTemplateId
-		configTemplate, err := s.dao.ConfigTemplate().GetByID(kt, req.BizId, configTemplateID)
-		if err != nil {
-			return nil, fmt.Errorf("get config template failed, err: %v", err)
-		}
-		// 查询配置模版关联的模版信息和最新版本
-		template, err := s.dao.Template().GetByID(kt, req.BizId, configTemplate.Attachment.TemplateID)
-		if err != nil {
-			return nil, fmt.Errorf("get template failed, err: %v", err)
-		}
-		latestRevision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(kt, req.BizId, configTemplate.Attachment.TemplateID)
-		if err != nil {
-			return nil, fmt.Errorf("get latest template revision failed, err: %v", err)
-		}
-		// 仅最新版本的配置可以生成和下发
-		if group.ConfigTemplateVersionId != latestRevision.ID {
-			return nil, fmt.Errorf("config template version id is not latest")
-		}
-
-		// 查询进程信息
-		processes, _, err := s.dao.Process().List(kt, req.BizId, &pbproc.ProcessSearchCondition{
-			CcProcessIds: group.CcProcessIds,
-		}, &types.BasePage{
-			All: true,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("get process failed, err: %v", err)
-		}
-		// 查询到的进程数量不等于提供的进程ID数量，说明存在进程被删除的情况，需要刷新重新提交
-		if len(processes) != len(group.CcProcessIds) || len(processes) == 0 {
-			return nil, fmt.Errorf("some processes not found for biz %d with provided process IDs", req.BizId)
-		}
-
-		// 判断进程和配置模版的绑定关系
-		isBindRelation, err := isBindRelation(kt, s.dao, req.BizId, processes, configTemplate)
-		if err != nil {
-			return nil, fmt.Errorf("check bind relation failed, err: %v", err)
-		}
-		if !isBindRelation {
-			return nil, fmt.Errorf("invalid binding relationship between process and config template")
-		}
-
-		// 收集进程ID用于构建操作范围（去重）
-		for _, id := range group.CcProcessIds {
-			processIDSet[id] = struct{}{}
-		}
-		// 获取环境信息（取第一个进程的环境）
-		if environment == "" && len(processes) > 0 {
-			environment = processes[0].Spec.Environment
-		}
-
-		for _, process := range processes {
-			processInstances, err := s.dao.ProcessInstance().GetByProcessIDs(kt, req.BizId, []uint32{process.ID})
-			if err != nil {
-				return nil, fmt.Errorf("get process instance failed, err: %v", err)
-			}
-			for _, processInstance := range processInstances {
-				taskInfos = append(taskInfos, taskInfo{
-					configTemplateID: configTemplateID,
-					configTemplate:   configTemplate,
-					template:         template,
-					latestRevision:   latestRevision,
-					process:          process,
-					processInstance:  processInstance,
-				})
-			}
-		}
-	}
-
-	// 计算总任务数
-	totalCount := uint32(len(taskInfos))
-	if totalCount == 0 {
-		return nil, fmt.Errorf("no tasks to create for biz %d", req.BizId)
-	}
-	if environment == "" {
-		return nil, fmt.Errorf("no environment found for biz %d with provided process IDs", req.BizId)
-	}
-
-	// 创建任务批次
-	now := time.Now()
-	taskBatch := &table.TaskBatch{
-		Attachment: &table.TaskBatchAttachment{
-			BizID: req.BizId,
-		},
-		Spec: &table.TaskBatchSpec{
-			TaskObject: table.TaskObjectConfigFile,
-			TaskAction: table.TaskActionConfigGenerate,
-			Status:     table.TaskBatchStatusRunning,
-			TaskData:   "{}",
-			StartAt:    &now,
-			TotalCount: totalCount, // 设置总任务数，用于 Callback 机制判断批次完成
-		},
-		Revision: &table.Revision{
-			Creator:   kt.User,
-			Reviser:   kt.User,
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
-	}
-
-	// 将去重后的进程ID转为切片
-	processIDs := make([]uint32, 0, len(processIDSet))
-	for id := range processIDSet {
-		processIDs = append(processIDs, id)
-	}
-
-	// 构建操作范围
-	operateRange := table.OperateRange{
-		SetNames:     make([]string, 0, len(processIDs)),
-		ModuleNames:  make([]string, 0, len(processIDs)),
-		ServiceNames: make([]string, 0, len(processIDs)),
-		ProcessAlias: make([]string, 0, len(processIDs)),
-		CCProcessID:  processIDs,
-	}
-	taskBatch.Spec.SetTaskData(&table.TaskExecutionData{
-		Environment:  environment,
-		OperateRange: operateRange,
-	})
-	batchID, err := s.dao.TaskBatch().Create(kt, taskBatch)
-	if err != nil {
-		return nil, fmt.Errorf("create task batch failed, err: %v", err)
-	}
-
-	// 记录实际创建的任务数
-	var dispatchedCount uint32
-
-	// 如果任务创建过程出错，需要处理部分创建的情况
-	defer func() {
-		if dispatchedCount == totalCount {
-			// 所有任务都已创建，由 Callback 机制处理状态更新
-			return
-		}
-
-		// 计算未创建的任务数
-		failedToCreate := totalCount - dispatchedCount
-		logs.Warnf("task batch %d partially created: %d/%d tasks dispatched, %d failed to create, rid: %s",
-			batchID, dispatchedCount, totalCount, failedToCreate, kt.Rid)
-
-		// 将未创建的任务直接计为失败
-		if updateErr := s.dao.TaskBatch().AddFailedCount(kt, batchID, failedToCreate); updateErr != nil {
-			logs.Errorf("add failed count for batch %d error, err: %v, rid: %s", batchID, updateErr, kt.Rid)
-		}
-	}()
-
-	// 配置生成：创建并下发任务
-	for _, info := range taskInfos {
-		// 创建任务对象
-		taskObj, err := task.NewByTaskBuilder(
-			config.NewConfigGenerateTask(
-				s.dao,
-				req.BizId,
-				batchID,
-				table.ConfigGenerate,
-				kt.User,
-				info.configTemplateID,
-				info.configTemplate,
-				info.template,
-				info.latestRevision,
-				info.processInstance.ID,
-				info.processInstance,
-				info.process.Attachment.CcProcessID,
-				info.process,
-				info.configTemplate.Spec.Name,
-				info.process.Spec.Alias,
-				info.processInstance.Spec.ModuleInstSeq,
-			),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("create config generate task failed, err: %v", err)
-		}
-		// 下发任务
-		s.taskManager.Dispatch(taskObj)
-		dispatchedCount++
-	}
-
-	return &pbds.GenerateConfigResp{BatchId: batchID}, nil
+	return &pbds.GenerateConfigResp{BatchId: id}, nil
 }
 
 // getFilteredProcesses 获取过滤后的进程列表
@@ -1114,14 +939,15 @@ func dispatchTasks(
 				batchID,
 				table.ConfigPush,
 				kt.User,
-				t.GetTaskID(),
 				payload,
 			),
 		)
 		if err != nil {
-			logs.Errorf("create task failed, task_id: %s, err: %v, rid: %s", t.GetTaskID(), err, kt.Rid)
+			logs.Errorf("create task failed, task_id: %s, err: %v, rid: %s", taskObj.GetTaskID(), err, kt.Rid)
 			continue
 		}
+
+		logs.Infof("dispatch push config task, task_id: %s, batch_id: %d, rid: %s", taskObj.GetTaskID(), batchID, kt.Rid)
 
 		taskMgr.Dispatch(taskObj)
 		count++
@@ -1305,7 +1131,7 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, batchID uint32, t
 	}
 
 	// 查询该批次所有失败的任务
-	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, batchID, taskID)
+	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, batchID, taskID, common.ConfigGenerateTaskType)
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", batchID, err, kt.Rid)
 		return fmt.Errorf("query failed tasks failed: %v", err)
@@ -1330,14 +1156,14 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, batchID uint32, t
 			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
 			return fmt.Errorf("retry failed task failed: %v", err)
 		}
-
 	}
 	logs.Infof("retry tasks completed, batchID: %d, retryCount: %d, rid: %s", batchID, retryCount, kt.Rid)
 
 	return nil
 }
 
-func queryGenerateConfigFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uint32, taskID string) ([]*taskTypes.Task, error) {
+func queryGenerateConfigFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uint32,
+	taskID, taskType string) ([]*taskTypes.Task, error) {
 	var failedTasks []*taskTypes.Task
 
 	offset := int64(0)
@@ -1351,7 +1177,7 @@ func queryGenerateConfigFailedTasks(ctx context.Context, taskStorage istore.Stor
 			Offset:        offset,
 			Limit:         limit,
 			TaskIndexType: common.TaskIndexType,
-			TaskType:      common.ConfigGenerateTaskType,
+			TaskType:      taskType,
 		}
 
 		pagination, err := taskStorage.ListTask(ctx, listOpt)
@@ -1371,4 +1197,304 @@ func queryGenerateConfigFailedTasks(ctx context.Context, taskStorage istore.Stor
 	}
 
 	return failedTasks, nil
+}
+
+// CheckConfig implements [pbds.DataServer].
+func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*pbds.CheckConfigResp, error) {
+
+	id, err := s.runConfigTask(ctx, req.GetBizId(), req.GetConfigTemplateGroups(), ConfigTaskCheck)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.CheckConfigResp{BatchId: id}, nil
+}
+
+// runConfigTask 运行配置生成或校验任务
+// nolint:funlen
+func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup,
+	mode ConfigTaskMode) (uint32, error) {
+
+	kt := kit.FromGrpcContext(ctx)
+
+	if err := validateRequest(bizID, ctgs); err != nil {
+		return 0, err
+	}
+
+	// 1. 预处理，收集任务
+	var taskInfos []configTaskInfo
+	processIDSet := make(map[uint32]struct{})
+	environment := ""
+
+	for _, group := range ctgs {
+		configTemplate, err := s.dao.ConfigTemplate().
+			GetByID(kt, bizID, group.ConfigTemplateId)
+		if err != nil {
+			return 0, fmt.Errorf("get config template failed, err: %v", err)
+		}
+
+		template, err := s.dao.Template().
+			GetByID(kt, bizID, configTemplate.Attachment.TemplateID)
+		if err != nil {
+			return 0, fmt.Errorf("get template failed, err: %v", err)
+		}
+
+		latestRevision, err := s.dao.TemplateRevision().
+			GetLatestTemplateRevision(kt, bizID, configTemplate.Attachment.TemplateID)
+		if err != nil {
+			return 0, fmt.Errorf("get latest template revision failed, err: %v", err)
+		}
+
+		if group.ConfigTemplateVersionId != latestRevision.ID {
+			return 0, fmt.Errorf("config template version id is not latest")
+		}
+
+		processes, _, err := s.dao.Process().List(
+			kt,
+			bizID,
+			&pbproc.ProcessSearchCondition{CcProcessIds: group.CcProcessIds},
+			&types.BasePage{All: true},
+		)
+		if err != nil {
+			return 0, fmt.Errorf("get process failed, err: %v", err)
+		}
+
+		if len(processes) != len(group.CcProcessIds) || len(processes) == 0 {
+			return 0, fmt.Errorf("some processes not found for biz %d", bizID)
+		}
+
+		ok, err := isBindRelation(kt, s.dao, bizID, processes, configTemplate)
+		if err != nil {
+			return 0, err
+		}
+		if !ok {
+			return 0, fmt.Errorf("invalid binding relationship")
+		}
+
+		for _, p := range processes {
+			processIDSet[p.Attachment.CcProcessID] = struct{}{}
+			if environment == "" {
+				environment = p.Spec.Environment
+			}
+
+			instances, err := s.dao.ProcessInstance().
+				GetByProcessIDs(kt, bizID, []uint32{p.ID})
+			if err != nil {
+				return 0, err
+			}
+
+			for _, inst := range instances {
+				taskInfos = append(taskInfos, configTaskInfo{
+					configTemplateID: group.ConfigTemplateId,
+					configTemplate:   configTemplate,
+					template:         template,
+					latestRevision:   latestRevision,
+					process:          p,
+					processInstance:  inst,
+				})
+			}
+		}
+	}
+
+	if len(taskInfos) == 0 {
+		return 0, fmt.Errorf("no tasks to create")
+	}
+
+	// 2. 创建 TaskBatch
+	action := table.TaskActionConfigGenerate
+	if mode == ConfigTaskCheck {
+		action = table.TaskActionConfigCheck
+	}
+
+	now := time.Now()
+	batch := &table.TaskBatch{
+		Attachment: &table.TaskBatchAttachment{BizID: bizID},
+		Spec: &table.TaskBatchSpec{
+			TaskObject: table.TaskObjectConfigFile,
+			TaskAction: action,
+			Status:     table.TaskBatchStatusRunning,
+			StartAt:    &now,
+			TotalCount: uint32(len(taskInfos)),
+		},
+		Revision: &table.Revision{
+			Creator: kt.User,
+			Reviser: kt.User,
+		},
+	}
+	processIDs := make([]uint32, 0, len(processIDSet))
+	for id := range processIDSet {
+		processIDs = append(processIDs, id)
+	}
+	// 构建操作范围
+	operateRange := table.OperateRange{
+		SetNames:     make([]string, 0, len(processIDs)),
+		ModuleNames:  make([]string, 0, len(processIDs)),
+		ServiceNames: make([]string, 0, len(processIDs)),
+		ProcessAlias: make([]string, 0, len(processIDs)),
+		CCProcessID:  processIDs,
+	}
+	batch.Spec.SetTaskData(&table.TaskExecutionData{
+		Environment:  environment,
+		OperateRange: operateRange,
+	})
+
+	batchID, err := s.dao.TaskBatch().Create(kt, batch)
+	if err != nil {
+		return 0, err
+	}
+
+	// 记录实际创建的任务数
+	var dispatchedCount uint32
+	totalCount := uint32(len(taskInfos))
+
+	defer func() {
+		if dispatchedCount == totalCount {
+			return
+		}
+
+		failedToCreate := totalCount - dispatchedCount
+
+		logs.Warnf(
+			"task batch %d partially created: %d/%d tasks dispatched, %d failed to create, rid: %s",
+			batchID, dispatchedCount, totalCount, failedToCreate, kt.Rid,
+		)
+
+		if updateErr := s.dao.TaskBatch().
+			AddFailedCount(kt, batchID, failedToCreate); updateErr != nil {
+			logs.Errorf(
+				"add failed count for batch %d error, err: %v, rid: %s",
+				batchID, updateErr, kt.Rid,
+			)
+		}
+	}()
+
+	// 3. 下发任务
+	for _, info := range taskInfos {
+		var builder taskTypes.TaskBuilder
+
+		opts := common.ConfigTaskOptions{
+			Dao:                s.dao,
+			BizID:              bizID,
+			BatchID:            batchID,
+			ConfigTemplateID:   info.configTemplateID,
+			ConfigTemplateName: info.configTemplate.Spec.Name,
+			OperatorUser:       kt.User,
+			Template:           info.template,
+			TemplateRevision:   info.latestRevision,
+			Process:            info.process,
+			ProcessInstance:    info.processInstance,
+		}
+
+		switch mode {
+		case ConfigTaskGenerate:
+			opts.OperateType = table.ConfigGenerate
+			builder = config.NewConfigGenerateTask(opts)
+
+		case ConfigTaskCheck:
+			opts.OperateType = table.ConfigCheck
+			builder = config.NewCheckConfigTask(opts)
+
+		default:
+			return 0, fmt.Errorf("unsupported config task mode: %v", mode)
+		}
+
+		taskObj, err := task.NewByTaskBuilder(builder)
+		if err != nil {
+			return 0, err
+		}
+
+		s.taskManager.Dispatch(taskObj)
+
+		// 只在真正下发成功后 +1
+		dispatchedCount++
+	}
+
+	return batchID, nil
+}
+
+// GetConfigDiff implements [pbds.DataServer].
+func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq) (*pbds.GetConfigDiffResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	// 获取 task storage
+	taskStorage := taskpkg.GetGlobalStorage()
+	if taskStorage == nil {
+		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
+	}
+
+	taskInfo, err := taskStorage.GetTask(kt.Ctx, req.GetTaskId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 从 CommonPayload 中提取配置生成结果
+	var taskPayload executorCommon.TaskPayload
+	err = taskInfo.GetCommonPayload(&taskPayload)
+	if err != nil {
+		logs.Errorf("get common payload failed, taskID: %s, err: %v, rid: %s", req.TaskId, err, kt.Rid)
+		return nil, fmt.Errorf("get common payload failed: %v", err)
+	}
+
+	// 检查 ConfigPayload 是否存在
+	if taskPayload.ConfigPayload == nil || taskPayload.ProcessPayload == nil {
+		logs.Errorf("payload is nil, taskID: %s, rid: %s", req.TaskId, kt.Rid)
+		return nil, fmt.Errorf("payload not found in task")
+	}
+
+	currentOnline := &pbcin.ConfigVersion{
+		Data: &pbcin.ConfigContent{
+			Content:  taskPayload.ConfigPayload.ConfigContent,
+			Checksum: taskPayload.ConfigPayload.ConfigContentSignature,
+		},
+		Timestamp: timestamppb.New(taskInfo.End),
+		Operator:  taskInfo.Creator,
+	}
+
+	configInstance, err := s.dao.ConfigInstance().GetConfigInstance(kt, req.BizId, &dao.ConfigInstanceSearchCondition{
+		ConfigTemplateId: taskPayload.ConfigPayload.ConfigTemplateID,
+		CcProcessId:      taskPayload.ProcessPayload.CcProcessID,
+		ModuleInstSeq:    taskPayload.ProcessPayload.ModuleInstSeq,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	lastDispatched := &pbcin.ConfigVersion{}
+	if configInstance != nil {
+		lastDispatched = &pbcin.ConfigVersion{
+			Data: &pbcin.ConfigContent{
+				Content:  configInstance.Attachment.Content,
+				Checksum: configInstance.Attachment.Md5,
+			},
+			Timestamp: timestamppb.New(configInstance.Revision.UpdatedAt),
+			Operator:  configInstance.Revision.Reviser,
+		}
+	}
+
+	return &pbds.GetConfigDiffResp{
+		LastDispatched:     lastDispatched,
+		CurrentOnline:      currentOnline,
+		ConfigTemplateName: taskPayload.ConfigPayload.ConfigTemplateName,
+		ConfigFileName:     taskPayload.ConfigPayload.ConfigFileName,
+		ConfigFilePath:     taskPayload.ConfigPayload.ConfigFilePath,
+	}, nil
+}
+
+// GetConfigView implements [pbds.DataServer].
+func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq) (*pbds.GetConfigGenerateResultResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	configInstance, err := s.dao.ConfigInstance().GetConfigInstance(kt, req.BizId, &dao.ConfigInstanceSearchCondition{
+		ConfigTemplateId: req.GetConfigTemplateId(),
+		CcProcessId:      req.GetCcProcessId(),
+		ModuleInstSeq:    req.GetModuleInstSeq(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetConfigGenerateResult(kt.RpcCtx(), &pbds.GetConfigGenerateResultReq{
+		BizId:  req.GetBizId(),
+		TaskId: configInstance.Attachment.GenerateTaskID,
+	})
 }

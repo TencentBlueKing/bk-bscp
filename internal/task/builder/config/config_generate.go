@@ -14,115 +14,64 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	configExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
+
+const defaultGenerateConfigTimeout = 2 * time.Minute
 
 // GenerateConfigTask task generate config
 type GenerateConfigTask struct {
 	*common.Builder
-	bizID   uint32
-	batchID uint32
-
-	// 任务类型
-	operateType table.ConfigOperateType
-	// 操作人
-	operatorUser string
-
-	// 预定义渲染模版可能需要的字段
-	configTemplateID  uint32
-	configTemplate    *table.ConfigTemplate
-	template          *table.Template
-	templateRevision  *table.TemplateRevision
-	processInstanceID uint32
-	processInstance   *table.ProcessInstance
-	ccProcessID       uint32
-	process           *table.Process
-
+	bizID              uint32
+	batchID            uint32
+	configTemplateID   uint32
 	configTemplateName string
-	processAlias       string
-	moduleInstSeq      uint32
+	operateType        table.ConfigOperateType
+	operatorUser       string
+	template           *table.Template
+	templateRevision   *table.TemplateRevision
+	process            *table.Process
+	processInstance    *table.ProcessInstance
+	gseConf            cc.GSE
 }
 
-func NewConfigGenerateTask(
-	dao dao.Set,
-	bizID uint32,
-	batchID uint32,
-	operateType table.ConfigOperateType,
-	operatorUser string,
-	// 预定义渲染模版可能需要的字段
-	configTemplateID uint32,
-	configTemplate *table.ConfigTemplate,
-	template *table.Template,
-	templateRevision *table.TemplateRevision,
-	processInstanceID uint32,
-	processInstance *table.ProcessInstance,
-	ccProcessID uint32,
-	process *table.Process,
-	configTemplateName string,
-	processAlias string,
-	moduleInstSeq uint32,
-) types.TaskBuilder {
+// NewConfigGenerateTask xxx
+func NewConfigGenerateTask(opts common.ConfigTaskOptions) types.TaskBuilder {
 	return &GenerateConfigTask{
-		Builder:            common.NewBuilder(dao),
-		bizID:              bizID,
-		batchID:            batchID,
-		operateType:        operateType,
-		operatorUser:       operatorUser,
-		configTemplateID:   configTemplateID,
-		configTemplate:     configTemplate,
-		template:           template,
-		templateRevision:   templateRevision,
-		processInstanceID:  processInstanceID,
-		processInstance:    processInstance,
-		ccProcessID:        ccProcessID,
-		process:            process,
-		configTemplateName: configTemplateName,
-		processAlias:       processAlias,
-		moduleInstSeq:      moduleInstSeq,
+		Builder:            common.NewBuilder(opts.Dao),
+		bizID:              opts.BizID,
+		batchID:            opts.BatchID,
+		configTemplateID:   opts.ConfigTemplateID,
+		configTemplateName: opts.ConfigTemplateName,
+		operateType:        opts.OperateType,
+		operatorUser:       opts.OperatorUser,
+		template:           opts.Template,
+		templateRevision:   opts.TemplateRevision,
+		process:            opts.Process,
+		processInstance:    opts.ProcessInstance,
+		gseConf:            cc.G().GSE,
 	}
 }
 
 // FinalizeTask implements types.TaskBuilder.
 func (t *GenerateConfigTask) FinalizeTask(task *types.Task) error {
-	key := fmt.Sprintf("%d-%d-%d", t.configTemplateID, t.ccProcessID, t.moduleInstSeq)
-	// 设置 CommonPayload
-	if err := task.SetCommonPayload(&executorCommon.TaskPayload{
-		ProcessPayload: &executorCommon.ProcessPayload{
-			SetName:       t.process.Spec.SetName,
-			ModuleName:    t.process.Spec.ModuleName,
-			ServiceName:   t.process.Spec.ServiceName,
-			Environment:   t.process.Spec.Environment,
-			Alias:         t.process.Spec.Alias,
-			FuncName:      t.process.Spec.FuncName,
-			InnerIP:       t.process.Spec.InnerIP,
-			AgentID:       t.process.Attachment.AgentID,
-			CcProcessID:   t.process.Attachment.CcProcessID,
-			HostInstSeq:   t.processInstance.Spec.HostInstSeq,
-			ModuleInstSeq: t.processInstance.Spec.ModuleInstSeq,
-			ConfigData:    t.process.Spec.SourceData,
-			CloudID:       int(t.process.Attachment.CloudID),
-		},
-		ConfigPayload: &executorCommon.ConfigPayload{
-			ConfigTemplateID:        t.configTemplateID,
-			ConfigTemplateVersionID: t.templateRevision.ID,
-			ConfigTemplateName:      t.configTemplateName,
-			ConfigFileName:          t.templateRevision.Spec.Name,
-			ConfigFilePath:          t.templateRevision.Spec.Path,
-			ConfigFileOwner:         t.templateRevision.Spec.Permission.User,
-			ConfigFileGroup:         t.templateRevision.Spec.Permission.UserGroup,
-			ConfigFilePermission:    t.templateRevision.Spec.Permission.Privilege,
-			ConfigInstanceKey:       key,
-			ConfigContent:           "",
-		},
-	}); err != nil {
+	payload := executorCommon.BuildConfigTaskPayload(
+		t.process,
+		t.processInstance,
+		t.templateRevision,
+		t.configTemplateID,
+		t.configTemplateName,
+	)
+	if err := task.SetCommonPayload(payload); err != nil {
 		return err
 	}
 
@@ -133,29 +82,30 @@ func (t *GenerateConfigTask) FinalizeTask(task *types.Task) error {
 }
 
 func (t *GenerateConfigTask) Steps() ([]*types.Step, error) {
+	// 生成配置超时时间处理
+	if t.gseConf.GenerateConfigTimeout == 0 {
+		t.gseConf.GenerateConfigTimeout = defaultGenerateConfigTimeout
+	}
 	return []*types.Step{
 		config.GenerateConfig(
 			t.bizID,
 			t.batchID,
+			t.configTemplateID,
+			t.configTemplateName,
 			t.operateType,
 			t.operatorUser,
-			t.configTemplateID,
-			t.configTemplate,
 			t.template,
 			t.templateRevision,
-			t.processInstanceID,
-			t.processInstance,
-			t.ccProcessID,
 			t.process,
-			t.configTemplateName,
-			t.processAlias,
-			t.moduleInstSeq,
+			t.processInstance,
+			t.gseConf.GenerateConfigTimeout,
 		),
 	}, nil
 }
 
 func (t *GenerateConfigTask) TaskInfo() types.TaskInfo {
-	taskName := fmt.Sprintf("%s_%s_%s_%d", t.operateType, t.configTemplateName, t.processAlias, t.moduleInstSeq)
+	taskName := fmt.Sprintf("%s_%s_%s_%d", t.operateType, t.configTemplateName,
+		t.process.Spec.Alias, t.processInstance.Spec.ModuleInstSeq)
 	return types.TaskInfo{
 		TaskName:      taskName,
 		TaskType:      common.ConfigGenerateTaskType,

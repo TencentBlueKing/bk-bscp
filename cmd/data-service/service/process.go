@@ -18,7 +18,6 @@ import (
 	"strconv"
 	"time"
 
-	taskpkg "github.com/Tencent/bk-bcs/bcs-common/common/task"
 	istore "github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"gorm.io/gen/field"
@@ -26,7 +25,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
-	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -538,86 +536,6 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 		ProcessAliases:   processAliasesOptions,
 		CcProcessIds:     processIDOptions,
 	}, nil
-}
-
-// RetryTasks implements pbds.DataServer.
-func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbds.RetryTasksResp, error) {
-	kt := kit.FromGrpcContext(ctx)
-
-	// 获取 task storage
-	taskStorage := taskpkg.GetGlobalStorage()
-	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
-	}
-
-	// 查询任务批次信息
-	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.BatchId)
-	if err != nil {
-		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.BatchId, err, kt.Rid)
-		return nil, fmt.Errorf("get task batch failed: %v", err)
-	}
-
-	// 如果任务批次状态为成功，则拒绝重试
-	if taskBatch.Spec.Status == table.TaskBatchStatusSucceed {
-		logs.Infof("task batch %d is already succeed, skip retry, rid: %s", req.BatchId, kt.Rid)
-		return &pbds.RetryTasksResp{RetryCount: 0}, nil
-	}
-
-	// 查询该批次所有失败的任务
-	failedTasks, err := queryFailedTasks(ctx, taskStorage, req.BatchId)
-	if err != nil {
-		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", req.BatchId, err, kt.Rid)
-		return nil, fmt.Errorf("query failed tasks failed: %v", err)
-	}
-
-	if len(failedTasks) == 0 {
-		logs.Infof("no failed tasks to retry, batchID: %d, rid: %s", req.BatchId, kt.Rid)
-		return &pbds.RetryTasksResp{RetryCount: 0}, nil
-	}
-
-	// 重置计数字段用于重试
-	retryCount := uint32(len(failedTasks))
-	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, req.BatchId, retryCount); err != nil {
-		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", req.BatchId, err, kt.Rid)
-		return nil, fmt.Errorf("reset counts for retry failed: %v", err)
-	}
-
-	// 重试每个失败的任务
-	for _, failedTask := range failedTasks {
-		// 从进程操作完成步骤中获取进程操作负载，用于获取进程实例id
-		finalizeStep, ok := failedTask.GetStep(process.FinalizeOperateProcessStepName.String())
-		if !ok {
-			logs.Errorf("operate step not found, taskID: %s, rid: %s", failedTask.TaskID, kt.Rid)
-			return nil, fmt.Errorf("operate step not found")
-		}
-		var processPayload process.OperatePayload
-		if err := finalizeStep.GetPayload(&processPayload); err != nil {
-			logs.Errorf("get payload failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return nil, fmt.Errorf("get payload failed: %v", err)
-		}
-		// 获取进程实例
-		processInstance, err := s.dao.ProcessInstance().GetByID(kt, req.BizId, processPayload.ProcessInstanceID)
-		if err != nil {
-			logs.Errorf("get process instance failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
-			return nil, fmt.Errorf("get process instance failed: %v", err)
-		}
-		if processInstance == nil {
-			logs.Errorf("process instance not found, processInstanceID: %d, rid: %s", processPayload.ProcessInstanceID, kt.Rid)
-			return nil, fmt.Errorf("process instance not found")
-		}
-		// 更新进程实例状态
-		if err = updateProcessInstanceStatus(kt, s.dao, table.ProcessOperateType(taskBatch.Spec.TaskAction), processInstance); err != nil {
-			logs.Errorf("update process instance status failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
-			return nil, fmt.Errorf("update process instance status failed: %v", err)
-		}
-		err = s.taskManager.RetryAll(failedTask)
-		if err != nil {
-			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return nil, fmt.Errorf("retry failed task failed: %v", err)
-		}
-	}
-	logs.Infof("retry tasks completed, batchID: %d, retryCount: %d, rid: %s", req.BatchId, retryCount, kt.Rid)
-	return &pbds.RetryTasksResp{RetryCount: retryCount}, nil
 }
 
 // queryFailedTasks 查询批次中所有失败的任务
