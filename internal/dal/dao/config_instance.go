@@ -139,7 +139,7 @@ func (dao *configInstanceDao) Upsert(kit *kit.Kit, configInstance *table.ConfigI
 	// 如果记录已存在，更新记录
 	configInstance.ID = existing.ID
 	if _, err := q.Where(m.ID.Eq(existing.ID)).
-		Select(m.ConfigVersionID, m.GenerateTaskID, m.TenantID, m.Reviser, m.UpdatedAt).
+		Select(m.ConfigVersionID, m.GenerateTaskID, m.TenantID, m.Reviser, m.UpdatedAt, m.Md5, m.Content).
 		Updates(configInstance); err != nil {
 		return fmt.Errorf("update config instance failed: %w", err)
 	}

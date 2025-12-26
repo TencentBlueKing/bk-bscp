@@ -1552,6 +1552,10 @@ type GSE struct {
 	CacheSizeGB uint `yaml:"cacheSizeGB"`
 	// CacheRetentionRate is the cache retention rate of the source file in the feed server.
 	CacheRetentionRate float64 `yaml:"cacheRetentionRate"`
+	// ScriptStoreDir is the directory where the script files are stored.
+	ScriptStoreDir string `yaml:"script_store_dir"`
+	// GenerateConfigTimeout is the timeout for generating gse agent configuration.
+	GenerateConfigTimeout time.Duration `yaml:"generate_config_timeout"`
 }
 
 func (g *GSE) trySetDefault() {
