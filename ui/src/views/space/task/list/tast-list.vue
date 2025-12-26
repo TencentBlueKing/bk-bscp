@@ -140,7 +140,12 @@
 
   const handleRetry = async (row: ITaskHistoryItem) => {
     try {
-      await retryTask(spaceId.value, row.id);
+      const query = {
+        task_type: ['config_generate', 'config_push', 'config_check'].includes(row.task_action)
+          ? row.task_action
+          : null,
+      };
+      await retryTask(spaceId.value, row.id, query);
       loadTaskList();
     } catch (error) {
       console.error(error);

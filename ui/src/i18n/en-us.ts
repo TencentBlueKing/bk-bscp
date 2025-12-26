@@ -1466,4 +1466,9 @@ export default {
   '确认删除模板版本?': 'Confirm Delete Template Version?',
   个: 'Item',
   配置文件详情: 'Config File Details',
+  巡检: 'Check',
+  从未下发: 'NEVER_PUBLISHED',
+  一致: 'SAME',
+  不一致: 'DIFFERENT',
+  未知: 'UNKNOWN',
 };

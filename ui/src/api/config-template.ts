@@ -169,3 +169,19 @@ export const retryGenerateConfig = (biz_id: string, data: any) =>
  */
 export const previewConfig = (biz_id: string, data: any) =>
   http.post(`/config/biz_id/${biz_id}/config_instances/preview`, data).then((res) => res.data);
+
+/**
+ * 配置检查
+ * @param biz_id
+ * @param data
+ */
+export const checkConfig = (biz_id: string, data: IGenerateConfigParams) =>
+  http.post(`/config/biz_id/${biz_id}/config_instances/check`, data).then((res) => res.data);
+
+/**
+ * 配置检查查看
+ * @param biz_id
+ * @param params
+ */
+export const checkConfigView = (biz_id: string, params: any) =>
+  http.get(`/config/biz_id/${biz_id}/config_instances/view`, { params }).then((res) => res.data);

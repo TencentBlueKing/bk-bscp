@@ -48,6 +48,13 @@
           <TableColumn :title="$t('执行耗时')" col-key="execution_time">
             <template #default="{ row }"> {{ row.execution_time }}s </template>
           </TableColumn>
+          <TableColumn v-if="action === 'config_check'" :title="$t('检查结果')" col-key="compare_status">
+            <template #default="{ row }">
+              <span>
+                {{ TASK_DETAIL_COMPARE_STATUS_MAP[row.compare_status as keyof typeof TASK_DETAIL_COMPARE_STATUS_MAP] }}
+              </span>
+            </template>
+          </TableColumn>
           <TableColumn :title="$t('执行结果')" col-key="status">
             <template #default="{ row }">
               <div class="status">
@@ -61,14 +68,16 @@
               </div>
             </template>
           </TableColumn>
-          <TableColumn :title="$t('操作')" col-key="operation">
+          <TableColumn v-if="showOperationActions.includes(action)" :title="$t('操作')" col-key="operation">
             <template #default="{ row }">
-              <bk-button
-                v-if="['FAILURE', 'SUCCESS'].includes(row.status) && taskDetail.task_object !== 'process'"
-                theme="primary"
-                text>
-                {{ $t('查看配置') }}
-              </bk-button>
+              <template v-if="['FAILURE', 'SUCCESS'].includes(row.status)">
+                <bk-button v-if="action === 'config_check'" theme="primary" text @click="handleDiff(row.task_id)">
+                  {{ $t('配置对比') }}
+                </bk-button>
+                <bk-button v-else theme="primary" text @click="handleView(row.task_id)">
+                  {{ $t('查看配置') }}
+                </bk-button>
+              </template>
               <span v-else>--</span>
             </template>
           </TableColumn>
@@ -91,6 +100,12 @@
       </div>
     </div>
   </div>
+  <ConfigDetail
+    :bk-biz-id="bkBizId"
+    v-model:is-show="detailSliderData.open"
+    :is-check="false"
+    :data="detailSliderData.data" />
+  <TaskDiff :bk-biz-id="bkBizId" v-model:is-show="diffSliderData.open" :task-id="diffSliderData.taskId" />
 </template>
 
 <script lang="ts" setup>
@@ -98,18 +113,18 @@
   import { useI18n } from 'vue-i18n';
   import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
-  import { TASK_DETAIL_STATUS_MAP, TASK_ACTION_MAP } from '../../../../constants/task';
+  import { TASK_DETAIL_STATUS_MAP, TASK_ACTION_MAP, TASK_DETAIL_COMPARE_STATUS_MAP } from '../../../../constants/task';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
-  import { storeToRefs } from 'pinia';
   import SearchSelector from '../../../../components/search-selector.vue';
   import useTaskStore from '../../../../store/task';
   import { datetimeFormat } from '../../../../utils';
-  import type { IOperateRange } from '../../../../../types/task';
+  import type { IOperateRange, ITaskDetailItem } from '../../../../../types/task';
+  import ConfigDetail from '../../config-template/config-issued/config-detail.vue';
+  import TaskDiff from './task-diff.vue';
 
   const taskStore = useTaskStore();
-  const { taskDetail } = storeToRefs(taskStore);
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { t } = useI18n();
   const route = useRoute();
@@ -172,18 +187,35 @@
       status: 'RUNNING',
       count: 0,
     },
+    {
+      label: t('现网配置异常'),
+      status: 'ABNORMAL',
+      count: 0,
+    },
   ]);
+  // 展示操作列表的动作
+  const showOperationActions = ['config_generate', 'config_publish', 'config_check'];
+
   const bkBizId = ref(String(route.params.spaceId));
   const taskId = ref(Number(route.params.taskId));
   const searchValue = ref();
   const activePanels = ref('INITIALIZING');
   const isSearchEmpty = ref(false);
-  const detailList = ref<any[]>([]);
+  const detailList = ref<ITaskDetailItem[]>([]);
   const loading = ref(false);
   const failureCount = ref(0);
   const tableRef = ref();
   const loadPanelsFlag = ref(true);
   const searchSelectorRef = ref();
+  const action = ref('');
+  const detailSliderData = ref({
+    open: false,
+    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
+  });
+  const diffSliderData = ref({
+    open: false,
+    taskId: '',
+  });
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 150;
@@ -205,7 +237,7 @@
       detailList.value = res.tasks;
       pagination.value.count = res.count;
       panels.value.forEach((panel) => {
-        panel.count = res.statistics.find((item: any) => item.status === panel.status).count;
+        panel.count = res.statistics.find((item: any) => item.status === panel.status)?.count || 0;
         if (panel.status === 'FAILURE') {
           failureCount.value = panel.count;
         }
@@ -230,7 +262,7 @@
         task_action,
         status,
       } = res.task_batch;
-
+      action.value = task_action;
       const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
       const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
 
@@ -297,7 +329,10 @@
   // 重试所有失败任务
   const handleRetry = async () => {
     try {
-      await retryTask(bkBizId.value, taskId.value);
+      const query = {
+        task_type: showOperationActions.includes(action.value) ? action.value : null,
+      };
+      await retryTask(bkBizId.value, taskId.value, query);
       loadTaskList();
     } catch (error) {
       console.error(error);
@@ -309,6 +344,20 @@
     isSearchEmpty.value = false;
     searchSelectorRef.value.clear();
     loadTaskList();
+  };
+
+  const handleView = (id: string) => {
+    detailSliderData.value = {
+      open: true,
+      data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: id },
+    };
+  };
+
+  const handleDiff = (id: string) => {
+    diffSliderData.value = {
+      open: true,
+      taskId: id,
+    };
   };
 </script>
 

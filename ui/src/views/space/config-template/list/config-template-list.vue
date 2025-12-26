@@ -69,10 +69,10 @@
                 @click="handleConfigIssue(row.id)">
                 {{ t('配置下发') }}
               </bk-button>
-              <bk-button theme="primary" text @click="handleGoVersionManage(row)">
-                {{ t('版本管理') }}
+              <bk-button theme="primary" text @click="handleConfigCheck(row)">
+                {{ t('配置检查') }}
               </bk-button>
-              <TableMoreActions :operation-list="tableMoreOperationList" @operation="handleDelete(row)" />
+              <TableMoreActions :operation-list="tableMoreOperationList" @operation="handleMoreActions(row, $event)" />
             </div>
           </template>
         </TableColumn>
@@ -123,6 +123,7 @@
       <span class="value">{{ opTemplate.templateName }}</span>
     </div>
   </DeleteConfirmDialog>
+  <ConfigCheck v-model:is-show="isShowConfigCheck" :bk-biz-id="spaceId" :id="opTemplate.id" />
 </template>
 
 <script lang="ts" setup>
@@ -144,6 +145,7 @@
   import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
   import useConfigTemplateStore from '../../../../store/config-template';
   import TableMoreActions from '../../../../components/table/table-more-actions.vue';
+  import ConfigCheck from './config-check.vue';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
@@ -157,6 +159,10 @@
     { field: 'reviser', label: t('更新人') },
   ];
   const tableMoreOperationList = [
+    {
+      id: 'versionManage',
+      name: t('版本管理'),
+    },
     {
       id: 'delete',
       name: t('删除'),
@@ -179,6 +185,7 @@
   const templateSpaceId = ref(0);
   const isShowDeleteDialog = ref(false);
   const deletePendding = ref(false);
+  const isShowConfigCheck = ref(false);
 
   onMounted(() => {
     loadConfigTemplateList();
@@ -288,8 +295,24 @@
     loadConfigTemplateList();
   };
 
+  const handleMoreActions = (template: IConfigTemplateItem, op: string) => {
+    if (op === 'delete') {
+      handleDelete(template);
+    } else {
+      handleGoVersionManage(template);
+    }
+  };
+
   const handleDelete = (template: IConfigTemplateItem) => {
     isShowDeleteDialog.value = true;
+    opTemplate.value = {
+      id: template.id,
+      templateName: template.spec.name,
+    };
+  };
+
+  const handleConfigCheck = (template: IConfigTemplateItem) => {
+    isShowConfigCheck.value = true;
     opTemplate.value = {
       id: template.id,
       templateName: template.spec.name,

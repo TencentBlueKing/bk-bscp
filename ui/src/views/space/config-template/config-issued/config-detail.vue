@@ -24,7 +24,7 @@
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { getGenerateResult } from '../../../../api/config-template';
+  import { getGenerateResult, checkConfigView } from '../../../../api/config-template';
   import CodeEditor from '../../../../components/code-editor/index.vue';
 
   const { t } = useI18n();
@@ -32,7 +32,8 @@
   const props = defineProps<{
     bkBizId: string;
     isShow: boolean;
-    teskId: string;
+    isCheck: boolean;
+    data: { ccProcessId: number; moduleInstSeq: number; configTemplateId: number; taskId: string };
   }>();
   const emits = defineEmits(['update:isShow']);
   const templateDetail = ref({
@@ -85,7 +86,17 @@
 
   const loadGenerateResult = async () => {
     try {
-      const res = await getGenerateResult(props.bkBizId, props.teskId);
+      let res;
+      if (props.isCheck) {
+        const params = {
+          config_template_id: props.data.configTemplateId,
+          cc_process_id: props.data.ccProcessId,
+          module_inst_seq: props.data.moduleInstSeq,
+        };
+        res = await checkConfigView(props.bkBizId, params);
+      } else {
+        res = await getGenerateResult(props.bkBizId, props.data.taskId);
+      }
       templateDetail.value = res;
     } catch (error) {
       console.error(error);

@@ -8,6 +8,9 @@ export const TASK_ACTION_MAP = {
   restart: localT('重启'),
   reload: localT('重载'),
   kill: localT('强制停止'),
+  config_generate: localT('生成'),
+  config_publish: localT('下发'),
+  config_check: localT('巡检'),
 };
 
 export const TASK_STATUS_MAP = {
@@ -23,4 +26,11 @@ export const TASK_DETAIL_STATUS_MAP = {
   SUCCESS: localT('执行成功'),
   INITIALIZING: localT('等待执行'),
   RUNNING: localT('正在执行'),
+};
+
+export const TASK_DETAIL_COMPARE_STATUS_MAP = {
+  NEVER_PUBLISHED: localT('从未下发'),
+  SAME: localT('一致'),
+  DIFFERENT: localT('不一致'),
+  UNKNOWN: localT('未知'),
 };
