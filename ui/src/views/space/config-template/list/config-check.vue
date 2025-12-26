@@ -26,11 +26,14 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
+  import { useRouter } from 'vue-router';
   import { getConfigInstanceList, checkConfig } from '../../../../api/config-template';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import FilterProcess from '../../process/components/filter-process.vue';
   import ProcessTable from '../config-issued/process-table.vue';
   import { ITemplateProcess } from '../../../../../types/config-template';
+
+  const router = useRouter();
 
   const props = defineProps<{
     bkBizId: string;
@@ -97,7 +100,8 @@
           };
         }),
       };
-      await checkConfig(props.bkBizId, data);
+      const res = await checkConfig(props.bkBizId, data);
+      router.push({ name: 'task-detail', params: { taskId: res.batch_id } });
     } catch (error) {
       console.error(error);
     }
