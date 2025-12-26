@@ -1,5 +1,5 @@
 <template>
-  <bk-sideslider :is-show="props.show" :width="1200" @closed="handleClose">
+  <bk-sideslider :is-show="props.isShow" :width="1200" @closed="handleClose">
     <template #header>
       <div class="header">
         <span class="title">{{ $t('配置对比') }}</span>
@@ -12,16 +12,16 @@
         <template #leftHead>
           <slot name="baseHead">
             <div class="diff-panel-head">
-              <div class="version-tag current-version">{{ t('实时') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.current.createTime!) }}</span>
+              <div class="version-tag current-version">{{ t('最后下发') }}</div>
+              <span class="timer">{{ $t('下发时间') }}: {{ datetimeFormat(configDiffData.current.createTime!) }}</span>
             </div>
           </slot>
         </template>
         <template #rightHead>
           <slot name="currentHead">
             <div class="diff-panel-head">
-              <div class="version-tag base-version">{{ t('预生成') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.base.createTime!) }}</span>
+              <div class="version-tag base-version">{{ t('现网配置') }}</div>
+              <span class="timer">{{ $t('检查时间') }}: {{ datetimeFormat(configDiffData.base.createTime!) }}</span>
             </div>
           </slot>
         </template>
@@ -33,24 +33,18 @@
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { IDiffDetail } from '../../../../../types/service';
-  import { compareConfigInstance } from '../../../../api/config-template';
-
-  import Diff from '../../../../components/diff/index.vue';
+  import { taskCompare } from '../../../../api/task';
   import { datetimeFormat } from '../../../../utils';
+  import Diff from '../../../../components/diff/index.vue';
 
   const { t } = useI18n();
   const props = defineProps<{
-    show: boolean;
-    spaceId: string;
-    filePath: string;
-    instance: {
-      ccProcessId: number;
-      moduleInstSeq: number;
-      configVersionId: number;
-    };
+    isShow: boolean;
+    bkBizId: string;
+    taskId: string;
   }>();
 
-  const emits = defineEmits(['update:show']);
+  const emits = defineEmits(['update:isShow']);
 
   const configDiffData = ref<IDiffDetail>({
     contentType: 'text',
@@ -64,30 +58,32 @@
       createTime: '',
     },
   });
+  const filePath = ref('');
   watch(
-    () => props.show,
+    () => props.isShow,
     (newVal) => {
       if (newVal) {
-        loadGenerateResult();
+        loadDiff();
       }
     },
   );
 
-  const loadGenerateResult = async () => {
+  const loadDiff = async () => {
     try {
-      const res = await compareConfigInstance(props.spaceId, props.instance);
+      const res = await taskCompare(props.bkBizId, props.taskId);
       configDiffData.value = {
         contentType: 'text',
         id: 0,
         current: {
-          content: res.oldConfigContent.content,
-          createTime: res.oldConfigContent.createTime,
+          content: res.last_dispatched.data.content,
+          createTime: res.last_dispatched.timestamp,
         },
         base: {
-          content: res.newConfigContent.content,
-          createTime: res.newConfigContent.createTime,
+          content: res.current_online.data.content,
+          createTime: res.current_online.timestamp,
         },
       };
+      filePath.value = `${res.config_template_name} (${res.config_file_path})`;
     } catch (error) {
       console.error(error);
     }
@@ -99,14 +95,12 @@
       id: 0,
       current: {
         content: '',
-        createTime: '',
       },
       base: {
         content: '',
-        createTime: '',
       },
     };
-    emits('update:show', false);
+    emits('update:isShow', false);
   };
 </script>
 <style lang="scss" scoped>

@@ -23,5 +23,13 @@ export const getTaskDetailList = (biz_id: string, taskId: number, query: any) =>
  * @param bizId 业务ID
  * @param taskId 任务id
  */
-export const retryTask = (biz_id: string, taskId: number) =>
-  http.post(`/config/biz_id/${biz_id}/task_batch/${taskId}/retry`).then((res) => res.data);
+export const retryTask = (biz_id: string, taskId: number, query: any) =>
+  http.post(`/config/biz_id/${biz_id}/task_batch/${taskId}/retry`, query).then((res) => res.data);
+
+/**
+ * 任务对比查看
+ * @param bizId 业务ID
+ * @param taskId 任务id
+ */
+export const taskCompare = (biz_id: string, taskId: string) =>
+  http.get(`/config/biz_id/${biz_id}/config_instances/diff/${taskId}`).then((res) => res.data);

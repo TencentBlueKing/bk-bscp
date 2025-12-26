@@ -5,11 +5,19 @@
         <AngleDownFill :class="['angle-icon', isShow && 'expanded']" />
         <span class="template-name">{{ templateName }}</span>
         <span class="version">
-          ({{ $t('即将下发') }} <span>{{ `#${templateProcess.revisionName}` }}</span> {{ $t('版本') }})
+          ({{ isCheck ? $t('最后一次下发') : $t('即将下发') }} <span>{{ `#${templateProcess.revisionName}` }}</span>
+          {{ $t('版本') }})
         </span>
       </div>
       <div class="head-right">
-        <template v-if="isGenerate">
+        <template v-if="isCheck">
+          <span>
+            {{ $t('已选') }}
+            <span class="count">{{ templateProcess.list.length }}</span>
+            {{ $t('个') }}
+          </span>
+        </template>
+        <template v-else-if="isGenerate">
           <div class="status-total">
             <div class="success-count">
               <span class="dot SUCCESS"></span>
@@ -58,20 +66,20 @@
     </div>
     <div v-show="isShow">
       <PrimaryTable class="border" :data="templateProcess.list" row-key="cc_process_id">
-        <TableColumn :title="$t('进程别名')" col-key="process_alias"></TableColumn>
+        <TableColumn :title="$t('进程别名')" col-key="process_alias" width="180" />
         <TableColumn :title="$t('所属拓扑')" ellipsis>
           <template #default="{ row }: { row: ITemplateProcessItem }">
             {{ `${row.set} / ${row.module} / ${row.service_instance}` }}
           </template>
         </TableColumn>
-        <TableColumn col-key="cc_process_id">
+        <TableColumn col-key="cc_process_id" width="133">
           <template #title>
             <span class="tips-title" v-bk-tooltips="{ content: $t('对应 CMDB 中唯一 ID'), placement: 'top' }">
               {{ $t('CC 进程ID') }}
             </span>
           </template>
         </TableColumn>
-        <TableColumn col-key="module_inst_seq">
+        <TableColumn col-key="module_inst_seq" width="133">
           <template #title>
             <span class="tips-title" v-bk-tooltips="{ content: $t('模块下唯一标识'), placement: 'top' }"> InstID </span>
           </template>
@@ -95,19 +103,22 @@
           </TableColumn>
         </template>
         <template v-else>
-          <TableColumn :title="$t('版本号')" col-key="config_version_name" />
+          <TableColumn :title="$t('版本号')" col-key="config_version_name" width="140" />
           <TableColumn :title="$t('版本描述')" col-key="config_version_memo" />
         </template>
-        <TableColumn :title="$t('操作')">
+        <TableColumn :title="$t('操作')" width="196">
           <template #default="{ row }: { row: ITemplateProcessItem }">
-            <div v-if="isGenerate" class="op-btns">
+            <bk-button v-if="isCheck" theme="primary" text @click="handleView(row)">
+              {{ $t('查看配置') }}
+            </bk-button>
+            <div v-else-if="isGenerate" class="op-btns">
               <bk-button v-if="row.status === 'SUCCESS'" theme="primary" text @click="emits('regenerate', row)">
                 {{ $t('重新生成') }}
               </bk-button>
               <bk-button v-if="row.status === 'FAILURE'" theme="primary" text @click="emits('retry', row)">
                 {{ $t('重试') }}
               </bk-button>
-              <bk-button theme="primary" text @click="handleView(row.task_id)">{{ $t('查看') }}</bk-button>
+              <bk-button theme="primary" text @click="handleView(row)">{{ $t('查看') }}</bk-button>
             </div>
             <bk-button v-else theme="primary" text @click="handleDiff(row)"> {{ $t('配置对比') }}</bk-button>
           </template>
@@ -120,7 +131,11 @@
     :space-id="props.bkBizId"
     :instance="diffSliderData.data"
     :file-path="diffSliderData.filePath" />
-  <ConfigDetail v-model:is-show="detailSliderData.open" :bk-biz-id="bkBizId" :tesk-id="detailSliderData.taskId" />
+  <ConfigDetail
+    v-model:is-show="detailSliderData.open"
+    :is-check="isCheck"
+    :bk-biz-id="bkBizId"
+    :data="detailSliderData.data" />
 </template>
 
 <script lang="ts" setup>
@@ -134,7 +149,8 @@
 
   const props = defineProps<{
     templateProcess: ITemplateProcess;
-    isGenerate: boolean;
+    isGenerate?: boolean;
+    isCheck?: boolean;
     bkBizId: string;
   }>();
   const emits = defineEmits(['select', 'regenerate', 'retry']);
@@ -152,10 +168,10 @@
   });
   const detailSliderData = ref<{
     open: boolean;
-    taskId: string;
+    data: { ccProcessId: number; moduleInstSeq: number; configTemplateId: number; taskId: string };
   }>({
     open: false,
-    taskId: '',
+    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
   });
 
   const templateName = computed(() => {
@@ -180,10 +196,15 @@
   };
 
   // 查看配置文件详情
-  const handleView = (taskId: string) => {
+  const handleView = (row: ITemplateProcessItem) => {
     detailSliderData.value = {
       open: true,
-      taskId,
+      data: {
+        ccProcessId: row.cc_process_id,
+        moduleInstSeq: row.module_inst_seq,
+        configTemplateId: row.config_template_id,
+        taskId: row.task_id,
+      },
     };
   };
 </script>
