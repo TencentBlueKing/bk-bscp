@@ -75,6 +75,9 @@ message TaskDetail {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行时间(s)" }];
   TaskPayload task_payload = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程配置快照" }];
+  string compare_status = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "对比状态：SAME、DIFFERENT、NEVER_PUBLISHED、UNKNOWN"
+  }];
 }
 
 // TaskStatusStatItem 任务状态统计项

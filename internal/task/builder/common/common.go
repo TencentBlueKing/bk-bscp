@@ -19,6 +19,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
@@ -28,6 +29,8 @@ const (
 	ConfigGenerateTaskType = "config_generate"
 	// ConfigPushTaskType 配置下发任务类型
 	ConfigPushTaskType = "config_push"
+	// ConfigCheckTaskType 配置检查任务类型
+	ConfigCheckTaskType = "config_check"
 
 	// ProcessOperateTaskType 进程操作任务类型
 	ProcessOperateTaskType = "process_operate"
@@ -92,4 +95,19 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, bizID, processID
 			CloudID:       int(process.Attachment.CloudID),
 		},
 	})
+}
+
+// ConfigTaskOptions 配置生成和配置检查共用
+type ConfigTaskOptions struct {
+	Dao                dao.Set
+	BizID              uint32
+	BatchID            uint32
+	ConfigTemplateID   uint32
+	ConfigTemplateName string
+	OperatorUser       string
+	OperateType        table.ConfigOperateType
+	Template           *table.Template
+	TemplateRevision   *table.TemplateRevision
+	Process            *table.Process
+	ProcessInstance    *table.ProcessInstance
 }

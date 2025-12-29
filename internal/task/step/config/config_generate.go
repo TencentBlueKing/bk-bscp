@@ -23,52 +23,28 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-const (
-	// MaxExecutionTime 最大执行时间
-	MaxExecutionTime = 10 * time.Second
-)
-
-func GenerateConfig(
-	bizID uint32,
-	batchID uint32,
-	operateType table.ConfigOperateType,
-	operatorUser string,
-	// 预定义渲染模版可能需要的字段
-	configTemplateID uint32,
-	configTemplate *table.ConfigTemplate,
-	template *table.Template,
-	templateRevision *table.TemplateRevision,
-	processInstanceID uint32,
-	processInstance *table.ProcessInstance,
-	ccProcessID uint32,
-	process *table.Process,
-	configTemplateName string,
-	processAlias string,
-	moduleInstSeq uint32,
-) *types.Step {
+// GenerateConfig xxx
+func GenerateConfig(bizID, batchID, configTemplateID uint32, configTemplateName string, operateType table.ConfigOperateType,
+	operatorUser string, template *table.Template, templateRevision *table.TemplateRevision, process *table.Process,
+	processInstance *table.ProcessInstance, generateConfigTimeout time.Duration) *types.Step {
 	logs.V(3).Infof("generate config: bizID: %d, configTemplateID: %d, processAlias: %s, moduleInstSeq: %d, operateType: %s",
-		bizID, configTemplateID, processAlias, moduleInstSeq, operateType)
+		bizID, configTemplateID, process.Spec.Alias, processInstance.Spec.ModuleInstSeq, operateType)
 
 	generate := types.NewStep(config.GenerateConfigStepName.String(), config.GenerateConfigStepName.String()).
 		SetAlias("generate_config").
-		SetMaxExecution(MaxExecutionTime).
+		SetMaxExecution(generateConfigTimeout).
 		SetMaxTries(0)
 	lo.Must0(generate.SetPayload(config.GenerateConfigPayload{
 		BizID:              bizID,
 		BatchID:            batchID,
+		ConfigTemplateID:   configTemplateID,
+		ConfigTemplateName: configTemplateName,
 		OperateType:        operateType,
 		OperatorUser:       operatorUser,
-		ConfigTemplateID:   configTemplateID,
-		ConfigTemplate:     configTemplate,
 		Template:           template,
 		TemplateRevision:   templateRevision,
-		ProcessInstanceID:  processInstanceID,
-		ProcessInstance:    processInstance,
-		CcProcessID:        ccProcessID,
 		Process:            process,
-		ConfigTemplateName: configTemplateName,
-		ProcessAlias:       processAlias,
-		ModuleInstSeq:      moduleInstSeq,
+		ProcessInstance:    processInstance,
 	}))
 	return generate
 }

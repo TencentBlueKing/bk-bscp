@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
+	pbcin "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-instance"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
@@ -80,14 +81,15 @@ func (s *Service) GenerateConfig(ctx context.Context, req *pbcs.GenerateConfigRe
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
-	dsConfigTemplateGroups := make([]*pbds.GenerateConfigReq_ConfigTemplateGroup, 0)
+	dsConfigTemplateGroups := make([]*pbcin.ConfigTemplateGroup, 0)
 	for _, configTemplateGroup := range req.GetConfigTemplateGroups() {
-		dsConfigTemplateGroups = append(dsConfigTemplateGroups, &pbds.GenerateConfigReq_ConfigTemplateGroup{
+		dsConfigTemplateGroups = append(dsConfigTemplateGroups, &pbcin.ConfigTemplateGroup{
 			ConfigTemplateId:        configTemplateGroup.GetConfigTemplateId(),
 			ConfigTemplateVersionId: configTemplateGroup.GetConfigTemplateVersionId(),
 			CcProcessIds:            configTemplateGroup.GetCcProcessIds(),
 		})
 	}
+
 	dsResp, err := s.client.DS.GenerateConfig(grpcKit.RpcCtx(), &pbds.GenerateConfigReq{
 		BizId:                req.GetBizId(),
 		ConfigTemplateGroups: dsConfigTemplateGroups,
@@ -269,4 +271,98 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbcs.OperateGe
 	}
 
 	return &pbcs.OperateGenerateConfigResp{}, nil
+}
+
+// CheckConfig implements [pbcs.ConfigServer].
+func (s *Service) CheckConfig(ctx context.Context, req *pbcs.CheckConfigReq) (*pbcs.CheckConfigResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+	dsConfigTemplateGroups := make([]*pbcin.ConfigTemplateGroup, 0)
+	for _, configTemplateGroup := range req.GetConfigTemplateGroups() {
+		dsConfigTemplateGroups = append(dsConfigTemplateGroups, &pbcin.ConfigTemplateGroup{
+			ConfigTemplateId:        configTemplateGroup.GetConfigTemplateId(),
+			ConfigTemplateVersionId: configTemplateGroup.GetConfigTemplateVersionId(),
+			CcProcessIds:            configTemplateGroup.GetCcProcessIds(),
+		})
+	}
+	dsResp, err := s.client.DS.CheckConfig(grpcKit.RpcCtx(), &pbds.CheckConfigReq{
+		BizId:                req.GetBizId(),
+		ConfigTemplateGroups: dsConfigTemplateGroups,
+	})
+	if err != nil {
+		logs.Errorf("check config failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	return &pbcs.CheckConfigResp{
+		BatchId: dsResp.GetBatchId(),
+	}, nil
+}
+
+// GetConfigDiff implements [pbcs.ConfigServer].
+func (s *Service) GetConfigDiff(ctx context.Context, req *pbcs.GetConfigDiffReq) (*pbcs.GetConfigDiffResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetConfigDiff(grpcKit.RpcCtx(), &pbds.GetConfigDiffReq{
+		BizId:  req.GetBizId(),
+		TaskId: req.GetTaskId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetConfigDiffResp{
+		LastDispatched:     resp.GetLastDispatched(),
+		CurrentOnline:      resp.GetCurrentOnline(),
+		ConfigTemplateName: resp.GetConfigTemplateName(),
+		ConfigFilePath:     resp.GetConfigFilePath(),
+		ConfigFileName:     resp.GetConfigFileName(),
+	}, nil
+}
+
+// GetConfigView implements [pbcs.ConfigServer].
+func (s *Service) GetConfigView(ctx context.Context, req *pbcs.GetConfigViewReq) (*pbcs.GetConfigRenderResultResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetConfigView(grpcKit.RpcCtx(), &pbds.GetConfigViewReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+		CcProcessId:      req.GetCcProcessId(),
+		ModuleInstSeq:    req.GetModuleInstSeq(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetConfigRenderResultResp{
+		ConfigTemplateId:     resp.ConfigTemplateId,
+		ConfigTemplateName:   resp.ConfigTemplateName,
+		ConfigFileName:       resp.ConfigFileName,
+		ConfigFilePath:       resp.ConfigFilePath,
+		ConfigFileOwner:      resp.ConfigFileOwner,
+		ConfigFileGroup:      resp.ConfigFileGroup,
+		ConfigFilePermission: resp.ConfigFilePermission,
+		ConfigInstanceKey:    resp.ConfigInstanceKey,
+		Content:              resp.Content,
+	}, nil
 }

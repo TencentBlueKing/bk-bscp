@@ -21,6 +21,8 @@ const (
 	ConfigGenerate ConfigOperateType = "config_generate"
 	// 配置下发
 	ConfigPush ConfigOperateType = "config_push"
+	// 配置检查
+	ConfigCheck ConfigOperateType = "config_check"
 )
 
 // ConfigInstance defines a config instance's detail information
@@ -46,6 +48,10 @@ type ConfigInstanceAttachment struct {
 	GenerateTaskID string `json:"generate_task_id" gorm:"column:task_id"`
 	// TenantID is the tenant ID.
 	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
+	// Md5 is the config content md5 value.
+	Md5 string `json:"md5" gorm:"column:md5"`
+	// Content is the config content.
+	Content string `json:"content" gorm:"column:content"`
 }
 
 // TableName is the config instance's database table name.

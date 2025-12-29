@@ -45,6 +45,8 @@ func mig20251112142234Up(tx *gorm.DB) error {
 		ModuleInstSeq    uint   `gorm:"column:module_inst_seq;type:bigint unsigned;not null;comment:模块下的进程实例序列号"`
 		GenerateTaskID   string `gorm:"column:task_id;type:varchar(255);not null;comment:配置生成任务ID"`
 		TenantID         string `gorm:"column:tenant_id;type:varchar(255);not null;default:default;comment:租户ID"`
+		Md5              string `gorm:"column:md5;type:varchar(64);not null;comment:配置内容MD5"`
+		Content          string `gorm:"column:content;type:longtext;comment:文件内容"`
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`

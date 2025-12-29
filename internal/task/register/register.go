@@ -49,6 +49,10 @@ func RegisterExecutor(
 	// 注册 配置下发执行器
 	configPushExecutor := config.NewPushConfigExecutor(dao, gseService, repo)
 	config.RegisterPushConfigExecutor(configPushExecutor)
+
+	// 注册 配置检查执行器
+	configCheckExecutor := config.NewCheckConfigExecutor(dao, gseService)
+	config.RegisterCheckConfigExecutor(configCheckExecutor)
 }
 
 // RegisterHello register

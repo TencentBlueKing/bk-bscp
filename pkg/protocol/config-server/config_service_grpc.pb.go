@@ -223,6 +223,9 @@ const (
 	Config_PreviewConfig_FullMethodName                      = "/pbcs.Config/PreviewConfig"
 	Config_CompareConfig_FullMethodName                      = "/pbcs.Config/CompareConfig"
 	Config_GenerateConfig_FullMethodName                     = "/pbcs.Config/GenerateConfig"
+	Config_CheckConfig_FullMethodName                        = "/pbcs.Config/CheckConfig"
+	Config_GetConfigDiff_FullMethodName                      = "/pbcs.Config/GetConfigDiff"
+	Config_GetConfigView_FullMethodName                      = "/pbcs.Config/GetConfigView"
 	Config_OperateGenerateConfig_FullMethodName              = "/pbcs.Config/OperateGenerateConfig"
 	Config_PushConfig_FullMethodName                         = "/pbcs.Config/PushConfig"
 	Config_GetConfigRenderResult_FullMethodName              = "/pbcs.Config/GetConfigRenderResult"
@@ -629,6 +632,12 @@ type ConfigClient interface {
 	CompareConfig(ctx context.Context, in *CompareConfigReq, opts ...grpc.CallOption) (*CompareConfigResp, error)
 	// 配置生成
 	GenerateConfig(ctx context.Context, in *GenerateConfigReq, opts ...grpc.CallOption) (*GenerateConfigResp, error)
+	// 配置检查
+	CheckConfig(ctx context.Context, in *CheckConfigReq, opts ...grpc.CallOption) (*CheckConfigResp, error)
+	// 配置对比
+	GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, opts ...grpc.CallOption) (*GetConfigDiffResp, error)
+	// 获取配置
+	GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error)
 	// 配置生成操作
 	OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error)
 	// 配置下发
@@ -2429,6 +2438,33 @@ func (c *configClient) GenerateConfig(ctx context.Context, in *GenerateConfigReq
 	return out, nil
 }
 
+func (c *configClient) CheckConfig(ctx context.Context, in *CheckConfigReq, opts ...grpc.CallOption) (*CheckConfigResp, error) {
+	out := new(CheckConfigResp)
+	err := c.cc.Invoke(ctx, Config_CheckConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, opts ...grpc.CallOption) (*GetConfigDiffResp, error) {
+	out := new(GetConfigDiffResp)
+	err := c.cc.Invoke(ctx, Config_GetConfigDiff_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error) {
+	out := new(GetConfigRenderResultResp)
+	err := c.cc.Invoke(ctx, Config_GetConfigView_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error) {
 	out := new(OperateGenerateConfigResp)
 	err := c.cc.Invoke(ctx, Config_OperateGenerateConfig_FullMethodName, in, out, opts...)
@@ -2937,6 +2973,12 @@ type ConfigServer interface {
 	CompareConfig(context.Context, *CompareConfigReq) (*CompareConfigResp, error)
 	// 配置生成
 	GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error)
+	// 配置检查
+	CheckConfig(context.Context, *CheckConfigReq) (*CheckConfigResp, error)
+	// 配置对比
+	GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error)
+	// 获取配置
+	GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigRenderResultResp, error)
 	// 配置生成操作
 	OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error)
 	// 配置下发
@@ -3556,6 +3598,15 @@ func (UnimplementedConfigServer) CompareConfig(context.Context, *CompareConfigRe
 }
 func (UnimplementedConfigServer) GenerateConfig(context.Context, *GenerateConfigReq) (*GenerateConfigResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateConfig not implemented")
+}
+func (UnimplementedConfigServer) CheckConfig(context.Context, *CheckConfigReq) (*CheckConfigResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckConfig not implemented")
+}
+func (UnimplementedConfigServer) GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigDiff not implemented")
+}
+func (UnimplementedConfigServer) GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigRenderResultResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigView not implemented")
 }
 func (UnimplementedConfigServer) OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateGenerateConfig not implemented")
@@ -7136,6 +7187,60 @@ func _Config_GenerateConfig_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_CheckConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckConfigReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CheckConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CheckConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CheckConfig(ctx, req.(*CheckConfigReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetConfigDiff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigDiffReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetConfigDiff(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetConfigDiff_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetConfigDiff(ctx, req.(*GetConfigDiffReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetConfigView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigViewReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetConfigView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetConfigView_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetConfigView(ctx, req.(*GetConfigViewReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_OperateGenerateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OperateGenerateConfigReq)
 	if err := dec(in); err != nil {
@@ -8160,6 +8265,18 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateConfig",
 			Handler:    _Config_GenerateConfig_Handler,
+		},
+		{
+			MethodName: "CheckConfig",
+			Handler:    _Config_CheckConfig_Handler,
+		},
+		{
+			MethodName: "GetConfigDiff",
+			Handler:    _Config_GetConfigDiff_Handler,
+		},
+		{
+			MethodName: "GetConfigView",
+			Handler:    _Config_GetConfigView_Handler,
 		},
 		{
 			MethodName: "OperateGenerateConfig",

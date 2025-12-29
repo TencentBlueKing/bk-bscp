@@ -13,6 +13,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
@@ -22,14 +24,18 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
+const (
+	// MaxExecutionTime 最大执行时间
+	MaxExecutionTime = 30 * time.Second
+)
+
 // ValidatePushConfig 验证配置下发步骤
 func ValidatePushConfig(
 	bizID uint32,
 	batchID uint32,
 	operateType table.ConfigOperateType,
 	operatorUser string,
-	generateTaskID string,
-	generateTaskPayload *executorCommon.TaskPayload,
+	payload *executorCommon.TaskPayload,
 ) *types.Step {
 	logs.V(3).Infof("validate push config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
@@ -39,12 +45,11 @@ func ValidatePushConfig(
 		SetMaxTries(0)
 
 	lo.Must0(validate.SetPayload(config.PushConfigPayload{
-		BizID:               bizID,
-		BatchID:             batchID,
-		OperateType:         operateType,
-		OperatorUser:        operatorUser,
-		GenerateTaskID:      generateTaskID,
-		GenerateTaskPayload: generateTaskPayload,
+		BizID:        bizID,
+		BatchID:      batchID,
+		OperateType:  operateType,
+		OperatorUser: operatorUser,
+		Payload:      payload,
 	}))
 	return validate
 }
@@ -56,7 +61,7 @@ func DownloadConfig(
 	operateType table.ConfigOperateType,
 	operatorUser string,
 	generateTaskID string,
-	generateTaskPayload *executorCommon.TaskPayload,
+	payload *executorCommon.TaskPayload,
 ) *types.Step {
 	logs.V(3).Infof("download config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
@@ -66,25 +71,18 @@ func DownloadConfig(
 		SetMaxTries(0)
 
 	lo.Must0(download.SetPayload(config.PushConfigPayload{
-		BizID:               bizID,
-		BatchID:             batchID,
-		OperateType:         operateType,
-		OperatorUser:        operatorUser,
-		GenerateTaskID:      generateTaskID,
-		GenerateTaskPayload: generateTaskPayload,
+		BizID:        bizID,
+		BatchID:      batchID,
+		OperateType:  operateType,
+		OperatorUser: operatorUser,
+		Payload:      payload,
 	}))
 	return download
 }
 
 // PushConfigToTarget 推送配置到目标机器步骤
-func PushConfigToTarget(
-	bizID uint32,
-	batchID uint32,
-	operateType table.ConfigOperateType,
-	operatorUser string,
-	generateTaskID string,
-	generateTaskPayload *executorCommon.TaskPayload,
-) *types.Step {
+func PushConfigToTarget(bizID, batchID uint32, operateType table.ConfigOperateType, operatorUser string,
+	generateTaskID string, generateTaskPayload *executorCommon.TaskPayload) *types.Step {
 	logs.V(3).Infof("push config to target: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
 	push := types.NewStep(config.PushConfigStepName.String(), config.PushConfigStepName.String()).
@@ -93,12 +91,11 @@ func PushConfigToTarget(
 		SetMaxTries(0)
 
 	lo.Must0(push.SetPayload(config.PushConfigPayload{
-		BizID:               bizID,
-		BatchID:             batchID,
-		OperateType:         operateType,
-		OperatorUser:        operatorUser,
-		GenerateTaskID:      generateTaskID,
-		GenerateTaskPayload: generateTaskPayload,
+		BizID:        bizID,
+		BatchID:      batchID,
+		OperateType:  operateType,
+		OperatorUser: operatorUser,
+		Payload:      generateTaskPayload,
 	}))
 	return push
 }
@@ -109,8 +106,7 @@ func ReleaseConfig(
 	batchID uint32,
 	operateType table.ConfigOperateType,
 	operatorUser string,
-	generateTaskID string,
-	generateTaskPayload *executorCommon.TaskPayload,
+	payload *executorCommon.TaskPayload,
 ) *types.Step {
 	logs.V(3).Infof("release config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
@@ -120,12 +116,11 @@ func ReleaseConfig(
 		SetMaxTries(0)
 
 	lo.Must0(push.SetPayload(config.PushConfigPayload{
-		BizID:               bizID,
-		BatchID:             batchID,
-		OperateType:         operateType,
-		OperatorUser:        operatorUser,
-		GenerateTaskID:      generateTaskID,
-		GenerateTaskPayload: generateTaskPayload,
+		BizID:        bizID,
+		BatchID:      batchID,
+		OperateType:  operateType,
+		OperatorUser: operatorUser,
+		Payload:      payload,
 	}))
 	return push
 }

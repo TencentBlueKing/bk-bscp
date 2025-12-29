@@ -27,12 +27,12 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bcs"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -50,8 +50,6 @@ const (
 	ReleaseConfigStepName istep.StepName = "ReleaseConfig"
 	// CallbackName push config callback name
 	CallbackName istep.CallbackName = "Callback"
-	// scriptStoreDir 脚本存放目录
-	scriptStoreDir = "/tmp/bkjob/root"
 	// scriptNameTmpl 脚本名称模板
 	scriptNameTmpl   = "bk_gse_script_%d.sh"
 	scriptTimeoutSec = 3600
@@ -60,9 +58,8 @@ const (
 // PushConfigExecutor 配置下发执行器
 type PushConfigExecutor struct {
 	*common.Executor
-	GseService *gse.Service        // GSE 服务
-	Repo       repository.Provider // 仓库服务
-	fileLock   *lock.FileLock      // 文件锁
+	Repo     repository.Provider // 仓库服务
+	fileLock *lock.FileLock      // 文件锁
 }
 
 // NewPushConfigExecutor new push config executor
@@ -72,20 +69,19 @@ func NewPushConfigExecutor(dao dao.Set, gseService *gse.Service, repo repository
 			Dao:        dao,
 			GseService: gseService,
 		},
-		GseService: gseService,
-		Repo:       repo,
-		fileLock:   lock.NewFileLock(),
+		Repo:     repo,
+		fileLock: lock.NewFileLock(),
 	}
 }
 
 // PushConfigPayload 配置下发 payload
 type PushConfigPayload struct {
-	BizID               uint32
-	BatchID             uint32
-	OperateType         table.ConfigOperateType
-	OperatorUser        string
-	GenerateTaskID      string              // 关联的配置生成任务 ID
-	GenerateTaskPayload *common.TaskPayload // 配置生成任务 payload
+	BizID        uint32
+	BatchID      uint32
+	TaskID       string // 下发后返回的任务ID，通过这个任务ID可以查询下发结果
+	OperateType  table.ConfigOperateType
+	OperatorUser string
+	Payload      *common.TaskPayload // 配置生成任务 payload
 }
 
 // ValidatePushConfig implements istep.Step.
@@ -98,63 +94,16 @@ func (e *PushConfigExecutor) ValidatePushConfig(c *istep.Context) error {
 	return nil
 }
 
-// DownloadConfig implements istep.Step.
-// DownloadConfig 下载配置文件到本地
-func (e *PushConfigExecutor) DownloadConfig(c *istep.Context) error {
-	payload := &PushConfigPayload{}
-	if err := c.GetPayload(payload); err != nil {
-		return err
-	}
-
-	commonPayload := &common.TaskPayload{}
-	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("get common payload failed: %w", err)
-	}
-
-	if commonPayload.ConfigPayload == nil {
-		return fmt.Errorf("config payload not found")
-	}
-
-	cfg := commonPayload.ConfigPayload
-	content := cfg.ConfigContent
-	signature := cfg.ConfigContentSignature
-
-	logs.Infof("download config for batch %d, biz_id: %d, config_key: %s",
-		payload.BatchID, payload.BizID, cfg.ConfigInstanceKey)
-
-	cacheDir := cc.G().GSE.CacheDir
-	dir := path.Join(cacheDir, strconv.Itoa(int(payload.BizID)))
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return fmt.Errorf("create directory failed: %w", err)
-	}
-
-	filePath := path.Join(dir, signature)
-
-	// 文件锁避免并发写入
-	e.fileLock.Acquire(filePath)
-	defer e.fileLock.Release(filePath)
-
-	// 文件已存在则跳过
-	if _, err := os.Stat(filePath); err == nil {
-		logs.Infof("config file exists, skip writing: %s", filePath)
-		return nil
-	}
-
-	if err := os.WriteFile(filePath, []byte(content), os.ModePerm); err != nil {
-		return fmt.Errorf("write file failed: %w", err)
-	}
-
-	logs.Infof("write config file success: %s", filePath)
-	return nil
-}
-
 // ReleaseConfig implements istep.Step.
+// ReleaseConfig 通过脚本方式下发配置
 func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
+	kt := kit.New()
 	logs.Infof("[ReleaseConfig STEP]: start release config")
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
 		return err
 	}
+
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
 		return fmt.Errorf("get common payload failed: %w", err)
@@ -164,7 +113,6 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		return fmt.Errorf("config payload not found")
 	}
 
-	kt := kit.New()
 	kt.BizID = payload.BizID
 
 	script, err := buildConfigScript(
@@ -179,12 +127,13 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		return err
 	}
 
-	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix())
+	scriptStoreDir := e.GseConf.ScriptStoreDir
 
+	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix())
 	resp, err := e.GseService.AsyncExtensionsExecuteScript(kt.Ctx, &gse.ExecuteScriptReq{
 		Agents: []gse.Agent{
 			{
-				BkAgentID: payload.GenerateTaskPayload.ProcessPayload.AgentID,
+				BkAgentID: commonPayload.ProcessPayload.AgentID,
 				User:      commonPayload.ConfigPayload.ConfigFileOwner,
 			},
 		},
@@ -208,24 +157,14 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		return fmt.Errorf("gse execute script response is nil, batch_id=%d", payload.BatchID)
 	}
 
-	logs.Infof("[ReleaseConfig STEP]: gse task created, batch_id: %d, task_id: %s, target: %s/%s",
-		payload.BatchID, resp.Result.TaskID, commonPayload.ConfigPayload.ConfigFilePath,
-		commonPayload.ConfigPayload.ConfigFileName)
+	logs.Infof("[ReleaseConfig STEP]: gse task created, batch_id: %d, task_id: %s, target: %s",
+		payload.BatchID, resp.Result.TaskID, path.Join(commonPayload.ConfigPayload.ConfigFilePath,
+			commonPayload.ConfigPayload.ConfigFileName))
 
-	// 等待脚本执行完成
-	result, err := e.WaitExecuteScriptTaskFinish(kt.Ctx, resp.Result.TaskID, payload.GenerateTaskPayload.ProcessPayload.AgentID)
-	if err != nil {
-		return fmt.Errorf("wait script execution failed: %w", err)
-	}
-
-	// 检查脚本执行结果
-	for _, r := range result.Result {
-		if r.ErrorCode != 0 {
-			logs.Errorf("[ReleaseConfig STEP]: script execution failed, agent: %s, container: %s, code: %d, msg: %s",
-				r.BkAgentID, r.BkContainerID, r.ErrorCode, r.ErrorMsg)
-			return fmt.Errorf("script execution failed, agent: %s, container: %s, code: %d, msg: %s",
-				r.BkAgentID, r.BkContainerID, r.ErrorCode, r.ErrorMsg)
-		}
+	payload.TaskID = resp.Result.TaskID
+	if err = c.SetPayload(payload); err != nil {
+		logs.Errorf("[ReleaseConfig STEP]: set common payload failed: %v", err)
+		return err
 	}
 
 	logs.Infof("[ReleaseConfig STEP]: script execution success, batch_id: %d, task_id: %s", payload.BatchID,
@@ -234,16 +173,223 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 	return nil
 }
 
+// Callback implements istep.Callback.
+func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
+	logs.Infof("[PushConfig Callback]: start callback processing")
+	payload := &PushConfigPayload{}
+	if err := c.GetPayload(payload); err != nil {
+		return fmt.Errorf("get payload failed: %w", err)
+	}
+
+	commonPayload := &common.TaskPayload{}
+	if err := c.GetCommonPayload(commonPayload); err != nil {
+		return fmt.Errorf("[PushConfig Callback]: get common payload failed: %w", err)
+	}
+
+	cfg := commonPayload.ConfigPayload
+	if cfg == nil {
+		return fmt.Errorf("[PushConfig Callback]: config payload is nil")
+	}
+
+	proc := commonPayload.ProcessPayload
+	if proc == nil {
+		return fmt.Errorf("[PushConfig Callback]: process payload is nil")
+	}
+
+	kit := kit.New()
+	kit.BizID = payload.BizID
+	kit.User = payload.OperatorUser
+
+	// 通过脚本任务ID获取脚本执行结果
+	result, err := e.WaitExecuteScriptFinish(kit.Ctx, payload.TaskID, proc.AgentID)
+	if err != nil {
+		return fmt.Errorf("wait script execution failed: %w", err)
+	}
+
+	if len(result.Result) == 0 {
+		return fmt.Errorf("script execution result is empty, task_id=%s", payload.TaskID)
+	}
+
+	isSuccess := cbErr == nil
+	// 更新批次状态
+	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
+		logs.Errorf(
+			"[PushConfig Callback]: increment completed count failed, batch_id=%d, success=%v, err=%v",
+			payload.BatchID,
+			isSuccess,
+			err,
+		)
+		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
+	}
+
+	if !isSuccess {
+		logs.Warnf(
+			"[PushConfig Callback]: task failed, skip config instance upsert, batch_id=%d, err=%v",
+			payload.BatchID,
+			cbErr,
+		)
+		return nil
+	}
+
+	now := time.Now()
+
+	instance := &table.ConfigInstance{
+		Attachment: &table.ConfigInstanceAttachment{
+			BizID:            payload.BizID,
+			ConfigTemplateID: cfg.ConfigTemplateID,
+			ConfigVersionID:  cfg.ConfigTemplateVersionID,
+			CcProcessID:      proc.CcProcessID,
+			ModuleInstSeq:    proc.ModuleInstSeq,
+			GenerateTaskID:   c.GetTaskID(),                            // 下发成功后的任务ID
+			Md5:              tools.ByteMD5([]byte(cfg.ConfigContent)), // 下发成功后的内容MD5
+			Content:          cfg.ConfigContent,                        // 下发成功后的内容
+		},
+		Revision: &table.Revision{
+			Creator:   kit.User,
+			Reviser:   kit.User,
+			CreatedAt: now,
+			UpdatedAt: now,
+		},
+	}
+	if err := e.Dao.ConfigInstance().Upsert(kit, instance); err != nil {
+		logs.Errorf(
+			"[PushConfig Callback]: upsert config instance failed, batch_id=%d, instance=%+v, err=%v",
+			payload.BatchID,
+			instance,
+			err,
+		)
+		return fmt.Errorf("upsert config instance failed: %w", err)
+	}
+
+	return nil
+}
+
+// RegisterPushConfigExecutor 注册执行器
+func RegisterPushConfigExecutor(e *PushConfigExecutor) {
+	istep.Register(ValidatePushConfigStepName, istep.StepExecutorFunc(e.ValidatePushConfig))
+	istep.Register(ReleaseConfigStepName, istep.StepExecutorFunc(e.ReleaseConfig))
+	istep.RegisterCallback(CallbackName, istep.CallbackExecutorFunc(e.Callback))
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\'"\'"'`) + "'"
+}
+
+var fileModeRe = regexp.MustCompile(`^[0-7]{3,4}$`)
+
+// buildConfigScript 构建配置下发脚本
+func buildConfigScript(base64Content string, absPath string, fileMode string, owner string,
+	group string) (string, error) {
+
+	if !strings.HasPrefix(absPath, "/") {
+		return "", fmt.Errorf("absPath must be absolute")
+	}
+
+	if !fileModeRe.MatchString(fileMode) {
+		return "", fmt.Errorf("invalid fileMode: %s", fileMode)
+	}
+
+	return fmt.Sprintf(`#!/bin/bash
+set -euo pipefail
+
+TARGET_PATH=%s
+TARGET_DIR="$(dirname "$TARGET_PATH")"
+
+# 1. 创建目标目录
+mkdir -p -- "$TARGET_DIR"
+
+# 2. 写入配置文件（base64 解码）
+echo %s | base64 -d > "$TARGET_PATH"
+
+# 3. 设置权限和属主
+chmod %s "$TARGET_PATH"
+chown %s:%s "$TARGET_PATH"
+
+# 4. 校验（不影响主流程）
+set +e
+ls -l "$TARGET_PATH" || true
+md5sum "$TARGET_PATH" || true
+`,
+		shellQuote(absPath),
+		shellQuote(base64Content),
+		fileMode,
+		shellQuote(owner),
+		shellQuote(group),
+	), nil
+}
+
+// getServerInfo 获取服务器 AgentID 和 ContainerID(暂时没有用到)
+func getServerInfo() (agentID string, containerID string, err error) {
+	conf := cc.DataService().GSE
+
+	// 主机部署，直接返回配置的 AgentID
+	if conf.NodeAgentID != "" {
+		return conf.NodeAgentID, "", nil
+	}
+
+	ctx := context.Background()
+	retry := tools.NewRetryPolicy(5, [2]uint{3000, 5000})
+
+	var lastErr error
+	for retry.RetryCount() < 5 {
+		// 查询 Pod
+		pod, err := bcs.QueryPod(ctx, conf.ClusterID, conf.PodID)
+		if err != nil {
+			lastErr = fmt.Errorf("query pod failed: %w", err)
+			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
+			retry.Sleep()
+			continue
+		}
+
+		// 查找容器 ID
+		for _, c := range pod.Status.ContainerStatuses {
+			if c.Name == conf.ContainerName {
+				containerID = tools.SplitContainerID(c.ContainerID)
+				break
+			}
+		}
+		if containerID == "" {
+			lastErr = fmt.Errorf("container %s not found in pod %s/%s",
+				conf.ContainerName, conf.ClusterID, conf.PodID)
+			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
+			retry.Sleep()
+			continue
+		}
+
+		// 查询 Node
+		node, err := bcs.QueryNode(ctx, conf.ClusterID, pod.Spec.NodeName)
+		if err != nil {
+			lastErr = fmt.Errorf("query node failed: %w", err)
+			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
+			retry.Sleep()
+			continue
+		}
+
+		agentID = node.Labels[constant.LabelKeyAgentID]
+		if agentID == "" {
+			lastErr = fmt.Errorf("agent-id not found in node %s/%s", conf.ClusterID, pod.Spec.NodeName)
+			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
+			retry.Sleep()
+			continue
+		}
+
+		logs.Infof("get server info from k8s success, agent_id: %s, container_id: %s", agentID, containerID)
+		return agentID, containerID, nil
+	}
+
+	return "", "", fmt.Errorf("get server info failed after 5 retries: %w", lastErr)
+}
+
 // PushConfig implements istep.Step.
-// PushConfig 通过 GSE 传输文件到目标机器
+// PushConfig 通过 GSE 传输文件到目标机器(暂时没有用到)
 func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
 		return err
 	}
 
-	cfg := payload.GenerateTaskPayload.ConfigPayload
-	proc := payload.GenerateTaskPayload.ProcessPayload
+	cfg := payload.Payload.ConfigPayload
+	proc := payload.Payload.ProcessPayload
 
 	logs.Infof("[PushConfig STEP]: push config for batch %d, biz_id: %d, config_key: %s",
 		payload.BatchID, payload.BizID, cfg.ConfigInstanceKey)
@@ -322,192 +468,52 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	return nil
 }
 
-// Callback implements istep.Callback.
-func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
+// DownloadConfig implements istep.Step.
+// DownloadConfig 下载配置文件到本地(暂时没有用到)
+func (e *PushConfigExecutor) DownloadConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("get payload failed: %w", err)
+		return err
 	}
 
-	kt := kit.New()
-	kt.BizID = payload.BizID
-	kt.User = payload.OperatorUser
-
-	isSuccess := cbErr == nil
-	// 更新批次状态
-	if err := e.Dao.TaskBatch().IncrementCompletedCount(kt, payload.BatchID, isSuccess); err != nil {
-		logs.Errorf(
-			"[PushConfig Callback]: increment completed count failed, batch_id=%d, success=%v, err=%v",
-			payload.BatchID,
-			isSuccess,
-			err,
-		)
-		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
+	commonPayload := &common.TaskPayload{}
+	if err := c.GetCommonPayload(commonPayload); err != nil {
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
-	// 仅配置下发成功才更新配置实例的状态
-	if !isSuccess {
-		logs.Warnf(
-			"[PushConfig Callback]: task failed, skip config instance upsert, batch_id=%d, err=%v",
-			payload.BatchID,
-			cbErr,
-		)
+	if commonPayload.ConfigPayload == nil {
+		return fmt.Errorf("config payload not found")
+	}
+
+	cfg := commonPayload.ConfigPayload
+	content := cfg.ConfigContent
+	signature := cfg.ConfigContentSignature
+
+	logs.Infof("download config for batch %d, biz_id: %d, config_key: %s",
+		payload.BatchID, payload.BizID, cfg.ConfigInstanceKey)
+
+	cacheDir := cc.G().GSE.CacheDir
+	dir := path.Join(cacheDir, strconv.Itoa(int(payload.BizID)))
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("create directory failed: %w", err)
+	}
+
+	filePath := path.Join(dir, signature)
+
+	// 文件锁避免并发写入
+	e.fileLock.Acquire(filePath)
+	defer e.fileLock.Release(filePath)
+
+	// 文件已存在则跳过
+	if _, err := os.Stat(filePath); err == nil {
+		logs.Infof("config file exists, skip writing: %s", filePath)
 		return nil
 	}
 
-	cfg := payload.GenerateTaskPayload.ConfigPayload
-	proc := payload.GenerateTaskPayload.ProcessPayload
-	now := time.Now()
-
-	instance := &table.ConfigInstance{
-		Attachment: &table.ConfigInstanceAttachment{
-			BizID:            payload.BizID,
-			ConfigTemplateID: cfg.ConfigTemplateID,
-			ConfigVersionID:  cfg.ConfigTemplateVersionID,
-			CcProcessID:      proc.CcProcessID,
-			ModuleInstSeq:    proc.ModuleInstSeq,
-			GenerateTaskID:   payload.GenerateTaskID,
-			TenantID:         "",
-		},
-		Revision: &table.Revision{
-			Creator:   kt.User,
-			Reviser:   kt.User,
-			CreatedAt: now,
-			UpdatedAt: now,
-		},
-	}
-	if err := e.Dao.ConfigInstance().Upsert(kt, instance); err != nil {
-		logs.Errorf(
-			"[PushConfig Callback]: upsert config instance failed, batch_id=%d, instance=%+v, err=%v",
-			payload.BatchID,
-			instance,
-			err,
-		)
-		return fmt.Errorf("upsert config instance failed: %w", err)
+	if err := os.WriteFile(filePath, []byte(content), os.ModePerm); err != nil {
+		return fmt.Errorf("write file failed: %w", err)
 	}
 
+	logs.Infof("write config file success: %s", filePath)
 	return nil
-}
-
-// getServerInfo 获取服务器 AgentID 和 ContainerID
-func getServerInfo() (agentID string, containerID string, err error) {
-	conf := cc.DataService().GSE
-
-	// 主机部署，直接返回配置的 AgentID
-	if conf.NodeAgentID != "" {
-		return conf.NodeAgentID, "", nil
-	}
-
-	ctx := context.Background()
-	retry := tools.NewRetryPolicy(5, [2]uint{3000, 5000})
-
-	var lastErr error
-	for retry.RetryCount() < 5 {
-		// 查询 Pod
-		pod, err := bcs.QueryPod(ctx, conf.ClusterID, conf.PodID)
-		if err != nil {
-			lastErr = fmt.Errorf("query pod failed: %w", err)
-			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
-			retry.Sleep()
-			continue
-		}
-
-		// 查找容器 ID
-		for _, c := range pod.Status.ContainerStatuses {
-			if c.Name == conf.ContainerName {
-				containerID = tools.SplitContainerID(c.ContainerID)
-				break
-			}
-		}
-		if containerID == "" {
-			lastErr = fmt.Errorf("container %s not found in pod %s/%s",
-				conf.ContainerName, conf.ClusterID, conf.PodID)
-			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
-			retry.Sleep()
-			continue
-		}
-
-		// 查询 Node
-		node, err := bcs.QueryNode(ctx, conf.ClusterID, pod.Spec.NodeName)
-		if err != nil {
-			lastErr = fmt.Errorf("query node failed: %w", err)
-			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
-			retry.Sleep()
-			continue
-		}
-
-		agentID = node.Labels[constant.LabelKeyAgentID]
-		if agentID == "" {
-			lastErr = fmt.Errorf("agent-id not found in node %s/%s", conf.ClusterID, pod.Spec.NodeName)
-			logs.Warnf("get server info from k8s failed, retry: %d, err: %v", retry.RetryCount(), lastErr)
-			retry.Sleep()
-			continue
-		}
-
-		logs.Infof("get server info from k8s success, agent_id: %s, container_id: %s", agentID, containerID)
-		return agentID, containerID, nil
-	}
-
-	return "", "", fmt.Errorf("get server info failed after 5 retries: %w", lastErr)
-}
-
-// RegisterPushConfigExecutor 注册执行器
-func RegisterPushConfigExecutor(e *PushConfigExecutor) {
-	istep.Register(ValidatePushConfigStepName, istep.StepExecutorFunc(e.ValidatePushConfig))
-	istep.Register(ReleaseConfigStepName, istep.StepExecutorFunc(e.ReleaseConfig))
-	istep.RegisterCallback(CallbackName, istep.CallbackExecutorFunc(e.Callback))
-}
-
-func shellQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\'"\'"'`) + "'"
-}
-
-var fileModeRe = regexp.MustCompile(`^[0-7]{3,4}$`)
-
-// buildConfigScript 构建配置下发脚本
-func buildConfigScript(base64Content string, absPath string, fileMode string, owner string,
-	group string) (string, error) {
-
-	if !strings.HasPrefix(absPath, "/") {
-		return "", fmt.Errorf("absPath must be absolute")
-	}
-
-	if !fileModeRe.MatchString(fileMode) {
-		return "", fmt.Errorf("invalid fileMode: %s", fileMode)
-	}
-
-	return fmt.Sprintf(`#!/bin/bash
-set -euo pipefail
-
-TARGET_PATH=%s
-TARGET_DIR="$(dirname "$TARGET_PATH")"
-
-# 1. 创建目标目录
-mkdir -p -- "$TARGET_DIR"
-
-# 2. 写入配置文件（base64 解码）
-echo %s | base64 -d > "$TARGET_PATH"
-
-# 3. 设置权限和属主
-chmod %s "$TARGET_PATH"
-chown %s:%s "$TARGET_PATH"
-
-# 4. 校验（不影响主流程）
-set +e
-ls -l "$TARGET_PATH" || true
-md5sum "$TARGET_PATH" || true
-
-FILE_SIZE=$(stat -c%%s "$TARGET_PATH" 2>/dev/null || echo 0)
-if [ "$FILE_SIZE" -le 10240 ]; then
-    head -n 50 "$TARGET_PATH" || true
-else
-    echo "file too large ($FILE_SIZE bytes), skip preview"
-fi
-`,
-		shellQuote(absPath),
-		shellQuote(base64Content),
-		fileMode,
-		shellQuote(owner),
-		shellQuote(group),
-	), nil
 }
