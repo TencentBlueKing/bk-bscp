@@ -93,7 +93,7 @@ func (t *PushConfigTask) TaskInfo() types.TaskInfo {
 	taskName := fmt.Sprintf("%s_%s", t.operateType, configKey)
 	return types.TaskInfo{
 		TaskName:      taskName,
-		TaskType:      common.ConfigPushTaskType,
+		TaskType:      string(table.TaskActionConfigPublish),
 		TaskIndexType: common.TaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", t.batchID),
 		Creator:       t.operatorUser,

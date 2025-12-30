@@ -25,13 +25,6 @@ import (
 
 // 定义任务类型常量
 const (
-	// ConfigGenerateTaskType 配置生成任务类型
-	ConfigGenerateTaskType = "config_generate"
-	// ConfigPushTaskType 配置下发任务类型
-	ConfigPushTaskType = "config_push"
-	// ConfigCheckTaskType 配置检查任务类型
-	ConfigCheckTaskType = "config_check"
-
 	// ProcessOperateTaskType 进程操作任务类型
 	ProcessOperateTaskType = "process_operate"
 

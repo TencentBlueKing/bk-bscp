@@ -576,7 +576,7 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGene
 			Limit:         pageSize,
 			Offset:        offset,
 			TaskIndexType: common.TaskIndexType,
-			TaskType:      common.ConfigGenerateTaskType,
+			TaskType:      string(table.TaskActionConfigGenerate),
 		}
 
 		pagination, err := taskStorage.ListTask(kt.Ctx, listOpt)
@@ -796,7 +796,7 @@ func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
 			Limit:         pageSize,
 			Offset:        offset,
 			TaskIndexType: common.TaskIndexType,
-			TaskType:      common.ConfigGenerateTaskType,
+			TaskType:      string(table.TaskActionConfigGenerate),
 		}
 
 		pagination, err := storage.ListTask(kt.Ctx, listOpt)
@@ -1063,14 +1063,24 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
 	}
 
-	var err error
+	// 查询任务批次信息
+	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBatchId())
+	if err != nil {
+		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
+		return nil, fmt.Errorf("get task batch failed: %v", err)
+	}
+
+	if taskBatch == nil {
+		return nil, fmt.Errorf("get task batch failed task %d does not exist", req.GetBatchId())
+	}
+
 	// task_id如果有值表示重试单个否则全部
 	// operation_type：regenerate(重新生成)、retry(重试)
 	switch req.GetOperationType() {
 	case "regenerate":
-		err = s.regenerate(kt, taskStorage, req.BatchId, req.TaskId)
+		err = s.regenerate(kt, taskStorage, taskBatch, req.TaskId)
 	case "retry":
-		err = s.retry(kt, taskStorage, req.BatchId, req.TaskId)
+		err = s.retry(kt, taskStorage, taskBatch, req.TaskId)
 	default:
 		return &pbds.OperateGenerateConfigResp{}, fmt.Errorf("unknown operation type: %s", req.GetOperationType())
 	}
@@ -1083,15 +1093,15 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 }
 
 // regenerate 重新生成配置
-func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, batchID uint32, taskID string) error {
+func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, taskBatch *table.TaskBatch, taskID string) error {
 	listOpt := &istore.ListOption{
-		TaskIndex:     fmt.Sprintf("%d", batchID),
+		TaskIndex:     fmt.Sprintf("%d", taskBatch.ID),
 		TaskID:        taskID,
 		Status:        taskTypes.CallbackResultSuccess,
 		Offset:        0,
 		Limit:         1,
 		TaskIndexType: common.TaskIndexType,
-		TaskType:      common.ConfigGenerateTaskType,
+		TaskType:      string(table.TaskActionConfigGenerate),
 	}
 
 	tasks, err := taskStorage.ListTask(kt.Ctx, listOpt)
@@ -1100,7 +1110,7 @@ func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, batchID uint
 	}
 
 	if len(tasks.Items) == 0 {
-		logs.Infof("no tasks to regenerate, batchID: %d, rid: %s", batchID, kt.Rid)
+		logs.Infof("no tasks to regenerate, batchID: %d, rid: %s", taskBatch.ID, kt.Rid)
 		return nil
 	}
 
@@ -1116,36 +1126,30 @@ func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, batchID uint
 }
 
 // retry 重试失败的配置生成任务
-func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, batchID uint32, taskID string) error {
-	// 查询任务批次信息
-	taskBatch, err := s.dao.TaskBatch().GetByID(kt, batchID)
-	if err != nil {
-		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", batchID, err, kt.Rid)
-		return fmt.Errorf("get task batch failed: %v", err)
-	}
+func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, taskBatch *table.TaskBatch, taskID string) error {
 
 	// 如果任务批次状态为成功，则拒绝重试
 	if taskBatch.Spec.Status == table.TaskBatchStatusSucceed {
-		logs.Infof("task batch %d is already succeed, skip retry, rid: %s", batchID, kt.Rid)
+		logs.Infof("task batch %d is already succeed, skip retry, rid: %s", taskBatch.ID, kt.Rid)
 		return nil
 	}
 
 	// 查询该批次所有失败的任务
-	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, batchID, taskID, common.ConfigGenerateTaskType)
+	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, taskBatch.ID, taskID, string(table.TaskActionConfigGenerate))
 	if err != nil {
-		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", batchID, err, kt.Rid)
+		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
 		return fmt.Errorf("query failed tasks failed: %v", err)
 	}
 
 	if len(failedTasks) == 0 {
-		logs.Infof("no failed tasks to retry, batchID: %d, rid: %s", batchID, kt.Rid)
+		logs.Infof("no failed tasks to retry, batchID: %d, rid: %s", taskBatch.ID, kt.Rid)
 		return nil
 	}
 
 	// 重置计数字段用于重试
 	retryCount := uint32(len(failedTasks))
-	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, batchID, retryCount); err != nil {
-		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", batchID, err, kt.Rid)
+	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, taskBatch.ID, retryCount); err != nil {
+		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
 		return fmt.Errorf("reset counts for retry failed: %v", err)
 	}
 
@@ -1157,7 +1161,7 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, batchID uint32, t
 			return fmt.Errorf("retry failed task failed: %v", err)
 		}
 	}
-	logs.Infof("retry tasks completed, batchID: %d, retryCount: %d, rid: %s", batchID, retryCount, kt.Rid)
+	logs.Infof("retry tasks completed, batchID: %d, retryCount: %d, rid: %s", taskBatch.ID, retryCount, kt.Rid)
 
 	return nil
 }

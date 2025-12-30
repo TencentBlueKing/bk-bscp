@@ -4811,9 +4811,6 @@ message GetTaskBatchDetailResp {
 message RetryTasksReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 batch_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务批次ID" }];
-  string task_type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "任务类型：config_generate、config_push、config_check"
-  }];
 }
 
 message RetryTasksResp {

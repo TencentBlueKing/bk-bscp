@@ -108,7 +108,7 @@ func (t *GenerateConfigTask) TaskInfo() types.TaskInfo {
 		t.process.Spec.Alias, t.processInstance.Spec.ModuleInstSeq)
 	return types.TaskInfo{
 		TaskName:      taskName,
-		TaskType:      common.ConfigGenerateTaskType,
+		TaskType:      string(table.TaskActionConfigGenerate),
 		TaskIndexType: common.TaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", t.batchID),
 		Creator:       t.operatorUser,

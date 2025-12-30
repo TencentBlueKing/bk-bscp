@@ -64,10 +64,7 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbcs.ListTaskBatchReq)
 }
 
 // GetTaskBatchDetail implements pbcs.ConfigServer.
-func (s *Service) GetTaskBatchDetail(
-	ctx context.Context,
-	req *pbcs.GetTaskBatchDetailReq,
-) (*pbcs.GetTaskBatchDetailResp, error) {
+func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbcs.GetTaskBatchDetailReq) (*pbcs.GetTaskBatchDetailResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
@@ -115,9 +112,8 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 	}
 
 	resp, err := s.client.DS.RetryTasks(grpcKit.RpcCtx(), &pbds.RetryTasksReq{
-		BizId:    req.GetBizId(),
-		BatchId:  req.GetBatchId(),
-		TaskType: req.GetTaskType(),
+		BizId:   req.GetBizId(),
+		BatchId: req.GetBatchId(),
 	})
 	if err != nil {
 		return nil, err

@@ -112,7 +112,7 @@ func (c *checkConfigTask) TaskInfo() types.TaskInfo {
 		c.process.Spec.Alias, c.processInstance.Spec.ModuleInstSeq)
 	return types.TaskInfo{
 		TaskName:      taskName,
-		TaskType:      common.ConfigCheckTaskType,
+		TaskType:      string(table.TaskActionConfigCheck),
 		TaskIndexType: common.TaskIndexType,
 		TaskIndex:     fmt.Sprintf("%d", c.batchID),
 		Creator:       c.operatorUser,
