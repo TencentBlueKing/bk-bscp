@@ -187,13 +187,8 @@ func (s *Service) GenerateConfig(ctx context.Context, req *pbds.GenerateConfigRe
 }
 
 // getFilteredProcesses 获取过滤后的进程列表
-func getFilteredProcesses(
-	kt *kit.Kit,
-	bizID uint32,
-	dao dao.Set,
-	configTemplate *table.ConfigTemplate,
-	search *pbcin.ConfigInstanceSearchCondition,
-) ([]*table.Process, error) {
+func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate *table.ConfigTemplate,
+	search *pbcin.ConfigInstanceSearchCondition) ([]*table.Process, error) {
 	// 获取CcProcessID，其中模版进程ID列表对应多个进程
 	var (
 		processes []*table.Process
@@ -216,9 +211,15 @@ func getFilteredProcesses(
 	}
 	ccProcessIDs = append(ccProcessIDs, configTemplate.Attachment.CcProcessIDs...)
 
+	finalCcProcessIDs := ccProcessIDs
+	// 搜索条件优先覆盖模板
+	if search != nil && len(search.CcProcessIds) > 0 {
+		finalCcProcessIDs = search.CcProcessIds
+	}
+
 	// 根据过滤条件再次查询完整的进程列表
 	processSearchCondition := &pbproc.ProcessSearchCondition{
-		CcProcessIds: ccProcessIDs,
+		CcProcessIds: finalCcProcessIDs,
 	}
 	if search != nil {
 		processSearchCondition.Sets = search.Sets
