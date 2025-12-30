@@ -58,6 +58,10 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 		return nil, err
 	}
 
+	if templateSpace == nil || templateSet == nil {
+		return nil, fmt.Errorf("No available space or packages")
+	}
+
 	resp := &pbds.ListConfigTemplateResp{
 		TemplateSpace: &pbds.ListConfigTemplateResp_Item{
 			Id:   templateSpace.ID,
@@ -69,38 +73,42 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 		},
 	}
 
-	// 3. 根据业务查询模板空间和模板套餐下的模板配置
-	spec, err := s.dao.TemplateSpace().GetBizTemplateSpaceByName(grpcKit, req.GetBizId(), constant.CONFIG_DELIVERY)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return resp, nil
-		}
-		return nil, err
-	}
-
-	// 4. 根据模板空间查询模板
-	templates, count, err := s.dao.Template().List(grpcKit, req.GetBizId(), spec.ID,
+	// 3. 根据业务查询配置模板
+	configTemplates, count, err := s.dao.ConfigTemplate().List(grpcKit, req.GetBizId(), templateSpace.ID, req.GetSearch(),
 		&types.BasePage{
+			Start: req.Start,
+			Limit: uint(req.Limit),
 			All:   req.GetAll(),
-			Start: req.GetStart(),
-			Limit: uint(req.GetLimit()),
 		})
 	if err != nil {
 		return nil, err
 	}
 
-	templateIDs := []uint32{}
-	fileNames := make(map[uint32]string)
-	for _, template := range templates {
-		templateIDs = append(templateIDs, template.ID)
-		fileNames[template.ID] = path.Join(template.Spec.Path, template.Spec.Name)
+	if count == 0 {
+		return resp, nil
 	}
 
-	// 5. 根据模板ID查询配置模板列表
-	configTemplates, err := s.dao.ConfigTemplate().ListAllByTemplateIDs(grpcKit, req.GetBizId(), templateIDs)
+	idSet := make(map[uint32]struct{}, len(configTemplates))
+	templateIDs := make([]uint32, 0, len(configTemplates))
+	for _, v := range configTemplates {
+		id := v.Attachment.TemplateID
+		if _, ok := idSet[id]; ok {
+			continue
+		}
+		idSet[id] = struct{}{}
+		templateIDs = append(templateIDs, id)
+	}
+
+	templates, err := s.dao.Template().ListByIDs(grpcKit, templateIDs)
 	if err != nil {
 		return nil, err
 	}
+
+	fileNames := make(map[uint32]string, len(templates))
+	for _, template := range templates {
+		fileNames[template.ID] = path.Join(template.Spec.Path, template.Spec.Name)
+	}
+
 	resp.Count = uint32(count)
 	resp.Details = pbct.PbConfigTemplates(configTemplates, fileNames)
 
@@ -315,6 +323,20 @@ func (s *Service) fetchAllServiceTemplate(ctx context.Context, bizID int) ([]*bk
 func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConfigTemplateReq) (*pbds.CreateConfigTemplateResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
+	// 同一业务下不能出现同名的模板
+	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(kit, req.GetBizId(), 0, req.GetName())
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	if ct != nil {
+		return nil, fmt.Errorf(
+			"the same template name already exists under this %d business: %s",
+			req.GetBizId(),
+			req.GetName(),
+		)
+	}
+
 	// 1. 开启事务
 	tx := s.dao.GenQuery().Begin()
 	committed := false
@@ -496,13 +518,12 @@ func (s *Service) getOrCreateTemplateSpace(kit *kit.Kit, bizID uint32, now time.
 		},
 	}
 
-	id, err := s.dao.TemplateSpace().Create(kit, spec)
+	_, err = s.dao.TemplateSpace().Create(kit, spec)
 	if err != nil {
 		return nil, err
 	}
-	space.ID = id
 
-	return space, nil
+	return spec, nil
 }
 
 // getOrCreateDefaultTemplateSet 获取或创建默认模板套餐
@@ -529,11 +550,10 @@ func (s *Service) getOrCreateDefaultTemplateSet(kit *kit.Kit, bizID, spaceID uin
 			Creator: kit.User, CreatedAt: now,
 		},
 	}
-	id, err := s.dao.TemplateSet().Create(kit, set)
+	_, err = s.dao.TemplateSet().Create(kit, set)
 	if err != nil {
 		return nil, err
 	}
-	set.ID = id
 
 	return set, nil
 }
@@ -758,9 +778,18 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 // UpdateConfigTemplate implements pbds.DataServer.
 func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConfigTemplateReq) (*pbds.UpdateConfigTemplateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
+	// 同一业务下不能出现同名的模板
+	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(grpcKit, req.GetBizId(), req.GetConfigTemplateId(), req.GetName())
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if ct != nil {
+		return nil, fmt.Errorf(
+			"the same template name already exists under this %d business: %s", req.GetBizId(), req.GetName(),
+		)
+	}
 
 	now := time.Now().UTC()
-
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
@@ -784,23 +813,12 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	spec.RevisionMemo = req.GetRevisionMemo()
 	spec.Charset = table.FileCharset(req.GetCharset())
 	spec.FileMode = table.FileMode(req.GetFileMode())
-	spec.ContentSpec = &table.ContentSpec{
-		Signature: req.GetSign(),
-		ByteSize:  req.GetByteSize(),
-		Md5:       req.GetMd5(),
-	}
-	spec.Permission = &table.FilePermission{
-		User:      req.GetUser(),
-		UserGroup: req.GetUserGroup(),
-		Privilege: req.GetPrivilege(),
-	}
+	spec.ContentSpec = &table.ContentSpec{Signature: req.GetSign(), ByteSize: req.GetByteSize(), Md5: req.GetMd5()}
+	spec.Permission = &table.FilePermission{User: req.GetUser(), UserGroup: req.GetUserGroup(), Privilege: req.GetPrivilege()}
 	templateRevision := &table.TemplateRevision{
 		Spec:       &spec,
 		Attachment: revision.Attachment,
-		Revision: &table.CreatedRevision{
-			Creator:   grpcKit.User,
-			CreatedAt: now,
-		},
+		Revision:   &table.CreatedRevision{Creator: grpcKit.User, CreatedAt: now},
 	}
 
 	tx := s.dao.GenQuery().Begin()
@@ -897,7 +915,7 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 		TemplateSetName:      constant.DefaultTmplSetName,
 		FileName:             template.Spec.Name,
 		FilePath:             template.Spec.Path,
-		Memo:                 template.Spec.Memo,
+		Memo:                 revision.Spec.RevisionMemo,
 		RevisionName:         configTemplate.Spec.Name,
 		User:                 revision.Spec.Permission.User,
 		UserGroup:            revision.Spec.Permission.UserGroup,

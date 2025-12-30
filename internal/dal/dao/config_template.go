@@ -21,11 +21,14 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbct "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template"
+	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
 // ConfigTemplate is config template DAO interface definition.
@@ -44,6 +47,9 @@ type ConfigTemplate interface {
 	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, configTemplate *table.ConfigTemplate) error
 	// DeleteWithTx delete one template instance with transaction.
 	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, configTemplate *table.ConfigTemplate) error
+	List(kit *kit.Kit, bizID, templateSpaceID uint32, search *pbct.TemplateSearchCond, opt *types.BasePage) (
+		[]*table.ConfigTemplate, int64, error)
+	GetByUniqueKey(kit *kit.Kit, bizID, id uint32, name string) (*table.ConfigTemplate, error)
 }
 
 var _ ConfigTemplate = new(configTemplateDao)
@@ -52,6 +58,94 @@ type configTemplateDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByUniqueKey implements [ConfigTemplate].
+func (dao *configTemplateDao) GetByUniqueKey(kit *kit.Kit, bizID uint32, id uint32, name string) (
+	*table.ConfigTemplate, error) {
+	m := dao.genQ.ConfigTemplate
+
+	return dao.genQ.ConfigTemplate.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.Name.Eq(name), m.ID.Neq(id)).
+		Take()
+}
+
+// List implements [ConfigTemplate].
+func (dao *configTemplateDao) List(kit *kit.Kit, bizID uint32, templateSpaceID uint32, search *pbct.TemplateSearchCond,
+	opt *types.BasePage) ([]*table.ConfigTemplate, int64, error) {
+	m := dao.genQ.ConfigTemplate
+
+	conds, err := dao.handleSearch(kit, bizID, templateSpaceID, search)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	q := dao.genQ.ConfigTemplate.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID)).Where(conds...)
+	if opt.All {
+		result, err := q.Order(m.ID.Desc()).Find()
+		if err != nil {
+			return nil, 0, err
+		}
+		return result, int64(len(result)), err
+	}
+
+	return q.Order(m.ID.Desc()).FindByPage(opt.Offset(), opt.LimitInt())
+}
+
+// handle search
+func (dao *configTemplateDao) handleSearch(kit *kit.Kit, bizID, templateSpaceID uint32, search *pbct.TemplateSearchCond) (
+	[]rawgen.Condition, error) {
+	if search.String() == "" {
+		return []rawgen.Condition{}, nil
+	}
+
+	var conds []rawgen.Condition
+	m := dao.genQ.ConfigTemplate
+
+	if search.GetTemplateName() != "" {
+		conds = append(conds, m.Name.Like("%"+search.GetTemplateName()+"%"))
+	}
+
+	if search.GetReviser() != "" {
+		conds = append(conds, (m.Reviser.Eq(search.GetReviser())))
+	}
+
+	templateIDSet := make(map[uint32]struct{})
+	if len(search.GetTemplateId()) != 0 {
+		for _, id := range search.GetTemplateId() {
+			templateIDSet[id] = struct{}{}
+		}
+	}
+	// 根据文件名搜索
+	if search.GetFileName() != "" {
+		t := dao.genQ.Template
+		var items []struct{ ID uint32 }
+		err := dao.genQ.Template.WithContext(kit.Ctx).Where(t.BizID.Eq(bizID), t.TemplateSpaceID.Eq(templateSpaceID)).Where(
+			utils.RawCond(`CASE WHEN RIGHT(path, 1) = '/' THEN CONCAT(path,name)
+			 ELSE CONCAT_WS('/', path, name) END LIKE ?`, "%"+search.GetFileName()+"%")).Scan(&items)
+		if err != nil {
+			return nil, err
+		}
+		if len(items) == 0 {
+			// 添加一个永远不会匹配的条件
+			conds = append(conds, dao.genQ.ConfigTemplate.ID.Eq(0))
+			return conds, nil
+		}
+
+		for _, v := range items {
+			templateIDSet[v.ID] = struct{}{}
+		}
+	}
+
+	if len(templateIDSet) > 0 {
+		ids := make([]uint32, 0, len(templateIDSet))
+		for id := range templateIDSet {
+			ids = append(ids, id)
+		}
+		conds = append(conds, m.TemplateID.In(ids...))
+	}
+
+	return conds, nil
 }
 
 // DeleteWithTx implements ConfigTemplate.

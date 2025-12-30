@@ -98,6 +98,7 @@ message TemplateSearchCond {
   string template_name = 1;
   string file_name = 2;
   string reviser = 3;
+  repeated uint32 template_id = 4;
 }
 
 // ServiceInstanceInfo 服务实例信息
