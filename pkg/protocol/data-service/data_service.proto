@@ -2335,6 +2335,7 @@ message ListProcessResp {
   uint32 count = 1;
   repeated pbproc.Process process = 2;
   pbproc.FilterOptions filter_options = 3;
+  string cmdb_process_config_url = 4;
 }
 
 message OperateProcessReq {

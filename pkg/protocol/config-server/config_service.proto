@@ -4709,6 +4709,7 @@ message ListProcessResp {
   repeated pbproc.Process process = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程列表" }];
   pbproc.FilterOptions filter_options = 3;
+  string cmdb_process_config_url = 4;
 }
 
 message OperateProcessReq {

@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -96,10 +97,13 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		return nil, err
 	}
 
+	url := fmt.Sprintf(pbproc.CmdbProcessConfigURL, cc.G().CMDB.WebHost, req.GetBizId())
+
 	return &pbds.ListProcessResp{
-		Count:         uint32(count),
-		Process:       processes,
-		FilterOptions: filterOptions,
+		Count:                uint32(count),
+		Process:              processes,
+		FilterOptions:        filterOptions,
+		CmdbProcessConfigUrl: url,
 	}, nil
 }
 

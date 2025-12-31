@@ -70,9 +70,10 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	}
 
 	return &pbcs.ListProcessResp{
-		Count:         resp.Count,
-		Process:       resp.GetProcess(),
-		FilterOptions: resp.GetFilterOptions(),
+		Count:                resp.Count,
+		Process:              resp.GetProcess(),
+		FilterOptions:        resp.GetFilterOptions(),
+		CmdbProcessConfigUrl: resp.GetCmdbProcessConfigUrl(),
 	}, nil
 }
 

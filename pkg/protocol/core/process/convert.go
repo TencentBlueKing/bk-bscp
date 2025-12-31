@@ -14,12 +14,19 @@
 package pbproc
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbpi "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process-instance"
+)
+
+var (
+	ProcessConfigViewUrl = "%s/#/business/%d/index?tab=serviceInstance&node=module-%d"
+	CmdbProcessConfigURL = "%s/#/business/%d/service/template"
 )
 
 // Process convert pb Process to table Process
@@ -56,23 +63,24 @@ func (p *ProcessSpec) ProcessSpec() *table.ProcessSpec {
 }
 
 // PbProcessSpec convert table ProcessSpec to pb ProcessSpec
-func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32) *ProcessSpec {
+func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32, url string) *ProcessSpec {
 	if spec == nil {
 		return nil
 	}
 
 	return &ProcessSpec{
-		SetName:         spec.SetName,
-		ModuleName:      spec.ModuleName,
-		ServiceName:     spec.ServiceName,
-		Environment:     spec.Environment,
-		Alias:           spec.Alias,
-		InnerIp:         spec.InnerIP,
-		CcSyncStatus:    spec.CcSyncStatus.String(),
-		CcSyncUpdatedAt: toProtoTimestamp(spec.CcSyncUpdatedAt),
-		SourceData:      spec.SourceData,
-		ProcNum:         uint32(spec.ProcNum),
-		BindTemplateIds: bindTemplateIds,
+		SetName:              spec.SetName,
+		ModuleName:           spec.ModuleName,
+		ServiceName:          spec.ServiceName,
+		Environment:          spec.Environment,
+		Alias:                spec.Alias,
+		InnerIp:              spec.InnerIP,
+		CcSyncStatus:         spec.CcSyncStatus.String(),
+		CcSyncUpdatedAt:      toProtoTimestamp(spec.CcSyncUpdatedAt),
+		SourceData:           spec.SourceData,
+		ProcNum:              uint32(spec.ProcNum),
+		BindTemplateIds:      bindTemplateIds,
+		ProcessConfigViewUrl: url,
 	}
 }
 
@@ -139,9 +147,10 @@ func PbProcess(c *table.Process, bindTemplateIds []uint32) *Process {
 		return nil
 	}
 
+	url := fmt.Sprintf(ProcessConfigViewUrl, cc.G().CMDB.WebHost, c.Attachment.BizID, c.Attachment.ModuleID)
 	return &Process{
 		Id:         c.ID,
-		Spec:       PbProcessSpec(c.Spec, bindTemplateIds),
+		Spec:       PbProcessSpec(c.Spec, bindTemplateIds, url),
 		Attachment: PbProcessAttachment(c.Attachment),
 	}
 }

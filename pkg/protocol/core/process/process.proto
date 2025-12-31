@@ -50,6 +50,8 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "托管状态:managed,unmanaged" }];
   repeated uint32 bind_template_ids = 15
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定模板ID" }];
+  string process_config_view_url = 16
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "查看进程配置的url" }];
 }
 
 message ProcessAttachment {

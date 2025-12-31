@@ -1686,6 +1686,7 @@ type CMDBConfig struct {
 	Host       string `yaml:"host"`
 	UseEsb     bool   `yaml:"useEsb"`
 	BkUserName string `yaml:"bkUserName"`
+	WebHost    string `yaml:"webHost"`
 }
 
 // VerifyAgentIDBelongs defines apps that can download across different businesses
