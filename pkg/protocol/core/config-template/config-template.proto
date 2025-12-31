@@ -133,8 +133,7 @@ message ListProcessInstance {
 
 message ConfigTemplateVariable {
   string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量键" }];
-  string type = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量类型" }];
-  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量描述" }];
+  string value = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "变量值" }];
 }
 
 message BindProcessInstance {

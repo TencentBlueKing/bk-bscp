@@ -649,9 +649,8 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTe
 	configTemplateVariables := make([]*pbct.ConfigTemplateVariable, 0)
 
 	configTemplateVariables = append(configTemplateVariables, &pbct.ConfigTemplateVariable{
-		Key:  "BK_APP_ID",
-		Type: "集群列表",
-		Memo: "测试测试",
+		Key:   "BK_APP_ID",
+		Value: "测试测试",
 	})
 
 	return &pbds.ConfigTemplateVariableResp{
