@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
@@ -25,6 +26,7 @@ import (
 	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
@@ -32,6 +34,66 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
+
+const (
+	// CollectWindowSeconds 收集窗口时间（秒）
+	// 同一时间窗口内的请求会被合并到同一个 Job 中
+	// 窗口结束后 Job 开始处理，新请求会创建新的 Job
+	CollectWindowSeconds int64 = 15
+)
+
+// getTimeBucket 获取当前时间窗口
+func getTimeBucket() int64 {
+	return time.Now().Unix() / CollectWindowSeconds
+}
+
+// GetJobKey 获取带时间窗口的 Job Key
+// 格式: AsyncDownloadJob:{bizID}:{appID}:{fullPath}:{timeBucket}
+func GetJobKey(bizID, appID uint32, fullPath string, timeBucket int64) string {
+	return fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:%d", bizID, appID, fullPath, timeBucket)
+}
+
+// GetTargetsKey 获取带时间窗口的 Targets Key
+// 格式: AsyncDownloadJob:Targets:{bizID}:{appID}:{fullPath}:{timeBucket}
+func GetTargetsKey(bizID, appID uint32, fullPath string, timeBucket int64) string {
+	return fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s:%d", bizID, appID, fullPath, timeBucket)
+}
+
+// GetTargetsKeyFromJobKey 从 JobKey 获取对应的 TargetsKey
+// 通过替换前缀实现
+func GetTargetsKeyFromJobKey(jobKey string) string {
+	return strings.Replace(jobKey, "AsyncDownloadJob:", "AsyncDownloadJob:Targets:", 1)
+}
+
+// ParseTimeBucketFromJobKey 从 JobKey 中解析时间窗口
+// JobKey 格式: AsyncDownloadJob:{bizID}:{appID}:{fullPath}:{timeBucket}
+// 返回 timeBucket，如果解析失败返回 0
+func ParseTimeBucketFromJobKey(jobKey string) int64 {
+	parts := strings.Split(jobKey, ":")
+	if len(parts) < 2 {
+		return 0
+	}
+	// timeBucket 是最后一个部分
+	lastPart := parts[len(parts)-1]
+	timeBucket, err := strconv.ParseInt(lastPart, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return timeBucket
+}
+
+// IsTimeWindowExpired 判断时间窗口是否已结束
+// 根据 jobKey 中的 timeBucket 计算窗口结束时间，判断是否已过期
+func IsTimeWindowExpired(jobKey string) bool {
+	timeBucket := ParseTimeBucketFromJobKey(jobKey)
+	if timeBucket == 0 {
+		// 解析失败（可能是旧格式），使用保守策略，认为已过期
+		return true
+	}
+	// 窗口结束时间 = (timeBucket + 1) * CollectWindowSeconds
+	windowEndTime := time.Unix((timeBucket+1)*CollectWindowSeconds, 0)
+	return time.Now().After(windowEndTime)
+}
 
 // NewService initialize the async download service instance.
 func NewService(cs *clientset.ClientSet, mc *metric, redLock *lock.RedisLock) (*Service, error) {
@@ -195,102 +257,54 @@ func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID 
 // nolint
 func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
-	startTime := time.Now()
 	rid := kt.Rid
 	fullPath := path.Join(filePath, fileName)
-	fileKey := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:*", bizID, appID, fullPath)
 
-	// 获取外层锁（按文件路径）- 关键：记录等待锁的时间
-	outerLockStart := time.Now()
-	ad.redLock.Acquire(fileKey)
-	outerLockWaitDuration := time.Since(outerLockStart)
-	if outerLockWaitDuration > 100*time.Millisecond {
-		logs.Warnf("[upsertAsyncDownloadJob] outer lock wait time long, rid: %s, biz_id: %d, file: %s, wait_duration: %v",
-			rid, bizID, fullPath, outerLockWaitDuration)
-	}
-	defer ad.redLock.Release(fileKey)
+	// 使用时间窗口的 job key
+	// 同一时间窗口内的请求会复用同一个 Job，窗口结束后新请求会创建新的 Job
+	timeBucket := getTimeBucket()
+	jobKey := GetJobKey(bizID, appID, fullPath, timeBucket)
+	targetsKey := GetTargetsKey(bizID, appID, fullPath, timeBucket)
 
-	// 查找现有 job
-	keysStart := time.Now()
-	keys, err := ad.cs.Redis().Keys(kt.Ctx, fileKey)
-	keysDuration := time.Since(keysStart)
+	// 1. 检查 job 是否存在
+	jobData, err := ad.cs.Redis().Get(kt.Ctx, jobKey)
 	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis keys failed, rid: %s, biz_id: %d, file: %s, duration: %v, err: %v",
-			rid, bizID, fullPath, keysDuration, err)
+		logs.Errorf("[upsertAsyncDownloadJob] redis get failed, rid: %s, biz_id: %d, file: %s, err: %v",
+			rid, bizID, fullPath, err)
 		return "", err
 	}
-	if keysDuration > 100*time.Millisecond {
-		logs.Warnf("[upsertAsyncDownloadJob] redis keys slow, rid: %s, biz_id: %d, file: %s, found_keys: %d, duration: %v",
-			rid, bizID, fullPath, len(keys), keysDuration)
-	}
 
-	for _, key := range keys {
-		if jobID, ok := func() (string, bool) {
-			// 获取内层锁（按 job ID）- 关键：记录等待锁的时间
-			innerLockStart := time.Now()
-			ad.redLock.Acquire(key)
-			innerLockWaitDuration := time.Since(innerLockStart)
-			if innerLockWaitDuration > 100*time.Millisecond {
-				logs.Warnf("[upsertAsyncDownloadJob] inner lock wait time long, rid: %s, biz_id: %d, job_key: %s, wait_duration: %v",
-					rid, bizID, key, innerLockWaitDuration)
-			}
-			defer ad.redLock.Release(key)
-
-			data, e := ad.cs.Redis().Get(kt.Ctx, key)
-			if e != nil {
-				logs.Errorf("[upsertAsyncDownloadJob] redis get failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
-					rid, bizID, key, e)
-				return "", false
-			}
-			if data == "" {
-				return "", false
-			}
-			job := &types.AsyncDownloadJob{}
-			if e := jsoni.UnmarshalFromString(data, &job); e != nil {
-				logs.Errorf("[upsertAsyncDownloadJob] unmarshal job failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
-					rid, bizID, key, e)
-				return "", false
-			}
-			if job.Status == types.AsyncDownloadJobStatusPending {
-				// pending job exists, update it
-				updateStart := time.Now()
-				job.Targets = append(job.Targets, &types.AsyncDownloadTarget{
-					AgentID:     targetAgentID,
-					ContainerID: targetContainerID,
-				})
-				js, e := jsoni.Marshal(job)
-				if e != nil {
-					logs.Errorf("[upsertAsyncDownloadJob] marshal job failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
-						rid, bizID, key, e)
-					return "", false
-				}
-				if e := ad.cs.Redis().Set(kt.Ctx, key, string(js), 30*60); e != nil {
-					logs.Errorf("[upsertAsyncDownloadJob] redis set failed, rid: %s, biz_id: %d, job_key: %s, err: %v",
-						rid, bizID, key, e)
-					return "", false
-				}
-				updateDuration := time.Since(updateStart)
-				totalDuration := time.Since(startTime)
-				logs.Infof("[upsertAsyncDownloadJob] update existing job, rid: %s, biz_id: %d, job_id: %s, targets_count: %d, update_duration: %v, total_duration: %v",
-					rid, bizID, key, len(job.Targets), updateDuration, totalDuration)
-				return key, true
-			}
-			return "", false
-
-		}(); ok {
-			logs.Infof("[upsertAsyncDownloadJob] update existing job, rid: %s, biz_id: %d, job_id: %s",
-				rid, bizID, jobID)
-			return jobID, nil
+	if jobData != "" {
+		// Job 已存在，直接添加 target（使用 LPUSH，原子操作，不需要锁）
+		target := &types.AsyncDownloadTarget{
+			AgentID:     targetAgentID,
+			ContainerID: targetContainerID,
 		}
+		targetData, e := jsoni.Marshal(target)
+		if e != nil {
+			logs.Errorf("[upsertAsyncDownloadJob] marshal target failed, rid: %s, biz_id: %d, err: %v",
+				rid, bizID, e)
+			return "", e
+		}
+
+		// 使用 LPUSH 原子性地添加 target，不需要锁
+		if e := ad.cs.Redis().LPush(kt.Ctx, targetsKey, string(targetData)); e != nil {
+			logs.Errorf("[upsertAsyncDownloadJob] redis lpush failed, rid: %s, biz_id: %d, err: %v",
+				rid, bizID, e)
+			return "", e
+		}
+
+		// 确保 targetsKey 的 TTL
+		_ = ad.cs.Redis().Expire(kt.Ctx, targetsKey, 30*60, bedis.NX)
+
+		logs.Infof("[upsertAsyncDownloadJob] add target to existing job, rid: %s, biz_id: %d, job_id: %s",
+			rid, bizID, jobKey)
+		return jobKey, nil
 	}
 
-	// no pendeing job exists, create a new one
-	// it's not possible to create two same job in same time, so use time stamp as unique id would be friendly.
-	createStart := time.Now()
-	jobID := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:%s", bizID, appID,
-		fullPath, time.Now().Format("20060102150405"))
+	// 2. Job 不存在，尝试创建新 job（使用 SetNX，原子操作，不需要外层锁）
 	job := &types.AsyncDownloadJob{
-		JobID:         jobID,
+		JobID:         jobKey,
 		BizID:         bizID,
 		AppID:         appID,
 		FilePath:      filePath,
@@ -298,12 +312,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		TargetFileDir: targetDir,
 		TargetUser:    targetUser,
 		FileSignature: signature,
-		Targets: []*types.AsyncDownloadTarget{
-			{
-				AgentID:     targetAgentID,
-				ContainerID: targetContainerID,
-			},
-		},
+		// 注意：不包含 Targets 数组（新数据只存储在 Redis List）
 		Status:             types.AsyncDownloadJobStatusPending,
 		CreateTime:         time.Now(),
 		SuccessTargets:     make(map[string]gse.TransferFileResultDataResultContent),
@@ -311,30 +320,94 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		DownloadingTargets: make(map[string]gse.TransferFileResultDataResultContent),
 		TimeoutTargets:     make(map[string]gse.TransferFileResultDataResultContent),
 	}
+
 	js, err := jsoni.Marshal(job)
 	if err != nil {
 		logs.Errorf("[upsertAsyncDownloadJob] marshal new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
-			rid, bizID, jobID, err)
+			rid, bizID, jobKey, err)
 		return "", err
 	}
 
-	ad.metric.jobCounter.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
-		"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
-		"targets": strconv.Itoa(len(job.Targets)), "status": job.Status}).Inc()
-
-	err = ad.cs.Redis().Set(kt.Ctx, jobID, string(js), 30*60)
+	// 使用 SetNX 原子性地创建 job，不需要外层锁
+	ok, err := ad.cs.Redis().SetNX(kt.Ctx, jobKey, string(js), 30*60)
 	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis set new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
-			rid, bizID, jobID, err)
+		logs.Errorf("[upsertAsyncDownloadJob] redis setnx failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
+			rid, bizID, jobKey, err)
 		return "", err
 	}
 
-	createDuration := time.Since(createStart)
-	totalDuration := time.Since(startTime)
-	logs.Infof("[upsertAsyncDownloadJob] create new job, rid: %s, biz_id: %d, job_id: %s, create_duration: %v, total_duration: %v (outer_lock_wait: %v, keys_duration: %v)",
-		rid, bizID, jobID, createDuration, totalDuration, outerLockWaitDuration, keysDuration)
+	if ok {
+		// 创建成功，说明是第一个请求
+		ad.metric.jobCounter.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
+			"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
+			"targets": "1", "status": job.Status}).Inc()
 
-	return jobID, nil
+		// 添加第一个 target 到 List
+		target := &types.AsyncDownloadTarget{
+			AgentID:     targetAgentID,
+			ContainerID: targetContainerID,
+		}
+		targetData, e := jsoni.Marshal(target)
+		if e != nil {
+			logs.Errorf("[upsertAsyncDownloadJob] marshal target failed, rid: %s, biz_id: %d, err: %v",
+				rid, bizID, e)
+			return "", e
+		}
+
+		if e := ad.cs.Redis().LPush(kt.Ctx, targetsKey, string(targetData)); e != nil {
+			logs.Errorf("[upsertAsyncDownloadJob] redis lpush failed, rid: %s, biz_id: %d, err: %v",
+				rid, bizID, e)
+			return "", e
+		}
+
+		// 设置 targetsKey 的 TTL
+		_ = ad.cs.Redis().Expire(kt.Ctx, targetsKey, 30*60, bedis.NX)
+
+		logs.Infof("[upsertAsyncDownloadJob] create new job, rid: %s, biz_id: %d, job_id: %s",
+			rid, bizID, jobKey)
+		return jobKey, nil
+	}
+
+	// 创建失败，说明其他请求已经创建了，需要添加 target
+	// 等待一小段时间，让其他请求完成创建
+	time.Sleep(10 * time.Millisecond)
+
+	// 重新检查 job 是否存在
+	jobData, err = ad.cs.Redis().Get(kt.Ctx, jobKey)
+	if err != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] redis get retry failed, rid: %s, biz_id: %d, file: %s, err: %v",
+			rid, bizID, fullPath, err)
+		return "", err
+	}
+
+	if jobData == "" {
+		return "", fmt.Errorf("failed to find or create job, rid: %s", rid)
+	}
+
+	// 添加 target 到 List
+	target := &types.AsyncDownloadTarget{
+		AgentID:     targetAgentID,
+		ContainerID: targetContainerID,
+	}
+	targetData, e := jsoni.Marshal(target)
+	if e != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] marshal target retry failed, rid: %s, biz_id: %d, err: %v",
+			rid, bizID, e)
+		return "", e
+	}
+
+	if e := ad.cs.Redis().LPush(kt.Ctx, targetsKey, string(targetData)); e != nil {
+		logs.Errorf("[upsertAsyncDownloadJob] redis lpush retry failed, rid: %s, biz_id: %d, err: %v",
+			rid, bizID, e)
+		return "", e
+	}
+
+	// 确保 targetsKey 的 TTL
+	_ = ad.cs.Redis().Expire(kt.Ctx, targetsKey, 30*60, bedis.NX)
+
+	logs.Infof("[upsertAsyncDownloadJob] add target to existing job after retry, rid: %s, biz_id: %d, job_id: %s",
+		rid, bizID, jobKey)
+	return jobKey, nil
 }
 
 func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,
