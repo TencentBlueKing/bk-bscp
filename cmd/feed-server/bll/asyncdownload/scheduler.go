@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
@@ -30,6 +31,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -44,6 +46,10 @@ var (
 )
 
 // Scheduler scheduled task to process download jobs
+// GSECreateTaskFunc 定义 GSE 创建任务的函数类型，用于依赖注入和测试
+type GSECreateTaskFunc func(ctx context.Context, sourceAgentID, sourceContainerID, sourceFileDir, sourceUser,
+	filename string, targetFileDir string, targetsAgents []gse.TransferFileAgent) (string, error)
+
 type Scheduler struct {
 	ctx               context.Context
 	cancel            context.CancelFunc
@@ -54,6 +60,10 @@ type Scheduler struct {
 	serverAgentID     string
 	serverContainerID string
 	metric            *metric
+	// 以下字段用于测试和依赖注入，如果为空则使用默认值（从 cc.FeedServer() 读取）
+	cacheDir          string            // 缓存目录，如果为空则使用 cc.FeedServer().GSE.CacheDir
+	agentUser         string            // Agent 用户，如果为空则使用 cc.FeedServer().GSE.AgentUser
+	gseCreateTaskFunc GSECreateTaskFunc // GSE 创建任务函数，如果为空则使用 gse.CreateTransferFileTask
 }
 
 // NewScheduler create a async download scheduler
@@ -109,14 +119,18 @@ func NewScheduler(mc *metric, redLock *lock.RedisLock) (*Scheduler, error) {
 		serverAgentID:     serverAgentID,
 		serverContainerID: serverContainerID,
 		metric:            mc,
+		// cacheDir, agentUser, gseCreateTaskFunc 保持为空，使用默认值
 	}, nil
 }
 
 // Run run a scheduled task
 func (a *Scheduler) Run() {
+	// 注册shutdown notifier
+	notifier := shutdown.AddNotifier()
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 
 		for {
 			select {
@@ -124,6 +138,12 @@ func (a *Scheduler) Run() {
 				a.do()
 			case <-a.ctx.Done():
 				logs.Infof("async downloader stopped")
+				return
+			case <-notifier.Signal:
+				// 收到shutdown信号，等待旧数据格式的job处理完成
+				logs.Infof("received shutdown signal, waiting for old format jobs to complete...")
+				a.waitForOldFormatJobsComplete()
+				notifier.Done()
 				return
 			}
 		}
@@ -133,6 +153,76 @@ func (a *Scheduler) Run() {
 // Stop stop scheduled task
 func (a *Scheduler) Stop() {
 	a.cancel()
+	// 等待旧数据格式的job处理完成
+	a.waitForOldFormatJobsComplete()
+}
+
+// waitForOldFormatJobsComplete 等待旧数据格式的job处理完成
+func (a *Scheduler) waitForOldFormatJobsComplete() {
+	logs.Infof("checking for old format jobs (with Targets in job struct)...")
+
+	maxWaitTime := 5 * time.Minute // 最大等待时间
+	checkInterval := 5 * time.Second
+	startTime := time.Now()
+
+	for {
+		// 检查是否超时
+		if time.Since(startTime) > maxWaitTime {
+			logs.Warnf("wait for old format jobs timeout after %v", maxWaitTime)
+			return
+		}
+
+		// 查找所有job
+		keys, err := a.bds.Keys(a.ctx, "AsyncDownloadJob:*")
+		if err != nil {
+			logs.Errorf("list async download job keys failed, err: %s", err.Error())
+			return
+		}
+
+		oldFormatJobs := make([]string, 0)
+		for _, key := range keys {
+			// 过滤掉 targets keys，只处理 job keys
+			if strings.Contains(key, "AsyncDownloadJob:Targets:") {
+				continue
+			}
+
+			data, err := a.bds.Get(a.ctx, key)
+			if err != nil {
+				continue
+			}
+			if data == "" {
+				continue
+			}
+
+			job := &types.AsyncDownloadJob{}
+			if err = jsoni.Unmarshal([]byte(data), job); err != nil {
+				continue
+			}
+
+			// 检查是否是旧格式：job结构体中有Targets且Redis List为空
+			// 使用从 JobID 解析的 targetsKey（支持新旧格式）
+			targetsKey := GetTargetsKeyFromJobKey(job.JobID)
+			count, err := a.bds.LLen(a.ctx, targetsKey)
+
+			// 旧格式判断：job.Targets不为空 且 Redis List为空或不存在
+			if len(job.Targets) > 0 && (err != nil || count == 0) {
+				// 检查job状态，只等待pending或running状态的job
+				if job.Status == types.AsyncDownloadJobStatusPending ||
+					job.Status == types.AsyncDownloadJobStatusRunning {
+					oldFormatJobs = append(oldFormatJobs, job.JobID)
+				}
+			}
+		}
+
+		// 如果没有旧格式的job，退出
+		if len(oldFormatJobs) == 0 {
+			logs.Infof("all old format jobs have been processed")
+			return
+		}
+
+		logs.Infof("waiting for %d old format jobs to complete: %v", len(oldFormatJobs), oldFormatJobs)
+		time.Sleep(checkInterval)
+	}
 }
 
 func (a *Scheduler) do() {
@@ -144,6 +234,10 @@ func (a *Scheduler) do() {
 	}
 
 	for _, key := range keys {
+		// 过滤掉 targets keys，只处理 job keys
+		if strings.Contains(key, "AsyncDownloadJob:Targets:") {
+			continue
+		}
 		if err := func() error {
 			// lock by job to prevent from
 			// 1. concurrency writing in api AsyncDownload
@@ -159,17 +253,15 @@ func (a *Scheduler) do() {
 				}
 				job := &types.AsyncDownloadJob{}
 				if err := jsoni.Unmarshal([]byte(data), job); err != nil {
+					logs.Errorf("unmarshal async download job failed, job_id: %s, err: %v", key, err)
 					return err
 				}
 				switch job.Status {
 				case types.AsyncDownloadJobStatusPending:
-					if time.Since(job.CreateTime) < 15*time.Second {
-						// continue to collect target clients
-
-						// TODO: optimize the logic to collect target clients
-						// 1. create a new job set execute time as 5 seconds later
-						// 2. if any target collected during pending, set the execute time as 5 seconds later from now
-						// 3. if execute time expired, stop collect, start to download
+					// 根据时间窗口判断是否可以开始处理
+					// 只有当时间窗口结束后才开始处理，这样可以收集更多的 targets
+					if !IsTimeWindowExpired(job.JobID) {
+						// 时间窗口未结束，继续收集 targets
 						return nil
 					}
 					return a.handleDownload(job)
@@ -190,6 +282,7 @@ func (a *Scheduler) do() {
 	}
 }
 
+// nolint:funlen
 func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 	logs.Infof("handle async download job %s, biz_id: %d, app_id: %d", job.JobID, job.BizID, job.AppID)
 	kt := kit.New()
@@ -203,21 +296,54 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		return err
 	}
 
-	// 2. 下载文件到本地
-	sourceDir := path.Join(cc.FeedServer().GSE.CacheDir, strconv.Itoa(int(job.BizID)))
-	if err := os.MkdirAll(sourceDir, os.ModePerm); err != nil {
+	// 2. 只从Redis List读取Targets（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
+	targetsData, err := a.bds.LRange(a.ctx, targetsKey, 0, -1)
+	if err != nil {
+		return fmt.Errorf("read targets from redis list failed, job_id: %s, err: %v", job.JobID, err)
+	}
+
+	// 如果Redis List为空，记录警告（可能是旧数据）
+	if len(targetsData) == 0 {
+		logs.Warnf("targets list is empty for job %s, may be old format data", job.JobID)
+		return fmt.Errorf("targets list is empty for job %s", job.JobID)
+	}
+
+	// 解析targets
+	targets := make([]*types.AsyncDownloadTarget, 0, len(targetsData))
+	for _, targetData := range targetsData {
+		target := &types.AsyncDownloadTarget{}
+		if err = jsoni.Unmarshal([]byte(targetData), target); err != nil {
+			logs.Errorf("unmarshal target failed, job_id: %s, err: %v", job.JobID, err)
+			continue
+		}
+		targets = append(targets, target)
+	}
+
+	if len(targets) == 0 {
+		return fmt.Errorf("no valid targets found for job %s", job.JobID)
+	}
+
+	// 3. 下载文件到本地
+	// 使用注入的 cacheDir，如果为空则使用默认值
+	cacheDir := a.cacheDir
+	if cacheDir == "" {
+		cacheDir = cc.FeedServer().GSE.CacheDir
+	}
+	sourceDir := path.Join(cacheDir, strconv.Itoa(int(job.BizID)))
+	if err = os.MkdirAll(sourceDir, os.ModePerm); err != nil {
 		return err
 	}
 	// filepath = source/{biz_id}/{sha256}
 	signature := job.FileSignature
 	serverFilePath := path.Join(sourceDir, signature)
-	if err := a.checkAndDownloadFile(kt, serverFilePath, signature); err != nil {
+	if err = a.checkAndDownloadFile(kt, serverFilePath, signature); err != nil {
 		return err
 	}
 
-	// 3. 创建GSE文件传输任务
-	targetAgents := make([]gse.TransferFileAgent, 0, len(job.Targets))
-	for _, target := range job.Targets {
+	// 4. 创建GSE文件传输任务
+	targetAgents := make([]gse.TransferFileAgent, 0, len(targets))
+	for _, target := range targets {
 		targetAgents = append(targetAgents, gse.TransferFileAgent{
 			BkAgentID:     target.AgentID,
 			BkContainerID: target.ContainerID,
@@ -225,13 +351,25 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		})
 	}
 
-	taskID, err := gse.CreateTransferFileTask(a.ctx, a.serverAgentID, a.serverContainerID, sourceDir,
-		cc.FeedServer().GSE.AgentUser, signature, job.TargetFileDir, targetAgents)
+	// 使用注入的 agentUser，如果为空则使用默认值
+	agentUser := a.agentUser
+	if agentUser == "" {
+		agentUser = cc.FeedServer().GSE.AgentUser
+	}
+
+	// 使用注入的 gseCreateTaskFunc，如果为空则使用默认的 gse.CreateTransferFileTask
+	createTaskFunc := a.gseCreateTaskFunc
+	if createTaskFunc == nil {
+		createTaskFunc = gse.CreateTransferFileTask
+	}
+
+	taskID, err := createTaskFunc(a.ctx, a.serverAgentID, a.serverContainerID, sourceDir,
+		agentUser, signature, job.TargetFileDir, targetAgents)
 	if err != nil {
 		return fmt.Errorf("create gse transfer file task failed, %s", err.Error())
 	}
 
-	// 4. 更新任务状态
+	// 5. 更新任务状态
 	job.GSETaskID = taskID
 
 	if err := a.updateAsyncDownloadJobStatus(a.ctx, job); err != nil {
@@ -258,6 +396,14 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 		return err
 	}
 
+	// 只从Redis List获取targets数量（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
+	targetsCount, err := a.bds.LLen(ctx, targetsKey)
+	if err != nil {
+		// 如果获取失败，使用0（可能是旧数据）
+		targetsCount = 0
+	}
+
 	if old.Status != job.Status {
 		var duration float64
 		if old.Status == types.AsyncDownloadJobStatusPending {
@@ -269,11 +415,11 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 			job.JobID, old.Status, job.Status, duration, job.AppID, job.FileName)
 		a.metric.jobDurationSeconds.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
 			"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
-			"targets": strconv.Itoa(len(job.Targets)), "status": old.Status}).
+			"targets": strconv.Itoa(int(targetsCount)), "status": old.Status}).
 			Observe(duration)
 		a.metric.jobCounter.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
 			"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
-			"targets": strconv.Itoa(len(job.Targets)), "status": job.Status}).Inc()
+			"targets": strconv.Itoa(int(targetsCount)), "status": job.Status}).Inc()
 	}
 
 	js, err := jsoni.Marshal(job)
@@ -354,8 +500,15 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 		return err
 	}
 
+	// 只从Redis List获取targets数量（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
+	targetsCount, err := a.bds.LLen(a.ctx, targetsKey)
+	if err != nil {
+		return err
+	}
+
 	// if all targets are success, then the entire job is success
-	if len(job.SuccessTargets) == len(job.Targets) {
+	if len(job.SuccessTargets) == int(targetsCount) {
 		job.Status = types.AsyncDownloadJobStatusSuccess
 		if err := a.updateAsyncDownloadJobStatus(a.ctx, job); err != nil {
 			return err
@@ -363,7 +516,7 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 		return nil
 	}
 	// if all targets are in a final status and there is a failed target, then the entire job is failed
-	if len(job.SuccessTargets)+len(job.FailedTargets) == len(job.Targets) {
+	if len(job.SuccessTargets)+len(job.FailedTargets) == int(targetsCount) {
 		job.Status = types.AsyncDownloadJobStatusFailed
 		if err := a.updateAsyncDownloadJobStatus(a.ctx, job); err != nil {
 			return err
@@ -386,14 +539,17 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 
 		// TODO: need to check cancel gse task status ?
 		timeoutTargets := make([]gse.TransferFileAgent, 0, len(job.TimeoutTargets))
-		for _, content := range job.DownloadingTargets {
+		for _, content := range job.TimeoutTargets {
 			timeoutTargets = append(timeoutTargets, gse.TransferFileAgent{
 				BkAgentID:     content.DestAgentID,
 				BkContainerID: content.DestContainerID,
 			})
 		}
-		if _, err := gse.TerminateTransferFileTask(a.ctx, job.JobID, timeoutTargets); err != nil {
-			logs.Errorf("cancel timeout transfer file task %s failed, err: %s", job.JobID, err.Error())
+		if len(timeoutTargets) > 0 && job.GSETaskID != "" {
+			if _, err := gse.TerminateTransferFileTask(a.ctx, job.GSETaskID, timeoutTargets); err != nil {
+				logs.Errorf("cancel timeout transfer file task %s failed, gse_task_id: %s, err: %s",
+					job.JobID, job.GSETaskID, err.Error())
+			}
 		}
 		return nil
 	}
@@ -407,6 +563,22 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 	gseTaskResults, err := gse.TransferFileResult(a.ctx, job.GSETaskID)
 	if err != nil {
 		return err
+	}
+
+	// 只从Redis List读取targets（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
+	targetsData, err := a.bds.LRange(a.ctx, targetsKey, 0, -1)
+	if err != nil {
+		return err
+	}
+
+	targets := make([]*types.AsyncDownloadTarget, 0, len(targetsData))
+	for _, targetData := range targetsData {
+		target := &types.AsyncDownloadTarget{}
+		if err := jsoni.Unmarshal([]byte(targetData), target); err != nil {
+			continue
+		}
+		targets = append(targets, target)
 	}
 
 	// ! make sure that success + failed + downloading + timeout = all targets
@@ -430,7 +602,7 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 				for k := range job.TimeoutTargets {
 					delete(job.TimeoutTargets, k)
 				}
-				for _, target := range job.Targets {
+				for _, target := range targets {
 					job.FailedTargets[fmt.Sprintf("%s:%s", target.AgentID, target.ContainerID)] = result.Content
 				}
 			}
