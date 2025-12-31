@@ -274,6 +274,7 @@ func (a *Scheduler) do() {
 	}
 }
 
+// nolint:funlen
 func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 	logs.Infof("handle async download job %s, biz_id: %d, app_id: %d", job.JobID, job.BizID, job.AppID)
 	kt := kit.New()
