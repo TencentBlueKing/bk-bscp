@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	prm "github.com/prometheus/client_golang/prometheus"
@@ -33,6 +34,66 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
+
+const (
+	// CollectWindowSeconds 收集窗口时间（秒）
+	// 同一时间窗口内的请求会被合并到同一个 Job 中
+	// 窗口结束后 Job 开始处理，新请求会创建新的 Job
+	CollectWindowSeconds int64 = 15
+)
+
+// getTimeBucket 获取当前时间窗口
+func getTimeBucket() int64 {
+	return time.Now().Unix() / CollectWindowSeconds
+}
+
+// GetJobKey 获取带时间窗口的 Job Key
+// 格式: AsyncDownloadJob:{bizID}:{appID}:{fullPath}:{timeBucket}
+func GetJobKey(bizID, appID uint32, fullPath string, timeBucket int64) string {
+	return fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:%d", bizID, appID, fullPath, timeBucket)
+}
+
+// GetTargetsKey 获取带时间窗口的 Targets Key
+// 格式: AsyncDownloadJob:Targets:{bizID}:{appID}:{fullPath}:{timeBucket}
+func GetTargetsKey(bizID, appID uint32, fullPath string, timeBucket int64) string {
+	return fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s:%d", bizID, appID, fullPath, timeBucket)
+}
+
+// GetTargetsKeyFromJobKey 从 JobKey 获取对应的 TargetsKey
+// 通过替换前缀实现
+func GetTargetsKeyFromJobKey(jobKey string) string {
+	return strings.Replace(jobKey, "AsyncDownloadJob:", "AsyncDownloadJob:Targets:", 1)
+}
+
+// ParseTimeBucketFromJobKey 从 JobKey 中解析时间窗口
+// JobKey 格式: AsyncDownloadJob:{bizID}:{appID}:{fullPath}:{timeBucket}
+// 返回 timeBucket，如果解析失败返回 0
+func ParseTimeBucketFromJobKey(jobKey string) int64 {
+	parts := strings.Split(jobKey, ":")
+	if len(parts) < 2 {
+		return 0
+	}
+	// timeBucket 是最后一个部分
+	lastPart := parts[len(parts)-1]
+	timeBucket, err := strconv.ParseInt(lastPart, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return timeBucket
+}
+
+// IsTimeWindowExpired 判断时间窗口是否已结束
+// 根据 jobKey 中的 timeBucket 计算窗口结束时间，判断是否已过期
+func IsTimeWindowExpired(jobKey string) bool {
+	timeBucket := ParseTimeBucketFromJobKey(jobKey)
+	if timeBucket == 0 {
+		// 解析失败（可能是旧格式），使用保守策略，认为已过期
+		return true
+	}
+	// 窗口结束时间 = (timeBucket + 1) * CollectWindowSeconds
+	windowEndTime := time.Unix((timeBucket+1)*CollectWindowSeconds, 0)
+	return time.Now().After(windowEndTime)
+}
 
 // NewService initialize the async download service instance.
 func NewService(cs *clientset.ClientSet, mc *metric, redLock *lock.RedisLock) (*Service, error) {
@@ -199,9 +260,11 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 	rid := kt.Rid
 	fullPath := path.Join(filePath, fileName)
 
-	// 使用固定的 job key（不使用时间戳）
-	jobKey := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s", bizID, appID, fullPath)
-	targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s", bizID, appID, fullPath)
+	// 使用时间窗口的 job key
+	// 同一时间窗口内的请求会复用同一个 Job，窗口结束后新请求会创建新的 Job
+	timeBucket := getTimeBucket()
+	jobKey := GetJobKey(bizID, appID, fullPath, timeBucket)
+	targetsKey := GetTargetsKey(bizID, appID, fullPath, timeBucket)
 
 	// 1. 检查 job 是否存在
 	jobData, err := ad.cs.Redis().Get(kt.Ctx, jobKey)

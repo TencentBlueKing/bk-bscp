@@ -194,8 +194,8 @@ func (a *Scheduler) waitForOldFormatJobsComplete() {
 			}
 
 			// 检查是否是旧格式：job结构体中有Targets且Redis List为空
-			targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s",
-				job.BizID, job.AppID, path.Join(job.FilePath, job.FileName))
+			// 使用从 JobID 解析的 targetsKey（支持新旧格式）
+			targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 			count, err := a.bds.LLen(a.ctx, targetsKey)
 
 			// 旧格式判断：job.Targets不为空 且 Redis List为空或不存在
@@ -247,13 +247,10 @@ func (a *Scheduler) do() {
 				}
 				switch job.Status {
 				case types.AsyncDownloadJobStatusPending:
-					if time.Since(job.CreateTime) < 15*time.Second {
-						// continue to collect target clients
-
-						// TODO: optimize the logic to collect target clients
-						// 1. create a new job set execute time as 5 seconds later
-						// 2. if any target collected during pending, set the execute time as 5 seconds later from now
-						// 3. if execute time expired, stop collect, start to download
+					// 根据时间窗口判断是否可以开始处理
+					// 只有当时间窗口结束后才开始处理，这样可以收集更多的 targets
+					if !IsTimeWindowExpired(job.JobID) {
+						// 时间窗口未结束，继续收集 targets
 						return nil
 					}
 					return a.handleDownload(job)
@@ -288,9 +285,8 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		return err
 	}
 
-	// 2. 只从Redis List读取Targets
-	targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s",
-		job.BizID, job.AppID, path.Join(job.FilePath, job.FileName))
+	// 2. 只从Redis List读取Targets（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 	targetsData, err := a.bds.LRange(a.ctx, targetsKey, 0, -1)
 	if err != nil {
 		return fmt.Errorf("read targets from redis list failed, job_id: %s, err: %v", job.JobID, err)
@@ -389,9 +385,8 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 		return err
 	}
 
-	// 只从Redis List获取targets数量
-	targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s",
-		job.BizID, job.AppID, path.Join(job.FilePath, job.FileName))
+	// 只从Redis List获取targets数量（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 	targetsCount, err := a.bds.LLen(ctx, targetsKey)
 	if err != nil {
 		// 如果获取失败，使用0（可能是旧数据）
@@ -494,9 +489,8 @@ func (a *Scheduler) checkJobStatus(job *types.AsyncDownloadJob) error {
 		return err
 	}
 
-	// 只从Redis List获取targets数量
-	targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s",
-		job.BizID, job.AppID, path.Join(job.FilePath, job.FileName))
+	// 只从Redis List获取targets数量（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 	targetsCount, err := a.bds.LLen(a.ctx, targetsKey)
 	if err != nil {
 		return err
@@ -557,9 +551,8 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 		return err
 	}
 
-	// 只从Redis List读取targets（用于处理upload失败的情况）
-	targetsKey := fmt.Sprintf("AsyncDownloadJob:Targets:%d:%d:%s",
-		job.BizID, job.AppID, path.Join(job.FilePath, job.FileName))
+	// 只从Redis List读取targets（使用从 JobID 解析的 targetsKey）
+	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 	targetsData, err := a.bds.LRange(a.ctx, targetsKey, 0, -1)
 	if err != nil {
 		return err
