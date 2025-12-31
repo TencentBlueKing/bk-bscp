@@ -189,7 +189,7 @@ func (a *Scheduler) waitForOldFormatJobsComplete() {
 			}
 
 			job := &types.AsyncDownloadJob{}
-			if err := jsoni.Unmarshal([]byte(data), job); err != nil {
+			if err = jsoni.Unmarshal([]byte(data), job); err != nil {
 				continue
 			}
 
@@ -305,7 +305,7 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 	targets := make([]*types.AsyncDownloadTarget, 0, len(targetsData))
 	for _, targetData := range targetsData {
 		target := &types.AsyncDownloadTarget{}
-		if err := jsoni.Unmarshal([]byte(targetData), target); err != nil {
+		if err = jsoni.Unmarshal([]byte(targetData), target); err != nil {
 			logs.Errorf("unmarshal target failed, job_id: %s, err: %v", job.JobID, err)
 			continue
 		}
@@ -323,13 +323,13 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		cacheDir = cc.FeedServer().GSE.CacheDir
 	}
 	sourceDir := path.Join(cacheDir, strconv.Itoa(int(job.BizID)))
-	if err := os.MkdirAll(sourceDir, os.ModePerm); err != nil {
+	if err = os.MkdirAll(sourceDir, os.ModePerm); err != nil {
 		return err
 	}
 	// filepath = source/{biz_id}/{sha256}
 	signature := job.FileSignature
 	serverFilePath := path.Join(sourceDir, signature)
-	if err := a.checkAndDownloadFile(kt, serverFilePath, signature); err != nil {
+	if err = a.checkAndDownloadFile(kt, serverFilePath, signature); err != nil {
 		return err
 	}
 
