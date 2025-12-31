@@ -9,18 +9,15 @@
     <div class="variable-content">
       <SearchInput v-model="searchValue" :clearable="false" />
       <bk-loading color="#242424" :loading="loading">
-        <PrimaryTable class="variable-table" :data="variableList" size="small" row-key="key">
-          <TableColumn title="KEY" col-key="key" width="100" />
-          <TableColumn :title="$t('类型')" col-key="type" />
-          <TableColumn :title="$t('描述')" col-key="memo" width="120" ellipsis />
-          <TableColumn :title="$t('操作')" col-key="action">
-            <template #default="{ row }">
-              <div class="op-btns">
-                <edit-line class="icon" @click="handleEdit(row)" />
-                <Del class="icon" @click="handleDelete(row)" />
-              </div>
-            </template>
-          </TableColumn>
+        <PrimaryTable
+          class="variable-table"
+          :data="variableList"
+          size="small"
+          row-key="key"
+          hover
+          @row-click="handleRowClick">
+          <TableColumn :title="$t('名称')" col-key="key" />
+          <TableColumn :title="$t('变量')" col-key="value" />
         </PrimaryTable>
       </bk-loading>
     </div>
@@ -29,10 +26,19 @@
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
-  import { AngleDownLine, EditLine, Del } from 'bkui-vue/lib/icon';
+  import { AngleDownLine } from 'bkui-vue/lib/icon';
   import { getConfigTemplateVariable } from '../../../../api/config-template';
-  import type { IConfigTemplateVariableItem } from '../../../../../types/config-template';
   import SearchInput from '../../../../components/search-input.vue';
+  import { copyToClipBoard } from '../../../../utils';
+  import { useI18n } from 'vue-i18n';
+  import BkMessage from 'bkui-vue/lib/message';
+
+  interface IVariableItem {
+    key: string;
+    value: string;
+  }
+
+  const { t } = useI18n();
 
   const emits = defineEmits(['close']);
   const props = defineProps<{
@@ -40,7 +46,7 @@
   }>();
 
   const searchValue = ref('');
-  const variableList = ref<IConfigTemplateVariableItem[]>([]);
+  const variableList = ref<IVariableItem[]>([]);
   const loading = ref(false);
 
   onMounted(() => {
@@ -59,11 +65,12 @@
     }
   };
 
-  const handleEdit = (row: any) => {
-    console.log('Insert variable:', row);
-  };
-  const handleDelete = (row: any) => {
-    console.log('Delete variable:', row);
+  const handleRowClick = ({ row }: { row: IVariableItem }) => {
+    copyToClipBoard(row.value);
+    BkMessage({
+      theme: 'success',
+      message: t('变量值已复制'),
+    });
   };
 </script>
 
@@ -121,20 +128,6 @@
           }
         }
       }
-      .variable-table {
-        .op-btns {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          .icon {
-            cursor: pointer;
-            &:hover {
-              color: #3a84ff;
-            }
-          }
-        }
-      }
     }
   }
 </style>
@@ -149,10 +142,18 @@
         background: #53545c;
       }
     }
-    .t-table__body td {
-      background: #242424;
-      color: #979ba5 !important;
-      border-color: #4a4a4a;
+    .t-table__body tr {
+      td {
+        background: #242424;
+        color: #979ba5 !important;
+        border-color: #4a4a4a;
+      }
+      &:hover {
+        cursor: pointer;
+        td {
+          background: #2e2e2e;
+        }
+      }
     }
   }
 </style>

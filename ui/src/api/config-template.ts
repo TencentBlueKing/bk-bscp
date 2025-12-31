@@ -185,3 +185,9 @@ export const checkConfig = (biz_id: string, data: IGenerateConfigParams) =>
  */
 export const checkConfigView = (biz_id: string, params: any) =>
   http.get(`/config/biz_id/${biz_id}/config_instances/view`, { params }).then((res) => res.data);
+
+/**
+ * 获取进程实例拓扑树节点
+ */
+export const getProcessInstanceTopoTreeNodes = (biz_id: string) =>
+  http.get(`/config/biz_id/${biz_id}/process_instance_topo`).then((res) => res.data);

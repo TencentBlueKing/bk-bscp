@@ -39,11 +39,12 @@
         </div>
         <div class="editor-footer">
           <bk-button @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
-          <bk-button @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
+          <bk-button @click="handlePreview">{{ t('预览') }}</bk-button>
         </div>
       </div>
       <ProcessPreview
         v-show="suffix === 'preview'"
+        ref="previewRef"
         :bk-biz-id="bkBizId"
         :config-content="props.content"
         @close="suffix = ''" />
@@ -58,7 +59,7 @@
   import { FilliscreenLine, UnfullScreen } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../components/code-editor/index.vue';
   import BkMessage from 'bkui-vue/lib/message';
-  import ProcessPreview from './process-preview.vue';
+  import ProcessPreview from './process-preview/index.vue';
   import Variable from './variable.vue';
 
   const { t } = useI18n();
@@ -85,6 +86,7 @@
   const highlight = ref('python');
   const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
   const suffix = ref('');
+  const previewRef = ref();
 
   onBeforeUnmount(() => {
     codeEditorRef.value.destroy();
@@ -109,6 +111,14 @@
   const handleEscClose = (event: KeyboardEvent) => {
     if (event.code === 'Escape') {
       handleCloseFullScreen();
+    }
+  };
+
+  const handlePreview = () => {
+    if (suffix.value === 'preview') {
+      previewRef.value.reloadPreview();
+    } else {
+      suffix.value = 'preview';
     }
   };
 </script>

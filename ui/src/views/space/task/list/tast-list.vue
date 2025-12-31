@@ -12,9 +12,11 @@
         class="border"
         row-key="id"
         cell-empty-content="--"
+        hover
         :data="tableList"
         :loading="loading"
-        :max-height="tableMaxHeight">
+        :max-height="tableMaxHeight"
+        @row-click="handleRowClick">
         <TableColumn col-key="id" title="ID">
           <template #default="{ row }: { row: ITaskHistoryItem }">
             <bk-button theme="primary" text @click="handleJump(row.id)">{{ row.id }}</bk-button>
@@ -48,7 +50,7 @@
         </TableColumn>
         <TableColumn col-key="end_at" :title="t('结束时间')">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            {{ datetimeFormat(row.end_at) }}
+            {{ row.end_at ? datetimeFormat(row.end_at) : '--' }}
           </template>
         </TableColumn>
         <TableColumn col-key="execution_time" :title="t('执行耗时')">
@@ -70,7 +72,7 @@
               :disabled="row.status === 'success'"
               theme="primary"
               text
-              @click="handleRetry(row)">
+              @click.stop="handleRetry(row)">
               {{ t('重试') }}
             </bk-button>
             <span v-else>--</span>
@@ -140,12 +142,7 @@
 
   const handleRetry = async (row: ITaskHistoryItem) => {
     try {
-      const query = {
-        task_type: ['config_generate', 'config_push', 'config_check'].includes(row.task_action)
-          ? row.task_action
-          : null,
-      };
-      await retryTask(spaceId.value, row.id, query);
+      await retryTask(spaceId.value, row.id);
       loadTaskList();
     } catch (error) {
       console.error(error);
@@ -211,6 +208,10 @@
     isSearchEmpty.value = false;
     searchSelectorRef.value.clear();
     loadTaskList();
+  };
+
+  const handleRowClick = ({ row }: { row: ITaskHistoryItem }) => {
+    handleJump(row.id);
   };
 </script>
 

@@ -22,6 +22,7 @@ export interface IProcessItem {
     prev_data: string;
     proc_num: number;
     bind_template_ids: number[];
+    process_config_view_url: string
   };
 }
 

@@ -43,7 +43,13 @@
           <TableColumn :title="$t('服务实例')" col-key="task_payload.service_name" ellipsis></TableColumn>
           <TableColumn :title="$t('进程别名')" col-key="task_payload.alias"></TableColumn>
           <TableColumn :title="$t('CC 进程 ID')" col-key="task_payload.cc_process_id"></TableColumn>
-          <TableColumn :title="$t('模块下唯一标识')" col-key="task_payload.module_inst_seq"></TableColumn>
+          <TableColumn col-key="task_payload.module_inst_seq">
+            <template #title>
+              <span class="tips-title" v-bk-tooltips="{ content: $t('模块下唯一标识'), placement: 'top' }">
+                ModuleInstSeq
+              </span>
+            </template>
+          </TableColumn>
           <TableColumn :title="$t('内网 IP')" col-key="task_payload.inner_ip"></TableColumn>
           <TableColumn :title="$t('执行耗时')" col-key="execution_time">
             <template #default="{ row }"> {{ row.execution_time }}s </template>
@@ -71,7 +77,11 @@
           <TableColumn v-if="showOperationActions.includes(action)" :title="$t('操作')" col-key="operation">
             <template #default="{ row }">
               <template v-if="['FAILURE', 'SUCCESS'].includes(row.status)">
-                <bk-button v-if="action === 'config_check'" theme="primary" text @click="handleDiff(row.task_id)">
+                <bk-button
+                  v-if="action === 'config_check' && row.compare_status === 'DIFFERENT'"
+                  theme="primary"
+                  text
+                  @click="handleDiff(row.task_id)">
                   {{ $t('配置对比') }}
                 </bk-button>
                 <bk-button v-else theme="primary" text @click="handleView(row.task_id)">
@@ -242,7 +252,8 @@
           failureCount.value = panel.count;
         }
       });
-      if (loadPanelsFlag.value) {
+      const activePanelCount = panels.value.find((panel) => panel.status === activePanels.value)?.count;
+      if (activePanelCount === 0 || loadPanelsFlag.value) {
         loadPanelsFlag.value = false;
         activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
         loadTaskList();
@@ -275,7 +286,7 @@
           operate_range: mergeOpRange(operate_range),
           creator,
           start_at: datetimeFormat(start_at),
-          end_at: datetimeFormat(end_at),
+          end_at: end_at ? datetimeFormat(end_at) : '--',
           execution_time: `${execution_time}s`,
           status,
         },
@@ -329,10 +340,7 @@
   // 重试所有失败任务
   const handleRetry = async () => {
     try {
-      const query = {
-        task_type: showOperationActions.includes(action.value) ? action.value : null,
-      };
-      await retryTask(bkBizId.value, taskId.value, query);
+      await retryTask(bkBizId.value, taskId.value);
       loadTaskList();
     } catch (error) {
       console.error(error);

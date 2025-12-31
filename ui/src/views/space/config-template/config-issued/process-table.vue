@@ -81,7 +81,9 @@
         </TableColumn>
         <TableColumn col-key="module_inst_seq" width="133">
           <template #title>
-            <span class="tips-title" v-bk-tooltips="{ content: $t('模块下唯一标识'), placement: 'top' }"> InstID </span>
+            <span class="tips-title" v-bk-tooltips="{ content: $t('模块下唯一标识'), placement: 'top' }">
+              ModuleInstSeq
+            </span>
           </template>
         </TableColumn>
         <template v-if="isGenerate">

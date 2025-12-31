@@ -49,6 +49,7 @@
     </div>
     <ProcessPreview
       v-show="suffix === 'preview'"
+      ref="previewRef"
       :bk-biz-id="spaceId"
       :config-content="stringContent"
       @close="suffix = ''" />
@@ -60,7 +61,7 @@
     </bk-button>
     <bk-button v-else theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
-    <bk-button class="default-btn" @click="suffix = 'preview'">{{ t('预览') }}</bk-button>
+    <bk-button class="default-btn" @click="handlePreview">{{ t('预览') }}</bk-button>
   </div>
 </template>
 <script lang="ts" setup>
@@ -75,7 +76,7 @@
   import { useRouter } from 'vue-router';
   import CodeEditor from '../../../../../components/code-editor/index.vue';
   import PermissionInputPicker from '../../../../../components/permission-input-picker.vue';
-  import ProcessPreview from '../../components/process-preview.vue';
+  import ProcessPreview from '../../components/process-preview/index.vue';
   import Variable from '../../components/variable.vue';
 
   const { t } = useI18n();
@@ -138,6 +139,7 @@
   const suffix = ref('');
   const highlight = ref('python');
   const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
+  const previewRef = ref();
 
   const isViewMode = computed(() => props.type === 'view');
 
@@ -231,6 +233,15 @@
         templateIds: [props.configTemplateId],
       },
     });
+  };
+
+  // 预览
+  const handlePreview = () => {
+    if (suffix.value === 'preview') {
+      previewRef.value.reloadPreview();
+    } else {
+      suffix.value = 'preview';
+    }
   };
 </script>
 

@@ -42,6 +42,7 @@ export interface ITemplateTreeNodeRes {
   modifier: string;
   name: string;
   service_category_id: number;
+  process_count: number;
 }
 
 export interface IProcessPreviewItem {
@@ -90,12 +91,6 @@ export interface IConfigTemplateEditParams {
   privilege: string;
   fileAP: string;
   revision_name: string;
-}
-
-export interface IConfigTemplateVariableItem {
-  key: string;
-  memo: string;
-  type: string;
 }
 
 export interface ITemplateProcessItem {

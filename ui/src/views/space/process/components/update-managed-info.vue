@@ -136,7 +136,6 @@
       line-height: 20px;
       .info-item {
         display: flex;
-        align-items: center;
         .label {
           width: 110px;
           text-align: right;

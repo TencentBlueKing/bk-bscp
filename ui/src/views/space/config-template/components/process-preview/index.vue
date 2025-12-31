@@ -7,21 +7,11 @@
         </div>
         <span class="title">{{ $t('预览') }}</span>
       </div>
-      <bk-select
-        class="process-select"
-        v-model="inst"
-        :filterable="false"
-        :clearable="false"
-        @select="handleSelectProcess">
-        <template #prefix>
-          <span class="select-prefix">{{ $t('进程实例') }}</span>
-        </template>
-        <bk-option v-for="(item, index) in instOptions" :id="item.id" :key="index" :name="item.name" />
-      </bk-select>
+      <TreeSelect ref="treeSelectRef" :tree-data="topoData" @selected="handleSelectProcess" />
     </div>
-    <div class="preview-content">
+    <bk-loading class="preview-content" :loading="contentLoading" color="#242424">
       <CodeEditor
-        v-if="inst"
+        v-if="instId"
         :model-value="previewContent"
         :editable="false"
         line-numbers="off"
@@ -38,17 +28,17 @@
         :description="$t('请先选择进程实例')"
         scene="part"
         type="empty" />
-    </div>
+    </bk-loading>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { ref, onBeforeUnmount, onMounted } from 'vue';
   import { AngleDownLine } from 'bkui-vue/lib/icon';
-  import { getProcessList } from '../../../../api/process';
-  import { previewConfig } from '../../../../api/config-template';
-  import CodeEditor from '../../../../components/code-editor/index.vue';
-  import type { IProcessItem } from '../../../../../types/process';
+  import { getProcessInstanceTopoTreeNodes, previewConfig } from '../../../../../api/config-template';
+  import CodeEditor from '../../../../../components/code-editor/index.vue';
+  import TreeSelect from './tree-select.vue';
+  import { ITopoTreeNode, ITopoTreeNodeRes } from '../../../../../../types/config-template';
 
   const emits = defineEmits(['close']);
   const props = defineProps<{
@@ -57,11 +47,14 @@
   }>();
 
   const codeEditorRef = ref();
-  const inst = ref('');
-  const instOptions = ref<{ id: number; name: string }[]>([]);
   const previewContent = ref('');
+  const topoData = ref<ITopoTreeNode[]>([]);
+  const contentLoading = ref(false);
+  const instId = ref(0);
 
-  const loading = ref(false);
+  onMounted(() => {
+    loadTopoTreeData();
+  });
 
   onBeforeUnmount(() => {
     if (codeEditorRef.value) {
@@ -69,38 +62,65 @@
     }
   });
 
-  onMounted(() => {
-    loadBindProcess();
-  });
-
-  const loadBindProcess = async () => {
+  const loadTopoTreeData = async () => {
     try {
-      loading.value = true;
-      const res = await getProcessList(props.bkBizId, { start: 0, all: true });
-      instOptions.value = res.process.map((item: IProcessItem) => ({
-        id: item.attachment.cc_process_id,
-        name: item.spec.alias,
-      }));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      loading.value = false;
+      const res = await getProcessInstanceTopoTreeNodes(props.bkBizId);
+      topoData.value = filterTopoData(res.biz_topo_nodes);
+    } catch (e) {
+      console.warn(e);
     }
   };
 
+  // 处理topo树结构
+  const filterTopoData = (nodes: ITopoTreeNodeRes[], topoLevel = -1, parent: ITopoTreeNode | null = null) => {
+    topoLevel += 1;
+    return nodes.map((node) => {
+      const topo: ITopoTreeNode = {
+        child: [], // 递归填充
+        topoParentName: parent?.topoName || '',
+        topoParent: parent,
+        topoVisible: true,
+        topoExpand: false,
+        topoLoading: false,
+        topoLevel,
+        topoProcess: node.bk_obj_id === 'process',
+        topoType: node.bk_obj_id,
+        topoProcessCount: node.process_count,
+        topoChecked: false,
+        topoName: node.bk_inst_name,
+        service_template_id: node.service_template_id,
+        bk_inst_id: node.bk_inst_id,
+      };
+      if (node.child?.length) {
+        topo.child = filterTopoData(node.child, topoLevel, topo);
+      }
+      return topo;
+    });
+  };
+
   const handleSelectProcess = async (id: number) => {
+    if (!id) return;
     try {
+      contentLoading.value = true;
+      instId.value = id;
       const data = {
         templateContent: props.configContent,
         ccProcessId: id,
       };
       const res = await previewConfig(props.bkBizId, data);
-      console.log('res', res);
       previewContent.value = res.content;
     } catch (error) {
       console.error(error);
+    } finally {
+      contentLoading.value = false;
     }
   };
+
+  defineExpose({
+    reloadPreview: () => {
+      handleSelectProcess(instId.value);
+    },
+  });
 </script>
 
 <style scoped lang="scss">

@@ -182,6 +182,7 @@
         topoType: 'serviceTemplate',
         topoChecked: false,
         service_template_id: item.id,
+        topoProcessCount: item.process_count,
       };
     });
   };

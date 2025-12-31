@@ -53,23 +53,6 @@
     :space-id="spaceId"
     :template-space-id="templateSpaceId"
     :crt-version="diffSliderData.data" />
-  <DeleteConfirmDialog
-    v-model:is-show="deleteOptions.isShow"
-    :title="t('确认删除模板版本?')"
-    quick-close
-    :pending="deleteOptions.pendding"
-    @confirm="handleDeleteVersionConfirm">
-    <div class="delete-content">
-      <div>
-        <span class="label">{{ t('版本 ID') }} : </span>
-        <span class="value">{{ deleteOptions.id }}</span>
-      </div>
-      <div>
-        <span class="label">{{ t('版本描述') }} : </span>
-        <span class="value">{{ deleteOptions.memo || '--' }}</span>
-      </div>
-    </div>
-  </DeleteConfirmDialog>
 </template>
 <script lang="ts" setup>
   import { ref } from 'vue';
@@ -79,10 +62,9 @@
   import { ITemplateVersionItem, DiffSliderDataType } from '../../../../../types/template';
   import { datetimeFormat } from '../../../../utils/index';
   import { fileDownload } from '../../../../utils/file';
-  import { downloadTemplateContent, deleteTemplateVersion } from '../../../../api/template';
+  import { downloadTemplateContent } from '../../../../api/template';
   import UserName from '../../../../components/user-name.vue';
   import TemplateVersionDiff from '../../templates/version-manage/template-version-diff.vue';
-  import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
   import TableMoreActions from '../../../../components/table/table-more-actions.vue';
 
   const { t } = useI18n();
@@ -110,20 +92,11 @@
     open: false,
     data: { id: 0, versionId: 0, name: '' },
   });
-  const deleteOptions = ref({
-    isShow: false,
-    id: 0,
-    memo: '',
-    pendding: false,
-  });
+
   const operationList = [
     {
       name: t('下载'),
       id: 'download',
-    },
-    {
-      name: t('删除'),
-      id: 'delete',
     },
   ];
 
@@ -138,8 +111,6 @@
   const handleOperation = (version: ITemplateVersionItem, operation: string) => {
     if (operation === 'download') {
       handleDownload(version);
-    } else {
-      handleDeleteVersion(version);
     }
   };
 
@@ -147,30 +118,6 @@
     const { name, revision_name, content_spec } = version.spec;
     const content = await downloadTemplateContent(props.spaceId, props.templateSpaceId, content_spec.signature, true);
     fileDownload(content, `${name}_${revision_name}`);
-  };
-
-  const handleDeleteVersion = (version: ITemplateVersionItem) => {
-    deleteOptions.value = {
-      isShow: true,
-      id: version.id,
-      memo: version.spec.revision_memo,
-      pendding: false,
-    };
-  };
-
-  const handleDeleteVersionConfirm = async () => {
-    try {
-      deleteOptions.value.pendding = true;
-      await deleteTemplateVersion(props.spaceId, props.templateSpaceId, props.templateId, deleteOptions.value.id);
-      deleteOptions.value.isShow = false;
-      setTimeout(() => {
-        emits('deleted');
-      }, 300);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      deleteOptions.value.pendding = false;
-    }
   };
 
   // 配置下发

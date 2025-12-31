@@ -36,7 +36,7 @@
               </bk-button>
               <bk-tag
                 v-if="!row.isAssociated"
-                :class="['associated-btn']"
+                class="associated-btn"
                 theme="info"
                 @click="handleAssociatedProcess(row)">
                 {{ t('立即关联') }}
@@ -69,7 +69,7 @@
                 @click="handleConfigIssue(row.id)">
                 {{ t('配置下发') }}
               </bk-button>
-              <bk-button theme="primary" text @click="handleConfigCheck(row)">
+              <bk-button theme="primary" :disabled="!row.isAssociated" text @click="handleConfigCheck(row)">
                 {{ t('配置检查') }}
               </bk-button>
               <TableMoreActions :operation-list="tableMoreOperationList" @operation="handleMoreActions(row, $event)" />
@@ -376,13 +376,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    &:hover {
-      .associated-btn {
-        display: block;
-      }
-    }
     .associated-btn {
-      display: none;
       line-height: 20px;
       height: 20px;
       cursor: pointer;

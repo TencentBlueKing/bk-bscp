@@ -2,7 +2,7 @@
   <div class="op-content">
     <bk-button theme="primary" :disabled="count === 0" @click="emits('click', 'start')">{{ $t('批量启动') }}</bk-button>
     <bk-button :disabled="count === 0" @click="emits('click', 'stop')">{{ $t('批量停止') }}</bk-button>
-    <bk-button :disabled="count === 0">{{ $t('批量配置下发') }}</bk-button>
+    <bk-button :disabled="count === 0" @click="emits('click', 'issue')">{{ $t('批量配置下发') }}</bk-button>
     <bk-popover
       ref="buttonRef"
       trigger="click"

@@ -96,7 +96,7 @@
               {{ t('配置下发') }}
             </bk-button>
             <TableMoreAction
-              :enabled="row.spec.actions"
+              :enabled="{ ...row.spec.actions, view: true }"
               :operation-list="operationList"
               @operation="handleMoreActionClick(row, $event)" />
           </div>
@@ -295,7 +295,7 @@
     },
     {
       name: t('查看进程配置'),
-      id: 'viewConfig',
+      id: 'view',
     },
   ];
 
@@ -327,7 +327,6 @@
   const selectedIds = ref<number[]>([]);
   const tableLoading = ref(false);
   const tableRef = ref();
-  const isShowConfigIssued = ref(false);
   const expandedRowKeys = ref<number[]>([]);
 
   const tableMaxHeight = computed(() => {
@@ -422,6 +421,8 @@
         count: selectedIds.value.length,
       };
       isShowBatchOpProcess.value = true;
+    } else if (op === 'issue') {
+      handleBatchConfigIssued();
     } else {
       handleConfirmOp(op);
     }
@@ -470,6 +471,10 @@
   };
 
   const handleMoreActionClick = (data: IProcessItem, op: string) => {
+    if (op === 'view') {
+      window.open(data.spec.process_config_view_url);
+      return;
+    }
     if (op === 'kill') {
       handleOpProcess(data, 'kill');
       return;
@@ -486,15 +491,11 @@
         operateType: op,
       };
       const res = await processOperate(spaceId.value, query);
-      if (op === 'start' || op === 'stop') {
-        isShowOpProcess.value = false;
-        // 启动或停止跳转任务详情页
-        setTimeout(() => {
-          router.push({ name: 'task-detail', params: { taskId: res.batchID } });
-        }, 300);
-      } else {
-        loadProcessList();
-      }
+      isShowOpProcess.value = false;
+      // 进程操作跳转任务详情页
+      setTimeout(() => {
+        router.push({ name: 'task-detail', params: { taskId: res.batchID } });
+      }, 300);
     } catch (error) {
       console.error(error);
     } finally {
@@ -527,8 +528,25 @@
         templateIds: process.spec.bind_template_ids,
       },
     });
-    isShowConfigIssued.value = true;
   };
+
+  // 批量配置下发
+  const handleBatchConfigIssued = () => {
+    const selectedProcess = processList.value.filter((item) => selectedIds.value.includes(item.id));
+
+    const processIds = new Set(selectedProcess.map((p) => p.attachment.cc_process_id));
+
+    const templateIds = new Set(selectedProcess.flatMap((p) => p.spec.bind_template_ids));
+
+    router.push({
+      name: 'config-issued',
+      query: {
+        processIds: [...processIds],
+        templateIds: [...templateIds],
+      },
+    });
+  };
+
   // 表格下拉展开收起
   const handleExpandRow = (row: IProcessItem) => {
     const index = expandedRowKeys.value.indexOf(row.id);
@@ -683,6 +701,9 @@
     }
     .t-table__empty-row {
       background: #fafbfd !important;
+    }
+    .t-table__body tr:last-child td {
+      border-bottom: none;
     }
   }
 </style>
