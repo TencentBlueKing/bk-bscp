@@ -362,6 +362,7 @@ service Data {
   // 删除模板配置
   rpc DeleteConfigTemplate(DeleteConfigTemplateReq) returns (DeleteConfigTemplateResp) {}
   rpc OperateGenerateConfig(OperateGenerateConfigReq) returns (OperateGenerateConfigResp) {}
+  rpc GetProcessInstanceTopo(GetProcessInstanceTopoReq) returns (GetProcessInstanceTopoResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2699,4 +2700,12 @@ message GetConfigViewReq {
   uint32 config_template_id = 2;
   uint32 cc_process_id = 3;
   uint32 module_inst_seq = 4;
+}
+
+message GetProcessInstanceTopoReq {
+  uint32 biz_id = 1;
+}
+
+message GetProcessInstanceTopoResp {
+  repeated pbct.BizTopoNode biz_topo_nodes = 1;
 }

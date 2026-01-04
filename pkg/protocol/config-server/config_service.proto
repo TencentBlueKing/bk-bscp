@@ -1782,6 +1782,12 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       delete: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}"
     };
   }
+  // 进程实例拓扑
+  rpc GetProcessInstanceTopo(GetProcessInstanceTopoReq) returns (GetProcessInstanceTopoResp) {
+    option (google.api.http) = {
+      get: "/api/v1/config/biz_id/{biz_id}/process_instance_topo"
+    };
+  }
 }
 
 message UpdateCredentialScopeReq {
@@ -5178,4 +5184,12 @@ message GetConfigViewReq {
   uint32 cc_process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
   uint32 module_inst_seq = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的进程实例序列号" }];
+}
+
+message GetProcessInstanceTopoReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+}
+
+message GetProcessInstanceTopoResp {
+  repeated pbct.BizTopoNode biz_topo_nodes = 1;
 }

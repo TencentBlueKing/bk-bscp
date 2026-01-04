@@ -104,3 +104,28 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbcs.ProcessFil
 		CcProcessIds:     resp.CcProcessIds,
 	}, nil
 }
+
+// GetProcessInstanceTopo implements [pbcs.ConfigServer].
+func (s *Service) GetProcessInstanceTopo(ctx context.Context, req *pbcs.GetProcessInstanceTopoReq) (
+	*pbcs.GetProcessInstanceTopoResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.GetProcessInstanceTopo(grpcKit.RpcCtx(), &pbds.GetProcessInstanceTopoReq{
+		BizId: req.GetBizId(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.GetProcessInstanceTopoResp{
+		BizTopoNodes: resp.GetBizTopoNodes(),
+	}, nil
+}

@@ -219,8 +219,11 @@ const (
 // 配置模板管理相关常量
 const (
 	// BK_MODULE_OBJ_ID cmdb模块节点对象ID
-	BK_MODULE_OBJ_ID = "module"
-	BK_BIZ_OBJ_ID    = "biz"
+	BK_MODULE_OBJ_ID  = "module"
+	BK_BIZ_OBJ_ID     = "biz"
+	BK_SET_OBJ_ID     = "set"
+	BK_PROCESS_OBJ_ID = "process" // 进程
+	BK_SERVICE_OBJ_ID = "service" // 实例
 	// CONFIG_DELIVERY 默认模板配置空间
 	CONFIG_DELIVERY = "config_delivery"
 )

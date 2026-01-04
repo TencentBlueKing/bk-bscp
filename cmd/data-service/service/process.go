@@ -26,9 +26,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	pbct "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbtb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -571,4 +573,146 @@ func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uin
 	}
 
 	return failedTasks, nil
+}
+
+// GetProcessInstanceTopo implements [pbds.DataServer].
+func (s *Service) GetProcessInstanceTopo(ctx context.Context, req *pbds.GetProcessInstanceTopoReq) (
+	*pbds.GetProcessInstanceTopoResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	processes, count, err := s.dao.Process().List(kt, req.BizId, nil, &types.BasePage{
+		All: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list processes failed: %w", err)
+	}
+
+	if count == 0 {
+		return &pbds.GetProcessInstanceTopoResp{}, nil
+	}
+
+	setMap := make(map[uint32]*pbct.BizTopoNode)
+
+	for _, p := range processes {
+		// 1. 没有进程数量，直接跳过（最重要的裁剪点）
+		if p.Spec.ProcNum == 0 {
+			continue
+		}
+
+		// 集群
+		setNode := getOrCreateSetNode(setMap, p)
+
+		// 模块
+		moduleNode := getOrCreateChild(
+			setNode,
+			p.Attachment.ModuleID,
+			p.Spec.ModuleName,
+			constant.BK_MODULE_OBJ_ID,
+			"模块",
+		)
+
+		// 实例
+		instanceNode := getOrCreateChild(
+			moduleNode,
+			p.Attachment.ServiceInstanceID,
+			p.Spec.ServiceName,
+			constant.BK_SERVICE_OBJ_ID,
+			"实例",
+		)
+
+		// 进程
+		processNode := &pbct.BizTopoNode{
+			BkInstId:   p.Attachment.CcProcessID,
+			BkInstName: p.Spec.Alias,
+			BkObjId:    constant.BK_PROCESS_OBJ_ID,
+			BkObjName:  "进程",
+		}
+
+		instanceNode.Child = append(instanceNode.Child, processNode)
+	}
+
+	var result []*pbct.BizTopoNode
+	for _, setNode := range setMap {
+		pruneEmptyNode(setNode)
+		if len(setNode.Child) == 0 {
+			continue
+		}
+
+		// 回填 process_count
+		fillProcessCount(setNode)
+
+		result = append(result, setNode)
+	}
+
+	return &pbds.GetProcessInstanceTopoResp{
+		BizTopoNodes: result,
+	}, nil
+}
+
+// fillProcessCount 返回：该节点下包含的 process 节点数量
+func fillProcessCount(node *pbct.BizTopoNode) uint32 {
+
+	// process 节点：自身计 1
+	if node.BkObjId == constant.BK_PROCESS_OBJ_ID {
+		node.ProcessCount = 1
+		return 1
+	}
+
+	var total uint32
+	for _, child := range node.Child {
+		total += fillProcessCount(child)
+	}
+
+	node.ProcessCount = total
+	return total
+}
+
+func getOrCreateChild(parent *pbct.BizTopoNode, id uint32, name string, objID string,
+	objName string) *pbct.BizTopoNode {
+
+	for _, c := range parent.Child {
+		if c.BkInstId == id && c.BkObjId == objID {
+			return c
+		}
+	}
+
+	child := &pbct.BizTopoNode{
+		BkInstId:   id,
+		BkInstName: name,
+		BkObjId:    objID,
+		BkObjName:  objName,
+	}
+
+	parent.Child = append(parent.Child, child)
+	return child
+}
+
+func getOrCreateSetNode(setMap map[uint32]*pbct.BizTopoNode, p *table.Process) *pbct.BizTopoNode {
+	if node, ok := setMap[p.Attachment.SetID]; ok {
+		return node
+	}
+
+	node := &pbct.BizTopoNode{
+		BkInstId:   p.Attachment.SetID,
+		BkInstName: p.Spec.SetName,
+		BkObjId:    constant.BK_SET_OBJ_ID,
+		BkObjName:  "集群",
+	}
+	setMap[p.Attachment.SetID] = node
+	return node
+}
+
+func pruneEmptyNode(node *pbct.BizTopoNode) {
+	if len(node.Child) == 0 {
+		return
+	}
+
+	var kept []*pbct.BizTopoNode
+	for _, c := range node.Child {
+		pruneEmptyNode(c)
+		if len(c.Child) > 0 || c.BkObjId == constant.BK_PROCESS_OBJ_ID {
+			kept = append(kept, c)
+		}
+	}
+	node.Child = kept
 }

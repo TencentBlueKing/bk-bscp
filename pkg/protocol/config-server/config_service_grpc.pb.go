@@ -239,6 +239,7 @@ const (
 	Config_ProcessInstance_FullMethodName                    = "/pbcs.Config/ProcessInstance"
 	Config_ServiceInstance_FullMethodName                    = "/pbcs.Config/ServiceInstance"
 	Config_DeleteConfigTemplate_FullMethodName               = "/pbcs.Config/DeleteConfigTemplate"
+	Config_GetProcessInstanceTopo_FullMethodName             = "/pbcs.Config/GetProcessInstanceTopo"
 )
 
 // ConfigClient is the client API for Config service.
@@ -664,6 +665,8 @@ type ConfigClient interface {
 	ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error)
 	// 删除配置模板
 	DeleteConfigTemplate(ctx context.Context, in *DeleteConfigTemplateReq, opts ...grpc.CallOption) (*DeleteConfigTemplateResp, error)
+	// 进程实例拓扑
+	GetProcessInstanceTopo(ctx context.Context, in *GetProcessInstanceTopoReq, opts ...grpc.CallOption) (*GetProcessInstanceTopoResp, error)
 }
 
 type configClient struct {
@@ -2582,6 +2585,15 @@ func (c *configClient) DeleteConfigTemplate(ctx context.Context, in *DeleteConfi
 	return out, nil
 }
 
+func (c *configClient) GetProcessInstanceTopo(ctx context.Context, in *GetProcessInstanceTopoReq, opts ...grpc.CallOption) (*GetProcessInstanceTopoResp, error) {
+	out := new(GetProcessInstanceTopoResp)
+	err := c.cc.Invoke(ctx, Config_GetProcessInstanceTopo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -3005,6 +3017,8 @@ type ConfigServer interface {
 	ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error)
 	// 删除配置模板
 	DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error)
+	// 进程实例拓扑
+	GetProcessInstanceTopo(context.Context, *GetProcessInstanceTopoReq) (*GetProcessInstanceTopoResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3646,6 +3660,9 @@ func (UnimplementedConfigServer) ServiceInstance(context.Context, *ServiceInstan
 }
 func (UnimplementedConfigServer) DeleteConfigTemplate(context.Context, *DeleteConfigTemplateReq) (*DeleteConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) GetProcessInstanceTopo(context.Context, *GetProcessInstanceTopoReq) (*GetProcessInstanceTopoResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProcessInstanceTopo not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -7475,6 +7492,24 @@ func _Config_DeleteConfigTemplate_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_GetProcessInstanceTopo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProcessInstanceTopoReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetProcessInstanceTopo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetProcessInstanceTopo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetProcessInstanceTopo(ctx, req.(*GetProcessInstanceTopoReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8329,6 +8364,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteConfigTemplate",
 			Handler:    _Config_DeleteConfigTemplate_Handler,
+		},
+		{
+			MethodName: "GetProcessInstanceTopo",
+			Handler:    _Config_GetProcessInstanceTopo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

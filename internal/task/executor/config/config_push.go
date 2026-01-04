@@ -181,6 +181,10 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("get payload failed: %w", err)
 	}
 
+	if payload.TaskID == "" {
+		return fmt.Errorf("[PushConfig Callback]: get common payload failed: task id is nil")
+	}
+
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
 		return fmt.Errorf("[PushConfig Callback]: get common payload failed: %w", err)
