@@ -567,8 +567,19 @@ func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplate
 		return nil, err
 	}
 
+	processesCount := map[int]uint32{}
+	for _, v := range resp {
+		if v.ID != 0 {
+			cnt, err := s.dao.Process().ProcessCountByServiceTemplate(grpcKit, req.GetBizId(), uint32(v.ID))
+			if err != nil {
+				return nil, err
+			}
+			processesCount[v.ID] = uint32(cnt)
+		}
+	}
+
 	return &pbds.ServiceTemplateResp{
-		ServiceTemplates: pbct.ConvertServiceTemplates(resp),
+		ServiceTemplates: pbct.ConvertServiceTemplates(resp, processesCount),
 	}, nil
 }
 

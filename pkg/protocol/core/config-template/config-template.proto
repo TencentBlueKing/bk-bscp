@@ -81,8 +81,9 @@ message BizTopoNode {
 
 // ServiceTemplate 服务模板信息
 message ServiceTemplate {
-  uint32 id = 2;    // 服务模板ID
-  string name = 3;  // 服务模板名称
+  uint32 id = 2;             // 服务模板ID
+  string name = 3;           // 服务模板名称
+  uint32 process_count = 4;  // 进程数量
 }
 
 // ProcTemplate 进程模板数据

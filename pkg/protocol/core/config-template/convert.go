@@ -113,26 +113,27 @@ func ConvertBizTopoNode(src *bkcmdb.BizTopoNode) *BizTopoNode {
 }
 
 // ConvertServiceTemplates 批量转换 []*bkcmdb.ServiceTemplate -> []*ServiceTemplate
-func ConvertServiceTemplates(src []*bkcmdb.ServiceTemplate) []*ServiceTemplate {
+func ConvertServiceTemplates(src []*bkcmdb.ServiceTemplate, processesCount map[int]uint32) []*ServiceTemplate {
 	if src == nil {
 		return nil
 	}
 	res := make([]*ServiceTemplate, 0, len(src))
 	for _, s := range src {
-		res = append(res, ConvertServiceTemplate(s))
+		res = append(res, ConvertServiceTemplate(s, processesCount[s.ID]))
 	}
 	return res
 }
 
 // ConvertServiceTemplate 单个转换
-func ConvertServiceTemplate(s *bkcmdb.ServiceTemplate) *ServiceTemplate {
+func ConvertServiceTemplate(s *bkcmdb.ServiceTemplate, count uint32) *ServiceTemplate {
 	if s == nil {
 		return nil
 	}
 
 	return &ServiceTemplate{
-		Id:   uint32(s.ID),
-		Name: s.Name,
+		Id:           uint32(s.ID),
+		Name:         s.Name,
+		ProcessCount: count,
 	}
 }
 
