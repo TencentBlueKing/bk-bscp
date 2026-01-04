@@ -1198,6 +1198,16 @@ type WatchHostUpdatesConfig struct {
 	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
+// SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
+type SyncCmdbGseConfig struct {
+	// Enabled defines whether the sync cmdb and gse task is enabled
+	Enabled bool `yaml:"enabled"`
+	// Interval defines the interval for syncing cmdb and gse relationships
+	Interval string `yaml:"interval"`
+	// QpsLimit defines the QPS limit for sync cmdb and gse requests
+	QpsLimit float64 `yaml:"qpsLimit"`
+}
+
 // CrontabConfig defines crontab task configuration options.
 type CrontabConfig struct {
 	// SyncBizHost defines sync business host task configuration
@@ -1208,6 +1218,8 @@ type CrontabConfig struct {
 	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
 	// WatchHostUpdates defines watch host updates task configuration
 	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
+	// SyncCmdbGse defines sync cmdb and gse task configuration
+	SyncCmdbGse SyncCmdbGseConfig `yaml:"syncCmdbGse"`
 }
 
 // validate if the sync biz host config is valid or not.
@@ -1335,12 +1347,24 @@ func (c *WatchHostUpdatesConfig) trySetDefault() {
 	}
 }
 
+// trySetDefault try set the default value of watch host updates config
+func (c *SyncCmdbGseConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "20m" // 20m0s
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 80.0 // 80 QPS
+	}
+}
+
 // trySetDefault try set the default value of crontab config
 func (c *CrontabConfig) trySetDefault() {
 	c.SyncBizHost.trySetDefault()
 	c.CleanupBizHost.trySetDefault()
 	c.WatchBizHostRelation.trySetDefault()
 	c.WatchHostUpdates.trySetDefault()
+	c.SyncCmdbGse.trySetDefault()
 }
 
 // RateLimiter defines the rate limiter options for traffic control.

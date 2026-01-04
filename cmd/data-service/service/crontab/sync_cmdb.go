@@ -17,6 +17,8 @@ import (
 	"context"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
@@ -30,19 +32,28 @@ const (
 )
 
 // NewSyncCMDB init sync ticket status
-func NewSyncCMDB(set dao.Set, sd serviced.Service, svc *service.Service) *syncCMDB {
+func NewSyncCMDB(set dao.Set, sd serviced.Service, svc *service.Service,
+	qpsLimit float64, cleanupInterval time.Duration) *syncCMDB {
+	if qpsLimit <= 0 || qpsLimit > findHostBizRelationsApiQpsLimit {
+		qpsLimit = findHostBizRelationsApiQpsLimit
+	}
+	rateLimiter := rate.NewLimiter(rate.Limit(qpsLimit), 1)
 	return &syncCMDB{
-		set:   set,
-		state: sd,
-		svc:   svc,
+		set:             set,
+		state:           sd,
+		svc:             svc,
+		rateLimiter:     rateLimiter,
+		cleanupInterval: cleanupInterval,
 	}
 }
 
 // syncCMDB xxx
 type syncCMDB struct {
-	set   dao.Set
-	state serviced.Service
-	svc   *service.Service
+	set             dao.Set
+	state           serviced.Service
+	svc             *service.Service
+	rateLimiter     *rate.Limiter
+	cleanupInterval time.Duration
 }
 
 func (s *syncCMDB) Run() {

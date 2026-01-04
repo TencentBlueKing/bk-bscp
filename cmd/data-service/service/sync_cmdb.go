@@ -19,14 +19,11 @@ import (
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
-	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
-	gseProc "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
@@ -58,6 +55,7 @@ func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseSt
 
 // SynchronizeCmdbData 同步cmdb数据
 func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
+	grpcKit := kit.FromGrpcContext(ctx)
 	// 不指定业务同步，表示同步所有业务
 	if len(bizIDs) == 0 {
 		business, err := s.cmdb.SearchBusinessByAccount(ctx, bkcmdb.SearchSetReq{
@@ -73,42 +71,19 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 		}
 	}
 
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(5)
-
 	for _, id := range bizIDs {
-		bizID := id
-		g.Go(func() error {
-			cmdbimpl := cmdb.NewSyncCMDBService(bizID, s.cmdb, s.dao)
-			if err := cmdbimpl.SyncSingleBiz(gctx); err != nil {
-				logs.Errorf(
-					"[syncBiz][cmdb][error] biz=%d sync cmdb failed: err=%v type=%T",
-					bizID, err, err,
-				)
-				return fmt.Errorf("cmdb sync failed for biz=%d: %w", bizID, err)
-			}
-			logs.Infof("[syncBiz][cmdb][success] biz=%d sync cmdb done", bizID)
-
-			gseimpl := gseProc.NewSyncGESService(bizID, s.gseSvc, s.dao)
-			if err := gseimpl.SyncSingleBiz(gctx); err != nil {
-				logs.Errorf(
-					"[syncBiz][gse][error] biz=%d sync gse failed: err=%v type=%T",
-					bizID, err, err,
-				)
-				return fmt.Errorf("gse sync failed for biz=%d: %w", bizID, err)
-			}
-			logs.Infof("[syncBiz][gse][success] biz=%d sync gse done", bizID)
-
-			return nil
-		})
+		processOperateTask, err := task.NewByTaskBuilder(
+			cmdbGse.NewSyncCMDBGSETask(uint32(id), gse.OpTypeQuery, grpcKit.User),
+		)
+		if err != nil {
+			logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
+			return err
+		}
+		// 启动任务
+		s.taskManager.Dispatch(processOperateTask)
 	}
 
-	if err := g.Wait(); err != nil {
-		logs.Errorf("[syncBiz][group][error] some biz failed: %v", err)
-		return err
-	}
 	logs.Infof("[syncBiz][group][success] all biz sync completed")
-
 	return nil
 }
 

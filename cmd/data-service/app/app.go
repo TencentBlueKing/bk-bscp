@@ -527,10 +527,17 @@ func (ds *dataService) startCronTasks() {
 		cleanupBizHost.Run()
 	}
 
-	// TODO: 增加配置项，控制定时时间
 	// 定时同步cmdb数据
-	syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service)
-	syncCmdb.Run()
+	if crontabConfig.SyncCmdbGse.Enabled {
+		interval, err := time.ParseDuration(crontabConfig.SyncCmdbGse.Interval)
+		if err != nil {
+			logs.Errorf("parse syncCmdbGse interval failed, using default: %v", err)
+			interval = 1 * time.Hour // 1 hour
+		}
+
+		syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service, crontabConfig.SyncCmdbGse.QpsLimit, interval)
+		syncCmdb.Run()
+	}
 
 	// 监听cmdb资源变化
 	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.service)
