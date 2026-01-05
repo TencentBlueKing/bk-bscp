@@ -89,17 +89,20 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	// 获取原进程状态和托管状态
 	originalProcStatus := payload.OriginalProcStatus
 	originalProcManagedStatus := payload.OriginalProcManagedStatus
-	// 如果原进程状态或托管状态为空，则任务失败
-	if originalProcStatus == "" || originalProcManagedStatus == "" {
-		return fmt.Errorf("original process status or managed status is empty, cannot operate")
-	}
+
 	// 获取进程信息
 	process, err := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
 	if err != nil {
 		return fmt.Errorf("failed to get process: %w", err)
 	}
-	canOperate, message := pbproc.CanProcessOperate(
+	//  解析 SourceData 获取运行时配置
+	var processInfo table.ProcessInfo
+	if err := json.Unmarshal([]byte(process.Spec.SourceData), &processInfo); err != nil {
+		return fmt.Errorf("unmarshal process source data failed: %v", err)
+	}
+	canOperate, message, _ := pbproc.CanProcessOperate(
 		payload.OperateType,
+		processInfo,
 		originalProcStatus.String(),
 		originalProcManagedStatus.String(),
 		process.Spec.CcSyncStatus.String(),
@@ -177,6 +180,7 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 		StopCmd:           cmdbProcessInfo.StopCmd,
 		FaceStopCmd:       cmdbProcessInfo.FaceStopCmd,
 		Timeout:           cmdbProcessInfo.Timeout,
+		StartCheckSecs:    cmdbProcessInfo.BkStartCheckSecs,
 	}
 
 	// 对比数据库配置和 CMDB 最新配置

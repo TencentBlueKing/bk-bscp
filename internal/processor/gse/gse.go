@@ -119,7 +119,7 @@ func BuildProcessOperate(params BuildProcessOperateParams) (*gse.ProcessOperate,
 			},
 			MonitorPolicy: gse.ProcessMonitorPolicy{
 				AutoType:       gse.AutoTypePersistent,
-				StartCheckSecs: DefaultStartCheckSecs,
+				StartCheckSecs: params.ProcessInfo.StartCheckSecs,
 				OpTimeout:      params.ProcessInfo.Timeout,
 			},
 		},

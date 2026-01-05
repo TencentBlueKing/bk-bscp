@@ -177,7 +177,19 @@ func TestCanProcessOperate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := CanProcessOperate(tt.op, tt.status, tt.managedStatus, tt.syncStatus)
+			got, _, _ := CanProcessOperate(tt.op, table.ProcessInfo{
+				BkStartParamRegex: "",
+				WorkPath:          "/data/work",
+				PidFile:           "test",
+				User:              "test",
+				ReloadCmd:         "reload test",
+				RestartCmd:        "restart test",
+				StartCmd:          "start test",
+				StopCmd:           "stop test",
+				FaceStopCmd:       "kill -9",
+				Timeout:           30,
+				StartCheckSecs:    60,
+			}, tt.status, tt.managedStatus, tt.syncStatus)
 			if got != tt.want {
 				t.Errorf("canProcessOperate() = %v, want %v", got, tt.want)
 			}

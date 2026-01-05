@@ -146,6 +146,7 @@ type ProcessInfo struct {
 	StopCmd           string `json:"stop_cmd"`             // 停止命令
 	FaceStopCmd       string `json:"face_stop_cmd"`        // 强制停止命令
 	Timeout           int    `json:"timeout"`              // 操作超时时长
+	StartCheckSecs    int    `json:"start_check_secs"`     // 启动等待时长
 }
 
 // ProcessAttachment xxx

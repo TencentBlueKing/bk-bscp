@@ -458,6 +458,7 @@ type ProcessInfo struct {
 	BkUpdatedBy       string      `json:"bk_updated_by"`        // 更新人
 	BindInfo          []*BindInfo `json:"bind_info"`            // 绑定信息列表
 	ServiceInstanceID int         `json:"service_instance_id"`  // 服务实例ID
+	BkStartCheckSecs  int         `json:"bk_start_check_secs"`  // 启动等待时长
 }
 
 // ServiceInstanceRequest 查询服务实例请求参数

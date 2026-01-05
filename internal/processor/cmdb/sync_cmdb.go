@@ -139,6 +139,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 					StopCmd:           proc.Property.StopCmd,
 					FaceStopCmd:       proc.Property.FaceStopCmd,
 					Timeout:           proc.Property.Timeout,
+					StartCheckSecs:    proc.Property.BkStartCheckSecs,
 				},
 			})
 		}

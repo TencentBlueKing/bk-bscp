@@ -384,6 +384,7 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 		StopCmd:           p.StopCmd,
 		FaceStopCmd:       p.FaceStopCmd,
 		Timeout:           p.Timeout,
+		StartCheckSecs:    p.BkStartCheckSecs,
 	}
 	sourceData, err := json.Marshal(info)
 	if err != nil {

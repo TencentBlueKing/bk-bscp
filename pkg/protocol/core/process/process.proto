@@ -41,8 +41,8 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "上一次同步的数据" }];
   uint32 proc_num = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程数量" }];
   // 展示操作按钮是否可以操作,是一个map，key代表动作，value代表是否可以操作
-  map<string, bool> actions = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "展示操作按钮是否可以操作(key可以是register,unregister,start,stop,restart,reload,kill)"
+  map<string, ActionAvailability> actions = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "展示操作按钮是否可以操作(key可以是register,unregister,start,stop,restart,reload,kill,pull)"
   }];
   string status = 13
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态:running,stopped" }];
@@ -52,6 +52,17 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定模板ID" }];
   string process_config_view_url = 16
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "查看进程配置的url" }];
+}
+
+message ActionAvailability {
+  // 是否可操作
+  bool enabled = 1;
+  // 不可操作原因
+  // ""                     : 无原因 / 可操作
+  // "TASK_RUNNING"         : 任务执行中
+  // "CMD_NOT_CONFIGURED"   : 尚未配置操作命令
+  // "UNKNOWN_PROCESS_STATUS"   : 进程和托管状态未知
+  string reason = 2;
 }
 
 message ProcessAttachment {
