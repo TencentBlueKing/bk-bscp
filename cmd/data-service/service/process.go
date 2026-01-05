@@ -542,7 +542,7 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 }
 
 // queryFailedTasks 查询批次中所有失败的任务
-func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uint32) ([]*taskTypes.Task, error) {
+func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uint32, taskType string) ([]*taskTypes.Task, error) {
 	var failedTasks []*taskTypes.Task
 
 	offset := int64(0)
@@ -551,6 +551,7 @@ func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uin
 	for {
 		listOpt := &istore.ListOption{
 			TaskIndex: fmt.Sprintf("%d", batchID),
+			TaskType:  taskType,
 			Status:    taskTypes.TaskStatusFailure,
 			Offset:    offset,
 			Limit:     limit,

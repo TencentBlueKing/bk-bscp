@@ -187,17 +187,11 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 	if taskBatch == nil {
 		return resp, nil
 	}
-	var taskType string
-	if taskBatch.Spec.TaskAction == table.TaskActionConfigCheck ||
-		taskBatch.Spec.TaskAction == table.TaskActionConfigGenerate ||
-		taskBatch.Spec.TaskAction == table.TaskActionConfigPublish {
-		taskType = string(taskBatch.Spec.TaskAction)
-	}
 
 	// 构建查询选项
 	listOpt := &istore.ListOption{
 		TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
-		TaskType:  taskType,
+		TaskType:  string(taskBatch.Spec.TaskAction),
 		Limit:     limit,
 		Offset:    int64(req.GetStart()),
 	}
@@ -236,14 +230,11 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
 			return nil, fmt.Errorf("convert task to detail failed: %v", err)
 		}
-		if detail == nil {
-			continue
-		}
 		taskDetails = append(taskDetails, detail)
 	}
 
 	// 计算状态统计
-	statistics, err := getTaskStatusStatistics(ctx, fmt.Sprintf("%d", req.GetBatchId()), taskType)
+	statistics, err := getTaskStatusStatistics(ctx, fmt.Sprintf("%d", req.GetBatchId()), string(taskBatch.Spec.TaskAction))
 	if err != nil {
 		logs.Errorf("get task status statistics failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, fmt.Errorf("get task status statistics failed: %v", err)
@@ -270,22 +261,6 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get common payload failed: %v", err)
 	}
-	if processPayload.ProcessPayload == nil {
-		logs.Infof(
-			"skip task convert, process payload is nil, taskID: %s, taskType: %s",
-			task.TaskID, task.GetTaskType(),
-		)
-		return nil, nil
-	}
-
-	if processPayload.ConfigPayload == nil {
-		logs.Infof(
-			"skip task convert, config payload is nil, taskID: %s, taskType: %s",
-			task.TaskID, task.GetTaskType(),
-		)
-		return nil, nil
-	}
-
 	// 构建返回的 TaskDetail
 	detail := &pbtb.TaskDetail{
 		TaskId:        task.TaskID,
@@ -293,7 +268,9 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 		Message:       task.Message,
 		Creator:       task.Creator,
 		ExecutionTime: float32(task.ExecutionTime) / 1000.0,
-		TaskPayload: &pbtb.TaskPayload{
+	}
+	if processPayload.ProcessPayload != nil {
+		detail.TaskPayload = &pbtb.TaskPayload{
 			SetName:       processPayload.ProcessPayload.SetName,
 			ModuleName:    processPayload.ProcessPayload.ModuleName,
 			ServiceName:   processPayload.ProcessPayload.ServiceName,
@@ -306,8 +283,11 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 			HostInstSeq:   processPayload.ProcessPayload.HostInstSeq,
 			ModuleInstSeq: processPayload.ProcessPayload.ModuleInstSeq,
 			ConfigData:    processPayload.ProcessPayload.ConfigData,
-		},
-		CompareStatus: string(processPayload.ConfigPayload.CompareStatus),
+		}
+	}
+
+	if processPayload.ConfigPayload != nil {
+		detail.CompareStatus = string(processPayload.ConfigPayload.CompareStatus)
 	}
 
 	return detail, nil
@@ -502,7 +482,7 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 	}
 
 	// 查询该批次所有失败的任务
-	failedTasks, err := queryFailedTasks(kt.Ctx, taskStorage, taskBatch.ID)
+	failedTasks, err := queryFailedTasks(kt.Ctx, taskStorage, taskBatch.ID, string(taskBatch.Spec.TaskAction))
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
 		return 0, fmt.Errorf("query failed tasks failed: %v", err)

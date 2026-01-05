@@ -152,7 +152,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 func (t *OperateTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
 		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.operateType, t.processInstanceID),
-		TaskType:      common.ProcessOperateTaskType,
+		TaskType:      string(t.operateType),        // 存具体的操作类型，防止任务详情拿到其他的任务
 		TaskIndexType: common.TaskIndexType,         // 任务一个索引类型，比如key，uuid等，
 		TaskIndex:     fmt.Sprintf("%d", t.batchID), // 任务索引，代表一批任务
 		Creator:       t.operatorUser,
