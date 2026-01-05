@@ -726,7 +726,7 @@ func (s *CCTopoXMLService) GetBizGlobalVariablesMap(ctx context.Context) (map[st
 				// 收集字段名到 topo_variables（用于 fillMissingFields）
 				// 注意：只收集原始字段名（CC3.0 字段名），不包含旧系统字段（CC1.0 字段名）
 				// 旧系统字段通过 mapCC3FieldToCC1 映射得到，它们会在 XML 中自动生成，不需要在 topo_variables 中
-				// 判断是否为旧系统字段：如果 mapCC3FieldToCC1(attr.BkPropertyID) != attr.BkPropertyID，说明是旧字段
+				// 判断是否为原始 CC3.0 字段：如果 mapCC3FieldToCC1(attr.BkPropertyID) == attr.BkPropertyID，说明是原始 CC3.0 字段（不是旧字段）
 				legacyField := mapCC3FieldToCC1(attr.BkPropertyID)
 				if attr.BkPropertyID == legacyField {
 					// 这是原始字段（CC3.0），添加到 topo_variables

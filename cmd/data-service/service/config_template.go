@@ -676,15 +676,8 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTe
 	// 转换为 ConfigTemplateVariable 格式
 	configTemplateVariables := make([]*pbct.ConfigTemplateVariable, 0)
 
-	// 定义对象ID常量
-	const (
-		bkSetObjID    = "set"
-		bkModuleObjID = "module"
-		bkHostObjID   = "host"
-	)
-
 	// 按顺序处理 Set、Module、Host、Global 对象属性
-	objIDs := []string{bkSetObjID, bkModuleObjID, bkHostObjID, "global"}
+	objIDs := []string{cmdb.BK_SET_OBJ_ID, cmdb.BK_MODULE_OBJ_ID, cmdb.BK_HOST_OBJ_ID, "global"}
 	for _, objID := range objIDs {
 		if attrs, ok := objectAttrs[objID]; ok {
 			for _, attr := range attrs {
