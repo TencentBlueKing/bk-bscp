@@ -2598,7 +2598,7 @@ message CreateConfigTemplateResp {
 }
 
 message ConfigTemplateVariableReq {
-  uint32 id = 1;
+  uint32 biz_id = 1;
 }
 
 message ConfigTemplateVariableResp {

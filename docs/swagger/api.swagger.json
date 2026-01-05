@@ -9921,6 +9921,185 @@
         ]
       }
     },
+    "/api/v1/config/biz_id/{bizId}/config_instances/check": {
+      "post": {
+        "summary": "配置检查",
+        "operationId": "Config_CheckConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCheckConfigResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCheckConfigBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/diff/{taskId}": {
+      "get": {
+        "summary": "配置对比",
+        "operationId": "Config_GetConfigDiff",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetConfigDiffResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "taskId",
+            "description": "任务ID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/view": {
+      "get": {
+        "summary": "获取配置",
+        "operationId": "Config_GetConfigView",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetConfigRenderResultResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configTemplateId",
+            "description": "配置模板ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "ccProcessId",
+            "description": "CC进程ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "moduleInstSeq",
+            "description": "模块下的进程实例序列号",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/config_instances/operate": {
+      "post": {
+        "summary": "配置生成操作",
+        "operationId": "Config_OperateGenerateConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateGenerateConfigResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateGenerateConfigBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/config_instances/push": {
       "post": {
         "summary": "配置下发",
@@ -10093,6 +10272,45 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/pbcsGetConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configTemplateId",
+            "description": "配置模版ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "delete": {
+        "summary": "删除配置模板",
+        "operationId": "Config_DeleteConfigTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteConfigTemplateResp"
             }
           },
           "default": {
@@ -10376,6 +10594,39 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/biz_id/{bizId}/process_instance_topo": {
+      "get": {
+        "summary": "进程实例拓扑",
+        "operationId": "Config_GetProcessInstanceTopo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetProcessInstanceTopoResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -10482,20 +10733,6 @@
         "templateSetIsEmpty": {
           "type": "boolean",
           "description": "模板套餐是否为空：是=true，否=false"
-        }
-      }
-    },
-    "CompareConfigRespConfigContent": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string",
-          "description": "配置内容"
-        },
-        "createTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "创建时间"
         }
       }
     },
@@ -10810,6 +11047,19 @@
             "type": "object",
             "$ref": "#/definitions/pbatbTemplateBinding"
           }
+        }
+      }
+    },
+    "ConfigCheckConfigBody": {
+      "type": "object",
+      "properties": {
+        "configTemplateGroups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcinConfigTemplateGroup"
+          },
+          "description": "配置模版组"
         }
       }
     },
@@ -11820,7 +12070,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/GenerateConfigReqConfigTemplateGroup"
+            "$ref": "#/definitions/pbcinConfigTemplateGroup"
           },
           "description": "配置模版组"
         }
@@ -12740,6 +12990,24 @@
         }
       }
     },
+    "ConfigOperateGenerateConfigBody": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "任务批次ID"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "任务ID"
+        },
+        "operationType": {
+          "type": "string",
+          "description": "操作类型：regenerate、retry"
+        }
+      }
+    },
     "ConfigOperateProcessBody": {
       "type": "object",
       "properties": {
@@ -13135,6 +13403,10 @@
           "type": "string",
           "default": "unix",
           "description": "文件模式"
+        },
+        "revisionMemo": {
+          "type": "string",
+          "description": "配置模版版本描述"
         }
       }
     },
@@ -13438,30 +13710,6 @@
           "description": "变量描述"
         }
       }
-    },
-    "GenerateConfigReqConfigTemplateGroup": {
-      "type": "object",
-      "properties": {
-        "configTemplateId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "配置模版ID"
-        },
-        "configTemplateVersionId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "配置模版版本ID"
-        },
-        "ccProcessIds": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "description": "CC进程ID列表"
-        }
-      },
-      "title": "配置模版组，支持多个配置模版同时生成"
     },
     "GetHookInfoSpecReleases": {
       "type": "object",
@@ -14787,6 +15035,19 @@
       },
       "title": "Choice 查询枚举值选项"
     },
+    "pbcinConfigContent": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "title": "原始内容（例如文件内容、脚本、配置文本）"
+        },
+        "checksum": {
+          "type": "string",
+          "title": "内容的 MD5 / SHA256，用于快速比对（可选但实用）"
+        }
+      }
+    },
     "pbcinConfigInstance": {
       "type": "object",
       "properties": {
@@ -14837,10 +15098,6 @@
           "type": "string",
           "description": "配置模版版本描述"
         },
-        "latestTemplateRevisionName": {
-          "type": "string",
-          "description": "即将下发的配置模版版本号"
-        },
         "ccProcessId": {
           "type": "integer",
           "format": "int64",
@@ -14848,6 +15105,11 @@
         },
         "revision": {
           "$ref": "#/definitions/pbbaseRevision"
+        },
+        "latestTemplateRevisionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "最新的配置模版版本ID"
         }
       }
     },
@@ -14861,6 +15123,15 @@
             "$ref": "#/definitions/pbcinChoice"
           },
           "description": "配置模版版本查询选项"
+        },
+        "latestTemplateRevisionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "最新的配置模版版本ID"
+        },
+        "latestTemplateRevisionName": {
+          "type": "string",
+          "description": "最新的配置模版版本号"
         }
       },
       "title": "ConfigInstanceFilterOptions 配置实例过滤选项"
@@ -14906,6 +15177,47 @@
         }
       },
       "title": "ConfigInstanceSearchCondition 配置实例搜索条件"
+    },
+    "pbcinConfigTemplateGroup": {
+      "type": "object",
+      "properties": {
+        "configTemplateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模版ID"
+        },
+        "configTemplateVersionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "配置模版版本ID"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "CC进程ID列表"
+        }
+      }
+    },
+    "pbcinConfigVersion": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/pbcinConfigContent",
+          "title": "配置内容"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "下发 / 生效时间（Unix 时间戳，秒）"
+        },
+        "operator": {
+          "type": "string",
+          "title": "操作人 / 系统标识（可选）"
+        }
+      }
     },
     "pbclientClient": {
       "type": "object",
@@ -15787,6 +16099,16 @@
         }
       }
     },
+    "pbcsCheckConfigResp": {
+      "type": "object",
+      "properties": {
+        "batchId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "批任务ID"
+        }
+      }
+    },
     "pbcsCheckCredentialNameResp": {
       "type": "object",
       "properties": {
@@ -16004,12 +16326,26 @@
       "type": "object",
       "properties": {
         "oldConfigContent": {
-          "$ref": "#/definitions/CompareConfigRespConfigContent",
+          "$ref": "#/definitions/pbcsCompareConfigRespConfigContent",
           "description": "旧配置内容"
         },
         "newConfigContent": {
-          "$ref": "#/definitions/CompareConfigRespConfigContent",
+          "$ref": "#/definitions/pbcsCompareConfigRespConfigContent",
           "description": "新配置内容"
+        }
+      }
+    },
+    "pbcsCompareConfigRespConfigContent": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "配置内容"
+        },
+        "createTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "创建时间"
         }
       }
     },
@@ -16121,6 +16457,11 @@
         "taskId": {
           "type": "string",
           "description": "任务ID"
+        },
+        "generationTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "生成时间"
         }
       }
     },
@@ -16358,6 +16699,9 @@
     "pbcsDeleteConfigItemResp": {
       "type": "object"
     },
+    "pbcsDeleteConfigTemplateResp": {
+      "type": "object"
+    },
     "pbcsDeleteCredentialsResp": {
       "type": "object"
     },
@@ -16450,6 +16794,31 @@
             "type": "object",
             "$ref": "#/definitions/pbatvAppTemplateVariableReference"
           }
+        }
+      }
+    },
+    "pbcsGetConfigDiffResp": {
+      "type": "object",
+      "properties": {
+        "lastDispatched": {
+          "$ref": "#/definitions/pbcinConfigVersion",
+          "title": "最后一次下发的配置"
+        },
+        "currentOnline": {
+          "$ref": "#/definitions/pbcinConfigVersion",
+          "title": "当前现网生效的配置"
+        },
+        "configTemplateName": {
+          "type": "string",
+          "description": "配置模版名称"
+        },
+        "configFileName": {
+          "type": "string",
+          "description": "配置文件名称"
+        },
+        "configFilePath": {
+          "type": "string",
+          "description": "配置文件路径"
         }
       }
     },
@@ -16623,6 +16992,18 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/pbtrTemplateRevisionSpec"
+          }
+        }
+      }
+    },
+    "pbcsGetProcessInstanceTopoResp": {
+      "type": "object",
+      "properties": {
+        "bizTopoNodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctBizTopoNode"
           }
         }
       }
@@ -17597,6 +17978,9 @@
         },
         "filterOptions": {
           "$ref": "#/definitions/pbprocFilterOptions"
+        },
+        "cmdbProcessConfigUrl": {
+          "type": "string"
         }
       }
     },
@@ -18106,6 +18490,9 @@
         }
       }
     },
+    "pbcsOperateGenerateConfigResp": {
+      "type": "object"
+    },
     "pbcsOperateProcessResp": {
       "type": "object",
       "properties": {
@@ -18611,13 +18998,9 @@
           "type": "string",
           "description": "变量键"
         },
-        "type": {
+        "value": {
           "type": "string",
-          "description": "变量类型"
-        },
-        "memo": {
-          "type": "string",
-          "description": "变量描述"
+          "description": "变量值"
         }
       }
     },
@@ -18730,6 +19113,11 @@
         "name": {
           "type": "string",
           "title": "服务模板名称"
+        },
+        "processCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "进程数量"
         }
       },
       "title": "ServiceTemplate 服务模板信息"
@@ -18745,6 +19133,13 @@
         },
         "reviser": {
           "type": "string"
+        },
+        "templateId": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       },
       "title": "TemplateSearchCond 配置模板搜索条件"
@@ -19395,6 +19790,10 @@
             "format": "int64"
           },
           "description": "绑定模板ID"
+        },
+        "processConfigViewUrl": {
+          "type": "string",
+          "description": "查看进程配置的url"
         }
       },
       "title": "ProcessSpec source resource reference: pkg/dal/table/process.go"
@@ -20069,6 +20468,10 @@
         "taskPayload": {
           "$ref": "#/definitions/pbtbTaskPayload",
           "description": "进程配置快照"
+        },
+        "compareStatus": {
+          "type": "string",
+          "description": "对比状态：SAME、DIFFERENT、NEVER_PUBLISHED、UNKNOWN"
         }
       },
       "title": "TaskDetail 任务详情"
@@ -20663,6 +21066,9 @@
           "$ref": "#/definitions/pbcontentContentSpec"
         },
         "charset": {
+          "type": "string"
+        },
+        "templateName": {
           "type": "string"
         }
       },

@@ -657,12 +657,44 @@ func (s *Service) ProcessInstance(ctx context.Context, req *pbds.ProcessInstance
 
 // ConfigTemplateVariable implements pbds.DataServer.
 func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTemplateVariableReq) (*pbds.ConfigTemplateVariableResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 获取业务ID
+	bizID := int(req.GetBizId())
+	if bizID == 0 {
+		return nil, fmt.Errorf("biz_id is required")
+	}
+
+	// 使用 CCTopoXMLService 获取业务对象属性（复用 cc_topo.go 中的逻辑）
+	topoService := cmdb.NewCCTopoXMLService(bizID, s.cmdb)
+	objectAttrs, err := topoService.GetBizObjectAttributes(grpcKit.Ctx)
+	if err != nil {
+		logs.Errorf("get biz object attributes failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	// 转换为 ConfigTemplateVariable 格式
 	configTemplateVariables := make([]*pbct.ConfigTemplateVariable, 0)
 
-	configTemplateVariables = append(configTemplateVariables, &pbct.ConfigTemplateVariable{
-		Key:   "BK_APP_ID",
-		Value: "测试测试",
-	})
+	// 定义对象ID常量
+	const (
+		bkSetObjID    = "set"
+		bkModuleObjID = "module"
+		bkHostObjID   = "host"
+	)
+
+	// 按顺序处理 Set、Module、Host、Global 对象属性
+	objIDs := []string{bkSetObjID, bkModuleObjID, bkHostObjID, "global"}
+	for _, objID := range objIDs {
+		if attrs, ok := objectAttrs[objID]; ok {
+			for _, attr := range attrs {
+				configTemplateVariables = append(configTemplateVariables, &pbct.ConfigTemplateVariable{
+					Key:   attr.BkPropertyName, // bk_property_name 作为 Key
+					Value: attr.BkPropertyID,   // bk_property_id 作为 Value
+				})
+			}
+		}
+	}
 
 	return &pbds.ConfigTemplateVariableResp{
 		ConfigTemplateVariables: configTemplateVariables,

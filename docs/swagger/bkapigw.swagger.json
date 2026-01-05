@@ -772,6 +772,45 @@
           "Config"
         ]
       },
+      "delete": {
+        "summary": "删除配置模板",
+        "operationId": "Config_DeleteConfigTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configTemplateId",
+            "description": "配置模版ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
       "put": {
         "summary": "编辑配置模板",
         "operationId": "Config_UpdateConfigTemplate",
@@ -1014,6 +1053,39 @@
           {
             "name": "moduleId",
             "description": "模块ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process_instance_topo": {
+      "get": {
+        "summary": "进程实例拓扑",
+        "operationId": "Config_GetProcessInstanceTopo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetProcessInstanceTopoResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -1433,6 +1505,10 @@
           "type": "string",
           "default": "unix",
           "description": "文件模式"
+        },
+        "revisionMemo": {
+          "type": "string",
+          "description": "配置模版版本描述"
         }
       }
     },
@@ -1740,6 +1816,9 @@
         }
       }
     },
+    "pbcsDeleteConfigTemplateResp": {
+      "type": "object"
+    },
     "pbcsDeleteKvResp": {
       "type": "object"
     },
@@ -1748,6 +1827,18 @@
       "properties": {
         "bindTemplate": {
           "$ref": "#/definitions/pbctBindTemplate"
+        }
+      }
+    },
+    "pbcsGetProcessInstanceTopoResp": {
+      "type": "object",
+      "properties": {
+        "bizTopoNodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctBizTopoNode"
+          }
         }
       }
     },
@@ -2137,13 +2228,9 @@
           "type": "string",
           "description": "变量键"
         },
-        "type": {
+        "value": {
           "type": "string",
-          "description": "变量类型"
-        },
-        "memo": {
-          "type": "string",
-          "description": "变量描述"
+          "description": "变量值"
         }
       }
     },
@@ -2256,6 +2343,11 @@
         "name": {
           "type": "string",
           "title": "服务模板名称"
+        },
+        "processCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "进程数量"
         }
       },
       "title": "ServiceTemplate 服务模板信息"
@@ -2271,6 +2363,13 @@
         },
         "reviser": {
           "type": "string"
+        },
+        "templateId": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       },
       "title": "TemplateSearchCond 配置模板搜索条件"

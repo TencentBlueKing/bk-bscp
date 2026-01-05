@@ -818,6 +818,45 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除配置模板",
+        "operationId": "Config_DeleteConfigTemplate",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "配置模版ID",
+            "name": "configTemplateId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteConfigTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
       }
     },
     "/api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance": {
@@ -940,6 +979,39 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/pbcsProcessInstanceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process_instance_topo": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "进程实例拓扑",
+        "operationId": "Config_GetProcessInstanceTopo",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetProcessInstanceTopoResp"
             }
           },
           "default": {
@@ -1615,6 +1687,10 @@
           "description": "文件权限",
           "type": "string"
         },
+        "revisionMemo": {
+          "description": "配置模版版本描述",
+          "type": "string"
+        },
         "revisionName": {
           "description": "模板文件版本号",
           "type": "string"
@@ -1937,6 +2013,9 @@
         }
       }
     },
+    "pbcsDeleteConfigTemplateResp": {
+      "type": "object"
+    },
     "pbcsDeleteKvResp": {
       "type": "object"
     },
@@ -1945,6 +2024,18 @@
       "properties": {
         "bindTemplate": {
           "$ref": "#/definitions/pbctBindTemplate"
+        }
+      }
+    },
+    "pbcsGetProcessInstanceTopoResp": {
+      "type": "object",
+      "properties": {
+        "bizTopoNodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbctBizTopoNode"
+          }
         }
       }
     },
@@ -2334,12 +2425,8 @@
           "description": "变量键",
           "type": "string"
         },
-        "memo": {
-          "description": "变量描述",
-          "type": "string"
-        },
-        "type": {
-          "description": "变量类型",
+        "value": {
+          "description": "变量值",
           "type": "string"
         }
       }
@@ -2454,6 +2541,11 @@
         "name": {
           "type": "string",
           "title": "服务模板名称"
+        },
+        "processCount": {
+          "type": "integer",
+          "format": "int64",
+          "title": "进程数量"
         }
       }
     },
@@ -2466,6 +2558,13 @@
         },
         "reviser": {
           "type": "string"
+        },
+        "templateId": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
         },
         "templateName": {
           "type": "string"

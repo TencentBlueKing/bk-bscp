@@ -16,6 +16,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"sort"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -694,8 +695,11 @@ func (s *CCTopoXMLService) GetBizGlobalVariables(ctx context.Context) (*BizGloba
 //     for variable in bk_obj_variables:
 //     bk_property_id = variable["bk_property_id"]
 //     context[bk_property_id] = getattr(this_context, f"cc_{bk_obj_id}").attrib.get(bk_property_id)
+//
+// 注意：此方法复用 GetBizObjectAttributes 来获取属性信息，确保数据一致性
 func (s *CCTopoXMLService) GetBizGlobalVariablesMap(ctx context.Context) (map[string]interface{}, error) {
-	globalVars, err := s.GetBizGlobalVariables(ctx)
+	// 复用 GetBizObjectAttributes 获取完整的属性信息（包含旧系统字段和内置变量）
+	objectAttrs, err := s.GetBizObjectAttributes(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -704,59 +708,161 @@ func (s *CCTopoXMLService) GetBizGlobalVariablesMap(ctx context.Context) (map[st
 	// Python 代码结构：{ "set": [{"bk_property_id": "bk_set_name", ...}, ...], "module": [...], "host": [...] }
 	result := make(map[string]interface{})
 
+	// 定义对象ID列表（不包括 global，因为 global 是内置变量，不在 topo_variables 中）
+	objIDs := []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID}
+
 	// 构建按对象类型分组的变量列表
 	// Python 代码中 biz_global_variables 按 bk_obj_id 分组（"set", "module", "host"）
-	setVariables := make([]map[string]interface{}, 0, len(globalVars.TopoVariables.SetFields))
-	for _, field := range globalVars.TopoVariables.SetFields {
-		setVariables = append(setVariables, map[string]interface{}{
-			"bk_property_id": field,
-		})
-	}
-
-	moduleVariables := make([]map[string]interface{}, 0, len(globalVars.TopoVariables.ModuleFields))
-	for _, field := range globalVars.TopoVariables.ModuleFields {
-		moduleVariables = append(moduleVariables, map[string]interface{}{
-			"bk_property_id": field,
-		})
-	}
-
-	hostVariables := make([]map[string]interface{}, 0, len(globalVars.TopoVariables.HostFields))
-	for _, field := range globalVars.TopoVariables.HostFields {
-		hostVariables = append(hostVariables, map[string]interface{}{
-			"bk_property_id": field,
-		})
-	}
-
-	// 参考 Python 代码：biz_global_variables 按对象类型分组
-	// 结构：{ "set": [...], "module": [...], "host": [...] }
-	result["set"] = setVariables
-	result["module"] = moduleVariables
-	result["host"] = hostVariables
-
-	// 同时保留 topo_variables 作为字段名列表（用于 fillMissingFields）
-	// 合并所有字段（Set、Module、Host），因为 fillMissingFields 需要完整的字段列表
 	allTopoFields := make([]string, 0)
 	fieldMap := make(map[string]bool)
 
-	for _, field := range globalVars.TopoVariables.SetFields {
-		if !fieldMap[field] {
-			allTopoFields = append(allTopoFields, field)
-			fieldMap[field] = true
+	for _, objID := range objIDs {
+		if attrs, ok := objectAttrs[objID]; ok {
+			variables := make([]map[string]interface{}, 0, len(attrs))
+			for _, attr := range attrs {
+				variables = append(variables, map[string]interface{}{
+					"bk_property_id": attr.BkPropertyID,
+				})
+				// 收集字段名到 topo_variables（用于 fillMissingFields）
+				// 注意：只收集原始字段名（CC3.0 字段名），不包含旧系统字段（CC1.0 字段名）
+				// 旧系统字段通过 mapCC3FieldToCC1 映射得到，它们会在 XML 中自动生成，不需要在 topo_variables 中
+				// 判断是否为旧系统字段：如果 mapCC3FieldToCC1(attr.BkPropertyID) != attr.BkPropertyID，说明是旧字段
+				legacyField := mapCC3FieldToCC1(attr.BkPropertyID)
+				if attr.BkPropertyID == legacyField {
+					// 这是原始字段（CC3.0），添加到 topo_variables
+					if !fieldMap[attr.BkPropertyID] {
+						allTopoFields = append(allTopoFields, attr.BkPropertyID)
+						fieldMap[attr.BkPropertyID] = true
+					}
+				}
+			}
+			result[objID] = variables
 		}
 	}
-	for _, field := range globalVars.TopoVariables.ModuleFields {
-		if !fieldMap[field] {
-			allTopoFields = append(allTopoFields, field)
-			fieldMap[field] = true
-		}
-	}
-	for _, field := range globalVars.TopoVariables.HostFields {
-		if !fieldMap[field] {
-			allTopoFields = append(allTopoFields, field)
-			fieldMap[field] = true
-		}
-	}
+
+	// 同时保留 topo_variables 作为字段名列表（用于 fillMissingFields）
+	// 合并所有字段（Set、Module、Host），因为 fillMissingFields 需要完整的字段列表
+	// 注意：topo_variables 只包含 CC3.0 的原始字段名，不包含 CC1.0 的旧字段名
 	result["topo_variables"] = allTopoFields
+
+	return result, nil
+}
+
+// ObjectAttribute 对象属性信息（完全对应 Python 代码中的属性结构）
+type ObjectAttribute struct {
+	BkPropertyID        string `json:"bk_property_id"`         // 属性ID
+	BkPropertyName      string `json:"bk_property_name"`       // 属性名称
+	BkPropertyGroupName string `json:"bk_property_group_name"` // 属性分组名称（可选）
+	BkPropertyType      string `json:"bk_property_type"`       // 属性类型（可选）
+	BkObjID             string `json:"bk_obj_id"`              // 对象ID（set/module/host/global）
+	BkBizID             int    `json:"bk_biz_id,omitempty"`    // 业务ID（可选，内置变量为0）
+}
+
+// GetBizObjectAttributes 获取业务对象属性（完全对应 Python 的 biz_global_variables 方法）
+// 返回 Set、Module、Host、Global 对象的属性列表
+// 完全按照 Python 代码逻辑实现，包括：
+// 1. 获取所有对象属性
+// 2. 添加旧系统字段（append_legacy_global_variables）
+// 3. 筛选业务自定义属性或系统常用属性
+// 4. 按属性名称排序
+// 5. 按对象ID分组
+func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[string][]ObjectAttribute, error) {
+	// 定义对象ID列表（对应 Python 的 bk_obj_ids）
+	objIDs := []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID}
+
+	// 第一步：获取所有对象属性（对应 Python 的 request_multi_thread）
+	allObjectAttributes := make([]ObjectAttribute, 0)
+	for _, objID := range objIDs {
+		// 查询对象属性
+		attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
+			BkObjID: objID,
+			BkBizID: s.bizID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("search %s object attr failed: %w", objID, err)
+		}
+
+		// 转换为 ObjectAttribute 结构（包含完整信息）
+		for _, attr := range attrs {
+			allObjectAttributes = append(allObjectAttributes, ObjectAttribute{
+				BkPropertyID:        attr.BkPropertyID,
+				BkPropertyName:      attr.BkPropertyName,
+				BkPropertyGroupName: attr.BkPropertyGroupName,
+				BkPropertyType:      attr.BkPropertyType,
+				BkObjID:             attr.BkObjID,
+				BkBizID:             attr.BkBizID,
+			})
+		}
+	}
+
+	// 第二步：添加旧系统字段和内置变量（对应 Python 的 append_legacy_global_variables）
+	// 注意：Python 代码中是在筛选之前添加的
+	legacyAttributes := make([]ObjectAttribute, 0)
+	for _, attr := range allObjectAttributes {
+		legacyField := mapCC3FieldToCC1(attr.BkPropertyID)
+		if attr.BkPropertyID != legacyField {
+			// 如果新字段名和旧字段名不同，添加旧字段
+			// 注意：Python 代码中使用 copy.deepcopy，保留原始属性的所有信息
+			legacyAttr := ObjectAttribute{
+				BkPropertyID:        legacyField,                 // 更新为旧字段名
+				BkPropertyName:      attr.BkPropertyName + "(旧)", // 添加"(旧)"后缀
+				BkPropertyGroupName: "旧系统字段",                     // 设置为"旧系统字段"
+				BkPropertyType:      attr.BkPropertyType,         // 保留原始类型
+				BkObjID:             attr.BkObjID,                // 保留原始对象ID
+				BkBizID:             s.bizID,                     // 设置为业务ID
+			}
+			legacyAttributes = append(legacyAttributes, legacyAttr)
+		}
+	}
+	// 将旧字段添加到列表中
+	allObjectAttributes = append(allObjectAttributes, legacyAttributes...)
+
+	// 添加内置系统变量（对应 Python 的 builtin_global_variables）
+	builtinVariables := []ObjectAttribute{
+		{BkPropertyID: "FuncID", BkPropertyName: "进程别名(旧)", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "InstID", BkPropertyName: "实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "InstID0", BkPropertyName: "实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "LocalInstID", BkPropertyName: "主机进程实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "LocalInstID0", BkPropertyName: "主机进程实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "this", BkPropertyName: "【当前实例对象】", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "cc", BkPropertyName: "【业务拓扑对象】", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "HELP", BkPropertyName: "【HELP】帮助", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+	}
+	allObjectAttributes = append(allObjectAttributes, builtinVariables...)
+
+	// 第三步：筛选属性（对应 Python 的筛选逻辑）
+	// 筛选：业务自定义属性（bk_biz_id != 0）或系统常用属性
+	getSystemCommonAttributes := func(objID string) []string {
+		return getSystemCommonAttributes(objID)
+	}
+
+	filteredAttributes := make([]ObjectAttribute, 0)
+	for _, attr := range allObjectAttributes {
+		// 获取系统常用属性
+		systemAttrs := getSystemCommonAttributes(attr.BkObjID)
+		systemAttrMap := make(map[string]bool, len(systemAttrs))
+		for _, sysAttr := range systemAttrs {
+			systemAttrMap[sysAttr] = true
+		}
+
+		// 筛选条件：业务自定义属性（bk_biz_id != 0）或系统常用属性
+		if attr.BkBizID != 0 || systemAttrMap[attr.BkPropertyID] {
+			filteredAttributes = append(filteredAttributes, attr)
+		}
+	}
+
+	// 第四步：排序（对应 Python 的 sorted）
+	// Python 代码：all_object_attribute = sorted(all_object_attribute, key=lambda attr: attr["bk_property_name"])
+	sort.Slice(filteredAttributes, func(i, j int) bool {
+		return filteredAttributes[i].BkPropertyName < filteredAttributes[j].BkPropertyName
+	})
+
+	// 第五步：分组（对应 Python 的 defaultdict(list)）
+	// Python 代码：attributes_group_by_obj = defaultdict(list)
+	result := make(map[string][]ObjectAttribute)
+	for _, attr := range filteredAttributes {
+		result[attr.BkObjID] = append(result[attr.BkObjID], attr)
+	}
 
 	return result, nil
 }

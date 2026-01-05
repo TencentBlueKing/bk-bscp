@@ -219,7 +219,7 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbcs.ConfigTe
 		return nil, err
 	}
 	resp, err := s.client.DS.ConfigTemplateVariable(grpcKit.RpcCtx(), &pbds.ConfigTemplateVariableReq{
-		Id: req.GetBizId(),
+		BizId: req.GetBizId(),
 	})
 	if err != nil {
 		return nil, err

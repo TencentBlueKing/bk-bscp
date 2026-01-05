@@ -21,9 +21,11 @@
 | POST | /api/v1/config/biz_id/{bizId}/config_template | [Config_CreateConfigTemplate](#config-create-config-template) | 创建配置模板 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
+| DELETE | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_DeleteConfigTemplate](#config-delete-config-template) | 删除配置模板 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_GetConfigTemplate](#config-get-config-template) | 获取配置模板 |
+| GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
@@ -500,6 +502,39 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-delete-config-template"></span> 删除配置模板 (*Config_DeleteConfigTemplate*)
+
+```
+DELETE /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| configTemplateId | int64 (formatted integer) | ✓ | 配置模版ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-delete-kv"></span> 删除键值配置项 (*Config_DeleteKv*)
 
 ```
@@ -628,6 +663,38 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-get-process-instance-topo"></span> 进程实例拓扑 (*Config_GetProcessInstanceTopo*)
+
+```
+GET /api/v1/config/biz_id/{bizId}/process_instance_topo
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz_id/{bizId}/process_instance_topo HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-list-config-template"></span> 配置模板列表 (*Config_ListConfigTemplate*)
 
 ```
@@ -661,6 +728,9 @@ Content-Type: application/json
   "search": {
     "fileName": "",
     "reviser": "",
+    "templateId": [
+      {}
+    ],
     "templateName": ""
   },
   "start": 0
@@ -974,6 +1044,7 @@ PUT /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}
 | memo | string |  | 配置模版描述 |
 | name | string |  | 配置模版名称 |
 | privilege | string |  | 文件权限 |
+| revisionMemo | string |  | 配置模版版本描述 |
 | revisionName | string |  | 模板文件版本号 |
 | sign | string |  | 文件sha256 |
 | user | string |  | 用户权限名 |
@@ -999,6 +1070,7 @@ Content-Type: application/json
   "memo": "",
   "name": "",
   "privilege": "",
+  "revisionMemo": "",
   "revisionName": "",
   "sign": "",
   "user": "",
@@ -1460,6 +1532,7 @@ Content-Type: application/json
 | memo | string| `string` |  | | 配置模版描述 |  |
 | name | string| `string` |  | | 配置模版名称 |  |
 | privilege | string| `string` |  | | 文件权限 |  |
+| revisionMemo | string| `string` |  | | 配置模版版本描述 |  |
 | revisionName | string| `string` |  | | 模板文件版本号 |  |
 | sign | string| `string` |  | | 文件sha256 |  |
 | user | string| `string` |  | | 用户权限名 |  |
@@ -1753,6 +1826,13 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-delete-config-template-resp"></span> pbcsDeleteConfigTemplateResp
+
+
+  
+
+[interface{}](#interface)
+
 ### <span id="pbcs-delete-kv-resp"></span> pbcsDeleteKvResp
 
 
@@ -1772,6 +1852,21 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | bindTemplate | [PbctBindTemplate](#pbct-bind-template)| `PbctBindTemplate` |  | |  |  |
+
+
+
+### <span id="pbcs-get-process-instance-topo-resp"></span> pbcsGetProcessInstanceTopoResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizTopoNodes | \[\][PbctBizTopoNode](#pbct-biz-topo-node)| `[]*PbctBizTopoNode` |  | |  |  |
 
 
 
@@ -2072,8 +2167,7 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | 变量键 |  |
-| memo | string| `string` |  | | 变量描述 |  |
-| type | string| `string` |  | | 变量类型 |  |
+| value | string| `string` |  | | 变量值 |  |
 
 
 
@@ -2178,6 +2272,7 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | id | int64 (formatted integer)| `int64` |  | |  |  |
 | name | string| `string` |  | |  |  |
+| processCount | int64 (formatted integer)| `int64` |  | |  |  |
 
 
 
@@ -2194,6 +2289,7 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | fileName | string| `string` |  | |  |  |
 | reviser | string| `string` |  | |  |  |
+| templateId | []int64 (formatted integer)| `[]int64` |  | |  |  |
 | templateName | string| `string` |  | |  |  |
 
 
