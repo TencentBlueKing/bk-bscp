@@ -832,10 +832,6 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 	// 第三步：筛选属性（对应 Python 的筛选逻辑）
 	// 筛选：业务自定义属性（bk_biz_id != 0）或系统常用属性
-	getSystemCommonAttributes := func(objID string) []string {
-		return getSystemCommonAttributes(objID)
-	}
-
 	filteredAttributes := make([]ObjectAttribute, 0)
 	for _, attr := range allObjectAttributes {
 		// 获取系统常用属性
