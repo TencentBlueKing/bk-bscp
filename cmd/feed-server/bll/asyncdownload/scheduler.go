@@ -42,7 +42,7 @@ import (
 
 var (
 	// JobTimeoutSeconds is the timeout seconds for async download job
-	JobTimeoutSeconds = 15 * 60
+	JobTimeoutSeconds = 10 * 60
 )
 
 // Scheduler scheduled task to process download jobs
