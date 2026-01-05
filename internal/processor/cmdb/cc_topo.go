@@ -832,13 +832,24 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 	// 第三步：筛选属性（对应 Python 的筛选逻辑）
 	// 筛选：业务自定义属性（bk_biz_id != 0）或系统常用属性
-	filteredAttributes := make([]ObjectAttribute, 0)
-	for _, attr := range allObjectAttributes {
-		// 获取系统常用属性
-		systemAttrs := getSystemCommonAttributes(attr.BkObjID)
+	// 优化：在循环外预先构建每个 objID 的 systemAttrMap 缓存，避免重复计算
+	systemAttrMapCache := make(map[string]map[string]bool)
+	for _, objID := range []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID, "global"} {
+		systemAttrs := getSystemCommonAttributes(objID)
 		systemAttrMap := make(map[string]bool, len(systemAttrs))
 		for _, sysAttr := range systemAttrs {
 			systemAttrMap[sysAttr] = true
+		}
+		systemAttrMapCache[objID] = systemAttrMap
+	}
+
+	filteredAttributes := make([]ObjectAttribute, 0)
+	for _, attr := range allObjectAttributes {
+		// 从缓存中获取系统常用属性 map
+		systemAttrMap := systemAttrMapCache[attr.BkObjID]
+		// 如果 objID 不在缓存中（理论上不会发生），创建一个空的 map
+		if systemAttrMap == nil {
+			systemAttrMap = make(map[string]bool)
 		}
 
 		// 筛选条件：业务自定义属性（bk_biz_id != 0）或系统常用属性
