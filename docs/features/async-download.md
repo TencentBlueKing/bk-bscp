@@ -327,9 +327,36 @@ checkJobStatus(job)
     ↓
 4. 判断 Job 最终状态
     ├─ 所有 targets 成功 → Job Status = Success
+    │   └─ 判断条件：len(SuccessTargets) == targetsCount
     ├─ 所有 targets 完成且有失败 → Job Status = Failed
-    ├─ 超时（10分钟）→ Job Status = Timeout
+    │   └─ 判断条件：len(SuccessTargets) + len(FailedTargets) == targetsCount
+    │   └─ 注意：此判断不包括 TimeoutTargets，因为超时处理在后续检查中
+    ├─ 超时（15分钟）→ Job Status = Timeout + 取消 GSE 任务
+    │   └─ 判断条件：time.Since(ExecuteTime) > 15分钟
+    │   └─ 执行操作：
+    │      1. 将 DownloadingTargets 移到 TimeoutTargets
+    │      2. 调用 gse.TerminateTransferFileTask 取消 GSE 任务
+    │      3. 更新 Job 状态
     └─ 否则继续监控
+```
+
+**超时处理详细流程**：
+```
+检测到超时（执行时间 > 15分钟）
+    ↓
+1. 更新 Job 状态为 Timeout
+    ↓
+2. 将所有 DownloadingTargets 移到 TimeoutTargets
+    ├─ 遍历 job.DownloadingTargets
+    ├─ 复制到 job.TimeoutTargets
+    └─ 清空 job.DownloadingTargets
+    ↓
+3. 取消 GSE 任务（如果存在）
+    ├─ 检查 job.GSETaskID 是否为空
+    ├─ 构建 timeoutTargets 列表（从 TimeoutTargets）
+    └─ 调用 gse.TerminateTransferFileTask(job.GSETaskID, timeoutTargets)
+    ↓
+4. 更新 Job 状态到 Redis
 ```
 
 **状态同步机制**：
@@ -339,6 +366,40 @@ checkJobStatus(job)
 if _, ok := job.SuccessTargets[fmt.Sprintf("%s:%s", 
     task.TargetAgentID, task.TargetContainerID)]; ok {
     task.Status = types.AsyncDownloadJobStatusSuccess
+}
+```
+
+**超时处理关键代码**：
+```go
+// checkJobStatus 方法中
+if time.Since(job.ExecuteTime) > time.Duration(JobTimeoutSeconds)*time.Second {
+    // 1. 更新 Job 状态为 Timeout
+    job.Status = types.AsyncDownloadJobStatusTimeout
+    
+    // 2. 将 DownloadingTargets 移到 TimeoutTargets
+    for k, v := range job.DownloadingTargets {
+        job.TimeoutTargets[k] = v
+    }
+    for k := range job.DownloadingTargets {
+        delete(job.DownloadingTargets, k)
+    }
+    
+    // 3. 构建超时 targets 列表并取消 GSE 任务
+    timeoutTargets := make([]gse.TransferFileAgent, 0, len(job.TimeoutTargets))
+    for _, content := range job.TimeoutTargets {
+        timeoutTargets = append(timeoutTargets, gse.TransferFileAgent{
+            BkAgentID:     content.DestAgentID,
+            BkContainerID: content.DestContainerID,
+        })
+    }
+    
+    // 4. 取消 GSE 任务（使用 GSETaskID，而非 JobID）
+    if len(timeoutTargets) > 0 && job.GSETaskID != "" {
+        if _, err := gse.TerminateTransferFileTask(a.ctx, job.GSETaskID, timeoutTargets); err != nil {
+            logs.Errorf("cancel timeout transfer file task %s failed, gse_task_id: %s, err: %s",
+                job.JobID, job.GSETaskID, err.Error())
+        }
+    }
 }
 ```
 
@@ -459,7 +520,13 @@ func IsTimeWindowExpired(jobKey string) bool
 - **自动隔离**：新请求自动进入新窗口，不影响正在处理的 Job
 
 ### 5. 容错机制
-- **超时处理**：10 分钟超时自动终止
+- **超时处理**：
+  - 10 分钟超时自动终止 Job
+  - 超时后自动取消对应的 GSE 任务，避免资源浪费
+  - 使用 `gse.TerminateTransferFileTask(job.GSETaskID, timeoutTargets)` 取消任务
+  - 所有超时的 targets 从 `DownloadingTargets` 移到 `TimeoutTargets`
+  - **关键实现**：取消任务时使用 `job.GSETaskID`（GSE 任务ID），而非 `job.JobID`（异步下载任务ID）
+  - **资源释放**：只取消超时的 targets，不影响已完成的 targets
 - **失败处理**：单个 target 失败不影响其他 targets
 - **状态持久化**：所有状态存储在 Redis，支持服务重启
 
@@ -503,6 +570,10 @@ status, err := service.GetAsyncDownloadTaskStatus(kt, bizID, taskID)
 ### 超时配置
 - **Job 超时**：10 分钟（`JobTimeoutSeconds = 10 * 60`）
 - **目的**：防止任务无限期运行
+- **超时处理**：
+  - 超时后自动取消 GSE 任务，避免资源浪费
+  - 使用 `gse.TerminateTransferFileTask(job.GSETaskID, timeoutTargets)` 取消任务
+  - 所有超时的 targets 从 `DownloadingTargets` 移到 `TimeoutTargets`
 
 ### TTL 配置
 - **Task TTL**：30 分钟
@@ -535,6 +606,13 @@ status, err := service.GetAsyncDownloadTaskStatus(kt, bizID, taskID)
 - ✅ 15 秒时间窗口平衡了批量优化和响应速度
 - ✅ Redis List 存储 targets，支持高并发写入
 - ✅ 文件只下载一次，减少存储和带宽消耗
+
+### 5. 超时处理机制
+- ✅ **自动取消 GSE 任务**：超时后自动调用 `gse.TerminateTransferFileTask` 取消 GSE 任务，避免资源浪费
+- ✅ **正确的任务ID**：取消任务时使用 `job.GSETaskID`（GSE 任务ID），而非 `job.JobID`（异步下载任务ID）
+- ✅ **状态迁移**：超时时将所有 `DownloadingTargets` 移到 `TimeoutTargets`，确保状态一致性
+- ✅ **安全检查**：取消任务前检查 `job.GSETaskID` 是否为空，避免无效调用
+- ⚠️ **失败判断逻辑**：当前失败判断只考虑 `SuccessTargets` 和 `FailedTargets`，不包括 `TimeoutTargets`，因为超时处理在后续检查中执行
 
 ---
 
