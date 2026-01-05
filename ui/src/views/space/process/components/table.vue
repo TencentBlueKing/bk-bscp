@@ -96,7 +96,7 @@
               {{ t('配置下发') }}
             </bk-button>
             <TableMoreAction
-              :enabled="{ ...row.spec.actions, view: true }"
+              :enabled="{ ...row.spec.actions, view: { enabled: true, reason: '' } }"
               :operation-list="operationList"
               @operation="handleMoreActionClick(row, $event)" />
           </div>
@@ -238,7 +238,7 @@
   import UpdateManagedInfo from './update-managed-info.vue';
   import OpProcessDialog from './op-process-dialog.vue';
   import BatchOpProcessDialog from './batch-op-process-dialog.vue';
-  import TableMoreAction from '../../../../components/table/table-more-actions.vue';
+  import TableMoreAction from './table-more-actions.vue';
   import useGlobalStore from '../../../../store/global';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import SyncStatus from './sync-status.vue';
@@ -328,6 +328,7 @@
   const tableLoading = ref(false);
   const tableRef = ref();
   const expandedRowKeys = ref<number[]>([]);
+  const cmdbUrl = ref('');
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -354,6 +355,7 @@
           num: item.spec.proc_num,
         })),
       }));
+      cmdbUrl.value = res.cmdb_process_config_url;
       updatePagination('count', res.count);
       searchField.value.forEach((item) => {
         item.children = res.filter_options[item.field];
@@ -473,6 +475,10 @@
   const handleMoreActionClick = (data: IProcessItem, op: string) => {
     if (op === 'view') {
       window.open(data.spec.process_config_view_url);
+      return;
+    }
+    if (op === 'link') {
+      window.open(cmdbUrl.value);
       return;
     }
     if (op === 'kill') {

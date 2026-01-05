@@ -34,3 +34,10 @@ export const TASK_DETAIL_COMPARE_STATUS_MAP = {
   DIFFERENT: localT('不一致'),
   UNKNOWN: localT('未知'),
 };
+
+// 环境类型
+export const ENV_TYPE_MAP = {
+  1: localT('测试'),
+  2: localT('体验'),
+  3: localT('正式'),
+};

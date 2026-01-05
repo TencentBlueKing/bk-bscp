@@ -26,3 +26,9 @@ export const PROCESS_MANAGED_STATUS_MAP = {
   unmanaged: localT('未托管'),
   partly_managed: localT('部分托管中'),
 };
+
+// 进程按钮禁用提示
+export const PROCESS_BUTTON_DISABLED_TIPS = {
+  TASK_RUNNING: localT('任务正在执行，请稍候'),
+  UNKNOWN_PROCESS_STATUS: localT('进程状态异常'),
+};

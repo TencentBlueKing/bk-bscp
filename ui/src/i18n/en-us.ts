@@ -1474,4 +1474,8 @@ export default {
   未知: 'UNKNOWN',
   配置检查: 'Config Check',
   下发: 'Publish',
+  '任务正在执行，请稍候': 'Task is executing, please wait',
+  进程状态异常: 'Process Status Abnormal',
+  尚未配置操作命令: 'Operation Commands Not Configured',
+  '前往 BKCC 配置': 'Go to BKCC to Configure',
 };

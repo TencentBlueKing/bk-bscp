@@ -4,7 +4,10 @@
       <div class="label">{{ item.label }}：</div>
       <div class="value">
         <bk-overflow-title :class="{ theme: item.value === 'operate_range' }" type="tips">
-          {{ taskDetail![item.value as keyof typeof taskDetail] }}
+          <span v-if="item.value === 'environment'">{{
+            ENV_TYPE_MAP[Number(taskDetail.environment) as keyof typeof ENV_TYPE_MAP]
+          }}</span>
+          <span v-else>{{ taskDetail![item.value as keyof typeof taskDetail] }}</span>
         </bk-overflow-title>
       </div>
     </div>
@@ -13,6 +16,7 @@
 
 <script lang="ts" setup>
   import { useI18n } from 'vue-i18n';
+  import { ENV_TYPE_MAP } from '../../../../constants/task';
 
   defineProps<{
     taskDetail: Record<string, any>;
