@@ -11,7 +11,7 @@
       <bk-loading color="#242424" :loading="loading">
         <PrimaryTable
           class="variable-table"
-          :data="variableList"
+          :data="searchVariableList"
           size="small"
           row-key="key"
           hover
@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, watch } from 'vue';
   import { AngleDownLine } from 'bkui-vue/lib/icon';
   import { getConfigTemplateVariable } from '../../../../api/config-template';
   import SearchInput from '../../../../components/search-input.vue';
@@ -48,6 +48,15 @@
   const searchValue = ref('');
   const variableList = ref<IVariableItem[]>([]);
   const loading = ref(false);
+  const searchVariableList = ref<IVariableItem[]>([]);
+
+  watch(
+    () => searchValue.value,
+    (val) => {
+      if (!val) searchVariableList.value = [...variableList.value];
+      searchVariableList.value = variableList.value.filter((item) => item.key.includes(val));
+    },
+  );
 
   onMounted(() => {
     loadVariableList();
@@ -58,6 +67,7 @@
       loading.value = true;
       const res = await getConfigTemplateVariable(props.bkBizId);
       variableList.value = res.config_template_variables;
+      searchVariableList.value = [...variableList.value];
     } catch (error) {
       console.error(error);
     } finally {
