@@ -92,3 +92,9 @@ func (cs *ClientSet) Authorizer() iamauth.Authorizer {
 func (cs *ClientSet) Redis() bedis.Client {
 	return cs.bds
 }
+
+// SetRedis set the redis client. just for testing purposes.
+// This method is mainly for testing purposes, but can also be used for dependency injection.
+func (cs *ClientSet) SetRedis(bds bedis.Client) {
+	cs.bds = bds
+}
