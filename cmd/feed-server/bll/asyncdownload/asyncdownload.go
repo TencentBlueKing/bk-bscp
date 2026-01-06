@@ -272,6 +272,42 @@ func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID 
 	return task.Status, nil
 }
 
+// calculateExponentialBackoffDelay 计算指数退避延迟时间，避免位移或乘法溢出
+// attempt: 当前重试次数（从1开始）
+// initialDelay: 初始延迟时间
+// maxDelay: 最大延迟时间
+func calculateExponentialBackoffDelay(attempt int, initialDelay, maxDelay time.Duration) time.Duration {
+	// 基本健壮性检查
+	if attempt <= 0 {
+		return initialDelay
+	}
+	if initialDelay <= 0 || maxDelay <= 0 {
+		return initialDelay
+	}
+
+	// 计算在不超过最大重试间隔的情况下，倍率的最大安全值
+	maxMultiplier := maxDelay / initialDelay
+	if maxMultiplier <= 1 {
+		return maxDelay
+	}
+
+	// 使用循环方式计算倍率，避免位移溢出
+	multiplier := time.Duration(1)
+	for i := 1; i < attempt && multiplier < maxMultiplier; i++ {
+		multiplier <<= 1
+		if multiplier > maxMultiplier {
+			multiplier = maxMultiplier
+			break
+		}
+	}
+
+	delay := initialDelay * multiplier
+	if delay > maxDelay {
+		return maxDelay
+	}
+	return delay
+}
+
 // lpushWithRetry 带重试机制的 LPUSH 操作
 // 使用指数退避策略，在 LPUSH 失败时自动重试
 func (ad *Service) lpushWithRetry(
@@ -282,6 +318,7 @@ func (ad *Service) lpushWithRetry(
 	bizID uint32) error {
 	startTime := time.Now()
 	attempt := 0
+	var lastErr error
 
 	for attempt < LPushRetryMaxAttempts {
 		// 检查总超时时间
@@ -308,14 +345,12 @@ func (ad *Service) lpushWithRetry(
 			return nil
 		}
 
-		// LPUSH 失败，需要重试
+		// LPUSH 失败，保存错误信息并重试
+		lastErr = err
 		attempt++
-		delay := LPushRetryInitialDelay * time.Duration(1<<uint(attempt-1))
-		if delay > LPushRetryMaxDelay {
-			delay = LPushRetryMaxDelay
-		}
+		delay := calculateExponentialBackoffDelay(attempt, LPushRetryInitialDelay, LPushRetryMaxDelay)
 
-		// nolint
+		// nolint:lll // 日志行较长但保持可读性
 		logs.Warnf("[lpushWithRetry] redis lpush failed, will retry, rid: %s, biz_id: %d, targets_key: %s, attempt: %d, err: %v",
 			rid, bizID, targetsKey, attempt, err)
 		select {
@@ -325,10 +360,13 @@ func (ad *Service) lpushWithRetry(
 		}
 	}
 
-	// 所有重试都失败了
-	// nolint
-	logs.Errorf("[lpushWithRetry] redis lpush failed after retries, rid: %s, biz_id: %d, targets_key: %s, attempts: %d, duration_ms: %d",
-		rid, bizID, targetsKey, attempt, time.Since(startTime).Milliseconds())
+	// 所有重试都失败了，返回包含最后一次错误信息的错误
+	// nolint:lll // 日志行较长但保持可读性
+	logs.Errorf("[lpushWithRetry] redis lpush failed after retries, rid: %s, biz_id: %d, targets_key: %s, attempts: %d, duration_ms: %d, last_err: %v",
+		rid, bizID, targetsKey, attempt, time.Since(startTime).Milliseconds(), lastErr)
+	if lastErr != nil {
+		return fmt.Errorf("failed to lpush after %d attempts, last error: %w", attempt, lastErr)
+	}
 	return fmt.Errorf("failed to lpush after %d attempts", attempt)
 }
 
@@ -352,7 +390,7 @@ func (ad *Service) addTargetToJob(ctx context.Context, targetsKey string, target
 		return err
 	}
 
-	// nolint
+	// nolint:lll // 日志行较长但保持可读性
 	logs.Infof("[upsertAsyncDownloadJob] add target to job, rid: %s, biz_id: %d, app_id: %d, file: %s, job_id: %s, status: %s, "+
 		"duration_ms: %d",
 		rid, bizID, appID, fullPath, jobKey, jobStatus, time.Since(startTime).Milliseconds())
@@ -364,7 +402,7 @@ func parseAndCheckJobStatus(jobData, jobKey, rid string, bizID, appID uint32, fu
 	*types.AsyncDownloadJob, error) {
 	job := &types.AsyncDownloadJob{}
 	if err := jsoni.UnmarshalFromString(jobData, job); err != nil {
-		// nolint
+		// nolint:lll // 日志行较长但保持可读性
 		logs.Errorf("[upsertAsyncDownloadJob] unmarshal job failed, rid: %s, biz_id: %d, app_id: %d, file: %s, job_id: %s, err: %v",
 			rid, bizID, appID, fullPath, jobKey, err)
 		return nil, fmt.Errorf("unmarshal job failed, err: %v", err)
@@ -436,7 +474,7 @@ func (ad *Service) tryAddTargetToNewWindowJob(ctx context.Context, bizID, appID 
 	return false, jobKey, nil
 }
 
-// nolint
+// nolint:funlen // 函数较长但逻辑清晰，拆分会影响可读性
 func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
 	rid := kt.Rid
@@ -554,10 +592,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		if err != nil {
 			// SetNX 失败（网络错误等），需要重试
 			attempt++
-			delay := RetryInitialDelay * time.Duration(1<<uint(attempt-1))
-			if delay > RetryMaxDelay {
-				delay = RetryMaxDelay
-			}
+			delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
 			logs.Warnf("[upsertAsyncDownloadJob] redis setnx failed, will retry, rid: %s, biz_id: %d, app_id: %d, "+
 				"file: %s, job_id: %s, attempt: %d, latency_ms: %d, err: %v",
 				rid, bizID, appID, fullPath, jobKey, attempt, setnxLatency.Milliseconds(), err)
@@ -580,10 +615,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		// SetNX 返回 false，说明其他请求已经创建了 job
 		// 等待一小段时间后检查 job 是否存在
 		attempt++
-		delay := RetryInitialDelay * time.Duration(1<<uint(attempt-1))
-		if delay > RetryMaxDelay {
-			delay = RetryMaxDelay
-		}
+		delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
 		select {
 		case <-time.After(delay):
 		case <-kt.Ctx.Done():

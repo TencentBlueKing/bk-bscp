@@ -140,7 +140,8 @@ func (a *Scheduler) Run() {
 				logs.Infof("async downloader stopped")
 				return
 			case <-notifier.Signal:
-				// 收到shutdown信号，等待旧数据格式的job处理完成
+				// 收到shutdown信号，显式停止ticker避免资源泄漏，然后等待旧数据格式的job处理完成
+				ticker.Stop()
 				logs.Infof("received shutdown signal, waiting for old format jobs to complete...")
 				a.waitForOldFormatJobsComplete()
 				notifier.Done()
@@ -303,10 +304,15 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 		return fmt.Errorf("read targets from redis list failed, job_id: %s, err: %v", job.JobID, err)
 	}
 
-	// 如果Redis List为空，记录警告（可能是旧数据）
+	// 如果Redis List为空，记录警告。可能原因：
+	// 1）该任务为旧格式数据（targets 未拆分存储到 Redis List）；
+	// 2）新格式任务中 SetNX 成功但后续 LPush 失败，导致任务处于不一致状态。
 	if len(targetsData) == 0 {
-		logs.Warnf("targets list is empty for job %s, may be old format data", job.JobID)
-		return fmt.Errorf("targets list is empty for job %s", job.JobID)
+		logs.Warnf("targets list is empty for job %s, this may be legacy (old-format) job data "+
+			"or a partially created new-format job where LPush to Redis failed after SetNX; "+
+			"please verify Redis keys for this job and consider retrying or recreating the job", job.JobID)
+		return fmt.Errorf("targets list is empty for job %s: job data may be legacy or inconsistent; "+
+			"check Redis for this job and retry or recreate the job", job.JobID)
 	}
 
 	// 解析targets
@@ -400,7 +406,9 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 	targetsKey := GetTargetsKeyFromJobKey(job.JobID)
 	targetsCount, err := a.bds.LLen(ctx, targetsKey)
 	if err != nil {
-		// 如果获取失败，使用0（可能是旧数据）
+		// 如果获取失败，记录错误日志并使用0（可能是旧数据），避免静默失败导致监控指标误导
+		logs.Errorf("update asyncdownload job %s status: failed to get targets count from redis, key: %s, err: %v",
+			job.JobID, targetsKey, err)
 		targetsCount = 0
 	}
 
