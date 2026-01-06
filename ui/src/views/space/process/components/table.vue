@@ -75,23 +75,42 @@
       <TableColumn :title="t('操作')" :width="220" fixed="right" col-key="operation">
         <template #default="{ row }: { row: IProcessItem }">
           <div class="op-btns">
-            <bk-badge v-if="row.spec.cc_sync_status === 'updated'" position="top-right" theme="danger" dot>
+            <bk-badge v-if="row.spec.cc_sync_status !== 'updated'" position="top-right" theme="danger" dot>
               <bk-button text theme="primary" @click="handleUpdateManagedInfo(row)">
                 {{ t('更新托管信息') }}
               </bk-button>
             </bk-badge>
             <template v-else>
-              <bk-button
-                text
-                theme="primary"
-                :disabled="!row.spec.actions.start"
-                @click="handleOpProcess(row, 'start')">
-                {{ t('启动') }}
-              </bk-button>
-              <bk-button text theme="primary" :disabled="!row.spec.actions.stop" @click="handleOpProcess(row, 'stop')">
-                {{ t('停止') }}
-              </bk-button>
+              <bk-popover
+                v-for="action in ['start', 'stop']"
+                :key="action"
+                placement="top"
+                :disabled="row.spec.actions[action].enabled">
+                <bk-button
+                  text
+                  theme="primary"
+                  :disabled="!row.spec.actions[action].enabled"
+                  @click="handleOpProcess(row, action)">
+                  {{ action === 'start' ? t('启动') : t('停止') }}
+                </bk-button>
+                <template #content>
+                  <span
+                    v-if="isCmdNotConfigured(row.spec.actions[action].reason)"
+                    class="no-cmd-content"
+                    @click="handleMoreActionClick(row, 'link')">
+                    {{ $t('尚未配置操作命令') }}
+                    <span class="primary">
+                      {{ $t('前往 BKCC 配置') }}
+                      <Share />
+                    </span>
+                  </span>
+                  <span v-else>
+                    {{ getDisabledTip(row.spec.actions[action].reason) }}
+                  </span>
+                </template>
+              </bk-popover>
             </template>
+
             <bk-button text theme="primary" :disabled="!row.spec.actions.push" @click="handleConfigIssued(row)">
               {{ t('配置下发') }}
             </bk-button>
@@ -229,7 +248,12 @@
   import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
   import { getProcessList, processOperate } from '../../../../api/process';
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
-  import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
+  import {
+    CC_SYNC_STATUS,
+    PROCESS_STATUS_MAP,
+    PROCESS_MANAGED_STATUS_MAP,
+    PROCESS_BUTTON_DISABLED_TIPS,
+  } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
   import { timeAgo } from '../../../../utils';
   import { useRouter } from 'vue-router';
@@ -337,6 +361,11 @@
   onMounted(() => {
     loadProcessList();
   });
+
+  const isCmdNotConfigured = (reason: string) => reason === 'CMD_NOT_CONFIGURED';
+
+  const getDisabledTip = (reason: string) =>
+    PROCESS_BUTTON_DISABLED_TIPS[reason as keyof typeof PROCESS_BUTTON_DISABLED_TIPS];
 
   const loadProcessList = async () => {
     try {
@@ -662,6 +691,18 @@
       cursor: pointer;
       font-weight: bold;
     }
+  }
+  .no-cmd-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .primary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #3a84ff;
+    cursor: pointer;
   }
 </style>
 

@@ -6,12 +6,13 @@
     <template #content>
       <ul class="dropdown-ul" @mouseenter="handleEnter" @mouseleave="handleLeave">
         <template v-for="item in operations" :key="item.id">
-          <bk-popover v-if="item.reason === 'CMD_NOT_CONFIGURED'">
-            <li :class="getLiClass(item)">
+          <bk-popover :disabled="item.enabled">
+            <li :class="getLiClass(item)" @click="handleClick(item)">
               <span>{{ item.name }}</span>
             </li>
             <template #content>
               <span
+                v-if="item.reason === 'CMD_NOT_CONFIGURED'"
                 class="no-cmd-content"
                 @mouseenter="handleEnter"
                 @mouseleave="handleLeave"
@@ -22,18 +23,11 @@
                   <Share />
                 </span>
               </span>
+              <span v-else>
+                {{ PROCESS_BUTTON_DISABLED_TIPS[item.reason as keyof typeof PROCESS_BUTTON_DISABLED_TIPS] }}
+              </span>
             </template>
           </bk-popover>
-          <li
-            v-else
-            :class="getLiClass(item)"
-            v-bk-tooltips="{
-              content: PROCESS_BUTTON_DISABLED_TIPS[item.reason as keyof typeof PROCESS_BUTTON_DISABLED_TIPS],
-              disabled: item.enabled || !item.reason,
-            }"
-            @click="handleClick(item)">
-            <span>{{ item.name }}</span>
-          </li>
         </template>
       </ul>
     </template>
