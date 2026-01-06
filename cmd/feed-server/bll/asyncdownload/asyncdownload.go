@@ -442,6 +442,7 @@ const (
 // 如果找到 Pending 状态的 job，添加 target 并返回 jobKey
 // 如果找不到，尝试创建新的 job（使用 SetNX 重试循环）
 // 返回: (jobKey, nil) 成功, ("", error) 失败
+// nolint:funlen // 函数较长但逻辑清晰，拆分会影响可读性和控制流
 func (ad *Service) findOrCreatePendingJob(
 	ctx context.Context,
 	bizID, appID uint32,
@@ -466,19 +467,21 @@ func (ad *Service) findOrCreatePendingJob(
 
 		if jobData != "" {
 			// Job 已存在，检查状态
-			job, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, path.Join(filePath, fileName))
-			if err != nil {
-				logs.Errorf("[findOrCreatePendingJob] parse and check job status failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
-					rid, bizID, path.Join(filePath, fileName), jobKey, err)
+			job, parseErr := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, path.Join(filePath, fileName))
+			if parseErr != nil {
+				logs.Errorf("[findOrCreatePendingJob] parse and check job status failed, rid: %s, "+
+					"biz_id: %d, file: %s, job_id: %s, err: %v",
+					rid, bizID, path.Join(filePath, fileName), jobKey, parseErr)
 				continue // 继续尝试下一个窗口
 			}
 
 			if job.Status == types.AsyncDownloadJobStatusPending {
 				// 找到 Pending 状态的 job，添加 target
-				if err := ad.addTargetToJob(ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
-					path.Join(filePath, fileName), jobKey, job.Status, startTime); err != nil {
-					logs.Errorf("[findOrCreatePendingJob] add target to job failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
-						rid, bizID, path.Join(filePath, fileName), jobKey, err)
+				if addErr := ad.addTargetToJob(ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
+					path.Join(filePath, fileName), jobKey, job.Status, startTime); addErr != nil {
+					logs.Errorf("[findOrCreatePendingJob] add target to job failed, rid: %s, "+
+						"biz_id: %d, file: %s, job_id: %s, err: %v",
+						rid, bizID, path.Join(filePath, fileName), jobKey, addErr)
 					continue // 继续尝试下一个窗口
 				}
 				if windowOffset > 0 {
@@ -576,7 +579,8 @@ func (ad *Service) findOrCreatePendingJob(
 			// 检查 job 是否已经存在
 			jobData, err = ad.cs.Redis().Get(ctx, jobKey)
 			if err != nil {
-				logs.Warnf("[findOrCreatePendingJob] redis get failed during retry, will retry, rid: %s, biz_id: %d, job_id: %s, attempt: %d, err: %v",
+				logs.Warnf("[findOrCreatePendingJob] redis get failed during retry, will retry, "+
+					"rid: %s, biz_id: %d, job_id: %s, attempt: %d, err: %v",
 					rid, bizID, jobKey, attempt, err)
 				continue
 			}
@@ -587,7 +591,8 @@ func (ad *Service) findOrCreatePendingJob(
 			}
 
 			// Job 仍然不存在，继续重试 SetNX
-			logs.Infof("[findOrCreatePendingJob] job still not exists, will retry SetNX, rid: %s, biz_id: %d, job_id: %s, attempt: %d",
+			logs.Infof("[findOrCreatePendingJob] job still not exists, will retry SetNX, "+
+				"rid: %s, biz_id: %d, job_id: %s, attempt: %d",
 				rid, bizID, jobKey, attempt)
 		}
 
