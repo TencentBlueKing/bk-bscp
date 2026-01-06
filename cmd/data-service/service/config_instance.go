@@ -787,48 +787,63 @@ func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
 		return nil, fmt.Errorf("task storage not initialized")
 	}
 
-	const pageSize = 100
-	var tasks []*taskTypes.Task
-	offset := int64(0)
+	const pageSize int64 = 100
+
+	var (
+		result []*taskTypes.Task
+		offset int64
+		page   int
+	)
 
 	for {
+		page++
+
 		listOpt := &istore.ListOption{
-			TaskIndex:     fmt.Sprintf("%d", batchID),
-			Limit:         pageSize,
-			Offset:        offset,
+			TaskIndex:     strconv.FormatUint(uint64(batchID), 10),
 			TaskIndexType: common.TaskIndexType,
 			TaskType:      string(table.TaskActionConfigGenerate),
+			Status:        taskTypes.CallbackResultSuccess,
+			Limit:         pageSize,
+			Offset:        offset,
 		}
 
 		pagination, err := storage.ListTask(kt.Ctx, listOpt)
 		if err != nil {
-			logs.Errorf("list tasks failed, offset: %d, err: %v, rid: %s", offset, err, kt.Rid)
-			return nil, fmt.Errorf("list tasks failed: %v", err)
+			logs.Errorf(
+				"[getSuccessTasks] list task failed, batchID=%d, page=%d, offset=%d, rid=%s, err=%v",
+				batchID, page, offset, kt.Rid, err,
+			)
+			return nil, err
 		}
 
 		if len(pagination.Items) == 0 {
 			break
 		}
 
-		// 筛选成功的任务
-		for _, task := range pagination.Items {
-			if task.GetStatus() == taskTypes.TaskStatusSuccess {
-				tasks = append(tasks, task)
-			}
-		}
+		result = append(result, pagination.Items...)
 
-		if len(pagination.Items) < int(pageSize) {
+		// 已到最后一页
+		if int64(len(pagination.Items)) < pageSize {
 			break
 		}
+
 		offset += pageSize
 	}
 
-	if len(tasks) == 0 {
-		return nil, fmt.Errorf("no success tasks found for batch %d", batchID)
+	if len(result) == 0 {
+		logs.Warnf(
+			"[getSuccessTasks] no success tasks found, batchID=%d, rid=%s",
+			batchID, kt.Rid,
+		)
+		return []*taskTypes.Task{}, nil
 	}
 
-	logs.Infof("found %d success tasks for batch %d, rid: %s", len(tasks), batchID, kt.Rid)
-	return tasks, nil
+	logs.Infof(
+		"[getSuccessTasks] found %d success tasks, batchID=%d, rid=%s",
+		len(result), batchID, kt.Rid,
+	)
+
+	return result, nil
 }
 
 // createBatch 创建下发批次
@@ -938,7 +953,7 @@ func dispatchTasks(
 				dao,
 				bizID,
 				batchID,
-				table.ConfigPush,
+				table.ConfigOperateType(table.TaskActionConfigPublish),
 				kt.User,
 				payload,
 			),
@@ -1392,11 +1407,11 @@ func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin
 
 		switch mode {
 		case ConfigTaskGenerate:
-			opts.OperateType = table.ConfigGenerate
+			opts.OperateType = table.ConfigOperateType(table.TaskActionConfigGenerate)
 			builder = config.NewConfigGenerateTask(opts)
 
 		case ConfigTaskCheck:
-			opts.OperateType = table.ConfigCheck
+			opts.OperateType = table.ConfigOperateType(table.TaskActionConfigCheck)
 			builder = config.NewCheckConfigTask(opts)
 
 		default:

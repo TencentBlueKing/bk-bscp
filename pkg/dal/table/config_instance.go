@@ -16,15 +16,6 @@ import "github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
 
 type ConfigOperateType string
 
-const (
-	// 配置生成
-	ConfigGenerate ConfigOperateType = "config_generate"
-	// 配置下发
-	ConfigPush ConfigOperateType = "config_push"
-	// 配置检查
-	ConfigCheck ConfigOperateType = "config_check"
-)
-
 // ConfigInstance defines a config instance's detail information
 type ConfigInstance struct {
 	ID         uint32                    `json:"id" gorm:"primaryKey"`

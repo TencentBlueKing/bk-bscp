@@ -78,7 +78,6 @@ func NewPushConfigExecutor(dao dao.Set, gseService *gse.Service, repo repository
 type PushConfigPayload struct {
 	BizID        uint32
 	BatchID      uint32
-	TaskID       string // 下发后返回的任务ID，通过这个任务ID可以查询下发结果
 	OperateType  table.ConfigOperateType
 	OperatorUser string
 	Payload      *common.TaskPayload // 配置生成任务 payload
@@ -161,10 +160,13 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		payload.BatchID, resp.Result.TaskID, path.Join(commonPayload.ConfigPayload.ConfigFilePath,
 			commonPayload.ConfigPayload.ConfigFileName))
 
-	payload.TaskID = resp.Result.TaskID
-	if err = c.SetPayload(payload); err != nil {
-		logs.Errorf("[ReleaseConfig STEP]: set common payload failed: %v", err)
-		return err
+	// 通过任务ID查询脚本执行结果
+	result, err := e.WaitExecuteScriptFinish(kt.Ctx, resp.Result.TaskID, commonPayload.ProcessPayload.AgentID)
+	if err != nil {
+		return fmt.Errorf("wait script execution failed: %w", err)
+	}
+	if len(result.Result) == 0 {
+		return fmt.Errorf("script execution result is empty, task_id=%s", resp.Result.TaskID)
 	}
 
 	logs.Infof("[ReleaseConfig STEP]: script execution success, batch_id: %d, task_id: %s", payload.BatchID,
@@ -176,65 +178,29 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 // Callback implements istep.Callback.
 func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 	logs.Infof("[PushConfig Callback]: start callback processing")
+
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
 		return fmt.Errorf("get payload failed: %w", err)
-	}
-
-	if payload.TaskID == "" {
-		return fmt.Errorf("[PushConfig Callback]: get common payload failed: task id is nil")
-	}
-
-	commonPayload := &common.TaskPayload{}
-	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[PushConfig Callback]: get common payload failed: %w", err)
-	}
-
-	cfg := commonPayload.ConfigPayload
-	if cfg == nil {
-		return fmt.Errorf("[PushConfig Callback]: config payload is nil")
-	}
-
-	proc := commonPayload.ProcessPayload
-	if proc == nil {
-		return fmt.Errorf("[PushConfig Callback]: process payload is nil")
 	}
 
 	kit := kit.New()
 	kit.BizID = payload.BizID
 	kit.User = payload.OperatorUser
 
-	// 通过脚本任务ID获取脚本执行结果
-	result, err := e.WaitExecuteScriptFinish(kit.Ctx, payload.TaskID, proc.AgentID)
-	if err != nil {
-		return fmt.Errorf("wait script execution failed: %w", err)
-	}
-
-	if len(result.Result) == 0 {
-		return fmt.Errorf("script execution result is empty, task_id=%s", payload.TaskID)
-	}
-
 	isSuccess := cbErr == nil
 	// 更新批次状态
 	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
-		logs.Errorf(
-			"[PushConfig Callback]: increment completed count failed, batch_id=%d, success=%v, err=%v",
-			payload.BatchID,
-			isSuccess,
-			err,
-		)
 		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
 	}
 
+	// 仅配置下发成功才更新配置实例的状态
 	if !isSuccess {
-		logs.Warnf(
-			"[PushConfig Callback]: task failed, skip config instance upsert, batch_id=%d, err=%v",
-			payload.BatchID,
-			cbErr,
-		)
 		return nil
 	}
 
+	cfg := payload.Payload.ConfigPayload
+	proc := payload.Payload.ProcessPayload
 	now := time.Now()
 
 	instance := &table.ConfigInstance{
@@ -244,9 +210,10 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 			ConfigVersionID:  cfg.ConfigTemplateVersionID,
 			CcProcessID:      proc.CcProcessID,
 			ModuleInstSeq:    proc.ModuleInstSeq,
-			GenerateTaskID:   c.GetTaskID(),                            // 下发成功后的任务ID
-			Md5:              tools.ByteMD5([]byte(cfg.ConfigContent)), // 下发成功后的内容MD5
-			Content:          cfg.ConfigContent,                        // 下发成功后的内容
+			GenerateTaskID:   c.GetTaskID(),
+			Md5:              tools.ByteMD5([]byte(cfg.ConfigContent)),
+			Content:          cfg.ConfigContent,
+			TenantID:         "",
 		},
 		Revision: &table.Revision{
 			Creator:   kit.User,
@@ -256,12 +223,6 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 		},
 	}
 	if err := e.Dao.ConfigInstance().Upsert(kit, instance); err != nil {
-		logs.Errorf(
-			"[PushConfig Callback]: upsert config instance failed, batch_id=%d, instance=%+v, err=%v",
-			payload.BatchID,
-			instance,
-			err,
-		)
 		return fmt.Errorf("upsert config instance failed: %w", err)
 	}
 

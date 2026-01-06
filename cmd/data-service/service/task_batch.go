@@ -453,13 +453,13 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 	}
 
 	switch taskBatch.Spec.TaskAction {
-	case table.TaskAction(table.ConfigCheck):
+	case table.TaskActionConfigCheck:
 		// 处理配置检查任务
 		retryCount, err = s.retryCheckConfigTask(kt, taskStorage, taskBatch)
-	case table.TaskAction(table.ConfigGenerate):
+	case table.TaskActionConfigGenerate:
 		// 处理配置生成任务
 		err = s.retry(kt, taskStorage, taskBatch, "")
-	case table.TaskAction(table.ConfigPush):
+	case table.TaskActionConfigPublish:
 		// 处理配置下发任务
 		retryCount, err = s.retryPushConfigTask(kt, taskStorage, taskBatch)
 	default:

@@ -68,7 +68,6 @@ type CheckConfigPayload struct {
 	TemplateRevision   *table.TemplateRevision
 	Process            *table.Process
 	ProcessInstance    *table.ProcessInstance
-	TaskID             string
 }
 
 // CheckConfig implements istep.Step.
@@ -210,8 +209,8 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 	return nil
 }
 
-// FetchConfigConten implements istep.Step.
-func (e *CheckConfigExecutor) FetchConfigConten(c *istep.Context) error {
+// FetchConfigContent implements istep.Step.
+func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 	payload := &CheckConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
 		logs.Errorf("[FetchConfigContent Execute]: fetch config conten payload nil")
@@ -274,13 +273,52 @@ func (e *CheckConfigExecutor) FetchConfigConten(c *istep.Context) error {
 		},
 	})
 
-	if err != nil || resp == nil || resp.Result.TaskID == "" {
-		return fmt.Errorf("create md5 script task failed")
+	if err != nil {
+		logs.Errorf("[FetchConfigContent STEP]: create execute script task failed: %v", err)
+		return fmt.Errorf("create execute script task failed: %w", err)
 	}
 
-	payload.TaskID = resp.Result.TaskID
+	if resp == nil || resp.Result.TaskID == "" {
+		logs.Errorf("[FetchConfigContent STEP]: gse execute script response is nil, batch_id=%d", payload.BatchID)
+		return fmt.Errorf("gse execute script response is nil, batch_id=%d", payload.BatchID)
+	}
 
-	return c.SetPayload(payload)
+	// 存在差异化
+	result, err := e.WaitExecuteScriptFinish(kt.Ctx, resp.Result.TaskID, payload.Process.Attachment.AgentID)
+	if err != nil {
+		return fmt.Errorf("wait script execution failed: %w", err)
+	}
+
+	if len(result.Result) == 0 {
+		return fmt.Errorf("cat script execution result is empty, task_id=%s", resp.Result.TaskID)
+	}
+
+	r := result.Result[0]
+	if r.ErrorCode != 0 {
+		logs.Errorf(
+			"[FetchConfigContent STEP]: cat script execution failed, agent=%s, container=%s, code=%d, msg=%s",
+			r.BkAgentID,
+			r.BkContainerID,
+			r.ErrorCode,
+			r.ErrorMsg,
+		)
+		return fmt.Errorf(
+			"cat script execution failed, agent=%s, container=%s, code=%d, msg=%s",
+			r.BkAgentID,
+			r.BkContainerID,
+			r.ErrorCode,
+			r.ErrorMsg,
+		)
+	}
+
+	commonPayload.ConfigPayload.ConfigContent = r.Screen
+
+	if err := c.SetCommonPayload(commonPayload); err != nil {
+		return fmt.Errorf("[FetchConfigContent STEP]: set common payload failed: %w", err)
+	}
+
+	// 这是 配置内容不一致 的业务错误
+	return fmt.Errorf("config content inconsistent")
 }
 
 // Callback implements istep.Callback.
@@ -291,74 +329,11 @@ func (e *CheckConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("get payload failed: %w", err)
 	}
 
-	kit := kit.FromGrpcContext(c.Context())
-
-	commonPayload := &common.TaskPayload{}
-	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[CheckConfig Callback]: get common payload failed: %w", err)
-	}
-
-	cfg := commonPayload.ConfigPayload
-	if cfg == nil {
-		return fmt.Errorf("[CheckConfig Callback]: config payload is nil")
-	}
-
-	proc := commonPayload.ProcessPayload
-	if proc == nil {
-		return fmt.Errorf("[CheckConfig Callback]: process payload is nil")
-	}
-	var taskErr error
-	// 存在差异化
-	if commonPayload.ConfigPayload.CompareStatus == common.CompareResultDifferent {
-		result, err := e.WaitExecuteScriptFinish(kit.Ctx, payload.TaskID, payload.Process.Attachment.AgentID)
-		if err != nil {
-			return fmt.Errorf("wait script execution failed: %w", err)
-		}
-
-		if len(result.Result) == 0 {
-			return fmt.Errorf("cat script execution result is empty, task_id=%s", payload.TaskID)
-		}
-
-		r := result.Result[0]
-		if r.ErrorCode != 0 {
-			logs.Errorf(
-				"[FetchConfigContent Callback]: cat script execution failed, agent=%s, container=%s, code=%d, msg=%s",
-				r.BkAgentID,
-				r.BkContainerID,
-				r.ErrorCode,
-				r.ErrorMsg,
-			)
-			return fmt.Errorf(
-				"cat script execution failed, agent=%s, container=%s, code=%d, msg=%s",
-				r.BkAgentID,
-				r.BkContainerID,
-				r.ErrorCode,
-				r.ErrorMsg,
-			)
-		}
-
-		commonPayload.ConfigPayload.ConfigContent = r.Screen
-		taskErr = fmt.Errorf("config content inconsistent")
-	}
-
-	if err := c.SetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[FetchConfigContent Callback]: set common payload failed: %w", err)
-	}
-
-	isSuccess := cbErr == nil && taskErr == nil
-
-	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
-		logs.Errorf(
-			"[FetchConfigContent Callback]: increment completed count failed, batch_id=%d, success=%v, err=%v",
-			payload.BatchID,
-			isSuccess,
-			err,
-		)
-		return fmt.Errorf("increment completed count failed: %w", err)
-	}
-
-	if taskErr != nil {
-		return taskErr
+	// 更新 TaskBatch 状态
+	isSuccess := cbErr == nil
+	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit.New(), payload.BatchID, isSuccess); err != nil {
+		return fmt.Errorf("increment completed count failed, batchID: %d, err: %w",
+			payload.BatchID, err)
 	}
 
 	return nil
@@ -367,7 +342,7 @@ func (e *CheckConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 // RegisterCheckConfigExecutor 注册执行器
 func RegisterCheckConfigExecutor(e *CheckConfigExecutor) {
 	istep.Register(CheckConfigMD5StepName, istep.StepExecutorFunc(e.CheckConfigMD5))
-	istep.Register(FetchConfigContentStepName, istep.StepExecutorFunc(e.FetchConfigConten))
+	istep.Register(FetchConfigContentStepName, istep.StepExecutorFunc(e.FetchConfigContent))
 	istep.RegisterCallback(CheckConfigCallbackName, istep.CallbackExecutorFunc(e.Callback))
 }
 
