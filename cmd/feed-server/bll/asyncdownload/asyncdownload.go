@@ -39,7 +39,7 @@ const (
 	// CollectWindowSeconds 收集窗口时间（秒）
 	// 同一时间窗口内的请求会被合并到同一个 Job 中
 	// 窗口结束后 Job 开始处理，新请求会创建新的 Job
-	CollectWindowSeconds int64 = 15
+	CollectWindowSeconds int64 = 10
 
 	// RetryMaxAttempts SetNX 失败后的最大重试次数
 	RetryMaxAttempts = 5
@@ -432,350 +432,276 @@ func calculateNextTimeBucket(jobKey string, currentTimeBucket int64, jobStatus s
 	return nextTimeBucket, reason
 }
 
-// tryAddTargetToNewWindowJob 尝试在新窗口的 job 中添加 target
-// 如果新窗口的 job 存在且是 Pending 状态，则添加 target 并返回 true
-// 如果新窗口的 job 不存在或不是 Pending，返回 false 和新的 jobKey
-func (ad *Service) tryAddTargetToNewWindowJob(ctx context.Context, bizID, appID uint32, fullPath string,
-	nextTimeBucket int64, targetAgentID, targetContainerID string, rid string, startTime time.Time) (
-	success bool, jobKey string, err error) {
+const (
+	// MaxWindowLookahead 最大窗口前瞻数量，限制查找未来窗口的数量
+	MaxWindowLookahead = 3
+)
 
-	jobKey = GetJobKey(bizID, appID, fullPath, nextTimeBucket)
-	targetsKey := GetTargetsKey(bizID, appID, fullPath, nextTimeBucket)
+// findOrCreatePendingJob 在指定的时间窗口范围内查找或创建 Pending 状态的 job
+// 从 startTimeBucket 开始，最多查找 maxWindows 个窗口
+// 如果找到 Pending 状态的 job，添加 target 并返回 jobKey
+// 如果找不到，尝试创建新的 job（使用 SetNX 重试循环）
+// 返回: (jobKey, nil) 成功, ("", error) 失败
+func (ad *Service) findOrCreatePendingJob(
+	ctx context.Context,
+	bizID, appID uint32,
+	filePath, fileName, targetAgentID, targetContainerID, targetUser, targetDir, signature string,
+	startTimeBucket int64,
+	maxWindows int,
+	rid string,
+	startTime time.Time) (string, error) {
 
-	jobData, err := ad.cs.Redis().Get(ctx, jobKey)
-	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis get new window job failed, rid: %s, biz_id: %d, file: %s, "+
-			"job_id: %s, err: %v",
-			rid, bizID, fullPath, jobKey, err)
-		return false, jobKey, err
-	}
+	for windowOffset := int64(0); windowOffset < int64(maxWindows); windowOffset++ {
+		currentTimeBucket := startTimeBucket + windowOffset
+		jobKey := GetJobKey(bizID, appID, path.Join(filePath, fileName), currentTimeBucket)
+		targetsKey := GetTargetsKey(bizID, appID, path.Join(filePath, fileName), currentTimeBucket)
 
-	if jobData == "" {
-		// 新窗口的 job 不存在，需要创建
-		return false, jobKey, nil
-	}
-
-	// 新窗口的 job 已存在，检查状态
-	job, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, fullPath)
-	if err != nil {
-		return false, jobKey, err
-	}
-
-	if job.Status == types.AsyncDownloadJobStatusPending {
-		// 新窗口的 job 是 Pending，可以添加 target
-		if err := ad.addTargetToJob(ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
-			fullPath, jobKey, job.Status, startTime); err != nil {
-			return false, jobKey, err
+		// 1. 检查 job 是否存在
+		jobData, err := ad.cs.Redis().Get(ctx, jobKey)
+		if err != nil {
+			logs.Errorf("[findOrCreatePendingJob] redis get failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
+				rid, bizID, path.Join(filePath, fileName), jobKey, err)
+			continue // 继续尝试下一个窗口
 		}
-		return true, jobKey, nil
+
+		if jobData != "" {
+			// Job 已存在，检查状态
+			job, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, path.Join(filePath, fileName))
+			if err != nil {
+				logs.Errorf("[findOrCreatePendingJob] parse and check job status failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
+					rid, bizID, path.Join(filePath, fileName), jobKey, err)
+				continue // 继续尝试下一个窗口
+			}
+
+			if job.Status == types.AsyncDownloadJobStatusPending {
+				// 找到 Pending 状态的 job，添加 target
+				if err := ad.addTargetToJob(ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
+					path.Join(filePath, fileName), jobKey, job.Status, startTime); err != nil {
+					logs.Errorf("[findOrCreatePendingJob] add target to job failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
+						rid, bizID, path.Join(filePath, fileName), jobKey, err)
+					continue // 继续尝试下一个窗口
+				}
+				if windowOffset > 0 {
+					logs.Infof("[findOrCreatePendingJob] found pending job in window offset %d, rid: %s, biz_id: %d, job_id: %s",
+						windowOffset, rid, bizID, jobKey)
+				}
+				return jobKey, nil
+			}
+
+			// Job 存在但不是 Pending 状态，继续尝试下一个窗口
+			if windowOffset == 0 {
+				nextTimeBucket, reason := calculateNextTimeBucket(jobKey, currentTimeBucket, job.Status)
+				logs.Infof("[findOrCreatePendingJob] job not in pending, try next window, rid: %s, biz_id: %d, "+
+					"file: %s, old_job_id: %s, old_status: %s, old_time_bucket: %d, new_time_bucket: %d, reason: %s",
+					rid, bizID, path.Join(filePath, fileName), job.JobID, job.Status, currentTimeBucket, nextTimeBucket, reason)
+			}
+			continue
+		}
+
+		// 2. Job 不存在，尝试创建新 job（使用 SetNX，原子操作）
+		job := &types.AsyncDownloadJob{
+			JobID:         jobKey,
+			BizID:         bizID,
+			AppID:         appID,
+			FilePath:      filePath,
+			FileName:      fileName,
+			TargetFileDir: targetDir,
+			TargetUser:    targetUser,
+			FileSignature: signature,
+			// 注意：不包含 Targets 数组（新数据只存储在 Redis List）
+			Status:             types.AsyncDownloadJobStatusPending,
+			CreateTime:         time.Now(),
+			SuccessTargets:     make(map[string]gse.TransferFileResultDataResultContent),
+			FailedTargets:      make(map[string]gse.TransferFileResultDataResultContent),
+			DownloadingTargets: make(map[string]gse.TransferFileResultDataResultContent),
+			TimeoutTargets:     make(map[string]gse.TransferFileResultDataResultContent),
+		}
+
+		js, err := jsoni.Marshal(job)
+		if err != nil {
+			logs.Errorf("[findOrCreatePendingJob] marshal new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
+				rid, bizID, jobKey, err)
+			continue // 继续尝试下一个窗口
+		}
+
+		// 使用 SetNX 原子性地创建 job，使用指数退避重试机制
+		setnxStartTime := time.Now()
+		attempt := 0
+		var ok bool
+
+		for attempt < RetryMaxAttempts {
+			// 检查总超时时间
+			if time.Since(setnxStartTime) > RetryTotalTimeout {
+				logs.Errorf("[findOrCreatePendingJob] retry timeout, rid: %s, biz_id: %d, job_id: %s, attempts: %d",
+					rid, bizID, jobKey, attempt)
+				break
+			}
+
+			setnxAttemptStartTime := time.Now()
+			ok, err = ad.cs.Redis().SetNX(ctx, jobKey, string(js), 30*60)
+			setnxLatency := time.Since(setnxAttemptStartTime)
+			if err != nil {
+				// SetNX 失败（网络错误等），需要重试
+				attempt++
+				delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
+				logs.Warnf("[findOrCreatePendingJob] redis setnx failed, will retry, rid: %s, biz_id: %d, "+
+					"file: %s, job_id: %s, attempt: %d, latency_ms: %d, err: %v",
+					rid, bizID, path.Join(filePath, fileName), jobKey, attempt, setnxLatency.Milliseconds(), err)
+				select {
+				case <-time.After(delay):
+				case <-ctx.Done():
+					return "", ctx.Err()
+				}
+				continue
+			}
+
+			if ok {
+				// SetNX 成功，创建了 job
+				logs.Infof("[findOrCreatePendingJob] setnx success, rid: %s, biz_id: %d, file: %s, "+
+					"job_id: %s, attempt: %d, latency_ms: %d, window_offset: %d",
+					rid, bizID, path.Join(filePath, fileName), jobKey, attempt+1, setnxLatency.Milliseconds(), windowOffset)
+				break
+			}
+
+			// SetNX 返回 false，说明其他请求已经创建了 job
+			// 等待一小段时间后检查 job 是否存在
+			attempt++
+			delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return "", ctx.Err()
+			}
+
+			// 检查 job 是否已经存在
+			jobData, err = ad.cs.Redis().Get(ctx, jobKey)
+			if err != nil {
+				logs.Warnf("[findOrCreatePendingJob] redis get failed during retry, will retry, rid: %s, biz_id: %d, job_id: %s, attempt: %d, err: %v",
+					rid, bizID, jobKey, attempt, err)
+				continue
+			}
+
+			if jobData != "" {
+				// Job 已存在，跳出循环，检查状态
+				break
+			}
+
+			// Job 仍然不存在，继续重试 SetNX
+			logs.Infof("[findOrCreatePendingJob] job still not exists, will retry SetNX, rid: %s, biz_id: %d, job_id: %s, attempt: %d",
+				rid, bizID, jobKey, attempt)
+		}
+
+		// 检查 SetNX 结果
+		if err != nil {
+			logs.Errorf("[findOrCreatePendingJob] redis setnx failed after retries, rid: %s, biz_id: %d, "+
+				"file: %s, job_id: %s, attempts: %d, err: %v",
+				rid, bizID, path.Join(filePath, fileName), jobKey, attempt, err)
+			continue // 继续尝试下一个窗口
+		}
+
+		if ok {
+			// SetNX 成功，说明是第一个请求，创建了 job
+			ad.metric.jobCounter.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
+				"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
+				"targets": "1", "status": job.Status}).Inc()
+
+			// 添加第一个 target 到 List
+			target := &types.AsyncDownloadTarget{
+				AgentID:     targetAgentID,
+				ContainerID: targetContainerID,
+			}
+			targetData, e := jsoni.Marshal(target)
+			if e != nil {
+				logs.Errorf("[findOrCreatePendingJob] marshal target failed, rid: %s, biz_id: %d, err: %v",
+					rid, bizID, e)
+				continue // 继续尝试下一个窗口
+			}
+
+			// 使用 LPUSH 添加第一个 target，带重试机制
+			if e := ad.lpushWithRetry(ctx, targetsKey, string(targetData), rid, bizID); e != nil {
+				logs.Errorf("[findOrCreatePendingJob] redis lpush failed after retries, rid: %s, biz_id: %d, "+
+					"file: %s, job_id: %s, err: %v",
+					rid, bizID, path.Join(filePath, fileName), jobKey, e)
+				continue // 继续尝试下一个窗口
+			}
+
+			logs.Infof("[findOrCreatePendingJob] create new job, rid: %s, biz_id: %d, file: %s, "+
+				"job_id: %s, setnx_attempts: %d, window_offset: %d",
+				rid, bizID, path.Join(filePath, fileName), jobKey, attempt+1, windowOffset)
+			return jobKey, nil
+		}
+
+		// SetNX 失败但 job 已存在（其他请求创建了），检查状态
+		if jobData == "" {
+			jobData, err = ad.cs.Redis().Get(ctx, jobKey)
+			if err != nil {
+				logs.Errorf("[findOrCreatePendingJob] redis get failed after retries, rid: %s, biz_id: %d, file: %s, err: %v",
+					rid, bizID, path.Join(filePath, fileName), err)
+				continue // 继续尝试下一个窗口
+			}
+		}
+
+		if jobData != "" {
+			// 解析 job 数据并检查状态
+			existingJob, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, path.Join(filePath, fileName))
+			if err != nil {
+				continue // 继续尝试下一个窗口
+			}
+
+			if existingJob.Status == types.AsyncDownloadJobStatusPending {
+				// Job 是 Pending 状态，添加 target
+				if err := ad.addTargetToJob(ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
+					path.Join(filePath, fileName), jobKey, existingJob.Status, startTime); err != nil {
+					return "", err
+				}
+				logs.Infof("[findOrCreatePendingJob] add target to existing job after retry, rid: %s, biz_id: %d, "+
+					"file: %s, job_id: %s, status: %s, setnx_attempts: %d, window_offset: %d",
+					rid, bizID, path.Join(filePath, fileName), jobKey, existingJob.Status, attempt, windowOffset)
+				return jobKey, nil
+			}
+
+			// Job 存在但不是 Pending 状态，继续尝试下一个窗口
+			continue
+		}
 	}
 
-	// 新窗口的 job 也不是 Pending，需要继续创建下一个窗口
-	return false, jobKey, nil
+	// 所有窗口都尝试失败
+	return "", fmt.Errorf("failed to find or create pending job after checking %d windows, rid: %s", maxWindows, rid)
 }
 
-// nolint:funlen // 函数较长但逻辑清晰，拆分会影响可读性
+// upsertAsyncDownloadJob 创建或更新异步下载任务
+// 使用统一的时间窗口查找逻辑，避免不对称行为
 func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
 	rid := kt.Rid
-	fullPath := path.Join(filePath, fileName)
 	upsertStartTime := time.Now()
 
 	// 使用时间窗口的 job key
 	// 同一时间窗口内的请求会复用同一个 Job，窗口结束后新请求会创建新的 Job
 	timeBucket := getTimeBucket()
-	jobKey := GetJobKey(bizID, appID, fullPath, timeBucket)
-	targetsKey := GetTargetsKey(bizID, appID, fullPath, timeBucket)
 
-	// 1. 检查 job 是否存在
-	jobData, err := ad.cs.Redis().Get(kt.Ctx, jobKey)
+	// 使用统一的窗口查找逻辑，从当前时间窗口开始，最多查找 MaxWindowLookahead 个窗口
+	// 这样可以统一处理所有情况，避免不对称行为
+	jobKey, err := ad.findOrCreatePendingJob(
+		kt.Ctx,
+		bizID, appID,
+		filePath, fileName, targetAgentID, targetContainerID, targetUser, targetDir, signature,
+		timeBucket,
+		MaxWindowLookahead,
+		rid,
+		upsertStartTime,
+	)
+
 	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis get failed, rid: %s, biz_id: %d, file: %s, err: %v",
-			rid, bizID, fullPath, err)
+		logs.Errorf("[upsertAsyncDownloadJob] failed to find or create pending job, rid: %s, biz_id: %d, app_id: %d, "+
+			"file: %s, duration_ms: %d, err: %v",
+			rid, bizID, appID, path.Join(filePath, fileName), time.Since(upsertStartTime).Milliseconds(), err)
 		return "", err
 	}
 
-	if jobData != "" {
-		// Job 已存在，解析并检查状态
-		existingJob, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, fullPath)
-		if err != nil {
-			return "", err
-		}
-
-		// 如果 job 是 Pending 状态，直接添加 target
-		if existingJob.Status == types.AsyncDownloadJobStatusPending {
-			if err := ad.addTargetToJob(kt.Ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
-				fullPath, jobKey, existingJob.Status, upsertStartTime); err != nil {
-				return "", err
-			}
-			return jobKey, nil
-		}
-
-		// Job 不是 Pending 状态，需要创建新窗口的 job
-		// 不能向 Running 状态的 job 添加 target，因为 scheduler 已经开始处理，会导致数据不一致
-		nextTimeBucket, reason := calculateNextTimeBucket(jobKey, timeBucket, existingJob.Status)
-		logs.Infof("[upsertAsyncDownloadJob] job not in pending, create new window, rid: %s, biz_id: %d, app_id: %d, "+
-			"file: %s, old_job_id: %s, old_status: %s, old_time_bucket: %d, new_time_bucket: %d, reason: %s",
-			rid, bizID, appID, fullPath, existingJob.JobID, existingJob.Status, timeBucket, nextTimeBucket, reason)
-
-		// 尝试在新窗口的 job 中添加 target
-		success, newJobKey, err := ad.tryAddTargetToNewWindowJob(kt.Ctx, bizID, appID, fullPath,
-			nextTimeBucket, targetAgentID, targetContainerID, rid, upsertStartTime)
-		if err != nil {
-			return "", err
-		}
-		if success {
-			return newJobKey, nil
-		}
-
-		// 新窗口的 job 不存在或不是 Pending，继续创建下一个窗口（最多再尝试一次）
-		nextTimeBucket = nextTimeBucket + 1
-		jobKey = GetJobKey(bizID, appID, fullPath, nextTimeBucket)
-		targetsKey = GetTargetsKey(bizID, appID, fullPath, nextTimeBucket)
-
-		logs.Warnf("[upsertAsyncDownloadJob] new window job also not in pending, create next window, rid: %s, biz_id: %d, app_id: %d, file: %s, new_time_bucket: %d",
-			rid, bizID, appID, fullPath, nextTimeBucket)
-
-		// 检查第二个新窗口的 job 是否存在
-		jobData, err = ad.cs.Redis().Get(kt.Ctx, jobKey)
-		if err != nil {
-			logs.Errorf("[upsertAsyncDownloadJob] redis get second new window job failed, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
-				rid, bizID, fullPath, jobKey, err)
-			return "", err
-		}
-		// 如果 jobData 为空，继续到 SetNX 流程创建新 job
-	}
-
-	// 2. Job 不存在，尝试创建新 job（使用 SetNX，原子操作，不需要外层锁）
-	job := &types.AsyncDownloadJob{
-		JobID:         jobKey,
-		BizID:         bizID,
-		AppID:         appID,
-		FilePath:      filePath,
-		FileName:      fileName,
-		TargetFileDir: targetDir,
-		TargetUser:    targetUser,
-		FileSignature: signature,
-		// 注意：不包含 Targets 数组（新数据只存储在 Redis List）
-		Status:             types.AsyncDownloadJobStatusPending,
-		CreateTime:         time.Now(),
-		SuccessTargets:     make(map[string]gse.TransferFileResultDataResultContent),
-		FailedTargets:      make(map[string]gse.TransferFileResultDataResultContent),
-		DownloadingTargets: make(map[string]gse.TransferFileResultDataResultContent),
-		TimeoutTargets:     make(map[string]gse.TransferFileResultDataResultContent),
-	}
-
-	js, err := jsoni.Marshal(job)
-	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] marshal new job failed, rid: %s, biz_id: %d, job_id: %s, err: %v",
-			rid, bizID, jobKey, err)
-		return "", err
-	}
-
-	// 使用 SetNX 原子性地创建 job，不需要外层锁
-	// 如果 SetNX 失败，使用指数退避重试机制
-	startTime := time.Now()
-	attempt := 0
-	var ok bool
-
-	for attempt < RetryMaxAttempts {
-		// 检查总超时时间
-		if time.Since(startTime) > RetryTotalTimeout {
-			logs.Errorf("[upsertAsyncDownloadJob] retry timeout, rid: %s, biz_id: %d, job_id: %s, attempts: %d",
-				rid, bizID, jobKey, attempt)
-			break
-		}
-
-		setnxStartTime := time.Now()
-		ok, err = ad.cs.Redis().SetNX(kt.Ctx, jobKey, string(js), 30*60)
-		setnxLatency := time.Since(setnxStartTime)
-		if err != nil {
-			// SetNX 失败（网络错误等），需要重试
-			attempt++
-			delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
-			logs.Warnf("[upsertAsyncDownloadJob] redis setnx failed, will retry, rid: %s, biz_id: %d, app_id: %d, "+
-				"file: %s, job_id: %s, attempt: %d, latency_ms: %d, err: %v",
-				rid, bizID, appID, fullPath, jobKey, attempt, setnxLatency.Milliseconds(), err)
-			select {
-			case <-time.After(delay):
-			case <-kt.Ctx.Done():
-				return "", kt.Ctx.Err()
-			}
-			continue
-		}
-
-		if ok {
-			// SetNX 成功，跳出循环
-			logs.Infof("[upsertAsyncDownloadJob] setnx success, rid: %s, biz_id: %d, app_id: %d, file: %s, "+
-				"job_id: %s, attempt: %d, latency_ms: %d",
-				rid, bizID, appID, fullPath, jobKey, attempt+1, setnxLatency.Milliseconds())
-			break
-		}
-
-		// SetNX 返回 false，说明其他请求已经创建了 job
-		// 等待一小段时间后检查 job 是否存在
-		attempt++
-		delay := calculateExponentialBackoffDelay(attempt, RetryInitialDelay, RetryMaxDelay)
-		select {
-		case <-time.After(delay):
-		case <-kt.Ctx.Done():
-			return "", kt.Ctx.Err()
-		}
-
-		// 检查 job 是否已经存在
-		jobData, err = ad.cs.Redis().Get(kt.Ctx, jobKey)
-		if err != nil {
-			logs.Warnf("[upsertAsyncDownloadJob] redis get failed during retry, will retry, rid: %s, biz_id: %d, job_id: %s, attempt: %d, err: %v",
-				rid, bizID, jobKey, attempt, err)
-			continue
-		}
-
-		if jobData != "" {
-			// Job 已存在，跳出循环，进入添加 target 流程
-			break
-		}
-
-		// Job 仍然不存在，继续重试 SetNX
-		// 使用 Infof 记录调试信息（在高并发场景下可能产生较多日志，但有助于排查问题）
-		logs.Infof("[upsertAsyncDownloadJob] job still not exists, will retry SetNX, rid: %s, biz_id: %d, job_id: %s, attempt: %d",
-			rid, bizID, jobKey, attempt)
-	}
-
-	// 检查最终结果
-	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis setnx failed after retries, rid: %s, biz_id: %d, app_id: %d, "+
-			"file: %s, job_id: %s, attempts: %d, duration_ms: %d, err: %v",
-			rid, bizID, appID, fullPath, jobKey, attempt, time.Since(upsertStartTime).Milliseconds(), err)
-		return "", fmt.Errorf("failed to create job after %d attempts, err: %v", attempt, err)
-	}
-
-	if ok {
-		// SetNX 成功，说明是第一个请求，创建了 job
-		ad.metric.jobCounter.With(prm.Labels{"biz": strconv.Itoa(int(job.BizID)),
-			"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
-			"targets": "1", "status": job.Status}).Inc()
-
-		// 添加第一个 target 到 List
-		target := &types.AsyncDownloadTarget{
-			AgentID:     targetAgentID,
-			ContainerID: targetContainerID,
-		}
-		targetData, e := jsoni.Marshal(target)
-		if e != nil {
-			logs.Errorf("[upsertAsyncDownloadJob] marshal target failed, rid: %s, biz_id: %d, err: %v",
-				rid, bizID, e)
-			return "", e
-		}
-
-		// 使用 LPUSH 添加第一个 target，带重试机制
-		if e := ad.lpushWithRetry(kt.Ctx, targetsKey, string(targetData), rid, bizID); e != nil {
-			logs.Errorf("[upsertAsyncDownloadJob] redis lpush failed after retries, rid: %s, biz_id: %d, app_id: %d, "+
-				"file: %s, job_id: %s, duration_ms: %d, err: %v",
-				rid, bizID, appID, fullPath, jobKey, time.Since(upsertStartTime).Milliseconds(), e)
-			return "", e
-		}
-
-		logs.Infof("[upsertAsyncDownloadJob] create new job, rid: %s, biz_id: %d, app_id: %d, file: %s, "+
-			"job_id: %s, setnx_attempts: %d, duration_ms: %d",
-			rid, bizID, appID, fullPath, jobKey, attempt+1, time.Since(upsertStartTime).Milliseconds())
-		return jobKey, nil
-	}
-
-	// SetNX 失败但 job 已存在（其他请求创建了），需要检查状态并添加 target
-	// 再次确认 job 存在（可能在重试循环中已经检查过了）
-	if jobData == "" {
-		jobData, err = ad.cs.Redis().Get(kt.Ctx, jobKey)
-		if err != nil {
-			logs.Errorf("[upsertAsyncDownloadJob] redis get failed after retries, rid: %s, biz_id: %d, file: %s, err: %v",
-				rid, bizID, fullPath, err)
-			return "", fmt.Errorf("failed to get job after retries, err: %v", err)
-		}
-		if jobData == "" {
-			return "", fmt.Errorf("failed to find or create job after %d attempts, rid: %s", attempt, rid)
-		}
-	}
-
-	// 解析 job 数据并检查状态
-	existingJob, err := parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, fullPath)
-	if err != nil {
-		return "", err
-	}
-
-	// 如果 job 是 Pending 状态，直接添加 target
-	if existingJob.Status == types.AsyncDownloadJobStatusPending {
-		if err := ad.addTargetToJob(kt.Ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
-			fullPath, jobKey, existingJob.Status, upsertStartTime); err != nil {
-			return "", err
-		}
-		logs.Infof("[upsertAsyncDownloadJob] add target to existing job after retry, rid: %s, biz_id: %d, app_id: %d, "+
-			"file: %s, job_id: %s, status: %s, setnx_attempts: %d, duration_ms: %d",
-			rid, bizID, appID, fullPath, jobKey, existingJob.Status, attempt,
-			time.Since(upsertStartTime).Milliseconds())
-		return jobKey, nil
-	}
-
-	// Job 不是 Pending 状态，需要创建新窗口的 job
-	currentTimeBucket := ParseTimeBucketFromJobKey(jobKey)
-	if currentTimeBucket == 0 {
-		logs.Errorf("[upsertAsyncDownloadJob] failed to parse time bucket from job key, rid: %s, biz_id: %d, "+
-			"app_id: %d, file: %s, job_id: %s",
-			rid, bizID, appID, fullPath, jobKey)
-		return "", fmt.Errorf("failed to parse time bucket from job key")
-	}
-
-	nextTimeBucket, reason := calculateNextTimeBucket(jobKey, currentTimeBucket, existingJob.Status)
-	logs.Infof("[upsertAsyncDownloadJob] job not in pending after retry, create new window, rid: %s, biz_id: %d, "+
-		"app_id: %d, file: %s, old_job_id: %s, old_status: %s, old_time_bucket: %d, new_time_bucket: %d, reason: %s",
-		rid, bizID, appID, fullPath, existingJob.JobID, existingJob.Status, currentTimeBucket, nextTimeBucket, reason)
-
-	// 尝试在新窗口的 job 中添加 target
-	success, newJobKey, err := ad.tryAddTargetToNewWindowJob(kt.Ctx, bizID, appID, fullPath,
-		nextTimeBucket, targetAgentID, targetContainerID, rid, upsertStartTime)
-	if err != nil {
-		return "", err
-	}
-	if success {
-		return newJobKey, nil
-	}
-
-	// 新窗口的 job 不存在或不是 Pending，继续创建下一个窗口
-	nextTimeBucket = nextTimeBucket + 1
-	jobKey = GetJobKey(bizID, appID, fullPath, nextTimeBucket)
-	targetsKey = GetTargetsKey(bizID, appID, fullPath, nextTimeBucket)
-
-	logs.Warnf("[upsertAsyncDownloadJob] new window job also not in pending after retry, create next window, rid: %s, biz_id: %d, app_id: %d, file: %s, new_time_bucket: %d",
-		rid, bizID, appID, fullPath, nextTimeBucket)
-
-	// 检查第二个新窗口的 job 是否存在
-	jobData, err = ad.cs.Redis().Get(kt.Ctx, jobKey)
-	if err != nil {
-		logs.Errorf("[upsertAsyncDownloadJob] redis get second new window job failed after retry, rid: %s, biz_id: %d, file: %s, job_id: %s, err: %v",
-			rid, bizID, fullPath, jobKey, err)
-		return "", err
-	}
-
-	// 如果 jobData 为空，需要创建新 job，但已经超出 SetNX 循环
-	// 返回错误，让调用方重试
-	if jobData == "" {
-		return "", fmt.Errorf("job not in pending status and new window job not found, need retry, rid: %s", rid)
-	}
-
-	// 如果 jobData 存在，再次检查状态
-	existingJob, err = parseAndCheckJobStatus(jobData, jobKey, rid, bizID, appID, fullPath)
-	if err != nil {
-		return "", err
-	}
-
-	if existingJob.Status == types.AsyncDownloadJobStatusPending {
-		if err := ad.addTargetToJob(kt.Ctx, targetsKey, targetAgentID, targetContainerID, rid, bizID, appID,
-			fullPath, jobKey, existingJob.Status, upsertStartTime); err != nil {
-			return "", err
-		}
-		return jobKey, nil
-	}
-
-	// 第二个新窗口的 job 也不是 Pending，返回错误让调用方重试
-	return "", fmt.Errorf("job not in pending status after multiple window attempts, need retry, rid: %s", rid)
+	logs.Infof("[upsertAsyncDownloadJob] success, rid: %s, biz_id: %d, app_id: %d, file: %s, job_id: %s, duration_ms: %d",
+		rid, bizID, appID, path.Join(filePath, fileName), jobKey, time.Since(upsertStartTime).Milliseconds())
+	return jobKey, nil
 }
 
 func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,

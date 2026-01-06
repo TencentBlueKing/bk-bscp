@@ -1146,7 +1146,7 @@ func TestTimeWindowCorrectness(t *testing.T) {
 // 验证：
 // 1. 同一时间窗口内的请求会被合并到同一个 job
 // 2. 跨时间窗口的请求会创建新的 job
-// 3. 15秒后新请求会进入新的 job
+// 3. 10秒后新请求会进入新的 job
 func TestTimeWindowBoundary(t *testing.T) {
 	// 初始化服务名称
 	cc.InitService(cc.FeedServerName)
@@ -1363,7 +1363,7 @@ func TestTimeWindowBoundary(t *testing.T) {
 	t.Logf("  - Jobs are correctly isolated by time window")
 }
 
-// TestContinuousRequestsAcrossTimeWindows 测试持续 15 秒以上的请求
+// TestContinuousRequestsAcrossTimeWindows 测试持续 10 秒以上的请求
 // 验证请求在时间窗口边界处正确分配到不同的 job
 func TestContinuousRequestsAcrossTimeWindows(t *testing.T) {
 	// 跳过长时间测试（可以通过 -short 标志跳过）

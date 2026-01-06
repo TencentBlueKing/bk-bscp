@@ -94,7 +94,7 @@ type AsyncDownloadJob struct {
 
 ### 时间窗口机制
 
-**定义**：将时间按固定间隔（默认 15 秒）划分为多个窗口，同一窗口内的请求合并到同一个 Job 处理。
+**定义**：将时间按固定间隔（默认 10 秒）划分为多个窗口，同一窗口内的请求合并到同一个 Job 处理。
 
 **配置**：
 ```go
@@ -506,7 +506,7 @@ func IsTimeWindowExpired(jobKey string) bool
 ### 2. 并发处理
 - **无锁设计**：使用 Redis 单条命令原子操作（SetNX、LPUSH）避免锁竞争
 - **高并发支持**：支持大量客户端同时请求
-- **性能优化**：15 秒时间窗口，批量处理提高效率
+- **性能优化**：10 秒时间窗口，批量处理提高效率
 - **注意**：虽然单条 Redis 命令是原子的，但 SetNX + LPush 的组合操作不是强原子，存在中间状态。通过重试机制和状态检查来缓解竞态条件
 
 ### 3. 状态管理
@@ -564,7 +564,7 @@ status, err := service.GetAsyncDownloadTaskStatus(kt, bizID, taskID)
 ## 关键配置
 
 ### 时间窗口配置
-- **窗口时间**：15 秒（`CollectWindowSeconds = 15`）
+- **窗口时间**：10 秒（`CollectWindowSeconds = 10`）
 - **目的**：平衡批量优化和响应速度
 
 ### 超时配置
@@ -603,7 +603,7 @@ status, err := service.GetAsyncDownloadTaskStatus(kt, bizID, taskID)
 - ⚠️ 这是预期行为，不影响功能正确性
 
 ### 4. 性能考虑
-- ✅ 15 秒时间窗口平衡了批量优化和响应速度
+- ✅ 10 秒时间窗口平衡了批量优化和响应速度
 - ✅ Redis List 存储 targets，支持高并发写入
 - ✅ 文件只下载一次，减少存储和带宽消耗
 
