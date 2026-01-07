@@ -2,11 +2,14 @@
   <div class="info-wrap">
     <div v-for="item in infoList" :key="item.value" class="info-item">
       <div class="label">{{ item.label }}：</div>
-      <div class="value">
+      <div class="value" @click="handleGoProcess(item.value)">
         <bk-overflow-title :class="{ theme: item.value === 'operate_range' }" type="tips">
           <span v-if="item.value === 'environment'">{{
             ENV_TYPE_MAP[Number(taskDetail.environment) as keyof typeof ENV_TYPE_MAP]
           }}</span>
+          <span v-else-if="item.value === 'operate_range'">
+            {{ mergeOpRange(taskDetail.operate_range) }}
+          </span>
           <span v-else>{{ taskDetail![item.value as keyof typeof taskDetail] }}</span>
         </bk-overflow-title>
       </div>
@@ -17,12 +20,15 @@
 <script lang="ts" setup>
   import { useI18n } from 'vue-i18n';
   import { ENV_TYPE_MAP } from '../../../../constants/task';
+  import { IOperateRange } from '../../../../../types/task';
+  import { useRouter } from 'vue-router';
 
-  defineProps<{
+  const props = defineProps<{
     taskDetail: Record<string, any>;
   }>();
 
   const { t } = useI18n();
+  const router = useRouter();
 
   const infoList = [
     {
@@ -58,6 +64,22 @@
       value: 'end_at',
     },
   ];
+
+  const mergeOpRange = (operateRange: IOperateRange) => {
+    return Object.values(operateRange)
+      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
+      .join('.');
+  };
+
+  const handleGoProcess = (value: string) => {
+    if (value !== 'operate_range') return;
+    router.push({
+      name: 'process-management',
+      query: {
+        cc_process_id: props.taskDetail.operate_range.cc_process_ids[0],
+      },
+    });
+  };
 </script>
 
 <style scoped lang="scss">
@@ -86,6 +108,7 @@
       }
       .theme {
         color: #3a84ff;
+        cursor: pointer;
       }
     }
   }

@@ -130,7 +130,7 @@
   import SearchSelector from '../../../../components/search-selector.vue';
   import useTaskStore from '../../../../store/task';
   import { datetimeFormat } from '../../../../utils';
-  import type { IOperateRange, ITaskDetailItem } from '../../../../../types/task';
+  import type { ITaskDetailItem } from '../../../../../types/task';
   import ConfigDetail from '../../config-template/config-issued/config-detail.vue';
   import TaskDiff from './task-diff.vue';
 
@@ -220,7 +220,7 @@
   const action = ref('');
   const detailSliderData = ref({
     open: false,
-    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
+    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, configVersionId: 0, taskId: '' },
   });
   const diffSliderData = ref({
     open: false,
@@ -283,7 +283,7 @@
           task_type: `${typePrefix}${actionText}`,
           task_object,
           environment,
-          operate_range: mergeOpRange(operate_range),
+          operate_range,
           creator,
           start_at: datetimeFormat(start_at),
           end_at: end_at ? datetimeFormat(end_at) : '--',
@@ -296,12 +296,6 @@
     } finally {
       loading.value = false;
     }
-  };
-
-  const mergeOpRange = (operateRange: IOperateRange) => {
-    return Object.values(operateRange)
-      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
-      .join('.');
   };
 
   const handleChangePanel = (status: string) => {
@@ -357,7 +351,7 @@
   const handleView = (id: string) => {
     detailSliderData.value = {
       open: true,
-      data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: id },
+      data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: id, configVersionId: 0 },
     };
   };
 

@@ -58,8 +58,10 @@
   import { getProcessFilter } from '../../../../api/process';
   import type { IProcessFilterItem } from '../../../../../types/process';
   import { useI18n } from 'vue-i18n';
+  import { useRoute } from 'vue-router';
 
   const { t } = useI18n();
+  const route = useRoute();
 
   const props = withDefaults(
     defineProps<{
@@ -155,6 +157,10 @@
   const filterType = ref('filter');
 
   onMounted(() => {
+    if (route.query.cc_process_id) {
+      filterValues.value.cc_process_ids.push(Number(route.query.cc_process_id));
+      emits('search', { ...filterValues.value, environment: activeEnv.value });
+    }
     loadPerocessFilterList();
   });
 
