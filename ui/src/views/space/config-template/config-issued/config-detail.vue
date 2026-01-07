@@ -33,7 +33,13 @@
     bkBizId: string;
     isShow: boolean;
     isCheck: boolean;
-    data: { ccProcessId: number; moduleInstSeq: number; configTemplateId: number; taskId: string };
+    data: {
+      ccProcessId: number;
+      moduleInstSeq: number;
+      configTemplateId: number;
+      taskId: string;
+      configVersionId: number;
+    };
   }>();
   const emits = defineEmits(['update:isShow']);
   const templateDetail = ref({
@@ -92,6 +98,7 @@
           config_template_id: props.data.configTemplateId,
           cc_process_id: props.data.ccProcessId,
           module_inst_seq: props.data.moduleInstSeq,
+          config_version_id: props.data.configVersionId,
         };
         res = await checkConfigView(props.bkBizId, params);
       } else {

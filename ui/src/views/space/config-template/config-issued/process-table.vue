@@ -161,19 +161,25 @@
   const checkedVersion = ref<string[]>([]);
   const diffSliderData = ref<{
     open: boolean;
-    data: { ccProcessId: number; moduleInstSeq: number; configVersionId: number };
+    data: { ccProcessId: number; moduleInstSeq: number; configVersionId: number; configTemplateId: number };
     filePath: string;
   }>({
     open: false,
-    data: { ccProcessId: 0, moduleInstSeq: 0, configVersionId: 0 },
+    data: { ccProcessId: 0, moduleInstSeq: 0, configVersionId: 0, configTemplateId: 0 },
     filePath: '',
   });
   const detailSliderData = ref<{
     open: boolean;
-    data: { ccProcessId: number; moduleInstSeq: number; configTemplateId: number; taskId: string };
+    data: {
+      ccProcessId: number;
+      moduleInstSeq: number;
+      configTemplateId: number;
+      taskId: string;
+      configVersionId: number;
+    };
   }>({
     open: false,
-    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
+    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, configVersionId: 0, taskId: '' },
   });
 
   const templateName = computed(() => {
@@ -189,6 +195,7 @@
         ccProcessId: row.cc_process_id,
         moduleInstSeq: row.module_inst_seq,
         configVersionId: row.latest_template_revision_id,
+        configTemplateId: row.config_template_id,
       },
     };
   };
@@ -206,6 +213,7 @@
         moduleInstSeq: row.module_inst_seq,
         configTemplateId: row.config_template_id,
         taskId: row.task_id,
+        configVersionId: row.latest_template_revision_id,
       },
     };
   };

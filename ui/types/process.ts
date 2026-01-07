@@ -7,7 +7,7 @@ export interface IProcessItem {
   };
   proc_inst: IProcInst[];
   spec: {
-    actions:  Record<string, boolean>;
+    actions: Record<string, { enabled: boolean; reason: string }>;
     alias: string;
     cc_sync_status: string;
     cc_sync_updated_at: string;
@@ -22,7 +22,7 @@ export interface IProcessItem {
     prev_data: string;
     proc_num: number;
     bind_template_ids: number[];
-    process_config_view_url: string
+    process_config_view_url: string;
   };
 }
 

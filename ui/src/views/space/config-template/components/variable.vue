@@ -8,7 +8,7 @@
     </div>
     <div class="variable-content">
       <SearchInput v-model="searchValue" :clearable="false" />
-      <bk-loading color="#242424" :loading="loading">
+      <bk-loading class="variable-loading" color="#242424" :loading="loading">
         <PrimaryTable
           class="variable-table"
           :data="searchVariableList"
@@ -54,7 +54,9 @@
     () => searchValue.value,
     (val) => {
       if (!val) searchVariableList.value = [...variableList.value];
-      searchVariableList.value = variableList.value.filter((item) => item.key.includes(val));
+      searchVariableList.value = variableList.value.filter(
+        (item) => item.key.includes(val) || item.value.includes(val),
+      );
     },
   );
 
@@ -76,7 +78,7 @@
   };
 
   const handleRowClick = ({ row }: { row: IVariableItem }) => {
-    copyToClipBoard(row.value);
+    copyToClipBoard(`$\{${row.value}}`);
     BkMessage({
       theme: 'success',
       message: t('变量值已复制'),
@@ -137,6 +139,10 @@
             }
           }
         }
+      }
+      .variable-loading {
+        max-height: calc(100% - 60px);
+        overflow: auto;
       }
     }
   }

@@ -75,42 +75,36 @@
       <TableColumn :title="t('操作')" :width="220" fixed="right" col-key="operation">
         <template #default="{ row }: { row: IProcessItem }">
           <div class="op-btns">
-            <bk-badge v-if="row.spec.cc_sync_status !== 'updated'" position="top-right" theme="danger" dot>
-              <bk-button text theme="primary" @click="handleUpdateManagedInfo(row)">
-                {{ t('更新托管信息') }}
-              </bk-button>
-            </bk-badge>
-            <template v-else>
-              <bk-popover
-                v-for="action in ['start', 'stop']"
-                :key="action"
-                placement="top"
-                :disabled="row.spec.actions[action].enabled">
+            <TableBtnTooltips
+              v-if="row.spec.cc_sync_status === 'updated'"
+              :disabled="row.spec.actions.unregister.enabled"
+              :reason="row.spec.actions.unregister.reason"
+              :link="cmdbUrl">
+              <bk-badge position="top-right" theme="danger" dot>
                 <bk-button
                   text
                   theme="primary"
-                  :disabled="!row.spec.actions[action].enabled"
-                  @click="handleOpProcess(row, action)">
-                  {{ action === 'start' ? t('启动') : t('停止') }}
+                  :disabled="!row.spec.actions.unregister.enabled"
+                  @click="handleUpdateManagedInfo(row)">
+                  {{ t('更新托管信息') }}
                 </bk-button>
-                <template #content>
-                  <span
-                    v-if="isCmdNotConfigured(row.spec.actions[action].reason)"
-                    class="no-cmd-content"
-                    @click="handleMoreActionClick(row, 'link')">
-                    {{ $t('尚未配置操作命令') }}
-                    <span class="primary">
-                      {{ $t('前往 BKCC 配置') }}
-                      <Share />
-                    </span>
-                  </span>
-                  <span v-else>
-                    {{ getDisabledTip(row.spec.actions[action].reason) }}
-                  </span>
-                </template>
-              </bk-popover>
-            </template>
-
+              </bk-badge>
+            </TableBtnTooltips>
+            <TableBtnTooltips
+              v-else
+              v-for="action in ['start', 'stop']"
+              :key="action"
+              :disabled="row.spec.actions[action].enabled"
+              :reason="row.spec.actions[action].reason"
+              :link="cmdbUrl">
+              <bk-button
+                text
+                theme="primary"
+                :disabled="!row.spec.actions[action].enabled"
+                @click="handleOpProcess(row, action)">
+                {{ action === 'start' ? t('启动') : t('停止') }}
+              </bk-button>
+            </TableBtnTooltips>
             <bk-button text theme="primary" :disabled="!row.spec.actions.push" @click="handleConfigIssued(row)">
               {{ t('配置下发') }}
             </bk-button>
@@ -228,7 +222,7 @@
   <UpdateManagedInfo
     :is-show="isShowUpdateManagedInfo"
     :managed-info="managedInfo"
-    @update="handleConfirmOp('update')"
+    @update="handleConfirmOp('update_register')"
     @close="isShowUpdateManagedInfo = false" />
   <OpProcessDialog
     :is-show="isShowOpProcess"
@@ -248,12 +242,7 @@
   import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
   import { getProcessList, processOperate } from '../../../../api/process';
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
-  import {
-    CC_SYNC_STATUS,
-    PROCESS_STATUS_MAP,
-    PROCESS_MANAGED_STATUS_MAP,
-    PROCESS_BUTTON_DISABLED_TIPS,
-  } from '../../../../constants/process';
+  import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
   import { timeAgo } from '../../../../utils';
   import { useRouter } from 'vue-router';
@@ -268,6 +257,7 @@
   import SyncStatus from './sync-status.vue';
   import FilterProcess from './filter-process.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
+  import TableBtnTooltips from './table-btn-tooltips.vue';
 
   const { spaceId } = storeToRefs(useGlobalStore());
   const { pagination, updatePagination } = useTablePagination('clientSearch');
@@ -361,11 +351,6 @@
   onMounted(() => {
     loadProcessList();
   });
-
-  const isCmdNotConfigured = (reason: string) => reason === 'CMD_NOT_CONFIGURED';
-
-  const getDisabledTip = (reason: string) =>
-    PROCESS_BUTTON_DISABLED_TIPS[reason as keyof typeof PROCESS_BUTTON_DISABLED_TIPS];
 
   const loadProcessList = async () => {
     try {

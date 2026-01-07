@@ -8,7 +8,7 @@
       </div>
     </template>
     <div class="diff-content-area">
-      <diff :diff="configDiffData" :is-tpl="true" :loading="false">
+      <diff :diff="configDiffData" :is-tpl="true" :loading="loadng">
         <template #leftHead>
           <slot name="baseHead">
             <div class="diff-panel-head">
@@ -33,7 +33,7 @@
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { IDiffDetail } from '../../../../../types/service';
-  import { compareConfigInstance } from '../../../../api/config-template';
+  import { checkConfigView } from '../../../../api/config-template';
 
   import Diff from '../../../../components/diff/index.vue';
   import { datetimeFormat } from '../../../../utils';
@@ -44,6 +44,7 @@
     spaceId: string;
     filePath: string;
     instance: {
+      configTemplateId: number;
       ccProcessId: number;
       moduleInstSeq: number;
       configVersionId: number;
@@ -64,6 +65,8 @@
       createTime: '',
     },
   });
+  const loadng = ref(false);
+
   watch(
     () => props.show,
     (newVal) => {
@@ -74,22 +77,31 @@
   );
 
   const loadGenerateResult = async () => {
+    loadng.value = true;
     try {
-      const res = await compareConfigInstance(props.spaceId, props.instance);
+      const params = {
+        config_template_id: props.instance.configTemplateId,
+        cc_process_id: props.instance.ccProcessId,
+        module_inst_seq: props.instance.moduleInstSeq,
+        config_version_id: props.instance.configVersionId,
+      };
+      const res = await checkConfigView(props.spaceId, params);
       configDiffData.value = {
         contentType: 'text',
         id: 0,
         current: {
-          content: res.oldConfigContent.content,
-          createTime: res.oldConfigContent.createTime,
+          content: res.last_dispatched.data.content,
+          createTime: res.last_dispatched.timestamp,
         },
         base: {
-          content: res.newConfigContent.content,
-          createTime: res.newConfigContent.createTime,
+          content: res.preview_config.data.content,
+          createTime: res.preview_config.timestamp,
         },
       };
     } catch (error) {
       console.error(error);
+    } finally {
+      loadng.value = false;
     }
   };
 
@@ -128,7 +140,7 @@
     }
     .path {
       font-size: 14px;
-      color: #4D4F56;
+      color: #4d4f56;
     }
   }
   .diff-panel-head {
