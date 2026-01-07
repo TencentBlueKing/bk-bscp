@@ -820,13 +820,17 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 	// 添加内置系统变量（对应 Python 的 builtin_global_variables）
 	builtinVariables := []ObjectAttribute{
 		{BkPropertyID: "FuncID", BkPropertyName: "进程别名(旧)", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
-		{BkPropertyID: "InstID", BkPropertyName: "实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
-		{BkPropertyID: "InstID0", BkPropertyName: "实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "ModuleInstSeq", BkPropertyName: "模块实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "ModuleInstSeq0", BkPropertyName: "模块实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "HostInstSeq", BkPropertyName: "主机实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "HostInstSeq0", BkPropertyName: "主机实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "InstID", BkPropertyName: "模块实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "InstID0", BkPropertyName: "模块实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
 		{BkPropertyID: "LocalInstID", BkPropertyName: "主机进程实例ID", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
 		{BkPropertyID: "LocalInstID0", BkPropertyName: "主机进程实例ID（从0编号）", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
 		{BkPropertyID: "this", BkPropertyName: "【当前实例对象】", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
 		{BkPropertyID: "cc", BkPropertyName: "【业务拓扑对象】", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
-		{BkPropertyID: "HELP", BkPropertyName: "【HELP】帮助", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
+		{BkPropertyID: "HELP", BkPropertyName: "帮助【HELP】", BkPropertyGroupName: "内置字段", BkPropertyType: "", BkObjID: "global", BkBizID: s.bizID},
 	}
 	allObjectAttributes = append(allObjectAttributes, builtinVariables...)
 
@@ -859,9 +863,9 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 	}
 
 	// 第四步：排序（对应 Python 的 sorted）
-	// Python 代码：all_object_attribute = sorted(all_object_attribute, key=lambda attr: attr["bk_property_name"])
+	// 按 BkPropertyID 的 ASCII 值排序
 	sort.Slice(filteredAttributes, func(i, j int) bool {
-		return filteredAttributes[i].BkPropertyName < filteredAttributes[j].BkPropertyName
+		return filteredAttributes[i].BkPropertyID < filteredAttributes[j].BkPropertyID
 	})
 
 	// 第五步：分组（对应 Python 的 defaultdict(list)）

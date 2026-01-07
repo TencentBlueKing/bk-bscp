@@ -19504,6 +19504,19 @@
       },
       "title": "ProcessSpec source resource reference: pkg/dal/table/process_instance.go"
     },
+    "pbprocActionAvailability": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "是否可操作"
+        },
+        "reason": {
+          "type": "string",
+          "title": "不可操作原因\n\"\"                     : 无原因 / 可操作\n\"TASK_RUNNING\"         : 任务执行中\n\"CMD_NOT_CONFIGURED\"   : 尚未配置操作命令\n\"UNKNOWN_PROCESS_STATUS\"   : 进程和托管状态未知"
+        }
+      }
+    },
     "pbprocFilterOptions": {
       "type": "object",
       "properties": {
@@ -19770,9 +19783,9 @@
         "actions": {
           "type": "object",
           "additionalProperties": {
-            "type": "boolean"
+            "$ref": "#/definitions/pbprocActionAvailability"
           },
-          "description": "展示操作按钮是否可以操作(key可以是register,unregister,start,stop,restart,reload,kill)",
+          "description": "展示操作按钮是否可以操作(key可以是register,unregister,start,stop,restart,reload,kill,pull)",
           "title": "展示操作按钮是否可以操作,是一个map，key代表动作，value代表是否可以操作"
         },
         "status": {

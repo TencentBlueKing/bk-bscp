@@ -308,7 +308,7 @@ func mapCC3FieldToCC1(newFieldName string) string {
 	fieldNameMapping := map[string]string{
 		// set
 		"bk_set_name":       "SetName",
-		"bk_set_env":        "SetEnviType", // 注意：Python 中是 SetEnviType，不是 SetEnv
+		"bk_set_env":        "SetEnviType", // 注意：Python 中是 SetEnviType，不是 SetEnv（维持了旧版本）
 		"bk_world_id":       "SetWorldID",
 		"bk_platform":       "Platform",
 		"bk_system":         "System",
