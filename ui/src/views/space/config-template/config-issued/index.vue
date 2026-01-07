@@ -279,8 +279,8 @@
   const handleIssue = async () => {
     try {
       pending.value = true;
-      await issueConfig(spaceId.value, batchId.value);
-      handleClose();
+      const res = await issueConfig(spaceId.value, batchId.value);
+      router.push({ name: 'task-detail', params: { taskId: res.batch_id } });
     } catch (error) {
       console.error(error);
     } finally {
