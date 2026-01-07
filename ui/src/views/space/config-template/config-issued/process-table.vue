@@ -110,7 +110,12 @@
         </template>
         <TableColumn :title="$t('操作')" width="196">
           <template #default="{ row }: { row: ITemplateProcessItem }">
-            <bk-button v-if="isCheck" theme="primary" text @click="handleView(row)">
+            <bk-button
+              v-if="isCheck"
+              theme="primary"
+              text
+              :disabled="row.config_version_name === '-'"
+              @click="handleView(row)">
               {{ $t('查看配置') }}
             </bk-button>
             <div v-else-if="isGenerate" class="op-btns">
@@ -175,11 +180,10 @@
       moduleInstSeq: number;
       configTemplateId: number;
       taskId: string;
-      configVersionId: number;
     };
   }>({
     open: false,
-    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, configVersionId: 0, taskId: '' },
+    data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
   });
 
   const templateName = computed(() => {
@@ -213,7 +217,6 @@
         moduleInstSeq: row.module_inst_seq,
         configTemplateId: row.config_template_id,
         taskId: row.task_id,
-        configVersionId: row.latest_template_revision_id,
       },
     };
   };
