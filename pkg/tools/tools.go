@@ -82,6 +82,24 @@ func SliceDiff(slice1, slice2 []uint32) []uint32 {
 	return diff
 }
 
+// SliceIntersect get the intersection of two slices
+func SliceIntersect(slice1, slice2 []uint32) []uint32 {
+	set := make(map[uint32]struct{}, len(slice1))
+	result := make([]uint32, 0)
+
+	for _, v := range slice1 {
+		set[v] = struct{}{}
+	}
+
+	for _, v := range slice2 {
+		if _, ok := set[v]; ok {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
 // SliceRepeatedElements get the repeated elements in a slice, and the keep the sequence of result
 func SliceRepeatedElements(slice []uint32) []uint32 {
 	frequencyMap := make(map[uint32]uint32)

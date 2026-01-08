@@ -90,6 +90,18 @@ func TestSliceDiff(t *testing.T) {
 	}
 }
 
+func TestSliceIntersect(t *testing.T) {
+	slice1 := []uint32{1, 2, 3, 4, 5}
+	slice2 := []uint32{3, 4, 5, 6, 7}
+	expected := []uint32{3, 4, 5}
+
+	result := SliceIntersect(slice1, slice2)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected intersection: %v, but got %v", expected, result)
+	}
+}
+
 func TestSliceRepeatedElements(t *testing.T) {
 	slice := []uint32{1, 2, 2, 3, 4, 4, 5, 5, 5}
 	expected := []uint32{2, 4, 5}

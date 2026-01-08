@@ -36,6 +36,7 @@ import (
 	pbcin "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-instance"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
@@ -212,9 +213,9 @@ func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate
 	ccProcessIDs = append(ccProcessIDs, configTemplate.Attachment.CcProcessIDs...)
 
 	finalCcProcessIDs := ccProcessIDs
-	// 搜索条件优先覆盖模板
+	// 只能为和配置模版绑定了的进程实例下发配置，如果搜索条件指定了进程ID，则取交集
 	if search != nil && len(search.CcProcessIds) > 0 {
-		finalCcProcessIDs = search.CcProcessIds
+		finalCcProcessIDs = tools.SliceIntersect(ccProcessIDs, search.CcProcessIds)
 	}
 
 	// 根据过滤条件再次查询完整的进程列表
