@@ -31,6 +31,7 @@ const (
 	DisableReasonTaskRunning         = "TASK_RUNNING"           // 运行中
 	DisableReasonCmdNotConfigured    = "CMD_NOT_CONFIGURED"     // 尚未配置操作命令
 	DisableReasonUnknownProcessState = "UNKNOWN_PROCESS_STATUS" // 进程和托管状态空
+	DisableReasonNoNeedOperate       = "NO_NEED_OPERATE"        // 当前状态无需执行该操作
 )
 
 var (
@@ -376,12 +377,12 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 				}
 				return true, "", DisableReasonNone
 			}
-			return false, "process is already stopped, no need to stop", DisableReasonTaskRunning
+			return false, "process is already stopped, no need to stop", DisableReasonNoNeedOperate
 		case table.UnregisterProcessOperate:
 			if isManaged {
 				return true, "", DisableReasonNone
 			}
-			return false, "process is already unregistered, no need to unregister", DisableReasonTaskRunning
+			return false, "process is already unregistered, no need to unregister", DisableReasonNoNeedOperate
 		default:
 			return false, "process cannot operate", DisableReasonNone
 		}
@@ -393,12 +394,12 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		if isUnmanaged {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already unmanaged, no need to register", DisableReasonTaskRunning
+		return false, "process is already unmanaged, no need to register", DisableReasonNoNeedOperate
 	case table.UnregisterProcessOperate: // 已托管：可取消托管
 		if isManaged {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already managed, no need to unregister", DisableReasonTaskRunning
+		return false, "process is already managed, no need to unregister", DisableReasonNoNeedOperate
 	case table.StartProcessOperate: // 进程已停止：可启动
 		// start 需要命令
 		if !hasOperateCommand(op, info) {
@@ -407,7 +408,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		if isStopped {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already started, no need to start", DisableReasonTaskRunning
+		return false, "process is already started, no need to start", DisableReasonNoNeedOperate
 	case table.RestartProcessOperate, table.ReloadProcessOperate: // 进程启动或停止均可执行重启、重载操作
 		// restart/reload 需要命令（按你的需求）
 		if !hasOperateCommand(op, info) {
@@ -422,7 +423,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		if isRunning {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already stopped, no need to stop or kill", DisableReasonTaskRunning
+		return false, "process is already stopped, no need to stop or kill", DisableReasonNoNeedOperate
 	case table.PullProcessOperate: // 下发： 只要求未被删除
 		if !isDeleted {
 			return true, "", DisableReasonNone
