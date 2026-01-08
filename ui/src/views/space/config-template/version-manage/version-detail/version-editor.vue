@@ -138,7 +138,7 @@
   const submitPending = ref(false);
   const suffix = ref('');
   const highlight = ref('python');
-  const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
+  const highlightOptions = ['python', 'yaml', 'json', 'xml', 'shell', 'bat', 'powershell', 'javascript'];
   const previewRef = ref();
 
   const isViewMode = computed(() => props.type === 'view');

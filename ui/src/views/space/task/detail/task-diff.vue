@@ -75,12 +75,12 @@
         contentType: 'text',
         id: 0,
         current: {
-          content: res.last_dispatched.data.content,
-          createTime: res.last_dispatched.timestamp,
+          content: res.last_dispatched ? res.last_dispatched.data.content : '',
+          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
         },
         base: {
-          content: res.current_online.data.content,
-          createTime: res.current_online.timestamp,
+          content: res.preview_config ? res.preview_config.data.content : '',
+          createTime: res.preview_config ? res.preview_config.timestamp : '',
         },
       };
       filePath.value = `${res.config_template_name} (${res.config_file_path})`;

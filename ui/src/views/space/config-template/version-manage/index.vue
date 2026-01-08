@@ -11,6 +11,7 @@
         {{ t('新建版本') }}
       </bk-button>
       <SearchSelector
+        v-show="versionDetailModeData.type !== 'create'"
         ref="searchSelectorRef"
         class="search-input"
         :search-field="searchField"
@@ -102,7 +103,7 @@
   });
   const versionDetailModeData = ref<{ open: boolean; type: string; id: number }>({
     open: false,
-    type: 'create',
+    type: 'view',
     id: 0,
   });
   const searchQuery = ref<{ [key: string]: string }>({});

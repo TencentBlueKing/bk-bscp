@@ -84,7 +84,7 @@
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
   const highlight = ref('python');
-  const highlightOptions = ['python', 'shell', 'bat', 'powershell'];
+  const highlightOptions = ['python', 'yaml', 'json', 'xml', 'shell', 'bat', 'powershell', 'javascript'];
   const suffix = ref('');
   const previewRef = ref();
 

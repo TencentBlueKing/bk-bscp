@@ -21,9 +21,7 @@
     </TableColumn>
     <TableColumn :title="t('更新时间')">
       <template #default="{ row }">
-        <template v-if="row.revision">
           {{ datetimeFormat(row.revision.update_at) }}
-        </template>
       </template>
     </TableColumn>
     <TableColumn :title="t('操作')" width="337">

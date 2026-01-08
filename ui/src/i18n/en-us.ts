@@ -1478,4 +1478,5 @@ export default {
   进程状态异常: 'Process Status Abnormal',
   尚未配置操作命令: 'Operation Commands Not Configured',
   '前往 BKCC 配置': 'Go to BKCC to Configure',
+  当前状态无需执行该操作: 'The current status does not require this operation',
 };

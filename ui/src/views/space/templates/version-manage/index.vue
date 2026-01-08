@@ -13,6 +13,7 @@
         {{ t('新建版本') }}
       </bk-button>
       <SearchSelector
+        v-show="versionDetailModeData.type !== 'create'"
         ref="searchSelectorRef"
         class="search-input"
         :search-field="searchField"

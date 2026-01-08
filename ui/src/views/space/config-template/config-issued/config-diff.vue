@@ -90,12 +90,12 @@
         contentType: 'text',
         id: 0,
         current: {
-          content: res.last_dispatched.data.content,
-          createTime: res.last_dispatched.timestamp,
+          content: res.last_dispatched ? res.last_dispatched.data.content : '',
+          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
         },
         base: {
-          content: res.preview_config.data.content,
-          createTime: res.preview_config.timestamp,
+          content: res.preview_config ? res.preview_config.data.content : '',
+          createTime: res.preview_config ? res.preview_config.timestamp : '',
         },
       };
     } catch (error) {

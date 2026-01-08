@@ -120,7 +120,7 @@
           config_file_permission,
           config_file_owner,
           config_file_group,
-          content: last_dispatched.data.content,
+          content: last_dispatched ? last_dispatched.data.content : '',
         };
       } else {
         res = await getGenerateResult(props.bkBizId, props.data.taskId);
