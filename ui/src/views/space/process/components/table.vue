@@ -176,8 +176,9 @@
             </TableColumn>
             <TableColumn>
               <template #default="{ row: rowData }: { row: IProcInst }">
-                <div v-if="rowData.spec.actions" class="op-btns">
+                <div class="op-btns">
                   <bk-button
+                    v-if="rowData.spec.actions.stop"
                     text
                     theme="primary"
                     :disabled="!rowData.spec.actions.stop"
@@ -185,6 +186,7 @@
                     {{ t('停止') }}
                   </bk-button>
                   <bk-button
+                    v-if="rowData.spec.actions.unregister"
                     text
                     theme="primary"
                     :disabled="!rowData.spec.actions.unregister"
@@ -192,7 +194,6 @@
                     {{ t('取消托管') }}
                   </bk-button>
                 </div>
-                <span v-else>--</span>
               </template>
             </TableColumn>
           </PrimaryTable>
