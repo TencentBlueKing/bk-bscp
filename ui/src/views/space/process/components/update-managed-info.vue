@@ -1,12 +1,5 @@
 <template>
   <bk-dialog :is-show="isShow" :title="$t('更新托管信息')" width="960">
-    <bk-alert theme="warning">
-      <template #title>
-        <span>{{ $t('全部进程将会进行重启') }}:</span>
-        <br />
-        <span>{{ $t('执行旧的停止命令，使用新的启动命令') }}</span>
-      </template>
-    </bk-alert>
     <div class="info-wrap">
       <div class="info-content">
         <div v-for="value in 2" :key="value" class="info">
@@ -29,10 +22,18 @@
         <span>{{ t('更新') }}</span>
       </div>
     </div>
+    <bk-checkbox class="restart-checkbox" v-model="restart"> {{ t('重启') }}</bk-checkbox>
+    <bk-alert v-show="restart" class="restart-alert" theme="warning">
+      <template #title>
+        <span>{{ $t('全部进程将会进行重启') }}:</span>
+        <br />
+        <span>{{ $t('执行旧的停止命令，使用新的启动命令') }}</span>
+      </template>
+    </bk-alert>
     <template #footer>
       <div class="button-group">
         <bk-button theme="primary" @click="handleSubmitClick">
-          {{ t('更新并重启') }}
+          {{ restart ? t('更新并重启') : t('更新') }}
         </bk-button>
         <bk-button @click="handleClose">{{ t('取消') }}</bk-button>
       </div>
@@ -54,6 +55,7 @@
   const emits = defineEmits(['close', 'update']);
   const newDisplayData = ref();
   const oldDisplayData = ref();
+  const restart = ref(false);
 
   watch(
     () => props.managedInfo,
@@ -96,8 +98,8 @@
   };
 
   const handleSubmitClick = () => {
-    // TODO 提交更新托管信息
-    emits('update');
+    emits('update', restart.value);
+    emits('close');
   };
   const handleClose = () => {
     emits('close');
@@ -106,7 +108,6 @@
 
 <style scoped lang="scss">
   .info-wrap {
-    margin: 16px 0 24px;
     border: 1px solid #dcdee5;
     border-radius: 2px;
     .info-content {
@@ -165,6 +166,12 @@
         border-radius: 2px;
       }
     }
+  }
+  .restart-checkbox {
+    margin: 16px 0;
+  }
+  .restart-alert {
+    margin-bottom: 24px;
   }
   .button-group {
     .bk-button {

@@ -115,11 +115,8 @@
   };
 
   const handlePreview = () => {
-    if (suffix.value === 'preview') {
-      previewRef.value.reloadPreview();
-    } else {
-      suffix.value = 'preview';
-    }
+    suffix.value = 'preview';
+    previewRef.value.reloadPreview();
   };
 </script>
 

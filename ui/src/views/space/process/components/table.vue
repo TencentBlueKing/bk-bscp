@@ -222,7 +222,7 @@
   <UpdateManagedInfo
     :is-show="isShowUpdateManagedInfo"
     :managed-info="managedInfo"
-    @update="handleConfirmOp('update_register')"
+    @update="handleConfirmOp('update_register', $event)"
     @close="isShowUpdateManagedInfo = false" />
   <OpProcessDialog
     :is-show="isShowOpProcess"
@@ -504,12 +504,13 @@
     handleConfirmOp(op);
   };
 
-  const handleConfirmOp = async (op: string) => {
+  const handleConfirmOp = async (op: string, restart?: boolean) => {
     try {
       const query = {
         processIds: processIds.value,
         processInstanceId: processInstanceId.value,
         operateType: op,
+        enable_process_restart: restart,
       };
       const res = await processOperate(spaceId.value, query);
       isShowOpProcess.value = false;
