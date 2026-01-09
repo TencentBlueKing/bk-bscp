@@ -1684,7 +1684,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // 获取配置
-  rpc GetConfigView(GetConfigViewReq) returns (GetConfigRenderResultResp) {
+  rpc GetConfigView(GetConfigViewReq) returns (GetConfigViewResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/config_instances/view"
@@ -5170,7 +5170,7 @@ message GetConfigDiffResp {
   // 当前现网生效的配置
   pbcin.ConfigVersion current_online = 2;
   string config_template_name = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板名称" }];
   string config_file_name = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件名称" }];
   string config_file_path = 5
@@ -5184,6 +5184,27 @@ message GetConfigViewReq {
   uint32 cc_process_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
   uint32 module_inst_seq = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块下的进程实例序列号" }];
+  uint32 config_version_id = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板版本ID" }];
+}
+
+message GetConfigViewResp {
+  // 最后一次下发的配置
+  pbcin.ConfigVersion last_dispatched = 1;
+  // 实时预览的配置
+  pbcin.ConfigVersion preview_config = 2;
+  string config_template_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板名称" }];
+  string config_file_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件名称" }];
+  string config_file_path = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置文件路径" }];
+  string config_file_owner = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
+  string config_file_group = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户组权限名" }];
+  string config_file_permission = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件权限" }];
 }
 
 message GetProcessInstanceTopoReq {

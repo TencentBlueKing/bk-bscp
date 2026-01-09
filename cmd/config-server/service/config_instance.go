@@ -334,7 +334,7 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbcs.GetConfigDiffReq)
 }
 
 // GetConfigView implements [pbcs.ConfigServer].
-func (s *Service) GetConfigView(ctx context.Context, req *pbcs.GetConfigViewReq) (*pbcs.GetConfigRenderResultResp, error) {
+func (s *Service) GetConfigView(ctx context.Context, req *pbcs.GetConfigViewReq) (*pbcs.GetConfigViewResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
@@ -349,20 +349,20 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbcs.GetConfigViewReq)
 		ConfigTemplateId: req.GetConfigTemplateId(),
 		CcProcessId:      req.GetCcProcessId(),
 		ModuleInstSeq:    req.GetModuleInstSeq(),
+		ConfigVersionId:  req.GetConfigVersionId(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &pbcs.GetConfigRenderResultResp{
-		ConfigTemplateId:     resp.ConfigTemplateId,
-		ConfigTemplateName:   resp.ConfigTemplateName,
-		ConfigFileName:       resp.ConfigFileName,
-		ConfigFilePath:       resp.ConfigFilePath,
-		ConfigFileOwner:      resp.ConfigFileOwner,
-		ConfigFileGroup:      resp.ConfigFileGroup,
-		ConfigFilePermission: resp.ConfigFilePermission,
-		ConfigInstanceKey:    resp.ConfigInstanceKey,
-		Content:              resp.Content,
+	return &pbcs.GetConfigViewResp{
+		LastDispatched:       resp.GetLastDispatched(),
+		PreviewConfig:        resp.GetPreviewConfig(),
+		ConfigTemplateName:   resp.GetConfigTemplateName(),
+		ConfigFilePath:       resp.GetConfigFilePath(),
+		ConfigFileName:       resp.GetConfigFileName(),
+		ConfigFileOwner:      resp.GetConfigFileOwner(),
+		ConfigFileGroup:      resp.GetConfigFileGroup(),
+		ConfigFilePermission: resp.GetConfigFilePermission(),
 	}, nil
 }

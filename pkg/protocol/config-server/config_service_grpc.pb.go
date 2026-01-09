@@ -638,7 +638,7 @@ type ConfigClient interface {
 	// 配置对比
 	GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, opts ...grpc.CallOption) (*GetConfigDiffResp, error)
 	// 获取配置
-	GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error)
+	GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigViewResp, error)
 	// 配置生成操作
 	OperateGenerateConfig(ctx context.Context, in *OperateGenerateConfigReq, opts ...grpc.CallOption) (*OperateGenerateConfigResp, error)
 	// 配置下发
@@ -2459,8 +2459,8 @@ func (c *configClient) GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, 
 	return out, nil
 }
 
-func (c *configClient) GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error) {
-	out := new(GetConfigRenderResultResp)
+func (c *configClient) GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigViewResp, error) {
+	out := new(GetConfigViewResp)
 	err := c.cc.Invoke(ctx, Config_GetConfigView_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2990,7 +2990,7 @@ type ConfigServer interface {
 	// 配置对比
 	GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error)
 	// 获取配置
-	GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigRenderResultResp, error)
+	GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigViewResp, error)
 	// 配置生成操作
 	OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error)
 	// 配置下发
@@ -3619,7 +3619,7 @@ func (UnimplementedConfigServer) CheckConfig(context.Context, *CheckConfigReq) (
 func (UnimplementedConfigServer) GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigDiff not implemented")
 }
-func (UnimplementedConfigServer) GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigRenderResultResp, error) {
+func (UnimplementedConfigServer) GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigViewResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigView not implemented")
 }
 func (UnimplementedConfigServer) OperateGenerateConfig(context.Context, *OperateGenerateConfigReq) (*OperateGenerateConfigResp, error) {

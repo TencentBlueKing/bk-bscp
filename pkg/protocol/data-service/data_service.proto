@@ -350,7 +350,7 @@ service Data {
   // 配置对比
   rpc GetConfigDiff(GetConfigDiffReq) returns (GetConfigDiffResp) {}
   // 配置查看
-  rpc GetConfigView(GetConfigViewReq) returns (GetConfigGenerateResultResp) {}
+  rpc GetConfigView(GetConfigViewReq) returns (GetConfigViewResp) {}
   // 配置实例状态
   rpc ConfigGenerateStatus(ConfigGenerateStatusReq) returns (ConfigGenerateStatusResp) {}
   // 查看配置生成结果
@@ -2700,6 +2700,20 @@ message GetConfigViewReq {
   uint32 config_template_id = 2;
   uint32 cc_process_id = 3;
   uint32 module_inst_seq = 4;
+  uint32 config_version_id = 5;
+}
+
+message GetConfigViewResp {
+  // 最后一次下发的配置
+  pbcin.ConfigVersion last_dispatched = 1;
+  // 实时预览的配置
+  pbcin.ConfigVersion preview_config = 2;
+  string config_template_name = 3;
+  string config_file_name = 4;
+  string config_file_path = 5;
+  string config_file_owner = 6;
+  string config_file_group = 7;
+  string config_file_permission = 8;
 }
 
 message GetProcessInstanceTopoReq {

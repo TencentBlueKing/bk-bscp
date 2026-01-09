@@ -517,7 +517,7 @@ type DataClient interface {
 	// 配置对比
 	GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, opts ...grpc.CallOption) (*GetConfigDiffResp, error)
 	// 配置查看
-	GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigGenerateResultResp, error)
+	GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigViewResp, error)
 	// 配置实例状态
 	ConfigGenerateStatus(ctx context.Context, in *ConfigGenerateStatusReq, opts ...grpc.CallOption) (*ConfigGenerateStatusResp, error)
 	// 查看配置生成结果
@@ -2448,8 +2448,8 @@ func (c *dataClient) GetConfigDiff(ctx context.Context, in *GetConfigDiffReq, op
 	return out, nil
 }
 
-func (c *dataClient) GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigGenerateResultResp, error) {
-	out := new(GetConfigGenerateResultResp)
+func (c *dataClient) GetConfigView(ctx context.Context, in *GetConfigViewReq, opts ...grpc.CallOption) (*GetConfigViewResp, error) {
+	out := new(GetConfigViewResp)
 	err := c.cc.Invoke(ctx, Data_GetConfigView_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2783,7 +2783,7 @@ type DataServer interface {
 	// 配置对比
 	GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error)
 	// 配置查看
-	GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigGenerateResultResp, error)
+	GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigViewResp, error)
 	// 配置实例状态
 	ConfigGenerateStatus(context.Context, *ConfigGenerateStatusReq) (*ConfigGenerateStatusResp, error)
 	// 查看配置生成结果
@@ -3438,7 +3438,7 @@ func (UnimplementedDataServer) CheckConfig(context.Context, *CheckConfigReq) (*C
 func (UnimplementedDataServer) GetConfigDiff(context.Context, *GetConfigDiffReq) (*GetConfigDiffResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigDiff not implemented")
 }
-func (UnimplementedDataServer) GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigGenerateResultResp, error) {
+func (UnimplementedDataServer) GetConfigView(context.Context, *GetConfigViewReq) (*GetConfigViewResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigView not implemented")
 }
 func (UnimplementedDataServer) ConfigGenerateStatus(context.Context, *ConfigGenerateStatusReq) (*ConfigGenerateStatusResp, error) {

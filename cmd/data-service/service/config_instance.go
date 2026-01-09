@@ -14,7 +14,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"strings"
@@ -24,6 +26,7 @@ import (
 	istore "github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
@@ -36,6 +39,7 @@ import (
 	pbcin "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-instance"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
@@ -1501,20 +1505,133 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq)
 }
 
 // GetConfigView implements [pbds.DataServer].
-func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq) (*pbds.GetConfigGenerateResultResp, error) {
+func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq) (*pbds.GetConfigViewResp, error) {
+
 	kt := kit.FromGrpcContext(ctx)
 
-	configInstance, err := s.dao.ConfigInstance().GetConfigInstance(kt, req.BizId, &dao.ConfigInstanceSearchCondition{
-		ConfigTemplateId: req.GetConfigTemplateId(),
-		CcProcessId:      req.GetCcProcessId(),
-		ModuleInstSeq:    req.GetModuleInstSeq(),
+	// 1. 查询配置实例（可能不存在）
+	ci, err := s.dao.ConfigInstance().GetConfigInstance(
+		kt,
+		req.GetBizId(),
+		&dao.ConfigInstanceSearchCondition{
+			ConfigTemplateId: req.GetConfigTemplateId(),
+			CcProcessId:      req.GetCcProcessId(),
+			ModuleInstSeq:    req.GetModuleInstSeq(),
+		},
+	)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	lastDispatched := buildLastDispatched(ci)
+
+	// 2. 查询模板
+	ct, err := s.dao.ConfigTemplate().GetByID(
+		kt,
+		req.GetBizId(),
+		req.GetConfigTemplateId(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 现网配置视图（未指定版本）
+	if req.GetConfigVersionId() == 0 {
+		if ci == nil {
+			return nil, fmt.Errorf(
+				"config instance not found, biz_id=%d, config_template_id=%d, cc_process_id=%d, module_inst_seq=%d",
+				req.GetBizId(), req.GetConfigTemplateId(), req.GetCcProcessId(), req.GetModuleInstSeq(),
+			)
+		}
+
+		tr, errT := s.dao.TemplateRevision().
+			GetTemplateRevisionById(kt, req.GetBizId(), ci.Attachment.ConfigVersionID)
+		if errT != nil {
+			return nil, errT
+		}
+
+		return buildConfigViewResp(ct, tr, lastDispatched, nil), nil
+	}
+
+	// 4. 实时预览指定版本
+	tr, err := s.dao.TemplateRevision().
+		GetTemplateRevisionById(kt, req.GetBizId(), req.GetConfigVersionId())
+	if err != nil {
+		return nil, err
+	}
+
+	previewConfig, err := s.buildPreviewConfig(kt, tr, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildConfigViewResp(ct, tr, lastDispatched, previewConfig), nil
+}
+
+func buildLastDispatched(ci *table.ConfigInstance) *pbcin.ConfigVersion {
+	if ci == nil {
+		return nil
+	}
+
+	return &pbcin.ConfigVersion{
+		Data: &pbcin.ConfigContent{
+			Content:  ci.Attachment.Content,
+			Checksum: ci.Attachment.Md5,
+		},
+		Timestamp: timestamppb.New(ci.Revision.UpdatedAt),
+		Operator:  ci.Revision.Reviser,
+	}
+}
+
+func (s *Service) buildPreviewConfig(kt *kit.Kit, tr *table.TemplateRevision, req *pbds.GetConfigViewReq) (*pbcin.ConfigVersion, error) {
+
+	body, _, err := s.repo.Download(kt, tr.Spec.ContentSpec.Signature)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"download template config failed, template id: %d, name: %s, path: %s, err: %w",
+			tr.Attachment.TemplateID, tr.Spec.Name, tr.Spec.Path, err,
+		)
+	}
+	defer body.Close()
+
+	raw, err := io.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+
+	previewResp, err := s.PreviewConfig(kt.Ctx, &pbds.PreviewConfigReq{
+		BizId:           req.GetBizId(),
+		TemplateContent: string(raw),
+		CcProcessId:     req.GetCcProcessId(),
+		ModuleInstSeq:   req.GetModuleInstSeq(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return s.GetConfigGenerateResult(kt.RpcCtx(), &pbds.GetConfigGenerateResultReq{
-		BizId:  req.GetBizId(),
-		TaskId: configInstance.Attachment.GenerateTaskID,
-	})
+	content := previewResp.GetContent()
+
+	return &pbcin.ConfigVersion{
+		Data: &pbcin.ConfigContent{
+			Content:  content,
+			Checksum: tools.ByteSHA256([]byte(content)),
+		},
+		Timestamp: timestamppb.New(time.Now()),
+		Operator:  kt.User,
+	}, nil
+}
+
+func buildConfigViewResp(ct *table.ConfigTemplate, tr *table.TemplateRevision,
+	last *pbcin.ConfigVersion, preview *pbcin.ConfigVersion) *pbds.GetConfigViewResp {
+
+	return &pbds.GetConfigViewResp{
+		LastDispatched:       last,
+		PreviewConfig:        preview,
+		ConfigTemplateName:   ct.Spec.Name,
+		ConfigFileName:       tr.Spec.Name,
+		ConfigFilePath:       tr.Spec.Path,
+		ConfigFileOwner:      tr.Spec.Permission.User,
+		ConfigFileGroup:      tr.Spec.Permission.UserGroup,
+		ConfigFilePermission: tr.Spec.Permission.Privilege,
+	}
 }
