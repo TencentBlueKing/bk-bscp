@@ -79,7 +79,8 @@
       { title: t('停止命令：'), content: data.stop_cmd || '--', isWarn: false },
       { title: t('强制停止：'), content: data.face_stop_cmd || '--', isWarn: false },
       { title: t('重载命令：'), content: data.reload_cmd || '--', isWarn: false },
-      { title: t('操作超时时长：'), content: data.timeout || '--', isWarn: false },
+      { title: t('启动等待时长：'), content: `${data.start_check_secs}s` || '--', isWarn: false },
+      { title: t('操作超时时长：'), content: `${data.timeout}s` || '--', isWarn: false },
     ];
   };
 

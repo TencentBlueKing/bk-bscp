@@ -77,14 +77,14 @@
           <div class="op-btns">
             <TableBtnTooltips
               v-if="row.spec.cc_sync_status === 'updated'"
-              :disabled="row.spec.actions.unregister.enabled"
-              :reason="row.spec.actions.unregister.reason"
+              :disabled="row.spec.actions.update_register.enabled"
+              :reason="row.spec.actions.update_register.reason"
               :link="cmdbUrl">
               <bk-badge position="top-right" theme="danger" dot>
                 <bk-button
                   text
                   theme="primary"
-                  :disabled="!row.spec.actions.unregister.enabled"
+                  :disabled="!row.spec.actions.update_register.enabled"
                   @click="handleUpdateManagedInfo(row)">
                   {{ t('更新托管信息') }}
                 </bk-button>

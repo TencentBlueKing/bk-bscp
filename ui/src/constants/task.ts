@@ -11,6 +11,7 @@ export const TASK_ACTION_MAP = {
   config_generate: localT('生成'),
   config_publish: localT('下发'),
   config_check: localT('巡检'),
+  update_register: localT('更新托管信息'),
 };
 
 export const TASK_STATUS_MAP = {
