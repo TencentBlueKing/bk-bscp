@@ -14,12 +14,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
@@ -868,8 +868,9 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		}
 	}()
 
-	// 如果文件权限和内容没变化不更新模板版本数据
-	if !reflect.DeepEqual(revision.Spec.ContentSpec, spec.ContentSpec) || !reflect.DeepEqual(revision.Spec.Permission, spec.Permission) {
+	// 如果文件权限和内容以及描述没变化不更新模板版本数据
+	if !reflect.DeepEqual(revision.Spec.ContentSpec, spec.ContentSpec) ||
+		!reflect.DeepEqual(revision.Spec.Permission, spec.Permission) || req.GetRevisionMemo() != template.Spec.Memo {
 		// 生成新的版本文件
 		_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true)
 		if err != nil {
@@ -884,7 +885,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	err = s.dao.Template().UpdateWithTx(grpcKit, tx, &table.Template{
 		ID: template.ID,
 		Spec: &table.TemplateSpec{
-			Memo: req.GetMemo(),
+			Memo: req.GetRevisionMemo(),
 			Path: template.Spec.Path,
 			Name: template.Spec.Name,
 		},
