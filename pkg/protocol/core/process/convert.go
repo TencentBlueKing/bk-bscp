@@ -208,27 +208,43 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 			pbProc.Spec.Status = deriveProcessStatus(statusSet)
 			pbProc.Spec.ManagedStatus = deriveManagedStatus(managedStatusSet)
 
-			// 处理单个实例按钮（仅缩容时）,只有最后一个实例返回按钮操作权限
-			if p.Spec.ProcNum < uint(len(insts)) {
-				last := pbProc.ProcInst[len(pbProc.ProcInst)-1] // 最后一个实例
-				instStatus := last.Spec.Status
-				instManagedStatus := last.Spec.ManagedStatus
+			isScaleDown := p.Spec.ProcNum < uint(len(pbProc.ProcInst))
 
-				stopAllowed, _, _ := CanProcessOperate(table.StopProcessOperate, processInfo,
-					instStatus, instManagedStatus, "")
+			for i, inst := range pbProc.ProcInst {
 
-				unregisterAllowed, _, _ := CanProcessOperate(table.UnregisterProcessOperate, processInfo,
-					instStatus, instManagedStatus, "")
-
-				// 如果两个都不能操作，则强制开放 unregister = true
-				if !stopAllowed && !unregisterAllowed {
-					unregisterAllowed = true
+				// 1. ing 状态：实例级全部冻结（基于实例自身状态）
+				if isProcessInProgress(inst.Spec.Status) ||
+					isManagedInProgress(inst.Spec.ManagedStatus) {
+					inst.Spec.Actions = emptyInstanceActions()
+					continue
 				}
 
-				last.Spec.Actions = map[string]bool{
-					"stop":       stopAllowed,
-					"unregister": unregisterAllowed,
+				// 2. 缩容：最后一个实例特殊处理，其余实例照常处理
+				if isScaleDown && i == len(pbProc.ProcInst)-1 {
+
+					actions := buildInstanceActions(
+						processInfo,
+						inst.Spec.Status,
+						inst.Spec.ManagedStatus,
+						p.Spec.CcSyncStatus.String(),
+					)
+
+					// 缩容兜底：保证至少能 unregister
+					if !actions["stop"] && !actions["unregister"] {
+						actions["unregister"] = true
+					}
+
+					inst.Spec.Actions = actions
+					continue
 				}
+
+				// 3. 普通实例能力判断
+				inst.Spec.Actions = buildInstanceActions(
+					processInfo,
+					inst.Spec.Status,
+					inst.Spec.ManagedStatus,
+					p.Spec.CcSyncStatus.String(),
+				)
 			}
 
 		} else {
@@ -241,6 +257,38 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 		result = append(result, pbProc)
 	}
 	return result
+}
+
+func emptyInstanceActions() map[string]bool {
+	return map[string]bool{
+		"stop":       false,
+		"unregister": false,
+	}
+}
+
+func buildInstanceActions(processInfo table.ProcessInfo, instStatus, instManagedStatus,
+	syncStatus string) map[string]bool {
+
+	stopAllowed, _, _ := CanProcessOperate(
+		table.StopProcessOperate,
+		processInfo,
+		instStatus,
+		instManagedStatus,
+		syncStatus,
+	)
+
+	unregisterAllowed, _, _ := CanProcessOperate(
+		table.UnregisterProcessOperate,
+		processInfo,
+		instStatus,
+		instManagedStatus,
+		syncStatus,
+	)
+
+	return map[string]bool{
+		"stop":       stopAllowed,
+		"unregister": unregisterAllowed,
+	}
 }
 
 // buildProcessActions 构建所有操作类型的可用性
@@ -316,6 +364,28 @@ func hasOperateCommand(op table.ProcessOperateType, info table.ProcessInfo) bool
 	}
 }
 
+func isProcessInProgress(state string) bool {
+	switch state {
+	case table.ProcessStatusStarting.String(),
+		table.ProcessStatusStopping.String(),
+		table.ProcessStatusReloading.String(),
+		table.ProcessStatusRestarting.String():
+		return true
+	default:
+		return false
+	}
+}
+
+func isManagedInProgress(state string) bool {
+	switch state {
+	case table.ProcessManagedStatusStarting.String(),
+		table.ProcessManagedStatusStopping.String():
+		return true
+	default:
+		return false
+	}
+}
+
 // CanProcessOperate 判断某个操作是否允许执行
 //  1. 检测进程和托管状态
 //  2. 检测workPath、PidFile、User是否为空
@@ -341,13 +411,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	}
 
 	// 3. ing 状态禁止所有操作
-	isStartingOrStopping := processState == table.ProcessStatusStarting.String() ||
-		processState == table.ProcessStatusStopping.String() ||
-		processState == table.ProcessStatusReloading.String() || processState == table.ProcessStatusRestarting.String()
-	isManagedStartingOrStopping := managedState == table.ProcessManagedStatusStarting.String() ||
-		managedState == table.ProcessManagedStatusStopping.String()
-
-	if isStartingOrStopping || isManagedStartingOrStopping {
+	if isProcessInProgress(processState) || isManagedInProgress(managedState) {
 		return false, "process is in intermediate state, cannot operate", DisableReasonTaskRunning
 	}
 

@@ -25,7 +25,6 @@ import (
 	taskpkg "github.com/Tencent/bk-bcs/bcs-common/common/task"
 	istore "github.com/Tencent/bk-bcs/bcs-common/common/task/stores/iface"
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
