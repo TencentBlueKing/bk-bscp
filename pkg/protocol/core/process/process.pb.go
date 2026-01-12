@@ -282,6 +282,8 @@ type ActionAvailability struct {
 	// "TASK_RUNNING"         : 任务执行中
 	// "CMD_NOT_CONFIGURED"   : 尚未配置操作命令
 	// "UNKNOWN_PROCESS_STATUS"   : 进程和托管状态未知
+	// "NO_REGISTER_UPDATE"   : 无需更新托管信息
+	// "NO_NEED_OPERATE"   : 当前状态无需执行该操作
 	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 

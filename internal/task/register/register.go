@@ -36,6 +36,9 @@ func RegisterExecutor(
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, dao)
 	process.RegisterExecutor(processExecutor)
 
+	updateRegisterExecutor := process.NewUpdateRegisterExecutor(gseService, bkcmdbService, dao)
+	process.RegisterUpdateRegisterExecutor(updateRegisterExecutor)
+
 	// 注册 同步cmdb和gse 执行器
 	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(bkcmdbService, gseService, dao)
 	cmdbGse.RegisterExecutor(cmdbGseExecutor)

@@ -149,6 +149,9 @@ func GetProcessManagedStatusByOpType(
 			return ProcessManagedStatusManaged
 		}
 		return ProcessManagedStatusStopping
+	case UpdateRegisterProcessOperate:
+		// 更新托管操作 修改进程托管状态为托管中
+		return ProcessManagedStatusStarting
 	default:
 		return ""
 	}
@@ -157,7 +160,7 @@ func GetProcessManagedStatusByOpType(
 // GetProcessStatusByOpType 根据操作类型获取进程状态
 func GetProcessStatusByOpType(operateType ProcessOperateType) ProcessStatus {
 	switch operateType {
-	case StartProcessOperate:
+	case StartProcessOperate, UpdateRegisterProcessOperate:
 		return ProcessStatusStarting
 	case StopProcessOperate:
 		return ProcessStatusStopping

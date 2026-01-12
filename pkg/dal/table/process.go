@@ -44,6 +44,8 @@ const (
 	KillProcessOperate ProcessOperateType = "kill"
 	// PullProcessOperate 下发操作
 	PullProcessOperate ProcessOperateType = "pull"
+	// UpdateRegisterProcessOperate 更新托管信息
+	UpdateRegisterProcessOperate ProcessOperateType = "update_register"
 )
 
 // ValidateOperateType 验证操作类型是否有效
@@ -57,6 +59,7 @@ func ValidateOperateType(operateType ProcessOperateType) error {
 	case RestartProcessOperate:
 	case ReloadProcessOperate:
 	case KillProcessOperate:
+	case UpdateRegisterProcessOperate:
 		return nil
 	default:
 		return fmt.Errorf("unsupported operation type: %s", operateType)

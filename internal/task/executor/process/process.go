@@ -23,6 +23,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -86,6 +87,23 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	if err := c.GetPayload(payload); err != nil {
 		return fmt.Errorf("get payload failed: %w", err)
 	}
+
+	commonPayload := &common.TaskPayload{}
+	if err := c.GetCommonPayload(commonPayload); err != nil {
+		return err
+	}
+
+	if commonPayload.ProcessPayload == nil {
+		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: common process payload is nil")
+	}
+
+	// 获取进程配置信息
+	var processInfo table.ProcessInfo
+	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
+	if err != nil {
+		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to marshal process info: %w", err)
+	}
+
 	// 获取原进程状态和托管状态
 	originalProcStatus := payload.OriginalProcStatus
 	originalProcManagedStatus := payload.OriginalProcManagedStatus
@@ -95,11 +113,14 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get process: %w", err)
 	}
-	//  解析 SourceData 获取运行时配置
-	var processInfo table.ProcessInfo
-	if err := json.Unmarshal([]byte(process.Spec.SourceData), &processInfo); err != nil {
-		return fmt.Errorf("unmarshal process source data failed: %v", err)
+
+	// 如果进程从cmdb侧删除，且本次操作是停止、强制停止、取消托管，则不进行对比
+	if process.Spec.CcSyncStatus == table.Deleted &&
+		(payload.OperateType == table.KillProcessOperate || payload.OperateType == table.StopProcessOperate ||
+			payload.OperateType == table.UnregisterProcessOperate) {
+		return nil
 	}
+
 	canOperate, message, _ := pbproc.CanProcessOperate(
 		payload.OperateType,
 		processInfo,
@@ -107,9 +128,11 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 		originalProcManagedStatus.String(),
 		process.Spec.CcSyncStatus.String(),
 	)
+
 	if !canOperate {
 		return fmt.Errorf("process cannot operate, reason: %s", message)
 	}
+
 	return nil
 }
 
@@ -117,6 +140,7 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 // 在进程操作前，对比数据库中存储的进程配置和 CMDB 最新的进程配置是否一致
 func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 	logs.Infof("[CompareWithCMDBProcessInfo STEP]: starting comparison")
+
 	payload := &OperatePayload{}
 	if err := c.GetPayload(payload); err != nil {
 		return fmt.Errorf("get payload failed: %w", err)
@@ -139,33 +163,34 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: unmarshal database config data failed: %w", err)
 	}
 
-	// 调用 CMDB API 获取最新的进程配置
-	// 查询进程记录获取 ServiceInstanceID 和 CcProcessID
-	process, err := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
-	if err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: get process from database failed: %w", err)
-	}
-
-	// 如果进程从cmdb侧删除，且本次操作是停止、强制停止、取消托管，则不进行对比
-	if process.Spec.CcSyncStatus == table.Deleted &&
-		(payload.OperateType == table.KillProcessOperate || payload.OperateType == table.StopProcessOperate ||
-			payload.OperateType == table.UnregisterProcessOperate) {
-		return nil
-	}
-
 	// 获取cmdb侧最新进程详情
 	processInfo, err := e.CMDBService.ListProcessDetailByIds(c.Context(), bkcmdb.ProcessReq{
 		BkBizID:      int(payload.BizID),
-		BkProcessIDs: []int{int(process.Attachment.CcProcessID)},
+		BkProcessIDs: []int{int(commonPayload.ProcessPayload.CcProcessID)},
 	})
 	if err != nil {
 		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to get process from CMDB, bizID: %d, "+
-			"ccProcessID: %d, err: %v", payload.BizID, process.Attachment.CcProcessID, err)
+			"ccProcessID: %d, err: %v", payload.BizID, commonPayload.ProcessPayload.CcProcessID, err)
 	}
+
+	// 表示cmdb删除了该进程，需要更新表数据
 	if len(processInfo) == 0 {
+		tx := e.Dao.GenQuery().Begin()
+		err = cmdb.DeleteInstanceStoppedUnmanaged(kit.New(), e.Dao, tx, payload.BizID, []uint32{payload.ProcessID})
+		if err != nil {
+			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
+				payload.BizID, payload.ProcessID, err)
+			if rbErr := tx.Rollback(); rbErr != nil {
+				logs.Errorf("[CompareWithCMDBProcessInfo STEP]: rollback failed for bizID=%d: %v", payload.BizID, rbErr)
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: commit failed for biz %d: %v", payload.BizID, err)
+		}
 		return fmt.Errorf("process not found in CMDB, bizID: %d, ccProcessID: %d",
-			payload.BizID, process.Attachment.CcProcessID)
+			payload.BizID, commonPayload.ProcessPayload.CcProcessID)
 	}
+
 	cmdbProcessInfo := processInfo[0]
 
 	// 用cmdb的ProcessInfo构建bscp侧的ProcessInfo方便后续对比
@@ -259,14 +284,13 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 		return err
 	}
 
-	// 查询进程信息
-	process, err := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to get process: %w", err)
+	if commonPayload.ProcessPayload == nil {
+		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: common process payload is nil")
 	}
+
 	// 获取进程配置信息
 	var processInfo table.ProcessInfo
-	err = json.Unmarshal([]byte(process.Spec.SourceData), &processInfo)
+	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
 	if err != nil {
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to marshal process info: %w", err)
 	}
@@ -284,6 +308,7 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 		GseOpType:     gse.OpTypeQuery,
 		ProcessInfo:   processInfo,
 	}
+
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to build process operate: %w", err)
@@ -717,9 +742,10 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 
 // RegisterExecutor register executor
 func RegisterExecutor(e *ProcessExecutor) {
+	// 先获取的命令
+	istep.Register(CompareWithCMDBProcessInfoStepName, istep.StepExecutorFunc(e.CompareWithCMDBProcessInfo))
 	// 校验操作是否合法
 	istep.Register(ValidateOperateProcessStepName, istep.StepExecutorFunc(e.ValidateOperate))
-	istep.Register(CompareWithCMDBProcessInfoStepName, istep.StepExecutorFunc(e.CompareWithCMDBProcessInfo))
 	istep.Register(CompareWithGSEProcessStatusStepName, istep.StepExecutorFunc(e.CompareWithGSEProcessStatus))
 	istep.Register(CompareWithGSEProcessConfigStepName, istep.StepExecutorFunc(e.CompareWithGSEProcessConfig))
 	// 注册主要执行步骤

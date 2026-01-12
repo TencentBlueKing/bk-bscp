@@ -179,7 +179,8 @@ func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, 
 			ProcessInfo:   processInfo,
 		})
 		if err != nil {
-			return nil, nil, fmt.Errorf("build process operate failed: %w", err)
+			logs.Errorf("build process operate failed: %w", err)
+			continue
 		}
 		req = append(req, *processOperate)
 	}

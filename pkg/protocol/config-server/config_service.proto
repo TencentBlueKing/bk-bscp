@@ -4725,7 +4725,10 @@ message OperateProcessReq {
   uint32 process_instance_id = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例ID" }];
   string operate_type = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "操作类型：start、stop、query_status、register、unregister、restart、reload、kill"
+    description: "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register"
+  }];
+  bool enable_process_restart = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否启停进程：默认为false，只有操作类型是update_register才有效"
   }];
 }
 

@@ -249,6 +249,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		batchID,
 		table.ProcessOperateType(req.OperateType),
 		processInstances,
+		req.GetEnableProcessRestart(),
 	)
 	if err != nil {
 		return nil, err
@@ -264,7 +265,7 @@ func validateOperateRequest(req *pbds.OperateProcessReq) error {
 		return fmt.Errorf("invalid request: when processInstanceId is specified, only one processId is allowed")
 	}
 
-	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill
+	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill、update_register
 	if err := table.ValidateOperateType(table.ProcessOperateType(req.OperateType)); err != nil {
 		return fmt.Errorf("invalid request: operate type is not supported: %w", err)
 	}
@@ -426,6 +427,7 @@ func dispatchProcessTasks(
 	batchID uint32,
 	operateType table.ProcessOperateType,
 	processInstances []*table.ProcessInstance,
+	enableProcessRestart bool,
 ) (uint32, error) {
 	var dispatchedCount uint32
 	for _, inst := range processInstances {
@@ -439,19 +441,33 @@ func dispatchProcessTasks(
 			return dispatchedCount, err
 		}
 
-		// 创建任务
-		taskObj, err := task.NewByTaskBuilder(
-			processBuilder.NewOperateTask(
-				dao,
-				bizID,
-				batchID,
-				procID,
-				inst.ID,
-				operateType, kt.User,
-				true, // 是否需要对比cmdb配置
-				originalProcManagedStatus,
-				originalProcStatus,
-			))
+		var taskObj *taskTypes.Task
+		var err error
+		if operateType == table.UpdateRegisterProcessOperate {
+			taskObj, err = task.NewByTaskBuilder(
+				processBuilder.NewUpdateRegisterTask(dao,
+					bizID,
+					batchID,
+					procID,
+					inst.ID, kt.User,
+					originalProcManagedStatus,
+					originalProcStatus, enableProcessRestart),
+			)
+		} else {
+			taskObj, err = task.NewByTaskBuilder(
+				processBuilder.NewOperateTask(
+					dao,
+					bizID,
+					batchID,
+					procID,
+					inst.ID,
+					operateType, kt.User,
+					true, // 是否需要对比cmdb配置
+					originalProcManagedStatus,
+					originalProcStatus,
+				))
+		}
+
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
 			return dispatchedCount, err

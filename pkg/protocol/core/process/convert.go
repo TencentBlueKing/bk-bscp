@@ -18,19 +18,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
-	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbpi "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process-instance"
 )
 
 const (
-	DisableReasonNone                = ""
-	DisableReasonTaskRunning         = "TASK_RUNNING"           // 运行中
+	DisableReasonNone                = ""                       // 无原因 / 可操作
+	DisableReasonTaskRunning         = "TASK_RUNNING"           // 运行中 / ing 状态
 	DisableReasonCmdNotConfigured    = "CMD_NOT_CONFIGURED"     // 尚未配置操作命令
-	DisableReasonUnknownProcessState = "UNKNOWN_PROCESS_STATUS" // 进程和托管状态空
+	DisableReasonUnknownProcessState = "UNKNOWN_PROCESS_STATUS" // 进程或托管状态未知
+	DisableReasonNoRegisterUpdate    = "NO_REGISTER_UPDATE"     // 无需更新托管信息
 	DisableReasonNoNeedOperate       = "NO_NEED_OPERATE"        // 当前状态无需执行该操作
 )
 
@@ -177,6 +178,7 @@ func PbProcesses(c []*table.Process, bindTemplateIds map[uint32][]uint32) []*Pro
 	return result
 }
 
+// PbProcessesWithInstances convert table Process to pb Process
 func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*table.ProcessInstance,
 	bindTemplateIds map[uint32][]uint32) []*Process {
 	if procs == nil {
@@ -340,7 +342,8 @@ func BuildActionAvailability(
 	}
 }
 
-func hasOperateCommand(op table.ProcessOperateType, info table.ProcessInfo) bool {
+// HasOperateCommand 验证操作命令
+func HasOperateCommand(op table.ProcessOperateType, info table.ProcessInfo) bool {
 	switch op {
 
 	case table.StartProcessOperate:
@@ -436,7 +439,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		case table.StopProcessOperate:
 			if isRunning {
 				// stop 需要命令：先检查命令是否存在
-				if !hasOperateCommand(op, info) {
+				if !HasOperateCommand(op, info) {
 					return false, "the stop command does not exist", DisableReasonCmdNotConfigured
 				}
 				return true, "", DisableReasonNone
@@ -466,7 +469,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		return false, "process is already managed, no need to unregister", DisableReasonNoNeedOperate
 	case table.StartProcessOperate: // 进程已停止：可启动
 		// start 需要命令
-		if !hasOperateCommand(op, info) {
+		if !HasOperateCommand(op, info) {
 			return false, "the start command does not exist", DisableReasonCmdNotConfigured
 		}
 		if isStopped {
@@ -475,13 +478,13 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		return false, "process is already started, no need to start", DisableReasonNoNeedOperate
 	case table.RestartProcessOperate, table.ReloadProcessOperate: // 进程启动或停止均可执行重启、重载操作
 		// restart/reload 需要命令（按你的需求）
-		if !hasOperateCommand(op, info) {
+		if !HasOperateCommand(op, info) {
 			return false, "the restart/reload command does not exist", DisableReasonCmdNotConfigured
 		}
 		return true, "", DisableReasonNone
 	case table.StopProcessOperate, table.KillProcessOperate: // 进程已启动：可停止、强制停止
 		// stop/kill 需要命令
-		if !hasOperateCommand(op, info) {
+		if !HasOperateCommand(op, info) {
 			return false, "the stop/kill command does not exist", DisableReasonCmdNotConfigured
 		}
 		if isRunning {

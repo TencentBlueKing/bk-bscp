@@ -33,10 +33,11 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 	}
 
 	resp, err := s.client.DS.OperateProcess(grpcKit.RpcCtx(), &pbds.OperateProcessReq{
-		BizId:             req.GetBizId(),
-		ProcessIds:        req.GetProcessIds(),
-		ProcessInstanceId: req.GetProcessInstanceId(),
-		OperateType:       req.GetOperateType(),
+		BizId:                req.GetBizId(),
+		ProcessIds:           req.GetProcessIds(),
+		ProcessInstanceId:    req.GetProcessInstanceId(),
+		OperateType:          req.GetOperateType(),
+		EnableProcessRestart: req.GetEnableProcessRestart(),
 	})
 	if err != nil {
 		return nil, err
