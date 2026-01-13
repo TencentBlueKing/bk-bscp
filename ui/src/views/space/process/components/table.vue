@@ -77,14 +77,14 @@
           <div class="op-btns">
             <TableBtnTooltips
               v-if="row.spec.cc_sync_status === 'updated'"
-              :disabled="row.spec.actions.update_register.enabled"
-              :reason="row.spec.actions.update_register.reason"
+              :disabled="row.spec.actions.update_register?.enabled"
+              :reason="row.spec.actions.update_register?.reason"
               :link="cmdbUrl">
               <bk-badge position="top-right" theme="danger" dot>
                 <bk-button
                   text
                   theme="primary"
-                  :disabled="!row.spec.actions.update_register.enabled"
+                  :disabled="!row.spec.actions.update_register?.enabled"
                   @click="handleUpdateManagedInfo(row)">
                   {{ t('更新托管信息') }}
                 </bk-button>
@@ -466,7 +466,7 @@
 
   const getSecondTableRowClass = ({ row, rowIndex }: { row: IProcInst; rowIndex: number }) => {
     if (row.num && rowIndex + 1 > row.num) {
-      return 'warn';
+      return 'warn default-row';
     }
     return 'default-row';
   };
@@ -700,7 +700,7 @@
       background: #fff0f0;
     }
     .warn {
-      background: #fdf4e8;
+      background: #fdf4e8 !important;
     }
     .default {
       background: #fafbfd;
@@ -724,7 +724,7 @@
       }
     }
     .default-row {
-      background: #fafbfd !important;
+      background: #fafbfd;
       td {
         height: 32px;
         padding: 0 !important;
