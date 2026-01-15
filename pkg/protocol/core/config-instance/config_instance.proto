@@ -43,6 +43,7 @@ message ConfigInstanceSearchCondition {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
   repeated string process_aliases = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  string environment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
 }
 
 // Choice 查询枚举值选项
