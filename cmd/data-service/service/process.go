@@ -209,8 +209,11 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 	}
 
 	// 构建操作范围
-	operateRange := buildOperateRange(processes)
+	operateRange := buildOperateRange(processes, req)
 	environment := processes[0].Spec.Environment
+	if req.OperateRange != nil {
+		environment = req.OperateRange.GetEnvironment()
+	}
 
 	// 创建任务批次
 	batchID, err := createTaskBatch(kt, s.dao, req.OperateType, environment, operateRange, totalCount)
@@ -283,7 +286,49 @@ func getProcessesAndInstances(kt *kit.Kit, dao dao.Set, req *pbds.OperateProcess
 	if req.ProcessInstanceId != 0 {
 		return getByProcessInstanceID(kt, dao, req.BizId, req.ProcessInstanceId)
 	}
+	// 根据操作范围获取进程和进程实例（适配进程配置管理插件）
+	if req.OperateRange != nil {
+		return getByOperateRanges(kt, dao, req.BizId, req.OperateRange)
+	}
 	return getByProcessIDs(kt, dao, req.BizId, req.ProcessIds)
+}
+
+// getByOperateRanges 根据操作范围获取进程和进程实例（适配进程配置管理插件）
+func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pbproc.OperateRange) (
+	[]*table.Process, []*table.ProcessInstance, error) {
+	// 根据操作范围查询进程列表
+	processes, err := dao.Process().GetByOperateRange(
+		kt,
+		bizID,
+		operateRange,
+	)
+	if err != nil {
+		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, nil, err
+	}
+
+	if len(processes) == 0 {
+		return nil, nil, fmt.Errorf("no processes found for biz %d with provided operate range", bizID)
+	}
+
+	// 提取进程ID列表
+	processIDs := make([]uint32, 0, len(processes))
+	for _, process := range processes {
+		processIDs = append(processIDs, process.ID)
+	}
+
+	// 查询进程实例列表
+	processInstances, err := dao.ProcessInstance().GetByProcessIDs(kt, bizID, processIDs)
+	if err != nil {
+		logs.Errorf("get process instances failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, nil, err
+	}
+
+	if len(processInstances) == 0 {
+		return nil, nil, fmt.Errorf("no process instances found for processes matching operate range")
+	}
+
+	return processes, processInstances, nil
 }
 
 // getByInstanceID 根据实例ID获取进程和进程实例
@@ -339,7 +384,7 @@ func getByProcessIDs(kt *kit.Kit, dao dao.Set, bizID uint32, processIDs []uint32
 }
 
 // buildOperateRange 从进程列表构建操作范围
-func buildOperateRange(processes []*table.Process) table.OperateRange {
+func buildOperateRange(processes []*table.Process, req *pbds.OperateProcessReq) table.OperateRange {
 	operateRange := table.OperateRange{
 		SetNames:     make([]string, 0, len(processes)),
 		ModuleNames:  make([]string, 0, len(processes)),
@@ -348,12 +393,27 @@ func buildOperateRange(processes []*table.Process) table.OperateRange {
 		CCProcessID:  make([]uint32, 0, len(processes)),
 	}
 
-	for _, process := range processes {
-		operateRange.SetNames = append(operateRange.SetNames, process.Spec.SetName)
-		operateRange.ModuleNames = append(operateRange.ModuleNames, process.Spec.ModuleName)
-		operateRange.ServiceNames = append(operateRange.ServiceNames, process.Spec.ServiceName)
-		operateRange.ProcessAlias = append(operateRange.ProcessAlias, process.Spec.Alias)
-		operateRange.CCProcessID = append(operateRange.CCProcessID, process.Attachment.CcProcessID)
+	// 仅插件操作需要构建完整操作范围
+	if req.OperateRange != nil {
+		if setName := req.OperateRange.GetSetName(); setName != "" {
+			operateRange.SetNames = []string{setName}
+		}
+		if moduleName := req.OperateRange.GetModuleName(); moduleName != "" {
+			operateRange.ModuleNames = []string{moduleName}
+		}
+		if serviceName := req.OperateRange.GetServiceName(); serviceName != "" {
+			operateRange.ServiceNames = []string{serviceName}
+		}
+		if processAlias := req.OperateRange.GetProcessAlias(); processAlias != "" {
+			operateRange.ProcessAlias = []string{processAlias}
+		}
+		if ccProcessID := req.OperateRange.GetCcProcessId(); ccProcessID != 0 {
+			operateRange.CCProcessID = []uint32{ccProcessID}
+		}
+	} else {
+		for _, process := range processes {
+			operateRange.CCProcessID = append(operateRange.CCProcessID, process.Attachment.CcProcessID)
+		}
 	}
 
 	return operateRange

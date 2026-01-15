@@ -181,13 +181,116 @@ func validateRequest(bizID uint32, ctgs []*pbcin.ConfigTemplateGroup) error {
 
 // GenerateConfig implements pbds.DataServer.
 func (s *Service) GenerateConfig(ctx context.Context, req *pbds.GenerateConfigReq) (*pbds.GenerateConfigResp, error) {
+	kt := kit.FromGrpcContext(ctx)
 
-	id, err := s.runConfigTask(ctx, req.GetBizId(), req.GetConfigTemplateGroups(), ConfigTaskGenerate)
+	var configTemplateGroups []*pbcin.ConfigTemplateGroup
+	var pluginMode bool
+	var err error
+
+	if req.GetOperateRange() != nil {
+		// 通过操作范围(operate_range)构建配置模版组，适配进程配置管理插件
+		configTemplateGroups, err = s.buildConfigTemplateGroups(kt, req.GetBizId(), req.GetOperateRange())
+		if err != nil {
+			return nil, err
+		}
+		pluginMode = true
+		logs.Infof("buildConfigTemplateGroups", configTemplateGroups)
+		logs.Infof("pluginMode", pluginMode)
+	} else {
+		configTemplateGroups = req.GetConfigTemplateGroups()
+	}
+
+	// 执行配置生成任务
+	batchID, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskGenerate, pluginMode)
 	if err != nil {
+		logs.Errorf("run config task failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
-	return &pbds.GenerateConfigResp{BatchId: id}, nil
+	return &pbds.GenerateConfigResp{BatchId: batchID}, nil
+}
+
+// buildConfigTemplateGroups 根据操作范围构建配置模版组
+func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*pbcin.ConfigTemplateGroup, error) {
+	// 根据操作范围查询匹配的进程列表
+	processes, err := s.dao.Process().GetByOperateRange(kt, bizID, operateRange)
+	if err != nil {
+		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
+		return nil, fmt.Errorf("get processes by operate range failed: %w", err)
+	}
+
+	if len(processes) == 0 {
+		return nil, fmt.Errorf("no processes found for biz %d with provided operate range", bizID)
+	}
+
+	// 提取所有进程的 CcProcessID
+	ccProcessIDs := make([]uint32, 0, len(processes))
+	for _, process := range processes {
+		ccProcessIDs = append(ccProcessIDs, process.Attachment.CcProcessID)
+	}
+
+	// 确定需要下发的配置模版ID列表
+	var configTemplateIDs []uint32
+	if len(operateRange.GetConfigTemplateIds()) > 0 {
+		configTemplateIDs = operateRange.GetConfigTemplateIds()
+	} else {
+		// 未指定则下发所有配置模版
+		configTemplateIDs, err = s.getAllConfigTemplateIDs(kt, bizID)
+		if err != nil {
+			logs.Errorf("get all config template ids failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, fmt.Errorf("get all config template ids failed: %w", err)
+		}
+		if len(configTemplateIDs) == 0 {
+			return nil, fmt.Errorf("no config templates found for biz %d", bizID)
+		}
+	}
+
+	// 为每个配置模版构建配置模版组
+	configTemplateGroups := make([]*pbcin.ConfigTemplateGroup, 0, len(configTemplateIDs))
+	for _, configTemplateID := range configTemplateIDs {
+		// 查询配置模版的最新版本
+		latestRevision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(kt, bizID, configTemplateID)
+		if err != nil {
+			logs.Errorf("get latest template revision failed, config_template_id: %d, err: %v, rid: %s",
+				configTemplateID, err, kt.Rid)
+			return nil, fmt.Errorf("get latest template revision for template %d failed: %w", configTemplateID, err)
+		}
+
+		// 构建配置模版组
+		group := &pbcin.ConfigTemplateGroup{
+			ConfigTemplateId:        configTemplateID,
+			ConfigTemplateVersionId: latestRevision.ID,
+			CcProcessIds:            ccProcessIDs,
+		}
+		configTemplateGroups = append(configTemplateGroups, group)
+	}
+
+	return configTemplateGroups, nil
+}
+
+// getAllConfigTemplateIDs 获取业务下所有配置模版ID
+func (s *Service) getAllConfigTemplateIDs(kt *kit.Kit, bizID uint32) ([]uint32, error) {
+	// 获取或创建模板空间
+	templateSpace, err := s.getOrCreateTemplateSpace(kt, bizID, time.Now().UTC())
+	if err != nil {
+		return nil, fmt.Errorf("get or create template space failed: %w", err)
+	}
+
+	// 查询所有配置模版
+	configTemplates, _, err := s.dao.ConfigTemplate().List(kt, bizID, templateSpace.ID, nil, &types.BasePage{
+		All: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list config templates failed: %w", err)
+	}
+
+	// 提取配置模版ID列表
+	configTemplateIDs := make([]uint32, 0, len(configTemplates))
+	for _, configTemplate := range configTemplates {
+		configTemplateIDs = append(configTemplateIDs, configTemplate.ID)
+	}
+
+	return configTemplateIDs, nil
 }
 
 // getFilteredProcesses 获取过滤后的进程列表
@@ -1229,8 +1332,23 @@ func queryGenerateConfigFailedTasks(ctx context.Context, taskStorage istore.Stor
 
 // CheckConfig implements [pbds.DataServer].
 func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*pbds.CheckConfigResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	var configTemplateGroups []*pbcin.ConfigTemplateGroup
+	var pluginMode bool
+	var err error
 
-	id, err := s.runConfigTask(ctx, req.GetBizId(), req.GetConfigTemplateGroups(), ConfigTaskCheck)
+	if req.GetOperateRange() != nil {
+		// 通过操作范围构建配置模版组，适配进程配置管理插件
+		configTemplateGroups, err = s.buildConfigTemplateGroups(kt, req.GetBizId(), req.GetOperateRange())
+		if err != nil {
+			return nil, err
+		}
+		pluginMode = true
+	} else {
+		configTemplateGroups = req.GetConfigTemplateGroups()
+	}
+
+	id, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskCheck, pluginMode)
 	if err != nil {
 		return nil, err
 	}
@@ -1240,18 +1358,15 @@ func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*p
 
 // runConfigTask 运行配置生成或校验任务
 // nolint:funlen
-func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup,
-	mode ConfigTaskMode) (uint32, error) {
-
-	kt := kit.FromGrpcContext(ctx)
-
+func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup,
+	mode ConfigTaskMode, pluginMode bool) (uint32, error) {
 	if err := validateRequest(bizID, ctgs); err != nil {
 		return 0, err
 	}
 
 	// 1. 预处理，收集任务
 	var taskInfos []configTaskInfo
-	processIDSet := make(map[uint32]struct{})
+	var processesForRange []*table.Process // 用于插件模式构建完整操作范围
 	environment := ""
 
 	for _, group := range ctgs {
@@ -1299,8 +1414,12 @@ func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin
 			return 0, fmt.Errorf("invalid binding relationship")
 		}
 
+		// 插件模式下收集进程信息用于构建完整操作范围
+		if pluginMode {
+			processesForRange = append(processesForRange, processes...)
+		}
+
 		for _, p := range processes {
-			processIDSet[p.Attachment.CcProcessID] = struct{}{}
 			if environment == "" {
 				environment = p.Spec.Environment
 			}
@@ -1349,18 +1468,10 @@ func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin
 			Reviser: kt.User,
 		},
 	}
-	processIDs := make([]uint32, 0, len(processIDSet))
-	for id := range processIDSet {
-		processIDs = append(processIDs, id)
-	}
+
 	// 构建操作范围
-	operateRange := table.OperateRange{
-		SetNames:     make([]string, 0, len(processIDs)),
-		ModuleNames:  make([]string, 0, len(processIDs)),
-		ServiceNames: make([]string, 0, len(processIDs)),
-		ProcessAlias: make([]string, 0, len(processIDs)),
-		CCProcessID:  processIDs,
-	}
+	operateRange := s.buildOperateRange(processesForRange, pluginMode)
+
 	batch.Spec.SetTaskData(&table.TaskExecutionData{
 		Environment:  environment,
 		OperateRange: operateRange,
@@ -1438,6 +1549,81 @@ func (s *Service) runConfigTask(ctx context.Context, bizID uint32, ctgs []*pbcin
 	}
 
 	return batchID, nil
+}
+
+// buildOperateRange 根据插件模式构建操作范围
+func (s *Service) buildOperateRange(processes []*table.Process, pluginMode bool) table.OperateRange {
+	// 收集 CC 进程 ID（去重）
+	ccProcessIDSet := make(map[uint32]struct{})
+	for _, p := range processes {
+		ccProcessIDSet[p.Attachment.CcProcessID] = struct{}{}
+	}
+
+	// 非插件模式：仅返回 CC 进程 ID
+	if !pluginMode {
+		ccProcessIDs := make([]uint32, 0, len(ccProcessIDSet))
+		for id := range ccProcessIDSet {
+			ccProcessIDs = append(ccProcessIDs, id)
+		}
+		return table.OperateRange{
+			CCProcessID: ccProcessIDs,
+		}
+	}
+
+	// 插件模式：构建完整的操作范围（去重）
+	setNameSet := make(map[string]struct{})
+	moduleNameSet := make(map[string]struct{})
+	serviceNameSet := make(map[string]struct{})
+	processAliasSet := make(map[string]struct{})
+
+	for _, p := range processes {
+		if p.Spec != nil && p.Spec.SetName != "" {
+			setNameSet[p.Spec.SetName] = struct{}{}
+		}
+		if p.Spec != nil && p.Spec.ModuleName != "" {
+			moduleNameSet[p.Spec.ModuleName] = struct{}{}
+		}
+		if p.Spec != nil && p.Spec.ServiceName != "" {
+			serviceNameSet[p.Spec.ServiceName] = struct{}{}
+		}
+		if p.Spec != nil && p.Spec.Alias != "" {
+			processAliasSet[p.Spec.Alias] = struct{}{}
+		}
+	}
+
+	// 转换为切片
+	setNames := make([]string, 0, len(setNameSet))
+	for name := range setNameSet {
+		setNames = append(setNames, name)
+	}
+
+	moduleNames := make([]string, 0, len(moduleNameSet))
+	for name := range moduleNameSet {
+		moduleNames = append(moduleNames, name)
+	}
+
+	serviceNames := make([]string, 0, len(serviceNameSet))
+	for name := range serviceNameSet {
+		serviceNames = append(serviceNames, name)
+	}
+
+	processAliases := make([]string, 0, len(processAliasSet))
+	for alias := range processAliasSet {
+		processAliases = append(processAliases, alias)
+	}
+
+	ccProcessIDs := make([]uint32, 0, len(ccProcessIDSet))
+	for id := range ccProcessIDSet {
+		ccProcessIDs = append(ccProcessIDs, id)
+	}
+
+	return table.OperateRange{
+		SetNames:     setNames,
+		ModuleNames:  moduleNames,
+		ServiceNames: serviceNames,
+		ProcessAlias: processAliases,
+		CCProcessID:  ccProcessIDs,
+	}
 }
 
 // GetConfigDiff implements [pbds.DataServer].

@@ -10010,7 +10010,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbcsGetConfigRenderResultResp"
+              "$ref": "#/definitions/pbcsGetConfigViewResp"
             }
           },
           "default": {
@@ -10048,6 +10048,14 @@
           {
             "name": "moduleInstSeq",
             "description": "模块下的进程实例序列号",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configVersionId",
+            "description": "配置模板版本ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -11060,6 +11068,9 @@
             "$ref": "#/definitions/pbcinConfigTemplateGroup"
           },
           "description": "配置模版组"
+        },
+        "operateRange": {
+          "$ref": "#/definitions/pbprocOperateRange"
         }
       }
     },
@@ -12073,6 +12084,9 @@
             "$ref": "#/definitions/pbcinConfigTemplateGroup"
           },
           "description": "配置模版组"
+        },
+        "operateRange": {
+          "$ref": "#/definitions/pbprocOperateRange"
         }
       }
     },
@@ -13026,7 +13040,14 @@
         },
         "operateType": {
           "type": "string",
-          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill"
+          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register"
+        },
+        "enableProcessRestart": {
+          "type": "boolean",
+          "description": "是否启停进程：默认为false，只有操作类型是update_register才有效"
+        },
+        "operateRange": {
+          "$ref": "#/definitions/pbprocOperateRange"
         }
       }
     },
@@ -15174,6 +15195,10 @@
             "type": "string"
           },
           "description": "进程别名"
+        },
+        "environment": {
+          "type": "string",
+          "description": "环境"
         }
       },
       "title": "ConfigInstanceSearchCondition 配置实例搜索条件"
@@ -16810,7 +16835,7 @@
         },
         "configTemplateName": {
           "type": "string",
-          "description": "配置模版名称"
+          "description": "配置模板名称"
         },
         "configFileName": {
           "type": "string",
@@ -16881,6 +16906,43 @@
       "properties": {
         "bindTemplate": {
           "$ref": "#/definitions/pbctBindTemplate"
+        }
+      }
+    },
+    "pbcsGetConfigViewResp": {
+      "type": "object",
+      "properties": {
+        "lastDispatched": {
+          "$ref": "#/definitions/pbcinConfigVersion",
+          "title": "最后一次下发的配置"
+        },
+        "previewConfig": {
+          "$ref": "#/definitions/pbcinConfigVersion",
+          "title": "实时预览的配置"
+        },
+        "configTemplateName": {
+          "type": "string",
+          "description": "配置模板名称"
+        },
+        "configFileName": {
+          "type": "string",
+          "description": "配置文件名称"
+        },
+        "configFilePath": {
+          "type": "string",
+          "description": "配置文件路径"
+        },
+        "configFileOwner": {
+          "type": "string",
+          "description": "用户权限名"
+        },
+        "configFileGroup": {
+          "type": "string",
+          "description": "用户组权限名"
+        },
+        "configFilePermission": {
+          "type": "string",
+          "description": "文件权限"
         }
       }
     },
@@ -19513,7 +19575,7 @@
         },
         "reason": {
           "type": "string",
-          "title": "不可操作原因\n\"\"                     : 无原因 / 可操作\n\"TASK_RUNNING\"         : 任务执行中\n\"CMD_NOT_CONFIGURED\"   : 尚未配置操作命令\n\"UNKNOWN_PROCESS_STATUS\"   : 进程和托管状态未知"
+          "title": "不可操作原因\n\"\"                     : 无原因 / 可操作\n\"TASK_RUNNING\"         : 任务执行中\n\"CMD_NOT_CONFIGURED\"   : 尚未配置操作命令\n\"UNKNOWN_PROCESS_STATUS\"   : 进程和托管状态未知\n\"NO_REGISTER_UPDATE\"   : 无需更新托管信息\n\"NO_NEED_OPERATE\"   : 当前状态无需执行该操作"
         }
       }
     },
@@ -19554,6 +19616,45 @@
         }
       },
       "title": "FilterOptions 查询过滤选项"
+    },
+    "pbprocOperateRange": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "description": "环境类型(1:测试 2: 体验 3: 正式)"
+        },
+        "setName": {
+          "type": "string",
+          "description": "集群名称"
+        },
+        "moduleName": {
+          "type": "string",
+          "description": "模块名称"
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "服务实例名称"
+        },
+        "processAlias": {
+          "type": "string",
+          "description": "进程别名"
+        },
+        "ccProcessId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "CC进程ID"
+        },
+        "configTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "配置模版ID列表"
+        }
+      },
+      "title": "操作范围，适配进程配置管理插件"
     },
     "pbprocProcess": {
       "type": "object",

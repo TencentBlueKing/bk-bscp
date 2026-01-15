@@ -17,23 +17,29 @@
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance | [Config_BindProcessInstance](#config-bind-process-instance) | 绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 根据业务查询拓扑 |
+| POST | /api/v1/config/biz_id/{bizId}/config_instances/check | [Config_CheckConfig](#config-check-config) | 配置检查 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/variable | [Config_ConfigTemplateVariable](#config-config-template-variable) | 配置模板变量 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template | [Config_CreateConfigTemplate](#config-create-config-template) | 创建配置模板 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
 | DELETE | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_DeleteConfigTemplate](#config-delete-config-template) | 删除配置模板 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
+| POST | /api/v1/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig](#config-generate-config) | 配置生成 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_GetConfigTemplate](#config-get-config-template) | 获取配置模板 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
+| POST | /api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail | [Config_GetTaskBatchDetail](#config-get-task-batch-detail) | 任务批次详情 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
+| POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance/{serviceInstanceId} | [Config_ProcessInstance](#config-process-instance) | 根据服务实例查询实例进程列表 |
 | GET | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
+| POST | /api/v1/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig](#config-push-config) | 配置下发 |
 | GET | /api/v1/config/biz_id/{bizId}/service_instance/{moduleId} | [Config_ServiceInstance](#config-service-instance) | 根据模块获取服务实例列表 |
 | GET | /api/v1/config/biz_id/{bizId}/service_template | [Config_ServiceTemplate](#config-service-template) | 根据业务查询服务模板列表 |
+| POST | /api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status | [Config_SyncCmdbGseStatus](#config-sync-cmdb-gse-status) | 同步cc和gse状态 |
 | PUT | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_UpdateConfigTemplate](#config-update-config-template) | 编辑配置模板 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key} | [Config_UpdateKv](#config-update-kv) | 更新键值配置项 |
 
@@ -312,6 +318,61 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-check-config"></span> 配置检查 (*Config_CheckConfig*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/config_instances/check
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| configTemplateGroups | \[\][PbcinConfigTemplateGroup](#pbcin-config-template-group) |  | 配置模版组 |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/config_instances/check HTTP/1.1
+Content-Type: application/json
+
+{
+  "configTemplateGroups": [
+    {
+      "ccProcessIds": [
+        {}
+      ],
+      "configTemplateId": 0,
+      "configTemplateVersionId": 0
+    }
+  ],
+  "operateRange": {
+    "ccProcessId": 0,
+    "configTemplateIds": [
+      {}
+    ],
+    "environment": "",
+    "moduleName": "",
+    "processAlias": "",
+    "serviceName": "",
+    "setName": ""
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-config-template-variable"></span> 配置模板变量 (*Config_ConfigTemplateVariable*)
 
 ```
@@ -569,6 +630,61 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-generate-config"></span> 配置生成 (*Config_GenerateConfig*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/config_instances/generate
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| configTemplateGroups | \[\][PbcinConfigTemplateGroup](#pbcin-config-template-group) |  | 配置模版组 |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/config_instances/generate HTTP/1.1
+Content-Type: application/json
+
+{
+  "configTemplateGroups": [
+    {
+      "ccProcessIds": [
+        {}
+      ],
+      "configTemplateId": 0,
+      "configTemplateVersionId": 0
+    }
+  ],
+  "operateRange": {
+    "ccProcessId": 0,
+    "configTemplateIds": [
+      {}
+    ],
+    "environment": "",
+    "moduleName": "",
+    "processAlias": "",
+    "serviceName": "",
+    "setName": ""
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-generate-release-and-publish"></span> 生成版本并发布 (*Config_GenerateReleaseAndPublish*)
 
 ```
@@ -695,6 +811,70 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-get-task-batch-detail"></span> 任务批次详情 (*Config_GetTaskBatchDetail*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| batchId | int64 (formatted integer) | ✓ | 批任务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| ccProcessIds | []int64 (formatted integer) |  | CC进程ID列表 |
+| instIds | []int64 (formatted integer) |  | 模块下的递增ID序号列表 |
+| limit | int64 (formatted integer) |  | 限制数量 |
+| moduleNames | []string |  | 模块名称列表 |
+| processAliases | []string |  | 进程别名列表 |
+| serviceNames | []string |  | 服务名称列表 |
+| setNames | []string |  | 集群名称列表 |
+| start | int64 (formatted integer) |  | 起始位置 |
+| status | string |  | 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail HTTP/1.1
+Content-Type: application/json
+
+{
+  "ccProcessIds": [
+    {}
+  ],
+  "instIds": [
+    {}
+  ],
+  "limit": 0,
+  "moduleNames": [
+    {}
+  ],
+  "processAliases": [
+    {}
+  ],
+  "serviceNames": [
+    {}
+  ],
+  "setNames": [
+    {}
+  ],
+  "start": 0,
+  "status": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-list-config-template"></span> 配置模板列表 (*Config_ListConfigTemplate*)
 
 ```
@@ -798,6 +978,61 @@ Content-Type: application/json
     {}
   ],
   "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-operate-process"></span> 进程操作 (*Config_OperateProcess*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/process/operate
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| enableProcessRestart | boolean |  | 是否启停进程：默认为false，只有操作类型是update_register才有效 |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range) |  |  |
+| operateType | string |  | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register |
+| processIds | []int64 (formatted integer) |  | 进程ID |
+| processInstanceId | int64 (formatted integer) |  | 进程实例ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/process/operate HTTP/1.1
+Content-Type: application/json
+
+{
+  "enableProcessRestart": false,
+  "operateRange": {
+    "ccProcessId": 0,
+    "configTemplateIds": [
+      {}
+    ],
+    "environment": "",
+    "moduleName": "",
+    "processAlias": "",
+    "serviceName": "",
+    "setName": ""
+  },
+  "operateType": "",
+  "processIds": [
+    {}
+  ],
+  "processInstanceId": 0
 }
 ```
 
@@ -959,6 +1194,41 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-push-config"></span> 配置下发 (*Config_PushConfig*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/config_instances/push
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| batchId | int64 (formatted integer) |  | 配置生成操作产生的批任务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/config_instances/push HTTP/1.1
+Content-Type: application/json
+
+{
+  "batchId": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-service-instance"></span> 根据模块获取服务实例列表 (*Config_ServiceInstance*)
 
 ```
@@ -1016,6 +1286,38 @@ GET /api/v1/config/biz_id/{bizId}/service_template HTTP/1.1
 Content-Type: application/json
 
 
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-sync-cmdb-gse-status"></span> 同步cc和gse状态 (*Config_SyncCmdbGseStatus*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status HTTP/1.1
+Content-Type: application/json
+
+{}
 ```
 
 #### 输出示例
@@ -1357,6 +1659,22 @@ Content-Type: application/json
 
 
 
+### <span id="config-check-config-body"></span> ConfigCheckConfigBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configTemplateGroups | \[\][PbcinConfigTemplateGroup](#pbcin-config-template-group)| `[]*PbcinConfigTemplateGroup` |  | | 配置模版组 |  |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range)| `PbprocOperateRange` |  | |  |  |
+
+
+
 ### <span id="config-create-config-template-body"></span> ConfigCreateConfigTemplateBody
 
 
@@ -1427,6 +1745,22 @@ Content-Type: application/json
 
 
 
+### <span id="config-generate-config-body"></span> ConfigGenerateConfigBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configTemplateGroups | \[\][PbcinConfigTemplateGroup](#pbcin-config-template-group)| `[]*PbcinConfigTemplateGroup` |  | | 配置模版组 |  |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range)| `PbprocOperateRange` |  | |  |  |
+
+
+
 ### <span id="config-generate-release-and-publish-body"></span> ConfigGenerateReleaseAndPublishBody
 
 
@@ -1446,6 +1780,29 @@ Content-Type: application/json
 | releaseMemo | string| `string` |  | | 版本描述 |  |
 | releaseName | string| `string` |  | | 服务版本名 |  |
 | variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec)| `[]*PbtvTemplateVariableSpec` |  | |  |  |
+
+
+
+### <span id="config-get-task-batch-detail-body"></span> ConfigGetTaskBatchDetailBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | CC进程ID列表 |  |
+| instIds | []int64 (formatted integer)| `[]int64` |  | | 模块下的递增ID序号列表 |  |
+| limit | int64 (formatted integer)| `int64` |  | | 限制数量 |  |
+| moduleNames | []string| `[]string` |  | | 模块名称列表 |  |
+| processAliases | []string| `[]string` |  | | 进程别名列表 |  |
+| serviceNames | []string| `[]string` |  | | 服务名称列表 |  |
+| setNames | []string| `[]string` |  | | 集群名称列表 |  |
+| start | int64 (formatted integer)| `int64` |  | | 起始位置 |  |
+| status | string| `string` |  | | 任务状态: INITIALIZING, RUNNING, SUCCESS, FAILURE |  |
 
 
 
@@ -1492,6 +1849,25 @@ Content-Type: application/json
 
 
 
+### <span id="config-operate-process-body"></span> ConfigOperateProcessBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| enableProcessRestart | boolean| `bool` |  | | 是否启停进程：默认为false，只有操作类型是update_register才有效 |  |
+| operateRange | [PbprocOperateRange](#pbproc-operate-range)| `PbprocOperateRange` |  | |  |  |
+| operateType | string| `string` |  | | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register |  |
+| processIds | []int64 (formatted integer)| `[]int64` |  | | 进程ID |  |
+| processInstanceId | int64 (formatted integer)| `int64` |  | | 进程实例ID |  |
+
+
+
 ### <span id="config-publish-body"></span> ConfigPublishBody
 
 
@@ -1512,6 +1888,28 @@ Content-Type: application/json
 | memo | string| `string` |  | | 上线说明 |  |
 
 
+
+### <span id="config-push-config-body"></span> ConfigPushConfigBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| batchId | int64 (formatted integer)| `int64` |  | | 配置生成操作产生的批任务ID |  |
+
+
+
+### <span id="config-sync-cmdb-gse-status-body"></span> ConfigSyncCmdbGseStatusBody
+
+
+  
+
+[interface{}](#interface)
 
 ### <span id="config-update-config-template-body"></span> ConfigUpdateConfigTemplateBody
 
@@ -1609,6 +2007,23 @@ Content-Type: application/json
 | creator | string| `string` |  | | 创建人 |  |
 | reviser | string| `string` |  | | 更新人 |  |
 | updateAt | string| `string` |  | | 更新时间 |  |
+
+
+
+### <span id="pbcin-config-template-group"></span> pbcinConfigTemplateGroup
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | CC进程ID列表 |  |
+| configTemplateId | int64 (formatted integer)| `int64` |  | | 配置模版ID |  |
+| configTemplateVersionId | int64 (formatted integer)| `int64` |  | | 配置模版版本ID |  |
 
 
 
@@ -1750,6 +2165,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-check-config-resp"></span> pbcsCheckConfigResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| batchId | int64 (formatted integer)| `int64` |  | | 批任务ID |  |
+
+
+
 ### <span id="pbcs-config-bind-process-instance-body"></span> pbcsConfigBindProcessInstanceBody
 
 
@@ -1840,6 +2270,21 @@ Content-Type: application/json
 
 [interface{}](#interface)
 
+### <span id="pbcs-generate-config-resp"></span> pbcsGenerateConfigResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| batchId | int64 (formatted integer)| `int64` |  | | 批任务ID |  |
+
+
+
 ### <span id="pbcs-get-config-template-resp"></span> pbcsGetConfigTemplateResp
 
 
@@ -1867,6 +2312,25 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | bizTopoNodes | \[\][PbctBizTopoNode](#pbct-biz-topo-node)| `[]*PbctBizTopoNode` |  | |  |  |
+
+
+
+### <span id="pbcs-get-task-batch-detail-resp"></span> pbcsGetTaskBatchDetailResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 任务总数 |  |
+| filterOptions | [PbtbTaskDetailFilterOptions](#pbtb-task-detail-filter-options)| `PbtbTaskDetailFilterOptions` |  | | 任务详情过滤选项 |  |
+| statistics | \[\][PbtbTaskStatusStatItem](#pbtb-task-status-stat-item)| `[]*PbtbTaskStatusStatItem` |  | | 状态统计列表 |  |
+| taskBatch | [PbtbTaskBatch](#pbtb-task-batch)| `PbtbTaskBatch` |  | | 任务批次信息 |  |
+| tasks | \[\][PbtbTaskDetail](#pbtb-task-detail)| `[]*PbtbTaskDetail` |  | | 任务详情列表 |  |
 
 
 
@@ -1919,6 +2383,21 @@ Content-Type: application/json
 | details | \[\][PbkvKv](#pbkv-kv)| `[]*PbkvKv` |  | |  |  |
 | exclusionCount | int64 (formatted integer)| `int64` |  | | 排除删除后的数量 |  |
 | isCertExpired | boolean| `bool` |  | | 是否有证书过期：是=true，否=false |  |
+
+
+
+### <span id="pbcs-operate-process-resp"></span> pbcsOperateProcessResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| batchID | int64 (formatted integer)| `int64` |  | | 批任务ID |  |
 
 
 
@@ -1985,6 +2464,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-push-config-resp"></span> pbcsPushConfigResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| batchId | int64 (formatted integer)| `int64` |  | | 批任务ID |  |
+
+
+
 ### <span id="pbcs-service-instance-resp"></span> pbcsServiceInstanceResp
 
 
@@ -2012,6 +2506,21 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | serviceTemplates | \[\][PbctServiceTemplate](#pbct-service-template)| `[]*PbctServiceTemplate` |  | |  |  |
+
+
+
+### <span id="pbcs-sync-cmdb-gse-status-resp"></span> pbcsSyncCmdbGseStatusResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| taskId | string| `string` |  | |  |  |
 
 
 
@@ -2351,6 +2860,27 @@ Content-Type: application/json
 
 
 
+### <span id="pbproc-operate-range"></span> pbprocOperateRange
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ccProcessId | int64 (formatted integer)| `int64` |  | | CC进程ID |  |
+| configTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 配置模版ID列表 |  |
+| environment | string| `string` |  | | 环境类型(1:测试 2: 体验 3: 正式) |  |
+| moduleName | string| `string` |  | | 模块名称 |  |
+| processAlias | string| `string` |  | | 进程别名 |  |
+| serviceName | string| `string` |  | | 服务实例名称 |  |
+| setName | string| `string` |  | | 集群名称 |  |
+
+
+
 ### <span id="pbrelease-callback-result"></span> pbreleaseCallbackResult
 
 
@@ -2419,6 +2949,164 @@ Content-Type: application/json
 | title | string| `string` |  | |  |  |
 | updatedAt | string| `string` |  | |  |  |
 | workflowId | string| `string` |  | |  |  |
+
+
+
+### <span id="pbtb-choice"></span> pbtbChoice
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| id | string| `string` |  | | 选项ID |  |
+| name | string| `string` |  | | 选项名称 |  |
+
+
+
+### <span id="pbtb-operate-range"></span> pbtbOperateRange
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | CC进程ID列表 |  |
+| ccProcessNames | []string| `[]string` |  | | CC进程名称列表 |  |
+| moduleNames | []string| `[]string` |  | | 模块名称列表 |  |
+| serviceNames | []string| `[]string` |  | | 服务实例名称列表 |  |
+| setNames | []string| `[]string` |  | | 集群名称列表 |  |
+
+
+
+### <span id="pbtb-process-task-data"></span> pbtbProcessTaskData
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| environment | string| `string` |  | | 环境 |  |
+| operateRange | [PbtbOperateRange](#pbtb-operate-range)| `PbtbOperateRange` |  | | 操作范围 |  |
+
+
+
+### <span id="pbtb-task-batch"></span> pbtbTaskBatch
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| creator | string| `string` |  | | 创建人 |  |
+| endAt | date-time (formatted string)| `strfmt.DateTime` |  | | 结束时间 |  |
+| executionTime | float (formatted number)| `float32` |  | | 执行耗时(秒) |  |
+| id | int64 (formatted integer)| `int64` |  | | 任务批次ID |  |
+| startAt | date-time (formatted string)| `strfmt.DateTime` |  | | 开始时间 |  |
+| status | string| `string` |  | | 任务状态 |  |
+| taskAction | string| `string` |  | | 任务动作 |  |
+| taskData | [PbtbProcessTaskData](#pbtb-process-task-data)| `PbtbProcessTaskData` |  | | 任务数据 |  |
+| taskObject | string| `string` |  | | 任务对象 |  |
+
+
+
+### <span id="pbtb-task-detail"></span> pbtbTaskDetail
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| compareStatus | string| `string` |  | | 对比状态：SAME、DIFFERENT、NEVER_PUBLISHED、UNKNOWN |  |
+| creator | string| `string` |  | | 创建者 |  |
+| executionTime | float (formatted number)| `float32` |  | | 执行时间(s) |  |
+| message | string| `string` |  | | 任务消息 |  |
+| status | string| `string` |  | | 任务状态 |  |
+| taskId | string| `string` |  | | 任务详情ID |  |
+| taskPayload | [PbtbTaskPayload](#pbtb-task-payload)| `PbtbTaskPayload` |  | | 进程配置快照 |  |
+
+
+
+### <span id="pbtb-task-detail-filter-options"></span> pbtbTaskDetailFilterOptions
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| aliasChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | 进程别名查询选项 |  |
+| ccProcessIdChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | CC进程ID查询选项 |  |
+| instIdChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | 实例ID查询选项 |  |
+| moduleNameChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | 模块名查询选项 |  |
+| serviceNameChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | 服务名称查询选项 |  |
+| setNameChoices | \[\][PbtbChoice](#pbtb-choice)| `[]*PbtbChoice` |  | | 集群名查询选项 |  |
+
+
+
+### <span id="pbtb-task-payload"></span> pbtbTaskPayload
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| agentId | string| `string` |  | | Agent ID |  |
+| alias | string| `string` |  | | 进程别名 |  |
+| ccProcessId | int64 (formatted integer)| `int64` |  | | CC进程ID |  |
+| configData | string| `string` |  | | 进程启动相关配置 |  |
+| environment | string| `string` |  | | 环境 |  |
+| funcName | string| `string` |  | | 进程二进制文件名 |  |
+| hostInstSeq | int64 (formatted integer)| `int64` |  | | 主机级别的序号 |  |
+| innerIp | string| `string` |  | | IP |  |
+| moduleInstSeq | int64 (formatted integer)| `int64` |  | | 模块级别的序号 |  |
+| moduleName | string| `string` |  | | 模块名 |  |
+| serviceName | string| `string` |  | | 服务实例 |  |
+| setName | string| `string` |  | | 集群名 |  |
+
+
+
+### <span id="pbtb-task-status-stat-item"></span> pbtbTaskStatusStatItem
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 数量 |  |
+| message | string| `string` |  | | 状态描述 |  |
+| status | string| `string` |  | | 任务状态 |  |
 
 
 

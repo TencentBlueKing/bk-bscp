@@ -38,6 +38,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 		ProcessInstanceId:    req.GetProcessInstanceId(),
 		OperateType:          req.GetOperateType(),
 		EnableProcessRestart: req.GetEnableProcessRestart(),
+		OperateRange:         req.GetOperateRange(),
 	})
 	if err != nil {
 		return nil, err

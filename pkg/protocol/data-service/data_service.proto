@@ -2345,6 +2345,7 @@ message OperateProcessReq {
   uint32 process_instance_id = 3;
   string operate_type = 4;
   bool enable_process_restart = 5;
+  pbproc.OperateRange operate_range = 6;
 }
 
 message OperateProcessResp {
@@ -2517,6 +2518,7 @@ message ListConfigInstancesResp {
 message GenerateConfigReq {
   uint32 biz_id = 1;
   repeated pbcin.ConfigTemplateGroup config_template_groups = 2;
+  pbproc.OperateRange operate_range = 3;
 }
 
 message GenerateConfigResp {
@@ -2526,6 +2528,7 @@ message GenerateConfigResp {
 message CheckConfigReq {
   uint32 biz_id = 1;
   repeated pbcin.ConfigTemplateGroup config_template_groups = 2;
+  pbproc.OperateRange operate_range = 3;
 }
 
 message CheckConfigResp {

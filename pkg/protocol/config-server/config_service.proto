@@ -4731,6 +4731,7 @@ message OperateProcessReq {
   bool enable_process_restart = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "是否启停进程：默认为false，只有操作类型是update_register才有效"
   }];
+  pbproc.OperateRange operate_range = 6;
 }
 
 message OperateProcessResp {
@@ -4924,6 +4925,7 @@ message GenerateConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated pbcin.ConfigTemplateGroup config_template_groups = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版组" }];
+  pbproc.OperateRange operate_range = 3;
 }
 
 message GenerateConfigResp {
@@ -4934,6 +4936,7 @@ message CheckConfigReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated pbcin.ConfigTemplateGroup config_template_groups = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版组" }];
+  pbproc.OperateRange operate_range = 3;
 }
 
 message CheckConfigResp {
