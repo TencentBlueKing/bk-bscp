@@ -23,8 +23,11 @@
             v-for="item in filter.list"
             :key="item.id"
             :value="filter.value === 'cc_process_ids' ? item.id : item.name"
-            :name="item.name">
-            {{ item.name }}
+            :name="item.name"
+            :class="['range-select-option', { issued: isIssued }]">
+            <div class="name-text">
+              <bk-overflow-title type="tips" resizeable>{{ item.name }}</bk-overflow-title>
+            </div>
           </bk-option>
         </bk-select>
         <bk-button class="op-btn" text theme="primary" @click="filterType = 'expression'">
@@ -246,6 +249,17 @@
       font-size: 14px;
       .icon {
         margin-right: 8px;
+      }
+    }
+  }
+
+  .range-select-option {
+    .name-text {
+      max-width: 86px;
+    }
+    &.issued {
+      .name-text {
+        max-width: 112px;
       }
     }
   }

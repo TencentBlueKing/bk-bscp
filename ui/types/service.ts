@@ -37,7 +37,7 @@ export interface IDiffDetail {
   secret_hidden?: boolean;
   base: {
     content: string | IFileConfigContentSummary;
-    createTime?: string;
+    createTime: string;
     language?: string;
     variables?: IVariableEditParams[];
     permission?: {
@@ -50,7 +50,7 @@ export interface IDiffDetail {
     content: string | IFileConfigContentSummary;
     language?: string;
     variables?: IVariableEditParams[];
-    createTime?: string;
+    createTime: string;
     permission?: {
       privilege: string;
       user: string;

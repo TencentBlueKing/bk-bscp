@@ -13,7 +13,7 @@
           <slot name="baseHead">
             <div class="diff-panel-head">
               <div class="version-tag current-version">{{ t('实时') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.current.createTime!) }}</span>
+              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.base.createTime) }}</span>
             </div>
           </slot>
         </template>
@@ -21,7 +21,7 @@
           <slot name="currentHead">
             <div class="diff-panel-head">
               <div class="version-tag base-version">{{ t('预生成') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.base.createTime!) }}</span>
+              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.current.createTime) }}</span>
             </div>
           </slot>
         </template>
@@ -90,12 +90,12 @@
         contentType: 'text',
         id: 0,
         current: {
-          content: res.last_dispatched ? res.last_dispatched.data.content : '',
-          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
-        },
-        base: {
           content: res.preview_config ? res.preview_config.data.content : '',
           createTime: res.preview_config ? res.preview_config.timestamp : '',
+        },
+        base: {
+          content: res.last_dispatched ? res.last_dispatched.data.content : '',
+          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
         },
       };
     } catch (error) {

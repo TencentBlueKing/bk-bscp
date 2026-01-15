@@ -198,7 +198,7 @@
       data: {
         ccProcessId: row.cc_process_id,
         moduleInstSeq: row.module_inst_seq,
-        configVersionId: row.latest_template_revision_id,
+        configVersionId: props.templateProcess.revisionId,
         configTemplateId: row.config_template_id,
       },
     };

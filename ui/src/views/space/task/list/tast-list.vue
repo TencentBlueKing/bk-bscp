@@ -73,7 +73,7 @@
           <template #default="{ row }: { row: ITaskHistoryItem }">
             <bk-button
               v-if="row.status !== 'running'"
-              :disabled="row.status === 'success'"
+              :disabled="row.status === 'succeed'"
               theme="primary"
               text
               @click.stop="handleRetry(row)">

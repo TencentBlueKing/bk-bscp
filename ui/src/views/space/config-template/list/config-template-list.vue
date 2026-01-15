@@ -18,7 +18,7 @@
             <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
           </template>
         </TableColumn>
-        <TableColumn :title="t('文件名')" col-key="spec.file_name"> </TableColumn>
+        <TableColumn :title="t('文件名')" col-key="spec.file_name" ellipsis> </TableColumn>
         <TableColumn :title="t('关联进程实例')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="associated-instance">
@@ -409,6 +409,7 @@
   }
 
   .delete-content {
+    text-align: center;
     .label {
       margin-right: 8px;
     }
