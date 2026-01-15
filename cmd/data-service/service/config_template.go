@@ -395,6 +395,8 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 		Revision: &table.Revision{
 			Creator:   kit.User,
 			CreatedAt: now,
+			Reviser:   kit.User,
+			UpdatedAt: now,
 		},
 	}
 	id, err := s.dao.ConfigTemplate().CreateWithTx(kit, tx, configTemplate)
@@ -434,6 +436,8 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 		Revision: &table.Revision{
 			Creator:   kit.User,
 			CreatedAt: now,
+			Reviser:   kit.User,
+			UpdatedAt: now,
 		},
 	}
 	templateID, err := s.dao.Template().CreateWithTx(kit, tx, template, false)
@@ -515,6 +519,7 @@ func (s *Service) getOrCreateTemplateSpace(kit *kit.Kit, bizID uint32, now time.
 		},
 		Revision: &table.Revision{
 			Creator: kit.User, CreatedAt: now,
+			Reviser: kit.User, UpdatedAt: now,
 		},
 	}
 
@@ -548,6 +553,7 @@ func (s *Service) getOrCreateDefaultTemplateSet(kit *kit.Kit, bizID, spaceID uin
 		},
 		Revision: &table.Revision{
 			Creator: kit.User, CreatedAt: now,
+			Reviser: kit.User, UpdatedAt: now,
 		},
 	}
 	_, err = s.dao.TemplateSet().Create(kit, set)
