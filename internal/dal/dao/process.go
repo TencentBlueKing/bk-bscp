@@ -180,7 +180,16 @@ func (dao *processDao) GetByID(kit *kit.Kit, bizID uint32, id uint32) (*table.Pr
 // fields = append(fields, field.NewString("", "id"))
 func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) (
 	[]*table.Process, error) {
-	q := dao.genQ.Process.WithContext(kit.Ctx)
+	sql := `processes.cc_sync_status != ?
+			OR EXISTS (
+			SELECT 1
+			FROM process_instances AS pl
+			WHERE pl.process_id = processes.id
+			AND (pl.status = ? OR pl.managed_status = ?)
+			)`
+
+	q := dao.genQ.Process.WithContext(kit.Ctx).
+		Where(dao.genQ.Process.BizID.Eq(bizID), utils.RawCond(sql, "deleted", "running", "managed"))
 
 	return q.Distinct(fields...).Select(fields...).Find()
 }
