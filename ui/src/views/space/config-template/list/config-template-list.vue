@@ -15,7 +15,7 @@
       <PrimaryTable :data="templateList" :loading="tableLoading" class="border" row-key="id" cell-empty-content="--">
         <TableColumn :title="t('模板名称')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
-            <bk-button theme="primary" text @click="handleViewTemplate(row.id)">{{ row.spec.name }}</bk-button>
+            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
           </template>
         </TableColumn>
         <TableColumn :title="t('文件名')" col-key="spec.file_name"> </TableColumn>
@@ -112,6 +112,7 @@
     :bk-biz-id="spaceId"
     :template-id="opTemplate.id"
     :template-space-id="templateSpaceId"
+    :is-associated="opTemplate.isAssociated"
     @operate="handleDetailOperate"
     @close="isShowDetails = false" />
   <DeleteConfirmDialog
@@ -180,6 +181,7 @@
   const opTemplate = ref({
     id: 0,
     templateName: '',
+    isAssociated: false,
   });
   const attribution = ref('');
   const templateSpaceId = ref(0);
@@ -234,8 +236,12 @@
   };
 
   // 查看模板详情
-  const handleViewTemplate = (id: number) => {
-    opTemplate.value.id = id;
+  const handleViewTemplate = (template: IConfigTemplateItem) => {
+    opTemplate.value = {
+      id: template.id,
+      templateName: `${template.spec.name} (${template.spec.file_name})`,
+      isAssociated: template.isAssociated,
+    };
     isShowDetails.value = true;
   };
 
@@ -250,6 +256,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: `${template.spec.name} (${template.spec.file_name})`,
+      isAssociated: template.isAssociated,
     };
     isShowAssociatedProcess.value = true;
   };
@@ -308,6 +315,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: template.spec.name,
+      isAssociated: template.isAssociated,
     };
   };
 
@@ -316,6 +324,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: template.spec.name,
+      isAssociated: template.isAssociated,
     };
   };
 

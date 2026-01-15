@@ -91,6 +91,7 @@
   const pending = ref(false);
   const batchId = ref(0);
   const statusTimer = ref();
+  const needGenerate = ref(true);
 
   watch(
     () => filterConditions.value,
@@ -114,12 +115,14 @@
 
   const handleSelectVersion = (template: ITemplateProcess, revisionId: number[]) => {
     loadTemplateInstanceList(template.id, revisionId);
+    needGenerate.value = true;
   };
 
   // 配置生成(全部)
   const handleConfigGenerate = async () => {
     try {
       stepsStatus.value.curStep = 2;
+      if (!needGenerate.value) return;
       pending.value = true;
       const data = {
         configTemplateGroups: templateProcessList.value!.map((templateProcess) => {
@@ -133,6 +136,7 @@
       const res = await generateConfig(spaceId.value, data);
       batchId.value = res.batch_id;
       loadGenerateStatus();
+      needGenerate.value = false;
     } catch (error) {
       console.error(error);
     } finally {
@@ -263,16 +267,19 @@
     }
     selectedTemplateIds.value.push(id);
     loadTemplateInstanceList(id);
+    needGenerate.value = true;
   };
 
   const handleRemoveTemplate = (id: number) => {
     selectedTemplateIds.value = selectedTemplateIds.value.filter((tid) => tid !== id);
     templateProcessList.value = templateProcessList.value.filter((t) => t.id !== id);
+    needGenerate.value = true;
   };
 
   const handleClearTemplate = () => {
     selectedTemplateIds.value = [];
     templateProcessList.value = [];
+    needGenerate.value = true;
   };
 
   // 配置下发

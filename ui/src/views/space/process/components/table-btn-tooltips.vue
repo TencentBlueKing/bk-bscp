@@ -18,6 +18,7 @@
 
 <script lang="ts" setup>
   import { PROCESS_BUTTON_DISABLED_TIPS } from '../../../../constants/process';
+  import { Share } from 'bkui-vue/lib/icon';
 
   const props = defineProps<{
     disabled: boolean;

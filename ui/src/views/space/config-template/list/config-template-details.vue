@@ -9,7 +9,9 @@
         </div>
         <div class="suffix-right">
           <bk-button @click="handleOpTemplate('edit')">{{ $t('编辑') }}</bk-button>
-          <bk-button theme="primary" @click="handleOpTemplate('issue')">{{ $t('配置下发') }}</bk-button>
+          <bk-button theme="primary" :disabled="!isAssociated" @click="handleOpTemplate('issue')">
+            {{ $t('配置下发') }}
+          </bk-button>
           <bk-popover ref="opPopRef" theme="light" placement="bottom-end" :arrow="false">
             <div class="more-actions">
               <Ellipsis class="ellipsis-icon" />
@@ -64,6 +66,7 @@
     bkBizId: string;
     templateId: number;
     templateSpaceId: number;
+    isAssociated: boolean;
   }>();
   const templateDetail = ref({
     name: '',
