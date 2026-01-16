@@ -93,6 +93,7 @@ func (s *Service) GenerateConfig(ctx context.Context, req *pbcs.GenerateConfigRe
 	dsResp, err := s.client.DS.GenerateConfig(grpcKit.RpcCtx(), &pbds.GenerateConfigReq{
 		BizId:                req.GetBizId(),
 		ConfigTemplateGroups: dsConfigTemplateGroups,
+		OperateRange:         req.GetOperateRange(),
 	})
 	if err != nil {
 		logs.Errorf("generate config failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -294,6 +295,7 @@ func (s *Service) CheckConfig(ctx context.Context, req *pbcs.CheckConfigReq) (*p
 	dsResp, err := s.client.DS.CheckConfig(grpcKit.RpcCtx(), &pbds.CheckConfigReq{
 		BizId:                req.GetBizId(),
 		ConfigTemplateGroups: dsConfigTemplateGroups,
+		OperateRange:         req.GetOperateRange(),
 	})
 	if err != nil {
 		logs.Errorf("check config failed, err: %v, rid: %s", err, grpcKit.Rid)

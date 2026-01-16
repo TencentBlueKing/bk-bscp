@@ -21,6 +21,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	process "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
@@ -57,6 +58,8 @@ type Process interface {
 	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
 	ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error)
 	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
+	// GetByOperateRange 根据操作范围查询进程
+	GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -395,4 +398,43 @@ func (dao *processDao) handleManagedStatus(kit *kit.Kit, q gen.IProcessDo, statu
 	}
 
 	return []rawgen.Condition{q.Where(m.ID.In(pid...))}, nil
+}
+
+// GetByOperateRange 根据操作范围查询进程
+func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error) {
+	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
+
+	// 构建查询条件
+	var conds []rawgen.Condition
+	conds = append(conds, m.BizID.Eq(bizID))
+
+	if operateRange.GetEnvironment() != "" {
+		conds = append(conds, m.Environment.Eq(operateRange.GetEnvironment()))
+	}
+
+	if operateRange.GetSetName() != "" {
+		conds = append(conds, m.SetName.Eq(operateRange.GetSetName()))
+	}
+
+	if operateRange.GetModuleName() != "" {
+		conds = append(conds, m.ModuleName.Eq(operateRange.GetModuleName()))
+	}
+
+	if operateRange.GetServiceName() != "" {
+		conds = append(conds, m.ServiceName.Eq(operateRange.GetServiceName()))
+	}
+
+	if operateRange.GetProcessAlias() != "" {
+		conds = append(conds, m.Alias_.Eq(operateRange.GetProcessAlias()))
+	}
+
+	if operateRange.GetCcProcessId() != 0 {
+		conds = append(conds, m.CcProcessID.Eq(operateRange.GetCcProcessId()))
+	}
+
+	// 只查询未删除的进程
+	conds = append(conds, m.CcSyncStatus.Neq(table.Deleted.String()))
+
+	return q.Where(conds...).Find()
 }
