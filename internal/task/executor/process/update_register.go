@@ -206,13 +206,16 @@ func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 	}
 
 	if !needStopProcess(status) {
-		logs.Infof("[StopProcessStep]: process not running, skip stop")
+		logs.Infof("[StopProcessStep STEP]: process not running, skip stop")
 		return nil
 	}
 
-	logs.Infof("[StopProcessStep STEP]: 执行停止操作")
 	if err = u.executeGSEOperate(c.Context(), payload, commonPayload, table.StopProcessOperate); err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf(
+			"[StopProcessStep STEP]: execute process operate %s failed: %w",
+			table.StopProcessOperate,
+			err,
+		)
 	}
 
 	return nil
@@ -239,58 +242,74 @@ func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 
 	payload := &UpdateRegisterPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("[RegisterProcessStep STEP]: get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("[RegisterProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	return u.executeGSEOperate(c.Context(), payload, commonPayload, table.RegisterProcessOperate)
+	if err := u.executeGSEOperate(c.Context(), payload, commonPayload, table.RegisterProcessOperate); err != nil {
+		return fmt.Errorf(
+			"[RegisterProcessStep STEP]: execute process operate %s failed: %w",
+			table.RegisterProcessOperate,
+			err,
+		)
+	}
+
+	return nil
 }
 
 // StartProcessStep 启动进程
 func (u *UpdateRegisterExecutor) StartProcessStep(c *istep.Context) error {
-	logs.Infof("[StopProcessStep STEP]: starting stop process")
+	logs.Infof("[StartProcessStep STEP]: starting start process")
 
 	payload := &UpdateRegisterPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("[StartProcessStep STEP]: get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("[StartProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	return u.executeGSEOperate(c.Context(), payload, commonPayload, table.StartProcessOperate)
+	if err := u.executeGSEOperate(c.Context(), payload, commonPayload, table.StartProcessOperate); err != nil {
+		return fmt.Errorf(
+			"[StartProcessStep STEP]: execute process operate %s failed: %w",
+			table.StartProcessOperate,
+			err,
+		)
+	}
+
+	return nil
 }
 
 // OperationCompletedStep 进程操作完成
 func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error {
-	logs.Infof("[ProcessOperationCompleted STEP]: starting process operation completed")
+	logs.Infof("[OperationCompletedStep STEP]: starting process operation completed")
 	payload := &UpdateRegisterPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[ProcessOperationCompleted STEP]: get payload failed: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[ProcessOperationCompleted STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: get common payload failed: %w", err)
 	}
 
 	// 解析进程配置信息
 	var processInfo table.ProcessInfo
 	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
 	if err != nil {
-		return fmt.Errorf("[ProcessOperationCompleted STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: unmarshal process info failed: %w", err)
 	}
 
 	// 获取gse侧进程状态
 	processStatus, managedStatus, err := u.getGSEProcessStatus(c, payload.BizID)
 	if err != nil {
-		return fmt.Errorf("[ProcessOperationCompleted STEP]: failed to get gse process status: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: failed to get gse process status: %w", err)
 	}
 
 	// 更新进程实例状态字段
@@ -300,7 +319,7 @@ func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error 
 		"managed_status":    managedStatus,
 		"status_updated_at": time.Now(),
 	}, m.ID.Eq(payload.ProcessInstanceID)); err != nil {
-		return fmt.Errorf("[ProcessOperationCompleted STEP]: failed to update process instance: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: failed to update process instance: %w", err)
 	}
 
 	// 更新进程配置和状态
@@ -311,7 +330,7 @@ func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error 
 			"source_data":    commonPayload.ProcessPayload.ConfigData,
 		},
 		u.Dao.GenQuery().Process.ID.Eq(payload.ProcessID)); errU != nil {
-		logs.Errorf("[ProcessOperationCompleted STEP]: update prev_data and source_data failed to %s, processID=%s, err=%v",
+		logs.Errorf("[OperationCompletedStep STEP]: update prev_data and source_data failed to %s, processID=%s, err=%v",
 			payload.ProcessID, errU)
 	}
 
@@ -330,7 +349,7 @@ func (u *UpdateRegisterExecutor) getGSEProcessStatus(
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return "", "", fmt.Errorf("get common payload failed: %w", err)
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: get common payload failed: %w", err)
 	}
 	// 查询进程信息
 	process, err := u.Dao.Process().GetByID(kit.New(), bizID, payload.ProcessID)
@@ -357,14 +376,15 @@ func (u *UpdateRegisterExecutor) getGSEProcessStatus(
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to build process operate: %w", err)
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to build process operate: %w", err)
 	}
 	req := &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
 	resp, err := u.GseService.OperateProcMulti(c.Context(), req)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to query process status via gseService.OperateProcMulti: %w", err)
+		return "", "",
+			fmt.Errorf("[getGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	result, err := u.WaitProcOperateTaskFinish(
 		c.Context(),
@@ -375,7 +395,7 @@ func (u *UpdateRegisterExecutor) getGSEProcessStatus(
 		commonPayload.ProcessPayload.AgentID,
 	)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to wait for query task finish: %w", err)
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to wait for query task finish: %w", err)
 	}
 	key := gse.BuildResultKey(
 		commonPayload.ProcessPayload.AgentID,
@@ -385,18 +405,18 @@ func (u *UpdateRegisterExecutor) getGSEProcessStatus(
 	)
 	procResult, ok := result[key]
 	if !ok {
-		return "", "", fmt.Errorf("process result not found for key: %s", key)
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: process result not found for key: %s", key)
 	}
 	if !gse.IsSuccess(procResult.ErrorCode) {
-		return "", "", fmt.Errorf("failed to query process status, errorCode=%d, errorMsg=%s",
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to query process status, errorCode=%d, errorMsg=%s",
 			procResult.ErrorCode, procResult.ErrorMsg)
 	}
 	var statusContent gse.ProcessStatusContent
 	if err = json.Unmarshal([]byte(procResult.Content), &statusContent); err != nil {
-		return "", "", fmt.Errorf("failed to unmarshal process status content: %w", err)
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to unmarshal process status content: %w", err)
 	}
 	if len(statusContent.Process) == 0 || len(statusContent.Process[0].Instance) == 0 {
-		return "", "", fmt.Errorf("process not found in gse")
+		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: process not found in gse")
 	}
 	instance := statusContent.Process[0].Instance[0]
 	processStatus := table.ProcessStatusStopped
@@ -611,8 +631,6 @@ func (u *UpdateRegisterExecutor) executeGSEOperate(ctx context.Context, payload 
 		commonPayload.ProcessPayload.Alias,
 		commonPayload.ProcessPayload.HostInstSeq,
 	)
-
-	fmt.Println("result[key]:", result[key])
 
 	procResult, ok := result[key]
 	if !ok {

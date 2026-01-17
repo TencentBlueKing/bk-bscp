@@ -89,6 +89,7 @@ func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32, url string
 		CcSyncStatus:         spec.CcSyncStatus.String(),
 		CcSyncUpdatedAt:      toProtoTimestamp(spec.CcSyncUpdatedAt),
 		SourceData:           spec.SourceData,
+		PrevData:             spec.PrevData,
 		ProcNum:              uint32(spec.ProcNum),
 		BindTemplateIds:      bindTemplateIds,
 		ProcessConfigViewUrl: url,
@@ -193,6 +194,7 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 			logs.Errorf("unmarshal process source data failed: %v", err)
 			continue
 		}
+		hasUnknownInstance := false
 		pbProc := PbProcess(p, bindTemplateIds[p.ID])
 		if insts, ok := procInstMap[p.ID]; ok {
 			pbProc.ProcInst = pbpi.PbProcInsts(insts)
@@ -200,19 +202,31 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 			// 根据实例状态计算 Process 状态
 			statusSet := make(map[string]struct{})
 			managedStatusSet := make(map[string]struct{})
+
 			for _, inst := range insts {
-				if inst.Spec != nil {
-					statusSet[inst.Spec.Status.String()] = struct{}{}
-					managedStatusSet[inst.Spec.ManagedStatus.String()] = struct{}{}
+				if inst.Spec == nil ||
+					inst.Spec.Status == "" ||
+					inst.Spec.ManagedStatus == "" {
+					hasUnknownInstance = true
+					break
 				}
+
+				statusSet[inst.Spec.Status.String()] = struct{}{}
+				managedStatusSet[inst.Spec.ManagedStatus.String()] = struct{}{}
 			}
 
 			pbProc.Spec.Status = deriveProcessStatus(statusSet)
 			pbProc.Spec.ManagedStatus = deriveManagedStatus(managedStatusSet)
 
 			isScaleDown := p.Spec.ProcNum < uint(len(pbProc.ProcInst))
+			lastIdx := len(pbProc.ProcInst) - 1
 
 			for i, inst := range pbProc.ProcInst {
+				// 未知状态禁用
+				if inst.Spec.Status == "" || inst.Spec.ManagedStatus == "" {
+					inst.Spec.Actions = emptyInstanceActions()
+					continue
+				}
 
 				// 1. ing 状态：实例级全部冻结（基于实例自身状态）
 				if isProcessInProgress(inst.Spec.Status) ||
@@ -222,8 +236,12 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 				}
 
 				// 2. 缩容：最后一个实例特殊处理，其余实例照常处理
-				if isScaleDown && i == len(pbProc.ProcInst)-1 {
+				if isScaleDown && i != lastIdx {
+					inst.Spec.Actions = emptyInstanceActions()
+					continue
+				}
 
+				if isScaleDown && i == lastIdx {
 					actions := buildInstanceActions(
 						processInfo,
 						inst.Spec.Status,
@@ -231,7 +249,7 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 						p.Spec.CcSyncStatus.String(),
 					)
 
-					// 缩容兜底：保证至少能 unregister
+					// 缩容兜底：至少允许 unregister
 					if !actions["stop"] && !actions["unregister"] {
 						actions["unregister"] = true
 					}
@@ -254,7 +272,7 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 		}
 
 		pbProc.Spec.Actions = buildProcessActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
-			pbProc.Spec.CcSyncStatus, processInfo)
+			pbProc.Spec.CcSyncStatus, processInfo, hasUnknownInstance)
 
 		result = append(result, pbProc)
 	}
@@ -295,7 +313,7 @@ func buildInstanceActions(processInfo table.ProcessInfo, instStatus, instManaged
 
 // buildProcessActions 构建所有操作类型的可用性
 func buildProcessActions(processState, managedState, syncStatus string,
-	info table.ProcessInfo) map[string]*ActionAvailability {
+	info table.ProcessInfo, hasUnknownInstance bool) map[string]*ActionAvailability {
 
 	actions := make(map[string]*ActionAvailability)
 
@@ -308,16 +326,22 @@ func buildProcessActions(processState, managedState, syncStatus string,
 		table.ReloadProcessOperate,
 		table.KillProcessOperate,
 		table.PullProcessOperate,
+		table.UpdateRegisterProcessOperate,
 	}
 
 	for _, op := range ops {
-		actions[string(op)] = BuildActionAvailability(
-			op,
-			processState,
-			managedState,
-			syncStatus,
-			info,
-		)
+
+		allowed, _, reason := CanProcessOperate(op, info, processState, managedState, syncStatus)
+
+		if hasUnknownInstance {
+			allowed = false
+			reason = DisableReasonUnknownProcessState
+		}
+
+		actions[string(op)] = &ActionAvailability{
+			Enabled: allowed,
+			Reason:  reason,
+		}
 	}
 
 	return actions
@@ -327,19 +351,6 @@ func hasBaseRuntimeInfo(info table.ProcessInfo) bool {
 	return info.WorkPath != "" &&
 		info.PidFile != "" &&
 		info.User != ""
-}
-
-func BuildActionAvailability(
-	op table.ProcessOperateType,
-	processState, managedState, syncStatus string,
-	info table.ProcessInfo,
-) *ActionAvailability {
-
-	can, _, reason := CanProcessOperate(op, info, processState, managedState, syncStatus)
-	return &ActionAvailability{
-		Enabled: can,
-		Reason:  reason,
-	}
 }
 
 // HasOperateCommand 验证操作命令
@@ -401,8 +412,7 @@ func isManagedInProgress(state string) bool {
 //     未托管允许托管
 //     已托管允许取消托管
 //     未删除可以下发
-func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, processState,
-	managedState, syncStatus string) (bool, string, string) {
+func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, processState, managedState, syncStatus string) (bool, string, string) {
 	// 1. 状态未知校验
 	if processState == "" || managedState == "" {
 		return false, "original process status or managed status is empty, cannot operate", DisableReasonUnknownProcessState
@@ -446,7 +456,8 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 			}
 			return false, "process is already stopped, no need to stop", DisableReasonNoNeedOperate
 		case table.UnregisterProcessOperate:
-			if isManaged {
+			// 已删除的状态下：已托管 或 部分托管 均可取消托管
+			if isManaged || managedState == table.ProcessManagedStatusPartlyManaged.String() {
 				return true, "", DisableReasonNone
 			}
 			return false, "process is already unregistered, no need to unregister", DisableReasonNoNeedOperate
@@ -496,6 +507,11 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 			return true, "", DisableReasonNone
 		}
 		return false, "process is deleted, cannot pull", DisableReasonUnknownProcessState
+	case table.UpdateRegisterProcessOperate: // 更新托管：只要求有更新
+		if syncStatus != table.Updated.String() {
+			return false, "process is not updated, cannot update register info", DisableReasonNoNeedOperate
+		}
+		return true, "", DisableReasonNone
 	default:
 		return false, "process cannot operate", DisableReasonUnknownProcessState
 	}
@@ -503,22 +519,48 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 
 // deriveProcessStatus 根据多个实例状态推导主进程状态
 func deriveProcessStatus(statusSet map[string]struct{}) string {
-	if len(statusSet) == 1 {
-		for s := range statusSet {
-			return s
+	var hasRunning bool
+	var hasNonRunning bool
+
+	for status := range statusSet {
+		if status == table.ProcessStatusRunning.String() {
+			hasRunning = true
+		} else {
+			hasNonRunning = true
 		}
 	}
-	// 存在多个不同状态，说明混合
-	return table.ProcessStatusPartlyRunning.String()
+
+	if hasRunning && hasNonRunning {
+		return table.ProcessStatusPartlyRunning.String()
+	}
+
+	// 只有一种语义状态，直接返回该状态
+	for status := range statusSet {
+		return status
+	}
+
+	return table.ProcessStatusStopped.String()
 }
 
-// deriveManagedStatus 根据多个实例状态推导主托管状态
 func deriveManagedStatus(statusSet map[string]struct{}) string {
-	if len(statusSet) == 1 {
-		for s := range statusSet {
-			return s
+	var hasManaged bool
+	var hasNonManaged bool
+
+	for status := range statusSet {
+		if status == table.ProcessManagedStatusManaged.String() {
+			hasManaged = true
+		} else {
+			hasNonManaged = true
 		}
 	}
-	// 存在多个不同状态，说明混合
-	return table.ProcessManagedStatusPartlyManaged.String()
+
+	if hasManaged && hasNonManaged {
+		return table.ProcessManagedStatusPartlyManaged.String()
+	}
+
+	for status := range statusSet {
+		return status
+	}
+
+	return table.ProcessManagedStatusUnmanaged.String()
 }

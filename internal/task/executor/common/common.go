@@ -24,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -115,9 +116,10 @@ func (e *Executor) WaitProcOperateTaskFinish(
 	agentID string,
 ) (map[string]gse.ProcResult, error) {
 	var (
-		result  map[string]gse.ProcResult
-		err     error
-		gseResp *gse.GESResponse
+		result          map[string]gse.ProcResult
+		err             error
+		gseResp         *gse.GESResponse
+		inProgressCount int
 	)
 
 	err = task.LoopDoFunc(ctx, func() error {
@@ -140,19 +142,35 @@ func (e *Executor) WaitProcOperateTaskFinish(
 			return err
 		}
 
-		// 构建 GSE 结果查询 key
 		key := gse.BuildResultKey(agentID, bizID, alias, hostInstSeq)
-		logs.Infof("get gse task result, key: %s", key)
-
-		// 该状态表示gse侧进程操作任务正在执行中，尚未完成
-		if gse.IsInProgress(result[key].ErrorCode) {
-			logs.Infof("WaitTaskFinish task %s is in progress, errorCode=%d", gseTaskID, result[key].ErrorCode)
-			return nil
+		procResult, ok := result[key]
+		if !ok {
+			return fmt.Errorf("gse result missing key=%s, taskID=%s", key, gseTaskID)
 		}
 
-		// 结束任务
+		// 115：仍在执行中
+		if gse.IsInProgress(procResult.ErrorCode) {
+			inProgressCount++
+			logs.Infof(
+				"WaitTaskFinish task %s still in progress (errorCode=115), retry=%d/%d",
+				gseTaskID, inProgressCount, gesprocessor.MaxInProgressRetries,
+			)
+
+			if inProgressCount >= gesprocessor.MaxInProgressRetries {
+				logs.Warnf(
+					"WaitTaskFinish task %s exceeded max in-progress retries, treat as finished",
+					gseTaskID,
+				)
+				return task.ErrEndLoop
+			}
+
+			return nil // 继续轮询
+		}
+
+		// 非 115，认为任务已结束（成功或失败由上层判断）
 		return task.ErrEndLoop
-	}, task.LoopInterval(2*time.Second))
+
+	}, task.LoopInterval(gesprocessor.DefaultInterval))
 
 	if err != nil {
 		logs.Errorf("WaitTaskFinish error, gseTaskID %s, err=%+v", gseTaskID, err)
