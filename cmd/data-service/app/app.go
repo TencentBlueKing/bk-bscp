@@ -540,7 +540,7 @@ func (ds *dataService) startCronTasks() {
 	}
 
 	// 监听cmdb资源变化
-	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.service)
+	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service)
 	watchCmdb.Run()
 
 	// 初始化ITSM模板[只有v4版本才需要]
