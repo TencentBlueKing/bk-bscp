@@ -226,6 +226,8 @@
     open: false,
     taskId: '',
   });
+  const timer = ref<number | null>(null);
+  const isRequesting = ref(false);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 150;
@@ -235,33 +237,82 @@
     loadTaskList();
   });
 
-  const loadTaskList = async () => {
+  const scheduleReload = (delay = 0) => {
+    if (timer.value) {
+      clearTimeout(timer.value);
+      timer.value = null;
+    }
+
+    timer.value = setTimeout(() => {
+      loadTaskList(delay > 0);
+    }, delay);
+  };
+
+  const loadTaskList = async (silent = false) => {
+    //  防止并发 & 递归触发
+    if (isRequesting.value) return;
+
     try {
-      loading.value = true;
+      isRequesting.value = true;
+      if (!silent) {
+        loading.value = true;
+      }
+
       const res = await getTaskDetailList(bkBizId.value, taskId.value, {
         status: activePanels.value,
         start: pagination.value.limit * (pagination.value.current - 1),
         limit: pagination.value.limit,
         ...searchValue.value,
       });
+
       detailList.value = res.tasks;
       pagination.value.count = res.count;
+
+      let hasRunningTask = false;
+
       panels.value.forEach((panel) => {
         panel.count = res.statistics.find((item: any) => item.status === panel.status)?.count || 0;
+
         if (panel.status === 'FAILURE') {
           failureCount.value = panel.count;
         }
+        const RUNNING_STATUSES = ['RUNNING', 'INITIALIZING'];
+        if (RUNNING_STATUSES.includes(panel.status) && panel.count > 0) {
+          hasRunningTask = true;
+        }
       });
-      const activePanelCount = panels.value.find((panel) => panel.status === activePanels.value)?.count;
-      if (activePanelCount === 0 || loadPanelsFlag.value) {
+
+      // 只允许触发一次 reload
+      const activePanel = panels.value.find((panel) => panel.status === activePanels.value);
+
+      if (!activePanel?.count || loadPanelsFlag.value) {
         loadPanelsFlag.value = false;
-        activePanels.value = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
-        loadTaskList();
+
+        const nextPanel = panels.value.find((item: any) => item.count > 0)?.status || 'INITIALIZING';
+
+        if (nextPanel !== activePanels.value) {
+          activePanels.value = nextPanel;
+          scheduleReload();
+          return;
+        }
       }
+
+      // filter options
       searchField.value.forEach((item) => {
         item.children = res.filter_options[`${item.field}_choices`];
       });
 
+      // 轮询逻辑（只留一个）
+      if (hasRunningTask) {
+        scheduleReload(3000);
+      } else {
+        if (timer.value) {
+          clearTimeout(timer.value);
+          timer.value = null;
+        }
+      }
+
+      // task batch info
       const {
         id,
         task_object,
@@ -273,7 +324,7 @@
         task_action,
         status,
       } = res.task_batch;
-      action.value = task_action;
+
       const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
       const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
 
@@ -294,6 +345,7 @@
     } catch (error) {
       console.error(error);
     } finally {
+      isRequesting.value = false;
       loading.value = false;
     }
   };
