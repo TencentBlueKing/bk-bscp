@@ -46,6 +46,11 @@ type ProcessInstance interface {
 	DeleteStoppedUnmanagedWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error
 	// BatchUpdateWithTx batch updates process instances.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.ProcessInstance) error
+	ListByProcessIDTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) ([]*table.ProcessInstance, error)
+	// ListByProcessIDOrderBySeqDescTx 查询某业务下某进程，按 module_inst_seq 倒序，取前 N 条实例
+	ListByProcessIDOrderBySeqDescTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32, limit int) ([]*table.ProcessInstance, error)
+	// BatchDeleteByIDsWithTx batch create client instances with transaction.
+	BatchDeleteByIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -54,6 +59,54 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// BatchDeleteByIDsWithTx implements [ProcessInstance].
+func (dao *processInstanceDao) BatchDeleteByIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error {
+	m := dao.genQ.ProcessInstance
+	_, err := tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.ID.In(ids...)).Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ListByProcessIDOrderBySeqDescTx implements [ProcessInstance].
+func (dao *processInstanceDao) ListByProcessIDOrderBySeqDescTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32, limit int) (
+	[]*table.ProcessInstance, error) {
+	m := dao.genQ.ProcessInstance
+	if limit <= 0 {
+		return nil, nil
+	}
+
+	result, err := tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
+		Order(m.ModuleInstSeq.Desc()).
+		Limit(limit).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ListByProcessIDTx implements [ProcessInstance].
+func (dao *processInstanceDao) ListByProcessIDTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32,
+	processID uint32) ([]*table.ProcessInstance, error) {
+	m := dao.genQ.ProcessInstance
+
+	result, err := tx.ProcessInstance.
+		WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }
 
 // BatchUpdateWithTx implements ProcessInstance.

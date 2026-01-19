@@ -356,8 +356,7 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 	}
 
 	// 根据操作类型判断是否需要继续操作进程
-	isValid, message := isOperationValid(
-		payload.OperateType, &statusContent, payload.OriginalProcStatus, payload.OriginalProcManagedStatus)
+	isValid, message := isOperationValid(payload.OperateType, &statusContent, payload.OriginalProcStatus, payload.OriginalProcManagedStatus)
 	if !isValid {
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: operation is not valid: %s", message)
 	}
@@ -550,7 +549,7 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 		return fmt.Errorf("[Finalize STEP]: failed to get gse process status: %w", err)
 	}
 
-	if payload.OperateType == table.UnregisterProcessOperate {
+	if payload.OperateType == table.UnregisterProcessOperate || payload.OperateType == table.StopProcessOperate {
 		// 判断是否存在缩容
 		process, errP := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
 		if errP != nil {

@@ -23,9 +23,11 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	gsecomponents "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -38,13 +40,14 @@ const (
 )
 
 // NewCmdbResourceWatcher 监听cmdb资源变化
-func NewCmdbResourceWatcher(dao dao.Set, sd serviced.Service, cmdb bkcmdb.Service,
+func NewCmdbResourceWatcher(dao dao.Set, sd serviced.Service, cmdb bkcmdb.Service, gse *gsecomponents.Service,
 	svc *service.Service) *cmdbResourceWatcher {
 	return &cmdbResourceWatcher{
 		dao:   dao,
 		state: sd,
 		cmdb:  cmdb,
 		svc:   svc,
+		gse:   gse,
 	}
 }
 
@@ -52,6 +55,7 @@ type cmdbResourceWatcher struct {
 	dao   dao.Set
 	state serviced.Service
 	cmdb  bkcmdb.Service
+	gse   *gsecomponents.Service
 	svc   *service.Service
 }
 
@@ -370,6 +374,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 }
 
 // handleProcessUpdate 处理进程的更新逻辑，包括别名变化、进程数变化、副表写入等。
+// nolint:funlen
 func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	p *bkcmdb.ProcessInfo, old *table.Process) error {
 
@@ -408,65 +413,102 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	newP.Spec.ProcNum = uint(p.ProcNum)
 	newP.Spec.SourceData = string(sourceData)
 
-	toAdd, toUpdate, toDelete, procInst, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP, old, now, map[[2]int]int{}, map[[2]int]int{})
+	// 处理进程变更，addP表示新增进程，updateP表示更新进程，delPID表示删除进程ID
+	// 别名变化会导致新增和删除进程，数量变化会导致新增或删除实例
+	addP, updateP, delPID, addInsts, delInstIDs, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP,
+		old, now, map[[2]int]int{}, map[[2]int]int{})
 	if err != nil {
 		logs.Errorf("biz %d: build process changes failed, processID=%d, err=%v, new=%+v, old=%+v",
 			old.Attachment.BizID, old.ID, err, newP, old)
 		return err
 	}
 
+	// 记录新增进程ID映射，方便后续回填实例的ProcessID
 	idMap := make(map[string]uint32)
-	// 插入
-	if toAdd != nil {
-		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{toAdd}); err != nil {
+
+	// 1. 实例删除
+	if len(delInstIDs) > 0 {
+		if err := c.dao.ProcessInstance().BatchDeleteByIDsWithTx(kt, tx, delInstIDs); err != nil {
+			return fmt.Errorf(
+				"biz %d: delete process instances failed, ids=%v: %w",
+				old.Attachment.BizID, delInstIDs, err,
+			)
+		}
+	}
+	// 2. 新增进程
+	if addP != nil {
+		// 新增且扩容需要更新cc状态时间
+		if len(addInsts) > 0 {
+			addP.Spec.CcSyncUpdatedAt = &now
+		}
+		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{addP}); err != nil {
 			logs.Errorf("[ProcessSync] biz=%d: insert process failed: name=%s, ccProcessID=%d, err=%v",
-				p.BkBizID, toAdd.Spec.Alias, toAdd.Attachment.CcProcessID, err)
+				old.Attachment.BizID, addP.Spec.Alias, addP.Attachment.CcProcessID, err)
 			return fmt.Errorf("insert failed: %w", err)
 		}
-		toAddKey := fmt.Sprintf("%s-%d-%d", toAdd.Attachment.TenantID, p.BkBizID, toAdd.Attachment.CcProcessID)
-		idMap[toAddKey] = toAdd.ID
+
+		key := fmt.Sprintf("%s-%d-%d", addP.Attachment.TenantID, addP.Attachment.BizID,
+			addP.Attachment.CcProcessID)
+		idMap[key] = addP.ID
 	}
 
-	// 更新
-	if toUpdate != nil {
-		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{toUpdate}); err != nil {
+	// 3. 更新进程
+	if updateP != nil {
+		// 更新且扩容需要更新cc状态时间
+		if len(addInsts) > 0 {
+			updateP.Spec.CcSyncUpdatedAt = &now
+		}
+		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{updateP}); err != nil {
 			logs.Errorf("[ProcessSync] biz=%d: update process failed: id=%d, name=%s, err=%v",
-				p.BkBizID, toUpdate.ID, toUpdate.Spec.Alias, err)
+				old.Attachment.BizID, updateP.ID, updateP.Spec.Alias, err)
 			return fmt.Errorf("update failed: %w", err)
 		}
-		toUpdatekey := fmt.Sprintf("%s-%d-%d", toUpdate.Attachment.TenantID, p.BkBizID, toUpdate.Attachment.CcProcessID)
-		idMap[toUpdatekey] = toUpdate.ID
+
+		key := fmt.Sprintf("%s-%d-%d", updateP.Attachment.TenantID, updateP.Attachment.BizID,
+			updateP.Attachment.CcProcessID)
+		idMap[key] = updateP.ID
 	}
 
-	// 删除
-	if toDelete > 0 {
-		if err := c.dao.Process().UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), []uint32{toDelete}); err != nil {
+	// 4. 删除进程（逻辑删除）
+	if delPID > 0 {
+		if err := c.dao.Process().
+			UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), []uint32{delPID}); err != nil {
 			logs.Errorf("[ProcessSync] biz=%d: mark deleted failed: processID=%d, err=%v",
-				old.Attachment.BizID, toDelete, err)
+				old.Attachment.BizID, delPID, err)
 			return fmt.Errorf("mark deleted failed: %w", err)
 		}
 	}
 
-	// 回填 ProcessID 给 Instance
-	for _, inst := range procInst {
-		key := fmt.Sprintf("%s-%d-%d", inst.Attachment.TenantID, inst.Attachment.BizID, inst.Attachment.CcProcessID)
+	// 5. 回填 ProcessID 给新增实例
+	for _, inst := range addInsts {
+		key := fmt.Sprintf("%s-%d-%d",
+			inst.Attachment.TenantID,
+			inst.Attachment.BizID,
+			inst.Attachment.CcProcessID,
+		)
 		if pid, ok := idMap[key]; ok && pid != 0 {
 			inst.Attachment.ProcessID = pid
 		}
 	}
 
-	if len(procInst) == 0 {
-		logs.Infof("[ProcessSync] biz=%d: no process instances to insert", old.Attachment.BizID)
-		return nil
+	// 6. 插入新增实例扩容
+	if len(addInsts) > 0 {
+		// 更新gse状态可以忽略错误
+		g := gse.NewSyncGESService(int(newP.Attachment.BizID), c.gse, c.dao)
+		insts, err := g.SyncSingleProcessStatus(kt.Ctx, newP, addInsts)
+		if err != nil {
+			logs.Errorf("[ProcessSync] biz=%d: sync gse process status failed: %v",
+				old.Attachment.BizID, err)
+		}
+		if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, insts); err != nil {
+			return fmt.Errorf(
+				"biz %d: insert process instances failed, count=%d: %w",
+				old.Attachment.BizID, len(insts), err,
+			)
+		}
 	}
 
-	if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, procInst); err != nil {
-		logs.Errorf("biz %d: insert process instances failed, count=%d, err=%v, data=%+v",
-			old.Attachment.BizID, len(procInst), err, procInst)
-		return fmt.Errorf("insert process instances failed: %w", err)
-	}
-
-	logs.Infof("[ProcessSync] biz=%d: successfully handled process update")
+	logs.Infof("[ProcessSync] biz=%d: successfully handled process update", old.Attachment.BizID)
 
 	return nil
 }

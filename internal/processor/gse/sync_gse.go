@@ -39,9 +39,9 @@ const (
 	DefaultStartCheckSecs = 5
 
 	defaultMaxWait  = 30 * time.Second
-	defaultInterval = 2 * time.Second
+	DefaultInterval = 2 * time.Second
 	// Maximum number of times to tolerate ErrorCode 115 before treating as complete
-	maxInProgressRetries = 5
+	MaxInProgressRetries = 5
 )
 
 // NewSyncGESService 初始化同步gse
@@ -82,10 +82,14 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			logs.Errorf("biz %d: get process instances failed, processID=%d, err=%v", s.bizID, process.ID, err)
 			continue
 		}
-
+		if len(insts) == 0 {
+			logs.Infof("biz %d: no instances for processID=%d, skip gse sync", s.bizID, process.ID)
+			continue
+		}
 		req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
 		if err != nil {
-			logs.Errorf("biz %d: build GSE operate request failed, processID=%d, err=%v", s.bizID, process.ID, err)
+			logs.Errorf("[SyncSingleBiz ERROR] biz %d: build GSE operate request failed, processID=%d, err=%v",
+				s.bizID, process.ID, err)
 			continue
 		}
 
@@ -93,11 +97,11 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			ProcOperateReq: req,
 		})
 		if err != nil {
-			logs.Errorf("biz %d: operate process failed, processID=%d, err=%v", s.bizID, process.ID, err)
+			logs.Errorf("[SyncSingleBiz ERROR] biz %d: operate process failed, processID=%d, err=%v", s.bizID, process.ID, err)
 			continue
 		}
 
-		result, err := waitForProcResult(kit.Ctx, s.svc, proc.TaskID, defaultMaxWait, defaultInterval)
+		result, err := waitForProcResult(kit.Ctx, s.svc, proc.TaskID, defaultMaxWait, DefaultInterval)
 		if err != nil {
 			logs.Errorf("biz %d: wait for process result failed, taskID=%s, err=%v", s.bizID, proc.TaskID, err)
 			continue
@@ -153,6 +157,62 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// SyncSingleProcessStatus 根据实例同步单个进程的 GSE 状态
+// - 成功：返回状态已更新的 insts（可能是部分）
+// - 失败：返回 insts + error
+func (s *syncGSEService) SyncSingleProcessStatus(ctx context.Context, process *table.Process, insts []*table.ProcessInstance) (
+	[]*table.ProcessInstance, error) {
+
+	req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
+	if err != nil {
+		logs.Errorf("[SyncSingleBiz ERROR] biz %d: build GSE operate request failed, processID=%d, err=%v",
+			s.bizID, process.ID, err)
+		return insts, err
+	}
+
+	proc, err := s.svc.OperateProcMulti(ctx, &gse.MultiProcOperateReq{
+		ProcOperateReq: req,
+	})
+	if err != nil {
+		return insts, fmt.Errorf(
+			"biz %d: operate process failed, processID=%d: %w",
+			s.bizID, process.ID, err,
+		)
+	}
+
+	// 5. 等待 GSE 结果
+	result, err := waitForProcResult(
+		ctx, s.svc, proc.TaskID, defaultMaxWait, DefaultInterval,
+	)
+	if err != nil {
+		return insts, fmt.Errorf(
+			"biz %d: wait gse result failed, taskID=%s: %w",
+			s.bizID, proc.TaskID, err,
+		)
+	}
+
+	// 6. 解析实例状态
+	updatedInsts := make([]*table.ProcessInstance, 0, len(result))
+	for key, val := range result {
+		inst := instMap[key]
+
+		status, managed := parseGSEProcResult(key, val)
+		logs.Infof("[GSESync][DEBUG] biz=%d processID=%d instID=%d key=%s status=%s managed=%s",
+			s.bizID, process.ID, inst.ID, key, status, managed)
+		inst.Spec.Status = status
+		inst.Spec.ManagedStatus = managed
+		inst.Spec.StatusUpdatedAt = time.Now().UTC()
+		updatedInsts = append(updatedInsts, inst)
+	}
+
+	if len(updatedInsts) == 0 {
+		logs.Warnf("[GSESync][WARN] biz=%d processID=%d no instances to update after gse result", s.bizID, process.ID)
+		return insts, nil
+	}
+
+	return updatedInsts, nil
 }
 
 func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, bizID uint32) (
@@ -275,7 +335,7 @@ func waitForProcResult(ctx context.Context, svc *gse.Service, taskID string, max
 
 			if hasInProgress {
 				inProgressCount++
-				if inProgressCount > maxInProgressRetries {
+				if inProgressCount > MaxInProgressRetries {
 					// 详细日志：包含业务ID、任务ID、计数，以及只包含115的进程条目
 					logs.Warnf("task=%s: seen ErrorCode==115 for %d times — still in progress; listing procs with 115: %+v",
 						taskID, inProgressCount, inProgressProcs)
