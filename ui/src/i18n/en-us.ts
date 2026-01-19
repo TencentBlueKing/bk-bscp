@@ -1479,4 +1479,8 @@ export default {
   尚未配置操作命令: 'Operation Commands Not Configured',
   '前往 BKCC 配置': 'Go to BKCC to Configure',
   当前状态无需执行该操作: 'The current status does not require this operation',
+  '未下发配置，无法进行配置检查': 'Cannot perform config check without issued config',
+  立即执行: 'Execute Now',
+  最后一次下发: 'Last Issued',
+  检查结果: 'Check Result',
 };
