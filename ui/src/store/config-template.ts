@@ -3,5 +3,6 @@ import { defineStore } from 'pinia';
 
 export default defineStore('configTemplate', () => {
   const createVerson = ref(false);
-  return { createVerson };
+  const isAssociated = ref(false);
+  return { createVerson, isAssociated };
 });

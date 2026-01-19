@@ -312,7 +312,6 @@
         }
       }
 
-      // task batch info
       const {
         id,
         task_object,
@@ -327,6 +326,7 @@
 
       const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
       const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
+      action.value = task_action;
 
       taskStore.$patch({
         taskDetail: {

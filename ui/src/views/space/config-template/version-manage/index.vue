@@ -28,6 +28,7 @@
         :config-template-id="configTemplateId"
         :list="versionList"
         :pagination="pagination"
+        :is-associated="isAssociated"
         @page-value-change="pagination.current = $event"
         @page-limit-change="handlePageLimitChange"
         @deleted="handleVersionDeleted"
@@ -43,6 +44,7 @@
         :pagination="pagination"
         :type="versionDetailModeData.type"
         :version-id="versionDetailModeData.id"
+        :is-associated="isAssociated"
         @created="handleCreatedVersion"
         @close="versionDetailModeData.open = false"
         @select="handleOpenDetailTable($event, 'view')" />
@@ -87,7 +89,7 @@
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
   const { spaceId } = storeToRefs(useGlobalStore());
   const configTemplateStore = useConfigTemplateStore();
-  const { createVerson } = storeToRefs(configTemplateStore);
+  const { createVerson, isAssociated } = storeToRefs(configTemplateStore);
 
   const route = useRoute();
   const router = useRouter();
@@ -220,10 +222,10 @@
   };
 
   // 新建版本成功后，重新拉取版本列表，并选中最新版本
-  const handleCreatedVersion = async (id: number) => {
+  const handleCreatedVersion = async () => {
     pagination.value.current = 1;
     await getVersionList();
-    handleVersionMenuSelect(id);
+    handleVersionMenuSelect(versionList.value[0].id);
   };
 
   const handlePageLimitChange = (val: number) => {

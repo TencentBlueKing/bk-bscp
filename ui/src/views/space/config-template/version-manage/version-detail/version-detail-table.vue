@@ -22,7 +22,9 @@
         :template-name="templateName"
         :data="versionEditingData"
         :type="props.type"
-        @created="emits('created', $event)"
+        :is-associated="props.isAssociated"
+        :is-latest="isLatestVersion"
+        @created="emits('created')"
         @close="emits('close')" />
     </div>
   </div>
@@ -48,12 +50,18 @@
     pagination: IPagination;
     type: string;
     versionId: number;
+    isAssociated: boolean;
   }>();
 
   const emits = defineEmits(['close', 'select', 'created']);
 
   const versionName = ref('');
   const templateName = ref('');
+
+  const isLatestVersion = computed(() => {
+    if (props.list.length === 0) return false;
+    return props.versionId === props.list[0].id;
+  });
 
   const versionEditingData = computed(() => {
     let data = {

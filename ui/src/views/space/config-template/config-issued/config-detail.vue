@@ -27,6 +27,7 @@
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { getGenerateResult, checkConfigView } from '../../../../api/config-template';
+  import { joinPathName } from '../../../../utils/config';
   import CodeEditor from '../../../../components/code-editor/index.vue';
 
   const { t } = useI18n();
@@ -115,7 +116,7 @@
         templateDetail.value = {
           ...templateDetail.value,
           config_file_name,
-          config_file_path,
+          config_file_path: joinPathName(config_file_path, config_file_name),
           config_template_name,
           config_file_permission,
           config_file_owner,

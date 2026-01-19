@@ -27,7 +27,7 @@
     <TableColumn :title="t('操作')" width="337">
       <template #default="{ row, rowIndex }">
         <div class="actions-wrapper">
-          <bk-button v-if="rowIndex === 0" text theme="primary" @click="handleConfigIssue">
+          <bk-button v-if="rowIndex === 0" :disabled="!isAssociated" text theme="primary" @click="handleConfigIssue">
             {{ t('配置下发') }}
           </bk-button>
           <bk-button text theme="primary" @click="handleOpenDiffSlider(row)">{{ t('版本对比') }}</bk-button>
@@ -75,6 +75,7 @@
     configTemplateId: number;
     list: ITemplateVersionItem[];
     pagination: IPagination;
+    isAssociated: boolean;
   }>();
 
   const emits = defineEmits([

@@ -287,6 +287,9 @@
   };
 
   const handleGoVersionManage = (configTemplate: IConfigTemplateItem) => {
+    configTemplateStore.$patch((state) => {
+      state.isAssociated = configTemplate.isAssociated;
+    });
     router.push({
       name: 'config-template-version-manage',
       params: {

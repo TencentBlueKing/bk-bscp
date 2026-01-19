@@ -13,7 +13,7 @@
           <slot name="baseHead">
             <div class="diff-panel-head">
               <div class="version-tag current-version">{{ t('最后下发') }}</div>
-              <span class="timer">{{ $t('下发时间') }}: {{ datetimeFormat(configDiffData.current.createTime!) }}</span>
+              <span class="timer">{{ $t('下发时间') }}: {{configDiffData.current.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -21,7 +21,7 @@
           <slot name="currentHead">
             <div class="diff-panel-head">
               <div class="version-tag base-version">{{ t('现网配置') }}</div>
-              <span class="timer">{{ $t('检查时间') }}: {{ datetimeFormat(configDiffData.base.createTime!) }}</span>
+              <span class="timer">{{ $t('检查时间') }}: {{ configDiffData.base.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -76,14 +76,14 @@
         id: 0,
         current: {
           content: res.last_dispatched ? res.last_dispatched.data.content : '',
-          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
+          createTime: res.last_dispatched ? datetimeFormat(res.last_dispatched.timestamp) : '--',
         },
         base: {
           content: res.preview_config ? res.preview_config.data.content : '',
-          createTime: res.preview_config ? res.preview_config.timestamp : '',
+          createTime: res.preview_config ? datetimeFormat(res.preview_config.timestamp) : '--',
         },
       };
-      filePath.value = `${res.config_template_name} (${res.config_file_path})`;
+      filePath.value = `${res.config_template_name} (${res.config_file_path}/${res.config_file_name})`;
     } catch (error) {
       console.error(error);
     }
@@ -95,9 +95,11 @@
       id: 0,
       current: {
         content: '',
+        createTime: '',
       },
       base: {
         content: '',
+        createTime: '',
       },
     };
     emits('update:isShow', false);
@@ -122,7 +124,7 @@
     }
     .path {
       font-size: 14px;
-      color: #4D4F56;
+      color: #4d4f56;
     }
   }
   .diff-panel-head {

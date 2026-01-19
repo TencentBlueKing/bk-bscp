@@ -56,10 +56,10 @@
     <Variable v-show="suffix === 'variable'" :bk-biz-id="spaceId" @close="suffix = ''" />
   </div>
   <div class="action-btns">
-    <bk-button v-if="isViewMode" theme="primary" @click="handleConfigIssue">
+    <bk-button v-if="isViewMode && isLatest" :disabled="!isAssociated" theme="primary" @click="handleConfigIssue">
       {{ t('配置下发') }}
     </bk-button>
-    <bk-button v-else theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
+    <bk-button v-else-if="!isViewMode" theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
     <bk-button class="default-btn" @click="handlePreview">{{ t('预览') }}</bk-button>
   </div>
@@ -91,6 +91,8 @@
     templateName: string;
     type: string;
     data: ITemplateVersionEditingData;
+    isAssociated: boolean;
+    isLatest: boolean;
   }>();
 
   const emits = defineEmits(['created', 'close']);
@@ -212,8 +214,8 @@
     try {
       submitPending.value = true;
       await uploadContent();
-      const res = await createConfigTemplateVersion(props.spaceId, props.configTemplateId, formData.value);
-      emits('created', res.id);
+      await createConfigTemplateVersion(props.spaceId, props.configTemplateId, formData.value);
+      emits('created');
       Message({
         theme: 'success',
         message: t('创建版本成功'),
