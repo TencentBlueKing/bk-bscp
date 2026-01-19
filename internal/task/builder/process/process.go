@@ -90,6 +90,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.processID,
 			t.processInstanceID,
 			t.operateType,
+			t.operatorUser,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
 		),

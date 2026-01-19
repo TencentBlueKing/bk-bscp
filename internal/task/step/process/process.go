@@ -37,6 +37,7 @@ func ValidateOperateProcess(
 	processID uint32,
 	processInstanceID uint32,
 	operateType table.ProcessOperateType,
+	operateUser string,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
 ) *types.Step {
@@ -53,6 +54,7 @@ func ValidateOperateProcess(
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OperateType:               operateType,
+		OperateUser:               operateUser,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
 	}))
