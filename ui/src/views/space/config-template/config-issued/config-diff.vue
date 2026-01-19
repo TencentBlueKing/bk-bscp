@@ -8,12 +8,12 @@
       </div>
     </template>
     <div class="diff-content-area">
-      <diff :diff="configDiffData" :is-tpl="true" :loading="loadng">
+      <diff :diff="configDiffData" :loading="loadng">
         <template #leftHead>
           <slot name="baseHead">
             <div class="diff-panel-head">
               <div class="version-tag current-version">{{ t('实时') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.base.createTime) }}</span>
+              <span class="timer">{{ $t('更新时间') }}: {{ configDiffData.base.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -21,7 +21,7 @@
           <slot name="currentHead">
             <div class="diff-panel-head">
               <div class="version-tag base-version">{{ t('预生成') }}</div>
-              <span class="timer">{{ $t('更新时间') }}: {{ datetimeFormat(configDiffData.current.createTime) }}</span>
+              <span class="timer">{{ $t('更新时间') }}: {{ configDiffData.current.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -34,15 +34,15 @@
   import { useI18n } from 'vue-i18n';
   import { IDiffDetail } from '../../../../../types/service';
   import { checkConfigView } from '../../../../api/config-template';
-
-  import Diff from '../../../../components/diff/index.vue';
   import { datetimeFormat } from '../../../../utils';
+  import { joinPathName } from '../../../../utils/config';
+  import Diff from '../../../../components/diff/index.vue';
+
 
   const { t } = useI18n();
   const props = defineProps<{
     show: boolean;
     spaceId: string;
-    filePath: string;
     instance: {
       configTemplateId: number;
       ccProcessId: number;
@@ -66,6 +66,7 @@
     },
   });
   const loadng = ref(false);
+  const filePath = ref('');
 
   watch(
     () => props.show,
@@ -91,13 +92,14 @@
         id: 0,
         current: {
           content: res.preview_config ? res.preview_config.data.content : '',
-          createTime: res.preview_config ? res.preview_config.timestamp : '',
+          createTime: res.preview_config ? datetimeFormat(res.preview_config.timestamp) : '--',
         },
         base: {
           content: res.last_dispatched ? res.last_dispatched.data.content : '',
-          createTime: res.last_dispatched ? res.last_dispatched.timestamp : '',
+          createTime: res.last_dispatched ? datetimeFormat(res.last_dispatched.timestamp) : '--',
         },
       };
+      filePath.value = `${res.config_template_name} (${joinPathName(res.config_file_path, res.config_file_name)})`;
     } catch (error) {
       console.error(error);
     } finally {

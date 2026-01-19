@@ -249,7 +249,6 @@
     searchValue.value = {};
     isSearchEmpty.value = false;
     searchSelectorRef.value.clear();
-    refresh();
   };
 
   const handleAssociatedProcess = (template: IConfigTemplateItem) => {

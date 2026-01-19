@@ -345,6 +345,7 @@
   const tableRef = ref();
   const expandedRowKeys = ref<number[]>([]);
   const cmdbUrl = ref('');
+  const searchSelectorRef = ref();
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -539,7 +540,9 @@
 
   // 清空筛选条件
   const handleClearFilter = () => {
+    pagination.value.current = 1;
     filterRef.value.clear();
+    searchSelectorRef.value.clear();
   };
 
   // 配置下发

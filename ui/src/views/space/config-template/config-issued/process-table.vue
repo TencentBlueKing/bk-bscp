@@ -99,7 +99,7 @@
           <TableColumn :title="$t('生成时间')">
             <template #default="{ row }: { row: ITemplateProcessItem }">
               <span>
-                {{ datetimeFormat(row.generation_time) }}
+                {{ getGenrateTime(row.status, row.generation_time) }}
               </span>
             </template>
           </TableColumn>
@@ -136,8 +136,7 @@
   <ConfigDiff
     v-model:show="diffSliderData.open"
     :space-id="props.bkBizId"
-    :instance="diffSliderData.data"
-    :file-path="diffSliderData.filePath" />
+    :instance="diffSliderData.data" />
   <ConfigDetail
     v-model:is-show="detailSliderData.open"
     :is-check="isCheck"
@@ -219,6 +218,13 @@
         taskId: row.task_id,
       },
     };
+  };
+
+  const getGenrateTime = (status: string, generationTime: string) => {
+    if (status === 'SUCCESS' || status === 'FAILURE') {
+      return datetimeFormat(generationTime);
+    }
+    return '--';
   };
 </script>
 

@@ -15,7 +15,7 @@
           @clear-template="handleClearTemplate"
           @select-range="filterConditions = $event" />
         <div v-show="stepsStatus.curStep === 2" class="batch-op-btns">
-          <bk-button class="retry-generate" @click="handleConfigGenerate">{{ $t('全部重新生成') }}</bk-button>
+          <bk-button class="retry-generate" @click="handleConfigGenerate(true)">{{ $t('全部重新生成') }}</bk-button>
           <bk-button class="retry-fail" @click="handleRetryAll">{{ $t('重试所有失败项') }}</bk-button>
         </div>
         <bk-loading class="process-table-wrap" :loading="pending">
@@ -119,10 +119,10 @@
   };
 
   // 配置生成(全部)
-  const handleConfigGenerate = async () => {
+  const handleConfigGenerate = async (isRetry = false) => {
     try {
       stepsStatus.value.curStep = 2;
-      if (!needGenerate.value) return;
+      if (!needGenerate.value && !isRetry) return;
       pending.value = true;
       const data = {
         configTemplateGroups: templateProcessList.value!.map((templateProcess) => {

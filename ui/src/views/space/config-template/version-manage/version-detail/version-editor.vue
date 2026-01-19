@@ -60,16 +60,22 @@
       {{ t('配置下发') }}
     </bk-button>
     <bk-button v-else-if="!isViewMode" theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
+    <bk-button class="default-btn" @click="handleDiff">{{ t('对比') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
     <bk-button class="default-btn" @click="handlePreview">{{ t('预览') }}</bk-button>
   </div>
+  <TemplateVersionDiff
+    v-model:show="diffSliderData.open"
+    :space-id="spaceId"
+    :template-space-id="templateSpaceId"
+    :crt-version="diffSliderData.data" />
 </template>
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import SHA256 from 'crypto-js/sha256';
   import Message from 'bkui-vue/lib/message';
-  import { ITemplateVersionEditingData } from '../../../../../../types/template';
+  import { DiffSliderDataType, ITemplateVersionEditingData } from '../../../../../../types/template';
   import { stringLengthInBytes } from '../../../../../utils/index';
   import { updateTemplateContent, downloadTemplateContent } from '../../../../../api/template';
   import { createConfigTemplateVersion } from '../../../../../api/config-template';
@@ -78,6 +84,7 @@
   import PermissionInputPicker from '../../../../../components/permission-input-picker.vue';
   import ProcessPreview from '../../components/process-preview/index.vue';
   import Variable from '../../components/variable.vue';
+  import TemplateVersionDiff from '../../../templates/version-manage/template-version-diff.vue';
 
   const { t } = useI18n();
   const router = useRouter();
@@ -142,6 +149,10 @@
   const highlight = ref('python');
   const highlightOptions = ['python', 'yaml', 'json', 'xml', 'shell', 'bat', 'powershell', 'javascript'];
   const previewRef = ref();
+  const diffSliderData = ref<{ open: boolean; data: DiffSliderDataType }>({
+    open: false,
+    data: { id: 0, versionId: 0, name: '' },
+  });
 
   const isViewMode = computed(() => props.type === 'view');
 
@@ -239,11 +250,26 @@
 
   // 预览
   const handlePreview = () => {
-    if (suffix.value === 'preview') {
-      previewRef.value.reloadPreview();
-    } else {
-      suffix.value = 'preview';
-    }
+    suffix.value = 'preview';
+    previewRef.value.reloadPreview();
+  };
+
+  // 对比
+  const handleDiff = () => {
+    diffSliderData.value = {
+      open: true,
+      data: {
+        id: props.templateId,
+        versionId: props.versionId,
+        name: isViewMode.value ? props.versionName : formData.value.revision_name,
+        permission: {
+          user: formData.value.user,
+          user_group: formData.value.user_group,
+          privilege: formData.value.privilege,
+        },
+        content: isViewMode.value ? undefined : stringContent.value,
+      },
+    };
   };
 </script>
 

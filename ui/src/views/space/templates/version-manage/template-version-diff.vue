@@ -82,7 +82,7 @@
         getVersionList();
         const detail: ITemplateVersionItem = await getTemplateVersionDetail(props.crtVersion.versionId);
         configDiffData.value.contentType = detail.spec.file_type === 'binary' ? 'file' : 'text';
-        configDiffData.value.current.content = await getConfigContent(detail);
+        configDiffData.value.current.content = props.crtVersion.content || await getConfigContent(detail);
         configDiffData.value.current.permission = props.crtVersion.permission;
       }
     },

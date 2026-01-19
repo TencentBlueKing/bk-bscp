@@ -8,12 +8,12 @@
       </div>
     </template>
     <div class="diff-content-area">
-      <diff :diff="configDiffData" :is-tpl="true" :loading="false">
+      <diff :diff="configDiffData" :loading="false">
         <template #leftHead>
           <slot name="baseHead">
             <div class="diff-panel-head">
               <div class="version-tag current-version">{{ t('最后下发') }}</div>
-              <span class="timer">{{ $t('下发时间') }}: {{configDiffData.current.createTime }}</span>
+              <span class="timer">{{ $t('下发时间') }}: {{ configDiffData.current.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -35,6 +35,7 @@
   import { IDiffDetail } from '../../../../../types/service';
   import { taskCompare } from '../../../../api/task';
   import { datetimeFormat } from '../../../../utils';
+  import { joinPathName } from '../../../../utils/config';
   import Diff from '../../../../components/diff/index.vue';
 
   const { t } = useI18n();
@@ -79,11 +80,11 @@
           createTime: res.last_dispatched ? datetimeFormat(res.last_dispatched.timestamp) : '--',
         },
         base: {
-          content: res.preview_config ? res.preview_config.data.content : '',
-          createTime: res.preview_config ? datetimeFormat(res.preview_config.timestamp) : '--',
+          content: res.current_online ? res.current_online.data.content : '',
+          createTime: res.current_online ? datetimeFormat(res.current_online.timestamp) : '--',
         },
       };
-      filePath.value = `${res.config_template_name} (${res.config_file_path}/${res.config_file_name})`;
+      filePath.value = `${res.config_template_name} (${joinPathName(res.config_file_path, res.config_file_name)})`;
     } catch (error) {
       console.error(error);
     }

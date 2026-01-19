@@ -212,6 +212,7 @@ export interface DiffSliderDataType {
     user: string;
     user_group: string;
   };
+  content?: string;
 }
 
 // 从历史版本导入配置模板

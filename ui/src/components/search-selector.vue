@@ -128,6 +128,7 @@
   defineExpose({
     clear: () => {
       searchValue.value = [];
+      emits('search', {});
     },
     clearCreator: () => {
       const creatorIndex = searchValue.value.findIndex((item) => item.id === 'creator');

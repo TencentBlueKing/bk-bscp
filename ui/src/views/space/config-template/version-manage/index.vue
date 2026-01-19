@@ -16,7 +16,7 @@
         class="search-input"
         :search-field="searchField"
         :user-field="['reviser']"
-        :placeholder="t('版本号/版本说明/更新人')"
+        :placeholder="t('版本号/版本说明/创建人')"
         @search="handleSearch" />
     </div>
     <div class="version-content-area">
@@ -113,7 +113,7 @@
   const searchField = [
     { field: 'revision_name', label: t('版本号') },
     { field: 'revision_memo', label: t('版本说明') },
-    { field: 'reviser', label: t('更新人') },
+    { field: 'creator', label: t('创建人') },
   ];
 
   const getRouteId = (id: string) => {

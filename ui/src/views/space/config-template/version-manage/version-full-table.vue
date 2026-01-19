@@ -14,14 +14,14 @@
         <span v-if="row.spec">{{ row.spec.revision_memo || '--' }}</span>
       </template>
     </TableColumn>
-    <TableColumn :title="t('更新人')">
+    <TableColumn :title="t('创建人')">
       <template #default="{ row }">
-        <user-name v-if="row.revision" :name="row.revision.rivision" />
+        <user-name v-if="row.revision" :name="row.revision.creator" />
       </template>
     </TableColumn>
-    <TableColumn :title="t('更新时间')">
+    <TableColumn :title="t('创建时间')">
       <template #default="{ row }">
-          {{ datetimeFormat(row.revision.update_at) }}
+          {{ datetimeFormat(row.revision.create_at) }}
       </template>
     </TableColumn>
     <TableColumn :title="t('操作')" width="337">
