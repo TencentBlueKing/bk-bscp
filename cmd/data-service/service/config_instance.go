@@ -232,7 +232,18 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 	// 确定需要下发的配置模版ID列表
 	var configTemplateIDs []uint32
 	if len(operateRange.GetConfigTemplateIds()) > 0 {
+		// 用户指定了配置模版ID
 		configTemplateIDs = operateRange.GetConfigTemplateIds()
+	} else if len(operateRange.GetConfigTemplateNames()) > 0 {
+		// 用户指定了配置模版名称，需要根据名称查询ID
+		configTemplateIDs, err = s.getConfigTemplateIDsByNames(kt, bizID, operateRange.GetConfigTemplateNames())
+		if err != nil {
+			logs.Errorf("get config template ids by names failed, err: %v, rid: %s", err, kt.Rid)
+			return nil, fmt.Errorf("get config template ids by names failed: %w", err)
+		}
+		if len(configTemplateIDs) == 0 {
+			return nil, fmt.Errorf("no config templates found for biz %d with provided names: %v", bizID, operateRange.GetConfigTemplateNames())
+		}
 	} else {
 		// 未指定则下发所有配置模版
 		configTemplateIDs, err = s.getAllConfigTemplateIDs(kt, bizID)
@@ -282,6 +293,47 @@ func (s *Service) getAllConfigTemplateIDs(kt *kit.Kit, bizID uint32) ([]uint32, 
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list config templates failed: %w", err)
+	}
+
+	// 提取配置模版ID列表
+	configTemplateIDs := make([]uint32, 0, len(configTemplates))
+	for _, configTemplate := range configTemplates {
+		configTemplateIDs = append(configTemplateIDs, configTemplate.ID)
+	}
+
+	return configTemplateIDs, nil
+}
+
+// getConfigTemplateIDsByNames 根据配置模版名称列表获取配置模版ID列表
+func (s *Service) getConfigTemplateIDsByNames(kt *kit.Kit, bizID uint32, names []string) ([]uint32, error) {
+	if len(names) == 0 {
+		return []uint32{}, nil
+	}
+
+	// 根据名称查询配置模版
+	configTemplates, err := s.dao.ConfigTemplate().ListByNames(kt, bizID, names)
+	if err != nil {
+		return nil, fmt.Errorf("list config templates by names failed: %w", err)
+	}
+
+	// 验证是否所有名称都找到了对应的配置模版
+	if len(configTemplates) != len(names) {
+		foundNames := make(map[string]struct{}, len(configTemplates))
+		for _, ct := range configTemplates {
+			foundNames[ct.Spec.Name] = struct{}{}
+		}
+
+		missingNames := make([]string, 0)
+		for _, name := range names {
+			if _, found := foundNames[name]; !found {
+				missingNames = append(missingNames, name)
+			}
+		}
+
+		if len(missingNames) > 0 {
+			logs.Warnf("some config template names not found, missing names: %v, rid: %s", missingNames, kt.Rid)
+			return nil, fmt.Errorf("config templates not found for names: %v", missingNames)
+		}
 	}
 
 	// 提取配置模版ID列表

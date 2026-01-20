@@ -1343,6 +1343,39 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/sync/sync_status": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取同步的状态",
+        "operationId": "Config_CmdbGseStatus",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCmdbGseStatusResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail": {
       "post": {
         "tags": [
@@ -2374,6 +2407,20 @@
         }
       }
     },
+    "pbcsCmdbGseStatusResp": {
+      "type": "object",
+      "properties": {
+        "lastSyncTime": {
+          "description": "最近一次同步时间",
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "description": "同步状态",
+          "type": "string"
+        }
+      }
+    },
     "pbcsConfigBindProcessInstanceBody": {
       "type": "object",
       "properties": {
@@ -3159,6 +3206,13 @@
           "items": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "configTemplateNames": {
+          "description": "配置模版名称列表",
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         },
         "environment": {

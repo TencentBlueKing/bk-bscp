@@ -140,4 +140,6 @@ message OperateRange {
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
     repeated uint32 config_template_ids = 7 
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID列表" }];
+    repeated string config_template_names = 8 
+        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称列表" }];
 }

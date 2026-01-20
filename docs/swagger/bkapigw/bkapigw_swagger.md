@@ -18,6 +18,7 @@
 | POST | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance | [Config_BindProcessInstance](#config-bind-process-instance) | 绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 根据业务查询拓扑 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/check | [Config_CheckConfig](#config-check-config) | 配置检查 |
+| GET | /api/v1/config/biz_id/{bizId}/sync/sync_status | [Config_CmdbGseStatus](#config-cmdb-gse-status) | 获取同步的状态 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/variable | [Config_ConfigTemplateVariable](#config-config-template-variable) | 配置模板变量 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template | [Config_CreateConfigTemplate](#config-create-config-template) | 创建配置模板 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
@@ -358,6 +359,9 @@ Content-Type: application/json
     "configTemplateIds": [
       {}
     ],
+    "configTemplateNames": [
+      {}
+    ],
     "environment": "",
     "moduleName": "",
     "processAlias": "",
@@ -365,6 +369,38 @@ Content-Type: application/json
     "setName": ""
   }
 }
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-cmdb-gse-status"></span> 获取同步的状态 (*Config_CmdbGseStatus*)
+
+```
+GET /api/v1/config/biz_id/{bizId}/sync/sync_status
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz_id/{bizId}/sync/sync_status HTTP/1.1
+Content-Type: application/json
+
+
 ```
 
 #### 输出示例
@@ -668,6 +704,9 @@ Content-Type: application/json
   "operateRange": {
     "ccProcessId": 0,
     "configTemplateIds": [
+      {}
+    ],
+    "configTemplateNames": [
       {}
     ],
     "environment": "",
@@ -1020,6 +1059,9 @@ Content-Type: application/json
   "operateRange": {
     "ccProcessId": 0,
     "configTemplateIds": [
+      {}
+    ],
+    "configTemplateNames": [
       {}
     ],
     "environment": "",
@@ -2180,6 +2222,22 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-cmdb-gse-status-resp"></span> pbcsCmdbGseStatusResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| lastSyncTime | date-time (formatted string)| `strfmt.DateTime` |  | | 最近一次同步时间 |  |
+| status | string| `string` |  | | 同步状态 |  |
+
+
+
 ### <span id="pbcs-config-bind-process-instance-body"></span> pbcsConfigBindProcessInstanceBody
 
 
@@ -2873,6 +2931,7 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | ccProcessId | int64 (formatted integer)| `int64` |  | | CC进程ID |  |
 | configTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 配置模版ID列表 |  |
+| configTemplateNames | []string| `[]string` |  | | 配置模版名称列表 |  |
 | environment | string| `string` |  | | 环境类型(1:测试 2: 体验 3: 正式) |  |
 | moduleName | string| `string` |  | | 模块名称 |  |
 | processAlias | string| `string` |  | | 进程别名 |  |

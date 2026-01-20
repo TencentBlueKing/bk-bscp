@@ -19652,6 +19652,13 @@
             "format": "int64"
           },
           "description": "配置模版ID列表"
+        },
+        "configTemplateNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "配置模版名称列表"
         }
       },
       "title": "操作范围，适配进程配置管理插件"

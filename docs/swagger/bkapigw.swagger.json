@@ -674,6 +674,39 @@
         ]
       }
     },
+    "/api/v1/config/biz_id/{bizId}/sync/sync_status": {
+      "get": {
+        "summary": "获取同步的状态",
+        "operationId": "Config_CmdbGseStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCmdbGseStatusResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/topo": {
       "get": {
         "summary": "根据业务查询拓扑",
@@ -2177,6 +2210,20 @@
         }
       }
     },
+    "pbcsCmdbGseStatusResp": {
+      "type": "object",
+      "properties": {
+        "lastSyncTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "最近一次同步时间"
+        },
+        "status": {
+          "type": "string",
+          "description": "同步状态"
+        }
+      }
+    },
     "pbcsConfigBindProcessInstanceBody": {
       "type": "object",
       "properties": {
@@ -2982,6 +3029,13 @@
             "format": "int64"
           },
           "description": "配置模版ID列表"
+        },
+        "configTemplateNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "配置模版名称列表"
         }
       },
       "title": "操作范围，适配进程配置管理插件"

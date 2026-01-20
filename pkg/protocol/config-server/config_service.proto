@@ -1588,7 +1588,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   }
   // 获取同步的状态
   rpc CmdbGseStatus(CmdbGseStatusReq) returns (CmdbGseStatusResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/sync/sync_status"
     };
