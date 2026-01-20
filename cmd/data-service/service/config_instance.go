@@ -310,6 +310,12 @@ func (s *Service) getConfigTemplateIDsByNames(kt *kit.Kit, bizID uint32, names [
 		return []uint32{}, nil
 	}
 
+	// 对输入的名称进行去重
+	uniqueNames := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		uniqueNames[name] = struct{}{}
+	}
+
 	// 根据名称查询配置模版
 	configTemplates, err := s.dao.ConfigTemplate().ListByNames(kt, bizID, names)
 	if err != nil {
@@ -317,14 +323,14 @@ func (s *Service) getConfigTemplateIDsByNames(kt *kit.Kit, bizID uint32, names [
 	}
 
 	// 验证是否所有名称都找到了对应的配置模版
-	if len(configTemplates) != len(names) {
+	if len(configTemplates) != len(uniqueNames) {
 		foundNames := make(map[string]struct{}, len(configTemplates))
 		for _, ct := range configTemplates {
 			foundNames[ct.Spec.Name] = struct{}{}
 		}
 
 		missingNames := make([]string, 0)
-		for _, name := range names {
+		for name := range uniqueNames {
 			if _, found := foundNames[name]; !found {
 				missingNames = append(missingNames, name)
 			}
