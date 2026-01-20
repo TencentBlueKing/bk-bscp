@@ -43,6 +43,15 @@ const (
 	RequestIDHeaderKey = "X-Request-Id"
 )
 
+type HTTPMethod string
+
+const (
+	GET    HTTPMethod = "GET"
+	POST   HTTPMethod = "POST"
+	DELETE HTTPMethod = "DELETE"
+	PUT    HTTPMethod = "PUT"
+)
+
 var (
 	maskKeys = map[string]struct{}{
 		"bk_app_secret": {},

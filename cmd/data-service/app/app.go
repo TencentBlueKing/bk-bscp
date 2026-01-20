@@ -35,6 +35,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
@@ -222,7 +223,13 @@ func (ds *dataService) initTaskManager() error {
 	// 注册并启动任务（register要在NewTaskMgr之前）
 	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
 	ds.gseSvc = gseService
-	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo)
+
+	pm, err := pushmanager.New(cc.G().PushProvider)
+	if err != nil {
+		return err
+	}
+
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, pm)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),

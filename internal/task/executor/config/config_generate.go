@@ -21,6 +21,7 @@ import (
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
@@ -45,10 +46,13 @@ type GenerateConfigExecutor struct {
 }
 
 // NewConfigExecutor new config executor
-func NewGenerateConfigExecutor(dao dao.Set, repo repository.Provider) *GenerateConfigExecutor {
+func NewGenerateConfigExecutor(dao dao.Set, cmdbService bkcmdb.Service, repo repository.Provider,
+	pm pushmanager.Service) *GenerateConfigExecutor {
 	return &GenerateConfigExecutor{
 		Executor: &common.Executor{
-			Dao: dao,
+			Dao:         dao,
+			CMDBService: cmdbService,
+			PM:          pm,
 		},
 		Repo: repo,
 	}
@@ -251,6 +255,14 @@ func (e *GenerateConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("[ConfigGenerateCallback]: increment completed count failed, batchID: %d, err: %w",
 			payload.BatchID, err)
 	}
+
+	// 统一推送事件
+	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+		BizID:    payload.BizID,
+		BatchID:  payload.BatchID,
+		Operator: payload.OperatorUser,
+		CbErr:    cbErr,
+	})
 
 	return nil
 }

@@ -90,6 +90,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
 			t.operateType,
+			t.operatorUser,
 			t.enableProcessRestart,
 		),
 	)

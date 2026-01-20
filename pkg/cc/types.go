@@ -1737,3 +1737,64 @@ func (c *VerifyAgentIDBelongs) trySetDefault() {
 		c.CrossBizAppIDs = []uint32{}
 	}
 }
+
+// PushProvider 定义推送服务提供方配置
+// 根据 Type 决定使用哪种推送实现及其参数校验规则
+type PushProvider struct {
+	// Type 推送提供方类型
+	// 例如：
+	// - bcs-push-manager：使用 BCS 网关
+	Type string `yaml:"type"`
+	// Config 推送配置
+	Config PushProviderConfig `yaml:"config"`
+}
+
+// PushProviderConfig 推送相关的具体配置项
+type PushProviderConfig struct {
+	// Host 推送服务地址
+	// 当 Type=bcs-push-manager 时必填
+	Host string `yaml:"host"`
+	// Token 推送服务鉴权 Token
+	// 当 Type=bcs-push-manager 时必填
+	Token string `yaml:"token"`
+	// Domain 业务标识
+	// 当 Type=bcs-push-manager 时必填
+	Domain string `yaml:"domain"`
+	// PushType 推送类型
+	// 支持的值：
+	// - rtx  ：企业微信 RTX
+	// - mail ：邮件
+	// - msg  ：bkchat 消息
+	// 支持多个，逗号分隔，如：rtx,mail
+	PushType string `yaml:"pushType"`
+	// BscpHost BSCP 服务地址
+	BscpHost string `yaml:"bscpHost"`
+	// MailSuffix 邮件后缀
+	// 当 PushType 包含 mail 时必填
+	MailSuffix string `yaml:"mailSuffix"`
+}
+
+// ValidateBCSPPushManager validate bcsp push manager
+func (p PushProvider) ValidateBCSPPushManager() error {
+	cfg := p.Config
+
+	if cfg.Host == "" {
+		return fmt.Errorf("pushProvider.config.host is required when type=bcs-push-manager")
+	}
+	if cfg.Token == "" {
+		return fmt.Errorf("pushProvider.config.token is required when type=bcs-push-manager")
+	}
+	if cfg.Domain == "" {
+		return fmt.Errorf("pushProvider.config.domain is required when type=bcs-push-manager")
+	}
+	if cfg.PushType == "" {
+		return fmt.Errorf("pushProvider.config.pushType is required when type=bcs-push-manager")
+	}
+	if cfg.PushType == "mail" {
+		if cfg.MailSuffix == "" {
+			return fmt.Errorf("pushProvider.config.mailSuffix is required when pushType=mail")
+		}
+	}
+
+	return nil
+}
