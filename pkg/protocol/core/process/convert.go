@@ -385,24 +385,61 @@ func operateNeedCommand(op table.ProcessOperateType) bool {
 /*
 CanProcessOperate 判断某个操作是否允许执行
 
-逻辑如下：
-1. 进程状态或托管状态未知，禁止操作
-2. 基础运行信息不完整，禁止操作
-3. 进程或托管状态处于 ing 状态，禁止操作
-4. 命令依赖型操作，命令不存在，禁止操作
-5. 已删除状态的特殊规则
-  - 停止操作：运行中允许停止，非运行中禁止停止
-  - 取消托管操作：托管中允许取消托管，非托管中禁止取消托管
-  - 其他操作一律禁止
+整体判定流程如下：
 
-6. 正常状态逻辑判断
-  - 注册操作：非托管中允许注册，托管中禁止注册
-  - 取消托管操作：托管中允许取消托管，非托管中禁止取消托管
-  - 启动操作：停止中允许启动，运行中禁止启动
-  - 重启/重载操作：一律允许
-  - 停止/杀死操作：运行中允许停止/杀死，非运行中禁止停止/杀死
-  - 拉取操作：一律允许
-  - 更新托管信息操作：已更新允许更新，未更新禁止更新
+1. 状态未知校验
+  - 进程状态或托管状态为空，视为未知状态
+  - 所有操作一律禁止
+
+2. 基础运行信息校验
+  - workPath / pidFile / user 等基础运行信息不完整
+  - 所有操作一律禁止
+
+3. ing（中间态）校验
+  - 进程状态或托管状态处于 ing 状态（如 starting / stopping / registering 等）
+  - 所有操作一律禁止
+
+4. 命令依赖型操作校验
+  - 对依赖命令的操作（如 start / stop / restart 等）
+  - 若对应命令不存在，则禁止操作
+
+5. 已删除（syncStatus = Deleted）状态的特殊规则
+  - 停止操作：
+    · 运行中 或 部分运行 → 允许停止
+    · 已停止 → 禁止（无需操作）
+  - 取消托管操作：
+    · 已托管 或 部分托管 → 允许取消托管
+    · 未托管 → 禁止（无需操作）
+  - 其他操作：
+    · 一律禁止，返回进程已删除
+
+6. 正常状态下的操作判定逻辑
+
+  - 注册操作（Register）：
+    · 未托管 或 部分托管 → 允许注册
+    · 已托管 → 禁止（无需操作）
+
+  - 取消托管操作（Unregister）：
+    · 已托管 或 部分托管 → 允许取消托管
+    · 未托管 → 禁止（无需操作）
+
+  - 启动操作（Start）：
+    · 已停止 或 部分运行 → 允许启动
+    · 运行中 → 禁止（无需操作）
+
+  - 重启 / 重载操作（Restart / Reload）：
+    · 不区分当前运行状态，一律允许
+
+  - 停止 / 杀死操作（Stop / Kill）：
+    · 运行中 或 部分运行 → 允许
+    · 已停止 → 禁止（无需操作）
+
+  - 拉取操作（Pull）：
+    · 不依赖运行 / 托管状态，一律允许
+
+  - 更新托管信息操作（UpdateRegister）：
+    · syncStatus = Updated → 允许更新
+    · 非 Updated → 禁止（无需操作）
 */
 func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, processState,
 	managedState, syncStatus string) (bool, string, string) {
@@ -438,6 +475,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	// 状态归一化
 	isRunning := processState == table.ProcessStatusRunning.String()
 	isStopped := processState == table.ProcessStatusStopped.String()
+	isPartlyRunning := processState == table.ProcessStatusPartlyRunning.String()
 	isManaged := managedState == table.ProcessManagedStatusManaged.String()
 	isUnmanaged := managedState == table.ProcessManagedStatusUnmanaged.String()
 	isPartlyManaged := managedState == table.ProcessManagedStatusPartlyManaged.String()
@@ -447,7 +485,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	if isDeleted {
 		switch op {
 		case table.StopProcessOperate:
-			if isRunning {
+			if isRunning || isPartlyRunning {
 				return true, "", DisableReasonNone
 			}
 			return false,
@@ -472,7 +510,8 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	// 6. 正常状态逻辑
 	switch op {
 	case table.RegisterProcessOperate:
-		if isUnmanaged {
+		// 允许：未托管 或 部分托管
+		if isUnmanaged || isPartlyManaged {
 			return true, "", DisableReasonNone
 		}
 		return false,
@@ -480,7 +519,8 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 			DisableReasonNoNeedOperate
 
 	case table.UnregisterProcessOperate:
-		if isManaged {
+		// 允许：已托管 或 部分托管
+		if isManaged || isPartlyManaged {
 			return true, "", DisableReasonNone
 		}
 		return false,
@@ -488,7 +528,8 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 			DisableReasonNoNeedOperate
 
 	case table.StartProcessOperate:
-		if isStopped {
+		// 允许：已停止 或 部分运行
+		if isStopped || isPartlyRunning {
 			return true, "", DisableReasonNone
 		}
 		return false,
@@ -497,9 +538,9 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 
 	case table.RestartProcessOperate, table.ReloadProcessOperate:
 		return true, "", DisableReasonNone
-
 	case table.StopProcessOperate, table.KillProcessOperate:
-		if isRunning {
+		// 允许：运行中 或 部分运行
+		if isRunning || isPartlyRunning {
 			return true, "", DisableReasonNone
 		}
 		return false,
