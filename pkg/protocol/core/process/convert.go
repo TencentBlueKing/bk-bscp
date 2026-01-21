@@ -33,6 +33,7 @@ const (
 	DisableReasonUnknownProcessState = "UNKNOWN_PROCESS_STATUS" // 进程或托管状态未知
 	DisableReasonNoRegisterUpdate    = "NO_REGISTER_UPDATE"     // 无需更新托管信息
 	DisableReasonNoNeedOperate       = "NO_NEED_OPERATE"        // 当前状态无需执行该操作
+	DisableReasonProcessDeleted      = "PROCESS_DELETED"        // 进程已删除
 )
 
 var (
@@ -182,108 +183,75 @@ func PbProcesses(c []*table.Process, bindTemplateIds map[uint32][]uint32) []*Pro
 // PbProcessesWithInstances convert table Process to pb Process
 func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*table.ProcessInstance,
 	bindTemplateIds map[uint32][]uint32) []*Process {
+
 	if procs == nil {
 		return []*Process{}
 	}
 
 	result := make([]*Process, 0, len(procs))
+
 	for _, p := range procs {
-		//  解析 SourceData 获取运行时配置
+
+		// 1. 解析进程运行时配置
 		var processInfo table.ProcessInfo
 		if err := json.Unmarshal([]byte(p.Spec.SourceData), &processInfo); err != nil {
 			logs.Errorf("unmarshal process source data failed: %v", err)
 			continue
 		}
-		hasUnknownInstance := false
+
 		pbProc := PbProcess(p, bindTemplateIds[p.ID])
-		if insts, ok := procInstMap[p.ID]; ok {
-			pbProc.ProcInst = pbpi.PbProcInsts(insts)
+		insts := procInstMap[p.ID]
+		pbProc.ProcInst = pbpi.PbProcInsts(insts)
 
-			// 根据实例状态计算 Process 状态
-			statusSet := make(map[string]struct{})
-			managedStatusSet := make(map[string]struct{})
+		agg := aggregateInstanceState(insts)
+		pbProc.Spec.Status = agg.procStatus
+		pbProc.Spec.ManagedStatus = agg.managedStatus
 
-			for _, inst := range insts {
-				if inst.Spec == nil ||
-					inst.Spec.Status == "" ||
-					inst.Spec.ManagedStatus == "" {
-					hasUnknownInstance = true
-					break
-				}
+		pbProc.Spec.Actions = buildProcessActions(
+			pbProc.Spec.Status,
+			pbProc.Spec.ManagedStatus,
+			p.Spec.CcSyncStatus.String(),
+			processInfo,
+			agg.hasUnknown,
+		)
 
-				statusSet[inst.Spec.Status.String()] = struct{}{}
-				managedStatusSet[inst.Spec.ManagedStatus.String()] = struct{}{}
-			}
-
-			pbProc.Spec.Status = deriveProcessStatus(statusSet)
-			pbProc.Spec.ManagedStatus = deriveManagedStatus(managedStatusSet)
-
-			isScaleDown := p.Spec.ProcNum < uint(len(pbProc.ProcInst))
-			lastIdx := len(pbProc.ProcInst) - 1
-
-			for i, inst := range pbProc.ProcInst {
-				// 未知状态禁用
-				if inst.Spec.Status == "" || inst.Spec.ManagedStatus == "" {
-					inst.Spec.Actions = emptyInstanceActions()
-					continue
-				}
-
-				// 1. ing 状态：实例级全部冻结（基于实例自身状态）
-				if isProcessInProgress(inst.Spec.Status) ||
-					isManagedInProgress(inst.Spec.ManagedStatus) {
-					inst.Spec.Actions = emptyInstanceActions()
-					continue
-				}
-
-				// 2. 缩容：最后一个实例特殊处理，其余实例照常处理
-				if isScaleDown && i != lastIdx {
-					inst.Spec.Actions = emptyInstanceActions()
-					continue
-				}
-
-				if isScaleDown && i == lastIdx {
-					actions := buildInstanceActions(
-						processInfo,
-						inst.Spec.Status,
-						inst.Spec.ManagedStatus,
-						p.Spec.CcSyncStatus.String(),
-					)
-
-					// 缩容兜底：至少允许 unregister
-					if !actions["stop"] && !actions["unregister"] {
-						actions["unregister"] = true
-					}
-
-					inst.Spec.Actions = actions
-					continue
-				}
-
-				// 3. 普通实例能力判断
-				inst.Spec.Actions = buildInstanceActions(
-					processInfo,
-					inst.Spec.Status,
-					inst.Spec.ManagedStatus,
-					p.Spec.CcSyncStatus.String(),
-				)
-			}
-
-		} else {
-			pbProc.ProcInst = []*pbpi.ProcInst{}
-		}
-
-		pbProc.Spec.Actions = buildProcessActions(pbProc.Spec.Status, pbProc.Spec.ManagedStatus,
-			pbProc.Spec.CcSyncStatus, processInfo, hasUnknownInstance)
+		buildProcessInstanceActions(p, pbProc.ProcInst, processInfo)
 
 		result = append(result, pbProc)
 	}
 	return result
 }
 
-func emptyInstanceActions() map[string]bool {
-	return map[string]bool{
-		"stop":       false,
-		"unregister": false,
+// buildProcessInstanceActions 构建实例级操作按钮
+// 规则：
+// 1. 仅缩容场景展示实例级按钮
+// 2. 仅最后一个实例允许操作
+// 3. Unknown / ing 状态冻结
+// 4. 实例级按钮仅用于缩容兜底
+func buildProcessInstanceActions(proc *table.Process, insts []*pbpi.ProcInst, processInfo table.ProcessInfo) {
+	// 非缩容，直接返回（默认已禁用）
+	if proc.Spec.ProcNum >= uint(len(insts)) {
+		return
 	}
+
+	// 缩容：只处理最后一个实例
+	lastInst := insts[len(insts)-1]
+
+	// Unknown / ing 状态冻结
+	if lastInst.Spec.Status == "" ||
+		lastInst.Spec.ManagedStatus == "" ||
+		isProcessInProgress(lastInst.Spec.Status) ||
+		isManagedInProgress(lastInst.Spec.ManagedStatus) {
+		return
+	}
+
+	// 构建兜底实例操作能力
+	lastInst.Spec.Actions = buildInstanceActions(
+		processInfo,
+		lastInst.Spec.Status,
+		lastInst.Spec.ManagedStatus,
+		proc.Spec.CcSyncStatus.String(),
+	)
 }
 
 func buildInstanceActions(processInfo table.ProcessInfo, instStatus, instManagedStatus,
@@ -330,9 +298,7 @@ func buildProcessActions(processState, managedState, syncStatus string,
 	}
 
 	for _, op := range ops {
-
 		allowed, _, reason := CanProcessOperate(op, info, processState, managedState, syncStatus)
-
 		if hasUnknownInstance {
 			allowed = false
 			reason = DisableReasonUnknownProcessState
@@ -378,6 +344,7 @@ func HasOperateCommand(op table.ProcessOperateType, info table.ProcessInfo) bool
 	}
 }
 
+// isProcessInProgress 判断进程状态是否处于 ing 状态
 func isProcessInProgress(state string) bool {
 	switch state {
 	case table.ProcessStatusStarting.String(),
@@ -390,6 +357,7 @@ func isProcessInProgress(state string) bool {
 	}
 }
 
+// isManagedInProgress 判断托管状态是否处于 ing 状态
 func isManagedInProgress(state string) bool {
 	switch state {
 	case table.ProcessManagedStatusStarting.String(),
@@ -400,167 +368,226 @@ func isManagedInProgress(state string) bool {
 	}
 }
 
-// CanProcessOperate 判断某个操作是否允许执行
-//  1. 检测进程和托管状态
-//  2. 检测workPath、PidFile、User是否为空
-//  3. 进程启动中、停止中、重启中、重载中禁止所有操作
-//  4. 正在托管中、取消托管中禁止所有操作
-//  5. 已删除状态下运行中的进程只能停止，托管中的进程只能取消托管
-//  6. 正常状态下的逻辑：
-//     已停止允许启动、重启、重载，需要判断操作命令
-//     已启动允许停止、强制停止、重启、重载，需要判断操作命令
-//     未托管允许托管
-//     已托管允许取消托管
-//     未删除可以下发
-func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, processState, managedState, syncStatus string) (bool, string, string) {
-	// 1. 状态未知校验
+// operateNeedCommand 判断某个操作是否需要依赖命令
+func operateNeedCommand(op table.ProcessOperateType) bool {
+	switch op {
+	case table.StartProcessOperate,
+		table.StopProcessOperate,
+		table.KillProcessOperate,
+		table.RestartProcessOperate,
+		table.ReloadProcessOperate:
+		return true
+	default:
+		return false
+	}
+}
+
+/*
+CanProcessOperate 判断某个操作是否允许执行
+
+逻辑如下：
+1. 进程状态或托管状态未知，禁止操作
+2. 基础运行信息不完整，禁止操作
+3. 进程或托管状态处于 ing 状态，禁止操作
+4. 命令依赖型操作，命令不存在，禁止操作
+5. 已删除状态的特殊规则
+  - 停止操作：运行中允许停止，非运行中禁止停止
+  - 取消托管操作：托管中允许取消托管，非托管中禁止取消托管
+  - 其他操作一律禁止
+
+6. 正常状态逻辑判断
+  - 注册操作：非托管中允许注册，托管中禁止注册
+  - 取消托管操作：托管中允许取消托管，非托管中禁止取消托管
+  - 启动操作：停止中允许启动，运行中禁止启动
+  - 重启/重载操作：一律允许
+  - 停止/杀死操作：运行中允许停止/杀死，非运行中禁止停止/杀死
+  - 拉取操作：一律允许
+  - 更新托管信息操作：已更新允许更新，未更新禁止更新
+*/
+func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, processState,
+	managedState, syncStatus string) (bool, string, string) {
+
+	// 1. 状态未知
 	if processState == "" || managedState == "" {
-		return false, "original process status or managed status is empty, cannot operate", DisableReasonUnknownProcessState
+		return false,
+			"original process status or managed status is empty, cannot operate",
+			DisableReasonUnknownProcessState
 	}
 
-	// 2. 基础信息校验
+	// 2. 基础运行信息
 	if !hasBaseRuntimeInfo(info) {
-		return false, "workPath, PidFile, and User cannot be empty, cannot operate", DisableReasonCmdNotConfigured
+		return false,
+			"workPath, PidFile, and User cannot be empty, cannot operate",
+			DisableReasonCmdNotConfigured
 	}
 
 	// 3. ing 状态禁止所有操作
 	if isProcessInProgress(processState) || isManagedInProgress(managedState) {
-		return false, "process is in intermediate state, cannot operate", DisableReasonTaskRunning
+		return false,
+			"process is in intermediate state, cannot operate",
+			DisableReasonTaskRunning
 	}
 
-	// 运行中
+	// 4. 命令依赖型操作：统一校验命令是否存在
+	if operateNeedCommand(op) && !HasOperateCommand(op, info) {
+		return false,
+			fmt.Sprintf("the %s command does not exist", op),
+			DisableReasonCmdNotConfigured
+	}
+
+	// 状态归一化
 	isRunning := processState == table.ProcessStatusRunning.String()
-
-	// 已停止
 	isStopped := processState == table.ProcessStatusStopped.String()
-
-	// 托管中
 	isManaged := managedState == table.ProcessManagedStatusManaged.String()
-
-	// 未托管
 	isUnmanaged := managedState == table.ProcessManagedStatusUnmanaged.String()
-
-	// 已删除
+	isPartlyManaged := managedState == table.ProcessManagedStatusPartlyManaged.String()
 	isDeleted := syncStatus == table.Deleted.String()
 
-	// 3. 已删除状态下的额外限制
+	// 5. 已删除状态的特殊规则
 	if isDeleted {
 		switch op {
 		case table.StopProcessOperate:
 			if isRunning {
-				// stop 需要命令：先检查命令是否存在
-				if !HasOperateCommand(op, info) {
-					return false, "the stop command does not exist", DisableReasonCmdNotConfigured
-				}
 				return true, "", DisableReasonNone
 			}
-			return false, "process is already stopped, no need to stop", DisableReasonNoNeedOperate
+			return false,
+				"process is already stopped, no need to stop",
+				DisableReasonNoNeedOperate
+
 		case table.UnregisterProcessOperate:
-			// 已删除的状态下：已托管 或 部分托管 均可取消托管
-			if isManaged || managedState == table.ProcessManagedStatusPartlyManaged.String() {
+			if isManaged || isPartlyManaged {
 				return true, "", DisableReasonNone
 			}
-			return false, "process is already unregistered, no need to unregister", DisableReasonNoNeedOperate
+			return false,
+				"process is already unregistered, no need to unregister",
+				DisableReasonNoNeedOperate
+
 		default:
-			return false, "process cannot operate", DisableReasonNone
+			return false,
+				"process is deleted, cannot operate",
+				DisableReasonProcessDeleted
 		}
 	}
 
-	// 4. 正常状态逻辑
+	// 6. 正常状态逻辑
 	switch op {
-	case table.RegisterProcessOperate: // 未托管：可托管
+	case table.RegisterProcessOperate:
 		if isUnmanaged {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already unmanaged, no need to register", DisableReasonNoNeedOperate
-	case table.UnregisterProcessOperate: // 已托管：可取消托管
+		return false,
+			"process is already managed, no need to register",
+			DisableReasonNoNeedOperate
+
+	case table.UnregisterProcessOperate:
 		if isManaged {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already managed, no need to unregister", DisableReasonNoNeedOperate
-	case table.StartProcessOperate: // 进程已停止：可启动
-		// start 需要命令
-		if !HasOperateCommand(op, info) {
-			return false, "the start command does not exist", DisableReasonCmdNotConfigured
-		}
+		return false,
+			"process is already unmanaged, no need to unregister",
+			DisableReasonNoNeedOperate
+
+	case table.StartProcessOperate:
 		if isStopped {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already started, no need to start", DisableReasonNoNeedOperate
-	case table.RestartProcessOperate, table.ReloadProcessOperate: // 进程启动或停止均可执行重启、重载操作
-		// restart/reload 需要命令（按你的需求）
-		if !HasOperateCommand(op, info) {
-			return false, "the restart/reload command does not exist", DisableReasonCmdNotConfigured
-		}
+		return false,
+			"process is already started, no need to start",
+			DisableReasonNoNeedOperate
+
+	case table.RestartProcessOperate, table.ReloadProcessOperate:
 		return true, "", DisableReasonNone
-	case table.StopProcessOperate, table.KillProcessOperate: // 进程已启动：可停止、强制停止
-		// stop/kill 需要命令
-		if !HasOperateCommand(op, info) {
-			return false, "the stop/kill command does not exist", DisableReasonCmdNotConfigured
-		}
+
+	case table.StopProcessOperate, table.KillProcessOperate:
 		if isRunning {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is already stopped, no need to stop or kill", DisableReasonNoNeedOperate
-	case table.PullProcessOperate: // 下发： 只要求未被删除
-		if !isDeleted {
+		return false,
+			"process is already stopped, no need to stop or kill",
+			DisableReasonNoNeedOperate
+
+	case table.PullProcessOperate:
+		return true, "", DisableReasonNone
+
+	case table.UpdateRegisterProcessOperate:
+		if syncStatus == table.Updated.String() {
 			return true, "", DisableReasonNone
 		}
-		return false, "process is deleted, cannot pull", DisableReasonUnknownProcessState
-	case table.UpdateRegisterProcessOperate: // 更新托管：只要求有更新
-		if syncStatus != table.Updated.String() {
-			return false, "process is not updated, cannot update register info", DisableReasonNoNeedOperate
-		}
-		return true, "", DisableReasonNone
+		return false,
+			"process is not updated, cannot update register info",
+			DisableReasonNoNeedOperate
+
 	default:
-		return false, "process cannot operate", DisableReasonUnknownProcessState
+		return false,
+			"process cannot operate",
+			DisableReasonUnknownProcessState
 	}
 }
 
-// deriveProcessStatus 根据多个实例状态推导主进程状态
-func deriveProcessStatus(statusSet map[string]struct{}) string {
-	var hasRunning bool
-	var hasNonRunning bool
+type aggState struct {
+	// 主进程“进程状态”聚合结果
+	procStatus string
 
-	for status := range statusSet {
-		if status == table.ProcessStatusRunning.String() {
-			hasRunning = true
-		} else {
-			hasNonRunning = true
-		}
-	}
+	// 主进程“托管状态”聚合结果
+	managedStatus string
 
-	if hasRunning && hasNonRunning {
-		return table.ProcessStatusPartlyRunning.String()
-	}
+	// 是否存在未知状态（空字符串 / 非法值）
+	hasUnknown bool
 
-	// 只有一种语义状态，直接返回该状态
-	for status := range statusSet {
-		return status
-	}
-
-	return table.ProcessStatusStopped.String()
+	// 原始集合（可选：调试/按钮裁决用）
+	procSet    map[string]struct{}
+	managedSet map[string]struct{}
 }
 
-func deriveManagedStatus(statusSet map[string]struct{}) string {
-	var hasManaged bool
-	var hasNonManaged bool
+// aggregateInstanceState 聚合实例状态，推导主进程状态
+func aggregateInstanceState(insts []*table.ProcessInstance) aggState {
+	agg := aggState{
+		procSet:    map[string]struct{}{},
+		managedSet: map[string]struct{}{},
+	}
 
-	for status := range statusSet {
-		if status == table.ProcessManagedStatusManaged.String() {
-			hasManaged = true
+	// 无实例，状态未知
+	if len(insts) == 0 {
+		agg.hasUnknown = true
+		return agg
+	}
+
+	for _, inst := range insts {
+		ps := inst.Spec.Status
+		ms := inst.Spec.ManagedStatus
+
+		if ps == "" {
+			agg.hasUnknown = true
 		} else {
-			hasNonManaged = true
+			agg.procSet[ps.String()] = struct{}{}
+		}
+
+		if ms == "" {
+			agg.hasUnknown = true
+		} else {
+			agg.managedSet[ms.String()] = struct{}{}
 		}
 	}
 
-	if hasManaged && hasNonManaged {
-		return table.ProcessManagedStatusPartlyManaged.String()
-	}
+	agg.procStatus = deriveUnifiedOrPartly(agg.procSet, agg.hasUnknown, table.ProcessStatusPartlyRunning.String())
+	agg.managedStatus = deriveUnifiedOrPartly(agg.managedSet, agg.hasUnknown, table.ProcessManagedStatusPartlyManaged.String())
 
-	for status := range statusSet {
-		return status
-	}
+	return agg
+}
 
-	return table.ProcessManagedStatusUnmanaged.String()
+// 核心推导：
+// - 如果 hasUnknown=true -> 返回空字符串
+// - 如果 set 里只有 1 种 -> 返回该状态
+// - 如果多种 -> partly_running
+func deriveUnifiedOrPartly(set map[string]struct{}, hasUnknown bool, partlyStatus string) string {
+	// 存在未知状态
+	if hasUnknown {
+		return ""
+	}
+	if len(set) == 1 {
+		for k := range set {
+			return k
+		}
+	}
+	return partlyStatus
 }

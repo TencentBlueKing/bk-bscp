@@ -15,6 +15,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -187,6 +188,18 @@ func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterO
 	return filterOptions, nil
 }
 
+func isStartSemantic(operateType string) bool {
+	switch table.TaskAction(operateType) {
+	case table.TaskActionRegister,
+		table.TaskActionStart,
+		table.TaskActionRestart,
+		table.TaskActionReload:
+		return true
+	default:
+		return false
+	}
+}
+
 // OperateProcess implements pbds.DataServer.
 func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessReq) (*pbds.OperateProcessResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -202,6 +215,13 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		return nil, err
 	}
 
+	// 启动语义下，过滤缩容实例
+	if isStartSemantic(req.GetOperateType()) {
+		processes, processInstances = filterInstancesForStart(
+			processes,
+			processInstances,
+		)
+	}
 	// 计算总任务数
 	totalCount := uint32(len(processInstances))
 	if totalCount == 0 {
@@ -294,6 +314,7 @@ func getProcessesAndInstances(kt *kit.Kit, dao dao.Set, req *pbds.OperateProcess
 }
 
 // getByOperateRanges 根据操作范围获取进程和进程实例（适配进程配置管理插件）
+// 启动阶段会过滤缩容实例
 func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pbproc.OperateRange) (
 	[]*table.Process, []*table.ProcessInstance, error) {
 	// 根据操作范围查询进程列表
@@ -383,6 +404,55 @@ func getByProcessIDs(kt *kit.Kit, dao dao.Set, bizID uint32, processIDs []uint32
 	return processes, processInstances, nil
 }
 
+// filterInstancesForStart 用于启动 / 重启 / 批量启动场景的实例过滤。
+// 注意：
+// 1. 仅用于启动语义
+// 2. 会因缩容导致实例和进程数量减少
+// 3. 非启动链路严禁调用
+func filterInstancesForStart(processes []*table.Process, processInstances []*table.ProcessInstance) (
+	[]*table.Process, []*table.ProcessInstance) {
+
+	// 按 processID 分组实例
+	procInstMap := make(map[uint32][]*table.ProcessInstance)
+	for _, inst := range processInstances {
+		procInstMap[inst.Attachment.ProcessID] = append(
+			procInstMap[inst.Attachment.ProcessID],
+			inst,
+		)
+	}
+
+	// 启动可用实例
+	filteredInstances := make([]*table.ProcessInstance, 0, len(processInstances))
+	// 启动涉及的进程（有实例参与启动）
+	filteredProcesses := make([]*table.Process, 0, len(processes))
+
+	for _, process := range processes {
+
+		insts := procInstMap[process.ID]
+		if len(insts) == 0 {
+			// 没有实例的进程，不参与本次启动
+			continue
+		}
+
+		filteredProcesses = append(filteredProcesses, process)
+
+		// 非缩容：全部保留
+		if uint(len(insts)) <= process.Spec.ProcNum {
+			filteredInstances = append(filteredInstances, insts...)
+			continue
+		}
+
+		// 缩容：按 module_inst_seq 升序取前 ProcNum
+		sort.Slice(insts, func(i, j int) bool {
+			return insts[i].Spec.ModuleInstSeq < insts[j].Spec.ModuleInstSeq
+		})
+
+		filteredInstances = append(filteredInstances, insts[:process.Spec.ProcNum]...)
+	}
+
+	return filteredProcesses, filteredInstances
+}
+
 // buildOperateRange 从进程列表构建操作范围
 func buildOperateRange(processes []*table.Process, req *pbds.OperateProcessReq) table.OperateRange {
 	operateRange := table.OperateRange{
@@ -456,15 +526,20 @@ func createTaskBatch(kt *kit.Kit, dao dao.Set, operateType string, environment s
 }
 
 // updateProcessInstanceStatus 更新进程实例状态
+// 根据操作类型和是否启用进程重启来决定最终状态
+// operateType: 操作类型
+// processInstances: 进程实例对象
+// enableProcessRestart: 是否启用进程重启
 func updateProcessInstanceStatus(
 	kt *kit.Kit,
 	dao dao.Set,
 	operateType table.ProcessOperateType,
 	processInstances *table.ProcessInstance,
+	enableProcessRestart bool,
 ) error {
 
+	processStatus := table.GetProcessStatusByOpType(operateType, processInstances.Spec.Status, enableProcessRestart)
 	managedStatus := table.GetProcessManagedStatusByOpType(operateType, processInstances.Spec.ManagedStatus)
-	processStatus := table.GetProcessStatusByOpType(operateType)
 	m := dao.GenQuery().ProcessInstance
 	if err := dao.ProcessInstance().UpdateSelectedFields(kt, processInstances.Attachment.BizID, map[string]any{
 		"managed_status":    managedStatus,
@@ -479,6 +554,9 @@ func updateProcessInstanceStatus(
 }
 
 // dispatchProcessTasks 下发进程操作任务，返回实际下发的任务数
+// operateType: 操作类型
+// processInstances: 进程实例对象列表
+// enableProcessRestart: 是否启用进程重启
 func dispatchProcessTasks(
 	kt *kit.Kit,
 	dao dao.Set,
@@ -496,7 +574,7 @@ func dispatchProcessTasks(
 		procID := inst.Attachment.ProcessID
 
 		// 更新进程实例状态
-		if err := updateProcessInstanceStatus(kt, dao, operateType, inst); err != nil {
+		if err := updateProcessInstanceStatus(kt, dao, operateType, inst, enableProcessRestart); err != nil {
 			logs.Errorf("update process instance status failed, err: %v, rid: %s", err, kt.Rid)
 			return dispatchedCount, err
 		}

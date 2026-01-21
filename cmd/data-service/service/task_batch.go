@@ -524,7 +524,7 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 			return 0, fmt.Errorf("process instance not found")
 		}
 		// 更新进程实例状态
-		if err = updateProcessInstanceStatus(kt, s.dao, table.ProcessOperateType(taskBatch.Spec.TaskAction), processInstance); err != nil {
+		if err = updateProcessInstanceStatus(kt, s.dao, table.ProcessOperateType(taskBatch.Spec.TaskAction), processInstance, true); err != nil {
 			logs.Errorf("update process instance status failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
 			return 0, fmt.Errorf("update process instance status failed: %v", err)
 		}

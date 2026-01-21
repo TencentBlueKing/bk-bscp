@@ -647,8 +647,8 @@ func (u *UpdateRegisterExecutor) executeGSEOperate(ctx context.Context, payload 
 // RegisterUpdateRegisterExecutor register executor
 func RegisterUpdateRegisterExecutor(e *UpdateRegisterExecutor) {
 	istep.Register(ValidateOperateStepName, istep.StepExecutorFunc(e.ValidateOperateStep))
-	istep.Register(StartProcessStepName, istep.StepExecutorFunc(e.StartProcessStep))
 	istep.Register(RegisterProcessStepName, istep.StepExecutorFunc(e.RegisterProcessStep))
+	istep.Register(StartProcessStepName, istep.StepExecutorFunc(e.StartProcessStep))
 	istep.Register(StopProcessStepName, istep.StepExecutorFunc(e.StopProcessStep))
 	istep.Register(OperationCompletedStepName, istep.StepExecutorFunc(e.OperationCompletedStep))
 	// 注册回调，用于任务失败时的状态回滚

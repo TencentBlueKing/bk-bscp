@@ -94,7 +94,19 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 		),
 	)
 
-	// 2. 是否需要重启进程
+	// 2. 更新托管信息（必选）
+	steps = append(steps,
+		processStep.RegisterProcessStep(
+			t.bizID,
+			t.batchID,
+			t.processID,
+			t.processInstanceID,
+			t.originalProcManagedStatus,
+			t.originalProcStatus,
+		),
+	)
+
+	// 3. 是否需要重启进程
 	if t.enableProcessRestart {
 		// Stop 旧进程
 		steps = append(steps,
@@ -108,18 +120,6 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			),
 		)
 	}
-
-	// 3. 注册进程（必选）
-	steps = append(steps,
-		processStep.RegisterProcessStep(
-			t.bizID,
-			t.batchID,
-			t.processID,
-			t.processInstanceID,
-			t.originalProcManagedStatus,
-			t.originalProcStatus,
-		),
-	)
 
 	// 4. 是否需要启动进程
 	if t.enableProcessRestart {

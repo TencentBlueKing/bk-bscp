@@ -158,9 +158,9 @@ func GetProcessManagedStatusByOpType(
 }
 
 // GetProcessStatusByOpType 根据操作类型获取进程状态
-func GetProcessStatusByOpType(operateType ProcessOperateType) ProcessStatus {
+func GetProcessStatusByOpType(operateType ProcessOperateType, originalStatus ProcessStatus, enableProcessRestart bool) ProcessStatus {
 	switch operateType {
-	case StartProcessOperate, UpdateRegisterProcessOperate:
+	case StartProcessOperate:
 		return ProcessStatusStarting
 	case StopProcessOperate:
 		return ProcessStatusStopping
@@ -172,8 +172,14 @@ func GetProcessStatusByOpType(operateType ProcessOperateType) ProcessStatus {
 		return ProcessStatusStopping
 	case RegisterProcessOperate, UnregisterProcessOperate:
 		// 托管/取消托管操作：保留原始进程状态，不修改
-		return ""
+		return originalStatus
+	case UpdateRegisterProcessOperate:
+		// 只更新托管状态
+		if !enableProcessRestart {
+			return originalStatus
+		}
+		return ProcessStatusStarting
 	default:
-		return ""
+		return originalStatus
 	}
 }
