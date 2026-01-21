@@ -263,6 +263,11 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		}
 	}()
 
+	processMap := make(map[uint32]*table.Process, len(processes))
+	for _, p := range processes {
+		processMap[p.ID] = p
+	}
+
 	// 创建并分发任务
 	dispatchedCount, err = dispatchProcessTasks(
 		kt,
@@ -272,6 +277,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		batchID,
 		table.ProcessOperateType(req.OperateType),
 		processInstances,
+		processMap,
 		req.GetEnableProcessRestart(),
 	)
 	if err != nil {
@@ -565,6 +571,7 @@ func dispatchProcessTasks(
 	batchID uint32,
 	operateType table.ProcessOperateType,
 	processInstances []*table.ProcessInstance,
+	processMap map[uint32]*table.Process,
 	enableProcessRestart bool,
 ) (uint32, error) {
 	var dispatchedCount uint32
@@ -572,6 +579,11 @@ func dispatchProcessTasks(
 		originalProcManagedStatus := inst.Spec.ManagedStatus
 		originalProcStatus := inst.Spec.Status
 		procID := inst.Attachment.ProcessID
+
+		proc, ok := processMap[procID]
+		if !ok {
+			return dispatchedCount, fmt.Errorf("process not found in processMap, processID=%d", procID)
+		}
 
 		// 更新进程实例状态
 		if err := updateProcessInstanceStatus(kt, dao, operateType, inst, enableProcessRestart); err != nil {
@@ -589,7 +601,8 @@ func dispatchProcessTasks(
 					procID,
 					inst.ID, kt.User,
 					originalProcManagedStatus,
-					originalProcStatus, enableProcessRestart),
+					originalProcStatus, proc.Spec.CcSyncStatus,
+					enableProcessRestart),
 			)
 		} else {
 			taskObj, err = task.NewByTaskBuilder(
@@ -599,10 +612,12 @@ func dispatchProcessTasks(
 					batchID,
 					procID,
 					inst.ID,
-					operateType, kt.User,
-					true, // 是否需要对比cmdb配置
+					operateType,
+					kt.User,
+					needCMDBCompare(proc.Spec.CcSyncStatus, operateType),
 					originalProcManagedStatus,
 					originalProcStatus,
+					proc.Spec.CcSyncStatus,
 				))
 		}
 
@@ -617,6 +632,30 @@ func dispatchProcessTasks(
 	}
 
 	return dispatchedCount, nil
+}
+
+// needCMDBCompare 判断是否需要与 CMDB 进行配置对比
+// 规则：
+// 1. 未删除的进程，需要进行 CMDB 对比
+// 2. 已删除的进程，在 停止 / 强制停止 / 取消托管 操作时，跳过 CMDB 对比
+// 3. 已删除进程的其他操作，统一跳过（防御式处理）
+func needCMDBCompare(ccSyncStatus table.CCSyncStatus, op table.ProcessOperateType) bool {
+
+	// 1. 未删除的进程：需要对比
+	if ccSyncStatus != table.Deleted {
+		return true
+	}
+
+	// 2. 已删除进程：特定操作跳过
+	switch op {
+	case table.KillProcessOperate,
+		table.StopProcessOperate,
+		table.UnregisterProcessOperate:
+		return false
+	default:
+		// 3. 已删除进程的其他操作：防御式跳过
+		return false
+	}
 }
 
 // ProcessFilterOptions implements pbds.DataServer.

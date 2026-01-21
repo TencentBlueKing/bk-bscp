@@ -78,6 +78,7 @@ type OperatePayload struct {
 	NeedCompareCMDB           bool                       // 是否需要对比CMDB配置，适配页面强制更新的场景
 	OriginalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	OriginalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
+	CCSyncStatus              table.CCSyncStatus
 }
 
 // ValidateOperate 校验操作是否合法
@@ -108,25 +109,13 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	originalProcStatus := payload.OriginalProcStatus
 	originalProcManagedStatus := payload.OriginalProcManagedStatus
 
-	// 获取进程信息
-	process, err := e.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
-	if err != nil {
-		return fmt.Errorf("failed to get process: %w", err)
-	}
-
-	// 如果进程从cmdb侧删除，且本次操作是停止、强制停止、取消托管，则不进行对比
-	if process.Spec.CcSyncStatus == table.Deleted &&
-		(payload.OperateType == table.KillProcessOperate || payload.OperateType == table.StopProcessOperate ||
-			payload.OperateType == table.UnregisterProcessOperate) {
-		return nil
-	}
-
+	// 校验操作是否合法
 	canOperate, message, _ := pbproc.CanProcessOperate(
 		payload.OperateType,
 		processInfo,
 		originalProcStatus.String(),
 		originalProcManagedStatus.String(),
-		process.Spec.CcSyncStatus.String(),
+		payload.CCSyncStatus.String(),
 	)
 
 	if !canOperate {

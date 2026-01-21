@@ -31,6 +31,7 @@ func ValidateOperateStep(
 	originalProcStatus table.ProcessStatus,
 	operateType table.ProcessOperateType,
 	enableProcessRestart bool,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	logs.V(3).Infof("ValidateOperateStep: bizID: %d, processID: %d, processInstanceID: %d",
@@ -51,6 +52,7 @@ func ValidateOperateStep(
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
 		EnableProcessRestart:      enableProcessRestart,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -64,6 +66,7 @@ func StopProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	setp := types.NewStep(process.StopProcessStepName.String(),
@@ -79,6 +82,7 @@ func StopProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -92,6 +96,7 @@ func RegisterProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	setp := types.NewStep(process.RegisterProcessStepName.String(),
@@ -107,6 +112,7 @@ func RegisterProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -120,6 +126,7 @@ func StartProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	setp := types.NewStep(process.StartProcessStepName.String(),
@@ -135,6 +142,7 @@ func StartProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -148,6 +156,7 @@ func OperationCompletedStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	setp := types.NewStep(process.OperationCompletedStepName.String(),
@@ -163,6 +172,7 @@ func OperationCompletedStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp

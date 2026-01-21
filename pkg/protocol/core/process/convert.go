@@ -484,7 +484,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	// 5. 已删除状态的特殊规则
 	if isDeleted {
 		switch op {
-		case table.StopProcessOperate:
+		case table.StopProcessOperate, table.KillProcessOperate:
 			if isRunning || isPartlyRunning {
 				return true, "", DisableReasonNone
 			}

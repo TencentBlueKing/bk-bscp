@@ -36,6 +36,7 @@ type OperateTask struct {
 	originalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	originalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
 	needCompareCMDB           bool                       // 是否需要对比cmdb配置，适配页面强制更新的场景
+	ccSyncStatus              table.CCSyncStatus         // 进程的cc同步状态
 }
 
 // NewoperateTask 创建一个 operate 任务
@@ -50,6 +51,7 @@ func NewOperateTask(
 	needCompareCMDB bool, // 是否需要对比cmdb配置，适配页面强制更新的场景
 	originalProcManagedStatus table.ProcessManagedStatus, // 原进程托管状态，用于后续状态回滚
 	originalProcStatus table.ProcessStatus, // 原进程状态，用于后续状态回滚
+	ccSyncStatus table.CCSyncStatus, // 进程的cc同步状态
 ) types.TaskBuilder {
 	return &OperateTask{
 		Builder:                   common.NewBuilder(dao),
@@ -62,6 +64,7 @@ func NewOperateTask(
 		originalProcManagedStatus: originalProcManagedStatus,
 		originalProcStatus:        originalProcStatus,
 		needCompareCMDB:           needCompareCMDB,
+		ccSyncStatus:              ccSyncStatus,
 	}
 }
 
@@ -92,6 +95,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operateType,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 		// 对比CMDB进程配置
 		processStep.CompareWithCMDBProcessInfo(
@@ -102,6 +106,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.needCompareCMDB,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 
 		// 对比GSE进程状态
@@ -112,6 +117,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 
 		// 对比GSE进程配置
@@ -122,6 +128,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 
 		// 执行进程操作
@@ -133,6 +140,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operateType,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 
 		// 进程操作完成，更新进程实例状态
@@ -144,6 +152,7 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operateType,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 	}, nil
 }

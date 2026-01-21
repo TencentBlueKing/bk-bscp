@@ -39,6 +39,7 @@ func ValidateOperateProcess(
 	operateType table.ProcessOperateType,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("validate operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
@@ -55,6 +56,7 @@ func ValidateOperateProcess(
 		OperateType:               operateType,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 	return validate
 }
@@ -68,6 +70,7 @@ func CompareWithCMDBProcessInfo(
 	needCompareCMDB bool,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("compare with cmdb process info: bizID: %d, processID: %d, processInstanceID: %d, needCompareCMDB: %t",
 		bizID, processID, processInstanceID, needCompareCMDB)
@@ -86,6 +89,7 @@ func CompareWithCMDBProcessInfo(
 		NeedCompareCMDB:           needCompareCMDB,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return compare
@@ -99,6 +103,7 @@ func CompareWithGSEProcessStatus(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("compare with gse process status: bizID: %d, processID: %d, processInstanceID: %d",
 		bizID, processID, processInstanceID)
@@ -116,6 +121,7 @@ func CompareWithGSEProcessStatus(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return compare
@@ -129,6 +135,7 @@ func CompareWithGSEProcessConfig(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("compare with gse process config: bizID: %d, processID: %d, processInstanceID: %d",
 		bizID, processID, processInstanceID)
@@ -146,6 +153,7 @@ func CompareWithGSEProcessConfig(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return compare
@@ -160,6 +168,7 @@ func OperateProcess(
 	operateType table.ProcessOperateType,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
@@ -177,6 +186,7 @@ func OperateProcess(
 		OperateType:               operateType,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 	return operate
 }
@@ -190,6 +200,7 @@ func FinalizeOperateProcess(
 	operateType table.ProcessOperateType,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("finalize process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
@@ -207,6 +218,7 @@ func FinalizeOperateProcess(
 		OperateType:               operateType,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
+		CCSyncStatus:              ccSyncStatus,
 	}))
 	return finalize
 }

@@ -36,6 +36,7 @@ type UpdateRegisterTask struct {
 	originalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	originalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
 	enableProcessRestart      bool                       // 是否启停进程
+	ccSyncStatus              table.CCSyncStatus         // 进程的cc同步状态
 }
 
 // NewUpdateRegisterTask 创建一个更新托管任务
@@ -48,6 +49,7 @@ func NewUpdateRegisterTask(
 	operatorUser string,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
+	ccSyncStatus table.CCSyncStatus, // 进程的cc同步状态
 	enableProcessRestart bool,
 ) types.TaskBuilder {
 	return &UpdateRegisterTask{
@@ -60,6 +62,7 @@ func NewUpdateRegisterTask(
 		operateType:               table.UpdateRegisterProcessOperate, // 直接定义成更新托管信息
 		originalProcManagedStatus: originalProcManagedStatus,
 		originalProcStatus:        originalProcStatus,
+		ccSyncStatus:              ccSyncStatus,
 		enableProcessRestart:      enableProcessRestart,
 	}
 }
@@ -91,6 +94,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			t.originalProcStatus,
 			t.operateType,
 			t.enableProcessRestart,
+			t.ccSyncStatus,
 		),
 	)
 
@@ -103,6 +107,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 	)
 
@@ -117,6 +122,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 				t.processInstanceID,
 				t.originalProcManagedStatus,
 				t.originalProcStatus,
+				t.ccSyncStatus,
 			),
 		)
 	}
@@ -131,6 +137,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 				t.processInstanceID,
 				t.originalProcManagedStatus,
 				t.originalProcStatus,
+				t.ccSyncStatus,
 			),
 		)
 	}
@@ -144,6 +151,7 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
 	)
 

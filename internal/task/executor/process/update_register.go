@@ -73,6 +73,7 @@ type UpdateRegisterPayload struct {
 	OriginalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	OriginalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
 	EnableProcessRestart      bool
+	CCSyncStatus              table.CCSyncStatus
 }
 
 // ValidateOperateStep 校验操作是否合法
@@ -147,19 +148,13 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 		}
 	}
 
-	// 获取进程信息
-	process, err := u.Dao.Process().GetByID(kit.New(), payload.BizID, payload.ProcessID)
-	if err != nil {
-		return fmt.Errorf("failed to get process: %w", err)
-	}
-
 	// 验证更新托管操作
 	canOperate, message, _ := pbproc.CanProcessOperate(
 		payload.OperateType,
 		latestCMDBInfo,
 		string(payload.OriginalProcStatus),
 		string(payload.OriginalProcManagedStatus),
-		process.Spec.CcSyncStatus.String(),
+		payload.CCSyncStatus.String(),
 	)
 	if !canOperate {
 		return fmt.Errorf("process cannot operate, reason: %s", message)
