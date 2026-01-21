@@ -170,7 +170,6 @@
       emits('search', { ...filterValues.value, environment: activeEnv.value });
     }
     if (filterFlag.value) {
-      console.log('taskDetail filter', taskDetail.value.operate_range);
       const {operate_range} = taskDetail.value;
       filterValues.value = {
         sets: operate_range.set_names,

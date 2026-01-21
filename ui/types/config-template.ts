@@ -75,8 +75,8 @@ export interface IConfigTemplateItem {
   instCount?: number;
   templateCount?: number;
   templateName?: string;
-  has_config_released: boolean;
-  has_process_instance: boolean;
+  is_config_released: boolean;
+  is_proc_bound: boolean;
 }
 
 export interface IConfigTemplateEditParams {

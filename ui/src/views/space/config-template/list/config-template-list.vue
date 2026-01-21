@@ -25,17 +25,17 @@
               <bk-button
                 theme="primary"
                 text
-                :disabled="!row.has_process_instance"
+                :disabled="!row.is_proc_bound"
                 v-bk-tooltips="{
                   content: `${t('模板进程')}: ${row.templateCount}\n${t('实例进程')}: ${row.instCount}`,
-                  disabled: !row.has_process_instance,
+                  disabled: !row.is_proc_bound,
                   placement: 'right',
                 }"
                 @click="handleAssociatedProcess(row)">
                 {{ row.instCount! + row.templateCount! }}
               </bk-button>
               <bk-tag
-                v-if="!row.has_process_instance"
+                v-if="!row.is_proc_bound"
                 class="associated-btn"
                 theme="info"
                 @click="handleAssociatedProcess(row)">
@@ -60,22 +60,22 @@
               <bk-button theme="primary" text @click="handleEdit(row)">{{ t('编辑') }}</bk-button>
               <bk-button
                 theme="primary"
-                :disabled="!row.has_process_instance"
+                :disabled="!row.is_proc_bound"
                 text
                 v-bk-tooltips="{
                   content: $t('未关联进程，无法进行配置下发'),
-                  disabled: row.has_process_instance,
+                  disabled: row.is_proc_bound,
                 }"
                 @click="handleConfigIssue(row.id)">
                 {{ t('配置下发') }}
               </bk-button>
               <bk-button
                 theme="primary"
-                :disabled="!row.has_config_released"
+                :disabled="!row.is_config_released"
                 text
                 v-bk-tooltips="{
                   content: $t('未下发配置，无法进行配置检查'),
-                  disabled: row.has_config_released,
+                  disabled: row.is_config_released,
                 }"
                 @click="handleConfigCheck(row)">
                 {{ t('配置检查') }}
@@ -247,7 +247,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: `${template.spec.name} (${template.spec.file_name})`,
-      isAssociated: template.has_process_instance,
+      isAssociated: template.is_proc_bound,
     };
     isShowDetails.value = true;
   };
@@ -262,7 +262,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: `${template.spec.name} (${template.spec.file_name})`,
-      isAssociated: template.has_process_instance,
+      isAssociated: template.is_proc_bound,
     };
     isShowAssociatedProcess.value = true;
   };
@@ -294,7 +294,7 @@
 
   const handleGoVersionManage = (configTemplate: IConfigTemplateItem) => {
     configTemplateStore.$patch((state) => {
-      state.isAssociated = configTemplate.has_process_instance;
+      state.isAssociated = configTemplate.is_proc_bound;
     });
     router.push({
       name: 'config-template-version-manage',
@@ -324,7 +324,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: template.spec.name,
-      isAssociated: template.has_process_instance,
+      isAssociated: template.is_proc_bound,
     };
   };
 
@@ -333,7 +333,7 @@
     opTemplate.value = {
       id: template.id,
       templateName: template.spec.name,
-      isAssociated: template.has_process_instance,
+      isAssociated: template.is_proc_bound,
     };
   };
 
