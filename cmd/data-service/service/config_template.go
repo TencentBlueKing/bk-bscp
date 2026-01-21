@@ -89,6 +89,7 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	}
 
 	idSet := make(map[uint32]struct{}, len(configTemplates))
+	configTemplateIDs := []uint32{}
 	templateIDs := make([]uint32, 0, len(configTemplates))
 	for _, v := range configTemplates {
 		id := v.Attachment.TemplateID
@@ -97,6 +98,23 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 		}
 		idSet[id] = struct{}{}
 		templateIDs = append(templateIDs, id)
+		configTemplateIDs = append(configTemplateIDs, v.ID)
+	}
+
+	// 获取配置实例
+	ci, er := s.dao.ConfigInstance().ListConfigInstancesByTemplateID(grpcKit, req.GetBizId(), configTemplateIDs)
+	if er != nil {
+		return nil, er
+	}
+	// 用于标记配置模板是否已下发过配置实例
+	releasedMap := make(map[uint32]bool, len(configTemplateIDs))
+	// 先默认全部为 false（未下发）
+	for _, id := range configTemplateIDs {
+		releasedMap[id] = false
+	}
+	// 如果存在配置实例，则标记为 true（已下发）
+	for _, inst := range ci {
+		releasedMap[inst.Attachment.ConfigTemplateID] = true
 	}
 
 	templates, err := s.dao.Template().ListByIDs(grpcKit, templateIDs)
@@ -110,7 +128,7 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	}
 
 	resp.Count = uint32(count)
-	resp.Details = pbct.PbConfigTemplates(configTemplates, fileNames)
+	resp.Details = pbct.PbConfigTemplates(configTemplates, fileNames, releasedMap)
 
 	return resp, nil
 }

@@ -13,6 +13,8 @@ message ConfigTemplate {
   ConfigTemplateSpec spec = 2;
   ConfigTemplateAttachment attachment = 3;
   pbbase.Revision revision = 4;
+  bool is_proc_bound = 5;
+  bool is_config_released = 6;
 }
 
 // ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go

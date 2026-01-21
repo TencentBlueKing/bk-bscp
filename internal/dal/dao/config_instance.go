@@ -42,6 +42,7 @@ type ConfigInstance interface {
 	Upsert(kit *kit.Kit, configInstance *table.ConfigInstance) error
 	// 获取配置实例
 	GetConfigInstance(kit *kit.Kit, bizID uint32, search *ConfigInstanceSearchCondition) (*table.ConfigInstance, error)
+	ListConfigInstancesByTemplateID(kit *kit.Kit, bizID uint32, configTemplateIDs []uint32) ([]*table.ConfigInstance, error)
 }
 
 var _ ConfigInstance = new(configInstanceDao)
@@ -50,6 +51,16 @@ type configInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// ListConfigInstancesByTemplateID implements [ConfigInstance].
+func (dao *configInstanceDao) ListConfigInstancesByTemplateID(kit *kit.Kit, bizID uint32,
+	configTemplateIDs []uint32) ([]*table.ConfigInstance, error) {
+	m := dao.genQ.ConfigInstance
+
+	return dao.genQ.ConfigInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID)).
+		Where(m.ConfigTemplateID.In(configTemplateIDs...)).Find()
 }
 
 // List implements ConfigInstance.

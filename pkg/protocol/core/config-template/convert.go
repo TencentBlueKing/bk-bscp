@@ -20,16 +20,19 @@ import (
 )
 
 // PbConfigTemplate convert table.ConfigTemplate to pb ConfigTemplate
-func PbConfigTemplate(ct *table.ConfigTemplate, fileName string) *ConfigTemplate {
+func PbConfigTemplate(ct *table.ConfigTemplate, fileName string, isProcBound,
+	isConfigReleased bool) *ConfigTemplate {
 	if ct == nil {
 		return nil
 	}
 
 	return &ConfigTemplate{
-		Id:         ct.ID,
-		Spec:       PbConfigTemplateSpec(ct.Spec, fileName),
-		Attachment: PbConfigTemplateAttachment(ct.Attachment),
-		Revision:   pbbase.PbRevision(ct.Revision),
+		Id:               ct.ID,
+		Spec:             PbConfigTemplateSpec(ct.Spec, fileName),
+		Attachment:       PbConfigTemplateAttachment(ct.Attachment),
+		Revision:         pbbase.PbRevision(ct.Revision),
+		IsProcBound:      isProcBound,
+		IsConfigReleased: isConfigReleased,
 	}
 }
 
@@ -62,13 +65,17 @@ func PbConfigTemplateAttachment(att *table.ConfigTemplateAttachment) *ConfigTemp
 }
 
 // PbConfigTemplates convert []*table.ConfigTemplate to []*pb ConfigTemplate
-func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string) []*ConfigTemplate {
+func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string,
+	releasedMap map[uint32]bool) []*ConfigTemplate {
 	if src == nil {
 		return nil
 	}
 	res := make([]*ConfigTemplate, 0, len(src))
 	for _, ct := range src {
-		res = append(res, PbConfigTemplate(ct, fileNames[ct.Attachment.TemplateID]))
+		isProcBound := len(ct.Attachment.CcProcessIDs) > 0 || len(ct.Attachment.CcTemplateProcessIDs) > 0
+
+		id := ct.ID
+		res = append(res, PbConfigTemplate(ct, fileNames[id], isProcBound, releasedMap[id]))
 	}
 	return res
 }
