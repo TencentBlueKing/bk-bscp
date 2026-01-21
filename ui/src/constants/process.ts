@@ -32,4 +32,5 @@ export const PROCESS_BUTTON_DISABLED_TIPS = {
   TASK_RUNNING: localT('任务正在执行，请稍候'),
   UNKNOWN_PROCESS_STATUS: localT('进程状态异常'),
   NO_NEED_OPERATE: localT('当前状态无需执行该操作'),
+  PROCESS_DELETED: localT('进程已删除，无法操作'),
 };

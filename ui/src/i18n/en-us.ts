@@ -1483,4 +1483,5 @@ export default {
   立即执行: 'Execute Now',
   最后一次下发: 'Last Issued',
   检查结果: 'Check Result',
+  '进程已删除，无法操作': 'Process has been deleted, cannot operate',
 };

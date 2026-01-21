@@ -21,25 +21,27 @@
       :loading="tableLoading"
       :max-height="tableMaxHeight"
       :expanded-row-keys="expandedRowKeys"
+      table-layout="fixed"
+      resizable
       @select-change="handleSelectChange">
-      <TableColumn col-key="row-select" type="multiple" width="32"></TableColumn>
-      <TableColumn :title="t('集群')" col-key="spec.set_name" width="183">
+      <TableColumn col-key="row-select" type="multiple" width="32" resizable></TableColumn>
+      <TableColumn :title="t('集群')" col-key="spec.set_name" width="183" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <bk-button text theme="primary" @click="handleExpandRow(row)">{{ row.spec.set_name }}</bk-button>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis />
-      <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis />
-      <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis />
-      <TableColumn col-key="attachment.cc_process_id">
+      <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis resizable />
+      <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis resizable/>
+      <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis resizable/>
+      <TableColumn col-key="attachment.cc_process_id" resizable>
         <template #title>
           <span class="tips-title" v-bk-tooltips="{ content: t('对应 CMDB 中唯一 ID'), placement: 'top' }">
             {{ t('CC 进程ID') }}
           </span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" />
-      <TableColumn col-key="spec.status" :title="t('进程状态')">
+      <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" resizable/>
+      <TableColumn col-key="spec.status" :title="t('进程状态')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <div v-if="row.spec.status" class="process-status">
             <Spinner v-if="['starting', 'restarting', 'reloading'].includes(row.spec.status)" class="spinner-icon" />
@@ -49,7 +51,7 @@
           <span v-else>--</span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152">
+      <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <bk-tag v-if="row.spec.managed_status" :theme="getManagedStatusTheme(row.spec.managed_status)">
             <span class="process-status">
@@ -60,12 +62,12 @@
           <span v-else>--</span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')">
+      <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           {{ timeAgo(row.spec.cc_sync_updated_at) }}
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')">
+      <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <span :class="['cc-sync-status', row.spec.cc_sync_status]">
             {{ CC_SYNC_STATUS[row.spec.cc_sync_status as keyof typeof CC_SYNC_STATUS] }}
@@ -105,9 +107,18 @@
                 {{ action === 'start' ? t('启动') : t('停止') }}
               </bk-button>
             </TableBtnTooltips>
-            <bk-button text theme="primary" :disabled="!row.spec.actions.push" @click="handleConfigIssued(row)">
-              {{ t('配置下发') }}
-            </bk-button>
+            <TableBtnTooltips
+              :disabled="row.spec.actions.pull.enabled"
+              :reason="row.spec.actions.pull.reason"
+              :link="cmdbUrl">
+              <bk-button
+                text
+                theme="primary"
+                :disabled="!row.spec.actions.pull.enabled"
+                @click="handleConfigIssued(row)">
+                {{ t('配置下发') }}
+              </bk-button>
+            </TableBtnTooltips>
             <TableMoreAction
               :enabled="{ ...row.spec.actions, view: { enabled: true, reason: '' } }"
               :operation-list="operationList"
