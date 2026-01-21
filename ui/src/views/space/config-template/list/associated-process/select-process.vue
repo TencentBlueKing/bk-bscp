@@ -6,7 +6,9 @@
           {{ $t('关联进程实例') }}
         </span>
         <span class="line"></span>
-        <span>{{ templateName }}</span>
+        <div style="width: 300px">
+          <bk-overflow-title type="tips"> {{ templateName }} </bk-overflow-title>
+        </div>
       </div>
       <div class="associated-content">
         <div class="label">{{ $t('选择关联进程') }}</div>

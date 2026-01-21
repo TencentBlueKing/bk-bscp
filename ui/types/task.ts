@@ -15,11 +15,11 @@ export interface ITaskHistoryItem {
 }
 
 export interface IOperateRange {
-  cc_process_ids: string[];
+  set_names: string[];
   cc_process_names: string[];
   module_names: string[];
   service_names: string[];
-  set_names: string[];
+  cc_process_ids: string[];
 }
 
 // 任务详情列表

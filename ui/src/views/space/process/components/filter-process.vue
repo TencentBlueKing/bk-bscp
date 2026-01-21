@@ -62,9 +62,14 @@
   import type { IProcessFilterItem } from '../../../../../types/process';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
+  import { storeToRefs } from 'pinia';
+  import useTaskStore from '../../../../store/task';
 
   const { t } = useI18n();
   const route = useRoute();
+
+  const taskStore = useTaskStore();
+  const { taskDetail, filterFlag } = storeToRefs(taskStore);
 
   const props = withDefaults(
     defineProps<{
@@ -162,6 +167,19 @@
   onMounted(() => {
     if (route.query.cc_process_id) {
       filterValues.value.cc_process_ids.push(Number(route.query.cc_process_id));
+      emits('search', { ...filterValues.value, environment: activeEnv.value });
+    }
+    if (filterFlag.value) {
+      console.log('taskDetail filter', taskDetail.value.operate_range);
+      const {operate_range} = taskDetail.value;
+      filterValues.value = {
+        sets: operate_range.set_names,
+        modules: operate_range.module_names,
+        service_instances: operate_range.service_names,
+        process_aliases: operate_range.cc_process_names,
+        cc_process_ids: operate_range.cc_process_ids,
+      };
+      taskStore.$patch({ filterFlag: false });
       emits('search', { ...filterValues.value, environment: activeEnv.value });
     }
     loadPerocessFilterList();

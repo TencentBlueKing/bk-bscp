@@ -6,7 +6,13 @@ export default defineStore('task', () => {
     id: 0,
     task_type: '',
     environment: '',
-    operate_range: '',
+    operate_range: {
+      cc_process_ids: [],
+      cc_process_names: [],
+      module_names: [],
+      service_names: [],
+      set_names: [],
+    },
     creator: '',
     start_at: '',
     end_at: '',
@@ -14,5 +20,6 @@ export default defineStore('task', () => {
     task_object: '',
     status: '',
   });
-  return { taskDetail };
+  const filterFlag = ref(false); // 任务详情跳转到进程管理时，触发过滤
+  return { taskDetail, filterFlag };
 });

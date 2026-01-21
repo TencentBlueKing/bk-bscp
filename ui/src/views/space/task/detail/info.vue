@@ -22,13 +22,15 @@
   import { ENV_TYPE_MAP } from '../../../../constants/task';
   import { IOperateRange } from '../../../../../types/task';
   import { useRouter } from 'vue-router';
+  import useTaskStore from '../../../../store/task';
 
-  const props = defineProps<{
+  defineProps<{
     taskDetail: Record<string, any>;
   }>();
 
   const { t } = useI18n();
   const router = useRouter();
+  const taskStore = useTaskStore();
 
   const infoList = [
     {
@@ -65,19 +67,28 @@
     },
   ];
 
+  const OP_RANGE_ORDER: (keyof IOperateRange)[] = [
+    'set_names',
+    'module_names',
+    'service_names',
+    'cc_process_names',
+    'cc_process_ids',
+  ];
+
   const mergeOpRange = (operateRange: IOperateRange) => {
-    return Object.values(operateRange)
-      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
-      .join('.');
+    return OP_RANGE_ORDER.map((key) => {
+      const arr = operateRange[key];
+      return arr.length ? `[${arr.join(',')}]` : '*';
+    }).join('.');
   };
 
   const handleGoProcess = (value: string) => {
     if (value !== 'operate_range') return;
+    taskStore.$patch((state) => {
+      state.filterFlag = true;
+    });
     router.push({
       name: 'process-management',
-      query: {
-        cc_process_id: props.taskDetail.operate_range.cc_process_ids[0],
-      },
     });
   };
 </script>
