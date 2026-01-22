@@ -104,6 +104,7 @@ type ProcessSpec struct {
 	PrevData        string       `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
 	ProcNum         uint         `gorm:"column:proc_num" json:"proc_num"`                     // 进程数量
 	FuncName        string       `gorm:"column:func_name" json:"func_name"`                   // 进程二进制文件名
+	DeletedAt       *time.Time   `db:"deleted_at" json:"deleted_at" gorm:"column:deleted_at"` // 删除时间
 }
 
 func (p ProcessInfo) Value() (string, error) {

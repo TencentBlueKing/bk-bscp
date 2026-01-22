@@ -763,8 +763,7 @@ func (s *syncCMDBService) syncProcessData(kit *kit.Kit, tx *gen.QueryTx, process
 
 	// 3. 新增进程
 	if len(diff.ToAddProcesses) > 0 {
-		if err := s.dao.Process().
-			BatchCreateWithTx(kit, tx, diff.ToAddProcesses); err != nil {
+		if err := s.dao.Process().BatchCreateWithTx(kit, tx, diff.ToAddProcesses); err != nil {
 			return err
 		}
 	}

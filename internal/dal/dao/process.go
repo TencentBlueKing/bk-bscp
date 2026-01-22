@@ -13,6 +13,8 @@
 package dao
 
 import (
+	"time"
+
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
@@ -216,7 +218,18 @@ func (dao *processDao) GetByIDs(kit *kit.Kit, bizID uint32, id []uint32) ([]*tab
 // UpdateSyncStatus implements Process.
 func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error {
 	m := dao.genQ.Process
-	_, err := tx.Process.WithContext(kit.Ctx).Where(m.ID.In(ids...)).Update(m.CcSyncStatus, state)
+	q := tx.Process.WithContext(kit.Ctx).Where(m.ID.In(ids...))
+
+	update := map[string]any{
+		m.CcSyncStatus.ColumnName().String(): state,
+	}
+
+	// deleted 状态：补充 deleted_at
+	if state == table.Deleted.String() {
+		update[m.DeletedAt.ColumnName().String()] = time.Now()
+	}
+
+	_, err := q.Updates(update)
 	return err
 }
 
