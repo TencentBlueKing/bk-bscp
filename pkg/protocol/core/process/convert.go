@@ -61,16 +61,16 @@ func (p *ProcessSpec) ProcessSpec() *table.ProcessSpec {
 	}
 
 	return &table.ProcessSpec{
-		SetName:         p.SetName,
-		ModuleName:      p.ModuleName,
-		ServiceName:     p.ServiceName,
-		Environment:     p.Environment,
-		Alias:           p.Alias,
-		InnerIP:         p.InnerIp,
-		CcSyncStatus:    table.CCSyncStatus(p.CcSyncStatus),
-		CcSyncUpdatedAt: timePtrFromProto(p.CcSyncUpdatedAt),
-		SourceData:      p.SourceData,
-		ProcNum:         uint(p.ProcNum),
+		SetName:              p.SetName,
+		ModuleName:           p.ModuleName,
+		ServiceName:          p.ServiceName,
+		Environment:          p.Environment,
+		Alias:                p.Alias,
+		InnerIP:              p.InnerIp,
+		CcSyncStatus:         table.CCSyncStatus(p.CcSyncStatus),
+		ProcessStateSyncedAt: timePtrFromProto(p.ProcessStateSyncedAt),
+		SourceData:           p.SourceData,
+		ProcNum:              uint(p.ProcNum),
 	}
 }
 
@@ -88,7 +88,7 @@ func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32, url string
 		Alias:                spec.Alias,
 		InnerIp:              spec.InnerIP,
 		CcSyncStatus:         spec.CcSyncStatus.String(),
-		CcSyncUpdatedAt:      toProtoTimestamp(spec.CcSyncUpdatedAt),
+		ProcessStateSyncedAt: toProtoTimestamp(spec.ProcessStateSyncedAt),
 		SourceData:           spec.SourceData,
 		PrevData:             spec.PrevData,
 		ProcNum:              uint32(spec.ProcNum),

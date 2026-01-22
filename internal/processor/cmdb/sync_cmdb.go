@@ -320,18 +320,17 @@ func buildProcess(bizs Bizs) []*table.Process {
 								ServiceTemplateID: uint32(mod.ServiceTemplateID),
 							},
 							Spec: &table.ProcessSpec{
-								SetName:         set.Name,
-								ModuleName:      mod.Name,
-								ServiceName:     svc.Name,
-								Environment:     set.SetEnv,
-								Alias:           proc.Name,
-								InnerIP:         hinfo.IP,
-								CcSyncStatus:    table.Synced,
-								CcSyncUpdatedAt: nil,
-								SourceData:      sourceData,
-								PrevData:        "{}",
-								ProcNum:         uint(proc.ProcNum),
-								FuncName:        proc.FuncName,
+								SetName:      set.Name,
+								ModuleName:   mod.Name,
+								ServiceName:  svc.Name,
+								Environment:  set.SetEnv,
+								Alias:        proc.Name,
+								InnerIP:      hinfo.IP,
+								CcSyncStatus: table.Synced,
+								SourceData:   sourceData,
+								PrevData:     "{}",
+								ProcNum:      uint(proc.ProcNum),
+								FuncName:     proc.FuncName,
 							},
 							Revision: &table.Revision{
 								CreatedAt: now,
@@ -562,7 +561,6 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 	if nameChanged && !safe {
 		newP.Spec.PrevData = oldP.Spec.SourceData
 		newP.Spec.CcSyncStatus = table.Synced
-		newP.Spec.CcSyncUpdatedAt = nil
 
 		toAdd := &table.Process{
 			Attachment: newP.Attachment,

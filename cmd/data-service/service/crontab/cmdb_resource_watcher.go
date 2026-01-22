@@ -437,9 +437,9 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	}
 	// 2. 新增进程
 	if addP != nil {
-		// 新增且扩容需要更新cc状态时间
+		// 新增且扩容需要同步进程状态时间
 		if len(addInsts) > 0 {
-			addP.Spec.CcSyncUpdatedAt = &now
+			addP.Spec.ProcessStateSyncedAt = &now
 		}
 		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{addP}); err != nil {
 			logs.Errorf("[ProcessSync] biz=%d: insert process failed: name=%s, ccProcessID=%d, err=%v",
@@ -454,9 +454,9 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 
 	// 3. 更新进程
 	if updateP != nil {
-		// 更新且扩容需要更新cc状态时间
+		// 更新且扩容需要同步进程状态时间
 		if len(addInsts) > 0 {
-			updateP.Spec.CcSyncUpdatedAt = &now
+			updateP.Spec.ProcessStateSyncedAt = &now
 		}
 		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{updateP}); err != nil {
 			logs.Errorf("[ProcessSync] biz=%d: update process failed: id=%d, name=%s, err=%v",

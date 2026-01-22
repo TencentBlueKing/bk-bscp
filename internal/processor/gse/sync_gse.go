@@ -141,9 +141,9 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 			}
 		}
 
-		// Update the process's cc_sync_updated_at timestamp to reflect when GSE sync completed
+		// Update the process's process_state_synced_at timestamp to reflect when GSE sync completed
 		now := time.Now().UTC()
-		process.Spec.CcSyncUpdatedAt = &now
+		process.Spec.ProcessStateSyncedAt = &now
 		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, []*table.Process{process}); err != nil {
 			logs.Errorf("biz %d: update process sync time failed, err=%v", s.bizID, err)
 			continue
