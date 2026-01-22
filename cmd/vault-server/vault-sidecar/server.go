@@ -26,7 +26,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/hashicorp/vault/api"
+	"github.com/openbao/openbao/api/v2"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 

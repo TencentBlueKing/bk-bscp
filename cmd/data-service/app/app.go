@@ -26,7 +26,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-common/common/tcp/listener"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/hashicorp/vault/api"
+	"github.com/openbao/openbao/api/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
