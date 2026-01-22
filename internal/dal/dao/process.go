@@ -13,8 +13,6 @@
 package dao
 
 import (
-	"time"
-
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
@@ -222,11 +220,6 @@ func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, sta
 
 	update := map[string]any{
 		m.CcSyncStatus.ColumnName().String(): state,
-	}
-
-	// deleted 状态：补充 deleted_at
-	if state == table.Deleted.String() {
-		update[m.DeletedAt.ColumnName().String()] = time.Now()
 	}
 
 	_, err := q.Updates(update)
