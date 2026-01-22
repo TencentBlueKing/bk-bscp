@@ -455,16 +455,7 @@ func (ds *dataService) startCronTasks() {
 
 	// 在启动全量同步之前，先获取事件cursor，避免丢失全量同步期间发生的事件
 	timeAgo := time.Now().Add(-10 * time.Second).Unix()
-	if err := crontab.InitHostDetailCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
-		logs.Errorf("init host detail cursor failed, err: %v", err)
-		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
-		// PASS
-	}
-	if err := crontab.InitBizHostCursor(ds.daoSet, ds.cmdb, timeAgo); err != nil {
-		logs.Errorf("init biz host cursor failed, err: %v", err)
-		// 初始化cursor失败则依赖后续定时任务重新获取，可能存在丢失事件的风险
-		// PASS
-	}
+	ds.initBizHostCursors(timeAgo)
 
 	crontabConfig := cc.DataService().Crontab
 	logs.Infof("crontabConfig: %+v", crontabConfig)
@@ -549,4 +540,45 @@ func (ds *dataService) startCronTasks() {
 		registerItsmV4Templates.Run()
 	}
 
+}
+
+// initBizHostCursors 初始化业务主机相关的游标
+func (ds *dataService) initBizHostCursors(timeAgo int64) {
+	kt := kit.New()
+
+	// 多租户模式：从 app 表获取租户列表并逐个初始化
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		apps, err := ds.daoSet.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get distinct tenant IDs failed, err: %v", err)
+			return
+		}
+
+		if len(apps) == 0 {
+			logs.Warnf("no tenants found in app table for init biz host cursors")
+			return
+		}
+
+		for _, app := range apps {
+			if app.Spec.TenantID == "" {
+				continue
+			}
+			tenantID := app.Spec.TenantID
+			if err := crontab.InitHostDetailCursor(tenantID, ds.daoSet, ds.cmdb, timeAgo); err != nil {
+				logs.Errorf("init host detail cursor failed for tenant %s, err: %v", tenantID, err)
+			}
+			if err := crontab.InitBizHostCursor(tenantID, ds.daoSet, ds.cmdb, timeAgo); err != nil {
+				logs.Errorf("init biz host cursor failed for tenant %s, err: %v", tenantID, err)
+			}
+		}
+		return
+	}
+
+	// 单租户模式
+	if err := crontab.InitHostDetailCursor("", ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init host detail cursor failed, err: %v", err)
+	}
+	if err := crontab.InitBizHostCursor("", ds.daoSet, ds.cmdb, timeAgo); err != nil {
+		logs.Errorf("init biz host cursor failed, err: %v", err)
+	}
 }

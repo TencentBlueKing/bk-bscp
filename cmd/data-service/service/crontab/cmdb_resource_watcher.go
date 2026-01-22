@@ -23,6 +23,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkuser"
 	gsecomponents "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -30,6 +31,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -83,27 +85,61 @@ func (c *cmdbResourceWatcher) Run() {
 					logs.Infof("current service instance is slave, skip sync cmdb")
 					continue
 				}
-				// 顺序监听每种资源类型
-				for _, res := range []bkcmdb.ResourceType{
-					bkcmdb.ResourceSet,
-					bkcmdb.ResourceModule,
-					bkcmdb.ResourceProcess,
-				} {
-					if err := c.watchCMDBResources(kt, res); err != nil {
-						logs.Errorf("[CMDB Watch] watch %s resource failed: %v", res.String(), err)
-					}
-				}
-
+				c.watchCMDBResourcesByTenant(kt)
 			}
 
 		}
 	}()
 }
 
+// watchCMDBResourcesByTenant 按租户监听 CMDB 资源变化
+func (c *cmdbResourceWatcher) watchCMDBResourcesByTenant(kt *kit.Kit) {
+	// 多租户模式：获取所有启用的租户并逐个监听
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		tenants, err := bkuser.ListEnabledTenants(kt.Ctx)
+		if err != nil {
+			logs.Errorf("[CMDB Watch] failed to list tenants: %v", err)
+			return
+		}
+
+		if len(tenants) == 0 {
+			logs.Warnf("[CMDB Watch] no enabled tenants found")
+			return
+		}
+
+		for _, tenant := range tenants {
+			kt.TenantID = tenant.ID
+			c.watchResourcesForTenant(kt)
+		}
+		return
+	}
+
+	// 单租户模式
+	c.watchResourcesForTenant(kt)
+}
+
+// watchResourcesForTenant 为单个租户监听所有资源类型
+func (c *cmdbResourceWatcher) watchResourcesForTenant(kt *kit.Kit) {
+	// 顺序监听每种资源类型
+	for _, res := range []bkcmdb.ResourceType{
+		bkcmdb.ResourceSet,
+		bkcmdb.ResourceModule,
+		bkcmdb.ResourceProcess,
+	} {
+		if err := c.watchCMDBResources(kt, res); err != nil {
+			logs.Errorf("[CMDB Watch] tenant=%s watch %s resource failed: %v", kt.TenantID, res.String(), err)
+		}
+	}
+}
+
 // watchCMDBResources 监听并处理指定资源类型
 func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.ResourceType) error {
 	fields := []string{}
+	// 生成带租户前缀的游标 key
 	cursorKey := fmt.Sprintf("resource:%s:cursor", resource.String())
+	if kt.TenantID != "" {
+		cursorKey = fmt.Sprintf("%s-%s", kt.TenantID, cursorKey)
+	}
 	var cursor string
 	switch resource {
 	case bkcmdb.ResourceSet:
@@ -321,7 +357,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 
 	// 如果是空全量同步
 	if procs == nil {
-		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
+		if err := c.svc.SynchronizeCmdbData(kt.Ctx, kt.TenantID, []int{p.BkBizID}); err != nil {
 			logs.Errorf("sync cmdb data failed: %v", err)
 		}
 		return
@@ -329,7 +365,7 @@ func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.Bk
 
 	switch resource.BkEventType {
 	case bkcmdb.EventCreate:
-		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
+		if err := c.svc.SynchronizeCmdbData(kt.Ctx, procs.Attachment.TenantID, []int{p.BkBizID}); err != nil {
 			logs.Errorf("%s sync cmdb data failed: %v", logPrefix, err)
 			return
 		}
@@ -494,11 +530,11 @@ func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
 	// 6. 插入新增实例扩容
 	if len(addInsts) > 0 {
 		// 更新gse状态可以忽略错误
-		g := gse.NewSyncGESService(int(newP.Attachment.BizID), c.gse, c.dao)
+		g := gse.NewSyncGESService(newP.Attachment.TenantID, int(newP.Attachment.BizID), c.gse, c.dao)
 		insts, err := g.SyncSingleProcessStatus(kt.Ctx, newP, addInsts)
 		if err != nil {
-			logs.Errorf("[ProcessSync] biz=%d: sync gse process status failed: %v",
-				old.Attachment.BizID, err)
+			logs.Errorf("[ProcessSync] tenant=%s biz=%d: sync gse process status failed: %v",
+				newP.Attachment.TenantID, old.Attachment.BizID, err)
 		}
 		if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, insts); err != nil {
 			return fmt.Errorf(

@@ -18,6 +18,7 @@ import (
 
 // BizHost defines business host relationship
 type BizHost struct {
+	TenantID      string    `db:"tenant_id" json:"tenant_id" gorm:"column:tenant_id;primaryKey;autoIncrement:false"`
 	BizID         uint      `db:"bk_biz_id" json:"bk_biz_id" gorm:"column:bk_biz_id;primaryKey;autoIncrement:false"`
 	HostID        uint      `db:"bk_host_id" json:"bk_host_id" gorm:"column:bk_host_id;primaryKey;autoIncrement:false"`
 	AgentID       string    `db:"bk_agent_id" json:"bk_agent_id" gorm:"column:bk_agent_id"`

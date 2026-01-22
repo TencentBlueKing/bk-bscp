@@ -49,13 +49,15 @@ type syncCmdbGseExecutor struct {
 
 // SyncCMDBPayload 同步cmdb相关负载
 type SyncCMDBPayload struct {
-	BizID uint32
+	BizID    uint32
+	TenantID string
 }
 
 // SyncGSEPayload 同步gse相关负载
 type SyncGSEPayload struct {
-	OpType gseSvc.OpType
-	BizID  uint32
+	TenantID string
+	BizID    uint32
+	OpType   gseSvc.OpType
 }
 
 // SyncCMDB implements istep.Step.
@@ -66,9 +68,9 @@ func (s *syncCmdbGseExecutor) SyncCMDB(c *istep.Context) error {
 	}
 
 	// 同步cc数据
-	syncSvc := cmdb.NewSyncCMDBService(int(payload.BizID), s.cmdbSvc, s.dao)
+	syncSvc := cmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.dao)
 	if err := syncSvc.SyncSingleBiz(c.Context()); err != nil {
-		logs.Errorf("biz: %d sync cmdb data failed: %v", payload.BizID, err)
+		logs.Errorf("tenant: %s biz: %d sync cmdb data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}
 
@@ -82,9 +84,9 @@ func (s *syncCmdbGseExecutor) SyncGSE(c *istep.Context) error {
 		return err
 	}
 	// 同步gse状态
-	gseService := gse.NewSyncGESService(int(payload.BizID), s.gseSvc, s.dao)
+	gseService := gse.NewSyncGESService(payload.TenantID, int(payload.BizID), s.gseSvc, s.dao)
 	if err := gseService.SyncSingleBiz(c.Context()); err != nil {
-		logs.Errorf("biz: %d sync gse data failed: %v", payload.BizID, err)
+		logs.Errorf("tenant: %s biz: %d sync gse data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}
 

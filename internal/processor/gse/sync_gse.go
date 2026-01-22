@@ -45,19 +45,21 @@ const (
 )
 
 // NewSyncGESService 初始化同步gse
-func NewSyncGESService(bizID int, svc *gse.Service, dao dao.Set) *syncGSEService {
+func NewSyncGESService(tenantID string, bizID int, svc *gse.Service, dao dao.Set) *syncGSEService {
 	return &syncGSEService{
-		bizID: bizID,
-		svc:   svc,
-		dao:   dao,
+		tenantID: tenantID,
+		bizID:    bizID,
+		svc:      svc,
+		dao:      dao,
 	}
 }
 
 // syncGSEService 同步gse
 type syncGSEService struct {
-	bizID int
-	svc   *gse.Service
-	dao   dao.Set
+	tenantID string
+	bizID    int
+	svc      *gse.Service
+	dao      dao.Set
 }
 
 // SyncSingleBiz 同步gse状态
@@ -65,6 +67,7 @@ type syncGSEService struct {
 // 2. 调用gse接口
 func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 	kit := kit.FromGrpcContext(ctx)
+	kit.TenantID = s.tenantID
 	processes, err := s.dao.Process().ListActiveProcesses(kit, uint32(s.bizID))
 	if err != nil {
 		logs.Errorf("list active processes failed: %v", err)

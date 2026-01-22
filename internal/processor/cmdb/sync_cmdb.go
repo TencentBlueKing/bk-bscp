@@ -32,17 +32,19 @@ import (
 
 // SyncCMDBService 同步cmdb
 type syncCMDBService struct {
-	bizID int
-	svc   bkcmdb.Service
-	dao   dao.Set
+	tenantID string
+	bizID    int
+	svc      bkcmdb.Service
+	dao      dao.Set
 }
 
 // NewSyncCMDBService 初始化同步cmdb
-func NewSyncCMDBService(bizID int, svc bkcmdb.Service, dao dao.Set) *syncCMDBService {
+func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service, dao dao.Set) *syncCMDBService {
 	return &syncCMDBService{
-		bizID: bizID,
-		svc:   svc,
-		dao:   dao,
+		tenantID: tenantID,
+		bizID:    bizID,
+		svc:      svc,
+		dao:      dao,
 	}
 }
 
@@ -160,7 +162,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	// 构建并立即入库
 	bizs := Bizs{s.bizID: sets}
 
-	processBatch := buildProcess(bizs)
+	processBatch := buildProcess(bizs, s.tenantID)
 
 	// 开启事务并入库
 	tx := s.dao.GenQuery().Begin()
@@ -273,7 +275,7 @@ func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID
 }
 
 // buildProcess 生成进程数据
-func buildProcess(bizs Bizs) []*table.Process {
+func buildProcess(bizs Bizs, tenantID string) []*table.Process {
 	now := time.Now()
 
 	var processBatch []*table.Process
@@ -307,7 +309,7 @@ func buildProcess(bizs Bizs) []*table.Process {
 
 						processBatch = append(processBatch, &table.Process{
 							Attachment: &table.ProcessAttachment{
-								TenantID:          "default",
+								TenantID:          tenantID,
 								BizID:             uint32(bizID),
 								CcProcessID:       uint32(proc.ID),
 								SetID:             uint32(set.ID),
@@ -419,7 +421,7 @@ func (s *syncCMDBService) diffProcesses(kit *kit.Kit, tx *gen.QueryTx, dbProcess
 				int(newP.Attachment.CcProcessID),
 				int(newP.Spec.ProcNum),
 				0, 0, 0,
-				now, hostCounter, moduleCounter,
+				newP.Attachment.TenantID, now, hostCounter, moduleCounter,
 			)
 			diff.ToAddInstances = append(diff.ToAddInstances, insts...)
 			continue
@@ -476,7 +478,7 @@ type InstanceReconcileResult struct {
 }
 
 func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID, processID, hostID, moduleID, ccProcessID uint32,
-	oldNum, newNum int, now time.Time, hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*InstanceReconcileResult, error) {
+	tenantID string, oldNum, newNum int, now time.Time, hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*InstanceReconcileResult, error) {
 
 	res := &InstanceReconcileResult{}
 
@@ -520,6 +522,7 @@ func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID
 		oldNum,
 		maxModuleSeq,
 		maxHostSeq,
+		tenantID,
 		now,
 		hostCounter,
 		moduleCounter,
@@ -577,7 +580,7 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 			int(toAdd.Attachment.CcProcessID),
 			newProcNum,
 			0, 0, 0,
-			now, hostCounter, moduleCounter,
+			toAdd.Attachment.TenantID, now, hostCounter, moduleCounter,
 		)
 
 		return toAdd, nil, oldP.ID, insts, nil, nil
@@ -626,6 +629,7 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 			oldP.Attachment.HostID,
 			oldP.Attachment.ModuleID,
 			oldP.Attachment.CcProcessID,
+			oldP.Attachment.TenantID,
 			len(allInsts),
 			newProcNum, // 用新值
 			now,
@@ -649,8 +653,8 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 }
 
 // buildInstances 根据进程数量生成进程实例
-func buildInstances(bizID, hostID, modID, ccProcessID, procNum, existCount, maxModuleInstSeq, maxHostInstSeq int, now time.Time,
-	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
+func buildInstances(bizID, hostID, modID, ccProcessID, procNum, existCount, maxModuleInstSeq, maxHostInstSeq int,
+	tenantID string, now time.Time, hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
 
 	// 如果新的进程数量 <= 已存在数量，则无需新增实例
 	if procNum <= existCount {
@@ -692,7 +696,7 @@ func buildInstances(bizID, hostID, modID, ccProcessID, procNum, existCount, maxM
 
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
-				TenantID:    "default",
+				TenantID:    tenantID,
 				BizID:       uint32(bizID),
 				CcProcessID: uint32(ccProcessID),
 			},

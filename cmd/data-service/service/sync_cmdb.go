@@ -37,7 +37,7 @@ func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseSt
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	processOperateTask, err := task.NewByTaskBuilder(
-		cmdbGse.NewSyncCMDBGSETask(req.GetBizId(), gse.OpTypeQuery, grpcKit.User),
+		cmdbGse.NewSyncCMDBGSETask(grpcKit.TenantID, req.GetBizId(), gse.OpTypeQuery, grpcKit.User),
 	)
 	if err != nil {
 		logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -54,7 +54,7 @@ func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseSt
 }
 
 // SynchronizeCmdbData 同步cmdb数据
-func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
+func (s *Service) SynchronizeCmdbData(ctx context.Context, tenantID string, bizIDs []int) error {
 	grpcKit := kit.FromGrpcContext(ctx)
 	// 不指定业务同步，表示同步所有业务
 	if len(bizIDs) == 0 {
@@ -73,7 +73,7 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 
 	for _, id := range bizIDs {
 		processOperateTask, err := task.NewByTaskBuilder(
-			cmdbGse.NewSyncCMDBGSETask(uint32(id), gse.OpTypeQuery, grpcKit.User),
+			cmdbGse.NewSyncCMDBGSETask(tenantID, uint32(id), gse.OpTypeQuery, grpcKit.User),
 		)
 		if err != nil {
 			logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -83,7 +83,7 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, bizIDs []int) error {
 		s.taskManager.Dispatch(processOperateTask)
 	}
 
-	logs.Infof("[syncBiz][group][success] all biz sync completed")
+	logs.Infof("[syncBiz][group][success] tenantID=%s all biz sync completed", tenantID)
 	return nil
 }
 
