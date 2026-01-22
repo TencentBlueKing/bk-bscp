@@ -33,8 +33,8 @@ message ProcessSpec {
   string cc_sync_status = 7 [
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步状态:synced,deleted,updated" }
   ];
-  google.protobuf.Timestamp cc_sync_updated_at = 8
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "cc同步更新时间" }];
+  google.protobuf.Timestamp process_state_synced_at = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程状态同步时间" }];
   string source_data = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "本次同步的数据" }];
   string prev_data = 10
@@ -126,20 +126,17 @@ message FilterOptions {
 
 // 操作范围，适配进程配置管理插件
 message OperateRange {
-    string environment = 1 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境类型(1:测试 2: 体验 3: 正式)" }];
-    string set_name = 2 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
-    string module_name = 3 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
-    string service_name = 4 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称" }];
-    string process_alias = 5 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
-    uint32 cc_process_id = 6 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
-    repeated uint32 config_template_ids = 7 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID列表" }];
-    repeated string config_template_names = 8 
-        [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称列表" }];
+  string environment = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境类型(1:测试 2: 体验 3: 正式)" }
+  ];
+  string set_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称" }];
+  string module_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称" }];
+  string service_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称" }];
+  string process_alias = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
+  uint32 cc_process_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID" }];
+  repeated uint32 config_template_ids = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版ID列表" }];
+  repeated string config_template_names = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称列表" }];
 }

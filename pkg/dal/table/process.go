@@ -92,19 +92,19 @@ func (p *Process) ResType() string {
 
 // ProcessSpec xxx
 type ProcessSpec struct {
-	SetName         string       `gorm:"column:set_name" json:"set_name"`                     // 集群
-	ModuleName      string       `gorm:"column:module_name" json:"module_name"`               // 模块
-	ServiceName     string       `gorm:"column:service_name" json:"service_name"`             // 服务实例名称
-	Environment     string       `gorm:"column:environment" json:"environment"`               // 环境类型(production/staging等)
-	Alias           string       `gorm:"column:alias" json:"alias"`                           // 进程别名
-	InnerIP         string       `gorm:"column:inner_ip" json:"inner_ip"`                     // 内网IP
-	CcSyncStatus    CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`         // cc同步状态:synced,deleted,updated
-	CcSyncUpdatedAt *time.Time   `gorm:"column:cc_sync_updated_at" json:"cc_sync_updated_at"` // cc同步更新时间
-	SourceData      string       `gorm:"column:source_data" json:"source_data"`               // 本次同步的数据
-	PrevData        string       `gorm:"column:prev_data" json:"prev_data"`                   // 上一次同步的数据
-	ProcNum         uint         `gorm:"column:proc_num" json:"proc_num"`                     // 进程数量
-	FuncName        string       `gorm:"column:func_name" json:"func_name"`                   // 进程二进制文件名
-	DeletedAt       *time.Time   `db:"deleted_at" json:"deleted_at" gorm:"column:deleted_at"` // 删除时间
+	SetName              string       `gorm:"column:set_name" json:"set_name"`                               // 集群
+	ModuleName           string       `gorm:"column:module_name" json:"module_name"`                         // 模块
+	ServiceName          string       `gorm:"column:service_name" json:"service_name"`                       // 服务实例名称
+	Environment          string       `gorm:"column:environment" json:"environment"`                         // 环境类型(production/staging等)
+	Alias                string       `gorm:"column:alias" json:"alias"`                                     // 进程别名
+	InnerIP              string       `gorm:"column:inner_ip" json:"inner_ip"`                               // 内网IP
+	CcSyncStatus         CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`                   // cc同步状态:synced,deleted,updated
+	ProcessStateSyncedAt *time.Time   `gorm:"column:process_state_synced_at" json:"process_state_synced_at"` // 进程状态同步时间
+	SourceData           string       `gorm:"column:source_data" json:"source_data"`                         // 本次同步的数据
+	PrevData             string       `gorm:"column:prev_data" json:"prev_data"`                             // 上一次同步的数据
+	ProcNum              uint         `gorm:"column:proc_num" json:"proc_num"`                               // 进程数量
+	FuncName             string       `gorm:"column:func_name" json:"func_name"`                             // 进程二进制文件名
+	DeletedAt            *time.Time   `db:"deleted_at" json:"deleted_at" gorm:"column:deleted_at"`           // 删除时间
 }
 
 func (p ProcessInfo) Value() (string, error) {

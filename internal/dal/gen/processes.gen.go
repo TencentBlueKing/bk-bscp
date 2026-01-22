@@ -46,7 +46,7 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.Alias_ = field.NewString(tableName, "alias")
 	_process.InnerIP = field.NewString(tableName, "inner_ip")
 	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_status")
-	_process.CcSyncUpdatedAt = field.NewTime(tableName, "cc_sync_updated_at")
+	_process.ProcessStateSyncedAt = field.NewTime(tableName, "process_state_synced_at")
 	_process.SourceData = field.NewString(tableName, "source_data")
 	_process.PrevData = field.NewString(tableName, "prev_data")
 	_process.ProcNum = field.NewUint(tableName, "proc_num")
@@ -65,36 +65,36 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 type process struct {
 	processDo processDo
 
-	ALL               field.Asterisk
-	ID                field.Uint32
-	TenantID          field.String
-	BizID             field.Uint32
-	CcProcessID       field.Uint32
-	SetID             field.Uint32
-	ModuleID          field.Uint32
-	ServiceInstanceID field.Uint32
-	HostID            field.Uint32
-	CloudID           field.Uint32
-	AgentID           field.String
-	ProcessTemplateID field.Uint32
-	ServiceTemplateID field.Uint32
-	SetName           field.String
-	ModuleName        field.String
-	ServiceName       field.String
-	Environment       field.String
-	Alias_            field.String
-	InnerIP           field.String
-	CcSyncStatus      field.String
-	CcSyncUpdatedAt   field.Time
-	SourceData        field.String
-	PrevData          field.String
-	ProcNum           field.Uint
-	FuncName          field.String
-	DeletedAt         field.Time
-	Creator           field.String
-	Reviser           field.String
-	CreatedAt         field.Time
-	UpdatedAt         field.Time
+	ALL                  field.Asterisk
+	ID                   field.Uint32
+	TenantID             field.String
+	BizID                field.Uint32
+	CcProcessID          field.Uint32
+	SetID                field.Uint32
+	ModuleID             field.Uint32
+	ServiceInstanceID    field.Uint32
+	HostID               field.Uint32
+	CloudID              field.Uint32
+	AgentID              field.String
+	ProcessTemplateID    field.Uint32
+	ServiceTemplateID    field.Uint32
+	SetName              field.String
+	ModuleName           field.String
+	ServiceName          field.String
+	Environment          field.String
+	Alias_               field.String
+	InnerIP              field.String
+	CcSyncStatus         field.String
+	ProcessStateSyncedAt field.Time
+	SourceData           field.String
+	PrevData             field.String
+	ProcNum              field.Uint
+	FuncName             field.String
+	DeletedAt            field.Time
+	Creator              field.String
+	Reviser              field.String
+	CreatedAt            field.Time
+	UpdatedAt            field.Time
 
 	fieldMap map[string]field.Expr
 }
@@ -130,7 +130,7 @@ func (p *process) updateTableName(table string) *process {
 	p.Alias_ = field.NewString(table, "alias")
 	p.InnerIP = field.NewString(table, "inner_ip")
 	p.CcSyncStatus = field.NewString(table, "cc_sync_status")
-	p.CcSyncUpdatedAt = field.NewTime(table, "cc_sync_updated_at")
+	p.ProcessStateSyncedAt = field.NewTime(table, "process_state_synced_at")
 	p.SourceData = field.NewString(table, "source_data")
 	p.PrevData = field.NewString(table, "prev_data")
 	p.ProcNum = field.NewUint(table, "proc_num")
@@ -184,7 +184,7 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["alias"] = p.Alias_
 	p.fieldMap["inner_ip"] = p.InnerIP
 	p.fieldMap["cc_sync_status"] = p.CcSyncStatus
-	p.fieldMap["cc_sync_updated_at"] = p.CcSyncUpdatedAt
+	p.fieldMap["process_state_synced_at"] = p.ProcessStateSyncedAt
 	p.fieldMap["source_data"] = p.SourceData
 	p.fieldMap["prev_data"] = p.PrevData
 	p.fieldMap["proc_num"] = p.ProcNum
