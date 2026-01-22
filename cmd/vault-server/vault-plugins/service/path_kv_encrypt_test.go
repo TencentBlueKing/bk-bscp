@@ -17,7 +17,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/openbao/openbao/sdk/v2/logical"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
