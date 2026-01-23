@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -41,6 +42,7 @@ type Executor struct {
 	CMDBService bkcmdb.Service // CMDB 服务
 	Dao         dao.Set
 	GseConf     cc.GSE // GSE 配置
+	RedLock     *lock.RedisLock
 }
 
 // TaskPayload 公用的配置，作为任务快照，方便进行获取以及对比
@@ -99,11 +101,12 @@ const (
 )
 
 // NewExecutor new executor
-func NewExecutor(gseService *gse.Service, dao dao.Set) *Executor {
+func NewExecutor(gseService *gse.Service, dao dao.Set, redLock *lock.RedisLock) *Executor {
 	return &Executor{
 		GseService: gseService,
 		Dao:        dao,
 		GseConf:    cc.G().GSE,
+		RedLock:    redLock,
 	}
 }
 

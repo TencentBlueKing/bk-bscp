@@ -15,16 +15,19 @@ package process
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
+	"github.com/TencentBlueKing/bk-bscp/cmd/cache-service/service/cache/keys"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -52,13 +55,19 @@ type UpdateRegisterExecutor struct {
 	*common.Executor
 }
 
+// ErrRegisterProcessStepFailed 注册进程步骤失败
+var ErrRegisterProcessStepFailed = errors.New("register process step failed")
+
 // NewUpdateRegisterExecutor new update register executor
-func NewUpdateRegisterExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, dao dao.Set) *UpdateRegisterExecutor {
+func NewUpdateRegisterExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, dao dao.Set,
+	redLock *lock.RedisLock) *UpdateRegisterExecutor {
+
 	return &UpdateRegisterExecutor{
 		Executor: &common.Executor{
 			GseService:  gseService,
 			CMDBService: cmdbService,
 			Dao:         dao,
+			RedLock:     redLock,
 		},
 	}
 }
@@ -245,12 +254,13 @@ func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 		return fmt.Errorf("[RegisterProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	if err := u.executeGSEOperate(c.Context(), payload, commonPayload, table.RegisterProcessOperate); err != nil {
-		return fmt.Errorf(
-			"[RegisterProcessStep STEP]: execute process operate %s failed: %w",
-			table.RegisterProcessOperate,
-			err,
-		)
+	if err := u.executeGSEOperate(
+		c.Context(),
+		payload,
+		commonPayload,
+		table.RegisterProcessOperate,
+	); err != nil {
+		return fmt.Errorf("%w: %v", ErrRegisterProcessStepFailed, err)
 	}
 
 	return nil
@@ -315,18 +325,6 @@ func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error 
 		"status_updated_at": time.Now(),
 	}, m.ID.Eq(payload.ProcessInstanceID)); err != nil {
 		return fmt.Errorf("[OperationCompletedStep STEP]: failed to update process instance: %w", err)
-	}
-
-	// 更新进程配置和状态
-	if errU := u.Dao.Process().UpdateSelectedFields(kit.New(), payload.BizID,
-		map[string]any{
-			"cc_sync_status": table.Synced,
-			"prev_data":      commonPayload.ProcessPayload.ConfigData,
-			"source_data":    commonPayload.ProcessPayload.ConfigData,
-		},
-		u.Dao.GenQuery().Process.ID.Eq(payload.ProcessID)); errU != nil {
-		logs.Errorf("[OperationCompletedStep STEP]: update prev_data and source_data failed to %s, processID=%s, err=%v",
-			payload.ProcessID, errU)
 	}
 
 	return nil
@@ -447,10 +445,40 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 			logs.Errorf("[UpdateRegisterCallback CALLBACK]: failed to increment completed count, "+
 				"batchID: %d, err: %v", payload.BatchID, err)
 		}
-	}
 
-	logs.Infof("[UpdateRegisterCallback CALLBACK]: successfully rolled back process instance status, "+
-		"bizID: %d, processInstanceID: %d", payload.BizID, payload.ProcessInstanceID)
+		snapshot, err := u.updateBatchExtraDataWithLock(payload.BatchID, registerProcessSuccessDelta(cbErr))
+		if err != nil {
+			logs.Errorf("update batch extra data failed, batchID=%d, err=%v",
+				payload.BatchID, err)
+		}
+
+		if snapshot != nil {
+			// 是否更新进程配置：仅由数量一致性决定
+			allRegisterSucceeded := snapshot.RegisterProcessSuccessCount == snapshot.TotalCount
+			if allRegisterSucceeded {
+				updateFields := map[string]any{
+					"cc_sync_status": table.Synced,
+					"prev_data":      commonPayload.ProcessPayload.ConfigData,
+					"source_data":    commonPayload.ProcessPayload.ConfigData,
+				}
+				if errU := u.Dao.Process().UpdateSelectedFields(
+					kit.New(),
+					payload.BizID,
+					updateFields,
+					u.Dao.GenQuery().Process.ID.Eq(payload.ProcessID),
+				); errU != nil {
+					logs.Errorf(
+						"[UpdateRegisterCallback CALLBACK]: update process config failed, processID=%s, err=%v",
+						payload.ProcessID,
+						errU,
+					)
+				}
+
+				logs.Infof("[UpdateRegisterCallback CALLBACK]: successfully rolled back process instance status, "+
+					"bizID: %d, processInstanceID: %d", payload.BizID, payload.ProcessInstanceID)
+			}
+		}
+	}
 
 	if isSuccess {
 		logs.Infof("[UpdateRegisterCallback CALLBACK]: task %s completed successfully, no rollback needed",
@@ -487,20 +515,70 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("failed to update process instance during rollback: %w", err)
 	}
 
-	// 更新进程配置和状态
-	if errU := u.Dao.Process().UpdateSelectedFields(kit.New(), payload.BizID,
-		map[string]any{
-			"cc_sync_status": table.Updated,
-		},
-		u.Dao.GenQuery().Process.ID.Eq(payload.ProcessID)); errU != nil {
-		logs.Errorf("[UpdateRegisterCallback CALLBACK]: update prev_data and source_data failed to %s, processID=%s, err=%v",
-			payload.ProcessID, errU)
-	}
-
 	logs.Infof("[UpdateRegisterCallback CALLBACK]: successfully rolled back process instance status, "+
 		"bizID: %d, processInstanceID: %d", payload.BizID, payload.ProcessInstanceID)
 
 	return nil
+}
+
+// BatchConfigDecisionSnapshot 用于判断是否需要更新进程配置的最小状态快照
+// 该结构不等同于 TaskBatch 的完整状态，仅包含配置更新判断所需的字段：
+//   - Status：批次最终状态（由 IncrementCompletedCount 推进）
+//   - TotalCount：批次内任务总数
+//   - RegisterProcessSuccessCount：RegisterProcessStep 成功次数（来自 ExtraData）
+type BatchConfigDecisionSnapshot struct {
+	Status                      table.TaskBatchStatus
+	TotalCount                  uint32
+	RegisterProcessSuccessCount uint32
+}
+
+// updateBatchExtraDataWithLock 更新任务批次的 ExtraData（RegisterProcess.SuccessCount），并发安全
+func (u *UpdateRegisterExecutor) updateBatchExtraDataWithLock(batchID uint32, delta uint32) (
+	*BatchConfigDecisionSnapshot, error) {
+
+	if delta == 0 {
+		return nil, nil
+	}
+
+	u.RedLock.Acquire(keys.ResKind.BatchID(batchID))
+
+	defer u.RedLock.Release(keys.ResKind.BatchID(batchID))
+
+	// 1. 重新从 DB 读
+	task, err := u.Dao.TaskBatch().GetByID(kit.New(), batchID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 解析 ExtraData
+	extra, err := parseTaskBatchExtraData(task.Spec.ExtraData)
+	if err != nil {
+		return nil, err
+	}
+
+	// RegisterProcessExtra 可能不存在，需兼容旧数据或首次写入场景
+	if extra.RegisterProcess == nil {
+		extra.RegisterProcess = &RegisterProcessExtra{}
+	}
+
+	// 3. 累加
+	extra.RegisterProcess.SuccessCount += delta
+
+	raw, err := json.Marshal(extra)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 写回 DB
+	if err := u.Dao.TaskBatch().UpdateExtraData(kit.New(), batchID, string(raw)); err != nil {
+		return nil, err
+	}
+
+	return &BatchConfigDecisionSnapshot{
+		Status:                      task.Spec.Status,
+		TotalCount:                  task.Spec.TotalCount,
+		RegisterProcessSuccessCount: extra.RegisterProcess.SuccessCount,
+	}, nil
 }
 
 // queryGSEProcessStatus 查询 GSE 状态
@@ -648,4 +726,36 @@ func RegisterUpdateRegisterExecutor(e *UpdateRegisterExecutor) {
 	istep.Register(OperationCompletedStepName, istep.StepExecutorFunc(e.OperationCompletedStep))
 	// 注册回调，用于任务失败时的状态回滚
 	istep.RegisterCallback(UpdateRegisterCallbackName, istep.CallbackExecutorFunc(e.Callback))
+}
+
+// registerProcessSuccessDelta 根据 RegisterProcessStep 的执行结果，返回成功数增量
+func registerProcessSuccessDelta(err error) uint32 {
+	if errors.Is(err, ErrRegisterProcessStepFailed) {
+		return 0
+	}
+	return 1
+}
+
+// TaskBatchExtraData 扩展参数
+type TaskBatchExtraData struct {
+	RegisterProcess *RegisterProcessExtra `json:"register_process,omitempty"`
+}
+
+// RegisterProcessExtra 更新托管扩展参数
+type RegisterProcessExtra struct {
+	SuccessCount uint32 `json:"success_count"`
+}
+
+// parseTaskBatchExtraData 解析扩展参数
+func parseTaskBatchExtraData(raw string) (*TaskBatchExtraData, error) {
+	if raw == "" {
+		return &TaskBatchExtraData{}, nil
+	}
+
+	var extra TaskBatchExtraData
+	if err := json.Unmarshal([]byte(raw), &extra); err != nil {
+		return nil, err
+	}
+
+	return &extra, nil
 }

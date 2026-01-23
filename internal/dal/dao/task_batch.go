@@ -50,6 +50,8 @@ type TaskBatch interface {
 	AddFailedCount(kit *kit.Kit, batchID uint32, count uint32) error
 	// HasRunningConfigPushTasks 检查是否有指定配置模板的运行中的配置下发任务
 	HasRunningConfigPushTasks(kit *kit.Kit, bizID uint32, configTemplateIDs []uint32) (bool, error)
+	// UpdateExtraData 更新批次的 ExtraData 字段
+	UpdateExtraData(kit *kit.Kit, batchID uint32, extraData string) error
 }
 
 var _ TaskBatch = new(taskBatchDao)
@@ -58,6 +60,19 @@ type taskBatchDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateExtraData implements [TaskBatch].
+func (dao *taskBatchDao) UpdateExtraData(kit *kit.Kit, batchID uint32, extraData string) error {
+	m := dao.genQ.TaskBatch
+	_, err := dao.genQ.TaskBatch.WithContext(kit.Ctx).Where(m.ID.Eq(batchID)).Updates(map[string]interface{}{
+		m.ExtraData.ColumnName().String(): extraData,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Create 创建任务批次

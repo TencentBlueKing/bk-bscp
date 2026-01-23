@@ -78,3 +78,8 @@ func (rk resKind) ReleasedInstance(appID uint32) string {
 func (rk resKind) CredentialMatchedCI(bizID uint32) string {
 	return fmt.Sprintf("credential-matched-ci-%d", bizID)
 }
+
+// BatchID return the batch id's resource kind
+func (rk resKind) BatchID(batchID uint32) string {
+	return fmt.Sprintf("batch-id-%d", batchID)
+}

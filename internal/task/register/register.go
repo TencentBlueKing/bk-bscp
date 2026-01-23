@@ -17,6 +17,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/hello"
@@ -31,12 +32,13 @@ func RegisterExecutor(
 	bkcmdbService bkcmdb.Service,
 	dao dao.Set,
 	repo repository.Provider,
+	redLock *lock.RedisLock,
 ) {
 	// 注册 process 执行器
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, dao)
 	process.RegisterExecutor(processExecutor)
 
-	updateRegisterExecutor := process.NewUpdateRegisterExecutor(gseService, bkcmdbService, dao)
+	updateRegisterExecutor := process.NewUpdateRegisterExecutor(gseService, bkcmdbService, dao, redLock)
 	process.RegisterUpdateRegisterExecutor(updateRegisterExecutor)
 
 	// 注册 同步cmdb和gse 执行器

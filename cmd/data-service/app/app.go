@@ -35,11 +35,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/space"
@@ -222,7 +224,13 @@ func (ds *dataService) initTaskManager() error {
 	// 注册并启动任务（register要在NewTaskMgr之前）
 	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
 	ds.gseSvc = gseService
-	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo)
+
+	bds, err := bedis.NewRedisCache(cc.DataService().Repo.RedisCluster)
+	if err != nil {
+		return fmt.Errorf("new redis cluster failed, err: %v", err)
+	}
+	redLock := lock.NewRedisLock(bds, 60)
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),

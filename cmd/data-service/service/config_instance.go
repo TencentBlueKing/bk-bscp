@@ -1070,6 +1070,7 @@ func createBatch(dao dao.Set, kt *kit.Kit, bizID uint32, srcBatch *table.TaskBat
 			Status:     table.TaskBatchStatusRunning,
 			StartAt:    &now,
 			TotalCount: taskCount,
+			ExtraData:  "{}",
 		},
 		Revision: &table.Revision{
 			Creator:   kt.User,
@@ -1551,6 +1552,7 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			Status:     table.TaskBatchStatusRunning,
 			StartAt:    &now,
 			TotalCount: uint32(len(taskInfos)),
+			ExtraData:  "{}",
 		},
 		Revision: &table.Revision{
 			Creator: kt.User,
