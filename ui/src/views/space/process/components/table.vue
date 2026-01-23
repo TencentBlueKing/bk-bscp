@@ -62,9 +62,9 @@
           <span v-else>--</span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')" resizable>
+      <TableColumn col-key="spec.process_state_synced_at" :title="t('状态获取时间')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
-          {{ timeAgo(row.spec.cc_sync_updated_at) }}
+          {{ timeAgo(row.spec.process_state_synced_at) }}
         </template>
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')" resizable>
