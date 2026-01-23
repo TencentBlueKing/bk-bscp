@@ -52,7 +52,7 @@ const (
 	// CallbackName push config callback name
 	CallbackName istep.CallbackName = "Callback"
 	// scriptNameTmpl 脚本名称模板
-	scriptNameTmpl   = "bk_gse_script_%d.sh"
+	scriptNameTmpl   = "bk_gse_script_%d_%d.sh"
 	scriptTimeoutSec = 3600
 )
 
@@ -69,6 +69,7 @@ func NewPushConfigExecutor(dao dao.Set, gseService *gse.Service, repo repository
 		Executor: &common.Executor{
 			Dao:        dao,
 			GseService: gseService,
+			GseConf:    cc.G().GSE,
 		},
 		Repo:     repo,
 		fileLock: lock.NewFileLock(),
@@ -136,7 +137,8 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 
 	scriptStoreDir := e.GseConf.ScriptStoreDir
 
-	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix())
+	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix(), commonPayload.ProcessPayload.ModuleInstSeq)
+
 	resp, err := e.GseService.AsyncExtensionsExecuteScript(kt.Ctx, &gse.ExecuteScriptReq{
 		Agents: []gse.Agent{
 			{
