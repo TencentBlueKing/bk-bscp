@@ -4,5 +4,11 @@ import { defineStore } from 'pinia';
 export default defineStore('configTemplate', () => {
   const createVerson = ref(false);
   const isAssociated = ref(false);
-  return { createVerson, isAssociated };
+  const perms = ref({
+    create: false,
+    update: false,
+    delete: false,
+    issued: false,
+  });
+  return { createVerson, isAssociated, perms };
 });

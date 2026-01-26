@@ -21,7 +21,7 @@
     </TableColumn>
     <TableColumn :title="t('创建时间')">
       <template #default="{ row }">
-          {{ datetimeFormat(row.revision.create_at) }}
+        {{ datetimeFormat(row.revision.create_at) }}
       </template>
     </TableColumn>
     <TableColumn :title="t('操作')" width="337">
@@ -56,6 +56,7 @@
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import { IPagination } from '../../../../../types/index';
   import { ITemplateVersionItem, DiffSliderDataType } from '../../../../../types/template';
   import { datetimeFormat } from '../../../../utils/index';
@@ -64,10 +65,13 @@
   import UserName from '../../../../components/user-name.vue';
   import TemplateVersionDiff from '../../templates/version-manage/template-version-diff.vue';
   import TableMoreActions from '../../../../components/table/table-more-actions.vue';
+  import useConfigTemplateStore from '../../../../store/config-template';
+  import useGlobalStore from '../../../../store/global';
 
   const { t } = useI18n();
   const router = useRouter();
-
+  const { perms } = storeToRefs(useConfigTemplateStore());
+  const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const props = defineProps<{
     spaceId: string;
     templateSpaceId: number;
@@ -121,6 +125,22 @@
 
   // 配置下发
   const handleConfigIssue = () => {
+    if (!perms.value.issued) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: props.spaceId,
+            basic: {
+              type: 'config_template',
+              action: 'generate_config',
+              resource_id: props.configTemplateId,
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    }
     router.push({
       name: 'config-issued',
       query: {

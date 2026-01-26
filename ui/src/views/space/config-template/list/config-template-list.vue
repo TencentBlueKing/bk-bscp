@@ -2,7 +2,7 @@
   <section class="list-wrap">
     <div class="title">{{ $t('配置模板管理') }}</div>
     <div class="op-wrap">
-      <bk-button class="create-btn" theme="primary" @click="isShowCreateTemplate = true">{{ $t('新建') }}</bk-button>
+      <bk-button class="create-btn" theme="primary" @click="handleCreate">{{ $t('新建') }}</bk-button>
       <SearchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
@@ -140,6 +140,7 @@
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { getConfigTemplateList, deleteConfigTemplate } from '../../../../api/config-template';
+  import { permissionCheck } from '../../../../api';
   import type { IConfigTemplateItem } from '../../../../../types/config-template';
   import { datetimeFormat } from '../../../../utils';
   import { useRouter } from 'vue-router';
@@ -158,8 +159,9 @@
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('configTemplateList');
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const configTemplateStore = useConfigTemplateStore();
+  const { perms } = storeToRefs(configTemplateStore);
   const router = useRouter();
 
   const searchField = [
@@ -196,9 +198,11 @@
   const isShowDeleteDialog = ref(false);
   const deletePendding = ref(false);
   const isShowConfigCheck = ref(false);
+  const permCheckLoading = ref(false);
 
   onMounted(() => {
     loadConfigTemplateList();
+    getPermData();
   });
 
   const loadConfigTemplateList = async () => {
@@ -227,6 +231,81 @@
     }
   };
 
+  const getPermData = async () => {
+    permCheckLoading.value = true;
+    const [createRes, updateRes, deleteRes, issuedRes] = await Promise.all([
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'create',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'update',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'delete',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'generate_config',
+            },
+          },
+        ],
+      }),
+    ]);
+    perms.value.create = createRes.is_allowed;
+    perms.value.update = updateRes.is_allowed;
+    perms.value.delete = deleteRes.is_allowed;
+    perms.value.issued = issuedRes.is_allowed;
+    permCheckLoading.value = false;
+  };
+
+  const checkOpPerm = (perm: 'create' | 'update' | 'delete' | 'issued') => {
+    if (permCheckLoading.value) return false;
+    if (!perms.value[perm]) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: perm === 'issued' ? 'generate_config' : perm,
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return false;
+    }
+    return true;
+  };
+
   const handleSearch = (list: { [key: string]: string }) => {
     searchQuery.value = list;
     isSearchEmpty.value = Object.keys(list).length > 0;
@@ -240,6 +319,11 @@
   const handlePageLimitChange = (limit: number) => {
     updatePagination('limit', limit);
     loadConfigTemplateList();
+  };
+
+  const handleCreate = () => {
+    if (!checkOpPerm('create')) return;
+    isShowCreateTemplate.value = true;
   };
 
   // 查看模板详情
@@ -268,6 +352,7 @@
   };
 
   const handleEdit = (configTemplate: IConfigTemplateItem) => {
+    if (!checkOpPerm('update')) return;
     configTemplateStore.$patch((state) => {
       state.createVerson = true;
     });
@@ -284,6 +369,7 @@
 
   // 配置下发
   const handleConfigIssue = (id: number) => {
+    if (!checkOpPerm('issued')) return;
     router.push({
       name: 'config-issued',
       query: {
@@ -313,6 +399,7 @@
 
   const handleMoreActions = (template: IConfigTemplateItem, op: string) => {
     if (op === 'delete') {
+      if (!checkOpPerm('delete')) return;
       handleDelete(template);
     } else {
       handleGoVersionManage(template);

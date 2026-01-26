@@ -47,7 +47,10 @@
             <template #content>
               <div class="version-select-content">
                 <div class="info">{{ $t('根据配置模板历史版本，筛选对应的实例') }}</div>
-                <bk-checkbox-group v-model="checkedVersion" @change="handleSelectVersion">
+                <bk-checkbox-group
+                  v-model="checkedVersion"
+                  class="version-checkbox-group"
+                  @change="handleSelectVersion">
                   <bk-checkbox v-for="version in templateProcess.versions" :key="version.id" :label="version.id">
                     {{ version.name }}
                   </bk-checkbox>
@@ -133,10 +136,7 @@
       </PrimaryTable>
     </div>
   </div>
-  <ConfigDiff
-    v-model:show="diffSliderData.open"
-    :space-id="props.bkBizId"
-    :instance="diffSliderData.data" />
+  <ConfigDiff v-model:show="diffSliderData.open" :space-id="props.bkBizId" :instance="diffSliderData.data" />
   <ConfigDetail
     v-model:is-show="detailSliderData.open"
     :is-check="isCheck"
@@ -344,5 +344,17 @@
   .op-btns {
     display: flex;
     gap: 8px;
+  }
+
+  .version-checkbox-group {
+    max-height: 200px;
+    display: flex;
+    flex-direction: column;
+    .bk-checkbox {
+      margin: 0;
+    }
+    .bk-checkbox:not(:last-child) {
+      margin-bottom: 16px;
+    }
   }
 </style>

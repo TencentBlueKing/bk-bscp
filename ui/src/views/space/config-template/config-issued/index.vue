@@ -94,7 +94,7 @@
   const statusTimer = ref();
   const needGenerate = ref(true);
   const permCheckLoading = ref(false);
-  const iuusedPerm = ref(false);
+  const issuedPerm = ref(false);
 
   onMounted(() => {
     getIssuedPerm();
@@ -133,7 +133,7 @@
         },
       ],
     });
-    iuusedPerm.value = issuedRes.is_allowed;
+    issuedPerm.value = issuedRes.is_allowed;
     permCheckLoading.value = false;
   };
 
@@ -308,7 +308,7 @@
 
   // 配置下发
   const handleIssue = async () => {
-    if (!iuusedPerm.value) {
+    if (!issuedPerm.value) {
       permissionQuery.value = {
         resources: [
           {

@@ -142,4 +142,8 @@
     margin-top: 24px;
     gap: 8px;
   }
+  .process-table-wrap {
+    height: calc(100% - 96px);
+    overflow: auto;
+  }
 </style>
