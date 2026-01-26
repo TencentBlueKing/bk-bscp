@@ -667,11 +667,14 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 
 	// 收集所有有效版本 ID
 	versionIDs := collectVersionIDs(configInstances)
+	// 构建 versions 返回项，默认包含 "-"
+	choices := make([]*pbcin.Choice, 0)
+	choices = append(choices, &pbcin.Choice{
+		Id:   "0",
+		Name: "-",
+	})
 	if len(versionIDs) == 0 {
-		return newFilterOptions(
-			latestRevision,
-			[]*pbcin.Choice{{Id: "0", Name: "-"}},
-		), nil
+		return newFilterOptions(latestRevision, choices), nil
 	}
 
 	// 查询版本信息
@@ -681,7 +684,6 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 	}
 
 	// 构建 versions 返回项
-	choices := make([]*pbcin.Choice, 0, len(templateRevisions))
 	for _, tr := range templateRevisions {
 		choices = append(choices, &pbcin.Choice{
 			Id:   strconv.FormatUint(uint64(tr.ID), 10),
