@@ -111,11 +111,11 @@
     </div>
   </div>
   <ConfigDetail
-    :bk-biz-id="bkBizId"
+    :bk-biz-id="spaceId"
     v-model:is-show="detailSliderData.open"
     :is-check="false"
     :data="detailSliderData.data" />
-  <TaskDiff :bk-biz-id="bkBizId" v-model:is-show="diffSliderData.open" :task-id="diffSliderData.taskId" />
+  <TaskDiff :bk-biz-id="spaceId" v-model:is-show="diffSliderData.open" :task-id="diffSliderData.taskId" />
 </template>
 
 <script lang="ts" setup>
@@ -133,11 +133,15 @@
   import type { ITaskDetailItem } from '../../../../../types/task';
   import ConfigDetail from '../../config-template/config-issued/config-detail.vue';
   import TaskDiff from './task-diff.vue';
+  import useGlobalStore from '../../../../store/global';
+  import { storeToRefs } from 'pinia';
+  import { permissionCheck } from '../../../../api';
 
   const taskStore = useTaskStore();
   const { pagination, updatePagination } = useTablePagination('taskList');
   const { t } = useI18n();
   const route = useRoute();
+  const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
 
   const searchField = ref([
     {
@@ -206,7 +210,6 @@
   // 展示操作列表的动作
   const showOperationActions = ['config_generate', 'config_publish', 'config_check'];
 
-  const bkBizId = ref(String(route.params.spaceId));
   const taskId = ref(Number(route.params.taskId));
   const searchValue = ref();
   const activePanels = ref('INITIALIZING');
@@ -218,6 +221,7 @@
   const loadPanelsFlag = ref(true);
   const searchSelectorRef = ref();
   const action = ref('');
+  const taskObject = ref('');
   const detailSliderData = ref({
     open: false,
     data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, configVersionId: 0, taskId: '' },
@@ -228,6 +232,12 @@
   });
   const timer = ref<number | null>(null);
   const isRequesting = ref(false);
+  const perms = ref({
+    operate: false,
+    generate: false,
+    issued: false,
+  });
+  const permCheckLoading = ref(false);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 150;
@@ -235,6 +245,7 @@
 
   onBeforeMount(async () => {
     loadTaskList();
+    getRetryPerm();
   });
 
   const scheduleReload = (delay = 0) => {
@@ -258,7 +269,7 @@
         loading.value = true;
       }
 
-      const res = await getTaskDetailList(bkBizId.value, taskId.value, {
+      const res = await getTaskDetailList(spaceId.value, taskId.value, {
         status: activePanels.value,
         start: pagination.value.limit * (pagination.value.current - 1),
         limit: pagination.value.limit,
@@ -327,6 +338,7 @@
       const actionText = TASK_ACTION_MAP[task_action as keyof typeof TASK_ACTION_MAP];
       const typePrefix = task_object === 'process' ? t('进程') : t('配置文件');
       action.value = task_action;
+      taskObject.value = task_object;
 
       taskStore.$patch({
         taskDetail: {
@@ -386,11 +398,92 @@
   // 重试所有失败任务
   const handleRetry = async () => {
     try {
-      await retryTask(bkBizId.value, taskId.value);
+      let taskAction = '';
+      if (taskObject.value === 'process') {
+        taskAction = 'operate';
+      } else if (action.value === 'config_generate') {
+        taskAction = 'generate';
+      } else if (action.value === 'config_publish') {
+        taskAction = 'issued';
+      }
+      if (taskAction && !checkPerm(taskAction)) {
+        return;
+      }
+      await retryTask(spaceId.value, taskId.value, action.value);
       loadTaskList();
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const getRetryPerm = async () => {
+    permCheckLoading.value = true;
+    const [operateRes, generateRes, issuedRes] = await Promise.all([
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'process_operate',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'generate_config',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'release_config',
+            },
+          },
+        ],
+      }),
+    ]);
+    perms.value.operate = operateRes.is_allowed;
+    perms.value.generate = generateRes.is_allowed;
+    perms.value.issued = issuedRes.is_allowed;
+    permCheckLoading.value = false;
+  };
+
+  const checkPerm = (action: string) => {
+    if (!perms.value[action as keyof typeof perms.value] && !permCheckLoading.value) {
+      let resourcesAction = '';
+      if (action === 'operate') {
+        resourcesAction = 'process_operate';
+      } else if (action === 'generate') {
+        resourcesAction = 'generate_config';
+      } else if (action === 'issued') {
+        resourcesAction = 'release_config';
+      }
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: resourcesAction,
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return false;
+    }
+    return true;
   };
 
   const handleClearSearch = () => {

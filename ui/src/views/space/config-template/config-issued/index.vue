@@ -128,7 +128,7 @@
           biz_id: spaceId.value,
           basic: {
             type: 'process_and_config_management',
-            action: 'deploy_config',
+            action: 'release_config',
           },
         },
       ],
@@ -315,7 +315,7 @@
             biz_id: spaceId.value,
             basic: {
               type: 'process_and_config_management',
-              action: 'deploy_config',
+              action: 'release_config',
             },
           },
         ],

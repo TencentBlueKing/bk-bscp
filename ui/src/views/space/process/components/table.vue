@@ -447,7 +447,7 @@
             biz_id: spaceId.value,
             basic: {
               type: 'process_and_config_management',
-              action: perm === 'operate' ? 'process_operate' : 'deploy_config',
+              action: perm === 'operate' ? 'process_operate' : 'release_config',
             },
           },
         ],
