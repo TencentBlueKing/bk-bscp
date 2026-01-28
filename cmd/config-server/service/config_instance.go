@@ -77,6 +77,7 @@ func (s *Service) GenerateConfig(ctx context.Context, req *pbcs.GenerateConfigRe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.GenerateConfig}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -111,6 +112,7 @@ func (s *Service) PushConfig(ctx context.Context, req *pbcs.PushConfigReq) (*pbc
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.ReleaseConfig}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -256,7 +258,9 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbcs.OperateGe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.GenerateConfig}, BizID: req.BizId},
 	}
+
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}

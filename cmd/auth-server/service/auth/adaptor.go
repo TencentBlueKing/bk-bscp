@@ -47,6 +47,8 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 	case meta.Commit, meta.ConfigItem, meta.Content, meta.CRInstance, meta.Release, meta.ReleasedCI, meta.Strategy,
 		meta.StrategySet, meta.PSH, meta.Repo, meta.Sidecar:
 		return genSkipResource(a)
+	case meta.ProcConfigMgmt:
+		return genProcConfigMgmtResource(a)
 	// case meta.Commit:
 	//	return genCommitResource(a)
 	// case meta.ConfigItem:
@@ -90,6 +92,8 @@ func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) 
 		return genAppIAMResource(a)
 	case meta.Credential:
 		return genCredIAMResource(a)
+	case meta.ProcConfigMgmt:
+		return genProcConfigMgmtRes(a)
 	default:
 		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Basic.Type)
 	}
@@ -123,6 +127,12 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 			actions = append(actions, action)
 		case meta.Audit:
 			action, err := genAuditIAMApplication(a)
+			if err != nil {
+				return nil, err
+			}
+			actions = append(actions, action)
+		case meta.ProcConfigMgmt:
+			action, err := genProcConfigMgmtApplication(a)
 			if err != nil {
 				return nil, err
 			}

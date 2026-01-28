@@ -2431,6 +2431,7 @@ message ProcessFilterOptionsResp {
 message RetryTasksReq {
   uint32 biz_id = 1;    // 业务ID
   uint32 batch_id = 2;  // 任务批次ID
+  string task_action = 3;
 }
 
 message RetryTasksResp {

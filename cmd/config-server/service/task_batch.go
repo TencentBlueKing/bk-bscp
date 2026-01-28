@@ -107,6 +107,34 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
 	}
+
+	switch req.GetTaskAction() {
+	case "config_publish":
+		res = append(res, &meta.ResourceAttribute{
+			Basic: meta.Basic{
+				Type:   meta.ProcConfigMgmt,
+				Action: meta.ReleaseConfig,
+			},
+			BizID: req.BizId,
+		})
+	case "config_generate":
+		res = append(res, &meta.ResourceAttribute{
+			Basic: meta.Basic{
+				Type:   meta.ProcConfigMgmt,
+				Action: meta.GenerateConfig,
+			},
+			BizID: req.BizId,
+		})
+	case "process_operations":
+		res = append(res, &meta.ResourceAttribute{
+			Basic: meta.Basic{
+				Type:   meta.ProcConfigMgmt,
+				Action: meta.ProcessOperate,
+			},
+			BizID: req.BizId,
+		})
+	}
+
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}

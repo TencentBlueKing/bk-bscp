@@ -74,5 +74,18 @@ func genBusinessManagementActionGroups() []client.ActionGroup {
 				{ID: AuditView},
 			},
 		},
+		{
+			Name:   "进程配置管理",
+			NameEn: "ProcConfigMgmt",
+			Actions: []client.ActionWithID{ // 进程配置管理查看
+				{ID: ProcConfigMgmtView},
+				{ID: ProcessOperate},
+				{ID: ConfigRelease},
+				{ID: ConfigGenerate},
+				{ID: ConfigTemplateCreate},
+				{ID: ConfigTemplateEdit},
+				{ID: ConfigTemplateDelete},
+			},
+		},
 	}
 }
