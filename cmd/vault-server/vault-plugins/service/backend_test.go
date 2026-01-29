@@ -16,7 +16,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/openbao/openbao/sdk/v2/logical"
 )
 
 func createBackendWithStorage(t testing.TB) (*backend, logical.Storage) {
