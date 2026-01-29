@@ -24,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -92,10 +93,39 @@ func (c *CleanupBizHost) Run() {
 					continue
 				}
 				logs.Infof("starts to cleanup invalid biz host relationships")
-				c.cleanupBizHost(kt)
+				c.cleanupBizHostByTenant(kt)
 			}
 		}
 	}()
+}
+
+// cleanupBizHostByTenant 按租户清理无效的业务主机关系
+func (c *CleanupBizHost) cleanupBizHostByTenant(kt *kit.Kit) {
+	// 多租户模式：从 app 表获取租户列表并逐个清理
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		apps, err := c.set.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get distinct tenant IDs failed, err: %v", err)
+			return
+		}
+
+		if len(apps) == 0 {
+			logs.Warnf("no tenants found in app table for cleanup biz host")
+			return
+		}
+
+		for _, app := range apps {
+			if app.Spec.TenantID == "" {
+				continue
+			}
+			kt.TenantID = app.Spec.TenantID
+			c.cleanupBizHost(kt)
+		}
+		return
+	}
+
+	// 单租户模式
+	c.cleanupBizHost(kt)
 }
 
 // cleanupBizHost cleanup invalid biz host relationships

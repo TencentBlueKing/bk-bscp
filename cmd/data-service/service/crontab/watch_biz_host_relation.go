@@ -26,6 +26,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -43,6 +44,14 @@ const (
 	// config key for biz host cursor
 	bizHostCursorKey = "biz_host_cursor"
 )
+
+// getBizHostCursorKey 获取带租户前缀的游标 key
+func getBizHostCursorKey(tenantID string) string {
+	if tenantID == "" {
+		return bizHostCursorKey
+	}
+	return fmt.Sprintf("%s-%s", tenantID, bizHostCursorKey)
+}
 
 // NewWatchBizHostRelation init watch biz host relation
 func NewWatchBizHostRelation(
@@ -105,10 +114,39 @@ func (w *WatchBizHostRelation) Run() {
 					continue
 				}
 				logs.Infof("host relation watch triggered")
-				w.watchBizHost(kt)
+				w.watchBizHostByTenant(kt)
 			}
 		}
 	}()
+}
+
+// watchBizHostByTenant 按租户监听业务主机关系变化
+func (w *WatchBizHostRelation) watchBizHostByTenant(kt *kit.Kit) {
+	// 多租户模式：从 app 表获取租户列表并逐个监听
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		apps, err := w.set.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get distinct tenant IDs failed, err: %v", err)
+			return
+		}
+
+		if len(apps) == 0 {
+			logs.Warnf("no tenants found in app table for watch biz host relation")
+			return
+		}
+
+		for _, app := range apps {
+			if app.Spec.TenantID == "" {
+				continue
+			}
+			kt.TenantID = app.Spec.TenantID
+			w.watchBizHost(kt)
+		}
+		return
+	}
+
+	// 单租户模式
+	w.watchBizHost(kt)
 }
 
 // watchBizHost watch business host relationship changes
@@ -124,11 +162,13 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 		BkEventTypes: []string{bizHostRelationCreateEvent, bizHostRelationDeleteEvent},
 		BkFields:     []string{"bk_biz_id", "bk_host_id"},
 	}
+	// get cursor key with tenant prefix
+	cursorKey := getBizHostCursorKey(kt.TenantID)
 	// get cursor from config table, if not exist, use timestamp to get events
-	config, err := w.set.Config().GetConfig(kt, bizHostCursorKey)
+	config, err := w.set.Config().GetConfig(kt, cursorKey)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.Errorf("get cached cursor from config failed, key: %s, err: %v", bizHostCursorKey, err)
+			logs.Errorf("get cached cursor from config failed, key: %s, err: %v", cursorKey, err)
 			return
 		}
 		// cursor not found, use timestamp
@@ -156,7 +196,7 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 		// update cursor to config table
 		lastEvent := watchResult.BkEvents[len(watchResult.BkEvents)-1]
 		config := &table.Config{
-			Key:   bizHostCursorKey,
+			Key:   cursorKey,
 			Value: lastEvent.BkCursor,
 		}
 		err := w.set.Config().UpsertConfig(kt, []*table.Config{config})
@@ -226,8 +266,9 @@ func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
 	}
 
 	bizHost := &table.BizHost{
-		BizID:  uint(*detail.BkBizID),
-		HostID: uint(*detail.BkHostID),
+		TenantID: kt.TenantID,
+		BizID:    uint(*detail.BkBizID),
+		HostID:   uint(*detail.BkHostID),
 	}
 	// query host detail
 	hostResult, err := w.cmdbService.ListBizHosts(kt.Ctx, &bkcmdb.ListBizHostsRequest{
@@ -334,9 +375,10 @@ func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hos
 
 // InitBizHostCursor initializes biz host cursor to the latest position
 // This function gets the latest cursor from CMDB and updates it to config table
-func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
-	logs.Infof("start init biz host cursor")
+func InitBizHostCursor(tenantID string, set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	logs.Infof("start init biz host cursor for tenant: %s", tenantID)
 	kt := kit.New()
+	kt.TenantID = tenantID
 	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Minute)
 	defer cancel()
 	kt.Ctx = ctx
@@ -358,9 +400,10 @@ func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) e
 		return fmt.Errorf("watch host relation resource failed: no events found")
 	}
 
+	cursorKey := getBizHostCursorKey(tenantID)
 	cursor := watchResult.BkEvents[len(watchResult.BkEvents)-1].BkCursor
 	config := &table.Config{
-		Key:   bizHostCursorKey,
+		Key:   cursorKey,
 		Value: cursor,
 	}
 
@@ -369,6 +412,6 @@ func InitBizHostCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) e
 		return fmt.Errorf("update biz host cursor to config failed: %w", err)
 	}
 
-	logs.Infof("successfully initialized biz host cursor to: %s", cursor)
+	logs.Infof("successfully initialized biz host cursor to: %s (tenant: %s)", cursor, tenantID)
 	return nil
 }

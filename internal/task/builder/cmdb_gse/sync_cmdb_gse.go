@@ -24,14 +24,16 @@ import (
 )
 
 type syncCMDBGSETask struct {
+	tenantID     string
 	bizID        uint32
 	opType       gseSvc.OpType
 	operatorUser string
 }
 
 // NewSyncCMDBGSETask 创建一个 同步cmdb 任务
-func NewSyncCMDBGSETask(bizID uint32, opType gseSvc.OpType, operatorUser string) types.TaskBuilder {
+func NewSyncCMDBGSETask(tenantID string, bizID uint32, opType gseSvc.OpType, operatorUser string) types.TaskBuilder {
 	return &syncCMDBGSETask{
+		tenantID:     tenantID,
 		bizID:        bizID,
 		opType:       opType,
 		operatorUser: operatorUser,
@@ -48,8 +50,8 @@ func (s *syncCMDBGSETask) FinalizeTask(t *types.Task) error {
 func (s *syncCMDBGSETask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
-		cmdb.SyncCMDB(s.bizID),
-		gse.SyncGseStatus(s.bizID, s.opType),
+		cmdb.SyncCMDB(s.tenantID, s.bizID),
+		gse.SyncGseStatus(s.tenantID, s.bizID, s.opType),
 	}, nil
 }
 
