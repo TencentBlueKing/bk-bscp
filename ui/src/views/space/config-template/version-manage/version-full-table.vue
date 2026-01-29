@@ -131,7 +131,7 @@
           {
             biz_id: props.spaceId,
             basic: {
-              type: 'config_template',
+              type: 'process_and_config_management',
               action: 'generate_config',
               resource_id: props.configTemplateId,
             },

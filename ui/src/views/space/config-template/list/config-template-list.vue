@@ -107,6 +107,8 @@
     :bk-biz-id="spaceId"
     :template-id="opTemplate.id"
     :template-name="opTemplate.templateName"
+    :update-perm="perms.update"
+    @no-perm="checkOpPerm('update')"
     @confirm="refresh" />
   <CreateConfigTemplate
     v-if="isShowCreateTemplate"
