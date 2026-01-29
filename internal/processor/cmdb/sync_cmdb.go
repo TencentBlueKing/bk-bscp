@@ -16,11 +16,14 @@ package cmdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"slices"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
@@ -528,6 +531,7 @@ func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID
 }
 
 // BuildProcessChanges 生成进程及其实例的新增、更新或删除操
+// nolint:funlen
 func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table.Process, oldP *table.Process, now time.Time,
 	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*table.Process, *table.Process, uint32,
 	[]*table.ProcessInstance, []uint32, error) {
@@ -557,32 +561,77 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 
 	newProcNum := int(newP.Spec.ProcNum)
 
-	// 1. 别名变更 + 不安全：删除旧进程，生成新进程
-	if nameChanged && !safe {
-		newP.Spec.PrevData = oldP.Spec.SourceData
-		newP.Spec.CcSyncStatus = table.Synced
-
-		toAdd := &table.Process{
-			Attachment: newP.Attachment,
-			Spec:       newP.Spec,
-			Revision:   &table.Revision{CreatedAt: now},
+	// 1. 别名变更：检查是否有同别名的 deleted 记录可以复用
+	if nameChanged {
+		// 查找同 CcProcessID + 同新别名 + deleted 状态的进程记录
+		reusableProc, err := dao.Process().GetDeletedByCcProcessIDAndAliasTx(
+			kit, tx, oldP.Attachment.BizID, oldP.Attachment.CcProcessID, newP.Spec.Alias)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, 0, nil, nil, err
 		}
 
-		insts := buildInstances(
-			int(toAdd.Attachment.BizID),
-			int(toAdd.Attachment.HostID),
-			int(toAdd.Attachment.ModuleID),
-			int(toAdd.Attachment.CcProcessID),
-			newProcNum,
-			0, 0, 0,
-			now, hostCounter, moduleCounter,
-		)
+		// 恢复 deleted 记录为 synced，并更新其元数据
+		if reusableProc != nil {
+			reusableProc.Spec.PrevData = oldP.Spec.SourceData
+			reusableProc.Spec.SourceData = newP.Spec.SourceData
+			reusableProc.Spec.CcSyncStatus = table.Synced
+			reusableProc.Spec.ProcNum = newP.Spec.ProcNum
+			reusableProc.Attachment = newP.Attachment
+			reusableProc.Revision = &table.Revision{UpdatedAt: now}
 
-		return toAdd, nil, oldP.ID, insts, nil, nil
-	}
+			// 查询恢复进程的现有实例
+			existingInsts, err := dao.ProcessInstance().ListByProcessIDTx(kit, tx, reusableProc.Attachment.BizID, reusableProc.ID)
+			if err != nil {
+				return nil, nil, 0, nil, nil, err
+			}
 
-	// 2. 原地更新进程元数据
-	if nameChanged {
+			// 根据 ProcNum 扩缩容实例
+			res, err := reconcileProcessInstances(
+				kit, dao, tx,
+				reusableProc.Attachment.BizID,
+				reusableProc.ID,
+				reusableProc.Attachment.HostID,
+				reusableProc.Attachment.ModuleID,
+				reusableProc.Attachment.CcProcessID,
+				len(existingInsts),
+				newProcNum,
+				now,
+				hostCounter,
+				moduleCounter,
+			)
+			if err != nil {
+				return nil, nil, 0, nil, nil, err
+			}
+
+			// 返回：恢复的进程作为更新，旧进程标记为删除
+			return nil, reusableProc, oldP.ID, res.ToAdd, res.ToDelete, nil
+		}
+
+		// 没有可复用的 deleted 记录且不安全：创建新进程，标记旧进程为删除
+		if !safe {
+			newP.Spec.PrevData = oldP.Spec.SourceData
+			newP.Spec.CcSyncStatus = table.Synced
+
+			toAdd := &table.Process{
+				Attachment: newP.Attachment,
+				Spec:       newP.Spec,
+				Revision:   &table.Revision{CreatedAt: now},
+			}
+
+			insts := buildInstances(
+				int(toAdd.Attachment.BizID),
+				int(toAdd.Attachment.HostID),
+				int(toAdd.Attachment.ModuleID),
+				int(toAdd.Attachment.CcProcessID),
+				newProcNum,
+				0, 0, 0,
+				now, hostCounter, moduleCounter,
+			)
+
+			return toAdd, nil, oldP.ID, insts, nil, nil
+		}
+
+		// 安全且没有可复用记录：原地更新别名
 		oldP.Spec.Alias = newP.Spec.Alias
 	}
 	if infoChanged {
