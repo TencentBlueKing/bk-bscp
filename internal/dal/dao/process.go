@@ -60,8 +60,8 @@ type Process interface {
 	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
 	// GetByOperateRange 根据操作范围查询进程
 	GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error)
-	// GetDeletedByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名 + deleted 状态的进程记录
-	GetDeletedByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
+	// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
+	GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -72,14 +72,13 @@ type processDao struct {
 	auditDao AuditDao
 }
 
-// GetDeletedByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名 + deleted 状态的进程记录
-func (dao *processDao) GetDeletedByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID,
+// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
+func (dao *processDao) GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID,
 	ccProcessID uint32, alias string) (*table.Process, error) {
 	m := dao.genQ.Process
 
 	return tx.Process.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.CcProcessID.Eq(ccProcessID), m.Alias_.Eq(alias),
-			m.CcSyncStatus.Eq(table.Deleted.String())).
+		Where(m.BizID.Eq(bizID), m.CcProcessID.Eq(ccProcessID), m.Alias_.Eq(alias)).
 		Take()
 }
 
@@ -243,8 +242,7 @@ func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, sta
 func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 
-	return tx.Process.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID),
-		m.CcSyncStatus.Neq(table.Deleted.String())).Find()
+	return tx.Process.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID)).Find()
 }
 
 // BatchUpdateWithTx implements Process.
