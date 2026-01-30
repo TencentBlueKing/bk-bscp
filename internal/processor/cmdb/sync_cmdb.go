@@ -403,7 +403,8 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 
 	// 7. 拉取 Set
 	setsResp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-		BkBizID: s.bizID,
+		BkSupplierAccount: "0",
+		BkBizID:           s.bizID,
 		Fields: []string{
 			"bk_set_id",
 			"bk_set_name",
@@ -1008,7 +1009,20 @@ func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID
 	return res, nil
 }
 
-// BuildProcessChanges 生成进程及其实例的新增、更新或删除操
+// BuildProcessChanges 根据 CMDB 新旧进程数据，计算进程及其实例的变更结果：
+// - 是否需要新增进程
+// - 是否需要更新进程
+// - 是否需要删除旧进程
+// - 是否需要新增/删除进程实例
+//
+// 返回值含义：
+// 1. toAddProcess        : 需要新增的进程（可能为 nil）
+// 2. toUpdateProcess     : 需要更新的进程（可能为 nil）
+// 3. toDeleteProcessID   : 需要删除的旧进程 ID（0 表示不删除）
+// 4. toAddInstances      : 需要新增的进程实例
+// 5. toDeleteInstanceIDs : 需要删除的进程实例 ID 列表
+// 6. error
+//
 // nolint: funlen
 func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table.Process, oldP *table.Process, now time.Time,
 	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*table.Process, *table.Process, uint32,
@@ -1041,8 +1055,8 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 
 	// 1. 别名变更：检查是否有同别名的 deleted 记录可以复用
 	if nameChanged {
-		// 查找同 CcProcessID + 同新别名 + deleted 状态的进程记录
-		reusableProc, err := dao.Process().GetDeletedByCcProcessIDAndAliasTx(
+		// 查找同 CcProcessID + 同新别名
+		reusableProc, err := dao.Process().GetByCcProcessIDAndAliasTx(
 			kit, tx, oldP.Attachment.BizID, oldP.Attachment.CcProcessID, newP.Spec.Alias)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil, 0, nil, nil, err
