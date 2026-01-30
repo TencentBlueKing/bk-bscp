@@ -20,7 +20,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/hashicorp/vault/api"
+	"github.com/openbao/openbao/api/v2"
 	"github.com/spf13/cobra"
 )
 

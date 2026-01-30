@@ -17,8 +17,8 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault/api"
-	"github.com/hashicorp/vault/sdk/plugin"
+	"github.com/openbao/openbao/api/v2"
+	"github.com/openbao/openbao/sdk/v2/plugin"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/vault-server/vault-plugins/service"
 )

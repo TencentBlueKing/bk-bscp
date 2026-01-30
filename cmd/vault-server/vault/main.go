@@ -16,7 +16,7 @@ package main
 import (
 	"os"
 
-	"github.com/hashicorp/vault/command"
+	"github.com/openbao/openbao/command"
 )
 
 func main() {

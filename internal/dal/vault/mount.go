@@ -15,7 +15,7 @@ package vault
 import (
 	"fmt"
 
-	"github.com/hashicorp/vault/api"
+	"github.com/openbao/openbao/api/v2"
 )
 
 // CreateMountPath 创建挂载目录
