@@ -35,7 +35,6 @@ type Module struct {
 // Host 主机
 type Host struct {
 	ID      int
-	Name    string
 	IP      string
 	CloudId int
 	AgentID string
@@ -68,3 +67,14 @@ type HostInfo struct {
 
 // Bizs 业务
 type Bizs map[int][]Set
+
+// ProcessSyncItem 一次同步中单个进程的结果
+type ProcessWithInstances struct {
+	Process   *table.Process
+	Instances []*table.ProcessInstance
+}
+
+// SyncProcessResult 表示一次进程同步任务的汇总结果
+type SyncProcessResult struct {
+	Items []*ProcessWithInstances
+}

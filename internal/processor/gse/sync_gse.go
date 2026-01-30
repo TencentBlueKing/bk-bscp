@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
@@ -38,10 +39,12 @@ const (
 	// DefaultStartCheckSecs 默认启动后检查存活的时间（秒）
 	DefaultStartCheckSecs = 5
 
-	defaultMaxWait  = 30 * time.Second
-	DefaultInterval = 2 * time.Second
+	defaultMaxWait  = 5 * time.Second
+	DefaultInterval = 1 * time.Second
 	// Maximum number of times to tolerate ErrorCode 115 before treating as complete
 	MaxInProgressRetries = 5
+
+	concurrentProcessesNumber = 5
 )
 
 // NewSyncGESService 初始化同步gse
@@ -59,10 +62,15 @@ type syncGSEService struct {
 	svc   *gse.Service
 	dao   dao.Set
 }
+type syncResult struct {
+	process      *table.Process
+	updatedInsts []*table.ProcessInstance
+}
 
 // SyncSingleBiz 同步gse状态
 // 1. 按业务获取进程数据
 // 2. 调用gse接口
+// nolint: funlen
 func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 	kit := kit.FromGrpcContext(ctx)
 	processes, err := s.dao.Process().ListActiveProcesses(kit, uint32(s.bizID))
@@ -75,86 +83,140 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 		return nil
 	}
 
-	for _, process := range processes {
-		// 查询实例表
-		insts, err := s.dao.ProcessInstance().GetByProcessIDs(kit, uint32(s.bizID), []uint32{process.ID})
-		if err != nil {
-			logs.Errorf("biz %d: get process instances failed, processID=%d, err=%v", s.bizID, process.ID, err)
-			continue
-		}
-		if len(insts) == 0 {
-			logs.Infof("biz %d: no instances for processID=%d, skip gse sync", s.bizID, process.ID)
-			continue
-		}
-		req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
-		if err != nil {
-			logs.Errorf("[SyncSingleBiz ERROR] biz %d: build GSE operate request failed, processID=%d, err=%v",
-				s.bizID, process.ID, err)
-			continue
-		}
+	g, gctx := errgroup.WithContext(kit.Ctx)
 
-		proc, err := s.svc.OperateProcMulti(kit.Ctx, &gse.MultiProcOperateReq{
-			ProcOperateReq: req,
-		})
-		if err != nil {
-			logs.Errorf("[SyncSingleBiz ERROR] biz %d: operate process failed, processID=%d, err=%v", s.bizID, process.ID, err)
-			continue
-		}
+	// 限制并发数
+	g.SetLimit(concurrentProcessesNumber)
 
-		result, err := waitForProcResult(kit.Ctx, s.svc, proc.TaskID, defaultMaxWait, DefaultInterval)
-		if err != nil {
-			logs.Errorf("biz %d: wait for process result failed, taskID=%s, err=%v", s.bizID, proc.TaskID, err)
-			continue
-		}
+	resultCh := make(chan *syncResult, len(processes))
 
-		updatedInsts := make([]*table.ProcessInstance, 0, len(result))
-		for key, val := range result {
-			inst := instMap[key]
-			if inst == nil {
-				logs.Warnf("biz %d: unmatched instance key: %s", s.bizID, key)
-				continue
+	for _, p := range processes {
+		process := p
+
+		g.Go(func() error {
+			// 1. 查实例
+			insts, err := s.dao.ProcessInstance().GetByProcessIDs(kit, uint32(s.bizID), []uint32{process.ID})
+			if err != nil {
+				logs.Errorf("biz %d: get instances failed, processID=%d, err=%v", s.bizID, process.ID, err)
+				return nil // 不阻断整体
+			}
+			if len(insts) == 0 {
+				return nil
 			}
 
-			status, managed := parseGSEProcResult(key, val)
-			inst.Spec.Status = status
-			inst.Spec.ManagedStatus = managed
-			updatedInsts = append(updatedInsts, inst)
-		}
+			// 2. build GSE req
+			req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
+			if err != nil {
+				logs.Errorf("biz %d: build GSE req failed, processID=%d, err=%v",
+					s.bizID, process.ID, err)
+				return nil
+			}
 
-		// 开启事务并入库
-		tx := s.dao.GenQuery().Begin()
+			// 3. 调 GSE
+			proc, err := s.svc.OperateProcMulti(gctx, &gse.MultiProcOperateReq{
+				ProcOperateReq: req,
+			})
+			if err != nil {
+				logs.Errorf("biz %d: operate proc failed, processID=%d, err=%v",
+					s.bizID, process.ID, err)
+				return nil
+			}
 
-		// 若事务失败需要回滚
-		committed := false
-		defer func() {
-			if !committed {
-				if rErr := tx.Rollback(); rErr != nil {
-					logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kit.Rid)
+			// 4. 等结果
+			result, err := waitForProcResult(
+				gctx, s.svc, proc.TaskID, defaultMaxWait, DefaultInterval)
+			if err != nil {
+				logs.Errorf("biz %d: wait result failed, taskID=%s, err=%v",
+					s.bizID, proc.TaskID, err)
+				return nil
+			}
+
+			// 5. 解析结果
+			updatedInsts := make([]*table.ProcessInstance, 0, len(result))
+			for key, val := range result {
+				inst := instMap[key]
+				if inst == nil {
+					continue
 				}
+				status, managed := parseGSEProcResult(key, val)
+				inst.Spec.Status = status
+				inst.Spec.ManagedStatus = managed
+				updatedInsts = append(updatedInsts, inst)
 			}
-		}()
 
-		if len(updatedInsts) > 0 {
-			if err := s.dao.ProcessInstance().BatchUpdateWithTx(kit, tx, updatedInsts); err != nil {
-				logs.Errorf("biz %d: batch update instances failed, err=%v", s.bizID, err)
-				continue
+			if len(updatedInsts) == 0 {
+				return nil
 			}
-		}
 
-		// Update the process's process_state_synced_at timestamp to reflect when GSE sync completed
-		now := time.Now().UTC()
-		process.Spec.ProcessStateSyncedAt = &now
-		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, []*table.Process{process}); err != nil {
-			logs.Errorf("biz %d: update process sync time failed, err=%v", s.bizID, err)
-			continue
-		}
+			// 6. 记录 process 同步时间
+			now := time.Now().UTC()
+			process.Spec.ProcessStateSyncedAt = &now
 
-		if err := tx.Commit(); err != nil {
-			logs.Errorf("biz %d: commit tx failed: %v", s.bizID, err)
-			continue
-		}
-		committed = true
+			// 7. 汇总结果
+			resultCh <- &syncResult{
+				process:      process,
+				updatedInsts: updatedInsts,
+			}
+
+			return nil
+		})
 	}
+
+	// 等待并发完成并关闭 channel
+	go func() {
+		if err := g.Wait(); err != nil {
+			logs.Errorf("[SyncSingleBiz ERROR] biz %d: errgroup aborted, err=%v", s.bizID, err)
+		}
+		close(resultCh)
+	}()
+
+	var (
+		allInsts   []*table.ProcessInstance
+		allProcess []*table.Process
+	)
+
+	for r := range resultCh {
+		allInsts = append(allInsts, r.updatedInsts...)
+		allProcess = append(allProcess, r.process)
+	}
+
+	if len(allInsts) == 0 && len(allProcess) == 0 {
+		return nil
+	}
+
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if err := tx.Rollback(); err != nil {
+				logs.Errorf(
+					"[SyncSingleBiz ERROR] biz %d: rollback failed, err=%v",
+					s.bizID, err,
+				)
+			}
+		}
+	}()
+
+	// 1. 批量更新实例
+	if len(allInsts) > 0 {
+		if err := s.dao.ProcessInstance().BatchUpdateWithTx(kit, tx, allInsts); err != nil {
+			return err
+		}
+	}
+
+	// 2. Process 更新
+	if len(allProcess) > 0 {
+		if err := s.dao.Process().BatchUpdateWithTx(kit, tx, allProcess); err != nil {
+			logs.Errorf("[SyncSingleBiz ERROR] biz %d: update processes failed, err=%v", s.bizID, err)
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		logs.Errorf("[SyncSingleBiz ERROR] biz %d: commit failed, err=%v", s.bizID, err)
+		return err
+	}
+	committed = true
 
 	return nil
 }
@@ -163,20 +225,20 @@ func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 // - 成功：返回状态已更新的 insts（可能是部分）
 // - 失败：返回 insts + error
 func (s *syncGSEService) SyncSingleProcessStatus(ctx context.Context, process *table.Process, insts []*table.ProcessInstance) (
-	[]*table.ProcessInstance, error) {
+	*table.Process, []*table.ProcessInstance, error) {
 
 	req, instMap, err := buildGSEOperateReq(process, insts, uint32(s.bizID))
 	if err != nil {
 		logs.Errorf("[SyncSingleBiz ERROR] biz %d: build GSE operate request failed, processID=%d, err=%v",
 			s.bizID, process.ID, err)
-		return insts, err
+		return process, insts, err
 	}
 
 	proc, err := s.svc.OperateProcMulti(ctx, &gse.MultiProcOperateReq{
 		ProcOperateReq: req,
 	})
 	if err != nil {
-		return insts, fmt.Errorf(
+		return process, insts, fmt.Errorf(
 			"biz %d: operate process failed, processID=%d: %w",
 			s.bizID, process.ID, err,
 		)
@@ -187,7 +249,7 @@ func (s *syncGSEService) SyncSingleProcessStatus(ctx context.Context, process *t
 		ctx, s.svc, proc.TaskID, defaultMaxWait, DefaultInterval,
 	)
 	if err != nil {
-		return insts, fmt.Errorf(
+		return process, insts, fmt.Errorf(
 			"biz %d: wait gse result failed, taskID=%s: %w",
 			s.bizID, proc.TaskID, err,
 		)
@@ -209,10 +271,13 @@ func (s *syncGSEService) SyncSingleProcessStatus(ctx context.Context, process *t
 
 	if len(updatedInsts) == 0 {
 		logs.Warnf("[GSESync][WARN] biz=%d processID=%d no instances to update after gse result", s.bizID, process.ID)
-		return insts, nil
+		return process, insts, nil
 	}
+	now := time.Now().UTC()
 
-	return updatedInsts, nil
+	process.Spec.ProcessStateSyncedAt = &now
+
+	return process, updatedInsts, nil
 }
 
 func buildGSEOperateReq(process *table.Process, insts []*table.ProcessInstance, bizID uint32) (

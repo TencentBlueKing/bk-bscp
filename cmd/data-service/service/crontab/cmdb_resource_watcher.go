@@ -14,7 +14,6 @@ package crontab
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -25,11 +24,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	gsecomponents "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
-	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/internal/task"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -41,22 +40,24 @@ const (
 
 // NewCmdbResourceWatcher 监听cmdb资源变化
 func NewCmdbResourceWatcher(dao dao.Set, sd serviced.Service, cmdb bkcmdb.Service, gse *gsecomponents.Service,
-	svc *service.Service) *cmdbResourceWatcher {
+	svc *service.Service, taskManager *task.TaskManager) *cmdbResourceWatcher {
 	return &cmdbResourceWatcher{
-		dao:   dao,
-		state: sd,
-		cmdb:  cmdb,
-		svc:   svc,
-		gse:   gse,
+		dao:         dao,
+		state:       sd,
+		cmdb:        cmdb,
+		svc:         svc,
+		gse:         gse,
+		taskManager: taskManager,
 	}
 }
 
 type cmdbResourceWatcher struct {
-	dao   dao.Set
-	state serviced.Service
-	cmdb  bkcmdb.Service
-	gse   *gsecomponents.Service
-	svc   *service.Service
+	dao         dao.Set
+	state       serviced.Service
+	cmdb        bkcmdb.Service
+	gse         *gsecomponents.Service
+	svc         *service.Service
+	taskManager *task.TaskManager
 }
 
 func (c *cmdbResourceWatcher) Run() {
@@ -134,6 +135,8 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			return fmt.Errorf("request CMDB watch for %s failed: %w", resource, err)
 		}
 
+		processEvents := map[bkcmdb.EventType][]bkcmdb.BkEventObj{}
+
 		// 处理事件
 		for _, event := range resp.BkEvents {
 			logs.Infof("[CMDB Watch] resource=%s event=%s cursor=%s", event.BkResource, event.BkEventType, event.BkCursor)
@@ -152,8 +155,14 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 				break
 			}
 
-			// 正常事件: 处理 + 更新游标
-			c.handleEvent(kt, event)
+			switch resource {
+			case bkcmdb.ResourceProcess:
+				processEvents[event.BkEventType] = append(processEvents[event.BkEventType], event)
+			default:
+				// 非 process 资源即时处理
+				c.handleEvent(kt, event)
+			}
+
 			cursor = event.BkCursor
 			if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
 				Key:   cursorKey,
@@ -161,6 +170,18 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			}}); err != nil {
 				logs.Errorf("[CMDB][Watch] update cursor failed, resource=%v, err=%v", resource, err)
 			}
+		}
+
+		if events := processEvents[bkcmdb.EventCreate]; len(events) > 0 {
+			c.handleProcessCreateEventsBatch(kt, events)
+		}
+
+		if events := processEvents[bkcmdb.EventDelete]; len(events) > 0 {
+			c.handleProcessDeleteEventsBatch(kt, events)
+		}
+
+		if events := processEvents[bkcmdb.EventUpdate]; len(events) > 0 {
+			c.handleProcessUpdateEventsBatch(kt, events)
 		}
 
 		// 如果刚才的循环被空事件 break，就退出到下一个资源
@@ -174,6 +195,45 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 	return nil
 }
 
+func groupProcessEventsByBiz(events []bkcmdb.BkEventObj) map[int][]bkcmdb.ProcessInfo {
+	result := make(map[int][]bkcmdb.ProcessInfo)
+
+	for _, event := range events {
+		if len(event.BkDetail) == 0 {
+			logs.Warnf("[CMDB][ProcessSync] empty detail, resource=%s, event=%s",
+				event.BkResource.String(), event.BkEventType)
+			continue
+		}
+
+		var p bkcmdb.ProcessInfo
+		if err := event.Decode(&p); err != nil {
+			logs.Errorf(
+				"[CMDB][ProcessSync] decode process failed, err=%v, resource=%s, event=%s",
+				err, event.BkResource.String(), event.BkEventType,
+			)
+			continue
+		}
+
+		result[p.BkBizID] = append(result[p.BkBizID], p)
+	}
+
+	return result
+}
+
+func (c *cmdbResourceWatcher) dispatchProcessStateSyncTasks(res *cmdb.SyncProcessResult) {
+	for _, item := range res.Items {
+		bizID := item.Process.Attachment.BizID
+		taskObj, err := task.NewByTaskBuilder(
+			gse.NewProcessStateSyncTask(c.dao, bizID, item.Process, item.Instances),
+		)
+		if err != nil {
+			logs.Errorf("[CMDB][ProcessSync] create gse task failed, bizID=%d, err=%v", bizID, err)
+			continue
+		}
+		c.taskManager.Dispatch(taskObj)
+	}
+}
+
 // handleEvent 根据资源和事件类型分派处理
 func (c *cmdbResourceWatcher) handleEvent(kt *kit.Kit, resource bkcmdb.BkEventObj) {
 	switch resource.BkResource {
@@ -181,8 +241,6 @@ func (c *cmdbResourceWatcher) handleEvent(kt *kit.Kit, resource bkcmdb.BkEventOb
 		c.handleSetEvent(kt, resource)
 	case bkcmdb.ResourceModule:
 		c.handleModuleEvent(kt, resource)
-	case bkcmdb.ResourceProcess:
-		c.handleProcessEvent(kt, resource)
 	default:
 		logs.Warnf("unknown CMDB resource type: %s", resource)
 	}
@@ -297,218 +355,97 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 	}
 }
 
-// handleProcessEvent 处理 CMDB 进程事件（创建、更新、删除）并同步至本地数据库。
-// 1. 进程别名发生变化，需删除旧进程，新增新的进程
-// 2. 更新进程数量
-// 3. 更新源数据
-func (c *cmdbResourceWatcher) handleProcessEvent(kt *kit.Kit, resource bkcmdb.BkEventObj) {
-	p := new(bkcmdb.ProcessInfo)
-	if err := resource.Decode(p); err != nil {
-		logs.Errorf("[CMDB][ProcessSync] decode process failed, err=%v, resourceType=%s, EventType=%s",
-			err, resource.BkResource.String(), resource.BkEventType)
+func (c *cmdbResourceWatcher) handleProcessCreateEventsBatch(kt *kit.Kit, events []bkcmdb.BkEventObj) {
+	processesByBiz := groupProcessEventsByBiz(events)
+	if len(processesByBiz) == 0 {
 		return
 	}
 
-	bizID, svcID, procID := uint32(p.BkBizID), uint32(p.ServiceInstanceID), uint32(p.BkProcessID)
-	logPrefix := fmt.Sprintf("[CMDB][ProcessSync][biz=%d][svc=%d][proc=%d][event=%s]", bizID, svcID, procID, resource.BkEventType)
-
-	// 查询一下表，如果数据一致，直接跳过
-	procs, err := c.dao.Process().GetProcByBizScvProc(kt, bizID, svcID, procID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		logs.Errorf("%s list process failed: %v", logPrefix, err)
-		return
-	}
-
-	// 如果是空全量同步
-	if procs == nil {
-		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
-			logs.Errorf("sync cmdb data failed: %v", err)
+	for bizID, procs := range processesByBiz {
+		if len(procs) == 0 {
+			continue
 		}
-		return
-	}
 
-	switch resource.BkEventType {
-	case bkcmdb.EventCreate:
-		if err := c.svc.SynchronizeCmdbData(kt.Ctx, []int{p.BkBizID}); err != nil {
-			logs.Errorf("%s sync cmdb data failed: %v", logPrefix, err)
-			return
-		}
-	case bkcmdb.EventUpdate:
-		tx := c.dao.GenQuery().Begin()
-		err := c.handleProcessUpdate(kt, tx, p, procs)
+		svc := cmdb.NewSyncCMDBService(bizID, c.cmdb, c.dao)
+		res, err := svc.SyncByProcessIDs(kt.Ctx, procs)
 		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
-				return
-			}
-			logs.Errorf("[ERROR] sync process and instance data failed for biz %d: %v", bizID, err)
-			return
+			logs.Errorf("[CMDB][ProcessSync] create sync failed, bizID=%d, err=%v", bizID, err)
+			continue
 		}
 
-		if err := tx.Commit(); err != nil {
-			logs.Errorf("commit failed for biz %d: %v", bizID, err)
-			return
-		}
-
-	case bkcmdb.EventDelete:
-		tx := c.dao.GenQuery().Begin()
-		err := cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, []uint32{procs.ID})
-		if err != nil {
-			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
-				bizID, procs.ID, err)
-			if rbErr := tx.Rollback(); rbErr != nil {
-				logs.Errorf("[ERROR] rollback failed for bizID=%d: %v", bizID, rbErr)
-				return
-			}
-			return
-		}
-
-		if err := tx.Commit(); err != nil {
-			logs.Errorf("commit failed for biz %d: %v", bizID, err)
-			return
-		}
-
-	default:
-		logs.Warnf("%s unknown event: %s", logPrefix, resource.BkEventType)
+		c.dispatchProcessStateSyncTasks(res)
 	}
 }
 
-// handleProcessUpdate 处理进程的更新逻辑，包括别名变化、进程数变化、副表写入等。
-// nolint:funlen
-func (c *cmdbResourceWatcher) handleProcessUpdate(kt *kit.Kit, tx *gen.QueryTx,
-	p *bkcmdb.ProcessInfo, old *table.Process) error {
+func (c *cmdbResourceWatcher) collectDeleteProcessIDs(kt *kit.Kit, processesByBiz map[int][]bkcmdb.ProcessInfo) map[uint32][]uint32 {
 
-	info := table.ProcessInfo{
-		BkStartParamRegex: p.BkStartParamRegex,
-		WorkPath:          p.WorkPath,
-		PidFile:           p.PidFile,
-		User:              p.User,
-		ReloadCmd:         p.ReloadCmd,
-		RestartCmd:        p.RestartCmd,
-		StartCmd:          p.StartCmd,
-		StopCmd:           p.StopCmd,
-		FaceStopCmd:       p.FaceStopCmd,
-		Timeout:           p.Timeout,
-		StartCheckSecs:    p.BkStartCheckSecs,
-	}
-	sourceData, err := json.Marshal(info)
-	if err != nil {
-		logs.Errorf("biz %d: marshal process info failed, processID=%d, err=%v, data=%+v",
-			old.Attachment.BizID, old.ID, err, info)
-		return err
-	}
+	result := make(map[uint32][]uint32)
 
-	now := time.Now().UTC()
-	newSpec := *old.Spec
-	newP := &table.Process{
-		Attachment: old.Attachment,
-		Spec:       &newSpec,
-		Revision: &table.Revision{
-			CreatedAt: now,
-		},
-	}
-	newP.Attachment.CcProcessID = uint32(p.BkProcessID)
-	newP.Attachment.ServiceInstanceID = uint32(p.ServiceInstanceID)
-	newP.Spec.Alias = p.BkProcessName
-	newP.Spec.ProcNum = uint(p.ProcNum)
-	newP.Spec.SourceData = string(sourceData)
+	for bizID, procs := range processesByBiz {
+		bid := uint32(bizID)
 
-	// 处理进程变更，addP表示新增进程，updateP表示更新进程，delPID表示删除进程ID
-	// 别名变化会导致新增和删除进程，数量变化会导致新增或删除实例
-	addP, updateP, delPID, addInsts, delInstIDs, err := cmdb.BuildProcessChanges(kt, c.dao, tx, newP,
-		old, now, map[[2]int]int{}, map[[2]int]int{})
-	if err != nil {
-		logs.Errorf("biz %d: build process changes failed, processID=%d, err=%v, new=%+v, old=%+v",
-			old.Attachment.BizID, old.ID, err, newP, old)
-		return err
-	}
+		for _, proc := range procs {
+			dbProc, err := c.dao.Process().GetProcByBizScvProc(kt, bid, uint32(proc.ServiceInstanceID), uint32(proc.BkProcessID))
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					continue
+				}
+				logs.Errorf("[CMDB][ProcessSync] query process failed, biz=%d, err=%v", bizID, err)
+				continue
+			}
 
-	// 记录新增进程ID映射，方便后续回填实例的ProcessID
-	idMap := make(map[string]uint32)
-
-	// 1. 实例删除
-	if len(delInstIDs) > 0 {
-		if err := c.dao.ProcessInstance().BatchDeleteByIDsWithTx(kt, tx, delInstIDs); err != nil {
-			return fmt.Errorf(
-				"biz %d: delete process instances failed, ids=%v: %w",
-				old.Attachment.BizID, delInstIDs, err,
-			)
-		}
-	}
-	// 2. 新增进程
-	if addP != nil {
-		// 新增且扩容需要同步进程状态时间
-		if len(addInsts) > 0 {
-			addP.Spec.ProcessStateSyncedAt = &now
-		}
-		if err := c.dao.Process().BatchCreateWithTx(kt, tx, []*table.Process{addP}); err != nil {
-			logs.Errorf("[ProcessSync] biz=%d: insert process failed: name=%s, ccProcessID=%d, err=%v",
-				old.Attachment.BizID, addP.Spec.Alias, addP.Attachment.CcProcessID, err)
-			return fmt.Errorf("insert failed: %w", err)
-		}
-
-		key := fmt.Sprintf("%s-%d-%d", addP.Attachment.TenantID, addP.Attachment.BizID,
-			addP.Attachment.CcProcessID)
-		idMap[key] = addP.ID
-	}
-
-	// 3. 更新进程
-	if updateP != nil {
-		// 更新且扩容需要同步进程状态时间
-		if len(addInsts) > 0 {
-			updateP.Spec.ProcessStateSyncedAt = &now
-		}
-		if err := c.dao.Process().BatchUpdateWithTx(kt, tx, []*table.Process{updateP}); err != nil {
-			logs.Errorf("[ProcessSync] biz=%d: update process failed: id=%d, name=%s, err=%v",
-				old.Attachment.BizID, updateP.ID, updateP.Spec.Alias, err)
-			return fmt.Errorf("update failed: %w", err)
-		}
-
-		key := fmt.Sprintf("%s-%d-%d", updateP.Attachment.TenantID, updateP.Attachment.BizID,
-			updateP.Attachment.CcProcessID)
-		idMap[key] = updateP.ID
-	}
-
-	// 4. 删除进程（逻辑删除）
-	if delPID > 0 {
-		if err := c.dao.Process().
-			UpdateSyncStatusWithTx(kt, tx, string(table.Deleted), []uint32{delPID}); err != nil {
-			logs.Errorf("[ProcessSync] biz=%d: mark deleted failed: processID=%d, err=%v",
-				old.Attachment.BizID, delPID, err)
-			return fmt.Errorf("mark deleted failed: %w", err)
+			if dbProc.ID > 0 {
+				result[bid] = append(result[bid], dbProc.ID)
+			}
 		}
 	}
 
-	// 5. 回填 ProcessID 给新增实例
-	for _, inst := range addInsts {
-		key := fmt.Sprintf("%s-%d-%d",
-			inst.Attachment.TenantID,
-			inst.Attachment.BizID,
-			inst.Attachment.CcProcessID,
-		)
-		if pid, ok := idMap[key]; ok && pid != 0 {
-			inst.Attachment.ProcessID = pid
-		}
+	return result
+}
+
+func (c *cmdbResourceWatcher) handleProcessDeleteEventsBatch(kt *kit.Kit, events []bkcmdb.BkEventObj) {
+	processesByBiz := groupProcessEventsByBiz(events)
+	if len(processesByBiz) == 0 {
+		return
 	}
 
-	// 6. 插入新增实例扩容
-	if len(addInsts) > 0 {
-		// 更新gse状态可以忽略错误
-		g := gse.NewSyncGESService(int(newP.Attachment.BizID), c.gse, c.dao)
-		insts, err := g.SyncSingleProcessStatus(kt.Ctx, newP, addInsts)
+	processIDsByBiz := c.collectDeleteProcessIDs(kt, processesByBiz)
+
+	fmt.Println("processIDsByBiz:", processIDsByBiz)
+
+	for bizID, procIDs := range processIDsByBiz {
+		if len(procIDs) == 0 {
+			continue
+		}
+
+		tx := c.dao.GenQuery().Begin()
+		if err := cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, procIDs); err != nil {
+			_ = tx.Rollback()
+			logs.Errorf("[CMDB][ProcessSync] delete failed, bizID=%d, procIDs=%v, err=%v", bizID, procIDs, err)
+			continue
+		}
+
+		if err := tx.Commit(); err != nil {
+			logs.Errorf("[CMDB][ProcessSync] commit failed, bizID=%d, err=%v", bizID, err)
+		}
+	}
+}
+
+func (c *cmdbResourceWatcher) handleProcessUpdateEventsBatch(kt *kit.Kit, events []bkcmdb.BkEventObj) {
+	processesByBiz := groupProcessEventsByBiz(events)
+
+	for bizID, procs := range processesByBiz {
+		if len(procs) == 0 {
+			continue
+		}
+
+		svc := cmdb.NewSyncCMDBService(bizID, c.cmdb, c.dao)
+		res, err := svc.UpdateProcess(kt.Ctx, procs)
 		if err != nil {
-			logs.Errorf("[ProcessSync] biz=%d: sync gse process status failed: %v",
-				old.Attachment.BizID, err)
+			logs.Errorf("[CMDB][ProcessSync] update sync failed, bizID=%d, err=%v", bizID, err)
+			continue
 		}
-		if err := c.dao.ProcessInstance().BatchCreateWithTx(kt, tx, insts); err != nil {
-			return fmt.Errorf(
-				"biz %d: insert process instances failed, count=%d: %w",
-				old.Attachment.BizID, len(insts), err,
-			)
-		}
+
+		c.dispatchProcessStateSyncTasks(res)
 	}
-
-	logs.Infof("[ProcessSync] biz=%d: successfully handled process update", old.Attachment.BizID)
-
-	return nil
 }

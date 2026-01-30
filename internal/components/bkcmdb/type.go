@@ -475,18 +475,19 @@ type ServiceInstanceResp struct {
 
 // ServiceInstanceInfo 服务实例信息
 type ServiceInstanceInfo struct {
-	ID                int               `json:"id"`                  // 服务实例ID
-	Name              string            `json:"name"`                // 服务实例名称
-	BkBizID           int               `json:"bk_biz_id"`           // 业务id
-	BkModuleID        int               `json:"bk_module_id"`        // 模型id
-	ServiceTemplateID int               `json:"service_template_id"` // 服务模版ID
-	Labels            map[string]string `json:"labels"`              // 标签信息
-	BkHostID          int               `json:"bk_host_id"`          // 主机id
-	Creator           string            `json:"creator"`             // 本条数据创建者
-	Modifier          string            `json:"modifier"`            // 本条数据的最后修改人员
-	CreateTime        string            `json:"create_time"`         // 创建时间
-	LastTime          string            `json:"last_time"`           // 更新时间
-	BkSupplierAccount string            `json:"bk_supplier_account"` // 开发商账号
+	ID                int                   `json:"id"`                  // 服务实例ID
+	Name              string                `json:"name"`                // 服务实例名称
+	BkBizID           int                   `json:"bk_biz_id"`           // 业务id
+	BkModuleID        int                   `json:"bk_module_id"`        // 模型id
+	ServiceTemplateID int                   `json:"service_template_id"` // 服务模版ID
+	Labels            map[string]string     `json:"labels"`              // 标签信息
+	BkHostID          int                   `json:"bk_host_id"`          // 主机id
+	Creator           string                `json:"creator"`             // 本条数据创建者
+	Modifier          string                `json:"modifier"`            // 本条数据的最后修改人员
+	CreateTime        string                `json:"create_time"`         // 创建时间
+	LastTime          string                `json:"last_time"`           // 更新时间
+	BkSupplierAccount string                `json:"bk_supplier_account"` // 开发商账号
+	ProcessInstances  []ListProcessInstance `json:"process_instances"`   // 进程实例列表
 }
 
 // ModuleRequest 查询模块信息请求
@@ -951,4 +952,35 @@ func (r ResourceType) Validate() error {
 	default:
 		return errors.New("invalid CMDB resource type")
 	}
+}
+
+// ListServiceInstanceRequest 查询服务实例请求参数
+type ListServiceInstanceReq struct {
+	BizID              int64      `json:"bk_biz_id"`            // 业务 ID
+	Page               PageParam  `json:"page"`                 // 分页信息
+	ModuleID           int64      `json:"bk_module_id"`         // 模块 ID
+	HostIDs            []int64    `json:"bk_host_list"`         // 主机 ID 列表
+	ServiceInstanceIDs []int64    `json:"service_instance_ids"` // 服务实例 ID 列表
+	Selectors          []Selector `json:"selectors"`            // 查询条件选择器
+}
+
+// ListServiceInstanceResponse 查询服务实例响应
+type ListServiceInstanceResp struct {
+	Count int64                 `json:"count"` // 总数量
+	Info  []ServiceInstanceInfo `json:"info"`  // 服务实例列表
+}
+
+// ListHostByServiceTemplateRequest 按服务模板、模块维度查询主机列表请求
+type ListHostByServiceTemplateReq struct {
+	BizID              int64     `json:"bk_biz_id"`               // 业务 ID
+	ServiceTemplateIDs []int64   `json:"bk_service_template_ids"` // 服务模板 ID 列表
+	ModuleIDs          []int64   `json:"bk_module_ids"`           // 模块 ID 列表
+	Fields             []string  `json:"fields"`                  // 返回字段列表
+	Page               PageParam `json:"page"`                    // 分页参数
+}
+
+// ListHostByServiceTemplateResponse 查询主机列表响应
+type ListHostByServiceTemplateResp struct {
+	Count int        `json:"count"` // 总数
+	Info  []HostInfo `json:"info"`  // 返回结果
 }

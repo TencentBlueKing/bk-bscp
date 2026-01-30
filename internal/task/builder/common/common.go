@@ -30,6 +30,9 @@ const (
 
 	// SyncCMDBGSETaskType 同步cmdb和gse任务类型
 	SyncCMDBGSETaskType = "sync_cmdb_gse"
+
+	// ProcessStateSyncType 同步 gse 进程和托管状态
+	ProcessStateSyncType = "process_state_sync"
 )
 
 // 定义任务索引类型常量

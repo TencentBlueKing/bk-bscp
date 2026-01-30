@@ -86,6 +86,12 @@ type Service interface {
 	FindTopoBrief(ctx context.Context, bizID int) (*TopoBriefResp, error)
 	// SearchObjectAttr 查询对象属性
 	SearchObjectAttr(ctx context.Context, req SearchObjectAttrReq) ([]ObjectAttrInfo, error)
+	// ListServiceInstanceDetail 获取服务实例详细信息
+	ListServiceInstanceDetail(ctx context.Context, req *ListServiceInstanceReq) (
+		*ListServiceInstanceResp, error)
+	// FindHostByServiceTemplate 查询服务模板下的主机
+	FindHostByServiceTemplate(ctx context.Context, req *ListHostByServiceTemplateReq) (
+		*ListHostByServiceTemplateResp, error)
 }
 
 // New cmdb service

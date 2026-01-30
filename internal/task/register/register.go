@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
+	gseSync "github.com/TencentBlueKing/bk-bscp/internal/task/executor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/hello"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 )
@@ -44,6 +45,9 @@ func RegisterExecutor(
 	// 注册 同步cmdb和gse 执行器
 	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(bkcmdbService, gseService, dao)
 	cmdbGse.RegisterExecutor(cmdbGseExecutor)
+
+	gseSyncExecutor := gseSync.NewProcessStateSyncExecutor(bkcmdbService, gseService, dao)
+	gseSync.RegisterExecutor(gseSyncExecutor)
 
 	// 注册 配置生成执行器
 	configGenerateExecutor := config.NewGenerateConfigExecutor(dao, repo)

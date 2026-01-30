@@ -384,3 +384,29 @@ func safeTruncateUTF8(s string, maxBytes int) string {
 	}
 	return s[:lastValid]
 }
+
+func UniqInt64s(src []int64) []int64 {
+	set := make(map[int64]struct{}, len(src))
+	out := make([]int64, 0, len(src))
+	for _, v := range src {
+		if _, ok := set[v]; ok {
+			continue
+		}
+		set[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+func UniqInts(src []int) []int {
+	set := make(map[int]struct{}, len(src))
+	out := make([]int, 0, len(src))
+	for _, v := range src {
+		if _, ok := set[v]; ok {
+			continue
+		}
+		set[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
