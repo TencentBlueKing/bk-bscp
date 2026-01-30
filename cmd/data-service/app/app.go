@@ -35,6 +35,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service/crontab"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
@@ -225,12 +226,17 @@ func (ds *dataService) initTaskManager() error {
 	gseService := gse.NewService(cc.G().BaseConf.AppCode, cc.G().BaseConf.AppSecret, cc.G().GSE.Host)
 	ds.gseSvc = gseService
 
+	pm, err := pushmanager.New(cc.G().PushProvider)
+	if err != nil {
+		return err
+	}
+
 	bds, err := bedis.NewRedisCache(cc.DataService().Repo.RedisCluster)
 	if err != nil {
 		return fmt.Errorf("new redis cluster failed, err: %v", err)
 	}
 	redLock := lock.NewRedisLock(bds, 60)
-	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock)
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock, pm)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),

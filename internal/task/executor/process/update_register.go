@@ -77,6 +77,7 @@ type UpdateRegisterPayload struct {
 	BizID                     uint32
 	BatchID                   uint32 // 任务批次ID，用于 Callback 更新批次状态
 	OperateType               table.ProcessOperateType
+	OperateUser               string
 	ProcessID                 uint32
 	ProcessInstanceID         uint32
 	OriginalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
@@ -478,6 +479,14 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 					"bizID: %d, processInstanceID: %d", payload.BizID, payload.ProcessInstanceID)
 			}
 		}
+
+		// 统一推送事件
+		u.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+			BizID:    payload.BizID,
+			BatchID:  payload.BatchID,
+			Operator: payload.OperateUser,
+			CbErr:    cbErr,
+		})
 	}
 
 	if isSuccess {

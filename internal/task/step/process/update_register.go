@@ -30,6 +30,7 @@ func ValidateOperateStep(
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
 	operateType table.ProcessOperateType,
+	operateUser string,
 	enableProcessRestart bool,
 	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
@@ -49,6 +50,7 @@ func ValidateOperateStep(
 		ProcessID:                 processID,
 		ProcessInstanceID:         processInstanceID,
 		OperateType:               operateType,
+		OperateUser:               operateUser,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
 		EnableProcessRestart:      enableProcessRestart,

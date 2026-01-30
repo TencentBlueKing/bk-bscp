@@ -31,7 +31,7 @@ const (
 )
 
 // NewSyncCMDBExecutor new sync cmdb gse executor
-func NewSyncCmdbGseExecutor(cmdbSvc bkcmdb.Service, gseSvc *gseSvc.Service,
+func NewSyncCmdbGseExecutor(gseSvc *gseSvc.Service, cmdbSvc bkcmdb.Service,
 	dao dao.Set) *syncCmdbGseExecutor {
 	return &syncCmdbGseExecutor{
 		cmdbSvc: cmdbSvc,
