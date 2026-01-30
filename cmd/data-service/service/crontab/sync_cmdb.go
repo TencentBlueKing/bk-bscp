@@ -20,9 +20,11 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/service"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkuser"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
@@ -79,24 +81,60 @@ func (s *syncCMDB) Run() {
 					continue
 				}
 
-				start := time.Now()
-				rid := kt.Rid // 链路ID，便于排查
-				syncAt := start.Format(time.RFC3339)
-
-				if err := s.svc.SynchronizeCmdbData(kt.Ctx, []int{}); err != nil {
-					logs.Errorf(
-						"[syncCMDBAndGSE][error] rid=%s at=%s failed to synchronize cmdb/gse data: %v (type=%T)",
-						rid, syncAt, err, err,
-					)
-				} else {
-					cost := time.Since(start)
-					logs.Infof(
-						"[syncCMDBAndGSE][success] rid=%s at=%s cost=%s - synchronize cmdb/gse success",
-						rid, syncAt, cost,
-					)
-				}
-
+				s.syncCMDBByTenant(kt)
 			}
 		}
 	}()
+}
+
+// syncCMDBByTenant 按租户同步 CMDB 数据
+func (s *syncCMDB) syncCMDBByTenant(kt *kit.Kit) {
+	start := time.Now()
+	rid := kt.Rid
+	syncAt := start.Format(time.RFC3339)
+
+	// 多租户模式：获取所有启用的租户并逐个同步
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		tenants, err := bkuser.ListEnabledTenants(kt.Ctx)
+		if err != nil {
+			logs.Errorf("[syncCMDBAndGSE][error] rid=%s at=%s failed to list tenants: %v", rid, syncAt, err)
+			return
+		}
+
+		if len(tenants) == 0 {
+			logs.Warnf("[syncCMDBAndGSE][warn] rid=%s at=%s no enabled tenants found", rid, syncAt)
+			return
+		}
+
+		for _, tenant := range tenants {
+			kt.TenantID = tenant.ID
+			if err := s.svc.SynchronizeCmdbData(kt.Ctx, tenant.ID, []int{}); err != nil {
+				logs.Errorf(
+					"[syncCMDBAndGSE][error] rid=%s tenant=%s at=%s failed to synchronize cmdb/gse data: %v",
+					rid, tenant.ID, syncAt, err,
+				)
+				// 继续同步其他租户
+				continue
+			}
+			logs.Infof("[syncCMDBAndGSE][success] rid=%s tenant=%s at=%s - synchronize cmdb/gse success", rid, tenant.ID, syncAt)
+		}
+
+		cost := time.Since(start)
+		logs.Infof("[syncCMDBAndGSE][success] rid=%s at=%s cost=%s - all tenants sync completed", rid, syncAt, cost)
+		return
+	}
+
+	// 单租户模式：使用空租户ID
+	if err := s.svc.SynchronizeCmdbData(kt.Ctx, "", []int{}); err != nil {
+		logs.Errorf(
+			"[syncCMDBAndGSE][error] rid=%s at=%s failed to synchronize cmdb/gse data: %v (type=%T)",
+			rid, syncAt, err, err,
+		)
+	} else {
+		cost := time.Since(start)
+		logs.Infof(
+			"[syncCMDBAndGSE][success] rid=%s at=%s cost=%s - synchronize cmdb/gse success",
+			rid, syncAt, cost,
+		)
+	}
 }

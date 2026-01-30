@@ -21,6 +21,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
@@ -34,6 +35,13 @@ type UserInfo struct {
 	BkUsername  string `json:"bk_username"`
 	LoginName   string `json:"login_name"`
 	DispalyName string `json:"display_name"`
+}
+
+// TenantInfo 租户信息
+type TenantInfo struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
 // GetVirtualUsers 根据用户名列表获取虚拟用户信息
@@ -87,4 +95,40 @@ func GetTenantBKAdmin(ctx context.Context) (*UserInfo, error) {
 	tenantAdminCache[kit.TenantID] = &users[0]
 
 	return tenantAdminCache[kit.TenantID], nil
+}
+
+// ListEnabledTenants 获取所有启用状态的租户列表
+func ListEnabledTenants(ctx context.Context) ([]TenantInfo, error) {
+	url := fmt.Sprintf("%s/api/bk-user/prod/api/v3/open/tenants/", cc.G().Esb.APIGWHost())
+
+	authHeader := components.MakeBKAPIGWAuthHeader(cc.G().Esb.AppCode, cc.G().Esb.AppSecret)
+	resp, err := components.GetClient().R().
+		SetContext(ctx).
+		SetHeader("X-Bkapi-Authorization", authHeader).
+		SetHeader("X-Bk-Tenant-Id", constant.DefaultTenantID). // 使用 system 租户调用
+		Get(url)
+
+	if err != nil {
+		return nil, fmt.Errorf("request list tenants failed: %w", err)
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("http code %d != 200, body: %s", resp.StatusCode(), resp.Body())
+	}
+
+	allTenants := new([]TenantInfo)
+	bkResult := &components.BKResult{Data: allTenants}
+	if err := json.Unmarshal(resp.Body(), bkResult); err != nil {
+		return nil, fmt.Errorf("unmarshal response failed: %w", err)
+	}
+
+	// 只返回 status=enabled 的租户
+	enabledTenants := make([]TenantInfo, 0)
+	for _, t := range *allTenants {
+		if t.Status == "enabled" {
+			enabledTenants = append(enabledTenants, t)
+		}
+	}
+
+	return enabledTenants, nil
 }

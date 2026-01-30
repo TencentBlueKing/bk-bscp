@@ -23,8 +23,8 @@ import (
 )
 
 // SyncGseStatus 同步gse状态
-func SyncGseStatus(bizID uint32, opType gse.OpType) *types.Step {
-	logs.V(3).Infof("Start synchronizing GSE, bizID=%d, opType=%v", bizID, opType)
+func SyncGseStatus(tenantID string, bizID uint32, opType gse.OpType) *types.Step {
+	logs.V(3).Infof("Start synchronizing GSE, tenantID=%s, bizID=%d, opType=%v", tenantID, bizID, opType)
 
 	syncCmdb := types.NewStep("sync-gse-task", cmdbGse.SyncGSE.String()).
 		SetAlias("sync-gse").
@@ -32,8 +32,9 @@ func SyncGseStatus(bizID uint32, opType gse.OpType) *types.Step {
 		SetMaxTries(process.MaxTries)
 
 	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncGSEPayload{
-		OpType: opType,
-		BizID:  bizID,
+		TenantID: tenantID,
+		BizID:    bizID,
+		OpType:   opType,
 	}))
 
 	return syncCmdb
