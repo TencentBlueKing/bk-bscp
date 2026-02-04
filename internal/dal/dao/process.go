@@ -62,6 +62,8 @@ type Process interface {
 	GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error)
 	// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
 	GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
+	// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
+	ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32, alias string) ([]uint32, error)
 }
 
 var _ Process = new(processDao)
@@ -453,4 +455,21 @@ func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRang
 	conds = append(conds, m.CcSyncStatus.Neq(table.Deleted.String()))
 
 	return q.Where(conds...).Find()
+}
+
+// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
+func (dao *processDao) ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID,
+	moduleID uint32, alias string) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.ModuleID.Eq(moduleID), m.Alias_.Eq(alias),
+			m.CcSyncStatus.Neq(table.Deleted.String())).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

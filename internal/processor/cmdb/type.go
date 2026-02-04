@@ -13,7 +13,14 @@
 // Package cmdb provides cmdb client.
 package cmdb
 
-import "github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+import (
+	"time"
+
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+)
 
 // Set 集群
 type Set struct {
@@ -77,4 +84,65 @@ type ProcessWithInstances struct {
 // SyncProcessResult 表示一次进程同步任务的汇总结果
 type SyncProcessResult struct {
 	Items []*ProcessWithInstances
+}
+
+// ModuleAliasKey 用于 moduleCounter 的 key，表示 (moduleID, alias) 组合
+type ModuleAliasKey struct {
+	ModuleID int
+	Alias    string
+}
+
+// HostProcessKey 用于 HostCounter 的 key，表示 (ccProcessID, hostID) 组合
+type HostProcessKey struct {
+	CcProcessID int
+	HostID      int
+}
+
+// SyncContext 同步过程中的共享上下文
+type SyncContext struct {
+	Kit           *kit.Kit
+	Dao           dao.Set
+	Tx            *gen.QueryTx
+	Now           time.Time
+	HostCounter   map[HostProcessKey]int // key: HostProcessKey{ccProcessID, hostID}
+	ModuleCounter map[ModuleAliasKey]int // key: ModuleAliasKey{moduleID, alias}
+}
+
+// BuildInstancesParams buildInstances 函数的参数
+type BuildInstancesParams struct {
+	BizID            uint32
+	HostID           uint32
+	ModuleID         uint32
+	CcProcessID      uint32
+	ProcNum          int
+	ExistCount       int
+	MaxModuleInstSeq int
+	MaxHostInstSeq   int
+	Alias            string
+}
+
+// ReconcileInstancesParams reconcileProcessInstances 函数的参数
+type ReconcileInstancesParams struct {
+	BizID       uint32
+	ProcessID   uint32
+	HostID      uint32
+	ModuleID    uint32
+	CcProcessID uint32
+	Alias       string
+	OldNum      int
+	NewNum      int
+}
+
+// BuildProcessChangesParams BuildProcessChanges 函数的参数
+type BuildProcessChangesParams struct {
+	NewProcess *table.Process
+	OldProcess *table.Process
+}
+
+// ReorderParams reorderModuleInstSeq 函数的参数
+type ReorderParams struct {
+	BizID      uint32
+	ModuleID   uint32
+	Alias      string
+	ExcludeIDs []uint32
 }

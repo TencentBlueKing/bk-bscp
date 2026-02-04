@@ -356,6 +356,7 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 }
 
 func (c *cmdbResourceWatcher) handleProcessCreateEventsBatch(kt *kit.Kit, events []bkcmdb.BkEventObj) {
+	logs.Infof("[ProcessSync] create triggered, events=%v", events)
 	processesByBiz := groupProcessEventsByBiz(events)
 	if len(processesByBiz) == 0 {
 		return
@@ -432,6 +433,7 @@ func (c *cmdbResourceWatcher) handleProcessDeleteEventsBatch(kt *kit.Kit, events
 }
 
 func (c *cmdbResourceWatcher) handleProcessUpdateEventsBatch(kt *kit.Kit, events []bkcmdb.BkEventObj) {
+	logs.Infof("[UpdateProcess] triggered, events=%v", events)
 	processesByBiz := groupProcessEventsByBiz(events)
 
 	for bizID, procs := range processesByBiz {

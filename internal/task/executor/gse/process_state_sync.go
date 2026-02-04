@@ -76,10 +76,20 @@ func (p *processStateSyncExecutor) ProcessStateSync(c *istep.Context) error {
 		}
 	}()
 
-	// 1. 批量更新实例
+	// 1. 批量更新实例状态字段（只更新 status, managed_status, status_updated_at，避免覆盖 ModuleInstSeq）
 	if len(procInsts) > 0 {
-		if err := p.dao.ProcessInstance().BatchUpdateWithTx(kit.New(), tx, procInsts); err != nil {
-			return err
+		kt := kit.New()
+		for _, inst := range procInsts {
+			if err := p.dao.ProcessInstance().UpdateSelectedFieldsWithTx(kt, tx, inst.Attachment.BizID,
+				map[string]any{
+					"status":            inst.Spec.Status,
+					"managed_status":    inst.Spec.ManagedStatus,
+					"status_updated_at": inst.Spec.StatusUpdatedAt,
+				},
+				p.dao.GenQuery().ProcessInstance.ID.Eq(inst.ID),
+			); err != nil {
+				return err
+			}
 		}
 	}
 

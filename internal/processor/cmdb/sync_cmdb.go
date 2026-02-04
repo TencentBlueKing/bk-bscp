@@ -101,6 +101,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
 		}
 	}
+	// Todo: 这里获取的是集群下的主机？另外为什么是通过模版来获取？
 	listHosts, err := s.fetchAllHostsBySetTemplate(ctx, setTemplateIDs)
 	if err != nil {
 		return fmt.Errorf(
@@ -843,11 +844,12 @@ func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([
 // 返回值：
 //   - ProcessDiff：包含进程与实例的所有变更集合
 //   - error：构建 diff 过程中任一阶段失败
-func diffProcesses(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, dbProcesses []*table.Process,
+func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 	newProcesses []*table.Process) (*ProcessDiff, error) {
 
-	now := time.Now().UTC()
-	diff := &ProcessDiff{}
+	diff := &ProcessDiff{
+		ModulesToReorder: make(map[ModuleAliasKey]struct{}),
+	}
 
 	// 1. 构建进程索引（以 CcProcessID 为主键）
 	// dbProcesses 索引：cc_process_id -> process
@@ -862,45 +864,56 @@ func diffProcesses(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, dbProcesses []*ta
 		newProcessByCCID[p.Attachment.CcProcessID] = p
 	}
 
-	// 2. 实例序列号计数器
-	// key: [bizID, hostID] / [bizID, moduleID]
-	// value: 当前已分配的实例序号
-	hostInstanceSeq := make(map[[2]int]int)
-	moduleInstanceSeq := make(map[[2]int]int)
-
-	// 3. 遍历 newProcesses，计算新增 / 更新 / 实例变更
+	// 2. 遍历 newProcesses，计算新增 / 更新 / 实例变更
 	for _, newP := range newProcesses {
 		oldP, exists := dbProcessByCCID[newP.Attachment.CcProcessID]
 
-		// 3.1 新增进程
+		// 2.1 新增进程
 		if !exists {
-			newP.Revision = &table.Revision{CreatedAt: now}
+			newP.Revision = &table.Revision{CreatedAt: ctx.Now}
 			diff.ToAddProcesses = append(diff.ToAddProcesses, newP)
 
+			// 查询同模块同别名的已有进程，获取最大 ModuleInstSeq
+			maxModuleInstSeq := 0
+			sameAliasProcessIDs, err := ctx.Dao.Process().ListByModuleIDAndAliasWithTx(
+				ctx.Kit, ctx.Tx, newP.Attachment.BizID, newP.Attachment.ModuleID, newP.Spec.Alias)
+			if err != nil {
+				logs.Errorf("[ProcessDiff][ListByModuleIDAndAlias] bizID=%d moduleID=%d alias=%s failed: %v",
+					newP.Attachment.BizID, newP.Attachment.ModuleID, newP.Spec.Alias, err)
+				return nil, err
+			}
+			if len(sameAliasProcessIDs) > 0 {
+				maxModuleInstSeq, err = ctx.Dao.ProcessInstance().GetMaxModuleInstSeqByProcessIDsWithTx(
+					ctx.Kit, ctx.Tx, newP.Attachment.BizID, sameAliasProcessIDs)
+				if err != nil {
+					logs.Errorf("[ProcessDiff][GetMaxModuleInstSeq] bizID=%d processIDs=%v failed: %v",
+						newP.Attachment.BizID, sameAliasProcessIDs, err)
+					return nil, err
+				}
+			}
+
 			// 为新增进程构建初始实例
-			insts := buildInstances(
-				int(newP.Attachment.BizID),
-				int(newP.Attachment.HostID),
-				int(newP.Attachment.ModuleID),
-				int(newP.Attachment.CcProcessID),
-				int(newP.Spec.ProcNum),
-				0, 0, 0,
-				now,
-				hostInstanceSeq,
-				moduleInstanceSeq,
-			)
+			insts := buildInstances(ctx, &BuildInstancesParams{
+				BizID:            newP.Attachment.BizID,
+				HostID:           newP.Attachment.HostID,
+				ModuleID:         newP.Attachment.ModuleID,
+				CcProcessID:      newP.Attachment.CcProcessID,
+				ProcNum:          int(newP.Spec.ProcNum),
+				ExistCount:       0,
+				MaxModuleInstSeq: maxModuleInstSeq,
+				MaxHostInstSeq:   0,
+				Alias:            newP.Spec.Alias,
+			})
 
 			diff.ToAddInstances = append(diff.ToAddInstances, insts...)
 			continue
 		}
 
-		// 3.2 已存在进程，计算变更
-		addP, updateP, delProcessID, addInsts, delInstIDs, err :=
-			BuildProcessChanges(
-				kit, dao, tx,
-				newP, oldP, now,
-				hostInstanceSeq, moduleInstanceSeq,
-			)
+		// 2.2 已存在进程，计算变更
+		changeResult, err := BuildProcessChanges(ctx, &BuildProcessChangesParams{
+			NewProcess: newP,
+			OldProcess: oldP,
+		})
 		if err != nil {
 			logs.Errorf(
 				"[ProcessDiff][BuildProcessChanges] ccProcessID=%d processID=%d failed: %v",
@@ -911,21 +924,26 @@ func diffProcesses(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, dbProcesses []*ta
 			return nil, err
 		}
 
-		if addP != nil {
-			diff.ToAddProcesses = append(diff.ToAddProcesses, addP)
+		if changeResult.ToAddProcess != nil {
+			diff.ToAddProcesses = append(diff.ToAddProcesses, changeResult.ToAddProcess)
 		}
-		if updateP != nil {
-			diff.ToUpdateProcesses = append(diff.ToUpdateProcesses, updateP)
+		if changeResult.ToUpdateProcess != nil {
+			diff.ToUpdateProcesses = append(diff.ToUpdateProcesses, changeResult.ToUpdateProcess)
 		}
-		if delProcessID != 0 {
-			diff.ToDeleteProcessIDs = append(diff.ToDeleteProcessIDs, delProcessID)
+		if changeResult.ToDeleteProcessID != 0 {
+			diff.ToDeleteProcessIDs = append(diff.ToDeleteProcessIDs, changeResult.ToDeleteProcessID)
 		}
 
-		diff.ToAddInstances = append(diff.ToAddInstances, addInsts...)
-		diff.ToDeleteInstanceIDs = append(diff.ToDeleteInstanceIDs, delInstIDs...)
+		diff.ToAddInstances = append(diff.ToAddInstances, changeResult.ToAddInstances...)
+		diff.ToDeleteInstanceIDs = append(diff.ToDeleteInstanceIDs, changeResult.ToDeleteInstanceIDs...)
+
+		// 收集需要重新编排的模块
+		if changeResult.ModuleToReorder != nil {
+			diff.ModulesToReorder[*changeResult.ModuleToReorder] = struct{}{}
+		}
 	}
 
-	// 4. db 中存在，但 new 中不存在 → 删除进程
+	// 3. db 中存在，但 new 中不存在 → 删除进程
 	for _, oldP := range dbProcesses {
 		if _, ok := newProcessByCCID[oldP.Attachment.CcProcessID]; !ok {
 			diff.ToDeleteProcessIDs = append(diff.ToDeleteProcessIDs, oldP.ID)
@@ -956,20 +974,20 @@ type InstanceReconcileResult struct {
 	ToDelete []uint32
 }
 
-func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID, processID, hostID, moduleID, ccProcessID uint32,
-	oldNum, newNum int, now time.Time, hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*InstanceReconcileResult, error) {
-
+// reconcileProcessInstances 处理进程实例扩缩容
+func reconcileProcessInstances(ctx *SyncContext, params *ReconcileInstancesParams) (*InstanceReconcileResult, error) {
 	res := &InstanceReconcileResult{}
 
 	// 数量一致不做处理
-	if newNum == oldNum {
+	if params.NewNum == params.OldNum {
 		return res, nil
 	}
 
 	// 缩容
-	if newNum < oldNum {
-		needDelete := oldNum - newNum
-		insts, err := dao.ProcessInstance().ListByProcessIDOrderBySeqDescTx(kit, tx, bizID, processID, needDelete)
+	if params.NewNum < params.OldNum {
+		needDelete := params.OldNum - params.NewNum
+		insts, err := ctx.Dao.ProcessInstance().ListByProcessIDOrderBySeqDescTx(
+			ctx.Kit, ctx.Tx, params.BizID, params.ProcessID, needDelete)
 		if err != nil {
 			return nil, err
 		}
@@ -977,60 +995,123 @@ func reconcileProcessInstances(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID
 		for _, inst := range insts {
 			res.ToDelete = append(res.ToDelete, inst.ID)
 		}
-
-		return res, nil
 	}
 
-	// 扩容
-	maxModuleSeq, err := dao.ProcessInstance().GetMaxModuleInstSeqTx(kit, tx, bizID, []uint32{processID})
-	if err != nil {
-		return nil, err
-	}
+	// 扩容：查询同模块同别名的最大序列号
+	if params.NewNum > params.OldNum {
+		// 获取同模块同别名的所有进程ID
+		sameAliasProcessIDs, err := ctx.Dao.Process().ListByModuleIDAndAliasWithTx(
+			ctx.Kit, ctx.Tx, params.BizID, params.ModuleID, params.Alias)
+		if err != nil {
+			return nil, err
+		}
 
-	maxHostSeq, err := dao.ProcessInstance().GetMaxHostInstSeqTx(kit, tx, bizID, []uint32{processID})
-	if err != nil {
-		return nil, err
-	}
+		maxModuleSeq := 0
+		if len(sameAliasProcessIDs) > 0 {
+			maxModuleSeq, err = ctx.Dao.ProcessInstance().GetMaxModuleInstSeqByProcessIDsWithTx(
+				ctx.Kit, ctx.Tx, params.BizID, sameAliasProcessIDs)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	res.ToAdd = buildInstances(
-		int(bizID),
-		int(hostID),
-		int(moduleID),
-		int(ccProcessID),
-		newNum,
-		oldNum,
-		maxModuleSeq,
-		maxHostSeq,
-		now,
-		hostCounter,
-		moduleCounter,
-	)
+		maxHostSeq, err := ctx.Dao.ProcessInstance().GetMaxHostInstSeqTx(
+			ctx.Kit, ctx.Tx, params.BizID, []uint32{params.ProcessID})
+		if err != nil {
+			return nil, err
+		}
+
+		res.ToAdd = buildInstances(ctx, &BuildInstancesParams{
+			BizID:            params.BizID,
+			HostID:           params.HostID,
+			ModuleID:         params.ModuleID,
+			CcProcessID:      params.CcProcessID,
+			ProcNum:          params.NewNum,
+			ExistCount:       params.OldNum,
+			MaxModuleInstSeq: maxModuleSeq,
+			MaxHostInstSeq:   maxHostSeq,
+			Alias:            params.Alias,
+		})
+	}
 
 	return res, nil
+}
+
+// reorderModuleInstSeq 重新编排同模块同别名的所有实例的 ModuleInstSeq（从1开始递增）
+func reorderModuleInstSeq(ctx *SyncContext, params *ReorderParams) ([]*table.ProcessInstance, error) {
+	// 1. 查询同模块同别名的所有进程ID
+	sameAliasProcessIDs, err := ctx.Dao.Process().ListByModuleIDAndAliasWithTx(
+		ctx.Kit, ctx.Tx, params.BizID, params.ModuleID, params.Alias)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sameAliasProcessIDs) == 0 {
+		return nil, nil
+	}
+
+	// 2. 查询这些进程的所有实例，按 ProcessID + HostInstSeq 排序
+	allInstances, err := ctx.Dao.ProcessInstance().ListByProcessIDsWithTx(
+		ctx.Kit, ctx.Tx, params.BizID, sameAliasProcessIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(allInstances) == 0 {
+		return nil, nil
+	}
+
+	// 构建排除ID集合
+	excludeSet := make(map[uint32]struct{}, len(params.ExcludeIDs))
+	for _, id := range params.ExcludeIDs {
+		excludeSet[id] = struct{}{}
+	}
+
+	// 3. 重新编排 ModuleInstSeq（从1开始递增），跳过即将删除的实例
+	toUpdate := make([]*table.ProcessInstance, 0)
+	seq := 0
+	for _, inst := range allInstances {
+		// 跳过即将删除的实例
+		if _, excluded := excludeSet[inst.ID]; excluded {
+			continue
+		}
+
+		seq++
+		if int(inst.Spec.ModuleInstSeq) != seq {
+			inst.Spec.ModuleInstSeq = uint32(seq)
+			toUpdate = append(toUpdate, inst)
+		}
+	}
+
+	return toUpdate, nil
+}
+
+// BuildProcessChangesResult 包含 BuildProcessChanges 的返回结果
+type BuildProcessChangesResult struct {
+	ToAddProcess        *table.Process
+	ToUpdateProcess     *table.Process
+	ToDeleteProcessID   uint32
+	ToAddInstances      []*table.ProcessInstance
+	ToDeleteInstanceIDs []uint32
+	// 需要重新编排的模块 (moduleID, alias)
+	ModuleToReorder *ModuleAliasKey
 }
 
 // BuildProcessChanges 根据 CMDB 新旧进程数据，计算进程及其实例的变更结果：
 // - 是否需要新增进程
 // - 是否需要更新进程
 // - 是否需要删除旧进程
-// - 是否需要新增/删除进程实例
-//
-// 返回值含义：
-// 1. toAddProcess        : 需要新增的进程（可能为 nil）
-// 2. toUpdateProcess     : 需要更新的进程（可能为 nil）
-// 3. toDeleteProcessID   : 需要删除的旧进程 ID（0 表示不删除）
-// 4. toAddInstances      : 需要新增的进程实例
-// 5. toDeleteInstanceIDs : 需要删除的进程实例 ID 列表
-// 6. error
+// - 是否需要新增/删除/更新进程实例
 //
 // nolint: funlen
-func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table.Process, oldP *table.Process, now time.Time,
-	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) (*table.Process, *table.Process, uint32,
-	[]*table.ProcessInstance, []uint32, error) {
+func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*BuildProcessChangesResult, error) {
+	newP := params.NewProcess
+	oldP := params.OldProcess
+	result := &BuildProcessChangesResult{}
 
 	equal, err := compareProcessInfo(newP.Spec.SourceData, oldP.Spec.SourceData)
 	if err != nil {
-		return nil, nil, 0, nil, nil, err
+		return nil, err
 	}
 
 	nameChanged := newP.Spec.Alias != oldP.Spec.Alias
@@ -1038,17 +1119,13 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
 
 	if !nameChanged && !infoChanged && !numChanged {
-		return nil, nil, 0, nil, nil, nil
+		return result, nil
 	}
 
 	// 是否安全
-	safe, err := isSafeToUpdateProcess(
-		kit, dao, tx,
-		oldP.Attachment.BizID,
-		oldP.ID,
-	)
+	safe, err := isSafeToUpdateProcess(ctx.Kit, ctx.Dao, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
 	if err != nil {
-		return nil, nil, 0, nil, nil, err
+		return nil, err
 	}
 
 	newProcNum := int(newP.Spec.ProcNum)
@@ -1056,10 +1133,10 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 	// 1. 别名变更：检查是否有同别名的 deleted 记录可以复用
 	if nameChanged {
 		// 查找同 CcProcessID + 同新别名
-		reusableProc, err := dao.Process().GetByCcProcessIDAndAliasTx(
-			kit, tx, oldP.Attachment.BizID, oldP.Attachment.CcProcessID, newP.Spec.Alias)
+		reusableProc, err := ctx.Dao.Process().GetByCcProcessIDAndAliasTx(
+			ctx.Kit, ctx.Tx, oldP.Attachment.BizID, oldP.Attachment.CcProcessID, newP.Spec.Alias)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, 0, nil, nil, err
+			return nil, err
 		}
 
 		// 恢复 deleted 记录为 synced，并更新其元数据
@@ -1069,34 +1146,43 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 			reusableProc.Spec.CcSyncStatus = table.Synced
 			reusableProc.Spec.ProcNum = newP.Spec.ProcNum
 			reusableProc.Attachment = newP.Attachment
-			reusableProc.Revision = &table.Revision{UpdatedAt: now}
+			reusableProc.Revision = &table.Revision{UpdatedAt: ctx.Now}
 
 			// 查询恢复进程的现有实例
-			existingInsts, err := dao.ProcessInstance().ListByProcessIDTx(kit, tx, reusableProc.Attachment.BizID, reusableProc.ID)
+			existingInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(
+				ctx.Kit, ctx.Tx, reusableProc.Attachment.BizID, reusableProc.ID)
 			if err != nil {
-				return nil, nil, 0, nil, nil, err
+				return nil, err
 			}
 
 			// 根据 ProcNum 扩缩容实例
-			res, err := reconcileProcessInstances(
-				kit, dao, tx,
-				reusableProc.Attachment.BizID,
-				reusableProc.ID,
-				reusableProc.Attachment.HostID,
-				reusableProc.Attachment.ModuleID,
-				reusableProc.Attachment.CcProcessID,
-				len(existingInsts),
-				newProcNum,
-				now,
-				hostCounter,
-				moduleCounter,
-			)
+			res, err := reconcileProcessInstances(ctx, &ReconcileInstancesParams{
+				BizID:       reusableProc.Attachment.BizID,
+				ProcessID:   reusableProc.ID,
+				HostID:      reusableProc.Attachment.HostID,
+				ModuleID:    reusableProc.Attachment.ModuleID,
+				CcProcessID: reusableProc.Attachment.CcProcessID,
+				Alias:       newP.Spec.Alias,
+				OldNum:      len(existingInsts),
+				NewNum:      newProcNum,
+			})
 			if err != nil {
-				return nil, nil, 0, nil, nil, err
+				return nil, err
 			}
 
 			// 返回：恢复的进程作为更新，旧进程标记为删除
-			return nil, reusableProc, oldP.ID, res.ToAdd, res.ToDelete, nil
+			result.ToUpdateProcess = reusableProc
+			result.ToDeleteProcessID = oldP.ID
+			result.ToAddInstances = res.ToAdd
+			result.ToDeleteInstanceIDs = res.ToDelete
+			// 只有实际发生扩缩容时才需要重新排序
+			if len(res.ToAdd) > 0 || len(res.ToDelete) > 0 {
+				result.ModuleToReorder = &ModuleAliasKey{
+					ModuleID: int(reusableProc.Attachment.ModuleID),
+					Alias:    newP.Spec.Alias,
+				}
+			}
+			return result, nil
 		}
 
 		// 没有可复用的 deleted 记录且不安全：创建新进程，标记旧进程为删除
@@ -1107,20 +1193,40 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 			toAdd := &table.Process{
 				Attachment: newP.Attachment,
 				Spec:       newP.Spec,
-				Revision:   &table.Revision{CreatedAt: now},
+				Revision:   &table.Revision{CreatedAt: ctx.Now},
 			}
 
-			insts := buildInstances(
-				int(toAdd.Attachment.BizID),
-				int(toAdd.Attachment.HostID),
-				int(toAdd.Attachment.ModuleID),
-				int(toAdd.Attachment.CcProcessID),
-				newProcNum,
-				0, 0, 0,
-				now, hostCounter, moduleCounter,
-			)
+			// 查询同模块同别名的最大 ModuleInstSeq
+			maxModuleInstSeq := 0
+			sameAliasProcessIDs, err := ctx.Dao.Process().ListByModuleIDAndAliasWithTx(
+				ctx.Kit, ctx.Tx, toAdd.Attachment.BizID, toAdd.Attachment.ModuleID, newP.Spec.Alias)
+			if err != nil {
+				return nil, err
+			}
+			if len(sameAliasProcessIDs) > 0 {
+				maxModuleInstSeq, err = ctx.Dao.ProcessInstance().GetMaxModuleInstSeqByProcessIDsWithTx(
+					ctx.Kit, ctx.Tx, toAdd.Attachment.BizID, sameAliasProcessIDs)
+				if err != nil {
+					return nil, err
+				}
+			}
 
-			return toAdd, nil, oldP.ID, insts, nil, nil
+			insts := buildInstances(ctx, &BuildInstancesParams{
+				BizID:            toAdd.Attachment.BizID,
+				HostID:           toAdd.Attachment.HostID,
+				ModuleID:         toAdd.Attachment.ModuleID,
+				CcProcessID:      toAdd.Attachment.CcProcessID,
+				ProcNum:          newProcNum,
+				ExistCount:       0,
+				MaxModuleInstSeq: maxModuleInstSeq,
+				MaxHostInstSeq:   0,
+				Alias:            newP.Spec.Alias,
+			})
+
+			result.ToAddProcess = toAdd
+			result.ToDeleteProcessID = oldP.ID
+			result.ToAddInstances = insts
+			return result, nil
 		}
 
 		// 安全且没有可复用记录：原地更新别名
@@ -1136,113 +1242,116 @@ func BuildProcessChanges(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, newP *table
 			oldP.Spec.CcSyncStatus = table.Updated
 		}
 	}
+
+	// 实例调整逻辑
 	if numChanged {
+		// 更新进程的 ProcNum 字段
 		oldP.Spec.ProcNum = newP.Spec.ProcNum
+
+		// 真实实例数
+		allInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(ctx.Kit, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := reconcileProcessInstances(ctx, &ReconcileInstancesParams{
+			BizID:       oldP.Attachment.BizID,
+			ProcessID:   oldP.ID,
+			HostID:      oldP.Attachment.HostID,
+			ModuleID:    oldP.Attachment.ModuleID,
+			CcProcessID: oldP.Attachment.CcProcessID,
+			Alias:       oldP.Spec.Alias,
+			OldNum:      len(allInsts),
+			NewNum:      newProcNum,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		result.ToAddInstances = res.ToAdd
+		result.ToDeleteInstanceIDs = res.ToDelete
+
+		// 不安全场景：不允许缩容
+		if newProcNum < len(allInsts) && !safe {
+			result.ToDeleteInstanceIDs = nil
+		}
+
+		// 只有实际发生扩缩容时才需要重新排序
+		if len(result.ToAddInstances) > 0 || len(result.ToDeleteInstanceIDs) > 0 {
+			result.ModuleToReorder = &ModuleAliasKey{
+				ModuleID: int(oldP.Attachment.ModuleID),
+				Alias:    oldP.Spec.Alias,
+			}
+		}
 	}
 
 	toUpdate := &table.Process{
 		ID:         oldP.ID,
 		Attachment: oldP.Attachment,
 		Spec:       oldP.Spec,
-		Revision:   &table.Revision{UpdatedAt: now},
+		Revision:   &table.Revision{UpdatedAt: ctx.Now},
 	}
 
-	// 3. 实例调整逻辑
-	insts := make([]*table.ProcessInstance, 0)
-	deleteInstanceIDs := []uint32{}
-	// 实例只在 安全且扩容 时调整
-	if numChanged {
-		// 真实实例数
-		allInsts, err := dao.ProcessInstance().ListByProcessIDTx(kit, tx, oldP.Attachment.BizID, oldP.ID)
-		if err != nil {
-			return nil, nil, 0, nil, nil, err
-		}
-
-		res, err := reconcileProcessInstances(
-			kit, dao, tx,
-			oldP.Attachment.BizID,
-			oldP.ID,
-			oldP.Attachment.HostID,
-			oldP.Attachment.ModuleID,
-			oldP.Attachment.CcProcessID,
-			len(allInsts),
-			newProcNum, // 用新值
-			now,
-			hostCounter,
-			moduleCounter,
-		)
-		if err != nil {
-			return nil, nil, 0, nil, nil, err
-		}
-
-		insts = res.ToAdd
-		deleteInstanceIDs = res.ToDelete
-
-		// 不安全场景：不允许缩容
-		if newProcNum < len(allInsts) && !safe {
-			deleteInstanceIDs = nil
-		}
-	}
-
-	return nil, toUpdate, 0, insts, deleteInstanceIDs, nil
+	result.ToUpdateProcess = toUpdate
+	return result, nil
 }
 
 // buildInstances 根据进程数量生成进程实例
-func buildInstances(bizID, hostID, modID, ccProcessID, procNum, existCount, maxModuleInstSeq, maxHostInstSeq int, now time.Time,
-	hostCounter map[[2]int]int, moduleCounter map[[2]int]int) []*table.ProcessInstance {
-
+// moduleCounter 的 key 为 ModuleAliasKey，使同模块同别名的进程共享 ModuleInstSeq 递增序列
+func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.ProcessInstance {
 	// 如果新的进程数量 <= 已存在数量，则无需新增实例
-	if procNum <= existCount {
+	if params.ProcNum <= params.ExistCount {
 		return nil
 	}
 
 	// 需要新增的实例数量
-	newCount := procNum - existCount
+	newCount := params.ProcNum - params.ExistCount
 	if newCount <= 0 {
 		return nil
 	}
 
 	instances := make([]*table.ProcessInstance, 0, newCount)
 
-	// 维度 key： (ccProcessID, hostID) 和 (ccProcessID, modID)
-	hostKey := [2]int{ccProcessID, hostID}
-	modKey := [2]int{ccProcessID, modID}
+	// 维度 key： (ccProcessID, hostID) 用于 HostInstSeq
+	// (moduleID, alias) 用于 ModuleInstSeq，使同模块同别名共享序列
+	hostKey := HostProcessKey{CcProcessID: int(params.CcProcessID), HostID: int(params.HostID)}
+	modKey := ModuleAliasKey{ModuleID: int(params.ModuleID), Alias: params.Alias}
 
 	// 从缓存取
-	startHostInstSeq := hostCounter[hostKey]
-	startModuleInstSeq := moduleCounter[modKey]
+	startHostInstSeq := ctx.HostCounter[hostKey]
+	startModuleInstSeq := ctx.ModuleCounter[modKey]
 
 	// 如果缓存未初始化，则从数据库最大值开始
 	if startHostInstSeq == 0 {
-		startHostInstSeq = maxHostInstSeq
-		hostCounter[hostKey] = startHostInstSeq
+		startHostInstSeq = params.MaxHostInstSeq
+		ctx.HostCounter[hostKey] = startHostInstSeq
 	}
 	if startModuleInstSeq == 0 {
-		startModuleInstSeq = maxModuleInstSeq
-		moduleCounter[modKey] = startModuleInstSeq
+		startModuleInstSeq = params.MaxModuleInstSeq
+		ctx.ModuleCounter[modKey] = startModuleInstSeq
 	}
 
 	for i := 1; i <= newCount; i++ {
-		hostCounter[hostKey]++
-		moduleCounter[modKey]++
+		ctx.HostCounter[hostKey]++
+		ctx.ModuleCounter[modKey]++
 
-		hostInstSeq := hostCounter[hostKey]
-		moduleInstSeq := moduleCounter[modKey]
+		hostInstSeq := ctx.HostCounter[hostKey]
+		moduleInstSeq := ctx.ModuleCounter[modKey]
 
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
 				TenantID:    "default",
-				BizID:       uint32(bizID),
-				CcProcessID: uint32(ccProcessID),
+				BizID:       params.BizID,
+				CcProcessID: params.CcProcessID,
 			},
 			Spec: &table.ProcessInstanceSpec{
-				StatusUpdatedAt: now,
+				StatusUpdatedAt: ctx.Now,
 				HostInstSeq:     uint32(hostInstSeq),
 				ModuleInstSeq:   uint32(moduleInstSeq),
 			},
 			Revision: &table.Revision{
-				CreatedAt: now,
-				UpdatedAt: now,
+				CreatedAt: ctx.Now,
+				UpdatedAt: ctx.Now,
 			},
 		})
 	}
@@ -1260,6 +1369,9 @@ type ProcessDiff struct {
 	// 实例级
 	ToAddInstances      []*table.ProcessInstance
 	ToDeleteInstanceIDs []uint32
+
+	// 需要重新编排 ModuleInstSeq 的模块 (moduleID, alias) 集合
+	ModulesToReorder map[ModuleAliasKey]struct{}
 
 	// side effect
 	NeedSyncGSE bool
@@ -1289,7 +1401,17 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 		return &SyncProcessResult{}, nil
 	}
 
-	diff, err := diffProcesses(kit, dao, tx, oldProcesses, newProcesses)
+	// 创建同步上下文
+	ctx := &SyncContext{
+		Kit:           kit,
+		Dao:           dao,
+		Tx:            tx,
+		Now:           time.Now().UTC(),
+		HostCounter:   make(map[HostProcessKey]int),
+		ModuleCounter: make(map[ModuleAliasKey]int),
+	}
+
+	diff, err := diffProcesses(ctx, oldProcesses, newProcesses)
 	if err != nil {
 		logs.Errorf(
 			"[ProcessSync][DiffProcesses] bizID=%d failed: %v",
@@ -1382,6 +1504,32 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 				bizID, len(diff.ToAddInstances), err,
 			)
 			return nil, err
+		}
+	}
+
+	// 8. 重新编排受影响模块的 ModuleInstSeq（在所有实例入库后统一执行）
+	for modKey := range diff.ModulesToReorder {
+		toUpdate, err := reorderModuleInstSeq(ctx, &ReorderParams{
+			BizID:    bizID,
+			ModuleID: uint32(modKey.ModuleID),
+			Alias:    modKey.Alias,
+		})
+		if err != nil {
+			logs.Errorf(
+				"[ProcessSync][ReorderModuleInstSeq] bizID=%d moduleID=%d alias=%s failed: %v",
+				bizID, modKey.ModuleID, modKey.Alias, err,
+			)
+			return nil, err
+		}
+
+		if len(toUpdate) > 0 {
+			if err := dao.ProcessInstance().BatchUpdateWithTx(kit, tx, toUpdate); err != nil {
+				logs.Errorf(
+					"[ProcessSync][UpdateModuleInstSeq] bizID=%d instanceCount=%d failed: %v",
+					bizID, len(toUpdate), err,
+				)
+				return nil, err
+			}
 		}
 	}
 
