@@ -101,7 +101,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
 		}
 	}
-	// Todo: 这里获取的是集群下的主机？另外为什么是通过模版来获取？
+
 	listHosts, err := s.fetchAllHostsBySetTemplate(ctx, setTemplateIDs)
 	if err != nil {
 		return fmt.Errorf(
