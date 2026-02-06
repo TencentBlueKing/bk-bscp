@@ -68,7 +68,7 @@
       </div>
     </div>
     <div v-show="isShow">
-      <PrimaryTable class="border" :data="templateProcess.list" row-key="cc_process_id">
+      <PrimaryTable class="border" :data="templateProcessList" row-key="id">
         <TableColumn :title="$t('进程别名')" col-key="process_alias" width="180" />
         <TableColumn :title="$t('所属拓扑')">
           <template #default="{ row }: { row: ITemplateProcessItem }">
@@ -145,7 +145,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { ITemplateProcess, ITemplateProcessItem } from '../../../../../types/config-template';
   import { AngleDownFill, Funnel, Spinner } from 'bkui-vue/lib/icon';
   import { GENERATE_STATUS } from '../../../../constants/config-template';
@@ -184,6 +184,20 @@
     open: false,
     data: { ccProcessId: 0, moduleInstSeq: 0, configTemplateId: 0, taskId: '' },
   });
+  const templateProcessList = ref<ITemplateProcessItem[]>([]);
+
+  watch(
+    () => props.templateProcess,
+    () => {
+      templateProcessList.value = props.templateProcess.list.map((item, index) => {
+        return {
+          ...item,
+          id: `${item.cc_process_id}_${index}`,
+        };
+      });
+    },
+    { immediate: true, deep: true },
+  );
 
   const templateName = computed(() => {
     if (!props.templateProcess.list.length) return '';
