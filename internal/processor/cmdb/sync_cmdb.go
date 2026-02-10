@@ -65,8 +65,7 @@ func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service, dao dao.
 //   - 构建完整业务拓扑
 //   - 通过 SyncProcessData 统一落库
 //
-// nolint: funlen
-// nolint: gocyclo
+// nolint: funlen,gocyclo
 func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	kt := kit.FromGrpcContext(ctx)
 	if s.tenantID != "" {
