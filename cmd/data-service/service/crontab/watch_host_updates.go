@@ -125,8 +125,10 @@ func (w *WatchHostUpdates) watchHostUpdatesByTenant(kt *kit.Kit) {
 			if app.Spec.TenantID == "" {
 				continue
 			}
-			kt.TenantID = app.Spec.TenantID
-			w.watchHostUpdates(kt)
+			tenantKit := *kt
+			tenantKit.TenantID = app.Spec.TenantID
+			tenantKit.Ctx = tenantKit.InternalRpcCtx()
+			w.watchHostUpdates(&tenantKit)
 		}
 		return
 	}
