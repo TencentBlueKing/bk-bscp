@@ -115,7 +115,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	}
 	var hosts []Host
 	for _, h := range listHosts {
-		hosts = append(hosts, Host{ID: h.BkHostID, IP: h.BkHostInnerIP,
+		hosts = append(hosts, Host{ID: h.BkHostID, IP: h.BkHostInnerIP, IPV6: h.BkHostInnerIPV6,
 			CloudId: h.BkCloudID, AgentID: h.BkAgentID})
 	}
 
@@ -379,6 +379,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 				Fields: []string{
 					"bk_host_id",
 					"bk_host_innerip",
+					"bk_host_innerip_v6",
 					"bk_cloud_id",
 					"bk_agent_id",
 				},
@@ -393,6 +394,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 			hosts = append(hosts, Host{
 				ID:      h.BkHostID,
 				IP:      h.BkHostInnerIP,
+				IPV6:    h.BkHostInnerIPV6,
 				CloudId: h.BkCloudID,
 				AgentID: h.BkAgentID,
 			})
@@ -676,6 +678,7 @@ func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Pro
 							Environment:          set.SetEnv,
 							Alias:                proc.Name,
 							InnerIP:              h.IP,
+							InnerIPV6:            h.IPV6,
 							CcSyncStatus:         table.Synced,
 							ProcessStateSyncedAt: nil,
 							SourceData:           sourceData,
@@ -792,6 +795,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 					"bk_host_id",
 					"bk_host_name",
 					"bk_host_innerip",
+					"bk_host_innerip_v6",
 					"bk_cloud_id",
 					"bk_agent_id",
 				},

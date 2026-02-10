@@ -45,6 +45,7 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.Environment = field.NewString(tableName, "environment")
 	_process.Alias_ = field.NewString(tableName, "alias")
 	_process.InnerIP = field.NewString(tableName, "inner_ip")
+	_process.InnerIPV6 = field.NewString(tableName, "inner_ip_v6")
 	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_status")
 	_process.ProcessStateSyncedAt = field.NewTime(tableName, "process_state_synced_at")
 	_process.SourceData = field.NewString(tableName, "source_data")
@@ -83,6 +84,7 @@ type process struct {
 	Environment          field.String
 	Alias_               field.String
 	InnerIP              field.String
+	InnerIPV6             field.String
 	CcSyncStatus         field.String
 	ProcessStateSyncedAt field.Time
 	SourceData           field.String
@@ -127,6 +129,7 @@ func (p *process) updateTableName(table string) *process {
 	p.Environment = field.NewString(table, "environment")
 	p.Alias_ = field.NewString(table, "alias")
 	p.InnerIP = field.NewString(table, "inner_ip")
+	p.InnerIPV6 = field.NewString(table, "inner_ip_v6")
 	p.CcSyncStatus = field.NewString(table, "cc_sync_status")
 	p.ProcessStateSyncedAt = field.NewTime(table, "process_state_synced_at")
 	p.SourceData = field.NewString(table, "source_data")
@@ -161,7 +164,7 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 28)
+	p.fieldMap = make(map[string]field.Expr, 29)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
@@ -180,6 +183,7 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["environment"] = p.Environment
 	p.fieldMap["alias"] = p.Alias_
 	p.fieldMap["inner_ip"] = p.InnerIP
+	p.fieldMap["inner_ip_v6"] = p.InnerIPV6
 	p.fieldMap["cc_sync_status"] = p.CcSyncStatus
 	p.fieldMap["process_state_synced_at"] = p.ProcessStateSyncedAt
 	p.fieldMap["source_data"] = p.SourceData

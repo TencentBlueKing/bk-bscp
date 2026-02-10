@@ -98,6 +98,7 @@ type ProcessSpec struct {
 	Environment          string       `gorm:"column:environment" json:"environment"`                         // 环境类型(production/staging等)
 	Alias                string       `gorm:"column:alias" json:"alias"`                                     // 进程别名
 	InnerIP              string       `gorm:"column:inner_ip" json:"inner_ip"`                               // 内网IP
+	InnerIPV6            string       `gorm:"column:inner_ip_v6" json:"inner_ip_v6"`                         // 内网IPv6
 	CcSyncStatus         CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`                   // cc同步状态:synced,deleted,updated
 	ProcessStateSyncedAt *time.Time   `gorm:"column:process_state_synced_at" json:"process_state_synced_at"` // 进程状态同步时间
 	SourceData           string       `gorm:"column:source_data" json:"source_data"`                         // 本次同步的数据

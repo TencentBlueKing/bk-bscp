@@ -43,6 +43,7 @@ type Module struct {
 type Host struct {
 	ID      int
 	IP      string
+	IPV6    string // 内网 IPv6，同步自 CC bk_host_innerip_v6
 	CloudId int
 	AgentID string
 }
@@ -68,6 +69,7 @@ type ProcInst struct {
 // HostInfo 构建 HostID -> HostInfo 映射
 type HostInfo struct {
 	IP      string
+	IPV6    string
 	CloudId int
 	AgentID string
 }
