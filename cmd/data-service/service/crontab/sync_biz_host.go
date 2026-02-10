@@ -175,7 +175,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 				Start: start,
 				Limit: limit,
 			},
-			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id", "bk_host_innerip"},
+			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id", "bk_host_innerip", "bk_host_innerip_v6"},
 		}
 
 		// Apply rate limiting before each request
