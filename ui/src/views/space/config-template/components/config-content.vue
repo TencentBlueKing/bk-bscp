@@ -5,7 +5,12 @@
         <div class="editor-title">
           <span>{{ t('配置内容') }}</span>
           <div class="btns">
-            <bk-select class="highlight-select" v-model="highlight" :filterable="false" :clearable="false">
+            <bk-select
+              class="highlight-select"
+              v-model="highlight"
+              :filterable="false"
+              :clearable="false"
+              @change="handleHighlightChange">
               <template #prefix>
                 <span class="select-prefix">{{ t('高亮风格') }}</span>
               </template>
@@ -54,7 +59,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onBeforeUnmount } from 'vue';
+  import { ref, onBeforeUnmount, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { FilliscreenLine, UnfullScreen } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../components/code-editor/index.vue';
@@ -64,7 +69,7 @@
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['change']);
+  const emits = defineEmits(['change', 'highlight-change']);
   const props = withDefaults(
     defineProps<{
       content: string;
@@ -73,6 +78,7 @@
       editable?: boolean;
       charset?: string;
       sizeLimit?: number;
+      highlightStyle: string;
     }>(),
     {
       editable: true,
@@ -87,6 +93,14 @@
   const highlightOptions = ['python', 'yaml', 'json', 'xml', 'shell', 'bat', 'powershell', 'javascript'];
   const suffix = ref('');
   const previewRef = ref();
+
+  watch(
+    () => props.highlightStyle,
+    (newVal) => {
+      highlight.value = newVal || 'python';
+    },
+    { immediate: true },
+  );
 
   onBeforeUnmount(() => {
     codeEditorRef.value.destroy();
@@ -117,6 +131,10 @@
   const handlePreview = () => {
     suffix.value = 'preview';
     previewRef.value.reloadPreview();
+  };
+
+  const handleHighlightChange = (value: string) => {
+    emits('highlight-change', value);
   };
 </script>
 

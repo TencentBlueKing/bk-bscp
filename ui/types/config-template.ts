@@ -92,6 +92,7 @@ export interface IConfigTemplateEditParams {
   privilege: string;
   fileAP: string;
   revision_name: string;
+  highlight_style: string;
 }
 
 export interface ITemplateProcessItem {

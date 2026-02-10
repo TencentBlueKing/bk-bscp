@@ -32,7 +32,12 @@
       </bk-form>
     </div>
     <div class="editor-wrap">
-      <ConfigContent :bk-biz-id="bkBizId" :content="content" @change="handleContentChange" />
+      <ConfigContent
+        :bk-biz-id="bkBizId"
+        :highlight-style="localVal.highlight_style"
+        :content="content"
+        @highlight-change="handleHighlightChange"
+        @change="handleContentChange" />
     </div>
   </div>
 </template>
@@ -93,6 +98,11 @@
 
   const handleContentChange = (value: string) => {
     content.value = value;
+    change();
+  };
+
+  const handleHighlightChange = (value: string) => {
+    localVal.value.highlight_style = value;
     change();
   };
 

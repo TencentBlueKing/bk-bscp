@@ -42,7 +42,11 @@
             </div>
           </div>
           <div class="editor-wrap">
-            <ConfigContent :bk-biz-id="bkBizId" :content="editorContent" :editable="false" />
+            <ConfigContent
+              :bk-biz-id="bkBizId"
+              :highlight-style="templateDetail.highlight_style"
+              :content="editorContent"
+              :editable="false" />
           </div>
         </div>
       </section>

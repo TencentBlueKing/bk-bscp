@@ -14,6 +14,7 @@ export function getConfigTemplateEditParams() {
     privilege: '644',
     charset: 'UTF-8',
     fileAP: '',
+    highlight_style: 'python',
     revision_name: `v${dayjs().format('YYYYMMDDHHmmss')}`,
   };
 }
