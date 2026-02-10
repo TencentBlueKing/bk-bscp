@@ -84,7 +84,7 @@ type process struct {
 	Environment          field.String
 	Alias_               field.String
 	InnerIP              field.String
-	InnerIPV6             field.String
+	InnerIPV6            field.String
 	CcSyncStatus         field.String
 	ProcessStateSyncedAt field.Time
 	SourceData           field.String
