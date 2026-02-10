@@ -21,9 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
