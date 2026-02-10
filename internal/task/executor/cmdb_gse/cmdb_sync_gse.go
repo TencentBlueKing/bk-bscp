@@ -69,7 +69,7 @@ func (s *syncCmdbGseExecutor) SyncCMDB(c *istep.Context) error {
 
 	// 同步cc数据
 	syncSvc := cmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.dao)
-	if _, err := syncSvc.SyncSingleBiz(c.Context()); err != nil {
+	if err := syncSvc.SyncSingleBiz(c.Context()); err != nil {
 		logs.Errorf("tenant: %s biz: %d sync cmdb data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}
