@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch } from 'vue';
+  import { ref, watch, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { useRouter, useRoute } from 'vue-router';
@@ -71,13 +71,14 @@
     ITemplateProcess,
     ITemplateProcessItem,
   } from '../../../../../types/config-template';
+  import { permissionCheck } from '../../../../api';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import SelectRange from './select-range.vue';
   import useGlobalStore from '../../../../store/global';
   import ProcessTable from './process-table.vue';
 
   const { t } = useI18n();
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const router = useRouter();
   const route = useRoute();
   const templateProcessList = ref<ITemplateProcess[]>([]);
@@ -92,6 +93,12 @@
   const batchId = ref(0);
   const statusTimer = ref();
   const needGenerate = ref(true);
+  const permCheckLoading = ref(false);
+  const issuedPerm = ref(false);
+
+  onMounted(() => {
+    getIssuedPerm();
+  });
 
   watch(
     () => filterConditions.value,
@@ -111,6 +118,23 @@
         name: 'config-template-list',
       });
     }
+  };
+
+  const getIssuedPerm = async () => {
+    permCheckLoading.value = true;
+    const issuedRes = await permissionCheck({
+      resources: [
+        {
+          biz_id: spaceId.value,
+          basic: {
+            type: 'process_and_config_management',
+            action: 'release_config',
+          },
+        },
+      ],
+    });
+    issuedPerm.value = issuedRes.is_allowed;
+    permCheckLoading.value = false;
   };
 
   const handleSelectVersion = (template: ITemplateProcess, revisionId: number[]) => {
@@ -284,6 +308,21 @@
 
   // 配置下发
   const handleIssue = async () => {
+    if (!issuedPerm.value) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'release_config',
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    };
     try {
       pending.value = true;
       const res = await issueConfig(spaceId.value, batchId.value);

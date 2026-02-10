@@ -85,7 +85,12 @@
   import ProcessPreview from '../../components/process-preview/index.vue';
   import Variable from '../../components/variable.vue';
   import TemplateVersionDiff from '../../../templates/version-manage/template-version-diff.vue';
+  import useConfigTemplateStore from '../../../../../store/config-template';
+  import useGlobalStore from '../../../../../store/global';
+  import { storeToRefs } from 'pinia';
 
+  const { isAssociated, perms } = storeToRefs(useConfigTemplateStore());
+  const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
   const router = useRouter();
   const props = defineProps<{
@@ -240,6 +245,22 @@
 
   // 配置下发
   const handleConfigIssue = () => {
+    if (!perms.value.issued) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: props.spaceId,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'generate_config',
+              resource_id: props.configTemplateId,
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    }
     router.push({
       name: 'config-issued',
       query: {

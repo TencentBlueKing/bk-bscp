@@ -693,3 +693,101 @@ func genCredentialRes(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
 	}
 }
+
+func genProcConfigMgmtRes(a *meta.ResourceAttribute) (*bkiam.Request, error) {
+	iamReq := bkiam.Request{
+		System:  sys.SystemIDBSCP,
+		Subject: dummyIAMUser,
+		Resources: []iam.ResourceNode{
+			{
+				System:    sys.SystemIDCMDB,
+				Type:      string(sys.Business),
+				ID:        strconv.FormatUint(uint64(a.BizID), 10),
+				Attribute: map[string]interface{}{},
+			},
+		},
+	}
+
+	switch a.Basic.Action {
+	case meta.View:
+		iamReq.Action = bkiam.NewAction(string(sys.ProcConfigMgmtView))
+	case meta.Create:
+		iamReq.Action = bkiam.NewAction(string(sys.ConfigTemplateCreate))
+	case meta.Update:
+		iamReq.Action = bkiam.NewAction(string(sys.ConfigTemplateEdit))
+	case meta.Delete:
+		iamReq.Action = bkiam.NewAction(string(sys.ConfigTemplateDelete))
+	case meta.GenerateConfig:
+		iamReq.Action = bkiam.NewAction(string(sys.ConfigGenerate))
+	case meta.ReleaseConfig:
+		iamReq.Action = bkiam.NewAction(string(sys.ConfigRelease))
+	case meta.ProcessOperate:
+		iamReq.Action = bkiam.NewAction(string(sys.ProcessOperate))
+	default:
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+	}
+
+	return &iamReq, nil
+}
+
+func genProcConfigMgmtApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, error) {
+	action := bkiam.ApplicationAction{
+		RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+			SystemID: sys.SystemIDCMDB,
+			Type:     string(sys.Business),
+			Instances: []bkiam.ApplicationResourceInstance{
+				[]iam.ApplicationResourceNode{{
+					Type: string(sys.Business),
+					ID:   strconv.FormatUint(uint64(a.BizID), 10),
+				}},
+			},
+		}},
+	}
+
+	switch a.Basic.Action {
+	case meta.View:
+		action.ID = string(sys.ProcConfigMgmtView)
+	case meta.ProcessOperate:
+		action.ID = string(sys.ProcessOperate)
+	case meta.ReleaseConfig:
+		action.ID = string(sys.ConfigRelease)
+	case meta.GenerateConfig:
+		action.ID = string(sys.ConfigGenerate)
+	case meta.Create:
+		action.ID = string(sys.ConfigTemplateCreate)
+	case meta.Update:
+		action.ID = string(sys.ConfigTemplateEdit)
+	case meta.Delete:
+		action.ID = string(sys.ConfigTemplateDelete)
+	default:
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+	}
+	return action, nil
+}
+
+func genProcConfigMgmtResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+	bizRes := client.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Business,
+		ID:     strconv.FormatUint(uint64(a.BizID), 10),
+	}
+
+	switch a.Basic.Action {
+	case meta.View:
+		return sys.ProcConfigMgmtView, []client.Resource{bizRes}, nil
+	case meta.ProcessOperate:
+		return sys.ProcessOperate, []client.Resource{bizRes}, nil
+	case meta.ReleaseConfig:
+		return sys.ConfigRelease, []client.Resource{bizRes}, nil
+	case meta.GenerateConfig:
+		return sys.ConfigGenerate, []client.Resource{bizRes}, nil
+	case meta.Create:
+		return sys.ConfigTemplateCreate, []client.Resource{bizRes}, nil
+	case meta.Update:
+		return sys.ConfigTemplateEdit, []client.Resource{bizRes}, nil
+	case meta.Delete:
+		return sys.ConfigTemplateDelete, []client.Resource{bizRes}, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+	}
+}

@@ -1,5 +1,5 @@
 <template>
-  <bk-popover :is-show="isShow" trigger="manual" theme="light" placement="bottom-start" :arrow="false">
+  <bk-popover :is-show="isShow" trigger="manual" theme="light" placement="bottom" :arrow="false">
     <div class="more-actions" @mouseenter="handleEnter" @mouseleave="handleLeave">
       <Ellipsis class="ellipsis-icon" />
     </div>

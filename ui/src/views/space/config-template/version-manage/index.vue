@@ -87,9 +87,9 @@
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const configTemplateStore = useConfigTemplateStore();
-  const { createVerson, isAssociated } = storeToRefs(configTemplateStore);
+  const { createVerson, isAssociated, perms } = storeToRefs(configTemplateStore);
 
   const route = useRoute();
   const router = useRouter();
@@ -109,7 +109,6 @@
     id: 0,
   });
   const searchQuery = ref<{ [key: string]: string }>({});
-  const searchSelectorRef = ref();
   const searchField = [
     { field: 'revision_name', label: t('版本号') },
     { field: 'revision_memo', label: t('版本说明') },
@@ -181,6 +180,21 @@
   };
 
   const openSelectVersionDialog = async () => {
+    if (!perms.value.update) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'update',
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    }
     selectVersionDialog.value.open = true;
     await getAllVersionList();
     selectVersionDialog.value.id = allVersionList.value.length > 0 ? allVersionList.value[0].id : '';
@@ -217,6 +231,21 @@
 
   // 复制并新建版本
   const handleCreateVersion = (id: number) => {
+    if (!perms.value.update) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'update',
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    }
     handleOpenDetailTable(id, 'create');
     selectVersionDialog.value.open = false;
   };

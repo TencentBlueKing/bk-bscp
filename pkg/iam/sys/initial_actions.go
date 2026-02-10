@@ -38,6 +38,7 @@ func GenerateStaticActions() []client.ResourceAction {
 	resourceActionList = append(resourceActionList, genApplicationActions()...)
 	resourceActionList = append(resourceActionList, genCredentialActions()...)
 	resourceActionList = append(resourceActionList, genAuditActions()...)
+	resourceActionList = append(resourceActionList, genProcConfigMgmtActions()...)
 
 	return resourceActionList
 }
@@ -286,6 +287,83 @@ func genAuditActions() []client.ResourceAction {
 		NameEn:               "View Audit",
 		RelatedResourceTypes: businessResource,
 		RelatedActions:       []client.ActionID{BusinessViewResource},
+		Version:              1,
+	})
+
+	return actions
+}
+
+// 生成进程管理按钮
+func genProcConfigMgmtActions() []client.ResourceAction {
+	actions := make([]client.ResourceAction, 0)
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ProcConfigMgmtView,
+		Name:                 ActionIDNameMap[ProcConfigMgmtView],
+		NameEn:               "View Process And Config Management",
+		Type:                 View,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ProcessOperate,
+		Name:                 ActionIDNameMap[ProcessOperate],
+		NameEn:               "Process Operate",
+		Type:                 Edit,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ConfigTemplateCreate,
+		Name:                 ActionIDNameMap[ConfigTemplateCreate],
+		NameEn:               "Create Config Template",
+		Type:                 Create,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ConfigTemplateEdit,
+		Name:                 ActionIDNameMap[ConfigTemplateEdit],
+		NameEn:               "Edit Config Template",
+		Type:                 Edit,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ConfigTemplateDelete,
+		Name:                 ActionIDNameMap[ConfigTemplateDelete],
+		NameEn:               "Delete Config Template",
+		Type:                 Delete,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ConfigGenerate,
+		Name:                 ActionIDNameMap[ConfigGenerate],
+		NameEn:               "Generate Config",
+		Type:                 Edit,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
+		Version:              1,
+	})
+
+	actions = append(actions, client.ResourceAction{
+		ID:                   ConfigRelease,
+		Name:                 ActionIDNameMap[ConfigRelease],
+		NameEn:               "Release Config",
+		Type:                 Edit,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
 		Version:              1,
 	})
 

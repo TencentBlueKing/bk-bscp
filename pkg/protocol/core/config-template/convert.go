@@ -74,7 +74,7 @@ func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string,
 	for _, ct := range src {
 		isProcBound := len(ct.Attachment.CcProcessIDs) > 0 || len(ct.Attachment.CcTemplateProcessIDs) > 0
 
-		id := ct.ID
+		id := ct.Attachment.TemplateID
 		res = append(res, PbConfigTemplate(ct, fileNames[id], isProcBound, releasedMap[id]))
 	}
 	return res

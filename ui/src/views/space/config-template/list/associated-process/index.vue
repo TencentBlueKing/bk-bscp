@@ -24,8 +24,9 @@
     bkBizId: string;
     templateId: number;
     templateName: string;
+    updatePerm: boolean;
   }>();
-  const emits = defineEmits(['update:isShow', 'confirm']);
+  const emits = defineEmits(['update:isShow', 'confirm', 'noPerm']);
   const selectProcess = ref<{
     cc_process_ids: number[];
     cc_template_process_ids: number[];
@@ -37,6 +38,11 @@
 
   const handleConfirm = async () => {
     try {
+      if (!props.updatePerm) {
+        emits('update:isShow', false);
+        emits('noPerm');
+        return;
+      }
       await bindProcessInstance(props.bkBizId, props.templateId, selectProcess.value);
       emits('update:isShow', false);
       emits('confirm');

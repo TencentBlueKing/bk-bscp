@@ -783,9 +783,13 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 		if err != nil {
 			return nil, err
 		}
-		// 已查到的 ID
+		// 已查到的 ID，用于去重
 		foundIDs := make(map[uint32]struct{})
 		for _, p := range processes {
+			// 跳过已经添加的进程模板ID，避免重复
+			if _, ok := foundIDs[p.Attachment.ProcessTemplateID]; ok {
+				continue
+			}
 			templateProcesses = append(templateProcesses, &pbct.BindProcessInstance{
 				Name:        p.Spec.ModuleName,
 				Id:          p.Attachment.ProcessTemplateID,

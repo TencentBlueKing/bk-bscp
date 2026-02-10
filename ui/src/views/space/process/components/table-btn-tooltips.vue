@@ -31,4 +31,17 @@
   };
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+  .no-cmd-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .primary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #3a84ff;
+    cursor: pointer;
+  }
+</style>

@@ -10,7 +10,7 @@ export interface IProcessItem {
     actions: Record<string, { enabled: boolean; reason: string }>;
     alias: string;
     cc_sync_status: string;
-    cc_sync_updated_at: string;
+    process_state_synced_at: string;
     environment: string;
     inner_ip: string;
     module_name: string;

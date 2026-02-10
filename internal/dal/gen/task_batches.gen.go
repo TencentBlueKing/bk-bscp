@@ -40,6 +40,7 @@ func newTaskBatch(db *gorm.DB, opts ...gen.DOOption) taskBatch {
 	_taskBatch.CompletedCount = field.NewUint32(tableName, "completed_count")
 	_taskBatch.SuccessCount = field.NewUint32(tableName, "success_count")
 	_taskBatch.FailedCount = field.NewUint32(tableName, "failed_count")
+	_taskBatch.ExtraData = field.NewString(tableName, "extra_data")
 	_taskBatch.Creator = field.NewString(tableName, "creator")
 	_taskBatch.Reviser = field.NewString(tableName, "reviser")
 	_taskBatch.CreatedAt = field.NewTime(tableName, "created_at")
@@ -67,6 +68,7 @@ type taskBatch struct {
 	CompletedCount field.Uint32
 	SuccessCount   field.Uint32
 	FailedCount    field.Uint32
+	ExtraData      field.String
 	Creator        field.String
 	Reviser        field.String
 	CreatedAt      field.Time
@@ -100,6 +102,7 @@ func (t *taskBatch) updateTableName(table string) *taskBatch {
 	t.CompletedCount = field.NewUint32(table, "completed_count")
 	t.SuccessCount = field.NewUint32(table, "success_count")
 	t.FailedCount = field.NewUint32(table, "failed_count")
+	t.ExtraData = field.NewString(table, "extra_data")
 	t.Creator = field.NewString(table, "creator")
 	t.Reviser = field.NewString(table, "reviser")
 	t.CreatedAt = field.NewTime(table, "created_at")
@@ -130,7 +133,7 @@ func (t *taskBatch) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (t *taskBatch) fillFieldMap() {
-	t.fieldMap = make(map[string]field.Expr, 17)
+	t.fieldMap = make(map[string]field.Expr, 18)
 	t.fieldMap["id"] = t.ID
 	t.fieldMap["tenant_id"] = t.TenantID
 	t.fieldMap["biz_id"] = t.BizID
@@ -144,6 +147,7 @@ func (t *taskBatch) fillFieldMap() {
 	t.fieldMap["completed_count"] = t.CompletedCount
 	t.fieldMap["success_count"] = t.SuccessCount
 	t.fieldMap["failed_count"] = t.FailedCount
+	t.fieldMap["extra_data"] = t.ExtraData
 	t.fieldMap["creator"] = t.Creator
 	t.fieldMap["reviser"] = t.Reviser
 	t.fieldMap["created_at"] = t.CreatedAt

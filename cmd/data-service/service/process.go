@@ -505,6 +505,7 @@ func createTaskBatch(kt *kit.Kit, dao dao.Set, operateType string, environment s
 		Status:     table.TaskBatchStatusRunning,
 		StartAt:    &now,
 		TotalCount: totalCount, // 设置总任务数，用于 Callback 机制判断批次完成
+		ExtraData:  "{}",
 	}
 	taskBatchSpec.SetTaskData(&table.TaskExecutionData{
 		Environment:  environment,

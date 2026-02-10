@@ -394,6 +394,7 @@ func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate
 	if len(templateProcessIDs) != 0 {
 		processes, _, err = dao.Process().List(kt, bizID, &pbproc.ProcessSearchCondition{
 			ProcessTemplateIds: templateProcessIDs,
+			CcSyncStatuses:     []string{table.Synced.String(), table.Updated.String()}, // 下发文件获取未删除的进程数据
 		}, &types.BasePage{
 			All: true,
 		})
@@ -666,11 +667,14 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 
 	// 收集所有有效版本 ID
 	versionIDs := collectVersionIDs(configInstances)
+	// 构建 versions 返回项，默认包含 "-"
+	choices := make([]*pbcin.Choice, 0)
+	choices = append(choices, &pbcin.Choice{
+		Id:   "0",
+		Name: "-",
+	})
 	if len(versionIDs) == 0 {
-		return newFilterOptions(
-			latestRevision,
-			[]*pbcin.Choice{{Id: "0", Name: "-"}},
-		), nil
+		return newFilterOptions(latestRevision, choices), nil
 	}
 
 	// 查询版本信息
@@ -680,7 +684,6 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 	}
 
 	// 构建 versions 返回项
-	choices := make([]*pbcin.Choice, 0, len(templateRevisions))
 	for _, tr := range templateRevisions {
 		choices = append(choices, &pbcin.Choice{
 			Id:   strconv.FormatUint(uint64(tr.ID), 10),
@@ -1070,6 +1073,7 @@ func createBatch(dao dao.Set, kt *kit.Kit, bizID uint32, srcBatch *table.TaskBat
 			Status:     table.TaskBatchStatusRunning,
 			StartAt:    &now,
 			TotalCount: taskCount,
+			ExtraData:  "{}",
 		},
 		Revision: &table.Revision{
 			Creator:   kt.User,
@@ -1455,7 +1459,7 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 
 	// 1. 预处理，收集任务
 	var taskInfos []configTaskInfo
-	var processesForRange []*table.Process // 用于插件模式构建完整操作范围
+	var processesForRange []*table.Process // 用于构建操作范围
 	environment := ""
 
 	for _, group := range ctgs {
@@ -1503,10 +1507,7 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			return 0, fmt.Errorf("invalid binding relationship")
 		}
 
-		// 插件模式下收集进程信息用于构建完整操作范围
-		if pluginMode {
-			processesForRange = append(processesForRange, processes...)
-		}
+		processesForRange = append(processesForRange, processes...)
 
 		for _, p := range processes {
 			if environment == "" {
@@ -1551,6 +1552,7 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			Status:     table.TaskBatchStatusRunning,
 			StartAt:    &now,
 			TotalCount: uint32(len(taskInfos)),
+			ExtraData:  "{}",
 		},
 		Revision: &table.Revision{
 			Creator: kt.User,
