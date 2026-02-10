@@ -312,7 +312,6 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 
 	resp, err := e.GseService.OperateProcMulti(c.Context(), req)
 	if err != nil {
-		// nolint: goerr113
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	// 等待查询任务完成

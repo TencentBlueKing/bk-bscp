@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	vault "github.com/hashicorp/vault/api"
+	vault "github.com/openbao/openbao/api/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

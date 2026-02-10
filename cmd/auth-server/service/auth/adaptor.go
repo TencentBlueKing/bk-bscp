@@ -31,11 +31,11 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 	}
 
 	// skip actions do not need to relate to resources
-	if a.Basic.Action == meta.SkipAction {
+	if a.Action == meta.SkipAction {
 		return genSkipResource(a)
 	}
 
-	switch a.Basic.Type {
+	switch a.Type {
 	case meta.Biz:
 		return genBizResource(a)
 	case meta.App:
@@ -75,7 +75,7 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 	//	return genCredentialRes(a)
 
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp auth type: %s", a.Basic.Type))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp auth type: %s", a.Type))
 	}
 }
 
@@ -85,7 +85,7 @@ func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) 
 		return nil, errors.New("resource attribute is not set")
 	}
 
-	switch a.Basic.Type {
+	switch a.Type {
 	case meta.Biz:
 		return genBizIAMResource(a)
 	case meta.App:
@@ -95,7 +95,7 @@ func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) 
 	case meta.ProcConfigMgmt:
 		return genProcConfigMgmtRes(a)
 	default:
-		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Basic.Type)
+		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
 	}
 }
 
@@ -106,7 +106,7 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 	}
 	actions := make([]bkiam.ApplicationAction, 0)
 	for _, a := range as {
-		switch a.Basic.Type {
+		switch a.Type {
 		case meta.Biz:
 			action, err := genBizIAMApplication(a)
 			if err != nil {
@@ -138,7 +138,7 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 			}
 			actions = append(actions, action)
 		default:
-			return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Basic.Type)
+			return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
 		}
 	}
 	application := bkiam.NewApplication(sys.SystemIDBSCP, actions)

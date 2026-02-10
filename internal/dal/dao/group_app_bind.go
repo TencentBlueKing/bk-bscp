@@ -76,7 +76,7 @@ func (dao *groupAppDao) BatchDeleteByGroupIDWithTx(kit *kit.Kit, tx *gen.QueryTx
 		return errf.New(errf.InvalidParameter, "biz id is 0")
 	}
 
-	m := tx.Query.GroupAppBind
+	m := tx.GroupAppBind
 	if _, err := tx.Query.GroupAppBind.WithContext(kit.Ctx).Where(
 		m.GroupID.Eq(groupID), m.BizID.Eq(bizID)).Delete(); err != nil {
 		return err

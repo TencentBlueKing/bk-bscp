@@ -340,7 +340,9 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
 }
 
 // ListTmplBoundNamedApps list template bound named app details.
+//
 // Deprecated: not in use currently
+//
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted.
 //
 //nolint:funlen
@@ -737,7 +739,9 @@ func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context,
 }
 
 // ListTmplRevisionBoundNamedApps list template revision bound named app details.
+//
 // Deprecated: not in use currently
+//
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted.
 //
 //nolint:funlen
@@ -1036,7 +1040,9 @@ func (s *Service) ListMultiTmplSetBoundUnnamedApps(ctx context.Context,
 }
 
 // ListTmplSetBoundNamedApps list template set bound named app details.
+//
 // Deprecated: not in use currently
+//
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted
 //
 //nolint:funlen

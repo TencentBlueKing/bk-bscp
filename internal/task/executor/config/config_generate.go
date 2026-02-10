@@ -60,7 +60,7 @@ func NewGenerateConfigExecutor(dao dao.Set, cmdbService bkcmdb.Service, repo rep
 
 // SetCMDBService 设置 CMDB 服务（用于获取 CC 拓扑 XML）
 func (e *GenerateConfigExecutor) SetCMDBService(cmdbService bkcmdb.Service) {
-	e.Executor.CMDBService = cmdbService
+	e.CMDBService = cmdbService
 }
 
 // GenerateConfigPayload generate config payload
@@ -179,7 +179,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 			templateContent: configContent,
 		}
 		renderStart := time.Now()
-		contextParams := render.BuildProcessContextParamsFromSource(kt.Ctx, source, e.Executor.CMDBService)
+		contextParams := render.BuildProcessContextParamsFromSource(kt.Ctx, source, e.CMDBService)
 		logs.V(3).Infof("build process context params from source, context params: %+v, template id: %d",
 			contextParams, generatePayload.TemplateRevision.Attachment.TemplateID)
 		// 使用公共方法渲染模板

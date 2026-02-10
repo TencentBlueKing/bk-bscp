@@ -464,20 +464,21 @@ func (a Scheduler) updateJobTargetsStatus(job *types.AsyncDownloadJob) error {
 			}
 		} else {
 			// only download task would append to the targets list
-			if result.ErrorCode == 0 {
+			switch result.ErrorCode {
+			case 0:
 				logs.Infof("download success, jobID: %s, file: %s, agentID: %s, containerID: %s",
 					job.JobID, result.Content.DestFileName, result.Content.DestAgentID, result.Content.DestContainerID)
 				job.SuccessTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content
 				delete(job.DownloadingTargets,
 					fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID))
-			} else if result.ErrorCode == 115 {
+			case 115:
 				logs.Infof("download in progress, jobID: %s, file: %s, agentID: %s, containerID: %s",
 					job.JobID, result.Content.DestFileName, result.Content.DestAgentID, result.Content.DestContainerID)
 				// If the result is 115 downloading state
 				job.DownloadingTargets[fmt.Sprintf("%s:%s", result.Content.DestAgentID, result.Content.DestContainerID)] =
 					result.Content
-			} else {
+			default:
 				logs.Errorf("download failed, jobID: %s, file: %s, agentID: %s, containerID: %s, errorCode: %d",
 					job.JobID, result.Content.DestFileName, result.Content.DestAgentID,
 					result.Content.DestContainerID, result.ErrorCode)

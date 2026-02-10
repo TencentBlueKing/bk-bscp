@@ -18,7 +18,7 @@ import (
 	"log"
 	"time"
 
-	vault "github.com/hashicorp/vault/api"
+	vault "github.com/openbao/openbao/api/v2"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/tenant-migration/config"

@@ -1,131 +1,168 @@
-run:
-  timeout: 10m
-issues:
-  exclude-dirs-use-default: true
-  exclude-dirs:
-    - .*/third_party/*
-  exclude-files:
-    - .*\.docs\.go$
-    - .*\.gen\.go$
-    - .*\.pb\.go$
-    - .*\.pb.gw\.go$
-    - .*\.pb.micro\.go$
-    - .*\.pb.validate\.go$
-    - .*\_test\.go$
-    - cmd/data-service/service/config_item.go
-    - cmd/data-service/service/group.go
-    - test/benchmark/run/template.go
-    - test/mock/repo/service/node.go
-    - pkg/version/version.go
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  # exclude-use-default: false
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
     - funlen
-    - gci
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
     - goheader
-    - goimports
     - gosec
+    - govet
+    - ineffassign
     - lll
     - misspell
     - nakedret
     - revive
+    - staticcheck
     - unconvert
     - unparam
-linters-settings:
-  staticcheck:
-    checks: ["all", "-SA1006", "-SA1019"]
-  errcheck:
-    exclude-functions:
-      - (*os.File).Close
-      - (io.Closer).Close
-      - (net/http.ResponseWriter).Write
-      - github.com/go-chi/render.Render
-      - io.Copy
-      - os.RemoveAll
-      - fmt.Fprint
-      - fmt.Fprintf
-      - fmt.Fprintln
-  lll:
-    line-length: 160
-  funlen:
-    lines: 120
-    statements: -1
-  gocyclo:
-    min-complexity: 30
-  govet:
-    enable:
-      - shadow
-    disable:
-      - printf
-  goconst:
-    min-occurrences: 5
-  goimports:
-    local-prefixes: github.com/TencentBlueKing/bk-bscp
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/TencentBlueKing/bk-bscp)
-  gocritic:
-    settings:
-      ifElseChain:
-        minThreshold: 3
-  gosec:
-    includes:
-      - G201
-      - G202
-      - G101
-      - G401
-      - G402
-      - G403
-      - G404
-      - G504
-  goheader:
-    values:
-      regexp:
-        YEAR: 20\d\d
-    template: |-
-      * Tencent is pleased to support the open source community by making Blueking Container Service available.
-       * Copyright (C) {{ YEAR }} THL A29 Limited, a Tencent company. All rights reserved.
-       * Licensed under the MIT License (the "License"); you may not use this file except
-       * in compliance with the License. You may obtain a copy of the License at
-       * http://opensource.org/licenses/MIT
-       * Unless required by applicable law or agreed to in writing, software distributed under
-       * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-       * either express or implied. See the License for the specific language governing permissions and
-       * limitations under the License.
-  misspell:
-    locale: US
-  revive:
-    confidence: 0
-    rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: early-return
-      - name: error-naming
-      - name: error-return
-      - name: error-strings
-      - name: errorf
-      - name: exported
-      - name: increment-decrement
-      - name: indent-error-flow
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: var-declaration
+    - unused
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+        - (io.Closer).Close
+        - (net/http.ResponseWriter).Write
+        - github.com/go-chi/render.Render
+        - io.Copy
+        - os.RemoveAll
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    funlen:
+      lines: 120
+      statements: -1
+    goconst:
+      min-occurrences: 5
+    gocritic:
+      settings:
+        ifElseChain:
+          minThreshold: 3
+    gocyclo:
+      min-complexity: 30
+    goheader:
+      values:
+        regexp:
+          YEAR: 20\d\d
+      template: |-
+        * Tencent is pleased to support the open source community by making Blueking Container Service available.
+         * Copyright (C) {{ YEAR }} THL A29 Limited, a Tencent company. All rights reserved.
+         * Licensed under the MIT License (the "License"); you may not use this file except
+         * in compliance with the License. You may obtain a copy of the License at
+         * http://opensource.org/licenses/MIT
+         * Unless required by applicable law or agreed to in writing, software distributed under
+         * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+         * either express or implied. See the License for the specific language governing permissions and
+         * limitations under the License.
+    gosec:
+      includes:
+        - G201
+        - G202
+        - G101
+        - G401
+        - G402
+        - G403
+        - G404
+        - G504
+    govet:
+      enable:
+        - shadow
+      disable:
+        - printf
+    lll:
+      line-length: 160
+    misspell:
+      locale: US
+    revive:
+      confidence: 0
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: early-return
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: var-declaration
+    staticcheck:
+      checks:
+        - all
+        - -SA1006
+        - -SA1019
+        # 与 v1 行为接近：关闭 v2 中新增/收紧的风格类检查，避免大量历史代码报错
+        - -ST1003   # 命名规范 (Id->ID, Url->URL 等)
+        - -ST1005   # error 字符串首字母不大写
+        - -ST1011   # time.Duration 不用单位后缀 (如 MS)
+        - -ST1019   # 禁止重复 import
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .*\.docs\.go$
+      - .*\.gen\.go$
+      - .*\.pb\.go$
+      - .*\.pb.gw\.go$
+      - .*\.pb.micro\.go$
+      - .*\.pb.validate\.go$
+      - .*\_test\.go$
+      - cmd/data-service/service/config_item.go
+      - cmd/data-service/service/group.go
+      - test/benchmark/run/template.go
+      - test/mock/repo/service/node.go
+      - pkg/version/version.go
+      - .*/third_party/*
+      - third_party$
+      - builtin$
+      - examples$
+      - test/suite/*
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/TencentBlueKing/bk-bscp)
+    goimports:
+      local-prefixes:
+        - github.com/TencentBlueKing/bk-bscp
+  exclusions:
+    generated: lax
+    paths:
+      - .*\.docs\.go$
+      - .*\.gen\.go$
+      - .*\.pb\.go$
+      - .*\.pb.gw\.go$
+      - .*\.pb.micro\.go$
+      - .*\.pb.validate\.go$
+      - .*\_test\.go$
+      - cmd/data-service/service/config_item.go
+      - cmd/data-service/service/group.go
+      - test/benchmark/run/template.go
+      - test/mock/repo/service/node.go
+      - pkg/version/version.go
+      - .*/third_party/*
+      - third_party$
+      - builtin$
+      - examples$

@@ -23,8 +23,8 @@ jobs:
 
       # 运行代码风格检查 (golangci-lint)
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.62.0
+          version: v2.8.0
           args: --timeout=5m
           working-directory: .

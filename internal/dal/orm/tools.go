@@ -228,6 +228,7 @@ func (f *FieldOption) AddIgnoredFields(fields ...string) *FieldOption {
 // Use table.App as an example, the returned expr should as follows:
 // id, biz_id, name as 'spec.name', memo as 'spec.memo'
 // Note: define the embedded columns in the table.go manually.
+//
 // Deprecated: GetNamedSelectColumns will panic if there is a nil value.
 func GetNamedSelectColumns(table interface{}) (expr string, err error) {
 	if table == nil {

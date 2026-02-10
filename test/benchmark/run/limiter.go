@@ -21,7 +21,7 @@ type Limiter struct {
 
 // NewStreamLimiter new stream limiter.
 func NewStreamLimiter(concurrent int) *Limiter {
-	if 0 == concurrent {
+	if concurrent == 0 {
 		concurrent = 100
 	}
 	return &Limiter{

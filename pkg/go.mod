@@ -1,8 +1,6 @@
 module github.com/TencentBlueKing/bk-bscp/pkg
 
-go 1.23.0
-
-toolchain go1.23.2
+go 1.25.0
 
 require (
 	github.com/dustin/go-humanize v1.0.1

@@ -648,7 +648,7 @@ func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Pro
 						continue
 					}
 
-					sourceData, err := proc.ProcessInfo.Value()
+					sourceData, err := proc.Value()
 					if err != nil {
 						logs.Errorf(
 							"[syncCMDB][ERROR] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: marshal process info failed: %v",

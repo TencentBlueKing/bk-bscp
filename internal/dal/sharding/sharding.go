@@ -136,7 +136,7 @@ func MustShardingAuditor(adminDB *gorm.DB) *gorm.DB {
 // InitAuditorSharding 审计表分库
 func InitAuditorSharding(adminDB *gorm.DB) (*gorm.DB, error) {
 	// 初始化配置
-	conf := adminDB.Dialector.(*mysql.Dialector).Config.DSNConfig.Clone()
+	conf := adminDB.Dialector.(*mysql.Dialector).DSNConfig.Clone()
 	conf.DBName = "bk_bscp_auditor"
 
 	auditorDB, err := gorm.Open(mysql.Open(conf.FormatDSN()), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})

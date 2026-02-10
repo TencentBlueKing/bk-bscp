@@ -47,12 +47,12 @@ func genBizResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.FindBusinessResource:
 		// create app is related to cmdb business resource
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 }
 
@@ -70,12 +70,12 @@ func genBizIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.FindBusinessResource:
 		// create app is related to cmdb business resource
 		iamReq.Action = bkiam.NewAction(string(sys.BusinessViewResource))
 	default:
-		return nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return &iamReq, nil
 }
@@ -94,7 +94,7 @@ func genAppIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		iamReq.Action = bkiam.NewAction(string(sys.AppCreate))
 	case meta.View:
@@ -108,7 +108,7 @@ func genAppIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 	case meta.Delete:
 		iamReq.Action = bkiam.NewAction(string(sys.AppDelete))
 	default:
-		return nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return &iamReq, nil
 }
@@ -127,13 +127,13 @@ func genCredIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		iamReq.Action = bkiam.NewAction(string(sys.CredentialView))
 	case meta.Manage:
 		iamReq.Action = bkiam.NewAction(string(sys.CredentialManage))
 	default:
-		return nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return &iamReq, nil
 }
@@ -156,12 +156,12 @@ func genBizIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, e
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.FindBusinessResource:
 		// create app is related to cmdb business resource
 		action.ID = string(sys.BusinessViewResource)
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return action, nil
 }
@@ -178,7 +178,7 @@ func genAppIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, e
 		ID:   strconv.FormatUint(uint64(a.ResourceID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		action.ID = string(sys.AppCreate)
 		resourceNodes = append(resourceNodes, resourceNodeBiz)
@@ -206,7 +206,7 @@ func genAppIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, e
 		action.ID = string(sys.ReleaseGenerate)
 		resourceNodes = append(resourceNodes, resourceNodeBiz, resourceNodeApp)
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	action.RelatedResourceTypes = []bkiam.ApplicationRelatedResourceType{
 		{
@@ -231,13 +231,13 @@ func genCredIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, 
 		}},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		action.ID = string(sys.CredentialView)
 	case meta.Manage:
 		action.ID = string(sys.CredentialManage)
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return action, nil
 }
@@ -256,11 +256,11 @@ func genAuditIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction,
 		}},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		action.ID = string(sys.AuditView)
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return action, nil
 }
@@ -283,7 +283,7 @@ func genAppResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create app is related to cmdb business resource
 		return sys.AppCreate, []client.Resource{bizRes}, nil
@@ -306,7 +306,7 @@ func genAppResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 		// find app is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -317,13 +317,13 @@ func genCredResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resou
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		return sys.CredentialView, []client.Resource{bizRes}, nil
 	case meta.Manage:
 		return sys.CredentialManage, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 }
 
@@ -335,11 +335,11 @@ func genAuditResource(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		return sys.AuditView, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 }
 
@@ -363,7 +363,7 @@ func genCommitResource(a *meta.ResourceAttribute) (client.ActionID, []client.Res
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create commit is related to bscp application resource, using app edit action
 		return sys.AppEdit, []client.Resource{appRes}, nil
@@ -371,7 +371,7 @@ func genCommitResource(a *meta.ResourceAttribute) (client.ActionID, []client.Res
 		// find commit is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -395,7 +395,7 @@ func genConfigItemResource(a *meta.ResourceAttribute) (client.ActionID, []client
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create config item is related to bscp application resource, using app edit action
 		return sys.AppEdit, []client.Resource{appRes}, nil
@@ -409,7 +409,7 @@ func genConfigItemResource(a *meta.ResourceAttribute) (client.ActionID, []client
 		// find config item is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -433,7 +433,7 @@ func genContentResource(a *meta.ResourceAttribute) (client.ActionID, []client.Re
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create content is related to bscp application resource, using app edit action
 		return sys.AppEdit, []client.Resource{appRes}, nil
@@ -447,7 +447,7 @@ func genContentResource(a *meta.ResourceAttribute) (client.ActionID, []client.Re
 		// download content is related to bscp application resource, using app edit action
 		return sys.AppEdit, []client.Resource{appRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -471,7 +471,7 @@ func genCRInstanceResource(a *meta.ResourceAttribute) (client.ActionID, []client
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create current released instance is related to bscp application resource, using app edit action
 		return sys.AppEdit, []client.Resource{appRes}, nil
@@ -482,7 +482,7 @@ func genCRInstanceResource(a *meta.ResourceAttribute) (client.ActionID, []client
 		// find current released instance is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -506,7 +506,7 @@ func genReleaseRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resourc
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create current released instance is related to bscp application resource, using config item packing action
 		return sys.ReleaseGenerate, []client.Resource{appRes}, nil
@@ -514,7 +514,7 @@ func genReleaseRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resourc
 		// find release is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -527,12 +527,12 @@ func genReleasedCIRes(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Find:
 		// find released config item is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -556,7 +556,7 @@ func genStrategyRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create strategy is related to bscp application resource, using strategy create action
 		return sys.StrategyCreate, []client.Resource{appRes}, nil
@@ -576,7 +576,7 @@ func genStrategyRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 		// find strategy is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -600,7 +600,7 @@ func genStrategySetRes(a *meta.ResourceAttribute) (client.ActionID, []client.Res
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Create:
 		// create strategy set is related to bscp application resource, using strategy set create action
 		return sys.StrategySetCreate, []client.Resource{appRes}, nil
@@ -614,7 +614,7 @@ func genStrategySetRes(a *meta.ResourceAttribute) (client.ActionID, []client.Res
 		// find strategy set is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -627,12 +627,12 @@ func genPSHRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, e
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Find:
 		// find published strategy history is related to cmdb business resource, using task history view action
 		return sys.TaskHistoryView, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -645,12 +645,12 @@ func genRepoRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, 
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Find:
 		// find repo resource is related to cmdb business resource, using view biz action
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -663,12 +663,12 @@ func genSidecarRes(a *meta.ResourceAttribute) (client.ActionID, []client.Resourc
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Access:
 		// request from sidecar is related to business view resource
 		return sys.BusinessViewResource, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -681,7 +681,7 @@ func genCredentialRes(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.Access:
 		// request from credential is related to business view resource
 		return sys.CredentialView, []client.Resource{bizRes}, nil
@@ -690,7 +690,7 @@ func genCredentialRes(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return sys.CredentialManage, []client.Resource{bizRes}, nil
 
 	default:
-		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Basic.Action))
+		return "", nil, errf.New(errf.InvalidParameter, fmt.Sprintf("unsupported bscp action: %s", a.Action))
 	}
 }
 
@@ -708,7 +708,7 @@ func genProcConfigMgmtRes(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		iamReq.Action = bkiam.NewAction(string(sys.ProcConfigMgmtView))
 	case meta.Create:
@@ -724,7 +724,7 @@ func genProcConfigMgmtRes(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 	case meta.ProcessOperate:
 		iamReq.Action = bkiam.NewAction(string(sys.ProcessOperate))
 	default:
-		return nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 
 	return &iamReq, nil
@@ -744,7 +744,7 @@ func genProcConfigMgmtApplication(a *meta.ResourceAttribute) (bkiam.ApplicationA
 		}},
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		action.ID = string(sys.ProcConfigMgmtView)
 	case meta.ProcessOperate:
@@ -760,7 +760,7 @@ func genProcConfigMgmtApplication(a *meta.ResourceAttribute) (bkiam.ApplicationA
 	case meta.Delete:
 		action.ID = string(sys.ConfigTemplateDelete)
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 	return action, nil
 }
@@ -772,7 +772,7 @@ func genProcConfigMgmtResource(a *meta.ResourceAttribute) (client.ActionID, []cl
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	switch a.Basic.Action {
+	switch a.Action {
 	case meta.View:
 		return sys.ProcConfigMgmtView, []client.Resource{bizRes}, nil
 	case meta.ProcessOperate:
@@ -788,6 +788,6 @@ func genProcConfigMgmtResource(a *meta.ResourceAttribute) (client.ActionID, []cl
 	case meta.Delete:
 		return sys.ConfigTemplateDelete, []client.Resource{bizRes}, nil
 	default:
-		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Basic.Action)
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 }

@@ -204,7 +204,7 @@ func parseAttributesToBatchOptions(kt *kit.Kit, user *meta.UserInfo, resources .
 		}
 
 		// this resource should be skipped, do not need to verify in auth center.
-		if resource.Basic.Action == meta.SkipAction {
+		if resource.Action == meta.SkipAction {
 			decisions[index].Authorized = true
 			logs.V(5).Infof("skip authorization for resource: %+v, rid: %s", resource, kt.Rid)
 			continue
