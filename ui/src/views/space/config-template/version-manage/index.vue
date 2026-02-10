@@ -84,12 +84,13 @@
   import VersionDetailTable from './version-detail/version-detail-table.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
   import useConfigTemplateStore from '../../../../store/config-template';
+  import { permissionCheck } from '../../../../api';
 
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
   const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const configTemplateStore = useConfigTemplateStore();
-  const { createVerson, isAssociated, perms } = storeToRefs(configTemplateStore);
+  const { createVerson, isAssociated } = storeToRefs(configTemplateStore);
 
   const route = useRoute();
   const router = useRouter();
@@ -114,6 +115,7 @@
     { field: 'revision_memo', label: t('版本说明') },
     { field: 'creator', label: t('创建人') },
   ];
+  const updatePerm = ref(true);
 
   const getRouteId = (id: string) => {
     if (id && typeof Number(id) === 'number') {
@@ -127,8 +129,7 @@
   const configTemplateId = computed(() => getRouteId(route.params.configTemplateId as string));
 
   onMounted(async () => {
-    getTemplateDetail();
-    await getVersionList();
+    await Promise.all([getTemplateDetail(), getVersionList(), getUpdatePermData()]);
     if (createVerson.value) {
       openSelectVersionDialog();
       configTemplateStore.$patch((state) => {
@@ -179,8 +180,23 @@
     });
   };
 
+  const getUpdatePermData = async () => {
+    const updateRes = await permissionCheck({
+      resources: [
+        {
+          biz_id: spaceId.value,
+          basic: {
+            type: 'process_and_config_management',
+            action: 'update',
+          },
+        },
+      ],
+    });
+    updatePerm.value = updateRes.is_allowed;
+  };
+
   const openSelectVersionDialog = async () => {
-    if (!perms.value.update) {
+    if (!updatePerm.value) {
       permissionQuery.value = {
         resources: [
           {
@@ -231,7 +247,7 @@
 
   // 复制并新建版本
   const handleCreateVersion = (id: number) => {
-    if (!perms.value.update) {
+    if (!updatePerm.value) {
       permissionQuery.value = {
         resources: [
           {
