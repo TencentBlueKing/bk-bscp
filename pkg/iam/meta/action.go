@@ -50,4 +50,8 @@ const (
 	SkipAction Action = "skip"
 	// Access means sidecar access the feed server action. and only for this scenario.
 	Access Action = "access"
+
+	ProcessOperate Action = "process_operate"
+	GenerateConfig Action = "generate_config"
+	ReleaseConfig  Action = "release_config"
 )

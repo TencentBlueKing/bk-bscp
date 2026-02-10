@@ -47,15 +47,17 @@ var (
 	findModuleBatch     = "%s/api/v3/findmany/module/bk_biz_id/%d"
 	listServiceInstance = "%s/api/v3/findmany/proc/service_instance"
 
-	findSetBatch         = "%s/api/v3/findmany/set/bk_biz_id/%d"
-	searchSet            = "%s/api/v3/set/search/%s/%d"
-	searchModule         = "%s/api/v3/module/search/%s/%d/%d"
-	findHostTopoRelation = "%s/api/v3/host/topo/relation/read"
-	listBizHosts         = "%s/api/v3/hosts/app/%d/list_hosts"
-	watchResource        = "%s/api/v3/event/watch/resource/%s"
-	findHostBizRelations = "%s/api/v3/hosts/modules/read"
-	findTopoBrief        = "%s/api/v3/cache/find/cache/topo/brief/biz/%d"
-	searchObjectAttr     = "%s/api/v3/find/objectattr"
+	findSetBatch              = "%s/api/v3/findmany/set/bk_biz_id/%d"
+	searchSet                 = "%s/api/v3/set/search/%s/%d"
+	searchModule              = "%s/api/v3/module/search/%s/%d/%d"
+	findHostTopoRelation      = "%s/api/v3/host/topo/relation/read"
+	listBizHosts              = "%s/api/v3/hosts/app/%d/list_hosts"
+	watchResource             = "%s/api/v3/event/watch/resource/%s"
+	findHostBizRelations      = "%s/api/v3/hosts/modules/read"
+	findTopoBrief             = "%s/api/v3/cache/find/cache/topo/brief/biz/%d"
+	searchObjectAttr          = "%s/api/v3/find/objectattr"
+	listServiceInstanceDetail = "%s/api/v3/findmany/proc/service_instance/details"
+	findHostByServiceTemplate = "%s/api/v3/findmany/hosts/by_service_templates/biz/%d"
 )
 
 type HTTPMethod string
@@ -499,6 +501,32 @@ func (bkcmdb *CMDBService) SearchObjectAttr(ctx context.Context, req SearchObjec
 	url := fmt.Sprintf(searchObjectAttr, bkcmdb.Host)
 
 	var resp []ObjectAttrInfo
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ListServiceInstanceDetail 获取服务实例详细信息
+func (bkcmdb *CMDBService) ListServiceInstanceDetail(ctx context.Context, req *ListServiceInstanceReq) (
+	*ListServiceInstanceResp, error) {
+	url := fmt.Sprintf(listServiceInstanceDetail, bkcmdb.Host)
+
+	resp := new(ListServiceInstanceResp)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// FindHostByServiceTemplate 查询服务模板下的主机
+func (bkcmdb *CMDBService) FindHostByServiceTemplate(ctx context.Context, req *ListHostByServiceTemplateReq) (
+	*ListHostByServiceTemplateResp, error) {
+	url := fmt.Sprintf(findHostByServiceTemplate, bkcmdb.Host, req.BizID)
+
+	resp := new(ListHostByServiceTemplateResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
 		return nil, err
 	}

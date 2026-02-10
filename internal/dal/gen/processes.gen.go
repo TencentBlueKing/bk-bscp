@@ -45,13 +45,13 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.Environment = field.NewString(tableName, "environment")
 	_process.Alias_ = field.NewString(tableName, "alias")
 	_process.InnerIP = field.NewString(tableName, "inner_ip")
+	_process.InnerIPV6 = field.NewString(tableName, "inner_ip_v6")
 	_process.CcSyncStatus = field.NewString(tableName, "cc_sync_status")
 	_process.ProcessStateSyncedAt = field.NewTime(tableName, "process_state_synced_at")
 	_process.SourceData = field.NewString(tableName, "source_data")
 	_process.PrevData = field.NewString(tableName, "prev_data")
 	_process.ProcNum = field.NewUint(tableName, "proc_num")
 	_process.FuncName = field.NewString(tableName, "func_name")
-	_process.DeletedAt = field.NewTime(tableName, "deleted_at")
 	_process.Creator = field.NewString(tableName, "creator")
 	_process.Reviser = field.NewString(tableName, "reviser")
 	_process.CreatedAt = field.NewTime(tableName, "created_at")
@@ -84,13 +84,13 @@ type process struct {
 	Environment          field.String
 	Alias_               field.String
 	InnerIP              field.String
+	InnerIPV6            field.String
 	CcSyncStatus         field.String
 	ProcessStateSyncedAt field.Time
 	SourceData           field.String
 	PrevData             field.String
 	ProcNum              field.Uint
 	FuncName             field.String
-	DeletedAt            field.Time
 	Creator              field.String
 	Reviser              field.String
 	CreatedAt            field.Time
@@ -129,13 +129,13 @@ func (p *process) updateTableName(table string) *process {
 	p.Environment = field.NewString(table, "environment")
 	p.Alias_ = field.NewString(table, "alias")
 	p.InnerIP = field.NewString(table, "inner_ip")
+	p.InnerIPV6 = field.NewString(table, "inner_ip_v6")
 	p.CcSyncStatus = field.NewString(table, "cc_sync_status")
 	p.ProcessStateSyncedAt = field.NewTime(table, "process_state_synced_at")
 	p.SourceData = field.NewString(table, "source_data")
 	p.PrevData = field.NewString(table, "prev_data")
 	p.ProcNum = field.NewUint(table, "proc_num")
 	p.FuncName = field.NewString(table, "func_name")
-	p.DeletedAt = field.NewTime(table, "deleted_at")
 	p.Creator = field.NewString(table, "creator")
 	p.Reviser = field.NewString(table, "reviser")
 	p.CreatedAt = field.NewTime(table, "created_at")
@@ -183,13 +183,13 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["environment"] = p.Environment
 	p.fieldMap["alias"] = p.Alias_
 	p.fieldMap["inner_ip"] = p.InnerIP
+	p.fieldMap["inner_ip_v6"] = p.InnerIPV6
 	p.fieldMap["cc_sync_status"] = p.CcSyncStatus
 	p.fieldMap["process_state_synced_at"] = p.ProcessStateSyncedAt
 	p.fieldMap["source_data"] = p.SourceData
 	p.fieldMap["prev_data"] = p.PrevData
 	p.fieldMap["proc_num"] = p.ProcNum
 	p.fieldMap["func_name"] = p.FuncName
-	p.fieldMap["deleted_at"] = p.DeletedAt
 	p.fieldMap["creator"] = p.Creator
 	p.fieldMap["reviser"] = p.Reviser
 	p.fieldMap["created_at"] = p.CreatedAt

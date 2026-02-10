@@ -26,6 +26,8 @@ type ProcessInstance interface {
 	Update(kit *kit.Kit, processInstance *table.ProcessInstance) error
 	// UpdateSelectedFields update selected fields
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
+	// UpdateSelectedFieldsWithTx update selected fields with transaction
+	UpdateSelectedFieldsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// BatchUpdate batch updates process instances.
 	BatchUpdate(kit *kit.Kit, instances []*table.ProcessInstance) error
 	// GetByID gets process instances by ID.
@@ -51,6 +53,10 @@ type ProcessInstance interface {
 	ListByProcessIDOrderBySeqDescTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32, limit int) ([]*table.ProcessInstance, error)
 	// BatchDeleteByIDsWithTx batch create client instances with transaction.
 	BatchDeleteByIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32) error
+	// GetMaxModuleInstSeqByProcessIDsWithTx 按进程ID列表查询最大 ModuleInstSeq
+	GetMaxModuleInstSeqByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
+	// ListByProcessIDsWithTx 按进程ID列表查询所有实例
+	ListByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -238,6 +244,24 @@ func (dao *processInstanceDao) UpdateSelectedFields(kit *kit.Kit, bizID uint32, 
 	return nil
 }
 
+// UpdateSelectedFieldsWithTx 更新指定字段（带事务）
+func (dao *processInstanceDao) UpdateSelectedFieldsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32,
+	data map[string]any, conds ...rawgen.Condition) error {
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+
+	query := q.Where(m.BizID.Eq(bizID))
+	if len(conds) > 0 {
+		query = query.Where(conds...)
+	}
+
+	if _, err := query.Updates(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // BatchUpdate implements ProcessInstance.
 func (dao *processInstanceDao) BatchUpdate(kit *kit.Kit, instances []*table.ProcessInstance) error {
 	if len(instances) == 0 {
@@ -287,4 +311,47 @@ func (dao *processInstanceDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, 
 	}
 
 	return tx.ProcessInstance.WithContext(kit.Ctx).CreateInBatches(data, 500)
+}
+
+// GetMaxModuleInstSeqByProcessIDsWithTx 按进程ID列表查询最大 ModuleInstSeq
+func (dao *processInstanceDao) GetMaxModuleInstSeqByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx,
+	bizID uint32, processIDs []uint32) (int, error) {
+	if len(processIDs) == 0 {
+		return 0, nil
+	}
+
+	m := dao.genQ.ProcessInstance
+	q := tx.ProcessInstance.WithContext(kit.Ctx)
+
+	var result struct {
+		MaxID int `gorm:"column:max_id"`
+	}
+	err := q.Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).
+		Select(m.ModuleInstSeq.Max().As("max_id")).Scan(&result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxID, nil
+}
+
+// ListByProcessIDsWithTx 按进程ID列表查询所有实例，按 ProcessID + HostInstSeq 排序
+// 用于重新编排 ModuleInstSeq 时，确保同一进程的实例连续编号
+func (dao *processInstanceDao) ListByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx,
+	bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error) {
+	if len(processIDs) == 0 {
+		return nil, nil
+	}
+
+	m := dao.genQ.ProcessInstance
+
+	result, err := tx.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.In(processIDs...)).
+		Order(m.ProcessID, m.HostInstSeq).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

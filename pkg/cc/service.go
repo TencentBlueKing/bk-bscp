@@ -81,6 +81,7 @@ type GlobalSettings struct {
 	GSE          GSE               `yaml:"gse"`
 	CMDB         CMDBConfig        `yaml:"cmdb"`
 	BCS          BCS               `yaml:"bcs"`
+	PushProvider PushProvider      `yaml:"pushProvider"`
 }
 
 // BaseConf 基础配置
@@ -336,6 +337,7 @@ type DataServiceSetting struct {
 	ITSM         ITSMConfig    `yaml:"itsm"`
 	Crontab      CrontabConfig `yaml:"crontab"`
 	GSE          GSE           `yaml:"gse"`
+	PushProvider PushProvider  `yaml:"pushProvider"`
 }
 
 // trySetFlagBindIP try set flag bind ip.

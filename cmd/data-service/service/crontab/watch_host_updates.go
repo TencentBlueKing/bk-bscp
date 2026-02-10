@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -38,6 +39,14 @@ const (
 	// Config keys for cursor storage
 	hostDetailCursorKey = "host_detail_cursor"
 )
+
+// getHostDetailCursorKey 获取带租户前缀的游标 key
+func getHostDetailCursorKey(tenantID string) string {
+	if tenantID == "" {
+		return hostDetailCursorKey
+	}
+	return fmt.Sprintf("%s-%s", tenantID, hostDetailCursorKey)
+}
 
 // NewWatchHostUpdates init watch host updates
 func NewWatchHostUpdates(
@@ -91,10 +100,41 @@ func (w *WatchHostUpdates) Run() {
 					continue
 				}
 				logs.Infof("host update watch triggered")
-				w.watchHostUpdates(kt)
+				w.watchHostUpdatesByTenant(kt)
 			}
 		}
 	}()
+}
+
+// watchHostUpdatesByTenant 按租户监听主机更新事件
+func (w *WatchHostUpdates) watchHostUpdatesByTenant(kt *kit.Kit) {
+	// 多租户模式：从 app 表获取租户列表并逐个监听
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		apps, err := w.set.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get distinct tenant IDs failed, err: %v", err)
+			return
+		}
+
+		if len(apps) == 0 {
+			logs.Warnf("no tenants found in app table for watch host updates")
+			return
+		}
+
+		for _, app := range apps {
+			if app.Spec.TenantID == "" {
+				continue
+			}
+			tenantKit := *kt
+			tenantKit.TenantID = app.Spec.TenantID
+			tenantKit.Ctx = tenantKit.InternalRpcCtx()
+			w.watchHostUpdates(&tenantKit)
+		}
+		return
+	}
+
+	// 单租户模式
+	w.watchHostUpdates(kt)
 }
 
 // watchHostUpdates watch host update events
@@ -107,10 +147,12 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 		BkEventTypes: []string{hostUpdateEvent},
 		BkFields:     []string{"bk_host_id", "bk_agent_id"},
 	}
-	config, err := w.set.Config().GetConfig(kt, hostDetailCursorKey)
+	// get cursor key with tenant prefix
+	cursorKey := getHostDetailCursorKey(kt.TenantID)
+	config, err := w.set.Config().GetConfig(kt, cursorKey)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.Errorf("get cached cursor from config failed, key: %s, err: %v", hostDetailCursorKey, err)
+			logs.Errorf("get cached cursor from config failed, key: %s, err: %v", cursorKey, err)
 			return
 		}
 		// cursor not found, use timestamp
@@ -139,7 +181,7 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 		// update cursor to config table
 		lastEvent := watchResult.BkEvents[len(watchResult.BkEvents)-1]
 		config := &table.Config{
-			Key:   hostDetailCursorKey,
+			Key:   cursorKey,
 			Value: lastEvent.BkCursor,
 		}
 		err := w.set.Config().UpsertConfig(kt, []*table.Config{config})
@@ -233,9 +275,10 @@ func (w *WatchHostUpdates) handleHostUpdateEvent(
 
 // InitHostDetailCursor initializes host detail cursor to the latest position
 // This function gets the latest cursor from CMDB and updates it to config table
-func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
-	logs.Infof("start init host detail cursor")
+func InitHostDetailCursor(tenantID string, set dao.Set, cmdbService bkcmdb.Service, timeAgo int64) error {
+	logs.Infof("start init host detail cursor for tenant: %s", tenantID)
 	kt := kit.New()
+	kt.TenantID = tenantID
 	ctx, cancel := context.WithTimeout(kt.Ctx, 10*time.Second)
 	defer cancel()
 	kt.Ctx = ctx
@@ -257,9 +300,10 @@ func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64
 		return fmt.Errorf("watch host resource failed: no events found")
 	}
 
+	cursorKey := getHostDetailCursorKey(tenantID)
 	cursor := watchResult.BkEvents[len(watchResult.BkEvents)-1].BkCursor
 	config := &table.Config{
-		Key:   hostDetailCursorKey,
+		Key:   cursorKey,
 		Value: cursor,
 	}
 
@@ -268,6 +312,6 @@ func InitHostDetailCursor(set dao.Set, cmdbService bkcmdb.Service, timeAgo int64
 		return fmt.Errorf("update host detail cursor to config failed: %w", err)
 	}
 
-	logs.Infof("successfully initialized host detail cursor to: %s", cursor)
+	logs.Infof("successfully initialized host detail cursor to: %s (tenant: %s)", cursor, tenantID)
 	return nil
 }

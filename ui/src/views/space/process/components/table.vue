@@ -31,8 +31,8 @@
         </template>
       </TableColumn>
       <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis resizable />
-      <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis resizable/>
-      <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis resizable/>
+      <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis resizable />
+      <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis resizable />
       <TableColumn col-key="attachment.cc_process_id" resizable>
         <template #title>
           <span class="tips-title" v-bk-tooltips="{ content: t('对应 CMDB 中唯一 ID'), placement: 'top' }">
@@ -40,7 +40,7 @@
           </span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" resizable/>
+      <TableColumn col-key="spec.inner_ip" :title="t('内网 IP')" resizable />
       <TableColumn col-key="spec.status" :title="t('进程状态')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <div v-if="row.spec.status" class="process-status">
@@ -62,9 +62,9 @@
           <span v-else>--</span>
         </template>
       </TableColumn>
-      <TableColumn col-key="spec.cc_sync_updated_at" :title="t('状态获取时间')" resizable>
+      <TableColumn col-key="spec.process_state_synced_at" :title="t('状态获取时间')" resizable>
         <template #default="{ row }: { row: IProcessItem }">
-          {{ timeAgo(row.spec.cc_sync_updated_at) }}
+          {{ timeAgo(row.spec.process_state_synced_at) }}
         </template>
       </TableColumn>
       <TableColumn col-key="spec.cc_sync_status" :title="t('CC 同步状态')" resizable>
@@ -270,8 +270,9 @@
   import FilterProcess from './filter-process.vue';
   import SearchSelector from '../../../../components/search-selector.vue';
   import TableBtnTooltips from './table-btn-tooltips.vue';
+  import { permissionCheck } from '../../../../api';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { pagination, updatePagination } = useTablePagination('clientSearch');
   const { t } = useI18n();
   const router = useRouter();
@@ -357,6 +358,11 @@
   const expandedRowKeys = ref<number[]>([]);
   const cmdbUrl = ref('');
   const searchSelectorRef = ref();
+  const permCheckLoading = ref(false);
+  const perms = ref({
+    operate: false,
+    issued: false,
+  });
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -364,6 +370,7 @@
 
   onMounted(() => {
     loadProcessList();
+    getProcessPerm();
   });
 
   const loadProcessList = async () => {
@@ -399,8 +406,61 @@
     selectedIds.value = ids;
   };
 
+  const getProcessPerm = async () => {
+    permCheckLoading.value = true;
+    const [operateRes, issuedRes] = await Promise.all([
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'process_operate',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'generate_config',
+            },
+          },
+        ],
+      }),
+    ]);
+    perms.value.operate = operateRes.is_allowed;
+    perms.value.issued = issuedRes.is_allowed;
+    permCheckLoading.value = false;
+  };
+
+  // 判断操作权限
+  const checkOpPerm = (perm: 'operate' | 'issued') => {
+    if (permCheckLoading.value) return false;
+    if (!perms.value[perm]) {
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: perm === 'operate' ? 'process_operate' : 'release_config',
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return false;
+    }
+    return true;
+  };
+
   // 进程表格操作
   const handleOpProcess = (data: IProcessItem, op: string) => {
+    if (!checkOpPerm('operate')) return;
     const cmd = JSON.parse(data.spec.source_data);
     processIds.value = [data.id];
     if (op === 'start') {
@@ -430,12 +490,14 @@
 
   // 实例表格操作
   const handleOpInst = (processId: number, id: number, op: string) => {
+    if (!checkOpPerm('operate')) return;
     processIds.value = [processId];
     processInstanceId.value = id;
     handleConfirmOp(op);
   };
 
   const handleBatchOpProcess = (op: string) => {
+    if (!checkOpPerm('operate')) return;
     processIds.value = selectedIds.value;
     if (op === 'start') {
       batchOpProcessInfo.value = {
@@ -494,6 +556,7 @@
   };
 
   const handleUpdateManagedInfo = (data: IProcessItem) => {
+    if (!checkOpPerm('operate')) return;
     processIds.value = [data.id];
     managedInfo.value.old = data.spec.prev_data;
     managedInfo.value.new = data.spec.source_data;
@@ -505,6 +568,7 @@
       window.open(data.spec.process_config_view_url);
       return;
     }
+    if (!checkOpPerm('operate')) return;
     if (op === 'link') {
       window.open(cmdbUrl.value);
       return;
@@ -558,6 +622,7 @@
 
   // 配置下发
   const handleConfigIssued = (process: IProcessItem) => {
+    if (!checkOpPerm('issued')) return;
     router.push({
       name: 'config-issued',
       query: {

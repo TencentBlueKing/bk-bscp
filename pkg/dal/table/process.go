@@ -98,13 +98,13 @@ type ProcessSpec struct {
 	Environment          string       `gorm:"column:environment" json:"environment"`                         // 环境类型(production/staging等)
 	Alias                string       `gorm:"column:alias" json:"alias"`                                     // 进程别名
 	InnerIP              string       `gorm:"column:inner_ip" json:"inner_ip"`                               // 内网IP
+	InnerIPV6            string       `gorm:"column:inner_ip_v6" json:"inner_ip_v6"`                         // 内网IPv6
 	CcSyncStatus         CCSyncStatus `gorm:"column:cc_sync_status" json:"cc_sync_status"`                   // cc同步状态:synced,deleted,updated
 	ProcessStateSyncedAt *time.Time   `gorm:"column:process_state_synced_at" json:"process_state_synced_at"` // 进程状态同步时间
 	SourceData           string       `gorm:"column:source_data" json:"source_data"`                         // 本次同步的数据
 	PrevData             string       `gorm:"column:prev_data" json:"prev_data"`                             // 上一次同步的数据
 	ProcNum              uint         `gorm:"column:proc_num" json:"proc_num"`                               // 进程数量
 	FuncName             string       `gorm:"column:func_name" json:"func_name"`                             // 进程二进制文件名
-	DeletedAt            *time.Time   `db:"deleted_at" json:"deleted_at" gorm:"column:deleted_at"`           // 删除时间
 }
 
 func (p ProcessInfo) Value() (string, error) {

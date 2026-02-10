@@ -125,9 +125,13 @@ bkapigw_docs:
 gen:
 	@go run scripts/gen/main.go
 
+# 与 .github/workflows/lint.yml 中 golangci-lint 版本保持一致
+GOLANGCI_LINT_IMAGE ?= golangci/golangci-lint:v1.62.0
+
 .PHONY: lint
 lint:
-	@golangci-lint run --issues-exit-code=0 --fix --skip-dirs=test --skip-dirs=pkg/logs/glog
+	@docker run --rm -v ${PRO_DIR}:/app -w /app ${GOLANGCI_LINT_IMAGE} \
+		sh -c "go mod download && golangci-lint run --issues-exit-code=0 --fix --timeout=5m --skip-dirs=test --skip-dirs=pkg/logs/glog"
 
 test: pre
 	@cd test/suite && make && cp -rf suite-test ${OUTPUT_DIR}/ && rm -rf suite-test

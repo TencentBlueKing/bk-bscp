@@ -1,0 +1,129 @@
+# BSCP Single-tenant to Multi-tenant Migration Configuration
+# 单租户到多租户数据迁移配置文件
+
+# Migration settings
+# 迁移设置
+migration:
+  # Target tenant ID to set for all migrated records
+  # 目标租户ID，将填充到所有迁移记录中
+  target_tenant_id: "10001"
+  
+  # Business IDs to migrate (if not specified, migrate all businesses)
+  # 要迁移的业务ID列表（如果不指定，则迁移所有业务）
+  # This allows migrating data for specific businesses only
+  # 支持按业务维度迁移数据
+  # biz_ids:
+  #   - 100
+  #   - 200
+  #   - 300
+  
+  # Number of records to process in each batch
+  # 每批处理的记录数
+  batch_size: 1000
+  
+  # If true, continue migration even if some records fail
+  # 如果为 true，即使部分记录失败也继续迁移
+  continue_on_error: false
+
+# Source environment configuration
+# 源环境配置
+source:
+  mysql:
+    # MySQL endpoints in host:port format
+    endpoints:
+      - "localhost:3306"
+    database: ""
+    user: "root"
+    password: ""
+    # Optional connection settings
+    dialTimeoutSec: 15
+    readTimeoutSec: 30
+    writeTimeoutSec: 30
+    maxOpenConn: 50
+    maxIdleConn: 10
+  
+  vault:
+    # Vault server address
+    address: "http://localhost:8200"
+    # Vault access token
+    token: "root-token"
+
+# Target environment configuration
+# 目标环境配置
+target:
+  mysql:
+    endpoints:
+      - "localhost:3306"
+    database: ""
+    user: "root"
+    password: ""
+    dialTimeoutSec: 15
+    readTimeoutSec: 30
+    writeTimeoutSec: 30
+    maxOpenConn: 50
+    maxIdleConn: 10
+  
+  vault:
+    address: "http://localhost:8200"
+    token: "root-token"
+
+# Tables to migrate (if not specified, use default CoreTables)
+# 需要迁移的表（如果不指定，使用默认的 CoreTables 列表）
+tables:
+  # First level - no foreign key dependencies
+  - sharding_bizs
+  - applications
+  - template_spaces
+  - groups
+  - hooks
+  - credentials
+  # Second level - depends on first level
+  - config_items
+  - releases
+  - strategy_sets
+  - template_sets
+  - templates
+  - template_variables
+  - hook_revisions
+  - credential_scopes
+  - group_app_binds
+  # Third level - depends on second level
+  - commits
+  - contents
+  - strategies
+  - current_published_strategies
+  - kvs
+  - released_config_items
+  - released_groups
+  - released_hooks
+  - released_kvs
+  - template_revisions
+  - app_template_bindings
+  - app_template_variables
+  - released_app_templates
+  - released_app_template_variables
+
+# Tables to skip during migration
+# 迁移时跳过的表（运行时/历史数据）
+skip_tables:
+  - events                        # 事件通知，系统自动生成
+  - current_released_instances    # 客户端当前版本，自动更新
+  - resource_locks                # 资源锁，运行时数据
+  - clients                       # 客户端连接信息
+  - client_events                 # 客户端事件
+  - client_querys                 # 客户端查询记录
+  - audits                        # 审计日志（可选迁移）
+  - published_strategy_histories  # 发布历史（可选迁移）
+  - archived_apps                 # 归档应用
+  - configs                       # ITSM配置，新环境重新配置
+  - schema_migrations             # 迁移记录表
+  - biz_hosts                     # 业务主机关系表，定时同步
+  - sharding_dbs                  # 业务数据库分片配置
+
+# Logging configuration
+# 日志配置
+log:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # If true, logs to stderr
+  toStdErr: true

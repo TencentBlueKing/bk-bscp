@@ -30,8 +30,8 @@ const (
 )
 
 // Biz 同步业务步骤
-func SyncCMDB(bizID uint32) *types.Step {
-	logs.V(3).Infof("Start synchronizing CMDB, bizID=%d", bizID)
+func SyncCMDB(tenantID string, bizID uint32) *types.Step {
+	logs.V(3).Infof("Start synchronizing CMDB, tenantID=%s, bizID=%d", tenantID, bizID)
 
 	syncCmdb := types.NewStep("sync-cmdb-task", cmdbGse.SyncCMDB.String()).
 		SetAlias("sync-cmdb").
@@ -39,7 +39,8 @@ func SyncCMDB(bizID uint32) *types.Step {
 		SetMaxTries(MaxTries)
 
 	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncCMDBPayload{
-		BizID: bizID,
+		BizID:    bizID,
+		TenantID: tenantID,
 	}))
 
 	return syncCmdb

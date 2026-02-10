@@ -13,8 +13,6 @@
 package dao
 
 import (
-	"time"
-
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
@@ -43,7 +41,7 @@ type Process interface {
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 	// BatchUpdateWithTx batch update client instances with transaction.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
-	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string, bizID uint32) ([]*table.Process, error)
+	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]*table.Process, error)
 	UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
 	ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields ...field.Expr) ([]*table.Process, error)
 	// UpdateSelectedFields 更新指定字段
@@ -62,6 +60,10 @@ type Process interface {
 	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
 	// GetByOperateRange 根据操作范围查询进程
 	GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error)
+	// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
+	GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
+	// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
+	ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32, alias string) ([]uint32, error)
 }
 
 var _ Process = new(processDao)
@@ -70,6 +72,16 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
+func (dao *processDao) GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID,
+	ccProcessID uint32, alias string) (*table.Process, error) {
+	m := dao.genQ.Process
+
+	return tx.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.CcProcessID.Eq(ccProcessID), m.Alias_.Eq(alias)).
+		Take()
 }
 
 // ProcessCountByServiceTemplate implements Process.
@@ -224,22 +236,15 @@ func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, sta
 		m.CcSyncStatus.ColumnName().String(): state,
 	}
 
-	// deleted 状态：补充 deleted_at
-	if state == table.Deleted.String() {
-		update[m.DeletedAt.ColumnName().String()] = time.Now()
-	}
-
 	_, err := q.Updates(update)
 	return err
 }
 
 // ListProcByBizID implements Process.
-func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, tenantID string,
-	bizID uint32) ([]*table.Process, error) {
+func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 
-	return tx.Process.WithContext(kit.Ctx).Where(m.TenantID.Eq(tenantID), m.BizID.Eq(bizID),
-		m.CcSyncStatus.Neq(table.Deleted.String())).Find()
+	return tx.Process.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID)).Find()
 }
 
 // BatchUpdateWithTx implements Process.
@@ -450,4 +455,21 @@ func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRang
 	conds = append(conds, m.CcSyncStatus.Neq(table.Deleted.String()))
 
 	return q.Where(conds...).Find()
+}
+
+// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
+func (dao *processDao) ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID,
+	moduleID uint32, alias string) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.ModuleID.Eq(moduleID), m.Alias_.Eq(alias),
+			m.CcSyncStatus.Neq(table.Deleted.String())).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

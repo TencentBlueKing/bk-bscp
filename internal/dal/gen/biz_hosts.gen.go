@@ -27,6 +27,7 @@ func newBizHost(db *gorm.DB, opts ...gen.DOOption) bizHost {
 
 	tableName := _bizHost.bizHostDo.TableName()
 	_bizHost.ALL = field.NewAsterisk(tableName)
+	_bizHost.TenantID = field.NewString(tableName, "tenant_id")
 	_bizHost.BizID = field.NewUint(tableName, "bk_biz_id")
 	_bizHost.HostID = field.NewUint(tableName, "bk_host_id")
 	_bizHost.AgentID = field.NewString(tableName, "bk_agent_id")
@@ -42,6 +43,7 @@ type bizHost struct {
 	bizHostDo bizHostDo
 
 	ALL           field.Asterisk
+	TenantID      field.String
 	BizID         field.Uint
 	HostID        field.Uint
 	AgentID       field.String
@@ -63,6 +65,7 @@ func (b bizHost) As(alias string) *bizHost {
 
 func (b *bizHost) updateTableName(table string) *bizHost {
 	b.ALL = field.NewAsterisk(table)
+	b.TenantID = field.NewString(table, "tenant_id")
 	b.BizID = field.NewUint(table, "bk_biz_id")
 	b.HostID = field.NewUint(table, "bk_host_id")
 	b.AgentID = field.NewString(table, "bk_agent_id")
@@ -92,7 +95,8 @@ func (b *bizHost) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (b *bizHost) fillFieldMap() {
-	b.fieldMap = make(map[string]field.Expr, 5)
+	b.fieldMap = make(map[string]field.Expr, 6)
+	b.fieldMap["tenant_id"] = b.TenantID
 	b.fieldMap["bk_biz_id"] = b.BizID
 	b.fieldMap["bk_host_id"] = b.HostID
 	b.fieldMap["bk_agent_id"] = b.AgentID

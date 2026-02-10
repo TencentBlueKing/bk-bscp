@@ -50,6 +50,13 @@ func genBizCommonActions() []client.CommonAction {
 				{ID: CredentialView},
 				{ID: CredentialManage},
 				{ID: AuditView},
+				{ID: ProcConfigMgmtView},
+				{ID: ProcessOperate},
+				{ID: ConfigTemplateCreate},
+				{ID: ConfigTemplateEdit},
+				{ID: ConfigTemplateDelete},
+				{ID: ConfigGenerate},
+				{ID: ConfigRelease},
 			},
 		},
 	}

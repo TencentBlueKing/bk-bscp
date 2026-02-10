@@ -70,4 +70,6 @@ const (
 	CredentialScope ResourceType = "credential_scope" //nolint:gosec
 	// Audit resource's bscp audit resource type
 	Audit ResourceType = "audit"
+	// ProcConfigMgmt resource's bscp process and config management resource type
+	ProcConfigMgmt ResourceType = "process_and_config_management"
 )

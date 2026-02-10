@@ -112,6 +112,7 @@
   import { ENV_TYPE_MAP, TASK_ACTION_MAP, TASK_STATUS_MAP } from '../../../../constants/task';
   import type { ITaskHistoryItem, IOperateRange } from '../../../../../types/task';
   import { datetimeFormat } from '../../../../utils';
+  import { permissionCheck } from '../../../../api';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import useGlobalStore from '../../../../store/global';
   import TableEmpty from '../../../../components/table/table-empty.vue';
@@ -121,7 +122,7 @@
   const { t } = useI18n();
   const router = useRouter();
   const { pagination, updatePagination } = useTablePagination('taskList');
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
 
   const isSearchEmpty = ref(false);
   const searchSelectorRef = ref();
@@ -135,6 +136,12 @@
   const loading = ref(false);
   const tableRef = ref();
   const searchValue = ref<{ [key: string]: string | string[] }>();
+  const perms = ref({
+    operate: false,
+    generate: false,
+    issued: false,
+  });
+  const permCheckLoading = ref(false);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -142,15 +149,97 @@
 
   onMounted(() => {
     loadTaskList();
+    getRetryPerm();
   });
 
   const handleRetry = async (row: ITaskHistoryItem) => {
     try {
-      await retryTask(spaceId.value, row.id);
+      let action = '';
+      if (row.task_object === 'process') {
+        action = 'operate';
+      } else if (row.task_action === 'config_generate') {
+        action = 'generate';
+      } else if (row.task_action === 'config_publish') {
+        action = 'issued';
+      }
+      if (action && !checkPerm(action)) {
+        return;
+      }
+      await retryTask(spaceId.value, row.id, row.task_action);
       loadTaskList();
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const getRetryPerm = async () => {
+    permCheckLoading.value = true;
+    const [operateRes, generateRes, issuedRes] = await Promise.all([
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'process_operate',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'generate_config',
+            },
+          },
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: 'release_config',
+            },
+          },
+        ],
+      }),
+    ]);
+    perms.value.operate = operateRes.is_allowed;
+    perms.value.generate = generateRes.is_allowed;
+    perms.value.issued = issuedRes.is_allowed;
+    permCheckLoading.value = false;
+  };
+
+  const checkPerm = (action: string) => {
+    if (!perms.value[action as keyof typeof perms.value] && !permCheckLoading.value) {
+      let resourcesAction = '';
+      if (action === 'operate') {
+        resourcesAction = 'process_operate';
+      } else if (action === 'generate') {
+        resourcesAction = 'generate_config';
+      } else if (action === 'issued') {
+        resourcesAction = 'release_config';
+      }
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'process_and_config_management',
+              action: resourcesAction,
+            },
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return false;
+    }
+    return true;
   };
 
   const loadTaskList = async () => {

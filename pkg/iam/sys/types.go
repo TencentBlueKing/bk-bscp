@@ -96,6 +96,14 @@ const (
 	CredentialManage client.ActionID = "app_credential_manage" //nolint:gosec
 	// AuditView 审计查看
 	AuditView client.ActionID = "audit_view"
+	// ProcConfigMgmtView 进程配置管理查看
+	ProcConfigMgmtView   client.ActionID = "proc_config_mgmt_view"
+	ProcessOperate       client.ActionID = "process_operate"
+	ConfigTemplateCreate client.ActionID = "config_template_create"
+	ConfigTemplateEdit   client.ActionID = "config_template_edit"
+	ConfigTemplateDelete client.ActionID = "config_template_delete"
+	ConfigGenerate       client.ActionID = "config_generate"
+	ConfigRelease        client.ActionID = "config_release"
 )
 
 // ActionIDNameMap is action id type map.
@@ -127,6 +135,14 @@ var ActionIDNameMap = map[client.ActionID]string{
 	CredentialView:   "服务秘钥查看",
 	CredentialManage: "服务秘钥管理",
 	AuditView:        "操作记录查看",
+
+	ProcConfigMgmtView:   "进程配置管理查看",
+	ProcessOperate:       "进程操作",
+	ConfigTemplateCreate: "配置模板创建",
+	ConfigTemplateEdit:   "配置模板编辑",
+	ConfigTemplateDelete: "配置模板删除",
+	ConfigGenerate:       "配置生成",
+	ConfigRelease:        "配置下发",
 }
 
 // InstanceSelectionID selection id to register iam.

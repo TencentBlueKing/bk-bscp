@@ -26,7 +26,9 @@ import (
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bcs"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
@@ -52,7 +54,7 @@ const (
 	// CallbackName push config callback name
 	CallbackName istep.CallbackName = "Callback"
 	// scriptNameTmpl 脚本名称模板
-	scriptNameTmpl   = "bk_gse_script_%d.sh"
+	scriptNameTmpl   = "bk_gse_script_%d_%d.sh"
 	scriptTimeoutSec = 3600
 )
 
@@ -64,11 +66,15 @@ type PushConfigExecutor struct {
 }
 
 // NewPushConfigExecutor new push config executor
-func NewPushConfigExecutor(dao dao.Set, gseService *gse.Service, repo repository.Provider) *PushConfigExecutor {
+func NewPushConfigExecutor(dao dao.Set, gseService *gse.Service, cmdbService bkcmdb.Service, repo repository.Provider,
+	pm pushmanager.Service) *PushConfigExecutor {
 	return &PushConfigExecutor{
 		Executor: &common.Executor{
-			Dao:        dao,
-			GseService: gseService,
+			Dao:         dao,
+			GseService:  gseService,
+			GseConf:     cc.G().GSE,
+			CMDBService: cmdbService,
+			PM:          pm,
 		},
 		Repo:     repo,
 		fileLock: lock.NewFileLock(),
@@ -136,7 +142,8 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 
 	scriptStoreDir := e.GseConf.ScriptStoreDir
 
-	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix())
+	scriptName := fmt.Sprintf(scriptNameTmpl, time.Now().Unix(), commonPayload.ProcessPayload.ModuleInstSeq)
+
 	resp, err := e.GseService.AsyncExtensionsExecuteScript(kt.Ctx, &gse.ExecuteScriptReq{
 		Agents: []gse.Agent{
 			{
@@ -200,6 +207,14 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
 		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
 	}
+
+	// 统一推送事件
+	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+		BizID:    payload.BizID,
+		BatchID:  payload.BatchID,
+		Operator: payload.OperatorUser,
+		CbErr:    cbErr,
+	})
 
 	// 仅配置下发成功才更新配置实例的状态
 	if !isSuccess {

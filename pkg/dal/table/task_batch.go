@@ -218,6 +218,8 @@ type TaskBatchSpec struct {
 	CompletedCount uint32 `json:"completed_count" gorm:"column:completed_count"` // 已完成任务数
 	SuccessCount   uint32 `json:"success_count" gorm:"column:success_count"`     // 成功任务数
 	FailedCount    uint32 `json:"failed_count" gorm:"column:failed_count"`       // 失败任务数
+
+	ExtraData string `json:"extra_data" gorm:"column:extra_data"` // 额外扩展数据
 }
 
 // 辅助方法：设置任务数据

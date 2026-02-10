@@ -22,6 +22,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
@@ -58,12 +59,14 @@ type ProcessExecutor struct {
 }
 
 // NewProcessExecutor new process executor
-func NewProcessExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, dao dao.Set) *ProcessExecutor {
+func NewProcessExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, pm pushmanager.Service,
+	dao dao.Set) *ProcessExecutor {
 	return &ProcessExecutor{
 		Executor: &common.Executor{
 			GseService:  gseService,
 			CMDBService: cmdbService,
 			Dao:         dao,
+			PM:          pm,
 		},
 	}
 }
@@ -73,6 +76,7 @@ type OperatePayload struct {
 	BizID                     uint32
 	BatchID                   uint32 // 任务批次ID，用于 Callback 更新批次状态
 	OperateType               table.ProcessOperateType
+	OperateUser               string
 	ProcessID                 uint32
 	ProcessInstanceID         uint32
 	NeedCompareCMDB           bool                       // 是否需要对比CMDB配置，适配页面强制更新的场景
@@ -590,6 +594,14 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 			// PASS 继续执行，不影响回滚逻辑
 		}
 	}
+
+	// 统一推送事件
+	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+		BizID:    payload.BizID,
+		BatchID:  payload.BatchID,
+		Operator: payload.OperateUser,
+		CbErr:    cbErr,
+	})
 
 	// 如果任务成功，不需要回滚
 	if isSuccess {

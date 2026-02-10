@@ -49,6 +49,7 @@ func mig20251020111432Up(tx *gorm.DB) error {
 		Status         string     `gorm:"type:varchar(250) not null;comment:任务状态" json:"status"`  // 任务状态
 		StartAt        *time.Time `gorm:"type:timestamp not null;comment:任务开始时间" json:"start_at"` // 任务开始时间
 		EndAt          *time.Time `gorm:"type:timestamp null;comment:任务结束时间" json:"end_at"`       // 任务结束时间
+		ExtraData      string     `gorm:"column:extra_data;type:json;NOT NULL"`                   // 额外扩展数据
 
 		// Revision is revision info of the resource
 		Creator   string    `gorm:"type:varchar(64) not null" json:"creator"`

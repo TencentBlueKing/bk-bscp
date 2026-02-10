@@ -24,6 +24,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -116,18 +117,47 @@ func (c *SyncBizHost) SyncBizHost(kt *kit.Kit) {
 		logs.Infof("sync biz host completed in %v", duration)
 	}()
 
+	// 多租户模式：从 app 表获取租户列表并逐个同步
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		apps, err := c.set.App().GetDistinctTenantIDs(kt)
+		if err != nil {
+			logs.Errorf("get distinct tenant IDs failed, err: %v", err)
+			return
+		}
+
+		if len(apps) == 0 {
+			logs.Warnf("no tenants found in app table")
+			return
+		}
+
+		for _, app := range apps {
+			if app.Spec.TenantID == "" {
+				continue
+			}
+			kt.TenantID = app.Spec.TenantID
+			c.syncBizHostByTenant(kt)
+		}
+		return
+	}
+
+	// 单租户模式
+	c.syncBizHostByTenant(kt)
+}
+
+// syncBizHostByTenant 按租户同步业务主机关系
+func (c *SyncBizHost) syncBizHostByTenant(kt *kit.Kit) {
 	// Query BSCP businesses
 	bizList, err := c.queryBSCPBusiness(kt)
 	if err != nil {
-		logs.Errorf("query BSCP business failed, err: %v", err)
+		logs.Errorf("query BSCP business failed, tenant: %s, err: %v", kt.TenantID, err)
 		return
 	}
-	logs.Infof("query BSCP business success, total business: %d", len(bizList))
+	logs.Infof("query BSCP business success, tenant: %s, total business: %d", kt.TenantID, len(bizList))
 
 	// Query host information by business ID
 	for _, biz := range bizList {
 		if err := c.syncBusinessHosts(kt, int(biz)); err != nil {
-			logs.Errorf("sync business %d hosts failed, err: %v", biz, err)
+			logs.Errorf("sync business %d hosts failed, tenant: %s, err: %v", biz, kt.TenantID, err)
 			// if sync failed, continue to sync next business
 			continue
 		}
@@ -145,7 +175,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 				Start: start,
 				Limit: limit,
 			},
-			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id", "bk_host_innerip"},
+			Fields: []string{"bk_biz_id", "bk_host_id", "bk_agent_id", "bk_host_innerip", "bk_host_innerip_v6"},
 		}
 
 		// Apply rate limiting before each request
@@ -166,6 +196,7 @@ func (c *SyncBizHost) syncBusinessHosts(kt *kit.Kit, bizID int) error {
 		var batchBizHosts []*table.BizHost
 		for _, host := range hostResult.Info {
 			bizHost := &table.BizHost{
+				TenantID:      kt.TenantID,
 				BizID:         uint(bizID),
 				HostID:        uint(host.BkHostID),
 				AgentID:       host.BkAgentID,
