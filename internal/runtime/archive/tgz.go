@@ -70,7 +70,10 @@ func (t TgzArchive) UnTar(r io.Reader) error {
 			return errf.New(int32(FileTooLarge), hdr.Name)
 		}
 
-		fp := filepath.Join(t.destPath, sanitize(hdr.Name))
+		fp, err := safePath(t.destPath, sanitize(hdr.Name))
+		if err != nil {
+			return err
+		}
 
 		if hdr.FileInfo().IsDir() {
 			if err = os.MkdirAll(fp, os.FileMode(hdr.Mode)); err != nil {

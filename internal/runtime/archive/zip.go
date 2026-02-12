@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -100,6 +101,16 @@ func (z ZipArchive) unpackZip(zr *zip.Reader) error {
 	return nil
 }
 
+// safePath validates that the resolved path is within destPath to prevent Zip Slip attacks.
+func safePath(destPath, entryName string) (string, error) {
+	destPath = filepath.Clean(destPath)
+	p := filepath.Join(destPath, entryName)
+	if !strings.HasPrefix(filepath.Clean(p)+string(os.PathSeparator), destPath+string(os.PathSeparator)) {
+		return "", fmt.Errorf("illegal file path in archive: %s", entryName)
+	}
+	return filepath.Clean(p), nil
+}
+
 func (z ZipArchive) unzipFile(f *zip.File) error {
 	var decodeName string
 	if f.Flags == 0 {
@@ -111,7 +122,11 @@ func (z ZipArchive) unzipFile(f *zip.File) error {
 	}
 
 	if f.FileInfo().IsDir() {
-		if err := os.MkdirAll(filepath.Join(z.destPath, decodeName), f.Mode().Perm()); err != nil {
+		dirPath, err := safePath(z.destPath, decodeName)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(dirPath, f.Mode().Perm()); err != nil {
 			return err
 		}
 		return nil
@@ -125,9 +140,12 @@ func (z ZipArchive) unzipFile(f *zip.File) error {
 		_ = rc.Close()
 	}()
 	filePath := sanitize(decodeName)
-	z.destPath = filepath.Join(z.destPath, filePath)
+	fullPath, err := safePath(z.destPath, filePath)
+	if err != nil {
+		return err
+	}
 
-	fileDir := filepath.Dir(z.destPath)
+	fileDir := filepath.Dir(fullPath)
 	_, err = os.Lstat(fileDir)
 	if err != nil {
 		if err = os.MkdirAll(fileDir, 0o700); err != nil {
@@ -135,7 +153,7 @@ func (z ZipArchive) unzipFile(f *zip.File) error {
 		}
 	}
 
-	file, err := os.Create(z.destPath)
+	file, err := os.Create(fullPath)
 	if err != nil {
 		return err
 	}
