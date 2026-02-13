@@ -1,0 +1,44 @@
+migration:
+  multi_tenant: false
+  tenant_id: "default"
+  biz_ids: []
+  batch_size: 500
+  continue_on_error: false
+  skip_cmdb: false
+
+source:
+  mysql:
+    endpoints: ["127.0.0.1:33060"]
+    database: ""
+    user: "root"
+    password: ""
+
+target:
+  mysql:
+    endpoints: ["127.0.0.1:3306"]
+    database: ""
+    user: "root"
+    password: ""
+
+repository:
+  storage_type: ""
+  bk_repo:
+    endpoint: ""
+    project: ""
+    username: ""
+    password: ""
+  # s3:
+  #   endpoint: "cos.ap-guangzhou.myqcloud.com"
+  #   access_key_id: ""
+  #   secret_access_key: ""
+  #   bucket_name: "bscp-bucket"
+  #   use_ssl: true
+
+cmdb:
+  endpoint: ""
+  app_code: ""
+  app_secret: ""
+  username: ""
+
+log:
+  level: "info"
