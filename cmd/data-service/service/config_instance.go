@@ -665,16 +665,40 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 		return nil, fmt.Errorf("get latest template revision failed, err: %v", err)
 	}
 
-	// 收集所有有效版本 ID
-	versionIDs := collectVersionIDs(configInstances)
-	// 构建 versions 返回项，默认包含 "-"
-	choices := make([]*pbcin.Choice, 0)
-	choices = append(choices, &pbcin.Choice{
-		Id:   "0",
-		Name: "-",
-	})
-	if len(versionIDs) == 0 {
+	uniqueRevisionIDs := make(map[uint32]struct{})
+
+	needDefaultOption := false
+
+	for _, ci := range configInstances {
+		if ci.Attachment == nil {
+			continue
+		}
+		if ci.Attachment.ConfigVersionID == 0 {
+			needDefaultOption = true
+		}
+
+		uniqueRevisionIDs[ci.Attachment.ConfigVersionID] = struct{}{}
+	}
+
+	// 预分配容量
+	choices := make([]*pbcin.Choice, 0, len(uniqueRevisionIDs)+1)
+
+	// 只有在存在 versionID=0 时才加 "-"
+	if needDefaultOption {
+		choices = append(choices, &pbcin.Choice{
+			Id:   "0",
+			Name: "-",
+		})
+	}
+
+	if len(uniqueRevisionIDs) == 0 {
 		return newFilterOptions(latestRevision, choices), nil
+	}
+
+	// 查询去重后的 revision
+	versionIDs := make([]uint32, 0, len(uniqueRevisionIDs))
+	for id := range uniqueRevisionIDs {
+		versionIDs = append(versionIDs, id)
 	}
 
 	// 查询版本信息
@@ -692,22 +716,6 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 	}
 
 	return newFilterOptions(latestRevision, choices), nil
-}
-
-// collectVersionIDs 提取配置实例中的唯一版本ID
-func collectVersionIDs(configInstances []*table.ConfigInstance) []uint32 {
-	m := make(map[uint32]struct{}, len(configInstances))
-	for _, ci := range configInstances {
-		if ci.Attachment != nil && ci.Attachment.ConfigVersionID > 0 {
-			m[ci.Attachment.ConfigVersionID] = struct{}{}
-		}
-	}
-
-	versionIDs := make([]uint32, 0, len(m))
-	for id := range m {
-		versionIDs = append(versionIDs, id)
-	}
-	return versionIDs
 }
 
 // newFilterOptions 构造统一返回结构
