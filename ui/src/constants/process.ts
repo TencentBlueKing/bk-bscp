@@ -5,6 +5,7 @@ export const CC_SYNC_STATUS = {
   synced: localT('正常'),
   deleted: localT('已删除'),
   updated: localT('有更新'),
+  abnormal: localT('异常'),
 };
 
 // 进程状态
@@ -33,4 +34,6 @@ export const PROCESS_BUTTON_DISABLED_TIPS = {
   UNKNOWN_PROCESS_STATUS: localT('进程状态异常'),
   NO_NEED_OPERATE: localT('当前状态无需执行该操作'),
   PROCESS_DELETED: localT('进程已删除，无法操作'),
+  NO_REGISTER_UPDATE: localT('无需更新托管信息'),
+  PROCESS_ABNORMAL: localT('进程异常'),
 };

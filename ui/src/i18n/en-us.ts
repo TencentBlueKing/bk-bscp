@@ -1484,4 +1484,7 @@ export default {
   最后一次下发: 'Last Issued',
   检查结果: 'Check Result',
   '进程已删除，无法操作': 'Process has been deleted, cannot operate',
+  异常: 'Abnormal',
+  无需更新托管信息: 'No need to update host information',
+  进程异常: 'Process Abnormal',
 };

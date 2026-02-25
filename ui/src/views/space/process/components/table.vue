@@ -712,7 +712,7 @@
     }
   }
   .cc-sync-status {
-    &.deleted {
+    &.deleted, &.abnormal {
       color: #e71818;
     }
     &.updated {
