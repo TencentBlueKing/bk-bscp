@@ -34,6 +34,7 @@ const (
 	DisableReasonNoRegisterUpdate    = "NO_REGISTER_UPDATE"     // 无需更新托管信息
 	DisableReasonNoNeedOperate       = "NO_NEED_OPERATE"        // 当前状态无需执行该操作
 	DisableReasonProcessDeleted      = "PROCESS_DELETED"        // 进程已删除
+	DisableReasonProcessAbnormal     = "PROCESS_ABNORMAL"       // 进程异常
 )
 
 var (
@@ -413,7 +414,17 @@ CanProcessOperate 判断某个操作是否允许执行
   - 其他操作：
     · 一律禁止，返回进程已删除
 
-6. 正常状态下的操作判定逻辑
+6. 进程异常（syncStatus = Abnormal）状态的特殊规则
+  - 停止操作：
+    · 运行中 或 部分运行 → 允许停止
+    · 已停止 → 禁止（无需操作）
+  - 取消托管操作：
+    · 已托管 或 部分托管 → 允许取消托管
+    · 未托管 → 禁止（无需操作）
+  - 其他操作：
+    · 一律禁止，返回进程异常
+
+7. 正常状态下的操作判定逻辑
 
   - 注册操作（Register）：
     · 未托管 或 部分托管 → 允许注册
@@ -480,6 +491,7 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 	isUnmanaged := managedState == table.ProcessManagedStatusUnmanaged.String()
 	isPartlyManaged := managedState == table.ProcessManagedStatusPartlyManaged.String()
 	isDeleted := syncStatus == table.Deleted.String()
+	isAbnormal := syncStatus == table.Abnormal.String()
 
 	// 5. 已删除状态的特殊规则
 	if isDeleted {
@@ -507,7 +519,31 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		}
 	}
 
-	// 6. 正常状态逻辑
+	// 6. 异常状态逻辑
+	if isAbnormal {
+		switch op {
+		case table.StopProcessOperate, table.KillProcessOperate:
+			if isRunning || isPartlyRunning {
+				return true, "", DisableReasonNone
+			}
+			return false,
+				"process is already stopped, no need to stop",
+				DisableReasonNoNeedOperate
+		case table.UnregisterProcessOperate:
+			if isManaged || isPartlyManaged {
+				return true, "", DisableReasonNone
+			}
+			return false,
+				"process is already unmanaged, no need to unregister",
+				DisableReasonNoNeedOperate
+		default:
+			return false,
+				"process is abnormal, only stop or unregister is allowed",
+				DisableReasonProcessAbnormal
+		}
+	}
+
+	// 7. 正常状态逻辑
 	switch op {
 	case table.RegisterProcessOperate:
 		// 允许：未托管 或 部分托管

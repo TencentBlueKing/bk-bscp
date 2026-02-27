@@ -108,6 +108,7 @@ type SyncContext struct {
 	Now           time.Time
 	HostCounter   map[HostProcessKey]int // key: HostProcessKey{ccProcessID, hostID}
 	ModuleCounter map[ModuleAliasKey]int // key: ModuleAliasKey{moduleID, alias}
+	BizID         uint32
 }
 
 // BuildInstancesParams buildInstances 函数的参数
@@ -147,4 +148,22 @@ type ReorderParams struct {
 	ModuleID   uint32
 	Alias      string
 	ExcludeIDs []uint32
+}
+
+// HostAliasKey 用于标识“同一主机下的进程别名”唯一组合。
+//
+// 主要用途：
+//  1. 在内存中作为 map key 进行分组统计
+//  2. 检测 (hostID + alias) 是否存在重复
+//  3. 用于判断同一主机内进程别名冲突
+//
+// 冲突定义：
+//
+//	在同一个 biz 范围内，如果相同 hostID 下存在多个相同 alias，
+//	则视为进程别名冲突，需要标记为 Abnormal。
+type HostAliasKey struct {
+	// HostID 表示进程所属主机 ID（唯一主机标识）
+	HostID uint32
+	// Alias 表示进程别名（同一主机内必须唯一）
+	Alias string
 }

@@ -64,6 +64,8 @@ type Process interface {
 	GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
 	// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
 	ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32, alias string) ([]uint32, error)
+	ListByHostAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32, alias string) ([]uint32, error)
+	UpdateSyncStatus(kit *kit.Kit, state string, ids []uint32) error
 }
 
 var _ Process = new(processDao)
@@ -72,6 +74,35 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateSyncStatus implements [Process].
+func (dao *processDao) UpdateSyncStatus(kit *kit.Kit, state string, ids []uint32) error {
+	m := dao.genQ.Process
+
+	update := map[string]any{
+		m.CcSyncStatus.ColumnName().String(): state,
+	}
+
+	_, err := dao.genQ.Process.WithContext(kit.Ctx).
+		Where(m.ID.In(ids...)).
+		Updates(update)
+	return err
+}
+
+// ListByHostAndAliasWithTx implements [Process].
+func (dao *processDao) ListByHostAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, hostID uint32,
+	alias string) ([]uint32, error) {
+	m := dao.genQ.Process
+
+	var result []uint32
+	if err := tx.Process.WithContext(kit.Ctx).
+		Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.HostID.Eq(hostID), m.Alias_.Eq(alias), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
@@ -180,7 +211,7 @@ func (dao *processDao) ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table
 	m := dao.genQ.Process
 
 	return dao.genQ.Process.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Where(m.BizID.Eq(bizID), m.TenantID.Eq(kit.TenantID), m.CcSyncStatus.Neq(table.Deleted.String())).
 		Find()
 }
 
@@ -244,7 +275,9 @@ func (dao *processDao) UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, sta
 func (dao *processDao) ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
 
-	return tx.Process.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID)).Find()
+	return tx.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Find()
 }
 
 // BatchUpdateWithTx implements Process.
