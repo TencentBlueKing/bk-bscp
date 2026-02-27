@@ -162,6 +162,7 @@ const routes = [
         name: 'task-history',
         meta: {
           navModule: 'task',
+          permission: 'process_config_view',
         },
         component: () => import('./views/space/task/index.vue'),
         children: [
@@ -170,6 +171,7 @@ const routes = [
             name: 'task-list',
             meta: {
               navModule: 'task',
+              permission: 'process_config_view',
             },
             component: () => import('./views/space/task/list/tast-list.vue'),
           },
@@ -178,6 +180,7 @@ const routes = [
             name: 'task-detail',
             meta: {
               navModule: 'task',
+              permission: 'process_config_view',
             },
             component: () => import('./views/space/task/detail/index.vue'),
           },
@@ -188,6 +191,7 @@ const routes = [
         name: 'process-management',
         meta: {
           navModule: 'process',
+          permission: 'process_config_view',
         },
         component: () => import('./views/space/process/index.vue'),
       },
@@ -196,6 +200,7 @@ const routes = [
         name: 'config-template-management',
         meta: {
           navModule: 'config-template',
+          permission: 'process_config_view',
         },
         component: () => import('./views/space/config-template/index.vue'),
         children: [
@@ -204,6 +209,7 @@ const routes = [
             name: 'config-template-list',
             meta: {
               navModule: 'config-template',
+              permission: 'process_config_view',
             },
             component: () => import('./views/space/config-template/list/config-template-list.vue'),
           },
@@ -212,6 +218,7 @@ const routes = [
             name: 'config-template-version-manage',
             meta: {
               navModule: 'config-template',
+              permission: 'process_config_view',
             },
             component: () => import('./views/space/config-template/version-manage/index.vue'),
           },
@@ -220,6 +227,7 @@ const routes = [
             name: 'config-issued',
             meta: {
               navModule: 'config-template',
+              permission: 'process_config_view',
             },
             component: () => import('./views/space/config-template/config-issued/index.vue'),
           },
@@ -266,6 +274,33 @@ router.afterEach(() => {
   globalStore.$patch((state) => {
     state.showPermApplyPage = false;
   });
+});
+
+router.beforeEach((to, from, next) => {
+  const { spaceFeatureFlags } = useGlobalStore();
+
+  const permissions = to.matched.map((record) => record.meta?.permission).filter(Boolean);
+
+  if (!permissions.length) {
+    next();
+    return;
+  }
+
+  const hasPermission = permissions.every((perm) => {
+    switch (perm) {
+      case 'process_config_view':
+        return spaceFeatureFlags.PROCESS_CONFIG_VIEW;
+      default:
+        return true;
+    }
+  });
+
+  if (!hasPermission) {
+    next('/');
+    return;
+  }
+
+  next();
 });
 
 export default router;

@@ -8,22 +8,29 @@
         <span class="head-title"> {{ appGlobalConfig.i18n.name }} </span>
       </div>
       <div class="head-routes">
-        <div v-for="nav in navList" :key="nav.id" :class="['nav-item', { actived: isFirstNavActived(nav.module) }]">
-          <div v-if="nav.children">
-            <div :class="['firstNav-item', { actived: isFirstNavActived(nav.module) }]">{{ nav.name }}</div>
-            <div class="secondNav-list">
-              <div
-                v-for="secondNav in nav.children"
-                :key="secondNav.id"
-                :class="['secondNav-item', { actived: isSecondNavActived(secondNav.module) }]"
-                @click.stop="handleNavClick(secondNav.id)">
-                {{ secondNav.name }}
+        <div v-for="nav in navList" :key="nav.id">
+          <template v-if="nav.view">
+            <div v-if="nav.children" class="nav-item">
+              <div :class="['firstNav-item', { actived: isFirstNavActived(nav.module) }]">
+                {{ nav.name }}
+              </div>
+              <div class="secondNav-list">
+                <div
+                  v-for="secondNav in nav.children"
+                  :key="secondNav.id"
+                  :class="['secondNav-item', { actived: isSecondNavActived(secondNav.module) }]"
+                  @click.stop="handleNavClick(secondNav.id)">
+                  {{ secondNav.name }}
+                </div>
               </div>
             </div>
-          </div>
-          <div v-else @click.stop="handleNavClick(nav.id)">
-            {{ nav.name }}
-          </div>
+            <div
+              v-else
+              :class="['nav-item', { actived: isFirstNavActived(nav.module) }]"
+              @click.stop="handleNavClick(nav.id)">
+              {{ nav.name }}
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -153,13 +160,14 @@
     typographer: true,
   });
   const navList = computed(() => [
-    { id: 'service-all', module: 'service', name: t('服务管理') },
-    { id: 'groups-management', module: 'groups', name: t('分组管理') },
-    { id: 'script-list', module: 'scripts', name: t('脚本管理') },
+    { id: 'service-all', module: 'service', name: t('服务管理'), view: true },
+    { id: 'groups-management', module: 'groups', name: t('分组管理'), view: true },
+    { id: 'script-list', module: 'scripts', name: t('脚本管理'), view: true },
     {
       id: 'templates-and-variables',
       module: 'templates-and-variables',
       name: t('模板与变量'),
+      view: true,
       children: [
         { id: 'templates-list', module: 'templates', name: t('模板管理') },
         { id: 'variables-management', module: 'variables', name: t('变量管理') },
@@ -170,6 +178,7 @@
       id: 'client-manage',
       module: 'client',
       name: t('客户端管理'),
+      view: true,
       children: [
         { id: 'client-statistics', module: 'client-statistics', name: t('客户端统计') },
         { id: 'client-search', module: 'client-search', name: t('客户端查询') },
@@ -181,13 +190,14 @@
       id: 'process-and-config-manage',
       module: 'process-and-config',
       name: t('进程与配置管理'),
+      view: spaceFeatureFlags.value.PROCESS_CONFIG_VIEW,
       children: [
         { id: 'process-management', module: 'process', name: t('进程管理') },
         { id: 'config-template-list', module: 'config-template', name: t('配置模板管理') },
         { id: 'task-list', module: 'task', name: t('任务历史') },
       ],
     },
-    { id: 'records-all', module: 'records', name: t('操作记录') },
+    { id: 'records-all', module: 'records', name: t('操作记录'), view: true },
   ]);
 
   const optionList = ref<ISpaceDetail[]>([]);
@@ -447,12 +457,6 @@
               color: #ffffff;
             }
           }
-          .firstNav-item {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            cursor: default;
-          }
           .secondNav-list {
             display: none;
             position: absolute;
@@ -481,6 +485,18 @@
                   color: #fff;
                 }
               }
+            }
+          }
+        }
+        .firstNav-item {
+          height: 100%;
+          display: flex;
+          align-items: center;
+          cursor: default;
+          &.actived {
+            color: #ffffff;
+            a {
+              color: #ffffff;
             }
           }
         }
