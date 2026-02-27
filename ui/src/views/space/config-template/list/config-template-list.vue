@@ -11,8 +11,14 @@
         class="search-selector"
         @search="handleSearch" />
     </div>
-    <div class="list-content">
-      <PrimaryTable :data="templateList" :loading="tableLoading" class="border" row-key="id" cell-empty-content="--">
+    <div ref="tableRef" class="list-content">
+      <PrimaryTable
+        :data="templateList"
+        :loading="tableLoading"
+        class="border"
+        row-key="id"
+        cell-empty-content="--"
+        :max-height="tableMaxHeight">
         <TableColumn :title="t('模板名称')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
@@ -138,7 +144,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { getConfigTemplateList, deleteConfigTemplate } from '../../../../api/config-template';
@@ -201,7 +207,11 @@
   const deletePendding = ref(false);
   const isShowConfigCheck = ref(false);
   const permCheckLoading = ref(false);
+  const tableRef = ref();
 
+  const tableMaxHeight = computed(() => {
+    return tableRef.value && tableRef.value.clientHeight - 60;
+  });
   onMounted(() => {
     loadConfigTemplateList();
     getPermData();
@@ -457,9 +467,14 @@
 
 <style scoped lang="scss">
   .list-wrap {
+    display: flex;
+    flex-direction: column;
     padding: 28px 24px;
     background: #f5f7fa;
     height: 100%;
+    .list-content {
+      flex: 1;
+    }
     .title {
       font-weight: 700;
       font-size: 16px;
