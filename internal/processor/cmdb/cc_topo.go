@@ -218,10 +218,9 @@ func (s *CCTopoXMLService) fetchSetDetails(ctx context.Context, setIDs []int) (m
 	// 使用 PageFetcher 获取所有 Set，然后在内存中过滤
 	allSets, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
 		resp, searchErr := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-			BkSupplierAccount: "0",
-			BkBizID:           s.bizID,
-			Fields:            fields,
-			Page:              page,
+			BkBizID: s.bizID,
+			Fields:  fields,
+			Page:    page,
 		})
 		if searchErr != nil {
 			return nil, 0, searchErr
