@@ -468,6 +468,12 @@ func (c *cmdbResourceWatcher) handleProcessDeleteEventsBatch(kt *kit.Kit, events
 			continue
 		}
 
+		if err := cmdb.CheckAndMarkHostAliasConflicts(kt, c.dao, tx, bizID); err != nil {
+			_ = tx.Rollback()
+			logs.Errorf("[CMDB][ProcessSync] conflict check failed, bizID=%d, err=%v", bizID, err)
+			continue
+		}
+
 		if err := tx.Commit(); err != nil {
 			logs.Errorf("[CMDB][ProcessSync] commit failed, bizID=%d, err=%v", bizID, err)
 		}

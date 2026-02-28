@@ -240,6 +240,13 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 		)
 	}
 
+	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logs.Errorf("[SyncSingleBiz][Rollback] bizID=%d failed: %v", s.bizID, rbErr)
+		}
+		return fmt.Errorf("[SyncSingleBiz][ConflictCheck] bizID=%d: %v", s.bizID, err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf(
 			"[SyncSingleBiz][CommitFailed] bizID=%d: %v",
@@ -476,6 +483,14 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 		}
 		return nil, err
 	}
+
+	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			logs.Errorf("transaction rollback failed, err: %v", rErr)
+		}
+		return nil, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -587,6 +602,14 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 			s.bizID, err,
 		)
 	}
+
+	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logs.Errorf("[UpdateProcess][ERROR] rollback failed for bizID=%d: %v", s.bizID, rbErr)
+		}
+		return nil, fmt.Errorf("[UpdateProcess][ConflictCheck] bizID=%d: %v", s.bizID, err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf(
 			"[UpdateProcess][CommitFailed] bizID=%d: %v",
@@ -1651,4 +1674,30 @@ func isSafeToUpdateProcess(
 	}
 
 	return true, nil
+}
+
+// CheckAndMarkHostAliasConflicts 检测同主机同别名冲突并标记状态
+//
+// 逻辑：
+//  1. 查询同 biz 下 (host_id, alias) 重复的进程 ID 列表
+//  2. 将冲突进程标记为 abnormal
+//  3. 将之前标记为 abnormal 但已不再冲突的进程恢复为 synced
+func CheckAndMarkHostAliasConflicts(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32) error {
+	conflictIDs, err := dao.Process().ListDuplicateHostAliasWithTx(kit, tx, bizID)
+	if err != nil {
+		return fmt.Errorf("[ConflictCheck] list duplicate host alias failed, bizID=%d: %w", bizID, err)
+	}
+
+	if len(conflictIDs) > 0 {
+		if err := dao.Process().UpdateSyncStatusWithTx(kit, tx, table.Abnormal.String(), conflictIDs); err != nil {
+			return fmt.Errorf("[ConflictCheck] mark abnormal failed, bizID=%d, ids=%v: %w", bizID, conflictIDs, err)
+		}
+		logs.Warnf("[ConflictCheck] bizID=%d marked %d processes as abnormal (duplicate host+alias)", bizID, len(conflictIDs))
+	}
+
+	if err := dao.Process().RestoreAbnormalWithTx(kit, tx, bizID, conflictIDs); err != nil {
+		return fmt.Errorf("[ConflictCheck] restore abnormal failed, bizID=%d: %w", bizID, err)
+	}
+
+	return nil
 }

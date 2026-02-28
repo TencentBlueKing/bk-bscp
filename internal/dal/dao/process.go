@@ -64,6 +64,10 @@ type Process interface {
 	GetByCcProcessIDAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, bizID, ccProcessID uint32, alias string) (*table.Process, error)
 	// ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表
 	ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32, alias string) ([]uint32, error)
+	// ListDuplicateHostAliasWithTx 查询同 biz 下同主机同别名的冲突进程 ID 列表
+	ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]uint32, error)
+	// RestoreAbnormalWithTx 将不再冲突的 abnormal 进程恢复为 synced
+	RestoreAbnormalWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, excludeIDs []uint32) error
 }
 
 var _ Process = new(processDao)
@@ -472,4 +476,43 @@ func (dao *processDao) ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryT
 	}
 
 	return result, nil
+}
+
+// ListDuplicateHostAliasWithTx 查询同 biz 下同主机同别名的冲突进程 ID 列表
+func (dao *processDao) ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]uint32, error) {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx)
+
+	var result []uint32
+	if err := q.Select(m.ID).
+		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Where(utils.RawCond(
+			`(host_id, alias) IN (
+				SELECT host_id, alias FROM processes
+				WHERE biz_id = ? AND cc_sync_status != ?
+				GROUP BY host_id, alias
+				HAVING COUNT(*) > 1
+			)`, bizID, table.Deleted.String(),
+		)).
+		Pluck(m.ID, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// RestoreAbnormalWithTx 将不再冲突的 abnormal 进程恢复为 synced，excludeIDs 是当前仍冲突的进程
+func (dao *processDao) RestoreAbnormalWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, excludeIDs []uint32) error {
+	m := dao.genQ.Process
+	q := tx.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Eq(table.Abnormal.String()))
+
+	if len(excludeIDs) > 0 {
+		q = q.Where(m.ID.NotIn(excludeIDs...))
+	}
+
+	_, err := q.Updates(map[string]any{
+		m.CcSyncStatus.ColumnName().String(): table.Synced.String(),
+	})
+	return err
 }

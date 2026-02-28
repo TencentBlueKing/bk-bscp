@@ -180,6 +180,8 @@ const (
 	Deleted CCSyncStatus = "deleted"
 	// Updated 已修改
 	Updated CCSyncStatus = "updated"
+	// Abnormal 同步异常
+	Abnormal CCSyncStatus = "abnormal"
 )
 
 // String get string value of cc sync status
@@ -190,7 +192,7 @@ func (p CCSyncStatus) String() string {
 // Validate validate cc sync status is valid or not.
 func (p CCSyncStatus) Validate() error {
 	switch p {
-	case Synced, Deleted, Updated:
+	case Synced, Deleted, Updated, Abnormal:
 		return nil
 	default:
 		return errors.New("invalid cc sync status")
