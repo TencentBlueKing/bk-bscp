@@ -160,12 +160,11 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 	done := false
 	for {
 		resp, err := c.cmdb.ResourceWatch(kt.Ctx, &bkcmdb.WatchResourceRequest{
-			BkCursor:          cursor,
-			BkResource:        resource.String(),
-			BkEventTypes:      []string{bkcmdb.EventCreate.String(), bkcmdb.EventUpdate.String(), bkcmdb.EventDelete.String()},
-			BkFields:          fields,
-			BkStartFrom:       new(int64),
-			BkSupplierAccount: "0",
+			BkCursor:     cursor,
+			BkResource:   resource.String(),
+			BkEventTypes: []string{bkcmdb.EventCreate.String(), bkcmdb.EventUpdate.String(), bkcmdb.EventDelete.String()},
+			BkFields:     fields,
+			BkStartFrom:  new(int64),
 		})
 		if err != nil {
 			return fmt.Errorf("request CMDB watch for %s failed: %w", resource, err)

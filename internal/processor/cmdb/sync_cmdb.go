@@ -439,8 +439,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 
 	// 7. 拉取 Set
 	setsResp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-		BkSupplierAccount: "0",
-		BkBizID:           s.bizID,
+		BkBizID: s.bizID,
 		Fields: []string{
 			"bk_set_id",
 			"bk_set_name",
@@ -775,10 +774,9 @@ func chunkInts(src []int64, size int) [][]int64 {
 func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, error) {
 	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
 		resp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-			BkSupplierAccount: "0",
-			BkBizID:           s.bizID,
-			Fields:            []string{"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"},
-			Page:              page,
+			BkBizID: s.bizID,
+			Fields:  []string{"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"},
+			Page:    page,
 		})
 
 		if err != nil {
@@ -792,10 +790,9 @@ func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, e
 func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkcmdb.ModuleInfo, error) {
 	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
 		resp, err := s.svc.SearchModule(ctx, bkcmdb.SearchModuleReq{
-			BkSupplierAccount: "0",
-			BkBizID:           s.bizID,
-			BkSetID:           setID,
-			Fields:            []string{"bk_module_id", "bk_module_name", "service_template_id", "bk_set_id"},
+			BkBizID: s.bizID,
+			BkSetID: setID,
+			Fields:  []string{"bk_module_id", "bk_module_name", "service_template_id", "bk_set_id"},
 		})
 		if err != nil {
 			return nil, 0, err

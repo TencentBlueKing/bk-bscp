@@ -367,7 +367,7 @@ func (bkcmdb *CMDBService) FindModuleWithRelation(ctx context.Context, req Modul
 
 // SearchSet 查询集群
 func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*Sets, error) {
-	url := fmt.Sprintf(searchSet, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID)
+	url := fmt.Sprintf(searchSet, bkcmdb.Host, bkcmdb.BkSupplierAccount, req.BkBizID)
 
 	resp := new(Sets)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -379,7 +379,7 @@ func (bkcmdb *CMDBService) SearchSet(ctx context.Context, req SearchSetReq) (*Se
 
 // SearchBusinessByAccount 查询业务
 func (bkcmdb *CMDBService) SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*Business, error) {
-	url := fmt.Sprintf(searchBusinessByAccount, bkcmdb.Host, req.BkSupplierAccount)
+	url := fmt.Sprintf(searchBusinessByAccount, bkcmdb.Host, bkcmdb.BkSupplierAccount)
 
 	resp := new(Business)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {
@@ -391,7 +391,7 @@ func (bkcmdb *CMDBService) SearchBusinessByAccount(ctx context.Context, req Sear
 
 // SearchModule 查询模块
 func (bkcmdb *CMDBService) SearchModule(ctx context.Context, req SearchModuleReq) (*ModuleListResp, error) {
-	url := fmt.Sprintf(searchModule, bkcmdb.Host, req.BkSupplierAccount, req.BkBizID, req.BkSetID)
+	url := fmt.Sprintf(searchModule, bkcmdb.Host, bkcmdb.BkSupplierAccount, req.BkBizID, req.BkSetID)
 
 	resp := new(ModuleListResp)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, resp); err != nil {

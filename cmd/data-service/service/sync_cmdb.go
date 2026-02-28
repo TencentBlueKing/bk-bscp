@@ -64,8 +64,7 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, tenantID string, bizI
 	// 不指定业务同步，表示同步所有业务
 	if len(bizIDs) == 0 {
 		business, err := s.cmdb.SearchBusinessByAccount(ctx, bkcmdb.SearchSetReq{
-			BkSupplierAccount: "0",
-			Fields:            []string{"bk_biz_id", "bk_biz_name"},
+			Fields: []string{"bk_biz_id", "bk_biz_name"},
 		})
 		if err != nil {
 			return fmt.Errorf("get business data failed: %v", err)
