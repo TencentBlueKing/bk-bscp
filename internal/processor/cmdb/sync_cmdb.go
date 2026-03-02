@@ -619,7 +619,6 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 	logs.Infof("[UpdateProcess][Success] bizID=%d tenantID=%s process data synced, %d processes written", s.bizID, s.tenantID, len(newProcesses))
 
 	return res, nil
-
 }
 
 // buildProcessesFromSets 根据业务拓扑信息构建进程表数据

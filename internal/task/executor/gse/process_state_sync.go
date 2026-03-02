@@ -97,8 +97,9 @@ func (p *processStateSyncExecutor) ProcessStateSync(c *istep.Context) error {
 		}
 	}
 
-	// 2. Process 更新
-	if err := p.dao.Process().BatchUpdateWithTx(kit.New(), tx, []*table.Process{proc}); err != nil {
+	// 2. Process 更新进程状态同步时间
+	if err := p.dao.Process().UpdateProcessStateSyncedAtTx(kit.New(), tx, proc.Attachment.BizID, proc.ID,
+		proc.Spec.ProcessStateSyncedAt); err != nil {
 		logs.Errorf("[SyncSingleBiz ERROR] biz %d: update processes failed, err=%v", payload.BizID, err)
 		return err
 	}
