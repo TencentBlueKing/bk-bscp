@@ -13,6 +13,8 @@
 package dao
 
 import (
+	"time"
+
 	rawgen "gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm/clause"
@@ -68,6 +70,8 @@ type Process interface {
 	ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]uint32, error)
 	// RestoreAbnormalWithTx 将不再冲突的 abnormal 进程恢复为 synced
 	RestoreAbnormalWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, excludeIDs []uint32) error
+	// UpdateProcessStateSyncedAtTx 更新进程状态同步时间
+	UpdateProcessStateSyncedAtTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32, syncedAt *time.Time) error
 }
 
 var _ Process = new(processDao)
@@ -76,6 +80,21 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateProcessStateSyncedAtTx implements [Process].
+func (dao *processDao) UpdateProcessStateSyncedAtTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, id uint32,
+	syncedAt *time.Time) error {
+	m := dao.genQ.Process
+
+	_, err := tx.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.Eq(id)).
+		Update(m.ProcessStateSyncedAt, syncedAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名

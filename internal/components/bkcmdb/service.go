@@ -96,5 +96,9 @@ type Service interface {
 
 // New cmdb service
 func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
+	// 没有配置供应商账号，默认设置为 "0"
+	if cfg.BkSupplierAccount == "" {
+		cfg.BkSupplierAccount = "0"
+	}
 	return &CMDBService{cfg}, nil
 }
