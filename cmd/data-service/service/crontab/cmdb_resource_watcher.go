@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -37,7 +38,10 @@ import (
 )
 
 const (
-	defaultResourceWatcherTime = 10 * time.Second
+	defaultMasterCheckInterval   = 10 * time.Second
+	defaultTenantRefreshInterval = 30 * time.Second
+	defaultInitialBackoff        = 1 * time.Second
+	defaultMaxBackoff            = 60 * time.Second
 )
 
 // NewCmdbResourceWatcher 监听cmdb资源变化
@@ -60,76 +64,143 @@ type cmdbResourceWatcher struct {
 	gse         *gsecomponents.Service
 	svc         *service.Service
 	taskManager *task.TaskManager
+	wg          sync.WaitGroup
 }
 
 func (c *cmdbResourceWatcher) Run() {
 	logs.Infof("Start listening cmdb resource changes")
 	notifier := shutdown.AddNotifier()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
+		c.wg.Add(1)
+		go c.manageTenantWatchers(ctx)
+	} else {
+		c.startResourceWatchers(ctx, "")
+	}
 
 	go func() {
-		ticker := time.NewTicker(defaultResourceWatcherTime)
-		defer ticker.Stop()
-		for {
-
-			kt := kit.New()
-			ctx, cancel := context.WithCancel(kt.Ctx)
-			kt.Ctx = ctx
-
-			select {
-			case <-notifier.Signal:
-				logs.Infof("stop synchronizing cmdb data success")
-				cancel()
-				notifier.Done()
-				return
-			case <-ticker.C:
-				if !c.state.IsMaster() {
-					logs.Infof("current service instance is slave, skip sync cmdb")
-					continue
-				}
-				c.watchCMDBResourcesByTenant(kt)
-			}
-
-		}
+		<-notifier.Signal
+		logs.Infof("stopping cmdb resource watchers...")
+		cancel()
+		c.wg.Wait()
+		logs.Infof("all cmdb resource watchers stopped")
+		notifier.Done()
 	}()
 }
 
-// watchCMDBResourcesByTenant 按租户监听 CMDB 资源变化
-func (c *cmdbResourceWatcher) watchCMDBResourcesByTenant(kt *kit.Kit) {
-	// 多租户模式：获取所有启用的租户并逐个监听
-	if cc.DataService().FeatureFlags.EnableMultiTenantMode {
-		tenants, err := bkuser.ListEnabledTenants(kt.Ctx)
-		if err != nil {
-			logs.Errorf("[CMDB Watch] failed to list tenants: %v", err)
-			return
-		}
-
-		if len(tenants) == 0 {
-			logs.Warnf("[CMDB Watch] no enabled tenants found")
-			return
-		}
-
-		for _, tenant := range tenants {
-			kt.TenantID = tenant.ID
-			c.watchResourcesForTenant(kt)
-		}
-		return
-	}
-
-	// 单租户模式
-	c.watchResourcesForTenant(kt)
-}
-
-// watchResourcesForTenant 为单个租户监听所有资源类型
-func (c *cmdbResourceWatcher) watchResourcesForTenant(kt *kit.Kit) {
-	// 顺序监听每种资源类型
+// startResourceWatchers 为指定租户的每种资源类型启动独立的 watch goroutine
+func (c *cmdbResourceWatcher) startResourceWatchers(ctx context.Context, tenantID string) {
 	for _, res := range []bkcmdb.ResourceType{
 		bkcmdb.ResourceSet,
 		bkcmdb.ResourceModule,
 		bkcmdb.ResourceProcess,
 	} {
-		if err := c.watchCMDBResources(kt, res); err != nil {
-			logs.Errorf("[CMDB Watch] tenant=%s watch %s resource failed: %v", kt.TenantID, res.String(), err)
+		c.wg.Add(1)
+		go c.watchLoop(ctx, tenantID, res)
+	}
+}
+
+// manageTenantWatchers 多租户模式下动态管理每个租户的 watch goroutine
+func (c *cmdbResourceWatcher) manageTenantWatchers(ctx context.Context) {
+	defer c.wg.Done()
+	activeTenants := make(map[string]context.CancelFunc)
+	defer func() {
+		for _, cancelFn := range activeTenants {
+			cancelFn()
 		}
+	}()
+
+	c.refreshTenantWatchers(ctx, activeTenants)
+
+	ticker := time.NewTicker(defaultTenantRefreshInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.refreshTenantWatchers(ctx, activeTenants)
+		}
+	}
+}
+
+// refreshTenantWatchers 刷新租户列表，启动新租户的 watcher、停止已移除租户的 watcher
+func (c *cmdbResourceWatcher) refreshTenantWatchers(ctx context.Context, activeTenants map[string]context.CancelFunc) {
+	tenants, err := bkuser.ListEnabledTenants(ctx)
+	if err != nil {
+		logs.Errorf("[CMDB Watch] failed to list tenants: %v", err)
+		return
+	}
+
+	if len(tenants) == 0 {
+		logs.Warnf("[CMDB Watch] no enabled tenants found")
+	}
+
+	// currentIDs 记录本次查询到的租户 ID，用于与 activeTenants 对比，清理已移除的租户
+	currentIDs := make(map[string]bool, len(tenants))
+	for _, t := range tenants {
+		currentIDs[t.ID] = true
+		if _, exists := activeTenants[t.ID]; !exists {
+			tenantCtx, tenantCancel := context.WithCancel(ctx)
+			activeTenants[t.ID] = tenantCancel
+			c.startResourceWatchers(tenantCtx, t.ID)
+			logs.Infof("[CMDB Watch] started watchers for tenant %s", t.ID)
+		}
+	}
+
+	// 清理已移除的租户
+	for id, cancelFn := range activeTenants {
+		if !currentIDs[id] {
+			cancelFn()
+			delete(activeTenants, id)
+			logs.Infof("[CMDB Watch] stopped watchers for removed tenant %s", id)
+		}
+	}
+}
+
+// watchLoop 持续长轮询循环：不断调用 watchCMDBResources，含 Master 检查与指数退避
+func (c *cmdbResourceWatcher) watchLoop(ctx context.Context, tenantID string, resource bkcmdb.ResourceType) {
+	defer c.wg.Done()
+	backoff := defaultInitialBackoff
+	logs.Infof("[CMDB Watch] tenant=%s starting watch loop for %s", tenantID, resource)
+
+	for {
+		select {
+		case <-ctx.Done():
+			logs.Infof("[CMDB Watch] tenant=%s watch loop for %s stopped", tenantID, resource)
+			return
+		default:
+		}
+
+		// 非 Master 时不消费事件，定期检查角色变化
+		if !c.state.IsMaster() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(defaultMasterCheckInterval):
+			}
+			continue
+		}
+
+		kt := kit.New()
+		kt.Ctx = ctx
+		kt.TenantID = tenantID
+
+		// cmdb api 支持长链接，无事件时会 hold 连接约 20s
+		if err := c.watchCMDBResources(kt, resource); err != nil {
+			logs.Errorf("[CMDB Watch] tenant=%s watch %s failed: %v, retry after %v",
+				tenantID, resource, err, backoff)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+			}
+			backoff = min(backoff*2, defaultMaxBackoff)
+			continue
+		}
+		backoff = defaultInitialBackoff
 	}
 }
 
@@ -157,8 +228,13 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 		cursor = existing.Value
 		logs.Infof("[CMDB Watch] loaded cursor from db: resource=%s cursor=%s", resource, cursor)
 	}
-	done := false
 	for {
+		select {
+		case <-kt.Ctx.Done():
+			return nil
+		default:
+		}
+
 		resp, err := c.cmdb.ResourceWatch(kt.Ctx, &bkcmdb.WatchResourceRequest{
 			BkCursor:     cursor,
 			BkResource:   resource.String(),
@@ -170,15 +246,20 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			return fmt.Errorf("request CMDB watch for %s failed: %w", resource, err)
 		}
 
-		processEvents := map[bkcmdb.EventType][]bkcmdb.BkEventObj{}
+		// 异常防护：正常情况下 CMDB 总会返回至少一条事件（真实事件或长轮询超时的空事件）
+		if len(resp.BkEvents) == 0 {
+			return fmt.Errorf("CMDB watch for %s returned empty events (BkWatched=%v)", resource, resp.BkWatched)
+		}
 
-		// 处理事件
+		processEvents := map[bkcmdb.EventType][]bkcmdb.BkEventObj{}
+		// caughtUp 标记是否已消费完所有积压事件（收到空事件），为 true 时返回让外层发起下一轮长轮询
+		caughtUp := false
+
 		for _, event := range resp.BkEvents {
 			logs.Infof("[CMDB Watch] resource=%s event=%s cursor=%s", event.BkResource, event.BkEventType, event.BkCursor)
 
-			// 空事件: 仅更新游标并退出到下一个资源
 			if event.BkEventType == "" {
-				logs.Infof("[CMDB Watch] resource=%s: empty event detected, update cursor=%s and break", resource, event.BkCursor)
+				logs.Infof("[CMDB Watch] resource=%s: no pending events, cursor=%s", resource, event.BkCursor)
 				cursor = event.BkCursor
 				if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
 					Key:   cursorKey,
@@ -186,7 +267,7 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 				}}); err != nil {
 					logs.Errorf("[CMDB][Watch] update cursor failed, resource=%v, err=%v", resource, err)
 				}
-				done = true
+				caughtUp = true
 				break
 			}
 
@@ -194,7 +275,6 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			case bkcmdb.ResourceProcess:
 				processEvents[event.BkEventType] = append(processEvents[event.BkEventType], event)
 			default:
-				// 非 process 资源即时处理
 				c.handleEvent(kt, event)
 			}
 
@@ -219,15 +299,10 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			c.handleProcessUpdateEventsBatch(kt, events)
 		}
 
-		// 如果刚才的循环被空事件 break，就退出到下一个资源
-		// 若检测到空事件，跳出外层循环
-		if done {
-			break
+		if caughtUp {
+			return nil
 		}
-
 	}
-
-	return nil
 }
 
 func groupProcessEventsByBiz(events []bkcmdb.BkEventObj) map[int][]bkcmdb.ProcessInfo {
