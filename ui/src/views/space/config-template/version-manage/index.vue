@@ -29,11 +29,13 @@
         :list="versionList"
         :pagination="pagination"
         :is-associated="isAssociated"
+        :is-search-empty="isSearchEmpty"
         @page-value-change="pagination.current = $event"
         @page-limit-change="handlePageLimitChange"
         @deleted="handleVersionDeleted"
         @select="handleOpenDetailTable($event, 'view')"
-        @create="handleCreateVersion" />
+        @create="handleCreateVersion"
+        @clear="handleClearSearch" />
       <VersionDetailTable
         v-else
         :space-id="spaceId"
@@ -116,6 +118,8 @@
     { field: 'creator', label: t('创建人') },
   ];
   const updatePerm = ref(true);
+  const isSearchEmpty = ref(false);
+  const searchSelectorRef = ref();
 
   const getRouteId = (id: string) => {
     if (id && typeof Number(id) === 'number') {
@@ -279,6 +283,7 @@
   };
 
   const handleSearch = (list: { [key: string]: string }) => {
+    isSearchEmpty.value = Object.keys(list).length !== 0;
     searchQuery.value = list;
     refreshList();
   };
@@ -286,6 +291,12 @@
   const refreshList = (current = 1) => {
     pagination.value.current = current;
     getVersionList();
+  };
+  const handleClearSearch = () => {
+    searchQuery.value = {};
+    isSearchEmpty.value = false;
+    searchSelectorRef.value.clear();
+    refreshList();
   };
 </script>
 <style lang="scss" scoped>

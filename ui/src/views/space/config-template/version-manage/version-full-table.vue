@@ -36,6 +36,9 @@
         </div>
       </template>
     </TableColumn>
+    <template #empty>
+      <TableEmpty :is-search-empty="isSearchEmpty" @clear="emits('clear')" />
+    </template>
   </PrimaryTable>
   <bk-pagination
     class="table-pagination"
@@ -67,6 +70,7 @@
   import TableMoreActions from '../../../../components/table/table-more-actions.vue';
   import useConfigTemplateStore from '../../../../store/config-template';
   import useGlobalStore from '../../../../store/global';
+  import TableEmpty from '../../../../components/table/table-empty.vue';
 
   const { t } = useI18n();
   const router = useRouter();
@@ -80,6 +84,7 @@
     list: ITemplateVersionItem[];
     pagination: IPagination;
     isAssociated: boolean;
+    isSearchEmpty: boolean;
   }>();
 
   const emits = defineEmits([
@@ -89,6 +94,7 @@
     'select',
     'deleted',
     'create',
+    'clear',
   ]);
 
   const diffSliderData = ref<{ open: boolean; data: DiffSliderDataType }>({
