@@ -125,7 +125,7 @@
         };
       } else {
         res = await getGenerateResult(props.bkBizId, props.data.taskId);
-        templateDetail.value = res;
+        templateDetail.value = { ...res, config_file_path: joinPathName(res.config_file_path, res.config_file_name) };
       }
     } catch (error) {
       console.error(error);

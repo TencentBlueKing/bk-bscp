@@ -52,20 +52,30 @@
       </section>
     </template>
   </DetailLayout>
+  <DeleteConfirmDialog
+    v-model:is-show="isShowDeleteDialog"
+    :title="t('确认删除模板文件?')"
+    @confirm="handleDeletConfirm">
+    <div class="delete-content">
+      <span class="label">{{ t('模板名称') }} :</span>
+      <span class="value">{{ templateDetail.name }}</span>
+    </div>
+  </DeleteConfirmDialog>
 </template>
 
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { getConfigTemplateDetail } from '../../../../api/config-template';
+  import { getConfigTemplateDetail, deleteConfigTemplate } from '../../../../api/config-template';
   import { downloadTemplateContent } from '../../../../api/template';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import DetailLayout from '../../scripts/components/detail-layout.vue';
   import ConfigContent from '../components/config-content.vue';
+  import DeleteConfirmDialog from '../components/delete-confirm-dialog.vue';
 
   const { t } = useI18n();
 
-  const emits = defineEmits(['close', 'operate']);
+  const emits = defineEmits(['close', 'operate', 'refresh']);
   const props = defineProps<{
     bkBizId: string;
     templateId: number;
@@ -126,14 +136,19 @@
       value: 'user_group',
     },
   ];
+  const isShowDeleteDialog = ref(false);
 
   onMounted(() => {
     getDetail();
   });
 
   const handleOpTemplate = (op: string) => {
-    emits('operate', op);
-    emits('close');
+    if (op === 'delete') {
+      isShowDeleteDialog.value = true;
+    } else {
+      emits('operate', op);
+      emits('close');
+    }
   };
 
   const getDetail = async () => {
@@ -152,6 +167,19 @@
       attribution: `${detail.template_space_name}/${detail.template_set_name}`,
     };
     editorContent.value = await downloadTemplateContent(props.bkBizId, props.templateSpaceId, detail.sign);
+  };
+
+  const handleDeletConfirm = async () => {
+    try {
+      await deleteConfigTemplate(props.bkBizId, props.templateId);
+      isShowDeleteDialog.value = false;
+      setTimeout(() => {
+        emits('close');
+        emits('refresh');
+      }, 300);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleClose = () => {

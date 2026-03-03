@@ -379,15 +379,15 @@
     loadTaskList();
   };
 
-  const handleSearch = (list: { [key: string]: string | string[] }) => {
+  const handleSearch = (list: { [key: string]: string }) => {
     searchValue.value = {
-      setNames: list.set_name || [],
-      moduleNames: list.module_name || [],
-      serviceNames: list.service_name || [],
-      processAliases: list.alias || [],
-      ccProcessIds: list.cc_process_id || [],
-      instIds: list.module_inst_seq || [],
-      ips: list.ip || [],
+      setNames: list.set_name ? [list.set_name] : null,
+      moduleNames: list.module_name ? [list.module_name] : null,
+      serviceNames: list.service_name ? [list.service_name] : null,
+      processAliases: list.alias ? [list.alias] : null,
+      ccProcessIds: list.cc_process_id ? [list.cc_process_id] : null,
+      instIds: list.module_inst_seq ? [list.module_inst_seq] : null,
+      ips: list.ip ? [list.ip] : null,
     };
     isSearchEmpty.value = Object.keys(list).length > 0;
     pagination.value.current = 1;

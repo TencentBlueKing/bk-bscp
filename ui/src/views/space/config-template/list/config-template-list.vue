@@ -130,7 +130,8 @@
     :template-space-id="templateSpaceId"
     :is-associated="opTemplate.isAssociated"
     @operate="handleDetailOperate"
-    @close="isShowDetails = false" />
+    @close="isShowDetails = false"
+    @refresh="refresh" />
   <DeleteConfirmDialog
     v-model:is-show="isShowDeleteDialog"
     :title="t('确认删除模板文件?')"

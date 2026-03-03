@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import useGlobalStore from './store/global';
 import { ISpaceDetail } from '../types/index';
+import { getSpaceFeatureFlag } from './api';
+import { storeToRefs } from 'pinia';
 
 const routes = [
   {
@@ -276,8 +278,14 @@ router.afterEach(() => {
   });
 });
 
-router.beforeEach((to, from, next) => {
-  const { spaceFeatureFlags } = useGlobalStore();
+router.beforeEach(async (to, from, next) => {
+  const globalStore = storeToRefs(useGlobalStore());
+  const { spaceFeatureFlags } = globalStore;
+  // 页面刷新后 spaceFeatureFlags会重置，重新获取权限信息
+  if (!spaceFeatureFlags.value.BIZ_VIEW) {
+    const res = await getSpaceFeatureFlag(to.params.spaceId as string);
+    spaceFeatureFlags.value = res;
+  }
 
   const permissions = to.matched.map((record) => record.meta?.permission).filter(Boolean);
 
@@ -289,7 +297,7 @@ router.beforeEach((to, from, next) => {
   const hasPermission = permissions.every((perm) => {
     switch (perm) {
       case 'process_config_view':
-        return spaceFeatureFlags.PROCESS_CONFIG_VIEW;
+        return spaceFeatureFlags.value.PROCESS_CONFIG_VIEW;
       default:
         return true;
     }
