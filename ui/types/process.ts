@@ -23,6 +23,7 @@ export interface IProcessItem {
     proc_num: number;
     bind_template_ids: number[];
     process_config_view_url: string;
+    new_alias: string;
   };
 }
 

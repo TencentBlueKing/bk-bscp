@@ -326,6 +326,7 @@
     line-height: 24px;
   }
   .search-select {
+    z-index: 100;
     margin: 16px 0;
     width: 400px;
   }

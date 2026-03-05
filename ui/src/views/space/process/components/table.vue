@@ -32,7 +32,19 @@
       </TableColumn>
       <TableColumn col-key="spec.module_name" :title="t('模块')" width="172" ellipsis resizable />
       <TableColumn col-key="spec.service_name" :title="t('服务实例')" ellipsis resizable />
-      <TableColumn col-key="spec.alias" :title="t('进程别名')" ellipsis resizable />
+      <TableColumn col-key="spec.alias" :title="t('进程别名')" width="200" ellipsis resizable>
+        <template #default="{ row }: { row: IProcessItem }">
+          <div class="alias">
+            <span>{{ row.spec.alias }}</span>
+            <span
+              v-if="row.spec.cc_sync_status === 'deleted' && row.spec.new_alias"
+              class="error-icon"
+              v-bk-tooltips="{ content: t('进程别名发生了变化，已自动在下方创建新进程。旧进程已删除，建议停止') }">
+              !
+            </span>
+          </div>
+        </template>
+      </TableColumn>
       <TableColumn col-key="attachment.cc_process_id" resizable>
         <template #title>
           <span class="tips-title" v-bk-tooltips="{ content: t('对应 CMDB 中唯一 ID'), placement: 'top' }">
@@ -712,12 +724,18 @@
     }
   }
   .cc-sync-status {
-    &.deleted, &.abnormal {
+    &.deleted,
+    &.abnormal {
       color: #e71818;
     }
     &.updated {
       color: #e38b02;
     }
+  }
+  .alias {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .spinner-icon {
     font-size: 14px;
@@ -750,14 +768,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    .error-icon {
-      font-size: 14px;
-      line-height: 14px;
-      vertical-align: middle;
-      color: #e71818;
-      cursor: pointer;
-      font-weight: bold;
-    }
   }
   .no-cmd-content {
     display: flex;
@@ -770,6 +780,14 @@
     gap: 4px;
     color: #3a84ff;
     cursor: pointer;
+  }
+  .error-icon {
+    font-size: 14px;
+    line-height: 14px;
+    vertical-align: middle;
+    color: #e71818;
+    cursor: pointer;
+    font-weight: bold;
   }
 </style>
 

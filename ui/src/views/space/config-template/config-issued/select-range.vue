@@ -48,7 +48,6 @@
     const { templateIds } = route.query;
 
     if (Array.isArray(templateIds) && templateIds.length) {
-      console.log(1);
       selectedTemplate.value = templateIds.map(Number);
       emits('selectTemplate', selectedTemplate.value);
     }
@@ -70,7 +69,6 @@
   };
 
   const handleSelectProcessRange = (filters: Record<string, any>) => {
-    console.log(2);
     filterConditions.value = filters;
     emits('selectRange', filters);
   };
