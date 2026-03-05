@@ -1225,13 +1225,13 @@ type WatchHostUpdatesConfig struct {
 	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
-// SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
-type SyncCmdbGseConfig struct {
-	// Enabled defines whether the sync cmdb and gse task is enabled
+// SyncCmdbProcessStatusConfig defines sync cmdb process status task configuration options.
+type SyncCmdbProcessStatusConfig struct {
+	// Enabled defines whether the sync cmdb process status task is enabled
 	Enabled bool `yaml:"enabled"`
-	// Interval defines the interval for syncing cmdb and gse relationships
+	// Interval defines the interval for syncing cmdb process status
 	Interval string `yaml:"interval"`
-	// QpsLimit defines the QPS limit for sync cmdb and gse requests
+	// QpsLimit defines the QPS limit for sync cmdb process status requests
 	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
@@ -1245,8 +1245,8 @@ type CrontabConfig struct {
 	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
 	// WatchHostUpdates defines watch host updates task configuration
 	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
-	// SyncCmdbGse defines sync cmdb and gse task configuration
-	SyncCmdbGse SyncCmdbGseConfig `yaml:"syncCmdbGse"`
+	// SyncCmdbProcessStatus defines sync cmdb process status task configuration
+	SyncCmdbProcessStatus SyncCmdbProcessStatusConfig `yaml:"syncCmdbProcessStatus"`
 }
 
 // validate if the sync biz host config is valid or not.
@@ -1374,8 +1374,8 @@ func (c *WatchHostUpdatesConfig) trySetDefault() {
 	}
 }
 
-// trySetDefault try set the default value of watch host updates config
-func (c *SyncCmdbGseConfig) trySetDefault() {
+// trySetDefault try set the default value of sync cmdb process status config
+func (c *SyncCmdbProcessStatusConfig) trySetDefault() {
 	if c.Interval == "" {
 		c.Interval = "20m" // 20m0s
 	}
@@ -1391,7 +1391,7 @@ func (c *CrontabConfig) trySetDefault() {
 	c.CleanupBizHost.trySetDefault()
 	c.WatchBizHostRelation.trySetDefault()
 	c.WatchHostUpdates.trySetDefault()
-	c.SyncCmdbGse.trySetDefault()
+	c.SyncCmdbProcessStatus.trySetDefault()
 }
 
 // RateLimiter defines the rate limiter options for traffic control.

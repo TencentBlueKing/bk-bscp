@@ -533,14 +533,14 @@ func (ds *dataService) startCronTasks() {
 	}
 
 	// 定时同步cmdb数据
-	if crontabConfig.SyncCmdbGse.Enabled {
-		interval, err := time.ParseDuration(crontabConfig.SyncCmdbGse.Interval)
+	if crontabConfig.SyncCmdbProcessStatus.Enabled {
+		interval, err := time.ParseDuration(crontabConfig.SyncCmdbProcessStatus.Interval)
 		if err != nil {
-			logs.Errorf("parse syncCmdbGse interval failed, using default: %v", err)
+			logs.Errorf("parse syncCmdbProcessStatus interval failed, using default: %v", err)
 			interval = 1 * time.Hour // 1 hour
 		}
 
-		syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service, crontabConfig.SyncCmdbGse.QpsLimit, interval)
+		syncCmdb := crontab.NewSyncCMDB(ds.daoSet, ds.sd, ds.service, crontabConfig.SyncCmdbProcessStatus.QpsLimit, interval)
 		syncCmdb.Run()
 	}
 
