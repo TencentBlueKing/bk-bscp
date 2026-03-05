@@ -4723,10 +4723,10 @@ message OperateProcessReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated uint32 process_ids = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
-  uint32 process_instance_id = 3
+  repeated uint32 process_instance_ids = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例ID" }];
   string operate_type = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register"
+    description: "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete"
   }];
   bool enable_process_restart = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "是否启停进程：默认为false，只有操作类型是update_register才有效"

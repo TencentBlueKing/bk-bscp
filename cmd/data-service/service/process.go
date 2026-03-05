@@ -222,13 +222,31 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 			processInstances,
 		)
 	}
-	// 计算总任务数
-	totalCount := uint32(len(processInstances))
-	if totalCount == 0 {
-		return nil, fmt.Errorf("no process instances found for biz %d", kt.BizID)
+
+	// 构建 processMap，用于后续快速查找进程信息
+	processMap := make(map[uint32]*table.Process, len(processes))
+	for _, p := range processes {
+		processMap[p.ID] = p
 	}
 
-	// 构建操作范围
+	// 预处理，提前分类出需要下发任务的实例和需要直接删除的实例
+	toDispatch, toDelete, err := preResolveInstances(processInstances, processMap, table.ProcessOperateType(req.OperateType))
+	if err != nil {
+		return nil, err
+	}
+
+	// 先执行直接删除（不需要任务批次）
+	if errB := batchDeleteProcessInstances(kt, s.dao, toDelete); errB != nil {
+		return nil, errB
+	}
+	logs.Infof("direct delete %d process instances, rid: %s", len(toDelete), kt.Rid)
+	// 没有需要下发的任务，直接返回
+	if len(toDispatch) == 0 {
+		return &pbds.OperateProcessResp{}, nil
+	}
+
+	// 构建操作范围，totalCount 只计入真正需要下发任务的实例
+	totalCount := uint32(len(toDispatch))
 	operateRange := buildOperateRange(processes, req)
 	environment := processes[0].Spec.Environment
 	if req.OperateRange != nil {
@@ -263,21 +281,15 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		}
 	}()
 
-	processMap := make(map[uint32]*table.Process, len(processes))
-	for _, p := range processes {
-		processMap[p.ID] = p
-	}
-
-	// 创建并分发任务
+	// 下发任务
 	dispatchedCount, err = dispatchProcessTasks(
 		kt,
 		s.dao,
 		s.taskManager,
 		kt.BizID,
 		batchID,
-		table.ProcessOperateType(req.OperateType),
-		processInstances,
-		processMap,
+		req.OperateType,
+		toDispatch,
 		req.GetEnableProcessRestart(),
 	)
 	if err != nil {
@@ -289,12 +301,13 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 
 // validateOperateRequest 校验操作请求参数
 func validateOperateRequest(req *pbds.OperateProcessReq) error {
-	// 指定实例时，只能指定一个进程ID
-	if len(req.ProcessIds) > 1 && req.ProcessInstanceId != 0 {
+	// 当指定了多个 processId 时，禁止指定 processInstanceId，因为一个实例只能对应一个进程，且无法支持多个进程的实例级操作
+	if len(req.ProcessIds) > 1 && len(req.ProcessInstanceIds) > 0 {
 		return fmt.Errorf("invalid request: when processInstanceId is specified, only one processId is allowed")
 	}
 
-	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill、update_register
+	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill、update_register、delete
+	// delete 操作是用于取消托管或者停止多个实例
 	if err := table.ValidateOperateType(table.ProcessOperateType(req.OperateType)); err != nil {
 		return fmt.Errorf("invalid request: operate type is not supported: %w", err)
 	}
@@ -309,8 +322,8 @@ func validateOperateRequest(req *pbds.OperateProcessReq) error {
 func getProcessesAndInstances(kt *kit.Kit, dao dao.Set, req *pbds.OperateProcessReq) (
 	[]*table.Process, []*table.ProcessInstance, error) {
 	// 指定实例
-	if req.ProcessInstanceId != 0 {
-		return getByProcessInstanceID(kt, dao, req.BizId, req.ProcessInstanceId)
+	if len(req.ProcessInstanceIds) != 0 {
+		return getByProcessInstanceIDs(kt, dao, req.BizId, req.ProcessInstanceIds)
 	}
 	// 根据操作范围获取进程和进程实例（适配进程配置管理插件）
 	if req.OperateRange != nil {
@@ -359,29 +372,29 @@ func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pb
 }
 
 // getByInstanceID 根据实例ID获取进程和进程实例
-func getByProcessInstanceID(kt *kit.Kit, dao dao.Set, bizID, processInstanceId uint32) (
+func getByProcessInstanceIDs(kt *kit.Kit, dao dao.Set, bizID uint32, processInstanceIDs []uint32) (
 	[]*table.Process, []*table.ProcessInstance, error) {
 	// 查询指定的进程实例
-	inst, err := dao.ProcessInstance().GetByID(kt, bizID, processInstanceId)
+	insts, err := dao.ProcessInstance().GetByIDs(kt, bizID, processInstanceIDs)
 	if err != nil {
-		logs.Errorf("get process instance by id failed, err: %v, rid: %s", err, kt.Rid)
+		logs.Errorf("get process instances by ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err
 	}
-	if inst == nil {
-		return nil, nil, fmt.Errorf("process instance not found for id %d", processInstanceId)
+	if len(insts) == 0 {
+		return nil, nil, fmt.Errorf("process instances not found for ids %v", processInstanceIDs)
 	}
 
 	// 查询进程信息
-	process, err := dao.Process().GetByID(kt, bizID, inst.Attachment.ProcessID)
+	process, err := dao.Process().GetByID(kt, bizID, insts[0].Attachment.ProcessID)
 	if err != nil {
 		logs.Errorf("get process failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err
 	}
 	if process == nil {
-		return nil, nil, fmt.Errorf("process not found for id %d", inst.Attachment.ProcessID)
+		return nil, nil, fmt.Errorf("process not found for id %d", insts[0].Attachment.ProcessID)
 	}
 
-	return []*table.Process{process}, []*table.ProcessInstance{inst}, nil
+	return []*table.Process{process}, insts, nil
 }
 
 // getByProcessIDs 根据进程ID列表获取进程和进程实例
@@ -560,79 +573,141 @@ func updateProcessInstanceStatus(
 	return nil
 }
 
-// dispatchProcessTasks 下发进程操作任务，返回实际下发的任务数
-// operateType: 操作类型
-// processInstances: 进程实例对象列表
-// enableProcessRestart: 是否启用进程重启
-func dispatchProcessTasks(
-	kt *kit.Kit,
-	dao dao.Set,
-	taskManager *task.TaskManager,
-	bizID uint32,
-	batchID uint32,
-	operateType table.ProcessOperateType,
-	processInstances []*table.ProcessInstance,
-	processMap map[uint32]*table.Process,
-	enableProcessRestart bool,
-) (uint32, error) {
-	var dispatchedCount uint32
-	for _, inst := range processInstances {
-		originalProcManagedStatus := inst.Spec.ManagedStatus
-		originalProcStatus := inst.Spec.Status
-		procID := inst.Attachment.ProcessID
+// resolvedInstance 预处理后的实例信息
+type resolvedInstance struct {
+	instance        *table.ProcessInstance
+	finalOpType     table.ProcessOperateType
+	proc            *table.Process
+	originalStatus  table.ProcessStatus
+	originalManaged table.ProcessManagedStatus
+}
 
-		proc, ok := processMap[procID]
+// preResolveInstances 预先解析每个实例的真实操作类型，并分类
+// 返回：需要下发任务的实例列表、需要直接删除的实例列表
+func preResolveInstances(processInstances []*table.ProcessInstance, processMap map[uint32]*table.Process,
+	operateType table.ProcessOperateType) (toDispatch []resolvedInstance, toDelete []*table.ProcessInstance, err error) {
+
+	for _, inst := range processInstances {
+		proc, ok := processMap[inst.Attachment.ProcessID]
 		if !ok {
-			return dispatchedCount, fmt.Errorf("process not found in processMap, processID=%d", procID)
+			return nil, nil, fmt.Errorf("process not found in processMap, processID=%d", inst.Attachment.ProcessID)
 		}
 
+		originalStatus := inst.Spec.Status
+		originalManaged := inst.Spec.ManagedStatus
+		finalOpType, err := resolveOperateType(operateType, originalStatus, originalManaged)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if finalOpType == table.DeleteProcessOperate {
+			// 直接删除，无需下发任务
+			toDelete = append(toDelete, inst)
+		} else {
+			toDispatch = append(toDispatch, resolvedInstance{
+				instance:        inst,
+				finalOpType:     finalOpType,
+				proc:            proc,
+				originalStatus:  originalStatus,
+				originalManaged: originalManaged,
+			})
+		}
+	}
+	return toDispatch, toDelete, nil
+}
+
+// dispatchProcessTasks 下发进程操作任务，返回实际下发的任务数
+// enableProcessRestart 用于判断是否启用进程重启，影响状态更新和任务构建逻辑
+func dispatchProcessTasks(kt *kit.Kit, dao dao.Set, taskManager *task.TaskManager, bizID, batchID uint32, taskType string,
+	toDispatch []resolvedInstance, enableProcessRestart bool) (uint32, error) {
+	var dispatchedCount uint32
+	for _, item := range toDispatch {
 		// 更新进程实例状态
-		if err := updateProcessInstanceStatus(kt, dao, operateType, inst, enableProcessRestart); err != nil {
+		if err := updateProcessInstanceStatus(kt, dao, item.finalOpType, item.instance, enableProcessRestart); err != nil {
 			logs.Errorf("update process instance status failed, err: %v, rid: %s", err, kt.Rid)
 			return dispatchedCount, err
 		}
 
-		var taskObj *taskTypes.Task
-		var err error
-		if operateType == table.UpdateRegisterProcessOperate {
-			taskObj, err = task.NewByTaskBuilder(
-				processBuilder.NewUpdateRegisterTask(dao,
-					bizID,
-					batchID,
-					procID,
-					inst.ID, kt.User,
-					originalProcManagedStatus,
-					originalProcStatus, proc.Spec.CcSyncStatus,
-					enableProcessRestart),
-			)
-		} else {
-			taskObj, err = task.NewByTaskBuilder(
-				processBuilder.NewOperateTask(
-					dao,
-					bizID,
-					batchID,
-					procID,
-					inst.ID,
-					operateType,
-					kt.User,
-					needCMDBCompare(proc.Spec.CcSyncStatus, operateType),
-					originalProcManagedStatus,
-					originalProcStatus,
-					proc.Spec.CcSyncStatus,
-				))
-		}
-
+		// 构建任务（finalOpType 已确定，不再是 Delete）
+		taskObj, err := buildProcessTask(
+			dao,
+			bizID,
+			batchID,
+			item.instance.Attachment.ProcessID,
+			item.instance.ID,
+			item.finalOpType, // 直接使用预解析的类型
+			kt.User,
+			taskType, // 任务批次的操作类型保持不变，任务内使用 finalOpType 来区分实际操作
+			item.proc.Spec.CcSyncStatus,
+			item.originalManaged,
+			item.originalStatus,
+			enableProcessRestart,
+		)
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
 			return dispatchedCount, err
 		}
-		// 下发任务
+
 		logs.Infof("dispatch process operate task, taskObj: %+v", taskObj)
 		taskManager.Dispatch(taskObj)
 		dispatchedCount++
 	}
 
 	return dispatchedCount, nil
+}
+
+// resolveOperateType 判断最终的操作类型
+// 规则：
+// 1. 非 delete 操作，保持不变
+// 2. delete 操作，根据进程状态和托管状态决定最终操作类型
+func resolveOperateType(operateType table.ProcessOperateType, status table.ProcessStatus,
+	managed table.ProcessManagedStatus) (table.ProcessOperateType, error) {
+
+	if operateType != table.DeleteProcessOperate {
+		return operateType, nil
+	}
+
+	return getDeleteProcessOperateType(status, managed)
+}
+
+// buildProcessTask 构建进程操作任务
+func buildProcessTask(dao dao.Set, bizID, batchID, procID, instID uint32, operateType table.ProcessOperateType,
+	user, taskType string, ccSyncStatus table.CCSyncStatus, originalManaged table.ProcessManagedStatus, originalStatus table.ProcessStatus,
+	enableRestart bool) (*taskTypes.Task, error) {
+
+	if operateType == table.UpdateRegisterProcessOperate {
+		return task.NewByTaskBuilder(
+			processBuilder.NewUpdateRegisterTask(
+				dao,
+				bizID,
+				batchID,
+				procID,
+				instID,
+				user,
+				originalManaged,
+				originalStatus,
+				ccSyncStatus,
+				enableRestart,
+			),
+		)
+	}
+
+	return task.NewByTaskBuilder(
+		processBuilder.NewOperateTask(
+			dao,
+			bizID,
+			batchID,
+			procID,
+			instID,
+			operateType,
+			user,
+			needCMDBCompare(ccSyncStatus, operateType),
+			originalManaged,
+			originalStatus,
+			ccSyncStatus,
+			taskType,
+		),
+	)
 }
 
 // needCMDBCompare 判断是否需要与 CMDB 进行配置对比
@@ -910,4 +985,52 @@ func pruneEmptyNode(node *pbct.BizTopoNode) {
 		}
 	}
 	node.Child = kept
+}
+
+// getDeleteProcessOperateType 根据进程状态和托管状态，判断 delete 操作最终需要执行的实际操作类型。
+// 规则：
+// 1. 如果进程状态是 Running（运行中），只需要执行 Stop 操作。
+// 2. 如果进程状态是 Stopped（已停止）：
+//   - 托管状态为 Managed（已托管）：执行 Unregister（取消托管）
+//   - 托管状态为 Unmanaged（未托管）：执行 Delete（删除）
+//
+// 3. 其他状态均视为非法操作，返回错误。
+func getDeleteProcessOperateType(
+	status table.ProcessStatus,
+	managedStatus table.ProcessManagedStatus,
+) (table.ProcessOperateType, error) {
+
+	switch status {
+
+	// 运行中的进程，只需要停止
+	case table.ProcessStatusRunning:
+		return table.StopProcessOperate, nil
+
+	// 已停止的进程，根据托管状态决定
+	case table.ProcessStatusStopped:
+		if managedStatus == table.ProcessManagedStatusManaged {
+			return table.UnregisterProcessOperate, nil
+		}
+		if managedStatus == table.ProcessManagedStatusUnmanaged {
+			return table.DeleteProcessOperate, nil
+		}
+		return "", fmt.Errorf("unsupported managed status: %s", managedStatus)
+	// 其他状态全部视为非法
+	default:
+		return "", fmt.Errorf(
+			"unsupported process state for delete: status=%s managedStatus=%s",
+			status, managedStatus,
+		)
+	}
+}
+
+// batchDeleteProcessInstances 批量直接删除实例（无需任务）
+func batchDeleteProcessInstances(kt *kit.Kit, dao dao.Set, instances []*table.ProcessInstance) error {
+	for _, inst := range instances {
+		if err := dao.ProcessInstance().Delete(kt, kt.BizID, inst.ID); err != nil {
+			logs.Errorf("direct delete process instance %d failed, err: %v, rid: %s", inst.ID, err, kt.Rid)
+			return err
+		}
+	}
+	return nil
 }

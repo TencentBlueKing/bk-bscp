@@ -43,7 +43,7 @@ type TaskBatch interface {
 	UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error
 	ListExecutors(kit *kit.Kit, bizID uint32) ([]string, error)
 	// IncrementCompletedCount 增加完成任务计数，当所有任务完成时自动更新批次状态
-	IncrementCompletedCount(kit *kit.Kit, batchID uint32, isSuccess bool) error
+	IncrementCompletedCount(kit *kit.Kit, batchID uint32, isSuccess bool) (bool, error)
 	// ResetCountsForRetry 重置计数字段用于重试
 	ResetCountsForRetry(kit *kit.Kit, batchID uint32, totalCount uint32) error
 	// AddFailedCount 增加失败计数（用于任务创建失败的场景），同时增加 CompletedCount 和 FailedCount
@@ -181,8 +181,9 @@ func (dao *taskBatchDao) ListExecutors(kit *kit.Kit, bizID uint32) ([]string, er
 }
 
 // IncrementCompletedCount 增加完成任务计数，当所有任务完成时自动更新批次状态
-func (dao *taskBatchDao) IncrementCompletedCount(kit *kit.Kit, batchID uint32, isSuccess bool) error {
+func (dao *taskBatchDao) IncrementCompletedCount(kit *kit.Kit, batchID uint32, isSuccess bool) (bool, error) {
 	m := dao.genQ.TaskBatch
+	var allCompleted bool
 
 	txFunc := func(tx *gen.Query) error {
 		q := tx.TaskBatch.WithContext(kit.Ctx)
@@ -210,6 +211,7 @@ func (dao *taskBatchDao) IncrementCompletedCount(kit *kit.Kit, batchID uint32, i
 
 		// 如果所有任务都已完成，更新批次状态
 		if batch.Spec.CompletedCount >= batch.Spec.TotalCount && batch.Spec.TotalCount > 0 {
+			allCompleted = true
 			var newStatus table.TaskBatchStatus
 			if batch.Spec.FailedCount == 0 {
 				newStatus = table.TaskBatchStatusSucceed
@@ -233,10 +235,10 @@ func (dao *taskBatchDao) IncrementCompletedCount(kit *kit.Kit, batchID uint32, i
 	}
 
 	if err := dao.genQ.Transaction(txFunc); err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return allCompleted, nil
 }
 
 // ResetCountsForRetry 重置计数字段用于重试，根据重试数量扣除完成计数和失败计数

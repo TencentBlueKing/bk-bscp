@@ -989,8 +989,8 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 		if changeResult.ToUpdateProcess != nil {
 			diff.ToUpdateProcesses = append(diff.ToUpdateProcesses, changeResult.ToUpdateProcess)
 		}
-		if changeResult.ToDeleteProcessID != 0 {
-			diff.ToDeleteProcessIDs = append(diff.ToDeleteProcessIDs, changeResult.ToDeleteProcessID)
+		if changeResult.ToDeleteProcess != nil {
+			diff.ToDeleteProcesses = append(diff.ToDeleteProcesses, changeResult.ToDeleteProcess)
 		}
 
 		diff.ToAddInstances = append(diff.ToAddInstances, changeResult.ToAddInstances...)
@@ -1005,7 +1005,7 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 	// 3. db 中存在，但 new 中不存在 → 删除进程
 	for _, oldP := range dbProcesses {
 		if _, ok := newProcessByCCID[oldP.Attachment.CcProcessID]; !ok {
-			diff.ToDeleteProcessIDs = append(diff.ToDeleteProcessIDs, oldP.ID)
+			diff.ToDeleteProcesses = append(diff.ToDeleteProcesses, oldP)
 		}
 	}
 
@@ -1080,6 +1080,17 @@ func reconcileProcessInstances(ctx *SyncContext, params *ReconcileInstancesParam
 			return nil, err
 		}
 
+		// 查询当前进程在该主机上已有的 HostInstSeq 列表
+		existInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(
+			ctx.Kit, ctx.Tx, params.BizID, params.ProcessID)
+		if err != nil {
+			return nil, err
+		}
+		usedHostInstSeqs := make([]int, 0, len(existInsts))
+		for _, inst := range existInsts {
+			usedHostInstSeqs = append(usedHostInstSeqs, int(inst.Spec.HostInstSeq))
+		}
+
 		res.ToAdd = buildInstances(ctx, &BuildInstancesParams{
 			BizID:            params.BizID,
 			HostID:           params.HostID,
@@ -1090,6 +1101,7 @@ func reconcileProcessInstances(ctx *SyncContext, params *ReconcileInstancesParam
 			MaxModuleInstSeq: maxModuleSeq,
 			MaxHostInstSeq:   maxHostSeq,
 			Alias:            params.Alias,
+			UsedHostInstSeqs: usedHostInstSeqs,
 		})
 	}
 
@@ -1149,7 +1161,7 @@ func reorderModuleInstSeq(ctx *SyncContext, params *ReorderParams) ([]*table.Pro
 type BuildProcessChangesResult struct {
 	ToAddProcess        *table.Process
 	ToUpdateProcess     *table.Process
-	ToDeleteProcessID   uint32
+	ToDeleteProcess     *table.Process
 	ToAddInstances      []*table.ProcessInstance
 	ToDeleteInstanceIDs []uint32
 	// 需要重新编排的模块 (moduleID, alias)
@@ -1198,8 +1210,12 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			return nil, err
 		}
 
+		// 待删除的数据需要记录新进程别名
+		oldP.Spec.NewAlias = newP.Spec.Alias
+
 		// 恢复 deleted 记录为 synced，并更新其元数据
 		if reusableProc != nil {
+			reusableProc.Spec.NewAlias = "" // 清空 NewAlias 字段
 			reusableProc.Spec.PrevData = oldP.Spec.SourceData
 			reusableProc.Spec.SourceData = newP.Spec.SourceData
 			reusableProc.Spec.CcSyncStatus = table.Synced
@@ -1231,7 +1247,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 
 			// 返回：恢复的进程作为更新，旧进程标记为删除
 			result.ToUpdateProcess = reusableProc
-			result.ToDeleteProcessID = oldP.ID
+			result.ToDeleteProcess = oldP
 			result.ToAddInstances = res.ToAdd
 			result.ToDeleteInstanceIDs = res.ToDelete
 			// 只有实际发生扩缩容时才需要重新排序
@@ -1283,7 +1299,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			})
 
 			result.ToAddProcess = toAdd
-			result.ToDeleteProcessID = oldP.ID
+			result.ToDeleteProcess = oldP
 			result.ToAddInstances = insts
 			return result, nil
 		}
@@ -1330,11 +1346,6 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 		result.ToAddInstances = res.ToAdd
 		result.ToDeleteInstanceIDs = res.ToDelete
 
-		// 不安全场景：不允许缩容
-		if newProcNum < len(allInsts) && !safe {
-			result.ToDeleteInstanceIDs = nil
-		}
-
 		// 只有实际发生扩缩容时才需要重新排序
 		if len(result.ToAddInstances) > 0 || len(result.ToDeleteInstanceIDs) > 0 {
 			result.ModuleToReorder = &ModuleAliasKey{
@@ -1376,31 +1387,24 @@ func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.Pro
 	hostKey := HostProcessKey{CcProcessID: int(params.CcProcessID), HostID: int(params.HostID)}
 	modKey := ModuleAliasKey{ModuleID: int(params.ModuleID), Alias: params.Alias}
 
-	// 从缓存取
-	startHostInstSeq := ctx.HostCounter[hostKey]
 	startModuleInstSeq := ctx.ModuleCounter[modKey]
-
 	// 如果缓存未初始化，则从数据库最大值开始
-	if startHostInstSeq == 0 {
-		startHostInstSeq = params.MaxHostInstSeq
-		ctx.HostCounter[hostKey] = startHostInstSeq
-	}
 	if startModuleInstSeq == 0 {
 		startModuleInstSeq = params.MaxModuleInstSeq
 		ctx.ModuleCounter[modKey] = startModuleInstSeq
 	}
 
-	for i := 1; i <= newCount; i++ {
-		ctx.HostCounter[hostKey]++
+	// HostInstSeq：计算已用序号的空洞，优先填洞
+	hostSeqsToAssign := calcHostInstSeqs(params.UsedHostInstSeqs, params.MaxHostInstSeq, newCount)
+
+	instTenantID := ctx.Kit.TenantID
+	if instTenantID == "" {
+		instTenantID = "default"
+	}
+
+	for i := range newCount {
 		ctx.ModuleCounter[modKey]++
 
-		hostInstSeq := ctx.HostCounter[hostKey]
-		moduleInstSeq := ctx.ModuleCounter[modKey]
-
-		instTenantID := ctx.Kit.TenantID
-		if instTenantID == "" {
-			instTenantID = "default"
-		}
 		instances = append(instances, &table.ProcessInstance{
 			Attachment: &table.ProcessInstanceAttachment{
 				TenantID:    instTenantID,
@@ -1409,8 +1413,8 @@ func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.Pro
 			},
 			Spec: &table.ProcessInstanceSpec{
 				StatusUpdatedAt: ctx.Now,
-				HostInstSeq:     uint32(hostInstSeq),
-				ModuleInstSeq:   uint32(moduleInstSeq),
+				HostInstSeq:     uint32(hostSeqsToAssign[i]), // 填洞后的连续序号
+				ModuleInstSeq:   uint32(ctx.ModuleCounter[modKey]),
 			},
 			Revision: &table.Revision{
 				CreatedAt: ctx.Now,
@@ -1419,15 +1423,57 @@ func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.Pro
 		})
 	}
 
+	if len(hostSeqsToAssign) > 0 {
+		ctx.HostCounter[hostKey] = hostSeqsToAssign[len(hostSeqsToAssign)-1]
+	}
+
 	return instances
+}
+
+// calcHostInstSeqs 基于已用序号，优先填洞，不够再续接最大值
+//
+// 示例：
+//
+//	usedSeqs = [1, 4, 5]，maxUsed=5，needAdd=3
+//	gaps     = [2, 3]
+//	续接      = [6]
+//	返回      = [2, 3, 6]
+func calcHostInstSeqs(usedSeqs []int, maxHostInstSeq, needAdd int) []int {
+	// 构建已用集合，找最大值
+	usedSet := make(map[int]struct{}, len(usedSeqs))
+	maxUsed := maxHostInstSeq
+	for _, seq := range usedSeqs {
+		usedSet[seq] = struct{}{}
+		if seq > maxUsed {
+			maxUsed = seq
+		}
+	}
+
+	result := make([]int, 0, needAdd)
+
+	// 1. 优先填空洞（1 ~ maxUsed 范围内未占用的序号）
+	for i := 1; i <= maxUsed && len(result) < needAdd; i++ {
+		if _, used := usedSet[i]; !used {
+			result = append(result, i)
+		}
+	}
+
+	// 2. 空洞不够，续接最大值
+	next := maxUsed
+	for len(result) < needAdd {
+		next++
+		result = append(result, next)
+	}
+
+	return result
 }
 
 // ProcessDiff 进程差异对比
 type ProcessDiff struct {
 	// 进程级
-	ToAddProcesses     []*table.Process
-	ToUpdateProcesses  []*table.Process
-	ToDeleteProcessIDs []uint32
+	ToAddProcesses    []*table.Process
+	ToUpdateProcesses []*table.Process
+	ToDeleteProcesses []*table.Process
 
 	// 实例级
 	ToAddInstances      []*table.ProcessInstance
@@ -1495,12 +1541,8 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 	}
 
 	// 2. 删除进程（并兜底清理 stopped / unmanaged 实例）
-	if len(diff.ToDeleteProcessIDs) > 0 {
-		if err := DeleteInstanceStoppedUnmanaged(kit, dao, tx, bizID, diff.ToDeleteProcessIDs); err != nil {
-			logs.Errorf(
-				"[ProcessSync][DeleteProcess] bizID=%d processIDs=%v failed: %v",
-				bizID, diff.ToDeleteProcessIDs, err,
-			)
+	if len(diff.ToDeleteProcesses) > 0 {
+		if err := replaceProcessAndCleanInstancesTx(kit, dao, tx, bizID, diff.ToDeleteProcesses); err != nil {
 			return nil, err
 		}
 	}
@@ -1627,15 +1669,37 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 	return result, nil
 }
 
-// DeleteInstanceStoppedUnmanaged 删除进程状态是已停止或者是空 和 托管状态是未托管或者是空的实例数据
-func DeleteInstanceStoppedUnmanaged(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
-	// 1. 删除processes表中的数据
-	err := dao.Process().UpdateSyncStatusWithTx(kit, tx, table.Deleted.String(), processIDs)
+// replaceProcessAndCleanInstancesTx 更新进程别名以及状态数据并清理相关实例
+func replaceProcessAndCleanInstancesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32,
+	process []*table.Process) error {
+	// 1. 将 process 表中的数据标记为 deleted 状态 且更新别名为新别名
+	err := dao.Process().UpdateSyncStatusAndAliasTx(kit, tx, process)
 	if err != nil {
 		return err
 	}
 
 	// 2. 删除process_instances表中的数据
+	var processIDs []uint32
+	for _, p := range process {
+		processIDs = append(processIDs, p.ID)
+	}
+	err = dao.ProcessInstance().DeleteStoppedUnmanagedWithTx(kit, tx, bizID, processIDs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// MarkProcessDeletedAndCleanInstancesTx 标记进程为 deleted 状态并清理相关实例
+func MarkProcessDeletedAndCleanInstancesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, processIDs []uint32) error {
+	// 1. 删除processes表中的数据
+
+	err := dao.Process().UpdateSyncStatusWithTx(kit, tx, table.Deleted.String(), processIDs)
+	if err != nil {
+		return err
+	}
+
 	err = dao.ProcessInstance().DeleteStoppedUnmanagedWithTx(kit, tx, bizID, processIDs)
 	if err != nil {
 		return err

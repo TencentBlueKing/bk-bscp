@@ -52,6 +52,7 @@ message ProcessSpec {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "绑定模板ID" }];
   string process_config_view_url = 16
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "查看进程配置的url" }];
+  string new_alias = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "新进程别名" }];
 }
 
 message ActionAvailability {

@@ -121,6 +121,8 @@ type BuildInstancesParams struct {
 	MaxModuleInstSeq int
 	MaxHostInstSeq   int
 	Alias            string
+	// 当前主机上该进程已占用的 HostInstSeq 列表（用于填洞）
+	UsedHostInstSeqs []int
 }
 
 // ReconcileInstancesParams reconcileProcessInstances 函数的参数

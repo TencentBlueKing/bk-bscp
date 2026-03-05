@@ -72,6 +72,8 @@ type Process interface {
 	RestoreAbnormalWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, excludeIDs []uint32) error
 	// UpdateProcessStateSyncedAtTx 更新进程状态同步时间
 	UpdateProcessStateSyncedAtTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32, syncedAt *time.Time) error
+	// UpdateSyncStatusAndAliasTx 批量更新进程同步状态和新别名
+	UpdateSyncStatusAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 }
 
 var _ Process = new(processDao)
@@ -80,6 +82,30 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// UpdateSyncStatusAndAliasTx 批量更新进程同步状态和新别名
+func (dao *processDao) UpdateSyncStatusAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error {
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	m := dao.genQ.Process
+
+	for _, v := range data {
+		_, err := tx.Process.WithContext(kit.Ctx).
+			Where(m.ID.Eq(v.ID)).
+			Updates(map[string]any{
+				"cc_sync_status": table.Deleted.String(),
+				"new_alias":      v.Spec.NewAlias,
+			})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // UpdateProcessStateSyncedAtTx implements [Process].

@@ -204,7 +204,7 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 
 	isSuccess := cbErr == nil
 	// 更新批次状态
-	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
+	if _, err := e.Dao.TaskBatch().IncrementCompletedCount(kit, payload.BatchID, isSuccess); err != nil {
 		return fmt.Errorf("increment completed count failed, batch: %d, err: %w", payload.BatchID, err)
 	}
 

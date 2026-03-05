@@ -46,6 +46,8 @@ const (
 	PullProcessOperate ProcessOperateType = "pull"
 	// UpdateRegisterProcessOperate 更新托管信息
 	UpdateRegisterProcessOperate ProcessOperateType = "update_register"
+	// DeleteProcessOperate 删除进程实例
+	DeleteProcessOperate ProcessOperateType = "delete"
 )
 
 // ValidateOperateType 验证操作类型是否有效
@@ -60,6 +62,7 @@ func ValidateOperateType(operateType ProcessOperateType) error {
 	case ReloadProcessOperate:
 	case KillProcessOperate:
 	case UpdateRegisterProcessOperate:
+	case DeleteProcessOperate:
 		return nil
 	default:
 		return fmt.Errorf("unsupported operation type: %s", operateType)
@@ -105,6 +108,7 @@ type ProcessSpec struct {
 	PrevData             string       `gorm:"column:prev_data" json:"prev_data"`                             // 上一次同步的数据
 	ProcNum              uint         `gorm:"column:proc_num" json:"proc_num"`                               // 进程数量
 	FuncName             string       `gorm:"column:func_name" json:"func_name"`                             // 进程二进制文件名
+	NewAlias             string       `gorm:"column:new_alias" json:"new_alias"`                             // 新进程别名
 }
 
 func (p ProcessInfo) Value() (string, error) {

@@ -57,6 +57,10 @@ type ProcessInstance interface {
 	GetMaxModuleInstSeqByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (int, error)
 	// ListByProcessIDsWithTx 按进程ID列表查询所有实例
 	ListByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
+	DeleteByIDs(kit *kit.Kit, bizID uint32, ids []uint32) error
+	// ListInactiveByProcessID 按进程 ID 列出非活动状态的实例列表
+	ListInactiveByProcessID(kit *kit.Kit, bizID, processID uint32) ([]*table.ProcessInstance, error)
+	GetByIDs(kit *kit.Kit, bizID uint32, ids []uint32) ([]*table.ProcessInstance, error)
 }
 
 var _ ProcessInstance = new(processInstanceDao)
@@ -65,6 +69,42 @@ type processInstanceDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByIDs implements [ProcessInstance].
+func (dao *processInstanceDao) GetByIDs(kit *kit.Kit, bizID uint32, ids []uint32) ([]*table.ProcessInstance, error) {
+	m := dao.genQ.ProcessInstance
+
+	return dao.genQ.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.In(ids...)).
+		Find()
+}
+
+// ListInactiveByProcessID implements [ProcessInstance].
+func (dao *processInstanceDao) ListInactiveByProcessID(kit *kit.Kit, bizID uint32, processID uint32) (
+	[]*table.ProcessInstance, error) {
+	m := dao.genQ.ProcessInstance
+
+	result, err := dao.genQ.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID),
+			m.Status.In(table.ProcessStatusStopped.String(), ""), m.ManagedStatus.In(table.ProcessManagedStatusUnmanaged.String(), "")).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// DeleteByIDs implements [ProcessInstance].
+func (dao *processInstanceDao) DeleteByIDs(kit *kit.Kit, bizID uint32, ids []uint32) error {
+	m := dao.genQ.ProcessInstance
+	_, err := dao.genQ.ProcessInstance.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.In(ids...)).Delete()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // BatchDeleteByIDsWithTx implements [ProcessInstance].
@@ -88,7 +128,8 @@ func (dao *processInstanceDao) ListByProcessIDOrderBySeqDescTx(kit *kit.Kit, tx 
 	}
 
 	result, err := tx.ProcessInstance.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
+		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID),
+			m.Status.In(table.ProcessStatusStopped.String(), ""), m.ManagedStatus.In(table.ProcessManagedStatusUnmanaged.String(), "")).
 		Order(m.ModuleInstSeq.Desc()).
 		Limit(limit).
 		Find()

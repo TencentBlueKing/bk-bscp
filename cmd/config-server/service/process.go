@@ -36,7 +36,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 	resp, err := s.client.DS.OperateProcess(grpcKit.RpcCtx(), &pbds.OperateProcessReq{
 		BizId:                req.GetBizId(),
 		ProcessIds:           req.GetProcessIds(),
-		ProcessInstanceId:    req.GetProcessInstanceId(),
+		ProcessInstanceIds:   req.GetProcessInstanceIds(),
 		OperateType:          req.GetOperateType(),
 		EnableProcessRestart: req.GetEnableProcessRestart(),
 		OperateRange:         req.GetOperateRange(),

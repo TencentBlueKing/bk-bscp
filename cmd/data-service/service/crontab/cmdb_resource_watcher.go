@@ -315,7 +315,7 @@ func (c *cmdbResourceWatcher) handleSetEvent(kt *kit.Kit, resource bkcmdb.BkEven
 			}
 			return
 		}
-		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		err = cmdb.MarkProcessDeletedAndCleanInstancesTx(kt, c.dao, tx, bizID, processIDs)
 		if err != nil {
 			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, setID=%d, processIDs=%v: %v",
 				bizID, setID, processIDs, err)
@@ -371,7 +371,7 @@ func (c *cmdbResourceWatcher) handleModuleEvent(kt *kit.Kit, resource bkcmdb.BkE
 			}
 			return
 		}
-		err = cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, processIDs)
+		err = cmdb.MarkProcessDeletedAndCleanInstancesTx(kt, c.dao, tx, bizID, processIDs)
 		if err != nil {
 			logs.Errorf("[ERROR] delete stopped/unmanaged failed for bizID=%d, modID=%d, processIDs=%v: %v",
 				bizID, modID, processIDs, err)
@@ -461,7 +461,7 @@ func (c *cmdbResourceWatcher) handleProcessDeleteEventsBatch(kt *kit.Kit, events
 		}
 
 		tx := c.dao.GenQuery().Begin()
-		if err := cmdb.DeleteInstanceStoppedUnmanaged(kt, c.dao, tx, bizID, procIDs); err != nil {
+		if err := cmdb.MarkProcessDeletedAndCleanInstancesTx(kt, c.dao, tx, bizID, procIDs); err != nil {
 			_ = tx.Rollback()
 			logs.Errorf("[CMDB][ProcessSync] delete failed, bizID=%d, procIDs=%v, err=%v", bizID, procIDs, err)
 			continue

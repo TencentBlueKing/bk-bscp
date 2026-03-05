@@ -2342,7 +2342,7 @@ message ListProcessResp {
 message OperateProcessReq {
   uint32 biz_id = 1;
   repeated uint32 process_ids = 2;
-  uint32 process_instance_id = 3;
+  repeated uint32 process_instance_ids = 3;
   string operate_type = 4;
   bool enable_process_restart = 5;
   pbproc.OperateRange operate_range = 6;

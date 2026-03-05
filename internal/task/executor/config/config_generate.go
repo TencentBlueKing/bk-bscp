@@ -251,7 +251,7 @@ func (e *GenerateConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 
 	// 更新 TaskBatch 状态
 	isSuccess := cbErr == nil
-	if err := e.Dao.TaskBatch().IncrementCompletedCount(kit.New(), payload.BatchID, isSuccess); err != nil {
+	if _, err := e.Dao.TaskBatch().IncrementCompletedCount(kit.New(), payload.BatchID, isSuccess); err != nil {
 		return fmt.Errorf("[ConfigGenerateCallback]: increment completed count failed, batchID: %d, err: %w",
 			payload.BatchID, err)
 	}

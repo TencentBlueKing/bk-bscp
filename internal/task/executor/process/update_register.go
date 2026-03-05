@@ -115,7 +115,7 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 
 	if len(processInfo) == 0 {
 		tx := u.Dao.GenQuery().Begin()
-		err = cmdb.DeleteInstanceStoppedUnmanaged(kit.New(), u.Dao, tx, payload.BizID, []uint32{payload.ProcessID})
+		err = cmdb.MarkProcessDeletedAndCleanInstancesTx(kit.New(), u.Dao, tx, payload.BizID, []uint32{payload.ProcessID})
 		if err != nil {
 			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
 				payload.BizID, payload.ProcessID, err)
@@ -442,7 +442,7 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 	// 更新 TaskBatch 的完成计数
 	isSuccess := cbErr == nil
 	if payload.BatchID > 0 {
-		if err := u.Dao.TaskBatch().IncrementCompletedCount(kit.New(), payload.BatchID, isSuccess); err != nil {
+		if _, err := u.Dao.TaskBatch().IncrementCompletedCount(kit.New(), payload.BatchID, isSuccess); err != nil {
 			logs.Errorf("[UpdateRegisterCallback CALLBACK]: failed to increment completed count, "+
 				"batchID: %d, err: %v", payload.BatchID, err)
 		}

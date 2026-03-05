@@ -95,6 +95,7 @@ func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32, url string
 		ProcNum:              uint32(spec.ProcNum),
 		BindTemplateIds:      bindTemplateIds,
 		ProcessConfigViewUrl: url,
+		NewAlias:             spec.NewAlias,
 	}
 }
 
@@ -192,7 +193,6 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 	result := make([]*Process, 0, len(procs))
 
 	for _, p := range procs {
-
 		// 1. 解析进程运行时配置
 		var processInfo table.ProcessInfo
 		if err := json.Unmarshal([]byte(p.Spec.SourceData), &processInfo); err != nil {
@@ -226,33 +226,36 @@ func PbProcessesWithInstances(procs []*table.Process, procInstMap map[uint32][]*
 // buildProcessInstanceActions 构建实例级操作按钮
 // 规则：
 // 1. 仅缩容场景展示实例级按钮
-// 2. 仅最后一个实例允许操作
-// 3. Unknown / ing 状态冻结
-// 4. 实例级按钮仅用于缩容兜底
+// 2. Unknown / ing 状态冻结
+// 3. 实例级按钮仅用于缩容兜底
 func buildProcessInstanceActions(proc *table.Process, insts []*pbpi.ProcInst, processInfo table.ProcessInfo) {
 	// 非缩容，直接返回（默认已禁用）
 	if proc.Spec.ProcNum >= uint(len(insts)) {
 		return
 	}
 
-	// 缩容：只处理最后一个实例
-	lastInst := insts[len(insts)-1]
+	current := len(insts)
+	target := int(proc.Spec.ProcNum)
+	needScaleDown := current - target
 
-	// Unknown / ing 状态冻结
-	if lastInst.Spec.Status == "" ||
-		lastInst.Spec.ManagedStatus == "" ||
-		isProcessInProgress(lastInst.Spec.Status) ||
-		isManagedInProgress(lastInst.Spec.ManagedStatus) {
-		return
+	// 只处理“超出的那几项”
+	for i := current - needScaleDown; i < current; i++ {
+		inst := insts[i]
+		// Unknown / ing 冻结
+		if inst.Spec.Status == "" ||
+			inst.Spec.ManagedStatus == "" ||
+			isProcessInProgress(inst.Spec.Status) ||
+			isManagedInProgress(inst.Spec.ManagedStatus) {
+			continue
+		}
+
+		inst.Spec.Actions = buildInstanceActions(
+			processInfo,
+			inst.Spec.Status,
+			inst.Spec.ManagedStatus,
+			proc.Spec.CcSyncStatus.String(),
+		)
 	}
-
-	// 构建兜底实例操作能力
-	lastInst.Spec.Actions = buildInstanceActions(
-		processInfo,
-		lastInst.Spec.Status,
-		lastInst.Spec.ManagedStatus,
-		proc.Spec.CcSyncStatus.String(),
-	)
 }
 
 func buildInstanceActions(processInfo table.ProcessInfo, instStatus, instManagedStatus,
@@ -427,7 +430,11 @@ CanProcessOperate 判断某个操作是否允许执行
   - 其他操作：
     · 一律禁止，返回进程异常
 
-7. 正常状态下的操作判定逻辑
+7. 更新托管信息操作的特殊规则
+  - 仅 syncStatus = Updated 的进程允许更新托管信息，且仅允许更新托管信息和配置下发的操作
+  - 其他操作（如 start / stop / restart 等）一律禁止，返回无更新的提示
+
+8. 正常状态下的操作判定逻辑
 
   - 注册操作（Register）：
     · 未托管 或 部分托管 → 允许注册
@@ -546,7 +553,21 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		}
 	}
 
-	// 7. 正常状态逻辑
+	// 7. 更新托管信息操作的特殊规则
+	// 仅 syncStatus = Updated 的进程允许更新托管信息，且仅允许更新托管信息和配置下发的操作
+	// 其他操作（如 start / stop / restart 等）一律禁止，返回无更新的提示
+	if syncStatus == table.Updated.String() {
+		if op == table.UpdateRegisterProcessOperate ||
+			op == table.PullProcessOperate {
+			return true, "", DisableReasonNone
+		}
+
+		return false,
+			"process has updated register info, only update register or pull operation is allowed",
+			DisableReasonNoRegisterUpdate
+	}
+
+	// 8. 正常状态逻辑
 	switch op {
 	case table.RegisterProcessOperate:
 		// 允许：未托管 或 部分托管
