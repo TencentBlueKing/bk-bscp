@@ -272,11 +272,9 @@
   };
 
   // 重新获取所有模板进程列表
-  const reloadAllTemplateProcess = () => {
+  const reloadAllTemplateProcess = async () => {
     templateProcessList.value = [];
-    selectedTemplateIds.value.forEach((id) => {
-      loadTemplateInstanceList(id);
-    });
+    await Promise.all(selectedTemplateIds.value.map((id) => loadTemplateInstanceList(id)));
   };
 
   const handleSelectTemplate = (id: number | number[]) => {
@@ -322,7 +320,7 @@
       };
       showApplyPermDialog.value = true;
       return;
-    };
+    }
     try {
       pending.value = true;
       const res = await issueConfig(spaceId.value, batchId.value);

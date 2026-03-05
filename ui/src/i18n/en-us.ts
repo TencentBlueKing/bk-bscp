@@ -854,6 +854,7 @@ export default {
   移出套餐成功: 'Moved out of package successfully',
   新建版本: 'New version',
   '版本号/版本说明/创建人': 'Version number/version description/creator',
+  '版本号/版本描述/创建人': 'Version number/version description/creator',
   选择载入版本: 'Select version to load',
   版本说明: 'Release Notes',
   展开列表: 'Expand list',

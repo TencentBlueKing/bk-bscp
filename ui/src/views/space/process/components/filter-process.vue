@@ -56,7 +56,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, computed, watch } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import { Transfer, Del } from 'bkui-vue/lib/icon';
   import { getProcessFilter } from '../../../../api/process';
   import type { IProcessFilterItem } from '../../../../../types/process';
@@ -75,7 +75,6 @@
     defineProps<{
       bkBizId: string;
       isIssued?: boolean; // 是否是配置下发
-      processIds?: string[];
     }>(),
     {
       isIssued: false,
@@ -83,15 +82,6 @@
   );
   const emits = defineEmits(['search']);
 
-  watch(
-    () => props.processIds,
-    () => {
-      if (props.processIds && props.processIds?.length > 0) {
-        filterValues.value.cc_process_ids = props.processIds.map((id) => Number(id));
-        emits('search', { ...filterValues.value, env: activeEnv.value });
-      }
-    },
-  );
 
   const envList = computed(() => {
     if (props.isIssued) {
@@ -165,8 +155,9 @@
   const filterType = ref('filter');
 
   onMounted(() => {
-    if (route.query.cc_process_id) {
-      filterValues.value.cc_process_ids.push(Number(route.query.cc_process_id));
+    if (route.query.processIds) {
+      const processIds = Array.isArray(route.query.processIds) ? route.query.processIds : [route.query.processIds];
+      filterValues.value.cc_process_ids = processIds.map(Number);
       emits('search', { ...filterValues.value, environment: activeEnv.value });
     }
     if (filterFlag.value) {

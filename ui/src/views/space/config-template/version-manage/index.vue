@@ -16,7 +16,7 @@
         class="search-input"
         :search-field="searchField"
         :user-field="['reviser']"
-        :placeholder="t('版本号/版本说明/创建人')"
+        :placeholder="t('版本号/版本描述/创建人')"
         @search="handleSearch" />
     </div>
     <div class="version-content-area">
