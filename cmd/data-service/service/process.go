@@ -157,15 +157,15 @@ func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterO
 		table.ProcessStatusRestarting.String():    "重启中",
 		table.ProcessStatusStopping.String():      "停止中",
 		table.ProcessStatusReloading.String():     "重载中",
-		table.ProcessStatusStopped.String():       "已停止",
+		table.ProcessStatusStopped.String():       "未运行",
 	}
 	psOptions := makeChoices(processStatusValues)
 
 	// Managed Status 选项
 	managedStatusValues := map[string]string{
-		table.ProcessManagedStatusStarting.String():      "启动中",
-		table.ProcessManagedStatusStopping.String():      "停止中",
-		table.ProcessManagedStatusManaged.String():       "已托管",
+		table.ProcessManagedStatusStarting.String():      "启动托管中",
+		table.ProcessManagedStatusStopping.String():      "停止托管中",
+		table.ProcessManagedStatusManaged.String():       "托管中",
 		table.ProcessManagedStatusUnmanaged.String():     "未托管",
 		table.ProcessManagedStatusPartlyManaged.String(): "部分托管",
 	}
@@ -173,9 +173,10 @@ func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterO
 
 	// CC Sync Status 选项
 	ccSyncStatusValues := map[string]string{
-		table.Synced.String():  "已同步",
-		table.Deleted.String(): "已删除",
-		table.Updated.String(): "已更新",
+		table.Synced.String():   "正常",
+		table.Deleted.String():  "已删除",
+		table.Updated.String():  "有更新",
+		table.Abnormal.String(): "异常",
 	}
 	ccSyncOptions := makeChoices(ccSyncStatusValues)
 
