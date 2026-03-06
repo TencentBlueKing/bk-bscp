@@ -607,19 +607,20 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 					return fmt.Errorf("[Finalize STEP]: failed to delete process instance: %w", errD)
 				}
 			}
-
-			if allCompleted {
-				if errR := e.reorderModuleInstSeq(kit.New(), payload.BizID, payload.ProcessID); errR != nil {
-					logs.Errorf("[ProcessOperateCallback CALLBACK]: failed to reorder module instance sequence, "+
-						"bizID: %d, processID: %d, err: %v", payload.BizID, payload.ProcessID, errR)
-				}
-			}
 		}
 
 		logs.Infof("[ProcessOperateCallback CALLBACK]: task %s completed successfully, no rollback needed",
 			c.GetTaskID())
 
 		return nil
+	}
+
+	// 只要任务完成就排序
+	if allCompleted {
+		if errR := e.reorderModuleInstSeq(kit.New(), payload.BizID, payload.ProcessID); errR != nil {
+			logs.Errorf("[ProcessOperateCallback CALLBACK]: failed to reorder module instance sequence, "+
+				"bizID: %d, processID: %d, err: %v", payload.BizID, payload.ProcessID, errR)
+		}
 	}
 
 	// 任务失败，执行回滚逻辑
