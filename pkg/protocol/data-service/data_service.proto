@@ -2650,6 +2650,8 @@ message UpdateConfigTemplateReq {
   string highlight_style = 13;
   string file_mode = 14;
   string revision_memo = 15;
+  string file_name = 16;
+  string file_path = 17;
 }
 
 message UpdateConfigTemplateResp {}
