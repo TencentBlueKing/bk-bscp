@@ -310,6 +310,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConf
 		FileMode:         req.GetFileMode(),
 		RevisionName:     req.GetRevisionName(),
 		RevisionMemo:     req.GetRevisionMemo(),
+		FilePath:         req.GetFilePath(),
+		FileName:         req.GetFileName(),
 	})
 
 	if err != nil {

@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"reflect"
 	"time"
 
 	"gorm.io/gorm"
@@ -343,11 +342,8 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	}
 
 	if ct != nil {
-		return nil, fmt.Errorf(
-			"the same template name already exists under this %d business: %s",
-			req.GetBizId(),
-			req.GetName(),
-		)
+		return nil, fmt.Errorf("the same template name already exists under this %d business: %s",
+			req.GetBizId(), req.GetName())
 	}
 
 	// 1. 开启事务
@@ -867,6 +863,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	}
 
 	spec := *revision.Spec
+	spec.Path = req.GetFilePath()
+	spec.Name = req.GetFileName()
 	spec.RevisionName = req.GetRevisionName()
 	spec.RevisionMemo = req.GetRevisionMemo()
 	spec.Charset = table.FileCharset(req.GetCharset())
@@ -891,17 +889,12 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		}
 	}()
 
-	// 如果文件权限和内容以及描述没变化不更新模板版本数据
-	if !reflect.DeepEqual(revision.Spec.ContentSpec, spec.ContentSpec) ||
-		!reflect.DeepEqual(revision.Spec.Permission, spec.Permission) || req.GetRevisionMemo() != template.Spec.Memo {
-		// 生成新的版本文件
-		_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true)
-		if err != nil {
-			logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
-			return nil, err
-		}
+	// 生成新的版本文件
+	_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true)
+	if err != nil {
+		logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
 	}
-
 	template.Revision.Reviser = grpcKit.User
 	template.Revision.UpdatedAt = now
 	// 更新模板文件
@@ -909,8 +902,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		ID: template.ID,
 		Spec: &table.TemplateSpec{
 			Memo: req.GetRevisionMemo(),
-			Path: template.Spec.Path,
-			Name: template.Spec.Name,
+			Path: req.GetFilePath(),
+			Name: req.GetFileName(),
 		},
 		Attachment: template.Attachment,
 		Revision:   template.Revision,

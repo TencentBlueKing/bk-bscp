@@ -5113,6 +5113,8 @@ message UpdateConfigTemplateReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
   string revision_memo = 15
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
+  string file_name = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string file_path = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
 }
 
 message UpdateConfigTemplateResp {}
