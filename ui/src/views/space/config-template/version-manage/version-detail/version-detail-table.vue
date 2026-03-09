@@ -74,11 +74,13 @@
       privilege: '',
       sign: '',
       byte_size: 0,
+      file_name: '',
+      file_path: '',
     };
     if (props.versionId) {
       const version = props.list.find((item) => item.id === props.versionId);
       if (version) {
-        const { revision_memo, file_type, file_mode, content_spec, permission } = version.spec;
+        const { revision_memo, file_type, file_mode, content_spec, permission, name, path } = version.spec;
         const { signature: sign, byte_size } = content_spec;
         const { user, user_group, privilege } = permission;
         data = {
@@ -91,6 +93,8 @@
           privilege,
           sign,
           byte_size,
+          file_name: name,
+          file_path: path,
         };
       }
     }

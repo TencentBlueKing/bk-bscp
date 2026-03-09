@@ -163,7 +163,10 @@ export interface ITemplateVersionEditingData {
   privilege: string;
   sign: string;
   byte_size: number;
-  name?: string;
+  template_name?: string;
+  fileAP?: string;
+  file_path?: string;
+  file_name?: string;
 }
 
 // 业务下所有模板套餐列表（按模板空间分组）

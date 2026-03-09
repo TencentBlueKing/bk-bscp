@@ -12,7 +12,11 @@
         <div class="detail-info">
           <div class="info-item" v-for="item in infoList" :key="item.label">
             <span class="label">{{ item.label }}</span>
-            <span class="value">{{ templateDetail[item.value as keyof typeof templateDetail] }}</span>
+            <div class="value">
+              <bk-overflow-title type="tips">
+                {{ templateDetail[item.value as keyof typeof templateDetail] }}
+              </bk-overflow-title>
+            </div>
           </div>
         </div>
         <div class="content">
