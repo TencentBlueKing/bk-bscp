@@ -1489,4 +1489,9 @@ export default {
   无需更新托管信息: 'No need to update host information',
   进程异常: 'Process Abnormal',
   '进程别名发生了变化，已自动在下方创建新进程。旧进程已删除，建议停止': 'The process alias has changed, a new process has been automatically created below. The old process has been deleted, it is recommended to stop',
+  一键清除已缩容的实例: 'One-click clear scaled-in instances',
+  一键清除: 'One-click clear',
+  '共 {n} 条实例记录待清除': 'A total of {n} instance records to be cleared',
+  '清除操作将对进程执行停止或者取消托管操作。': 'The clear operation will perform stop or cancel managed operation on the process.',
+  清除: '清除',
 };

@@ -188,7 +188,9 @@
               <template #default="{ row: rowData }: { row: IProcInst }">
                 <bk-tag v-if="rowData.spec.managed_status" :theme="getManagedStatusTheme(rowData.spec.managed_status)">
                   <span class="process-status">
-                    <Spinner v-if="['starting', 'stopping'].includes(row.spec.managed_status)" class="spinner-icon" />
+                    <Spinner
+                      v-if="['starting', 'stopping'].includes(rowData.spec.managed_status)"
+                      class="spinner-icon" />
                     {{
                       PROCESS_MANAGED_STATUS_MAP[rowData.spec.managed_status as keyof typeof PROCESS_MANAGED_STATUS_MAP]
                     }}
@@ -198,25 +200,15 @@
               </template>
             </TableColumn>
             <TableColumn>
-              <template #default="{ row: rowData }: { row: IProcInst }">
-                <div class="op-btns">
-                  <bk-button
-                    v-if="rowData.spec.actions.stop"
-                    text
-                    theme="primary"
-                    :disabled="!rowData.spec.actions.stop"
-                    @click="handleOpInst(row.id, rowData.id, 'stop')">
-                    {{ t('停止') }}
-                  </bk-button>
-                  <bk-button
-                    v-if="rowData.spec.actions.unregister"
-                    text
-                    theme="primary"
-                    :disabled="!rowData.spec.actions.unregister"
-                    @click="handleOpInst(row.id, rowData.id, 'unregister')">
-                    {{ t('取消托管') }}
-                  </bk-button>
-                </div>
+              <template #title>
+                <bk-button
+                  v-if="row.spec.proc_num < row.proc_inst.length"
+                  theme="primary"
+                  text
+                  v-bk-tooltips="{ content: t('一键清除已缩容的实例') }"
+                  @click="handleClearInst(row)">
+                  {{ t('一键清除') }}
+                </bk-button>
               </template>
             </TableColumn>
           </PrimaryTable>
@@ -258,6 +250,11 @@
     :info="batchOpProcessInfo"
     @close="isShowBatchOpProcess = false"
     @confirm="handleConfirmOp" />
+  <ClearInstDialog
+    :is-show="isShowClearInst"
+    :count="processInstanceIds.length"
+    @close="isShowClearInst = false"
+    @confirm="handleConfirmOp('delete')" />
 </template>
 
 <script lang="ts" setup>
@@ -283,6 +280,7 @@
   import SearchSelector from '../../../../components/search-selector.vue';
   import TableBtnTooltips from './table-btn-tooltips.vue';
   import { permissionCheck } from '../../../../api';
+  import ClearInstDialog from './clear-inst-dialog.vue';
 
   const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { pagination, updatePagination } = useTablePagination('clientSearch');
@@ -361,7 +359,7 @@
     new: '',
   });
   const processIds = ref<number[]>([]);
-  const processInstanceId = ref(0);
+  const processInstanceIds = ref<number[]>([]);
   const filterRef = ref();
   const searchValue = ref<{ [key: string]: string[] }>();
   const selectedIds = ref<number[]>([]);
@@ -375,6 +373,7 @@
     operate: false,
     issued: false,
   });
+  const isShowClearInst = ref(false);
 
   const tableMaxHeight = computed(() => {
     return tableRef.value && tableRef.value.clientHeight - 60;
@@ -500,12 +499,14 @@
     isShowOpProcess.value = true;
   };
 
-  // 实例表格操作
-  const handleOpInst = (processId: number, id: number, op: string) => {
+  // 一键清除缩容的实例
+  const handleClearInst = (process: IProcessItem) => {
     if (!checkOpPerm('operate')) return;
-    processIds.value = [processId];
-    processInstanceId.value = id;
-    handleConfirmOp(op);
+    processIds.value = [process.id];
+    processInstanceIds.value = process.proc_inst
+      .filter((inst, index) => index + 1 > process.spec.proc_num!)
+      .map((inst) => inst.id);
+    isShowClearInst.value = true;
   };
 
   const handleBatchOpProcess = (op: string) => {
@@ -597,7 +598,7 @@
     try {
       const query = {
         processIds: processIds.value,
-        processInstanceId: processInstanceId.value,
+        processInstanceIds: processInstanceIds.value,
         operateType: op,
         enable_process_restart: restart,
       };
@@ -611,7 +612,7 @@
       console.error(error);
     } finally {
       processIds.value = [];
-      processInstanceId.value = 0;
+      processInstanceIds.value = [];
     }
   };
 
@@ -788,6 +789,10 @@
     color: #e71818;
     cursor: pointer;
     font-weight: bold;
+  }
+  :deep(.t-table--column-resizable th) {
+    border-top: none !important;
+    border-right: none !important;
   }
 </style>
 

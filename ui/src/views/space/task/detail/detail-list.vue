@@ -119,7 +119,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onBeforeMount, computed } from 'vue';
+  import { ref, onBeforeMount, computed, onBeforeUnmount } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import { getTaskDetailList, retryTask } from '../../../../api/task';
@@ -246,6 +246,13 @@
   onBeforeMount(async () => {
     loadTaskList();
     getRetryPerm();
+  });
+
+  onBeforeUnmount(() => {
+    if (timer.value) {
+      clearTimeout(timer.value);
+      timer.value = null;
+    }
   });
 
   const scheduleReload = (delay = 0) => {
