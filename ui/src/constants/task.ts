@@ -12,6 +12,7 @@ export const TASK_ACTION_MAP = {
   config_publish: localT('下发'),
   config_check: localT('巡检'),
   update_register: localT('更新托管信息'),
+  delete: localT('一键清除'),
 };
 
 export const TASK_STATUS_MAP = {

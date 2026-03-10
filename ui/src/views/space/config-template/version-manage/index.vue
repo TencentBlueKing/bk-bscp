@@ -114,7 +114,7 @@
   const searchQuery = ref<{ [key: string]: string }>({});
   const searchField = [
     { field: 'revision_name', label: t('版本号') },
-    { field: 'revision_memo', label: t('版本说明') },
+    { field: 'revision_memo', label: t('版本描述') },
     { field: 'creator', label: t('创建人') },
   ];
   const updatePerm = ref(true);
