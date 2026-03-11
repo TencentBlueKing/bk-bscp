@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
@@ -1108,55 +1109,6 @@ func reconcileProcessInstances(ctx *SyncContext, params *ReconcileInstancesParam
 	return res, nil
 }
 
-// reorderModuleInstSeq 重新编排同模块同别名的所有实例的 ModuleInstSeq（从1开始递增）
-func reorderModuleInstSeq(ctx *SyncContext, params *ReorderParams) ([]*table.ProcessInstance, error) {
-	// 1. 查询同模块同别名的所有进程ID
-	sameAliasProcessIDs, err := ctx.Dao.Process().ListByModuleIDAndAliasWithTx(
-		ctx.Kit, ctx.Tx, params.BizID, params.ModuleID, params.Alias)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(sameAliasProcessIDs) == 0 {
-		return nil, nil
-	}
-
-	// 2. 查询这些进程的所有实例，按 ProcessID + HostInstSeq 排序
-	allInstances, err := ctx.Dao.ProcessInstance().ListByProcessIDsWithTx(
-		ctx.Kit, ctx.Tx, params.BizID, sameAliasProcessIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(allInstances) == 0 {
-		return nil, nil
-	}
-
-	// 构建排除ID集合
-	excludeSet := make(map[uint32]struct{}, len(params.ExcludeIDs))
-	for _, id := range params.ExcludeIDs {
-		excludeSet[id] = struct{}{}
-	}
-
-	// 3. 重新编排 ModuleInstSeq（从1开始递增），跳过即将删除的实例
-	toUpdate := make([]*table.ProcessInstance, 0)
-	seq := 0
-	for _, inst := range allInstances {
-		// 跳过即将删除的实例
-		if _, excluded := excludeSet[inst.ID]; excluded {
-			continue
-		}
-
-		seq++
-		if int(inst.Spec.ModuleInstSeq) != seq {
-			inst.Spec.ModuleInstSeq = uint32(seq)
-			toUpdate = append(toUpdate, inst)
-		}
-	}
-
-	return toUpdate, nil
-}
-
 // BuildProcessChangesResult 包含 BuildProcessChanges 的返回结果
 type BuildProcessChangesResult struct {
 	ToAddProcess        *table.Process
@@ -1614,11 +1566,16 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 
 	// 8. 重新编排受影响模块的 ModuleInstSeq（在所有实例入库后统一执行）
 	for modKey := range diff.ModulesToReorder {
-		toUpdate, err := reorderModuleInstSeq(ctx, &ReorderParams{
-			BizID:    bizID,
-			ModuleID: uint32(modKey.ModuleID),
-			Alias:    modKey.Alias,
-		})
+		toUpdate, err := calcModuleInstSeqUpdatesTx(
+			ctx.Kit,
+			ctx.Dao,
+			ctx.Tx,
+			&ReorderParams{
+				BizID:    bizID,
+				ModuleID: uint32(modKey.ModuleID),
+				Alias:    modKey.Alias,
+			},
+		)
 		if err != nil {
 			logs.Errorf(
 				"[ProcessSync][ReorderModuleInstSeq] bizID=%d moduleID=%d alias=%s failed: %v",
@@ -1760,4 +1717,106 @@ func CheckAndMarkHostAliasConflicts(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, 
 	}
 
 	return nil
+}
+
+// ComputeModuleInstSeqUpdates 重新排序模块实例序列，确保同一模块下相同别名的进程实例的 ModuleInstSeq 是连续的
+// 适用场景：当某个模块下的进程实例发生变更（删除）时，调用此函数重新计算并更新 ModuleInstSeq 字段，保持序列连续且有序
+func ComputeModuleInstSeqUpdates(kit *kit.Kit, dao dao.Set, bizID, processID uint32) error {
+	tx := dao.GenQuery().Begin()
+
+	committed := false
+	defer func() {
+		if !committed {
+			if errR := tx.Rollback(); errR != nil {
+				logs.Errorf(
+					"[ComputeModuleInstSeqUpdates ERROR] biz %d: rollback failed, err=%v",
+					bizID, errR,
+				)
+			}
+		}
+	}()
+
+	process, err := dao.Process().GetByIDWithTx(kit, tx, bizID, processID)
+	if err != nil {
+		return err
+	}
+
+	updates, err := calcModuleInstSeqUpdatesTx(
+		kit,
+		dao,
+		tx,
+		&ReorderParams{
+			BizID:    bizID,
+			ModuleID: process.Attachment.ModuleID,
+			Alias:    process.Spec.Alias,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(updates) > 0 {
+		err = dao.ProcessInstance().BatchUpdateWithTx(kit, tx, updates)
+		if err != nil {
+			return fmt.Errorf("failed to update process instances: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		logs.Errorf("[ComputeModuleInstSeqUpdates ERROR] biz %d: commit failed, err=%v", bizID, err)
+		return err
+	}
+
+	committed = true
+
+	return nil
+}
+
+// collectSeqUpdates 收集需要更新 ModuleInstSeq 的实例，确保同一模块下相同别名的进程实例的 ModuleInstSeq 是连续的
+func collectSeqUpdates(instances []*table.ProcessInstance) []*table.ProcessInstance {
+	updates := make([]*table.ProcessInstance, 0)
+	for i, inst := range instances {
+		if expectedSeq := uint32(i + 1); inst.Spec.ModuleInstSeq != expectedSeq {
+			inst.Spec.ModuleInstSeq = expectedSeq
+			updates = append(updates, inst)
+		}
+	}
+	return updates
+}
+
+func calcModuleInstSeqUpdatesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, params *ReorderParams) ([]*table.ProcessInstance, error) {
+
+	// 1 查询 processes
+	processIDs, err := dao.Process().ListByModuleIDAndAliasWithTx(
+		kit, tx, params.BizID, params.ModuleID, params.Alias,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list processes by module ID and alias: %w", err)
+	}
+
+	if len(processIDs) == 0 {
+		return nil, nil
+	}
+
+	// 2 查询 instances
+	instances, err := dao.ProcessInstance().ListByProcessIDsWithTx(
+		kit, tx, params.BizID, processIDs,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list process instances: %w", err)
+	}
+
+	if len(instances) == 0 {
+		return nil, nil
+	}
+
+	// 3 排序
+	sort.Slice(instances, func(i, j int) bool {
+		if instances[i].Attachment.CcProcessID != instances[j].Attachment.CcProcessID {
+			return instances[i].Attachment.CcProcessID < instances[j].Attachment.CcProcessID
+		}
+		return instances[i].Spec.HostInstSeq < instances[j].Spec.HostInstSeq
+	})
+
+	return collectSeqUpdates(instances), nil
 }

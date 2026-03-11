@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 	"time"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
@@ -588,6 +587,21 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 		CbErr:    cbErr,
 	})
 
+	kt := kit.New()
+
+	defer func() {
+		// 只要批次任务全部完成，就触发一次 CMDB 模块实例序列更新，确保模块实例序列的正确性
+		if allCompleted {
+			if errR := cmdb.ComputeModuleInstSeqUpdates(
+				kt, e.Dao, payload.BizID, payload.ProcessID); errR != nil {
+
+				logs.Errorf("[ProcessOperateCallback CALLBACK]: failed to reorder module instance sequence, "+
+					"bizID: %d, processID: %d, err: %v",
+					payload.BizID, payload.ProcessID, errR)
+			}
+		}
+	}()
+
 	// 如果任务成功，不需要回滚
 	if isSuccess {
 		if payload.OperateType == table.UnregisterProcessOperate || payload.OperateType == table.StopProcessOperate {
@@ -613,14 +627,6 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 			c.GetTaskID())
 
 		return nil
-	}
-
-	// 只要任务完成就排序
-	if allCompleted {
-		if errR := e.reorderModuleInstSeq(kit.New(), payload.BizID, payload.ProcessID); errR != nil {
-			logs.Errorf("[ProcessOperateCallback CALLBACK]: failed to reorder module instance sequence, "+
-				"bizID: %d, processID: %d, err: %v", payload.BizID, payload.ProcessID, errR)
-		}
 	}
 
 	// 任务失败，执行回滚逻辑
@@ -767,100 +773,4 @@ func RegisterExecutor(e *ProcessExecutor) {
 	istep.Register(FinalizeOperateProcessStepName, istep.StepExecutorFunc(e.Finalize))
 	// 注册回调，用于任务失败时的状态回滚
 	istep.RegisterCallback(ProcessOperateCallbackName, istep.CallbackExecutorFunc(e.Callback))
-}
-
-// reorderModuleInstSeq 重新排序模块实例序列，确保同一模块下相同别名的进程实例的 ModuleInstSeq 是连续的
-// 只更新第一个序列号断层之后的记录，避免全量更新
-func (e *ProcessExecutor) reorderModuleInstSeq(kit *kit.Kit, bizID uint32, processID uint32) error {
-	// 1 获取进程
-	process, err := e.Dao.Process().GetByID(kit, bizID, processID)
-	if err != nil {
-		return fmt.Errorf("failed to get process by ID: %w", err)
-	}
-
-	tx := e.Dao.GenQuery().Begin()
-	committed := false
-	defer func() {
-		if !committed {
-			if errR := tx.Rollback(); errR != nil {
-				logs.Errorf(
-					"[reorderModuleInstSeq ERROR] biz %d: rollback failed, err=%v",
-					bizID, errR,
-				)
-			}
-		}
-	}()
-
-	// 2 查询同 module + alias 的所有 process
-	processIDs, err := e.Dao.Process().ListByModuleIDAndAliasWithTx(kit, tx, bizID, process.Attachment.ModuleID,
-		process.Spec.Alias)
-	if err != nil {
-		return fmt.Errorf("failed to list processes by module ID and alias: %w", err)
-	}
-
-	// 3 查询所有实例
-	instances, err := e.Dao.ProcessInstance().ListByProcessIDsWithTx(kit, tx, bizID, processIDs)
-	if err != nil {
-		return err
-	}
-
-	// 4 排序
-	sort.Slice(instances, func(i, j int) bool {
-		if instances[i].Attachment.CcProcessID != instances[j].Attachment.CcProcessID {
-			return instances[i].Attachment.CcProcessID < instances[j].Attachment.CcProcessID
-		}
-		return instances[i].Spec.HostInstSeq < instances[j].Spec.HostInstSeq
-	})
-
-	// 5 找到第一个断层位置，只更新从该位置开始的后续记录
-	updates := findGapAndCollectUpdates(instances)
-
-	// 6 批量更新
-	if len(updates) > 0 {
-		err = e.Dao.ProcessInstance().BatchUpdateWithTx(kit, tx, updates)
-		if err != nil {
-			return fmt.Errorf("failed to update process instances: %w", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		logs.Errorf("[reorderModuleInstSeq ERROR] biz %d: commit failed, err=%v", bizID, err)
-		return err
-	}
-
-	committed = true
-
-	return nil
-}
-
-// findGapAndCollectUpdates 找到第一个序列断层，收集需要更新的实例
-//
-// 核心逻辑：
-//   - 遍历已排序的实例，期望序列号从 1 开始连续递增
-//   - 一旦发现实际序列号与期望序列号不符（即出现断层），
-//     从该位置起所有后续实例都需要更新
-//
-// 示例：
-//   - 删除 seq=3：[1,2,3,4,5] → 剩余排序后为 [1,2,4,5]，断层在 index=2（期望3，实际4），更新 [4→3, 5→4]
-//   - 删除 seq=2,3：[1,2,3,4,5] → 剩余排序后为 [1,4,5]，断层在 index=1（期望2，实际4），更新 [4→2, 5→3]
-//   - 删除 seq=5：[1,2,3,4,5] → 剩余排序后为 [1,2,3,4]，无断层，无需更新
-func findGapAndCollectUpdates(instances []*table.ProcessInstance) []*table.ProcessInstance {
-	updates := make([]*table.ProcessInstance, 0)
-	gapFound := false
-
-	for i := range instances {
-		expectedSeq := uint32(i + 1)
-
-		if !gapFound && instances[i].Spec.ModuleInstSeq == expectedSeq {
-			// 序列号连续，跳过
-			continue
-		}
-
-		// 发现断层，从此位置开始所有记录都需要更新
-		gapFound = true
-		instances[i].Spec.ModuleInstSeq = expectedSeq
-		updates = append(updates, instances[i])
-	}
-
-	return updates
 }

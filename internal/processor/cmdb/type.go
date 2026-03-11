@@ -145,8 +145,7 @@ type BuildProcessChangesParams struct {
 
 // ReorderParams reorderModuleInstSeq 函数的参数
 type ReorderParams struct {
-	BizID      uint32
-	ModuleID   uint32
-	Alias      string
-	ExcludeIDs []uint32
+	BizID    uint32
+	ModuleID uint32
+	Alias    string
 }

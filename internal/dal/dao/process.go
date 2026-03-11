@@ -74,6 +74,8 @@ type Process interface {
 	UpdateProcessStateSyncedAtTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32, syncedAt *time.Time) error
 	// UpdateSyncStatusAndAliasTx 批量更新进程同步状态和新别名
 	UpdateSyncStatusAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
+	// GetByIDWithTx get client by id.
+	GetByIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) (*table.Process, error)
 }
 
 var _ Process = new(processDao)
@@ -82,6 +84,15 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// GetByIDWithTx implements [Process].
+func (dao *processDao) GetByIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) (*table.Process, error) {
+	m := dao.genQ.Process
+
+	return tx.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ID.Eq(id)).
+		Take()
 }
 
 // UpdateSyncStatusAndAliasTx 批量更新进程同步状态和新别名
