@@ -19,13 +19,7 @@
               <bk-input v-model="formData.template_name" />
             </bk-form-item>
             <bk-form-item :label="t('配置文件名')" property="fileAP">
-              <bk-input
-                v-model="formData.fileAP"
-                :placeholder="t('请输入配置文件的完整路径和文件名，例如：/etc/nginx/nginx.conf')"
-                v-bk-tooltips="{
-                  content: t('请输入配置文件的完整路径和文件名，例如：/etc/nginx/nginx.conf'),
-                }"
-                @input="handleFileAPInput" />
+              <bk-input v-model="formData.fileAP" />
             </bk-form-item>
             <bk-form-item :label="t('版本号')" property="revision_name">
               <bk-input v-model="formData.revision_name" />
@@ -48,6 +42,11 @@
             </bk-form-item>
             <bk-form-item :label="t('用户组')" required>
               <bk-input v-model="formData.user_group" />
+            </bk-form-item>
+            <bk-form-item :label="$t('目标平台')" property="file_mode" required>
+              <bk-select v-model="formData.file_mode" :clearable="false" :filterable="false">
+                <bk-option v-for="item in fileModes" :key="item.value" :id="item.value" :name="item.label" />
+              </bk-select>
             </bk-form-item>
           </bk-form>
         </div>
@@ -97,7 +96,6 @@
   import useConfigTemplateStore from '../../../../../store/config-template';
   import useGlobalStore from '../../../../../store/global';
   import { storeToRefs } from 'pinia';
-  import { joinPathName } from '../../../../../utils/config';
 
   const { isAssociated, perms } = storeToRefs(useConfigTemplateStore());
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
@@ -116,6 +114,10 @@
     isAssociated: boolean;
     isLatest: boolean;
   }>();
+  const fileModes = [
+    { label: 'Unix and macOS', value: 'unix' },
+    { label: 'Windows', value: 'win' },
+  ];
 
   const emits = defineEmits(['created', 'close']);
 
@@ -135,14 +137,6 @@
         message: t('仅允许使用中文、英文、数字、下划线、中划线，且必须以中文、英文、数字开头和结尾'),
       },
     ],
-    // 配置文件名校验规则，path+filename
-    fileAP: [
-      {
-        validator: (val: string) => /^\/(?:[^/]+\/)*[^/]+$/.test(val),
-        message: t('无效的路径,路径不符合Unix文件路径格式规范'),
-        trigger: 'change',
-      },
-    ],
     revision_memo: [
       {
         validator: (value: string) => value.length <= 200,
@@ -155,7 +149,7 @@
     revision_name: '',
     revision_memo: '',
     file_type: '',
-    file_mode: '',
+    file_mode: 'unix',
     user: '',
     user_group: '',
     privilege: '',
@@ -186,7 +180,7 @@
       formData.value = {
         ...val,
         template_name: props.templateName,
-        fileAP: joinPathName(props.data.file_path!, props.data.file_name!),
+        fileAP: props.data.file_path! + props.data.file_name!,
       };
     },
     { immediate: true },
@@ -219,17 +213,6 @@
     } finally {
       contentLoading.value = false;
     }
-  };
-
-  const handleFileAPInput = () => {
-    // 用户输入文件名 补全路径
-    if (formData.value.fileAP && !formData.value.fileAP.startsWith('/')) {
-      formData.value.fileAP = `/${formData.value.fileAP}`;
-    }
-    const { fileAP } = formData.value;
-    const lastSlashIndex = fileAP!.lastIndexOf('/');
-    formData.value.file_name = fileAP!.slice(lastSlashIndex + 1);
-    formData.value.file_path = fileAP!.slice(0, lastSlashIndex + 1);
   };
 
   // 上传配置内容

@@ -11,11 +11,7 @@
           <bk-input v-model="localVal.name" @change="change" />
         </bk-form-item>
         <bk-form-item :label="$t('配置文件名')" property="fileAP" required>
-          <bk-input
-            v-model="localVal.fileAP"
-            :placeholder="t('请输入配置文件的完整路径和文件名，例如：/etc/nginx/nginx.conf')"
-            v-bk-tooltips="{ content: t('请输入配置文件的完整路径和文件名，例如：/etc/nginx/nginx.conf') }"
-            @input="handleFileAPInput" />
+          <bk-input v-model="localVal.fileAP" @change="change" />
         </bk-form-item>
         <bk-form-item :label="$t('配置文件描述')" property="memo">
           <bk-input v-model="localVal.memo" type="textarea" :rows="3" :maxlength="200" @change="change"></bk-input>
@@ -28,6 +24,11 @@
         </bk-form-item>
         <bk-form-item :label="$t('用户组')" property="user_group" required>
           <bk-input v-model="localVal.user_group" class="permission-input" @change="change" />
+        </bk-form-item>
+        <bk-form-item :label="$t('目标平台')" property="file_mode" required>
+          <bk-select v-model="localVal.file_mode" :clearable="false" :filterable="false" @change="change">
+            <bk-option v-for="item in fileModes" :key="item.value" :id="item.value" :name="item.label" />
+          </bk-select>
         </bk-form-item>
       </bk-form>
     </div>
@@ -64,14 +65,11 @@
   const formRef = ref();
   const localVal = ref({ ...props.localVal, fileAP: '' });
   const content = ref(props.content);
+  const fileModes = [
+    { label: 'Unix and macOS', value: 'unix' },
+    { label: 'Windows', value: 'win' },
+  ];
   const rules = {
-    fileAP: [
-      {
-        validator: (val: string) => /^\/(?:[^/]+\/)*[^/]+$/.test(val),
-        message: t('无效的路径,路径不符合Unix文件路径格式规范'),
-        trigger: 'change',
-      },
-    ],
     memo: [
       {
         validator: (value: string) => value.length <= 200,
@@ -86,14 +84,6 @@
     localVal.value.file_name = fileAP.slice(lastSlashIndex + 1);
     localVal.value.file_path = fileAP.slice(0, lastSlashIndex + 1);
     emits('change', localVal.value, content.value);
-  };
-
-  const handleFileAPInput = () => {
-    // 用户输入文件名 补全路径
-    if (localVal.value.fileAP && !localVal.value.fileAP.startsWith('/')) {
-      localVal.value.fileAP = `/${localVal.value.fileAP}`;
-    }
-    change();
   };
 
   const handleContentChange = (value: string) => {
@@ -126,6 +116,7 @@
     .form-wrap {
       padding: 12px 24px;
       width: 368px;
+      overflow: auto;
       .title {
         font-weight: 700;
         font-size: 14px;

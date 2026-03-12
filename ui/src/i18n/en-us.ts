@@ -1494,4 +1494,5 @@ export default {
   '共 {n} 条实例记录待清除': 'A total of {n} instance records to be cleared',
   '清除操作将对进程执行停止或者取消托管操作。': 'The clear operation will perform stop or cancel managed operation on the process.',
   清除: '清除',
+  目标平台: 'Target platform',
 };
