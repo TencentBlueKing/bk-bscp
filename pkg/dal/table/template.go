@@ -50,7 +50,7 @@ func (t *Template) ResType() string {
 }
 
 // ValidateCreate validate template is valid or not when create it.
-func (t *Template) ValidateCreate(kit *kit.Kit) error {
+func (t *Template) ValidateCreate(kit *kit.Kit, validatePath bool) error {
 	if t.ID > 0 {
 		return errors.New("id should not be set")
 	}
@@ -59,7 +59,7 @@ func (t *Template) ValidateCreate(kit *kit.Kit) error {
 		return errors.New("spec not set")
 	}
 
-	if err := t.Spec.ValidateCreate(kit); err != nil {
+	if err := t.Spec.ValidateCreate(kit, validatePath); err != nil {
 		return err
 	}
 
@@ -139,13 +139,15 @@ type TemplateSpec struct {
 }
 
 // ValidateCreate validate template spec when it is created.
-func (t *TemplateSpec) ValidateCreate(kit *kit.Kit) error {
+func (t *TemplateSpec) ValidateCreate(kit *kit.Kit, validatePath bool) error {
 	if err := validator.ValidateFileName(kit, t.Name); err != nil {
 		return err
 	}
 
-	if err := ValidatePath(kit, t.Path, Unix); err != nil {
-		return fmt.Errorf("%s err: %v", t.Path, err)
+	if validatePath {
+		if err := ValidatePath(kit, t.Path, Unix); err != nil {
+			return fmt.Errorf("%s err: %v", t.Path, err)
+		}
 	}
 
 	return nil

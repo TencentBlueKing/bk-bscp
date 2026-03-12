@@ -5082,7 +5082,7 @@ message CreateConfigTemplateReq {
   string highlight_style = 14
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
   string file_mode = 15
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标平台: win、unix"}];
   uint32 template_space_id = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "模板空间ID",
   }];
@@ -5110,7 +5110,7 @@ message UpdateConfigTemplateReq {
   string highlight_style = 13
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
   string file_mode = 14
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件模式", default: "unix" }];
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标平台: win、unix" }];
   string revision_memo = 15
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版版本描述" }];
   string file_name = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];

@@ -77,7 +77,7 @@ func (s *Service) CreateTemplateRevision(ctx context.Context,
 			Creator: kt.User,
 		},
 	}
-	id, err := s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, true)
+	id, err := s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, true, true)
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -384,7 +384,7 @@ func (s *Service) UpdateTemplateRevision(ctx context.Context, req *pbds.UpdateTe
 	//  如果文件权限和内容没变化不更新模板版本数据
 	if !reflect.DeepEqual(revision.Spec.ContentSpec, spec.ContentSpec) ||
 		!reflect.DeepEqual(revision.Spec.Permission, spec.Permission) {
-		id, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, true)
+		id, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, true, true)
 		template.Revision.Reviser = kt.User
 		template.Revision.UpdatedAt = time.Now().UTC()
 

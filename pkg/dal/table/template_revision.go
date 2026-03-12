@@ -49,7 +49,7 @@ func (t *TemplateRevision) ResType() string {
 }
 
 // ValidateCreate validate template revision is valid or not when create it.
-func (t *TemplateRevision) ValidateCreate(kit *kit.Kit) error {
+func (t *TemplateRevision) ValidateCreate(kit *kit.Kit, validatePath bool) error {
 	if t.ID > 0 {
 		return errors.New("id should not be set")
 	}
@@ -58,7 +58,7 @@ func (t *TemplateRevision) ValidateCreate(kit *kit.Kit) error {
 		return errors.New("spec not set")
 	}
 
-	if err := t.Spec.ValidateCreate(kit); err != nil {
+	if err := t.Spec.ValidateCreate(kit, validatePath); err != nil {
 		return err
 	}
 
@@ -112,7 +112,7 @@ type TemplateRevisionSpec struct {
 }
 
 // ValidateCreate validate template revision spec when it is created.
-func (t *TemplateRevisionSpec) ValidateCreate(kit *kit.Kit) error {
+func (t *TemplateRevisionSpec) ValidateCreate(kit *kit.Kit, validatePath bool) error {
 	if err := validator.ValidateReleaseName(kit, t.RevisionName); err != nil {
 		return err
 	}
@@ -133,12 +133,13 @@ func (t *TemplateRevisionSpec) ValidateCreate(kit *kit.Kit) error {
 		return err
 	}
 
-	if err := ValidatePath(kit, t.Path, Unix); err != nil {
-		return err
-	}
-
-	if err := t.Permission.Validate(kit, t.FileMode); err != nil {
-		return err
+	if validatePath {
+		if err := ValidatePath(kit, t.Path, Unix); err != nil {
+			return err
+		}
+		if err := t.Permission.Validate(kit, t.FileMode); err != nil {
+			return err
+		}
 	}
 
 	if err := t.ContentSpec.Validate(kit); err != nil {

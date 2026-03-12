@@ -118,7 +118,7 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 
 	fileNames := make(map[uint32]string, len(templates))
 	for _, template := range templates {
-		fileNames[template.ID] = path.Join(template.Spec.Path, template.Spec.Name)
+		fileNames[template.ID] = fmt.Sprintf("%s%s", template.Spec.Path, template.Spec.Name)
 	}
 
 	resp.Count = uint32(count)
@@ -449,7 +449,7 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 			UpdatedAt: now,
 		},
 	}
-	templateID, err := s.dao.Template().CreateWithTx(kit, tx, template, false)
+	templateID, err := s.dao.Template().CreateWithTx(kit, tx, template, false, false)
 	if err != nil {
 		logs.Errorf("create template failed, err: %v, rid: %s", err, kit.Rid)
 		return 0, err
@@ -490,7 +490,7 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 		},
 	}
 
-	if _, err = s.dao.TemplateRevision().CreateWithTx(kit, tx, templateRevision, false); err != nil {
+	if _, err = s.dao.TemplateRevision().CreateWithTx(kit, tx, templateRevision, false, false); err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kit.Rid)
 		return 0, err
 	}
@@ -890,7 +890,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	}()
 
 	// 生成新的版本文件
-	_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true)
+	_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true, false)
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err

@@ -33,7 +33,7 @@ type TemplateRevision interface {
 	// Create one template revision instance.
 	Create(kit *kit.Kit, templateRevision *table.TemplateRevision) (uint32, error)
 	// CreateWithTx create one template revision instance with transaction.
-	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.TemplateRevision, needAudit bool) (uint32, error)
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, template *table.TemplateRevision, needAudit, validatePath bool) (uint32, error)
 	// List templates with options.
 	List(kit *kit.Kit, bizID, templateID uint32, opt *types.BasePage) ([]*table.TemplateRevision,
 		int64, error)
@@ -119,7 +119,7 @@ func (dao *templateRevisionDao) GetLatestTemplateRevision(kit *kit.Kit, bizID ui
 
 // Create one template revision instance.
 func (dao *templateRevisionDao) Create(kit *kit.Kit, g *table.TemplateRevision) (uint32, error) {
-	if err := g.ValidateCreate(kit); err != nil {
+	if err := g.ValidateCreate(kit, true); err != nil {
 		return 0, err
 	}
 
@@ -171,8 +171,8 @@ func (dao *templateRevisionDao) Create(kit *kit.Kit, g *table.TemplateRevision) 
 
 // CreateWithTx create one template revision instance with transaction.
 func (dao *templateRevisionDao) CreateWithTx(
-	kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateRevision, needAudit bool) (uint32, error) {
-	if err := g.ValidateCreate(kit); err != nil {
+	kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateRevision, needAudit, validatePath bool) (uint32, error) {
+	if err := g.ValidateCreate(kit, validatePath); err != nil {
 		return 0, err
 	}
 
@@ -384,7 +384,7 @@ func (dao *templateRevisionDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 		return err
 	}
 	for i, item := range revisions {
-		if err := item.ValidateCreate(kit); err != nil {
+		if err := item.ValidateCreate(kit, true); err != nil {
 			return err
 		}
 		item.ID = ids[i]

@@ -112,7 +112,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 		},
 	}
 	// CreateWithTx create one template instance with transaction.
-	templateID, err := s.dao.Template().CreateWithTx(kt, tx, template, false)
+	templateID, err := s.dao.Template().CreateWithTx(kt, tx, template, false, true)
 	if err != nil {
 		logs.Errorf("create template failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -137,7 +137,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	}
 
 	// CreateWithTx create one template revision instance with transaction.
-	if _, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, false); err != nil {
+	if _, err = s.dao.TemplateRevision().CreateWithTx(kt, tx, templateRevision, false, true); err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
