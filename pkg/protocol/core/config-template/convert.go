@@ -20,7 +20,7 @@ import (
 )
 
 // PbConfigTemplate convert table.ConfigTemplate to pb ConfigTemplate
-func PbConfigTemplate(ct *table.ConfigTemplate, fileName string, isProcBound,
+func PbConfigTemplate(ct *table.ConfigTemplate, fullPath string, isProcBound,
 	isConfigReleased bool) *ConfigTemplate {
 	if ct == nil {
 		return nil
@@ -28,7 +28,7 @@ func PbConfigTemplate(ct *table.ConfigTemplate, fileName string, isProcBound,
 
 	return &ConfigTemplate{
 		Id:               ct.ID,
-		Spec:             PbConfigTemplateSpec(ct.Spec, fileName),
+		Spec:             PbConfigTemplateSpec(ct.Spec, fullPath),
 		Attachment:       PbConfigTemplateAttachment(ct.Attachment),
 		Revision:         pbbase.PbRevision(ct.Revision),
 		IsProcBound:      isProcBound,
@@ -37,14 +37,14 @@ func PbConfigTemplate(ct *table.ConfigTemplate, fileName string, isProcBound,
 }
 
 // PbConfigTemplateSpec convert table.ConfigTemplateSpec to pb ConfigTemplateSpec
-func PbConfigTemplateSpec(spec *table.ConfigTemplateSpec, fileName string) *ConfigTemplateSpec {
+func PbConfigTemplateSpec(spec *table.ConfigTemplateSpec, fullPath string) *ConfigTemplateSpec {
 	if spec == nil {
 		return nil
 	}
 
 	return &ConfigTemplateSpec{
-		Name:           spec.Name,
-		FileName:       fileName,
+		TemplateName:   spec.Name,
+		FullPath:       fullPath,
 		HighlightStyle: string(spec.HighlightStyle),
 	}
 }
@@ -65,7 +65,7 @@ func PbConfigTemplateAttachment(att *table.ConfigTemplateAttachment) *ConfigTemp
 }
 
 // PbConfigTemplates convert []*table.ConfigTemplate to []*pb ConfigTemplate
-func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string,
+func PbConfigTemplates(src []*table.ConfigTemplate, fullPath map[uint32]string,
 	releasedMap map[uint32]bool) []*ConfigTemplate {
 	if src == nil {
 		return nil
@@ -74,7 +74,7 @@ func PbConfigTemplates(src []*table.ConfigTemplate, fileNames map[uint32]string,
 	for _, ct := range src {
 		isProcBound := len(ct.Attachment.CcProcessIDs) > 0 || len(ct.Attachment.CcTemplateProcessIDs) > 0
 
-		res = append(res, PbConfigTemplate(ct, fileNames[ct.Attachment.TemplateID], isProcBound, releasedMap[ct.ID]))
+		res = append(res, PbConfigTemplate(ct, fullPath[ct.Attachment.TemplateID], isProcBound, releasedMap[ct.ID]))
 	}
 	return res
 }

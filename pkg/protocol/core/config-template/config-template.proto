@@ -19,21 +19,24 @@ message ConfigTemplate {
 
 // ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go
 message ConfigTemplateSpec {
-  string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
-  string file_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
+  string template_name = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string full_path = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
   string highlight_style = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "语法高亮" }];
 }
 
-// BindTemplate xxx
+// BindTemplate
 message BindTemplate {
   string template_space_name = 1
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板空间名称" }];
   string template_set_name = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名称" }];
-  string file_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件名" }];
-  string file_path = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
-  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版描述" }];
+  string full_path = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件路径" }];
+  string template_name = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
+  string template_memo = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版描述" }];
   string revision_name = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本号" }];
   string user = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "用户权限名" }];
@@ -52,7 +55,6 @@ message BindTemplate {
   repeated uint32 cc_process_ids = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "关联cc中未通过服务模板创建的进程实例ID"
   }];
-  string name = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模版名称" }];
 }
 
 // ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go

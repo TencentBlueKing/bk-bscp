@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -116,13 +117,13 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 		return nil, err
 	}
 
-	fileNames := make(map[uint32]string, len(templates))
+	fullPaths := make(map[uint32]string, len(templates))
 	for _, template := range templates {
-		fileNames[template.ID] = fmt.Sprintf("%s%s", template.Spec.Path, template.Spec.Name)
+		fullPaths[template.ID] = fmt.Sprintf("%s%s", template.Spec.Path, template.Spec.Name)
 	}
 
 	resp.Count = uint32(count)
-	resp.Details = pbct.PbConfigTemplates(configTemplates, fileNames, releasedMap)
+	resp.Details = pbct.PbConfigTemplates(configTemplates, fullPaths, releasedMap)
 
 	return resp, nil
 }
@@ -336,14 +337,14 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	kit := kit.FromGrpcContext(ctx)
 
 	// 同一业务下不能出现同名的模板
-	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(kit, req.GetBizId(), 0, req.GetName())
+	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(kit, req.GetBizId(), 0, req.GetTemplateName())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
 	if ct != nil {
 		return nil, fmt.Errorf("the same template name already exists under this %d business: %s",
-			req.GetBizId(), req.GetName())
+			req.GetBizId(), req.GetTemplateName())
 	}
 
 	// 1. 开启事务
@@ -370,9 +371,10 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 		existingPaths = append(existingPaths, path.Join(v.Spec.Path, v.Spec.Name))
 	}
 
-	if tools.CheckPathConflict(path.Join(req.GetFilePath(), req.GetFileName()), existingPaths) {
+	// 检测文件路径是否存在冲突
+	if tools.CheckPathConflict(req.GetFullPath(), existingPaths) {
 		return nil, errors.New(i18n.T(kit, "the config file %s already exists in this space and cannot be created again",
-			path.Join(req.GetFilePath(), req.GetFileName())))
+			req.GetFullPath()))
 	}
 
 	// 3. 通过空间和名称查询套餐
@@ -391,7 +393,7 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	// 5. 创建配置模板
 	configTemplate := &table.ConfigTemplate{
 		Spec: &table.ConfigTemplateSpec{
-			Name:           req.GetName(),
+			Name:           req.GetTemplateName(),
 			HighlightStyle: table.HighlightStyle(req.GetHighlightStyle()),
 		},
 		Attachment: &table.ConfigTemplateAttachment{
@@ -430,12 +432,14 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templateSpaceID uint32,
 	templateSet *table.TemplateSet, req *pbds.CreateConfigTemplateReq, now time.Time) (uint32, error) {
 
+	filePath, fileName := splitFullPath(req.GetFullPath())
+
 	// 1. 创建模板文件
 	template := &table.Template{
 		Spec: &table.TemplateSpec{
-			Name: req.GetFileName(),
-			Path: req.GetFilePath(),
-			Memo: req.GetMemo(),
+			Name: fileName,
+			Path: filePath,
+			Memo: req.GetTemplateMemo(),
 		},
 		Attachment: &table.TemplateAttachment{
 			BizID:           req.GetBizId(),
@@ -462,9 +466,9 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 	templateRevision := &table.TemplateRevision{
 		Spec: &table.TemplateRevisionSpec{
 			RevisionName: revisionName,
-			RevisionMemo: req.GetMemo(),
-			Name:         req.GetFileName(),
-			Path:         req.GetFilePath(),
+			RevisionMemo: req.GetTemplateMemo(),
+			Name:         fileName,
+			Path:         filePath,
 			FileType:     table.Text,
 			FileMode:     table.FileMode(req.GetFileMode()),
 			Permission: &table.FilePermission{
@@ -833,13 +837,13 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConfigTemplateReq) (*pbds.UpdateConfigTemplateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 	// 同一业务下不能出现同名的模板
-	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(grpcKit, req.GetBizId(), req.GetConfigTemplateId(), req.GetName())
+	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(grpcKit, req.GetBizId(), req.GetConfigTemplateId(), req.GetTemplateName())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 	if ct != nil {
 		return nil, fmt.Errorf(
-			"the same template name already exists under this %d business: %s", req.GetBizId(), req.GetName(),
+			"the same template name already exists under this %d business: %s", req.GetBizId(), req.GetTemplateName(),
 		)
 	}
 
@@ -862,9 +866,11 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		return nil, err
 	}
 
+	filePath, fileName := splitFullPath(req.GetFullPath())
+
 	spec := *revision.Spec
-	spec.Path = req.GetFilePath()
-	spec.Name = req.GetFileName()
+	spec.Path = filePath
+	spec.Name = fileName
 	spec.RevisionName = req.GetRevisionName()
 	spec.RevisionMemo = req.GetRevisionMemo()
 	spec.Charset = table.FileCharset(req.GetCharset())
@@ -902,8 +908,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		ID: template.ID,
 		Spec: &table.TemplateSpec{
 			Memo: req.GetRevisionMemo(),
-			Path: req.GetFilePath(),
-			Name: req.GetFileName(),
+			Path: filePath,
+			Name: fileName,
 		},
 		Attachment: template.Attachment,
 		Revision:   template.Revision,
@@ -917,7 +923,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	err = s.dao.ConfigTemplate().UpdateWithTx(grpcKit, tx, &table.ConfigTemplate{
 		ID: configTemplate.ID,
 		Spec: &table.ConfigTemplateSpec{
-			Name:           req.GetName(),
+			Name:           req.GetTemplateName(),
 			HighlightStyle: table.HighlightStyle(req.GetHighlightStyle()),
 		},
 		Attachment: configTemplate.Attachment,
@@ -965,10 +971,10 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 	resp := &pbct.BindTemplate{
 		TemplateSpaceName:    constant.CONFIG_DELIVERY,
 		TemplateSetName:      constant.DefaultTmplSetName,
-		FileName:             template.Spec.Name,
-		FilePath:             template.Spec.Path,
-		Memo:                 revision.Spec.RevisionMemo,
-		RevisionName:         configTemplate.Spec.Name,
+		FullPath:             fmt.Sprintf("%s%s", template.Spec.Path, template.Spec.Name),
+		TemplateName:         configTemplate.Spec.Name,
+		TemplateMemo:         template.Spec.Memo,
+		RevisionName:         revision.Spec.RevisionName,
 		User:                 revision.Spec.Permission.User,
 		UserGroup:            revision.Spec.Permission.UserGroup,
 		Privilege:            revision.Spec.Permission.Privilege,
@@ -980,7 +986,6 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 		FileMode:             string(revision.Spec.FileMode),
 		CcTemplateProcessIds: configTemplate.Attachment.CcTemplateProcessIDs,
 		CcProcessIds:         configTemplate.Attachment.CcProcessIDs,
-		Name:                 configTemplate.Spec.Name,
 	}
 
 	return &pbds.GetConfigTemplateResp{
@@ -1044,4 +1049,29 @@ func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbds.DeleteConf
 	committed = true
 
 	return &pbds.DeleteConfigTemplateResp{}, nil
+}
+
+// splitFullPath 将完整路径拆分为目录和文件名，兼容 Windows 和 Unix 风格路径
+func splitFullPath(fullPath string) (string, string) {
+
+	// 判断是否为 Windows 风格路径（含盘符 或 反斜杠）
+	isWindows := strings.Contains(fullPath, `\`) ||
+		(len(fullPath) >= 2 && fullPath[1] == ':')
+
+	if isWindows {
+		// 统一用反斜杠处理
+		fullPath = strings.ReplaceAll(fullPath, "/", `\`)
+		lastIdx := strings.LastIndex(fullPath, `\`)
+		if lastIdx == -1 {
+			return "", fullPath
+		}
+		dir := fullPath[:lastIdx+1] // +1 保留末尾的 \
+		file := fullPath[lastIdx+1:]
+		return dir, file
+	}
+
+	// Unix 路径
+	dir, file := path.Split(fullPath)
+	// path.Split 本身就会保留末尾的 /，无需额外处理
+	return dir, file
 }

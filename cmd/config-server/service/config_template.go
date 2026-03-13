@@ -185,10 +185,10 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbcs.CreateConf
 	}
 	resp, err := s.client.DS.CreateConfigTemplate(grpcKit.RpcCtx(), &pbds.CreateConfigTemplateReq{
 		BizId:           req.GetBizId(),
-		Name:            req.GetName(),
-		FileName:        req.GetFileName(),
-		FilePath:        req.GetFilePath(),
-		Memo:            req.GetMemo(),
+		TemplateName:    req.GetTemplateName(),
+		TemplateMemo:    req.GetTemplateMemo(),
+		RevisionName:    req.GetRevisionName(),
+		FullPath:        req.GetFullPath(),
 		User:            req.GetUser(),
 		UserGroup:       req.GetUserGroup(),
 		Privilege:       req.GetPrivilege(),
@@ -198,7 +198,6 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbcs.CreateConf
 		Charset:         req.GetCharset(),
 		HighlightStyle:  req.GetHighlightStyle(),
 		FileMode:        req.GetFileMode(),
-		RevisionName:    req.GetRevisionName(),
 		TemplateSpaceId: req.GetTemplateSpaceId(),
 	})
 	if err != nil {
@@ -297,8 +296,10 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConf
 	_, err := s.client.DS.UpdateConfigTemplate(grpcKit.RpcCtx(), &pbds.UpdateConfigTemplateReq{
 		BizId:            req.GetBizId(),
 		ConfigTemplateId: req.GetConfigTemplateId(),
-		Name:             req.GetName(),
-		Memo:             req.GetMemo(),
+		FullPath:         req.GetFullPath(),
+		TemplateName:     req.GetTemplateName(),
+		RevisionMemo:     req.GetRevisionMemo(),
+		RevisionName:     req.GetRevisionName(),
 		User:             req.GetUser(),
 		UserGroup:        req.GetUserGroup(),
 		Privilege:        req.GetPrivilege(),
@@ -308,10 +309,6 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConf
 		Charset:          req.GetCharset(),
 		HighlightStyle:   req.GetHighlightStyle(),
 		FileMode:         req.GetFileMode(),
-		RevisionName:     req.GetRevisionName(),
-		RevisionMemo:     req.GetRevisionMemo(),
-		FilePath:         req.GetFilePath(),
-		FileName:         req.GetFileName(),
 	})
 
 	if err != nil {
