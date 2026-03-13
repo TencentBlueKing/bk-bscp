@@ -7,14 +7,19 @@
         <span class="value">{{ attribution }}</span>
       </div>
       <bk-form ref="formRef" form-type="vertical" :model="localVal" :rules="rules">
-        <bk-form-item :label="$t('模板名称')" property="name" required>
-          <bk-input v-model="localVal.name" @change="change" />
+        <bk-form-item :label="$t('模板名称')" property="template_name" required>
+          <bk-input v-model="localVal.template_name" @change="change" />
         </bk-form-item>
-        <bk-form-item :label="$t('配置文件名')" property="fileAP" required>
-          <bk-input v-model="localVal.fileAP" @change="change" />
+        <bk-form-item :label="$t('配置文件名')" property="full_path" required>
+          <bk-input v-model="localVal.full_path" @change="change" />
         </bk-form-item>
-        <bk-form-item :label="$t('配置文件描述')" property="memo">
-          <bk-input v-model="localVal.memo" type="textarea" :rows="3" :maxlength="200" @change="change"></bk-input>
+        <bk-form-item :label="$t('配置文件描述')" property="template_memo">
+          <bk-input
+            v-model="localVal.template_memo"
+            type="textarea"
+            :rows="3"
+            :maxlength="200"
+            @change="change"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('文件权限')" property="privilege" required>
           <PermissionInputPicker v-model="localVal.privilege!" class="permission-input" @change="change" />
@@ -63,14 +68,14 @@
   const emits = defineEmits(['change']);
 
   const formRef = ref();
-  const localVal = ref({ ...props.localVal, fileAP: '' });
+  const localVal = ref({ ...props.localVal });
   const content = ref(props.content);
   const fileModes = [
     { label: 'Unix and macOS', value: 'unix' },
     { label: 'Windows', value: 'win' },
   ];
   const rules = {
-    memo: [
+    template_memo: [
       {
         validator: (value: string) => value.length <= 200,
         message: t('最大长度200个字符'),
@@ -79,10 +84,6 @@
   };
 
   const change = () => {
-    const { fileAP } = localVal.value;
-    const lastSlashIndex = fileAP.lastIndexOf('/');
-    localVal.value.file_name = fileAP.slice(lastSlashIndex + 1);
-    localVal.value.file_path = fileAP.slice(0, lastSlashIndex + 1);
     emits('change', localVal.value, content.value);
   };
 

@@ -155,9 +155,9 @@
     const res = await getConfigTemplateDetail(props.bkBizId, props.templateId);
     const detail = res.bind_template;
     templateDetail.value = {
-      name: detail.name || '',
-      file_name: detail.file_path + detail.file_name,
-      memo: detail.memo,
+      name: detail.template_name || '',
+      file_name: detail.full_path,
+      memo: detail.template_memo,
       privilege: detail.privilege,
       user: detail.user,
       user_group: detail.user_group,

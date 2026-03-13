@@ -15,11 +15,11 @@
       <div :class="['template-config-content-wrapper', { 'view-mode': isViewMode }]">
         <div v-if="!isViewMode" class="config-form">
           <bk-form ref="formRef" form-type="vertical" :model="formData" :rules="rules">
-            <bk-form-item :label="t('模板名称')" property="name">
+            <bk-form-item :label="t('模板名称')" property="template_name">
               <bk-input v-model="formData.template_name" />
             </bk-form-item>
-            <bk-form-item :label="t('配置文件名')" property="fileAP">
-              <bk-input v-model="formData.fileAP" />
+            <bk-form-item :label="t('配置文件名')" property="full_path">
+              <bk-input v-model="formData.full_path" />
             </bk-form-item>
             <bk-form-item :label="t('版本号')" property="revision_name">
               <bk-input v-model="formData.revision_name" />
@@ -156,7 +156,7 @@
     sign: '',
     byte_size: 0,
     template_name: '',
-    fileAP: '',
+    full_path: '',
   });
   const formRef = ref();
   const stringContent = ref('');
@@ -180,7 +180,6 @@
       formData.value = {
         ...val,
         template_name: props.templateName,
-        fileAP: props.data.file_path! + props.data.file_name!,
       };
     },
     { immediate: true },

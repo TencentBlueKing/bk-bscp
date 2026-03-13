@@ -74,8 +74,7 @@
       privilege: '',
       sign: '',
       byte_size: 0,
-      file_name: '',
-      file_path: '',
+      full_path: '',
     };
     if (props.versionId) {
       const version = props.list.find((item) => item.id === props.versionId);
@@ -93,8 +92,7 @@
           privilege,
           sign,
           byte_size,
-          file_name: name,
-          file_path: path,
+          full_path: path + name,
         };
       }
     }

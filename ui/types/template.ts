@@ -164,9 +164,7 @@ export interface ITemplateVersionEditingData {
   sign: string;
   byte_size: number;
   template_name?: string;
-  fileAP?: string;
-  file_path?: string;
-  file_name?: string;
+  full_path?: string;
 }
 
 // 业务下所有模板套餐列表（按模板空间分组）

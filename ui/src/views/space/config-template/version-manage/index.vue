@@ -145,7 +145,7 @@
   const getTemplateDetail = async () => {
     try {
       const res = await getConfigTemplateDetail(spaceId.value, configTemplateId.value);
-      templateName.value = res.bind_template.name;
+      templateName.value = res.bind_template.template_name;
     } catch (error) {
       console.error(error);
     }

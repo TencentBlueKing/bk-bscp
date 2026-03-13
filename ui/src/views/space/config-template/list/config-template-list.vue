@@ -21,10 +21,10 @@
         :max-height="tableMaxHeight">
         <TableColumn :title="t('模板名称')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
-            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.name }}</bk-button>
+            <bk-button theme="primary" text @click="handleViewTemplate(row)">{{ row.spec.template_name }}</bk-button>
           </template>
         </TableColumn>
-        <TableColumn :title="t('文件名')" col-key="spec.file_name" ellipsis> </TableColumn>
+        <TableColumn :title="t('文件名')" col-key="spec.full_path" ellipsis> </TableColumn>
         <TableColumn :title="t('关联进程实例')">
           <template #default="{ row }: { row: IConfigTemplateItem }">
             <div class="associated-instance">
@@ -343,7 +343,7 @@
   const handleViewTemplate = (template: IConfigTemplateItem) => {
     opTemplate.value = {
       id: template.id,
-      templateName: `${template.spec.name} (${template.spec.file_name})`,
+      templateName: `${template.spec.template_name} (${template.spec.full_path})`,
       isAssociated: template.is_proc_bound,
     };
     isShowDetails.value = true;
@@ -358,7 +358,7 @@
   const handleAssociatedProcess = (template: IConfigTemplateItem) => {
     opTemplate.value = {
       id: template.id,
-      templateName: `${template.spec.name} (${template.spec.file_name})`,
+      templateName: `${template.spec.template_name} (${template.spec.full_path})`,
       isAssociated: template.is_proc_bound,
     };
     isShowAssociatedProcess.value = true;
@@ -423,7 +423,7 @@
     isShowDeleteDialog.value = true;
     opTemplate.value = {
       id: template.id,
-      templateName: template.spec.name,
+      templateName: template.spec.template_name,
       isAssociated: template.is_proc_bound,
     };
   };
@@ -432,7 +432,7 @@
     isShowConfigCheck.value = true;
     opTemplate.value = {
       id: template.id,
-      templateName: template.spec.name,
+      templateName: template.spec.template_name,
       isAssociated: template.is_proc_bound,
     };
   };

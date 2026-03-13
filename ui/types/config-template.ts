@@ -69,8 +69,9 @@ export interface IConfigTemplateItem {
     update_at: string;
   };
   spec: {
-    file_name: string;
-    name: string;
+    full_path: string;
+    template_name: string;
+    highlight_style: string;
   };
   instCount?: number;
   templateCount?: number;
@@ -80,17 +81,15 @@ export interface IConfigTemplateItem {
 }
 
 export interface IConfigTemplateEditParams {
-  name: string;
-  memo: string;
+  template_name: string;
+  template_memo: string;
   file_type: string;
   charset: string;
-  file_name: string;
-  file_path: string;
+  full_path: string;
   file_mode: string;
   user: string;
   user_group: string;
   privilege: string;
-  fileAP: string;
   revision_name: string;
   highlight_style: string;
 }
