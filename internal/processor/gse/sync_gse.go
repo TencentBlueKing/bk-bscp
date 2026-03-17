@@ -76,7 +76,7 @@ type syncResult struct {
 func (s *syncGSEService) SyncSingleBiz(ctx context.Context) error {
 	kit := kit.FromGrpcContext(ctx)
 	kit.TenantID = s.tenantID
-	processes, err := s.dao.Process().ListActiveProcesses(kit, uint32(s.bizID))
+	processes, err := s.dao.Process().ListProcessesWithInstance(kit, uint32(s.bizID))
 	if err != nil {
 		logs.Errorf("list active processes failed: %v", err)
 		return err

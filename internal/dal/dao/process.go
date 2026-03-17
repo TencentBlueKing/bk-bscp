@@ -50,8 +50,8 @@ type Process interface {
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
 	GetProcByBizScvProc(kit *kit.Kit, bizID, svcInstID, processID uint32) (*table.Process, error)
-	// ListActiveProcesses 获取所有未删除的数据
-	ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error)
+	// ListProcessesWithInstance 查询存在关联进程实例的进程
+	ListProcessesWithInstance(kit *kit.Kit, bizID uint32) ([]*table.Process, error)
 	// GetByModuleID 查询模块下所有进程 ID.
 	GetByModuleIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, moduleID uint32) ([]uint32, error)
 	// GetByHostIDWithTx 查询主机下所有进程 ID.
@@ -235,12 +235,13 @@ func (dao *processDao) UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map
 	return nil
 }
 
-// ListActiveProcesses implements Process.
-func (dao *processDao) ListActiveProcesses(kit *kit.Kit, bizID uint32) ([]*table.Process, error) {
+// ListProcessesWithInstance implements Process.
+func (dao *processDao) ListProcessesWithInstance(kit *kit.Kit, bizID uint32) ([]*table.Process, error) {
 	m := dao.genQ.Process
+	q := dao.genQ.Process.WithContext(kit.Ctx)
 
-	return dao.genQ.Process.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+	return q.Where(m.BizID.Eq(bizID)).Where(utils.RawCond(
+		"EXISTS (SELECT 1 FROM process_instances pi WHERE pi.process_id = processes.id)")).
 		Find()
 }
 
