@@ -4,12 +4,12 @@
       <bk-button class="retry-btn" :disabled="failureCount === 0" @click="handleRetry">
         {{ $t('重试所有失败') }}
       </bk-button>
-      <SearchSelector
+      <!-- <SearchSelector
         ref="searchSelectorRef"
         :search-field="searchField"
         :placeholder="$t('搜索 集群/模块/服务实例/进程别名/CC 进程 ID/Inst_id/内网 IP')"
         class="search-select"
-        @search="handleSearch" />
+        @search="handleSearch" /> -->
     </div>
     <div class="list-wrap">
       <div class="panels-list">
@@ -127,7 +127,7 @@
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useRoute } from 'vue-router';
-  import SearchSelector from '../../../../components/search-selector.vue';
+  // import SearchSelector from '../../../../components/search-selector.vue';
   import useTaskStore from '../../../../store/task';
   import { datetimeFormat } from '../../../../utils';
   import type { ITaskDetailItem } from '../../../../../types/task';
@@ -386,21 +386,22 @@
     loadTaskList();
   };
 
-  const handleSearch = (list: { [key: string]: string }) => {
-    searchValue.value = {
-      setNames: list.set_name ? [list.set_name] : null,
-      moduleNames: list.module_name ? [list.module_name] : null,
-      serviceNames: list.service_name ? [list.service_name] : null,
-      processAliases: list.alias ? [list.alias] : null,
-      ccProcessIds: list.cc_process_id ? [list.cc_process_id] : null,
-      instIds: list.module_inst_seq ? [list.module_inst_seq] : null,
-      ips: list.ip ? [list.ip] : null,
-    };
-    isSearchEmpty.value = Object.keys(list).length > 0;
-    pagination.value.current = 1;
-    updatePagination('limit', 10);
-    loadTaskList();
-  };
+  // const handleSearch = (list: { [key: string]: string }) => {
+  //  @todo 待后端接口支持
+  //   searchValue.value = {
+  //     setNames: list.set_name ? [list.set_name] : null,
+  //     moduleNames: list.module_name ? [list.module_name] : null,
+  //     serviceNames: list.service_name ? [list.service_name] : null,
+  //     processAliases: list.alias ? [list.alias] : null,
+  //     ccProcessIds: list.cc_process_id ? [list.cc_process_id] : null,
+  //     instIds: list.module_inst_seq ? [list.module_inst_seq] : null,
+  //     ips: list.ip ? [list.ip] : null,
+  //   };
+  //   isSearchEmpty.value = Object.keys(list).length > 0;
+  //   pagination.value.current = 1;
+  //   updatePagination('limit', 10);
+  //   loadTaskList();
+  // };
 
   // 重试所有失败任务
   const handleRetry = async () => {
