@@ -14,6 +14,7 @@
 package pbci
 
 import (
+	"html"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -48,7 +49,7 @@ func PbConfigItemSpec(spec *table.ConfigItemSpec) *ConfigItemSpec {
 		Path:       spec.Path,
 		FileType:   string(spec.FileType),
 		FileMode:   string(spec.FileMode),
-		Memo:       spec.Memo,
+		Memo:       html.EscapeString(spec.Memo),
 		Permission: PbFilePermission(spec.Permission),
 		Charset:    string(spec.Charset),
 	}

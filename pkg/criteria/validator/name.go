@@ -178,8 +178,8 @@ func ValidateReleaseName(kit *kit.Kit, name string) error {
 }
 
 // qualifiedFileNameRegexp file name regexp.
-// 文件名不能包含/
-var qualifiedFileNameRegexp = regexp.MustCompile("^[^/]+$")
+// Whitelist: Chinese, English, numbers, underscore, hyphen, dot, space. Disallow HTML special chars like < > " ' & / etc.
+var qualifiedFileNameRegexp = regexp.MustCompile(`^[\p{Han}A-Za-z0-9_\-. ]+$`)
 
 var dotsRegexp = regexp.MustCompile(`^\.+$`)
 
@@ -202,7 +202,8 @@ func ValidateFileName(kit *kit.Kit, name string) error {
 	}
 
 	if !qualifiedFileNameRegexp.MatchString(name) {
-		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid name %s, there can't be any /", name))
+		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid name %s, "+
+			"only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space", name))
 	}
 
 	return nil
