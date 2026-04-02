@@ -109,6 +109,7 @@ type ProcessSpec struct {
 	ProcNum              uint         `gorm:"column:proc_num" json:"proc_num"`                               // 进程数量
 	FuncName             string       `gorm:"column:func_name" json:"func_name"`                             // 进程二进制文件名
 	NewAlias             string       `gorm:"column:new_alias" json:"new_alias"`                             // 新进程别名
+	OsType               string       `gorm:"column:os_type" json:"os_type"`                                 // 系统类型(linux:1,win:2)
 }
 
 func (p ProcessInfo) Value() (string, error) {
