@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -68,8 +69,9 @@ func (s *syncCmdbGseExecutor) SyncCMDB(c *istep.Context) error {
 	}
 
 	// 同步cc数据
+	kt := kit.NewWithTenant(payload.TenantID)
 	syncSvc := cmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.dao)
-	if err := syncSvc.SyncSingleBiz(c.Context()); err != nil {
+	if err := syncSvc.SyncSingleBiz(kt.Ctx); err != nil {
 		logs.Errorf("tenant: %s biz: %d sync cmdb data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}
@@ -84,8 +86,9 @@ func (s *syncCmdbGseExecutor) SyncGSE(c *istep.Context) error {
 		return err
 	}
 	// 同步gse状态
+	kt := kit.NewWithTenant(payload.TenantID)
 	gseService := gse.NewSyncGESService(payload.TenantID, int(payload.BizID), s.gseSvc, s.dao)
-	if err := gseService.SyncSingleBiz(c.Context()); err != nil {
+	if err := gseService.SyncSingleBiz(kt.Ctx); err != nil {
 		logs.Errorf("tenant: %s biz: %d sync gse data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}

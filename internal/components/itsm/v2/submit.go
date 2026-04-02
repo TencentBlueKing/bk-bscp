@@ -55,7 +55,7 @@ func CreateTicket(ctx context.Context, reqData map[string]any) (*CreateTicketDat
 	reqURL := fmt.Sprintf("%s%s", host, createTicketPath)
 
 	// 请求API
-	body, err := ItsmRequest(context.Background(), http.MethodPost, reqURL, reqData)
+	body, err := ItsmRequest(ctx, http.MethodPost, reqURL, reqData)
 	if err != nil {
 		logs.Errorf("request itsm create ticket failed, %s", err.Error())
 		return nil, fmt.Errorf("request itsm create ticket failed, %s", err.Error())

@@ -497,6 +497,55 @@
         }
       }
     },
+    "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取未绑定的模板列表",
+        "operationId": "Config_ListTemplatesNotBound",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "模板空间ID",
+            "name": "templateSpaceId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplatesNotBoundBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplatesNotBoundResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {
       "post": {
         "tags": [
@@ -1666,15 +1715,10 @@
           "type": "string"
         },
         "fileMode": {
-          "description": "文件模式",
-          "type": "string",
-          "default": "unix"
-        },
-        "fileName": {
-          "description": "文件名",
+          "description": "目标平台: win、unix",
           "type": "string"
         },
-        "filePath": {
+        "fullPath": {
           "description": "文件路径",
           "type": "string"
         },
@@ -1684,14 +1728,6 @@
         },
         "md5": {
           "description": "文件md5",
-          "type": "string"
-        },
-        "memo": {
-          "description": "配置模版描述",
-          "type": "string"
-        },
-        "name": {
-          "description": "配置模版名称",
           "type": "string"
         },
         "privilege": {
@@ -1704,6 +1740,14 @@
         },
         "sign": {
           "description": "文件sha256",
+          "type": "string"
+        },
+        "templateMemo": {
+          "description": "配置模版描述",
+          "type": "string"
+        },
+        "templateName": {
+          "description": "配置模版名称",
           "type": "string"
         },
         "templateSpaceId": {
@@ -1993,6 +2037,30 @@
         }
       }
     },
+    "ConfigListTemplatesNotBoundBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "search": {
+          "description": "搜索",
+          "type": "object"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "ConfigOperateProcessBody": {
       "type": "object",
       "properties": {
@@ -2004,7 +2072,7 @@
           "$ref": "#/definitions/pbprocOperateRange"
         },
         "operateType": {
-          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register",
+          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete",
           "type": "string"
         },
         "processIds": {
@@ -2015,10 +2083,13 @@
             "format": "int64"
           }
         },
-        "processInstanceId": {
+        "processInstanceIds": {
           "description": "进程实例ID",
-          "type": "integer",
-          "format": "int64"
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       }
     },
@@ -2087,9 +2158,12 @@
           "type": "string"
         },
         "fileMode": {
-          "description": "文件模式",
-          "type": "string",
-          "default": "unix"
+          "description": "目标平台: win、unix",
+          "type": "string"
+        },
+        "fullPath": {
+          "description": "文件路径",
+          "type": "string"
         },
         "highlightStyle": {
           "description": "高亮风格",
@@ -2097,14 +2171,6 @@
         },
         "md5": {
           "description": "文件md5",
-          "type": "string"
-        },
-        "memo": {
-          "description": "配置模版描述",
-          "type": "string"
-        },
-        "name": {
-          "description": "配置模版名称",
           "type": "string"
         },
         "privilege": {
@@ -2121,6 +2187,10 @@
         },
         "sign": {
           "description": "文件sha256",
+          "type": "string"
+        },
+        "templateName": {
+          "description": "配置模版名称",
           "type": "string"
         },
         "user": {
@@ -2615,6 +2685,23 @@
         }
       }
     },
+    "pbcsListTemplatesNotBoundResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtemplateTemplate"
+          }
+        }
+      }
+    },
     "pbcsOperateProcessResp": {
       "type": "object",
       "properties": {
@@ -2751,7 +2838,7 @@
     },
     "pbctBindTemplate": {
       "type": "object",
-      "title": "BindTemplate xxx",
+      "title": "BindTemplate",
       "properties": {
         "byteSize": {
           "description": "文件大小",
@@ -2783,11 +2870,7 @@
           "type": "string",
           "default": "unix"
         },
-        "fileName": {
-          "description": "文件名",
-          "type": "string"
-        },
-        "filePath": {
+        "fullPath": {
           "description": "文件路径",
           "type": "string"
         },
@@ -2797,14 +2880,6 @@
         },
         "md5": {
           "description": "文件md5",
-          "type": "string"
-        },
-        "memo": {
-          "description": "配置模版描述",
-          "type": "string"
-        },
-        "name": {
-          "description": "配置模版名称",
           "type": "string"
         },
         "privilege": {
@@ -2817,6 +2892,14 @@
         },
         "sign": {
           "description": "文件sha256",
+          "type": "string"
+        },
+        "templateMemo": {
+          "description": "配置模版描述",
+          "type": "string"
+        },
+        "templateName": {
+          "description": "配置模版名称",
           "type": "string"
         },
         "templateSetName": {
@@ -2866,8 +2949,8 @@
           "type": "array",
           "title": "子节点（递归）",
           "items": {
-            "type": "object",
-            "$ref": "#/definitions/pbctBizTopoNode"
+            "description": "recursive child node",
+            "type": "object"
           }
         },
         "default": {
@@ -2898,6 +2981,12 @@
           "description": "配置模板ID",
           "type": "integer",
           "format": "int64"
+        },
+        "isConfigReleased": {
+          "type": "boolean"
+        },
+        "isProcBound": {
+          "type": "boolean"
         },
         "revision": {
           "$ref": "#/definitions/pbbaseRevision"
@@ -2947,15 +3036,15 @@
       "type": "object",
       "title": "ConfigTemplateSpec source resource reference: pkg/dal/table/config_template.go",
       "properties": {
-        "fileName": {
-          "description": "文件名",
+        "fullPath": {
+          "description": "文件路径",
           "type": "string"
         },
         "highlightStyle": {
           "description": "语法高亮",
           "type": "string"
         },
-        "name": {
+        "templateName": {
           "description": "配置模版名称",
           "type": "string"
         }
@@ -3607,6 +3696,60 @@
         },
         "status": {
           "description": "任务状态",
+          "type": "string"
+        }
+      }
+    },
+    "pbtemplateTemplate": {
+      "type": "object",
+      "title": "Template source resource reference: pkg/dal/table/template.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbtemplateTemplateAttachment"
+        },
+        "id": {
+          "description": "模板文件ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbtemplateTemplateSpec"
+        }
+      }
+    },
+    "pbtemplateTemplateAttachment": {
+      "type": "object",
+      "title": "TemplateAttachment source resource reference: pkg/dal/table/template.go",
+      "properties": {
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "templateSpaceId": {
+          "description": "模板空间ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbtemplateTemplateSpec": {
+      "type": "object",
+      "title": "TemplateSpec source resource reference: pkg/dal/table/template.go",
+      "properties": {
+        "memo": {
+          "description": "文件描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "文件名",
+          "type": "string"
+        },
+        "path": {
+          "description": "文件路径",
           "type": "string"
         }
       }

@@ -283,7 +283,7 @@ func (e *GenerateConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 			payload.BatchID, err)
 	}
 
-	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+	e.AfterCallbackNotify(kt.Ctx, common.CallbackNotify{
 		TenantID: payload.TenantID,
 		BizID:    payload.BizID,
 		BatchID:  payload.BatchID,

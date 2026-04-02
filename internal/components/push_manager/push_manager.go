@@ -25,6 +25,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -81,6 +83,12 @@ func (p *pushManagerService) doRequest(ctx context.Context, method components.HT
 		SetContext(ctx).
 		SetAuthToken(p.Token).
 		SetBody(body)
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.MustGetKit(ctx)
+		req.SetHeader(constant.BkTenantID, kt.TenantID)
+	}
 
 	var resp *resty.Response
 	var err error

@@ -68,11 +68,7 @@ func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service, dao dao.
 //
 // nolint: funlen,gocyclo
 func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
-	kt := kit.FromGrpcContext(ctx)
-	if s.tenantID != "" {
-		kt.TenantID = s.tenantID
-		kt.Ctx = kt.InternalRpcCtx()
-	}
+	kt := kit.MustGetKit(ctx)
 	logs.Infof("[SyncSingleBiz][Start] bizID=%d tenantID=%s", s.bizID, s.tenantID)
 
 	// 1. 获取集群
@@ -474,9 +470,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 	}
 	processBatch := buildProcessesFromSets(tenantID, s.bizID, sets)
 
-	kt := kit.New()
-	kt.TenantID = s.tenantID
-	kt.Ctx = kt.InternalRpcCtx()
+	kt := kit.MustGetKit(ctx)
 	tx := s.dao.GenQuery().Begin()
 	res, err := SyncProcessData(kt, s.dao, tx, uint32(s.bizID), nil, processBatch)
 	if err != nil {
@@ -514,9 +508,7 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 		return &SyncProcessResult{}, nil
 	}
 
-	kt := kit.New()
-	kt.TenantID = s.tenantID
-	kt.Ctx = kt.InternalRpcCtx()
+	kt := kit.MustGetKit(ctx)
 
 	// 1. 构建 newProcesses（来自事件）
 	newProcesses := make([]*table.Process, 0, len(processes))

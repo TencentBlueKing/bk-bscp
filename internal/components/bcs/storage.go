@@ -21,6 +21,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // QueryPodData 通过集群ID和 pod UID 查询 pod 信息返回
@@ -38,10 +40,18 @@ type QueryPodData struct {
 func QueryPod(ctx context.Context, clusterID string, uid string) (*corev1.Pod, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/storage/k8s/dynamic/all_resources/clusters/%s/Pod?data.metadata.uid=%s",
 		cc.G().BCS.Host, clusterID, uid)
-	resp, err := components.GetClient().R().
+
+	request := components.GetClient().R().
 		SetContext(ctx).
-		SetAuthToken(cc.G().BCS.Token).
-		Get(url)
+		SetAuthToken(cc.G().BCS.Token)
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.MustGetKit(ctx)
+		request.SetHeader(constant.BkTenantID, kt.TenantID)
+	}
+
+	resp, err := request.Get(url)
 
 	if err != nil {
 		return nil, err
@@ -74,10 +84,18 @@ type QueryNodeData struct {
 func QueryNode(ctx context.Context, clusterID string, name string) (*corev1.Node, error) {
 	url := fmt.Sprintf("%s/bcsapi/v4/storage/k8s/dynamic/all_resources/clusters/%s/Node?data.metadata.name=%s",
 		cc.G().BCS.Host, clusterID, name)
-	resp, err := components.GetClient().R().
+
+	request := components.GetClient().R().
 		SetContext(ctx).
-		SetAuthToken(cc.G().BCS.Token).
-		Get(url)
+		SetAuthToken(cc.G().BCS.Token)
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.MustGetKit(ctx)
+		request.SetHeader(constant.BkTenantID, kt.TenantID)
+	}
+
+	resp, err := request.Get(url)
 
 	if err != nil {
 		return nil, err

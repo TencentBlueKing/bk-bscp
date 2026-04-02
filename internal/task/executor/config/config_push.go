@@ -246,7 +246,7 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 	}
 
 	// 统一推送事件
-	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+	e.AfterCallbackNotify(kt.Ctx, common.CallbackNotify{
 		TenantID: payload.TenantID,
 		BizID:    payload.BizID,
 		BatchID:  payload.BatchID,

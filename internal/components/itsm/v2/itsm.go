@@ -20,6 +20,8 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
 // GetAuthHeader 获取蓝鲸网关通用认证头
@@ -35,6 +37,12 @@ func ItsmRequest(ctx context.Context, method, reqURL string, data interface{}) (
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Bkapi-Authorization", GetAuthHeader())
+
+	// 多租户模式，带上租户ID
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.MustGetKit(ctx)
+		client.SetHeader(constant.BkTenantID, kt.TenantID)
+	}
 
 	switch method {
 	case http.MethodGet:

@@ -575,7 +575,7 @@ service Config {
   }
   // 获取未绑定的模板列表
   rpc ListTemplatesNotBound(ListTemplatesNotBoundReq) returns (ListTemplatesNotBoundResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/list_not_bound"

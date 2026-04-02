@@ -212,8 +212,18 @@ ${swagger}:
 markdown_docs: ${swag} ${swagger}
 	${swag} fmt -d ./cmd
 	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
-	# 修正bkapigw的swagger.json 的default值()
+	# 修正swagger.json中的default值（字符串布尔 -> JSON布尔）
 	sed -i 's/"default": "false"/"default": false/g' ./docs/swagger/bkapigw.swagger.json
+	sed -i 's/"default": "true"/"default": true/g' ./docs/swagger/bkapigw.swagger.json
+	sed -i 's/"default": "false"/"default": false/g' ./docs/swagger/api.swagger.json
+	sed -i 's/"default": "true"/"default": true/g' ./docs/swagger/api.swagger.json
+	# 修正query参数中不合法的type: object（改为type: string）
+	sed -i '/"in": "query"/,/}/{s/"type": "object"/"type": "string"/}' ./docs/swagger/api.swagger.json
+	sed -i '/"in": "query"/,/}/{s/"type": "object"/"type": "string"/}' ./docs/swagger/bkapigw.swagger.json
+	# 修正递归引用（API网关不支持递归解析），去除pbctBizTopoNode自引用
+	@for f in ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json; do \
+		python3 -c "import json,sys;f=sys.argv[1];d=json.load(open(f));n=d.get('definitions',{}).get('pbctBizTopoNode',{}).get('properties',{}).get('child',{});n['items']={'type':'object','description':'recursive child node'};json.dump(d,open(f,'w'),ensure_ascii=False,indent=2);print(f+' fixed')" "$$f"; \
+	done
 	${swagger} validate ./docs/swagger/bkapigw.swagger.json
 	# 合并bkapigw和apiserver的swagger.json
 	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json

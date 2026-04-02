@@ -44,10 +44,9 @@
           </bk-table-column>
           <bk-table-column :label="t('资源实例')" min-width="363">
             <template #default="{ row }">
-              <div
-                v-if="row.audit && row.audit.spec.res_instance"
-                v-html="convertInstance(row.audit.spec.res_instance)"
-                class="multi-line-styles" />
+              <div v-if="row.audit && row.audit.spec.res_instance" class="multi-line-styles">
+                {{ convertInstance(row.audit.spec.res_instance)}}
+              </div>
               <div v-else class="multi-line-styles">--</div>
               <!-- <div>{{ row.audit?.spec.res_instance || '--' }}</div> -->
             </template>
@@ -511,7 +510,7 @@
       resultList.splice(operateIndex, 1, operationDescription);
     }
 
-    return resultList.join('<br />');
+    return resultList.join('\n');
   };
 
   // 复制审批链接
@@ -915,7 +914,7 @@
     height: 100%;
     min-height: 42px;
     overflow: hidden;
-    white-space: normal;
+    white-space: pre-line;
     word-wrap: break-word;
     word-break: break-all;
     line-height: 21px;

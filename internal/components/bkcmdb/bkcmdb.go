@@ -24,6 +24,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/types"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -98,6 +100,11 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 		SetContext(ctx).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(body)
+
+	if cc.G().FeatureFlags.EnableMultiTenantMode {
+		kt := kit.MustGetKit(ctx)
+		request.SetHeader(constant.BkTenantID, kt.TenantID)
+	}
 
 	// 执行请求
 	var resp *resty.Response

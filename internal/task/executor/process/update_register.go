@@ -105,7 +105,8 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 	}
 
 	// 获取cmdb侧最新进程详情
-	processInfo, err := u.CMDBService.ListProcessDetailByIds(c.Context(), bkcmdb.ProcessReq{
+	ktForCmdbCtx := kit.NewWithTenant(payload.TenantID).Ctx
+	processInfo, err := u.CMDBService.ListProcessDetailByIds(ktForCmdbCtx, bkcmdb.ProcessReq{
 		BkBizID:      int(payload.BizID),
 		BkProcessIDs: []int{int(commonPayload.ProcessPayload.CcProcessID)},
 	})
@@ -206,7 +207,8 @@ func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 	}
 
 	// 1. 查询gse
-	status, err := u.queryGSEProcessStatus(c.Context(), payload, commonPayload, processInfo)
+	kt := kit.NewWithTenant(payload.TenantID)
+	status, err := u.queryGSEProcessStatus(kt.Ctx, payload, commonPayload, processInfo)
 	if err != nil {
 		return err
 	}
@@ -216,7 +218,7 @@ func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 		return nil
 	}
 
-	if err = u.executeGSEOperate(c.Context(), payload, commonPayload, table.StopProcessOperate); err != nil {
+	if err = u.executeGSEOperate(kt.Ctx, payload, commonPayload, table.StopProcessOperate); err != nil {
 		return fmt.Errorf(
 			"[StopProcessStep STEP]: execute process operate %s failed: %w",
 			table.StopProcessOperate,
@@ -257,7 +259,7 @@ func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 	}
 
 	if err := u.executeGSEOperate(
-		c.Context(),
+		kit.NewWithTenant(payload.TenantID).Ctx,
 		payload,
 		commonPayload,
 		table.RegisterProcessOperate,
@@ -282,7 +284,7 @@ func (u *UpdateRegisterExecutor) StartProcessStep(c *istep.Context) error {
 		return fmt.Errorf("[StartProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	if err := u.executeGSEOperate(c.Context(), payload, commonPayload, table.StartProcessOperate); err != nil {
+	if err := u.executeGSEOperate(kit.NewWithTenant(payload.TenantID).Ctx, payload, commonPayload, table.StartProcessOperate); err != nil {
 		return fmt.Errorf(
 			"[StartProcessStep STEP]: execute process operate %s failed: %w",
 			table.StartProcessOperate,
@@ -376,13 +378,14 @@ func (u *UpdateRegisterExecutor) getGSEProcessStatus(
 	req := &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
-	resp, err := u.GseService.OperateProcMulti(c.Context(), req)
+	ktCtx := kit.NewWithTenant(payload.TenantID).Ctx
+	resp, err := u.GseService.OperateProcMulti(ktCtx, req)
 	if err != nil {
 		return "", "",
 			fmt.Errorf("[getGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	result, err := u.WaitProcOperateTaskFinish(
-		c.Context(),
+		ktCtx,
 		resp.TaskID,
 		bizID,
 		commonPayload.ProcessPayload.HostInstSeq,
@@ -440,10 +443,12 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("[UpdateRegisterCallback CALLBACK]: get common payload failed: %w", err)
 	}
 
+	kt := kit.NewWithTenant(payload.TenantID)
+
 	// 更新 TaskBatch 的完成计数
 	isSuccess := cbErr == nil
 	if payload.BatchID > 0 {
-		if _, err := u.Dao.TaskBatch().IncrementCompletedCount(kit.NewWithTenant(payload.TenantID), payload.BatchID, isSuccess); err != nil {
+		if _, err := u.Dao.TaskBatch().IncrementCompletedCount(kt, payload.BatchID, isSuccess); err != nil {
 			logs.Errorf("[UpdateRegisterCallback CALLBACK]: failed to increment completed count, "+
 				"batchID: %d, err: %v", payload.BatchID, err)
 		}
@@ -482,7 +487,7 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 		}
 
 		// 统一推送事件
-		u.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+		u.AfterCallbackNotify(kt.Ctx, common.CallbackNotify{
 			TenantID: payload.TenantID,
 			BizID:    payload.BizID,
 			BatchID:  payload.BatchID,

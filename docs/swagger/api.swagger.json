@@ -276,7 +276,7 @@
             "description": "搜索条件",
             "in": "query",
             "required": false,
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "operator",
@@ -1389,7 +1389,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           },
           {
             "name": "deprecated",
@@ -1747,7 +1747,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           },
           {
             "name": "notTag",
@@ -1909,7 +1909,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -2590,7 +2590,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -2869,7 +2869,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           },
           {
             "name": "exclusionOperation",
@@ -2877,7 +2877,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -3910,7 +3910,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5092,7 +5092,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5178,7 +5178,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5251,7 +5251,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5322,7 +5322,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5416,7 +5416,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5510,7 +5510,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5583,7 +5583,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5654,7 +5654,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5776,7 +5776,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -5849,7 +5849,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -7401,7 +7401,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           },
           {
             "name": "enable",
@@ -8276,7 +8276,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           },
           {
             "name": "start",
@@ -8527,7 +8527,7 @@
             "in": "query",
             "required": false,
             "type": "boolean",
-            "default": "false"
+            "default": false
           }
         ],
         "tags": [
@@ -10635,6 +10635,39 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/manage_config_kv": {
+      "post": {
+        "summary": "configs 表 KV 管理",
+        "operationId": "Config_ManageConfigKV",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVReq"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -10765,7 +10798,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         },
         "noSetSpecified": {
@@ -10810,7 +10843,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10828,7 +10861,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10846,12 +10879,12 @@
         },
         "force": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否强制删除"
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10869,7 +10902,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10887,7 +10920,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10917,7 +10950,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
@@ -10956,7 +10989,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         },
         "noSetSpecified": {
@@ -10977,7 +11010,7 @@
         },
         "replaceAll": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否替换全部：如果为true会覆盖已有的文件，不存在的则删除"
         },
         "variables": {
@@ -11552,19 +11585,15 @@
     "ConfigCreateConfigTemplateBody": {
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "配置模版名称"
-        },
-        "fileName": {
-          "type": "string",
-          "description": "文件名"
-        },
-        "filePath": {
+        "fullPath": {
           "type": "string",
           "description": "文件路径"
         },
-        "memo": {
+        "templateName": {
+          "type": "string",
+          "description": "配置模版名称"
+        },
+        "templateMemo": {
           "type": "string",
           "description": "配置模版描述"
         },
@@ -11607,8 +11636,7 @@
         },
         "fileMode": {
           "type": "string",
-          "default": "unix",
-          "description": "文件模式"
+          "description": "目标平台: win、unix"
         },
         "templateSpaceId": {
           "type": "integer",
@@ -11649,7 +11677,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "bindApps": {
@@ -11984,7 +12012,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "boundApps": {
@@ -12065,7 +12093,7 @@
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         },
         "noSetSpecified": {
@@ -12252,7 +12280,7 @@
         },
         "withStatus": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "为模板配置项设置文件状态：是=true，否=false"
         },
         "status": {
@@ -12279,7 +12307,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "topIds": {
@@ -12301,7 +12329,7 @@
       "properties": {
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "start": {
@@ -12346,7 +12374,7 @@
       "properties": {
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "start": {
@@ -12405,7 +12433,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -12461,7 +12489,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "withStatus": {
@@ -12491,7 +12519,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "search": {
@@ -12518,7 +12546,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "state": {
@@ -12531,7 +12559,7 @@
       "properties": {
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "key": {
@@ -12599,7 +12627,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "start": {
@@ -12642,7 +12670,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -12662,7 +12690,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "search": {
@@ -12774,7 +12802,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -12828,7 +12856,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "topIds": {
@@ -12867,7 +12895,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -12904,7 +12932,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -12999,7 +13027,7 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         }
       }
@@ -13033,14 +13061,17 @@
           },
           "description": "进程ID"
         },
-        "processInstanceId": {
-          "type": "integer",
-          "format": "int64",
+        "processInstanceIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
           "description": "进程实例ID"
         },
         "operateType": {
           "type": "string",
-          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register"
+          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete"
         },
         "enableProcessRestart": {
           "type": "boolean",
@@ -13132,18 +13163,24 @@
         },
         "all": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否获取所有"
         },
         "exclusionOperation": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否排除操作：是=true，否=false"
         }
       }
     },
     "ConfigRetryTasksBody": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "taskAction": {
+          "type": "string",
+          "description": "任务动作:config_publish、config_generate、process_operations"
+        }
+      }
     },
     "ConfigSubmitPublishApproveBody": {
       "type": "object",
@@ -13193,7 +13230,7 @@
         },
         "isCompare": {
           "type": "boolean",
-          "default": "false",
+          "default": false,
           "description": "是否比较差异：是=true，否=false"
         }
       }
@@ -13375,13 +13412,17 @@
     "ConfigUpdateConfigTemplateBody": {
       "type": "object",
       "properties": {
-        "name": {
+        "fullPath": {
+          "type": "string",
+          "description": "文件路径"
+        },
+        "templateName": {
           "type": "string",
           "description": "配置模版名称"
         },
-        "memo": {
+        "revisionMemo": {
           "type": "string",
-          "description": "配置模版描述"
+          "description": "配置模版版本描述"
         },
         "revisionName": {
           "type": "string",
@@ -13422,12 +13463,7 @@
         },
         "fileMode": {
           "type": "string",
-          "default": "unix",
-          "description": "文件模式"
-        },
-        "revisionMemo": {
-          "type": "string",
-          "description": "配置模版版本描述"
+          "description": "目标平台: win、unix"
         }
       }
     },
@@ -13491,7 +13527,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "bindApps": {
@@ -13694,7 +13730,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "boundApps": {
@@ -16490,6 +16526,18 @@
         }
       }
     },
+    "pbcsConfigKVItem": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ConfigKVItem configs 表的 KV 条目"
+    },
     "pbcsConfigTemplateVariableResp": {
       "type": "object",
       "properties": {
@@ -18552,6 +18600,45 @@
         }
       }
     },
+    "pbcsManageConfigKVReq": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "action 操作类型: \"upsert\", \"delete\", \"get\", \"list\", \"append\", \"remove\"\r\n  upsert  — 整体写入 KV（覆盖），kvs 必填\r\n  delete  — 删除指定 key，key 必填\r\n  get     — 精确获取单条，key 必填\r\n  list    — 按前缀批量查询，key_prefix 必填\r\n  append  — 向逗号分隔列表追加元素（自动去重），kvs 必填\r\n  remove  — 从逗号分隔列表移除元素，kvs 必填"
+        },
+        "kvs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
+          },
+          "title": "kvs 用于 upsert / append / remove 操作"
+        },
+        "key": {
+          "type": "string",
+          "title": "key 用于 delete / get"
+        },
+        "keyPrefix": {
+          "type": "string",
+          "title": "key_prefix 用于 list 按前缀查询"
+        }
+      },
+      "title": "ManageConfigKVReq 通用 configs 表管理请求"
+    },
+    "pbcsManageConfigKVResp": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
+          }
+        }
+      },
+      "title": "ManageConfigKVResp 通用 configs 表管理响应"
+    },
     "pbcsOperateGenerateConfigResp": {
       "type": "object"
     },
@@ -18852,15 +18939,15 @@
           "type": "string",
           "description": "模板套餐名称"
         },
-        "fileName": {
-          "type": "string",
-          "description": "文件名"
-        },
-        "filePath": {
+        "fullPath": {
           "type": "string",
           "description": "文件路径"
         },
-        "memo": {
+        "templateName": {
+          "type": "string",
+          "description": "配置模版名称"
+        },
+        "templateMemo": {
           "type": "string",
           "description": "配置模版描述"
         },
@@ -18921,13 +19008,9 @@
             "format": "int64"
           },
           "description": "关联cc中未通过服务模板创建的进程实例ID"
-        },
-        "name": {
-          "type": "string",
-          "description": "配置模版名称"
         }
       },
-      "title": "BindTemplate xxx"
+      "title": "BindTemplate"
     },
     "pbctBizTopoNode": {
       "type": "object",
@@ -18957,7 +19040,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/pbctBizTopoNode"
+            "description": "recursive child node"
           },
           "title": "子节点（递归）"
         },
@@ -18995,6 +19078,12 @@
         },
         "revision": {
           "$ref": "#/definitions/pbbaseRevision"
+        },
+        "isProcBound": {
+          "type": "boolean"
+        },
+        "isConfigReleased": {
+          "type": "boolean"
         }
       },
       "title": "ConfigTemplate source resource reference: pkg/dal/table/config_template.go"
@@ -19038,13 +19127,13 @@
     "pbctConfigTemplateSpec": {
       "type": "object",
       "properties": {
-        "name": {
+        "templateName": {
           "type": "string",
           "description": "配置模版名称"
         },
-        "fileName": {
+        "fullPath": {
           "type": "string",
-          "description": "文件名"
+          "description": "文件路径"
         },
         "highlightStyle": {
           "type": "string",
@@ -19246,7 +19335,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "bindApps": {
@@ -19870,10 +19959,10 @@
           "type": "string",
           "description": "cc同步状态:synced,deleted,updated"
         },
-        "ccSyncUpdatedAt": {
+        "processStateSyncedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "cc同步更新时间"
+          "description": "进程状态同步时间"
         },
         "sourceData": {
           "type": "string",
@@ -19915,6 +20004,10 @@
         "processConfigViewUrl": {
           "type": "string",
           "description": "查看进程配置的url"
+        },
+        "newAlias": {
+          "type": "string",
+          "description": "新进程别名"
         }
       },
       "title": "ProcessSpec source resource reference: pkg/dal/table/process.go"
@@ -21319,7 +21412,7 @@
         },
         "public": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "服务可见范围，公开=true，指定服务=false"
         },
         "boundApps": {

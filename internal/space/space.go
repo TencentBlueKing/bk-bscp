@@ -194,10 +194,10 @@ func (s *Manager) HasCMDBSpace(ctx context.Context, spaceId string) bool {
 
 	// 最近较短时间内没有请求过该cmdb命名空间，则尝试重新拉取并刷新缓存
 	if !s.requestedCache.Has(key) {
-		ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*10)
 		defer cancel()
 
-		spaceList, err := s.fetchAllSpace(ctx)
+		spaceList, err := s.fetchAllSpace(timeoutCtx)
 		if err != nil {
 			logs.Errorf("fetch all space failed, err: %v", err)
 			return false

@@ -158,7 +158,8 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 	}
 
 	// 获取cmdb侧最新进程详情
-	processInfo, err := e.CMDBService.ListProcessDetailByIds(c.Context(), bkcmdb.ProcessReq{
+	ktForCmdbCtx := kit.NewWithTenant(payload.TenantID).Ctx
+	processInfo, err := e.CMDBService.ListProcessDetailByIds(ktForCmdbCtx, bkcmdb.ProcessReq{
 		BkBizID:      int(payload.BizID),
 		BkProcessIDs: []int{int(commonPayload.ProcessPayload.CcProcessID)},
 	})
@@ -313,12 +314,13 @@ func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
 
-	resp, err := e.GseService.OperateProcMulti(c.Context(), req)
+	kt := kit.NewWithTenant(payload.TenantID)
+	resp, err := e.GseService.OperateProcMulti(kt.Ctx, req)
 	if err != nil {
 		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	// 等待查询任务完成
-	result, err := e.WaitProcOperateTaskFinish(c.Context(),
+	result, err := e.WaitProcOperateTaskFinish(kt.Ctx,
 		resp.TaskID, payload.BizID,
 		commonPayload.ProcessPayload.HostInstSeq,
 		commonPayload.ProcessPayload.Alias,
@@ -488,14 +490,15 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
 
-	resp, err := e.GseService.OperateProcMulti(c.Context(), req)
+	kt := kit.NewWithTenant(payload.TenantID)
+	resp, err := e.GseService.OperateProcMulti(kt.Ctx, req)
 	if err != nil {
 		return fmt.Errorf("[Operate STEP]: OperateProcMulti failed: %w", err)
 	}
 
 	logs.Infof("[Operate STEP]: gse task created, task_id=%s", resp.TaskID)
 
-	result, err := e.WaitProcOperateTaskFinish(c.Context(), resp.TaskID,
+	result, err := e.WaitProcOperateTaskFinish(kt.Ctx, resp.TaskID,
 		payload.BizID, proc.HostInstSeq, proc.Alias, proc.AgentID)
 	if err != nil {
 		return fmt.Errorf("[Operate STEP]: wait task finish failed: %w", err)
@@ -567,12 +570,14 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 		return fmt.Errorf("failed to get payload: %w", err)
 	}
 
+	kt := kit.NewWithTenant(payload.TenantID)
+
 	allCompleted := false
 	var err error
 	// 更新 TaskBatch 的完成计数
 	isSuccess := cbErr == nil
 	if payload.BatchID > 0 {
-		allCompleted, err = e.Dao.TaskBatch().IncrementCompletedCount(kit.NewWithTenant(payload.TenantID), payload.BatchID, isSuccess)
+		allCompleted, err = e.Dao.TaskBatch().IncrementCompletedCount(kt, payload.BatchID, isSuccess)
 		if err != nil {
 			logs.Errorf("[ProcessOperateCallback CALLBACK]: failed to increment completed count, "+
 				"batchID: %d, err: %v", payload.BatchID, err)
@@ -582,15 +587,13 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 	}
 
 	// 统一推送事件
-	e.AfterCallbackNotify(c.Context(), common.CallbackNotify{
+	e.AfterCallbackNotify(kt.Ctx, common.CallbackNotify{
 		TenantID: payload.TenantID,
 		BizID:    payload.BizID,
 		BatchID:  payload.BatchID,
 		Operator: payload.OperateUser,
 		CbErr:    cbErr,
 	})
-
-	kt := kit.NewWithTenant(payload.TenantID)
 
 	defer func() {
 		// 只要批次任务全部完成，就触发一次 CMDB 模块实例序列更新，确保模块实例序列的正确性
@@ -714,12 +717,13 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 	req := &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
 	}
-	resp, err := e.GseService.OperateProcMulti(c.Context(), req)
+	ktCtx := kit.NewWithTenant(payload.TenantID).Ctx
+	resp, err := e.GseService.OperateProcMulti(ktCtx, req)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	result, err := e.WaitProcOperateTaskFinish(
-		c.Context(),
+		ktCtx,
 		resp.TaskID,
 		bizID,
 		commonPayload.ProcessPayload.HostInstSeq,

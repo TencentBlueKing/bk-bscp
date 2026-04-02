@@ -34,6 +34,7 @@ import (
 //   - BatchUpsertClientMetrics: clients/client_events tables are excluded from tenant filter
 //   - BatchUpdateLastConsumedTime: system-level batch update, server-side uses WithSkipTenantFilter
 //   - GetAuthConf: bootstrap config (login/ESB/CMDB), read from static config, not tenant-scoped
+//   - GetUserInfo: cookie-based login exchanges token for user info (including tenant_id), caller does not yet know tenant_id
 //   - GetAllBizsOfTmplSpaces: api-server bootstrap, enumerates all biz IDs with template spaces
 var tenantExemptMethods = map[string]struct{}{
 	"/pbcs.Cache/GetCurrentCursorReminder":   {},
@@ -42,6 +43,7 @@ var tenantExemptMethods = map[string]struct{}{
 	"/pbds.Data/BatchUpsertClientMetrics":    {},
 	"/pbds.Data/BatchUpdateLastConsumedTime": {},
 	"/pbas.Auth/GetAuthConf":                 {},
+	"/pbas.Auth/GetUserInfo":                 {},
 	"/pbcs.Config/GetAllBizsOfTmplSpaces":    {},
 	"/pbds.Data/GetAllBizsOfTmplSpaces":      {},
 }

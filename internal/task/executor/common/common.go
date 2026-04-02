@@ -679,7 +679,8 @@ type CallbackNotify struct {
 
 // AfterCallbackNotify 任务回调后通知
 func (e *Executor) AfterCallbackNotify(ctx context.Context, notify CallbackNotify) {
-	task, err := e.Dao.TaskBatch().GetByID(kit.NewWithTenant(notify.TenantID), notify.BatchID)
+	kt := kit.MustGetKit(ctx)
+	task, err := e.Dao.TaskBatch().GetByID(kt, notify.BatchID)
 	if err != nil {
 		logs.Errorf("[AfterCallbackNotify] get task batch failed, batchID=%d, err=%v",
 			notify.BatchID, err)

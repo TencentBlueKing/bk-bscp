@@ -66,7 +66,8 @@ func (p *processStateSyncExecutor) ProcessStateSync(c *istep.Context) error {
 		tenantID = payload.Process.Attachment.TenantID
 	}
 	gseService := gse.NewSyncGESService(tenantID, int(payload.BizID), p.gseSvc, p.dao)
-	proc, procInsts, err := gseService.SyncSingleProcessStatus(c.Context(), payload.Process, payload.ProcessInstances)
+	kt := kit.NewWithTenant(tenantID)
+	proc, procInsts, err := gseService.SyncSingleProcessStatus(kt.Ctx, payload.Process, payload.ProcessInstances)
 	if err != nil {
 		return err
 	}
