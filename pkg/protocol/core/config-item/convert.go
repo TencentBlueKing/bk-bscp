@@ -14,7 +14,6 @@
 package pbci
 
 import (
-	"html"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
