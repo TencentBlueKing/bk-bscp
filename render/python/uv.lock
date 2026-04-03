@@ -17,7 +17,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "lxml", specifier = ">=4.9.0" },
+    { name = "lxml", specifier = ">=5.1.0" },
     { name = "mako", specifier = ">=1.3.0" },
 ]
 

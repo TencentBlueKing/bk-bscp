@@ -1,4 +1,4 @@
-# 使用 uv 镜像，因为 uv 镜像包含了 Python 3.12 和 lxml 库，可以避免在构建时安装依赖
+# 使用 uv 镜像，构建阶段通过 uv sync 预装并锁定 Python 依赖
 FROM ghcr.io/astral-sh/uv:python3.12-alpine
 
 RUN apk --update --no-cache add ca-certificates bash vim curl \
@@ -23,6 +23,10 @@ COPY build/bk-bscp/bk-bscp-vaultserver/vault-plugins/bk-bscp-secret /etc/vault/v
 COPY scripts/itsm-templates/system_bk_bscp.json /bk-bscp/etc/itsm/system_bk_bscp.json
 # 复制 Python 模块到镜像中
 COPY render/python /bk-bscp/render/python
+WORKDIR /bk-bscp/render/python
+RUN uv sync --frozen
+RUN .venv/bin/python3 -c "import mako, lxml"
+WORKDIR /bk-bscp
 ENV BSCP_PYTHON_RENDER_PATH=/bk-bscp/render/python
 ENTRYPOINT ["/bk-bscp/bk-bscp-ui"]
 CMD []

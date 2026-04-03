@@ -49,7 +49,7 @@ func PbConfigItemSpec(spec *table.ConfigItemSpec) *ConfigItemSpec {
 		Path:       spec.Path,
 		FileType:   string(spec.FileType),
 		FileMode:   string(spec.FileMode),
-		Memo:       html.EscapeString(spec.Memo),
+		Memo:       spec.Memo,
 		Permission: PbFilePermission(spec.Permission),
 		Charset:    string(spec.Charset),
 	}

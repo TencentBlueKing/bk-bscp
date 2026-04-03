@@ -154,8 +154,9 @@ func (r *Renderer) RenderWithContext(ctx context.Context, template string, conte
 		defer cancel()
 	}
 
-	// Execute Python script with uv
-	cmd := exec.CommandContext(ctx, r.uvPath, "run", "--with", "mako", "--with", "lxml", "python3", r.scriptPath, "--stdin")
+	projectPath := filepath.Dir(r.scriptPath)
+	// Execute Python script with uv project environment.
+	cmd := exec.CommandContext(ctx, r.uvPath, "run", "--project", projectPath, "python3", r.scriptPath, "--stdin")
 	cmd.Stdin = bytes.NewReader(inputJSON)
 
 	var stdout, stderr bytes.Buffer
@@ -235,8 +236,9 @@ func (r *Renderer) RenderWithTempFileContext(ctx context.Context, template strin
 		defer cancel()
 	}
 
-	// Execute Python script with uv
-	cmd := exec.CommandContext(ctx, r.uvPath, "run", "--with", "mako", "--with", "lxml", "python3", r.scriptPath,
+	projectPath := filepath.Dir(r.scriptPath)
+	// Execute Python script with uv project environment.
+	cmd := exec.CommandContext(ctx, r.uvPath, "run", "--project", projectPath, "python3", r.scriptPath,
 		"--template", template,
 		"--context-file", tmpFile.Name())
 

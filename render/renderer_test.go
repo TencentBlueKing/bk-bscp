@@ -14,17 +14,31 @@ package render_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
 
-func TestRenderer_Render(t *testing.T) {
+func newTestRenderer(t *testing.T) *render.Renderer {
+	t.Helper()
+
+	pythonRoot, err := filepath.Abs("python")
+	if err != nil {
+		t.Fatalf("failed to resolve python dir: %v", err)
+	}
+	t.Setenv("BSCP_PYTHON_RENDER_PATH", pythonRoot)
+
 	renderer, err := render.NewRenderer()
 	if err != nil {
 		t.Fatalf("Failed to create renderer: %v", err)
 	}
+	return renderer
+}
+
+func TestRenderer_Render(t *testing.T) {
+	renderer := newTestRenderer(t)
 
 	tests := []struct {
 		name     string
@@ -76,10 +90,7 @@ func TestRenderer_Render(t *testing.T) {
 }
 
 func TestRenderer_RenderWithContext(t *testing.T) {
-	renderer, err := render.NewRenderer()
-	if err != nil {
-		t.Fatalf("Failed to create renderer: %v", err)
-	}
+	renderer := newTestRenderer(t)
 
 	t.Run("with timeout", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -104,10 +115,7 @@ func TestRenderer_RenderWithContext(t *testing.T) {
 }
 
 func TestRenderer_RenderWithTempFile(t *testing.T) {
-	renderer, err := render.NewRenderer()
-	if err != nil {
-		t.Fatalf("Failed to create renderer: %v", err)
-	}
+	renderer := newTestRenderer(t)
 
 	t.Run("large context", func(t *testing.T) {
 		template := "Count: ${count}\nData: ${data}"
