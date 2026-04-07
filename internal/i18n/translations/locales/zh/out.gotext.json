@@ -1201,6 +1201,36 @@
             ]
         },
         {
+            "id": "batch add templates to template sets failed, err: {Err}",
+            "message": "batch add templates to template sets failed, err: {Err}",
+            "translation": "模板集批量添加模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]s",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "version number {RevisionName} already exists. Please change it and try again.",
+            "message": "version number {RevisionName} already exists. Please change it and try again.",
+            "translation": "版本号 {RevisionName} 已存在，请更换后重试",
+            "placeholders": [
+                {
+                    "id": "RevisionName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "templateRevision.Spec.RevisionName"
+                }
+            ]
+        },
+        {
             "id": "hook name {Name} already exists",
             "message": "hook name {Name} already exists",
             "translation": "脚本名称 {Name} 已存在",
@@ -1545,6 +1575,11 @@
             ]
         },
         {
+            "id": "no permission to approve this ticket",
+            "message": "no permission to approve this ticket",
+            "translation": "没有权限批准此工单"
+        },
+        {
             "id": "release name {ReleaseName} already exists",
             "message": "release name {ReleaseName} already exists",
             "translation": "版本名称{ReleaseName}已存在",
@@ -1630,16 +1665,6 @@
             ]
         },
         {
-            "id": "biz list is empty",
-            "message": "biz list is empty",
-            "translation": "业务列表为空"
-        },
-        {
-            "id": "this ticket has been approved, no further processing is required",
-            "message": "this ticket has been approved, no further processing is required",
-            "translation": "此单据已审批完成，无需进一步处理"
-        },
-        {
             "id": "this ticket has been revoked, no further processing is required",
             "message": "this ticket has been revoked, no further processing is required",
             "translation": "此单据已撤销，无需进一步处理"
@@ -1660,9 +1685,19 @@
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "ticketStatus.Data.CurrentStatus"
+                    "expr": "statusResp.CurrentStatus"
                 }
             ]
+        },
+        {
+            "id": "this ticket has been rejected, no further processing is required",
+            "message": "this ticket has been rejected, no further processing is required",
+            "translation": "此单据已被拒绝，无需进一步处理。"
+        },
+        {
+            "id": "this ticket has been approved, no further processing is required",
+            "message": "this ticket has been approved, no further processing is required",
+            "translation": "此单据已审批完成，无需进一步处理"
         },
         {
             "id": "create release failed there is a file conflict",
@@ -1721,21 +1756,6 @@
             "id": "batch update app template binding's failed, err: {Err}",
             "message": "batch update app template binding's failed, err: {Err}",
             "translation": "批量更新应用模板绑定失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]s",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "batch add templates to template sets failed, err: {Err}",
-            "message": "batch add templates to template sets failed, err: {Err}",
-            "translation": "模板集批量添加模板失败, err: {Err}",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2886,6 +2906,21 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"
+                }
+            ]
+        },
+        {
+            "id": "unsupported highlight style: {HighlightStyle}",
+            "message": "unsupported highlight style: {HighlightStyle}",
+            "translation": "不支持的高亮样式: {HighlightStyle}",
+            "placeholders": [
+                {
+                    "id": "HighlightStyle",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.HighlightStyle",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "h"
                 }
             ]
         },

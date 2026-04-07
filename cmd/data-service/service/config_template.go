@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
@@ -493,9 +494,13 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 			CreatedAt: now,
 		},
 	}
-
 	if _, err = s.dao.TemplateRevision().CreateWithTx(kit, tx, templateRevision, false, false); err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kit.Rid)
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return 0, errf.Errorf(errf.AlreadyExists, "%s",
+				i18n.T(kit, "version number %s already exists. Please change it and try again.",
+					templateRevision.Spec.RevisionName))
+		}
 		return 0, err
 	}
 
@@ -899,6 +904,11 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true, false)
 	if err != nil {
 		logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return nil, errf.Errorf(errf.AlreadyExists, "%s",
+				i18n.T(grpcKit, "version number %s already exists. Please change it and try again.",
+					templateRevision.Spec.RevisionName))
+		}
 		return nil, err
 	}
 	template.Revision.Reviser = grpcKit.User

@@ -1383,6 +1383,40 @@
             "fuzzy": true
         },
         {
+            "id": "batch add templates to template sets failed, err: {Err}",
+            "message": "batch add templates to template sets failed, err: {Err}",
+            "translation": "batch add templates to template sets failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]s",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "version number {RevisionName} already exists. Please change it and try again.",
+            "message": "version number {RevisionName} already exists. Please change it and try again.",
+            "translation": "version number {RevisionName} already exists. Please change it and try again.",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "RevisionName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "templateRevision.Spec.RevisionName"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "hook name {Name} already exists",
             "message": "hook name {Name} already exists",
             "translation": "hook name {Name} already exists",
@@ -1775,6 +1809,13 @@
             "fuzzy": true
         },
         {
+            "id": "no permission to approve this ticket",
+            "message": "no permission to approve this ticket",
+            "translation": "no permission to approve this ticket",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "release name {ReleaseName} already exists",
             "message": "release name {ReleaseName} already exists",
             "translation": "release name {ReleaseName} already exists",
@@ -1874,20 +1915,6 @@
             "fuzzy": true
         },
         {
-            "id": "biz list is empty",
-            "message": "biz list is empty",
-            "translation": "biz list is empty",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "this ticket has been approved, no further processing is required",
-            "message": "this ticket has been approved, no further processing is required",
-            "translation": "this ticket has been approved, no further processing is required",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
             "id": "this ticket has been revoked, no further processing is required",
             "message": "this ticket has been revoked, no further processing is required",
             "translation": "this ticket has been revoked, no further processing is required",
@@ -1913,9 +1940,23 @@
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "ticketStatus.Data.CurrentStatus"
+                    "expr": "statusResp.CurrentStatus"
                 }
             ],
+            "fuzzy": true
+        },
+        {
+            "id": "this ticket has been rejected, no further processing is required",
+            "message": "this ticket has been rejected, no further processing is required",
+            "translation": "this ticket has been rejected, no further processing is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "this ticket has been approved, no further processing is required",
+            "message": "this ticket has been approved, no further processing is required",
+            "translation": "this ticket has been approved, no further processing is required",
+            "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
@@ -1985,23 +2026,6 @@
             "id": "batch update app template binding's failed, err: {Err}",
             "message": "batch update app template binding's failed, err: {Err}",
             "translation": "batch update app template binding's failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]s",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "batch add templates to template sets failed, err: {Err}",
-            "message": "batch add templates to template sets failed, err: {Err}",
-            "translation": "batch add templates to template sets failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -3353,6 +3377,23 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "f"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported highlight style: {HighlightStyle}",
+            "message": "unsupported highlight style: {HighlightStyle}",
+            "translation": "unsupported highlight style: {HighlightStyle}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "HighlightStyle",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.HighlightStyle",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "h"
                 }
             ],
             "fuzzy": true
