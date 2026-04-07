@@ -67,7 +67,14 @@
     <bk-button v-if="isViewMode && isLatest" :disabled="!isAssociated" theme="primary" @click="handleConfigIssue">
       {{ t('配置下发') }}
     </bk-button>
-    <bk-button v-else-if="!isViewMode" theme="primary" @click="handleSubmitClick">{{ t('提交') }}</bk-button>
+    <bk-button
+      v-else-if="!isViewMode"
+      theme="primary"
+      :disabled="submitPending"
+      :loading="submitPending"
+      @click="handleSubmitClick">
+      {{ t('提交') }}
+    </bk-button>
     <bk-button class="default-btn" @click="handleDiff">{{ t('对比') }}</bk-button>
     <bk-button class="default-btn" @click="suffix = 'variable'">{{ t('变量') }}</bk-button>
     <bk-button class="default-btn" @click="handlePreview">{{ t('预览') }}</bk-button>

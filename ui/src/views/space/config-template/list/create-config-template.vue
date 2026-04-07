@@ -11,7 +11,9 @@
           :edit="false"
           @change="handleFormChange" />
         <div class="btns">
-          <bk-button theme="primary" @click="handleCreateConfirm">{{ $t('创建') }}</bk-button>
+          <bk-button theme="primary" :disabled="pending" :loading="pending" @click="handleCreateConfirm">
+            {{ $t('创建') }}
+          </bk-button>
           <bk-button @click="handleClose">{{ $t('取消') }}</bk-button>
         </div>
       </section>
