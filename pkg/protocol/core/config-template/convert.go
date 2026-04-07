@@ -79,43 +79,57 @@ func PbConfigTemplates(src []*table.ConfigTemplate, fullPath map[uint32]string,
 	return res
 }
 
-// ConvertBizTopoNodes 批量转换
-func ConvertBizTopoNodes(src []*bkcmdb.BizTopoNode) []*BizTopoNode {
-	if src == nil {
+// ConvertTopoBriefNodes 批量转换 []*bkcmdb.TopoBriefNode -> []*BizTopoNode
+func ConvertTopoBriefNodes(src []*bkcmdb.TopoBriefNode) []*BizTopoNode {
+	if len(src) == 0 {
 		return nil
 	}
-	res := make([]*BizTopoNode, 0, len(src))
-	for _, n := range src {
-		res = append(res, ConvertBizTopoNode(n))
-	}
 
+	res := make([]*BizTopoNode, len(src))
+	for i, n := range src {
+		res[i] = ConvertTopoBriefNode(n)
+	}
 	return res
 }
 
-// ConvertBizTopoNode 单个节点转换（递归）
-func ConvertBizTopoNode(src *bkcmdb.BizTopoNode) *BizTopoNode {
+// ConvertTopoBriefNode 单个转换 *bkcmdb.TopoBriefNode -> *BizTopoNode
+func ConvertTopoBriefNode(src *bkcmdb.TopoBriefNode) *BizTopoNode {
 	if src == nil {
 		return nil
 	}
 
+	objID, objName, objIcon := mapObjMeta(src.Obj)
+
 	dst := &BizTopoNode{
-		BkInstId:   uint32(src.BkInstID),
-		BkInstName: src.BkInstName,
-		BkObjIcon:  src.BkObjIcon,
-		BkObjId:    src.BkObjID,
-		BkObjName:  src.BkObjName,
+		BkInstId:   uint32(src.ID),
+		BkInstName: src.Name,
+		BkObjId:    objID,
+		BkObjName:  objName,
+		BkObjIcon:  objIcon,
 		Default:    uint32(src.Default),
 	}
 
-	// 递归处理 children
-	if len(src.Child) > 0 {
-		dst.Child = make([]*BizTopoNode, 0, len(src.Child))
-		for _, c := range src.Child {
-			dst.Child = append(dst.Child, ConvertBizTopoNode(c))
+	// 递归 children
+	if len(src.Nodes) > 0 {
+		dst.Child = make([]*BizTopoNode, len(src.Nodes))
+		for i, c := range src.Nodes {
+			dst.Child[i] = ConvertTopoBriefNode(c)
 		}
 	}
 
 	return dst
+}
+
+// mapObjMeta 将 cmdb 的 obj 转换为前端需要的 id、name、icon
+func mapObjMeta(obj string) (id, name, icon string) {
+	switch obj {
+	case "set":
+		return "set", "集群", "icon-set"
+	case "module":
+		return "module", "模块", "icon-module"
+	default:
+		return obj, obj, ""
+	}
 }
 
 // ConvertServiceTemplates 批量转换 []*bkcmdb.ServiceTemplate -> []*ServiceTemplate

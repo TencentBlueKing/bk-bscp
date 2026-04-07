@@ -132,36 +132,30 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizTopoResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 	// 1. 查询业务实例拓扑 search_biz_inst_topo
-	topo, err := s.cmdb.SearchBizInstTopo(grpcKit.Ctx, &bkcmdb.BizTopoReq{
-		BkBizID: int(req.GetBizId()),
-	})
+	topo, err := s.cmdb.FindTopoBrief(grpcKit.Ctx, int(req.GetBizId()))
 	if err != nil {
 		return nil, err
+	}
+	if len(topo.Nodes) == 0 {
+		return nil, fmt.Errorf("empty topo nodes")
 	}
 
 	// 2. 转换为 pb 结构
-	pbTopo := pbct.ConvertBizTopoNodes(topo)
+	pbTopo := pbct.ConvertTopoBriefNodes(topo.Nodes)
 
-	// 3. 去掉业务层，只保留 set 层
-	// pbTopo[0] 为 biz，其子节点即 set 层
-	if len(pbTopo) == 0 || pbTopo[0].BkObjId != constant.BK_BIZ_OBJ_ID {
-		return nil, fmt.Errorf("unexpected biz topo format")
-	}
-	setTopo := pbTopo[0].Child
-
-	// 4. 获取模板ID并回填到拓扑树中
-	err = s.fillServiceTemplateIDToTopo(grpcKit.Ctx, setTopo, int(req.GetBizId()))
+	// 3. 获取模板ID并回填到拓扑树中
+	err = s.fillServiceTemplateIDToTopo(grpcKit.Ctx, pbTopo, int(req.GetBizId()))
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. 查询表获取进程数并回填到拓扑树中
-	if err := s.fillProcessCount(grpcKit, int(req.GetBizId()), setTopo); err != nil {
+	// 4. 查询表获取进程数并回填到拓扑树中
+	if err := s.fillProcessCount(grpcKit, int(req.GetBizId()), pbTopo); err != nil {
 		return nil, err
 	}
 
 	return &pbds.BizTopoResp{
-		BizTopoNodes: setTopo,
+		BizTopoNodes: pbTopo,
 	}, nil
 }
 
