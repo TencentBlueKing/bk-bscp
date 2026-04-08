@@ -140,11 +140,10 @@ type TemplateSpec struct {
 
 // ValidateCreate validate template spec when it is created.
 func (t *TemplateSpec) ValidateCreate(kit *kit.Kit, validatePath bool) error {
-	if err := validator.ValidateFileName(kit, t.Name); err != nil {
-		return err
-	}
-
 	if validatePath {
+		if err := validator.ValidateFileName(kit, t.Name); err != nil {
+			return err
+		}
 		if err := ValidatePath(kit, t.Path, Unix); err != nil {
 			return fmt.Errorf("%s err: %v", t.Path, err)
 		}

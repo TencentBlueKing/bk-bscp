@@ -121,10 +121,6 @@ func (t *TemplateRevisionSpec) ValidateCreate(kit *kit.Kit, validatePath bool) e
 		return err
 	}
 
-	if err := validator.ValidateFileName(kit, t.Name); err != nil {
-		return err
-	}
-
 	if err := t.FileType.Validate(kit); err != nil {
 		return err
 	}
@@ -134,6 +130,9 @@ func (t *TemplateRevisionSpec) ValidateCreate(kit *kit.Kit, validatePath bool) e
 	}
 
 	if validatePath {
+		if err := validator.ValidateFileName(kit, t.Name); err != nil {
+			return err
+		}
 		if err := ValidatePath(kit, t.Path, Unix); err != nil {
 			return err
 		}
