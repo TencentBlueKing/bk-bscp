@@ -327,6 +327,7 @@
 
   const handlePageChange = (page: number) => {
     pagination.value.current = page;
+    loadConfigTemplateList();
   };
 
   const handlePageLimitChange = (limit: number) => {
