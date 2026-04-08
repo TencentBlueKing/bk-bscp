@@ -109,6 +109,7 @@ type ProcessSpec struct {
 	ProcNum              uint         `gorm:"column:proc_num" json:"proc_num"`                               // 进程数量
 	FuncName             string       `gorm:"column:func_name" json:"func_name"`                             // 进程二进制文件名
 	NewAlias             string       `gorm:"column:new_alias" json:"new_alias"`                             // 新进程别名
+	AgentStatus          AgentStatus  `gorm:"column:agent_status" json:"agent_status"`                       // agent状态
 }
 
 func (p ProcessInfo) Value() (string, error) {
@@ -200,5 +201,30 @@ func (p CCSyncStatus) Validate() error {
 		return nil
 	default:
 		return errors.New("invalid cc sync status")
+	}
+}
+
+// AgentStatus agent状态
+type AgentStatus string
+
+const (
+	// AgentStatusAbnormal 异常
+	AgentStatusAbnormal AgentStatus = "abnormal"
+	// AgentStatusNormal 正常
+	AgentStatusNormal AgentStatus = "normal"
+)
+
+// String get string value of agent status
+func (p AgentStatus) String() string {
+	return string(p)
+}
+
+// Validate validate agent status is valid or not.
+func (p AgentStatus) Validate() error {
+	switch p {
+	case AgentStatusAbnormal, AgentStatusNormal:
+		return nil
+	default:
+		return errors.New("invalid agent status")
 	}
 }

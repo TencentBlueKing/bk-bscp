@@ -26,6 +26,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -39,15 +40,18 @@ type syncCMDBService struct {
 	tenantID string
 	bizID    int
 	svc      bkcmdb.Service
+	gseSvc   *gse.Service
 	dao      dao.Set
 }
 
 // NewSyncCMDBService 初始化同步cmdb（多租户：tenantID 为空时按单租户 "default" 处理）
-func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service, dao dao.Set) *syncCMDBService {
+func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service,
+	gseSvc *gse.Service, dao dao.Set) *syncCMDBService {
 	return &syncCMDBService{
 		tenantID: tenantID,
 		bizID:    bizID,
 		svc:      svc,
+		gseSvc:   gseSvc,
 		dao:      dao,
 	}
 }
@@ -111,13 +115,59 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			s.bizID, err,
 		)
 	}
-	var hosts []Host
+
+	// 4. 初始化 hosts，默认全部异常
+	hosts := make([]Host, 0, len(listHosts))
 	for _, h := range listHosts {
-		hosts = append(hosts, Host{ID: h.BkHostID, IP: h.BkHostInnerIP, IPV6: h.BkHostInnerIPV6,
-			CloudId: h.BkCloudID, AgentID: h.BkAgentID})
+		hosts = append(hosts, Host{
+			ID:         h.BkHostID,
+			IP:         h.BkHostInnerIP,
+			IPV6:       h.BkHostInnerIPV6,
+			CloudId:    h.BkCloudID,
+			AgentID:    h.BkAgentID,
+			AgentState: table.AgentStatusAbnormal.String(), // 默认异常
+		})
 	}
 
-	// 4. 服务实例
+	// 5. 收集 agentID
+	agentIDs := make([]string, 0, len(listHosts))
+	for _, h := range listHosts {
+		if h.BkAgentID != "" {
+			agentIDs = append(agentIDs, h.BkAgentID)
+		}
+	}
+
+	// 6. 只有在 agentIDs 不为空时才查询
+	var agentStatus []*gse.ListAgentStateData
+	if len(agentIDs) > 0 {
+		agentStatus, err = s.gseSvc.ListAgentState(ctx, &gse.ListAgentStateReq{
+			AgentIDList: agentIDs,
+		})
+		if err != nil {
+			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, len(agentIDs))
+			return err
+		}
+	}
+
+	statusMap := make(map[string]int, len(agentStatus))
+	for _, s := range agentStatus {
+		if s.BkAgentID == "" {
+			continue
+		}
+		statusMap[s.BkAgentID] = s.StatusCode
+	}
+
+	for i := range hosts {
+		agentID := hosts[i].AgentID
+		if agentID == "" {
+			continue
+		}
+		if code, ok := statusMap[agentID]; ok && code == 2 {
+			hosts[i].AgentState = table.AgentStatusNormal.String()
+		}
+	}
+
+	// 7. 服务实例
 	var moduleIDs []int
 	for _, set := range sets {
 		for _, m := range set.Module {
@@ -140,7 +190,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 		})
 	}
 
-	// 5. 进程
+	// 8. 进程
 	procInstBySvcID := make(map[int][]ProcInst)
 	for _, inst := range listSvcInsts {
 		procs, errL := s.svc.ListProcessInstance(ctx, &bkcmdb.ListProcessInstanceReq{
@@ -178,7 +228,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 		}
 	}
 
-	// 6. 拼装
+	// 9. 拼装
 	for si := range sets {
 		for mi := range sets[si].Module {
 			svcList := moduleSvcMap[sets[si].Module[mi].ID]
@@ -279,7 +329,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 // 返回值：
 //   - SyncProcessResult：描述本次同步中新增 / 更新 / 删除的统计信息
 //
-// nolint: funlen
+// nolint: funlen,gocyclo
 func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcmdb.ProcessInfo) (*SyncProcessResult, error) {
 	if len(processes) == 0 {
 		return &SyncProcessResult{}, nil
@@ -406,10 +456,58 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 		}
 	}
 
-	// 5. Module → Host 映射
+	// 5. 收集 agentIDs（顺便去重）
+	agentIDSet := make(map[string]struct{}, len(hosts))
+	agentIDs := make([]string, 0, len(hosts))
+
+	for _, h := range hosts {
+		if h.AgentID == "" {
+			continue
+		}
+		if _, ok := agentIDSet[h.AgentID]; !ok {
+			agentIDSet[h.AgentID] = struct{}{}
+			agentIDs = append(agentIDs, h.AgentID)
+		}
+	}
+
+	// 6. 查询 agent 状态（有才查）
+	var agentStatus []*gse.ListAgentStateData
+	if len(agentIDs) > 0 {
+		var err error
+		agentStatus, err = s.gseSvc.ListAgentState(ctx, &gse.ListAgentStateReq{
+			AgentIDList: agentIDs,
+		})
+		if err != nil {
+			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, len(agentIDs))
+			return nil, err
+		}
+	}
+
+	statusMap := make(map[string]int, len(agentStatus))
+	for _, s := range agentStatus {
+		if s.BkAgentID == "" {
+			continue
+		}
+		statusMap[s.BkAgentID] = s.StatusCode
+	}
+
+	for i := range hosts {
+		hosts[i].AgentState = table.AgentStatusAbnormal.String() // 默认异常
+
+		agentID := hosts[i].AgentID
+		if agentID == "" {
+			continue
+		}
+
+		if code, ok := statusMap[agentID]; ok && code == 2 {
+			hosts[i].AgentState = table.AgentStatusNormal.String()
+		}
+	}
+
+	// 7. Module → Host 映射
 	moduleHostMap := buildModuleHosts(allSvcInsts, hosts)
 
-	// 6. 构建 Set → Module
+	// 8. 构建 Set → Module
 	listModules, err := s.fetchAllModules(ctx, 0)
 	if err != nil {
 		return nil, err
@@ -435,7 +533,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 
 	setIDs = tools.UniqInts(setIDs)
 
-	// 7. 拉取 Set
+	// 9. 拉取 Set
 	setsResp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
 		BkBizID: s.bizID,
 		Fields: []string{
@@ -702,6 +800,7 @@ func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Pro
 							PrevData:             "{}",
 							ProcNum:              uint(proc.ProcNum),
 							FuncName:             proc.FuncName,
+							AgentStatus:          table.AgentStatus(h.AgentState),
 						},
 						Revision: &table.Revision{
 							CreatedAt: now,
@@ -1135,9 +1234,14 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	nameChanged := newP.Spec.Alias != oldP.Spec.Alias
 	infoChanged := !equal
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
+	agentStatusChanged := newP.Spec.AgentStatus != "" && newP.Spec.AgentStatus != oldP.Spec.AgentStatus
 
-	if !nameChanged && !infoChanged && !numChanged {
+	if !nameChanged && !infoChanged && !numChanged && !agentStatusChanged {
 		return result, nil
+	}
+
+	if agentStatusChanged {
+		oldP.Spec.AgentStatus = newP.Spec.AgentStatus
 	}
 
 	// 是否安全

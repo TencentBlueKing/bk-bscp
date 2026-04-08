@@ -412,7 +412,7 @@ func (c *cmdbResourceWatcher) handleProcessCreateEventsBatch(kt *kit.Kit, events
 			continue
 		}
 
-		svc := cmdb.NewSyncCMDBService(kt.TenantID, bizID, c.cmdb, c.dao)
+		svc := cmdb.NewSyncCMDBService(kt.TenantID, bizID, c.cmdb, c.gse, c.dao)
 		res, err := svc.SyncByProcessIDs(kt.Ctx, procs)
 		if err != nil {
 			logs.Errorf("[CMDB][ProcessSync] create sync failed, bizID=%d, err=%v", bizID, err)
@@ -498,7 +498,7 @@ func (c *cmdbResourceWatcher) handleProcessUpdateEventsBatch(kt *kit.Kit, events
 			continue
 		}
 
-		svc := cmdb.NewSyncCMDBService(kt.TenantID, bizID, c.cmdb, c.dao)
+		svc := cmdb.NewSyncCMDBService(kt.TenantID, bizID, c.cmdb, c.gse, c.dao)
 		res, err := svc.UpdateProcess(kt.Ctx, procs)
 		if err != nil {
 			logs.Errorf("[CMDB][ProcessSync] update sync failed, bizID=%d, err=%v", bizID, err)
