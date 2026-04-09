@@ -136,7 +136,7 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		return fmt.Errorf("render full path failed: %w", err)
 	}
 
-	builder := &ScriptBuilder{FileMode: fileMode}
+	builder := &ScriptBuilder{FileMode: fileMode, MaxBackups: e.GseConf.MaxBackups}
 	script, err := builder.BuildConfigPushScript(
 		base64.StdEncoding.EncodeToString([]byte(commonPayload.ConfigPayload.ConfigContent)),
 		fullPath,

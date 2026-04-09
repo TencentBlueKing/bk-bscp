@@ -1582,6 +1582,8 @@ type GSE struct {
 	WindowsScriptStoreDir string `yaml:"windows_script_store_dir"`
 	// GenerateConfigTimeout is the timeout for generating gse agent configuration.
 	GenerateConfigTimeout time.Duration `yaml:"generate_config_timeout"`
+	// MaxBackups is the maximum number of script backups to keep.
+	MaxBackups int `yaml:"max_backups"`
 }
 
 func (g *GSE) trySetDefault() {
