@@ -109,9 +109,9 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get auth conf")
 	}
-	if err := validateAuthConf(resp); err != nil {
-		klog.ErrorS(err, "validate auth conf failed")
-		return nil, fmt.Errorf("get auth conf invalid, err: %v", err)
+	if validateErr := validateAuthConf(resp); validateErr != nil {
+		klog.ErrorS(validateErr, "validate auth conf failed")
+		return nil, fmt.Errorf("get auth conf invalid, err: %v", validateErr)
 	}
 
 	loginAuth := resp.GetLoginAuth()
@@ -202,9 +202,6 @@ func validateAuthConf(resp *pbas.GetAuthConfResp) error {
 		if strings.TrimSpace(loginAuth.GetHost()) == "" {
 			missingFields = append(missingFields, "loginAuth.host")
 		}
-		if strings.TrimSpace(loginAuth.GetProvider()) == "" {
-			missingFields = append(missingFields, "loginAuth.provider")
-		}
 	}
 
 	esb := resp.GetEsb()
@@ -234,9 +231,6 @@ func validateAuthConf(resp *pbas.GetAuthConfResp) error {
 		}
 		if strings.TrimSpace(cmdb.GetAppSecret()) == "" {
 			missingFields = append(missingFields, "cmdb.appSecret")
-		}
-		if strings.TrimSpace(cmdb.GetBkUserName()) == "" {
-			missingFields = append(missingFields, "cmdb.bkUserName")
 		}
 	}
 
