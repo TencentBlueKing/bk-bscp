@@ -17,7 +17,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -107,33 +109,46 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get auth conf")
 	}
+	if err := validateAuthConf(resp); err != nil {
+		klog.ErrorS(err, "validate auth conf failed")
+		return nil, fmt.Errorf("get auth conf invalid, err: %v", err)
+	}
+
+	loginAuth := resp.GetLoginAuth()
+	esb := resp.GetEsb()
+	cmdbConf := resp.GetCmdb()
 
 	conf := &cc.LoginAuthSettings{
-		Host:      resp.LoginAuth.Host,
-		InnerHost: resp.LoginAuth.InnerHost,
-		Provider:  resp.LoginAuth.Provider,
+		Host:      loginAuth.GetHost(),
+		InnerHost: loginAuth.GetInnerHost(),
+		Provider:  loginAuth.GetProvider(),
+	}
+
+	esbTLS := cc.TLSConfig{}
+	if esb.GetTls() != nil {
+		esbTLS = cc.TLSConfig{
+			InsecureSkipVerify: esb.GetTls().GetInsecureSkipVerify(),
+			CertFile:           esb.GetTls().GetCertFile(),
+			KeyFile:            esb.GetTls().GetKeyFile(),
+			CAFile:             esb.GetTls().GetCaFile(),
+			Password:           esb.GetTls().GetPassword(),
+		}
 	}
 
 	// init space manager
 	esbSetting := &cc.Esb{
-		Endpoints: resp.Esb.Endpoints,
-		AppCode:   resp.Esb.AppCode,
-		AppSecret: resp.Esb.AppSecret,
-		User:      resp.Esb.User,
-		TLS: cc.TLSConfig{
-			InsecureSkipVerify: resp.Esb.Tls.InsecureSkipVerify,
-			CertFile:           resp.Esb.Tls.CertFile,
-			KeyFile:            resp.Esb.Tls.KeyFile,
-			CAFile:             resp.Esb.Tls.CaFile,
-			Password:           resp.Esb.Tls.Password,
-		},
+		Endpoints: esb.GetEndpoints(),
+		AppCode:   esb.GetAppCode(),
+		AppSecret: esb.GetAppSecret(),
+		User:      esb.GetUser(),
+		TLS:       esbTLS,
 	}
 
 	cmdbCfg := &cc.CMDBConfig{
-		Host:       resp.Cmdb.GetHost(),
-		AppCode:    resp.Cmdb.GetAppCode(),
-		AppSecret:  resp.Cmdb.GetAppSecret(),
-		BkUserName: resp.Cmdb.GetBkUserName(),
+		Host:       cmdbConf.GetHost(),
+		AppCode:    cmdbConf.GetAppCode(),
+		AppSecret:  cmdbConf.GetAppSecret(),
+		BkUserName: cmdbConf.GetBkUserName(),
 	}
 
 	authLoginClient := bkpaas.NewAuthLoginClient(conf)
@@ -171,6 +186,71 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	}
 
 	return authz, nil
+}
+
+func validateAuthConf(resp *pbas.GetAuthConfResp) error {
+	if resp == nil {
+		return fmt.Errorf("get auth conf response is nil")
+	}
+
+	missingFields := make([]string, 0)
+
+	loginAuth := resp.GetLoginAuth()
+	if loginAuth == nil {
+		missingFields = append(missingFields, "loginAuth")
+	} else {
+		if strings.TrimSpace(loginAuth.GetHost()) == "" {
+			missingFields = append(missingFields, "loginAuth.host")
+		}
+		if strings.TrimSpace(loginAuth.GetProvider()) == "" {
+			missingFields = append(missingFields, "loginAuth.provider")
+		}
+	}
+
+	esb := resp.GetEsb()
+	if esb == nil {
+		missingFields = append(missingFields, "esb")
+	} else {
+		if len(esb.GetEndpoints()) == 0 {
+			missingFields = append(missingFields, "esb.endpoints")
+		}
+		if strings.TrimSpace(esb.GetAppCode()) == "" {
+			missingFields = append(missingFields, "esb.appCode")
+		}
+		if strings.TrimSpace(esb.GetAppSecret()) == "" {
+			missingFields = append(missingFields, "esb.appSecret")
+		}
+	}
+
+	cmdb := resp.GetCmdb()
+	if cmdb == nil {
+		missingFields = append(missingFields, "cmdb")
+	} else {
+		if strings.TrimSpace(cmdb.GetHost()) == "" {
+			missingFields = append(missingFields, "cmdb.host")
+		}
+		if strings.TrimSpace(cmdb.GetAppCode()) == "" {
+			missingFields = append(missingFields, "cmdb.appCode")
+		}
+		if strings.TrimSpace(cmdb.GetAppSecret()) == "" {
+			missingFields = append(missingFields, "cmdb.appSecret")
+		}
+		if strings.TrimSpace(cmdb.GetBkUserName()) == "" {
+			missingFields = append(missingFields, "cmdb.bkUserName")
+		}
+	}
+
+	if len(missingFields) > 0 {
+		return fmt.Errorf("missing required auth config fields: %s", strings.Join(missingFields, ", "))
+	}
+
+	cmdbHost := strings.TrimSpace(cmdb.GetHost())
+	parsedURL, err := url.Parse(cmdbHost)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return fmt.Errorf("invalid cmdb.host: %q, must be full url with scheme", cmdbHost)
+	}
+
+	return nil
 }
 
 type authorizer struct {

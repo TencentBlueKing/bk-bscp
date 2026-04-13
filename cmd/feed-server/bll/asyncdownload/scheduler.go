@@ -101,6 +101,7 @@ func NewScheduler(mc *metric, redLock *lock.RedisLock, gseService *gse.Service) 
 
 	logs.Infof("server agent id: %s, server container id: %s", serverAgentID, serverContainerID)
 	return &Scheduler{
+		gseService:        gseService,
 		ctx:               ctx,
 		cancel:            cancel,
 		bds:               bds,
