@@ -198,10 +198,8 @@ func validateAuthConf(resp *pbas.GetAuthConfResp) error {
 	loginAuth := resp.GetLoginAuth()
 	if loginAuth == nil {
 		missingFields = append(missingFields, "loginAuth")
-	} else {
-		if strings.TrimSpace(loginAuth.GetHost()) == "" {
-			missingFields = append(missingFields, "loginAuth.host")
-		}
+	} else if strings.TrimSpace(loginAuth.GetHost()) == "" {
+		missingFields = append(missingFields, "loginAuth.host")
 	}
 
 	esb := resp.GetEsb()
