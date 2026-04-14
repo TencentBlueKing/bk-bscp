@@ -121,42 +121,66 @@ func (gse *Service) AsyncExtensionsTransferFile(ctx context.Context, req *Transf
 	// 2. if targetContainerID is set, means target is container, else is node
 	url := fmt.Sprintf(asyncExtensionsTransferFile, gse.host)
 
-	resp := new(CommonTaskResp)
+	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
+	if resp.Code != 0 {
+		return nil, fmt.Errorf("create transfer file task failed, code=%d, message=%s", resp.Code, resp.Message)
+	}
 
-	return &resp.Data, nil
+	data := new(CommonTaskRespData)
+	if err := resp.Decode(data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // AsyncTerminateTransferFile 终止文件分发任务, 可支持扩展型目标, 包括容器和主机
 func (gse *Service) AsyncTerminateTransferFile(ctx context.Context, req *TerminateTransferFileTaskReq) (*CommonTaskRespData, error) {
 	url := fmt.Sprintf(asyncTerminateTransferFile, gse.host)
 
-	resp := new(CommonTaskRespData)
+	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
+	if resp.Code != 0 {
+		return nil, fmt.Errorf("terminate transfer file task failed, code=%d, message=%s", resp.Code, resp.Message)
+	}
 
-	return resp, nil
+	data := new(CommonTaskRespData)
+	if err := resp.Decode(data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // GetExtensionsTransferFileResult 查询文件传输结果, 可支持扩展型目标, 包括容器和主机
 func (gse *Service) GetExtensionsTransferFileResult(ctx context.Context, req *GetTransferFileResultReq) (*TransferFileResultData, error) {
 	url := fmt.Sprintf(getExtensionsTransferFileResult, gse.host)
 
-	resp := new(TransferFileResultData)
+	resp := new(GESResponse)
 	if err := gse.doRequest(ctx, POST, url, req, resp); err != nil {
 		return nil, err
 	}
+	if resp.Code != 0 {
+		return nil, fmt.Errorf("get transfer file result failed, code=%d, message=%s", resp.Code, resp.Message)
+	}
 
-	return resp, nil
+	data := new(TransferFileResultData)
+	if err := resp.Decode(data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // GetTransferFileResultReq defines get transfer file result request
 type GetTransferFileResultReq struct {
-	TaskID string      `json:"task_id"` // 启动任务时返回的任务 ID
-	Agents []AgentList `json:"agents"`  // 目标节点 Agent ID 列表, 单 ID 最大长度不超过64个字符
+	TaskID string      `json:"task_id"`          // 启动任务时返回的任务 ID
+	Agents []AgentList `json:"agents,omitempty"` // 目标节点 Agent ID 列表, 单 ID 最大长度不超过64个字符
 }
 
 type AgentList struct {
