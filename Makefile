@@ -79,17 +79,6 @@ install: pre
 	@cp -rf ${PRO_DIR}/scripts/install/stop_all.sh ${OUTPUT_DIR}/install/
 	@echo -e "\e[34;1mPackaging Install Tools Done\n\033[0m"
 
-api: pre
-	@echo -e "\e[34;1mPackaging API Docs...\033[0m"
-	@mkdir -p ${OUTPUT_DIR}/api/
-	@mkdir -p ${OUTPUT_DIR}/api/api-server
-	@cp -f api/api-docs/api-server/api/bk_apigw_resources.yml ${OUTPUT_DIR}/api/api-server
-	@tar -czf ${OUTPUT_DIR}/api/api-server/zh.tgz -C api/api-docs/api-server/docs zh
-	@mkdir -p ${OUTPUT_DIR}/api/feed-server
-	@cp -f api/api-docs/feed-server/api/bk_apigw_resources.yml ${OUTPUT_DIR}/api/feed-server
-	@tar -czf ${OUTPUT_DIR}/api/feed-server/zh.tgz -C api/api-docs/feed-server/docs zh
-	@echo -e "\e[34;1mPackaging API Docs Done\n\033[0m"
-
 pb:
 	@echo -e "\e[34;1mFormat proto...\033[0m"
 	@find pkg/protocol -type f -name "*.proto"|xargs clang-format -i --style="{BasedOnStyle: Google, ColumnLimit: 120}"
@@ -140,10 +129,10 @@ test: pre
 mock: pre
 	@cd ${PRO_DIR}/test/mock/repo && make
 
-all: pre validate pb install test api mock build_bscp
+all: pre validate pb install test mock build_bscp
 	@echo -e "\e[34;1mBuild All Success!\n\033[0m"
 
-server: validate api
+server: validate
 	@echo -e "\e[34;1mMaking Server...\n\033[0m"
 	@echo "version: ${VERSION}" > ${OUTPUT_DIR}/VERSION
 	@cp -rf ${PRO_DIR}/server-CHANGELOG.md ${OUTPUT_DIR}

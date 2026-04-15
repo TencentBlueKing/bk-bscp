@@ -28,3 +28,33 @@ jobs:
           version: v2.8.0
           args: --timeout=5m
           working-directory: .
+
+  generated-files-check:
+    name: generated-files-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      - name: install generation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: regenerate pb and docs
+        run: |
+          export PATH="${{ github.workspace }}/bin/proto:$(go env GOPATH)/bin:$PATH"
+          make init
+          make pb docs
+
+      - name: verify generated files are up to date
+        run: |
+          if ! git diff --exit-code; then
+            echo "Generated files are out of date. Please run 'make pb docs' and commit the changes."
+            exit 1
+          fi
