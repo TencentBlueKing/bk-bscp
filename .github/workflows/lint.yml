@@ -46,15 +46,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format
 
-      - name: regenerate pb and docs
+      - name: regenerate pb and proto docs
         run: |
           export PATH="${{ github.workspace }}/bin/proto:$(go env GOPATH)/bin:$PATH"
           make init
-          make pb docs
+          make pb api_docs bkapigw_docs normalize_proto_docs
 
       - name: verify generated files are up to date
         run: |
           if ! git diff --exit-code; then
-            echo "Generated files are out of date. Please run 'make pb docs' and commit the changes."
+            echo "Generated proto files are out of date. Please run 'make pb api_docs bkapigw_docs normalize_proto_docs' and commit the changes."
             exit 1
           fi

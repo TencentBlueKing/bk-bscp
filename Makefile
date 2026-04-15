@@ -197,10 +197,8 @@ ${swagger}:
 	@mkdir -p ${PREFIX}/bin
 	@wget -q -O ${swagger} https://github.com/ifooth/go-swagger/releases/download/v0.31.0-r1/swagger && chmod a+x ${swagger}
 
-.PHONY: markdown_docs
-markdown_docs: ${swag} ${swagger}
-	${swag} fmt -d ./cmd
-	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
+.PHONY: normalize_proto_docs
+normalize_proto_docs:
 	# 修正swagger.json中的default值（字符串布尔 -> JSON布尔）
 	sed -i 's/"default": "false"/"default": false/g' ./docs/swagger/bkapigw.swagger.json
 	sed -i 's/"default": "true"/"default": true/g' ./docs/swagger/bkapigw.swagger.json
@@ -213,6 +211,11 @@ markdown_docs: ${swag} ${swagger}
 	@for f in ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json; do \
 		python3 -c "import json,sys;f=sys.argv[1];d=json.load(open(f));n=d.get('definitions',{}).get('pbctBizTopoNode',{}).get('properties',{}).get('child',{});n['items']={'type':'object','description':'recursive child node'};json.dump(d,open(f,'w'),ensure_ascii=False,indent=2);print(f+' fixed')" "$$f"; \
 	done
+
+.PHONY: markdown_docs
+markdown_docs: ${swag} ${swagger} normalize_proto_docs
+	${swag} fmt -d ./cmd
+	${swag} init -g ./cmd/api-server/api_server.go  --parseDependency --parseInternal --outputTypes json,json -o ./docs/swagger/apiserver
 	${swagger} validate ./docs/swagger/bkapigw.swagger.json
 	# 合并bkapigw和apiserver的swagger.json
 	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json
