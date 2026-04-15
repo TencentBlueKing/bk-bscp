@@ -61,7 +61,7 @@ init:
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.1
 
 	@echo Download gotext
-	go install golang.org/x/text/cmd/gotext@v0.20.0
+	go install golang.org/x/text/cmd/gotext@v0.36.0
 
 .PHONY: tidy
 tidy:
