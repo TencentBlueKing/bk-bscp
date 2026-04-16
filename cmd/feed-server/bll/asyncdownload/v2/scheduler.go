@@ -1,5 +1,5 @@
 // * Tencent is pleased to support the open source community by making Blueking Container Service available.
-//  * Copyright (C) 20\d\d THL A29 Limited, a Tencent company. All rights reserved.
+//  * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
 //  * Licensed under the MIT License (the "License"); you may not use this file except
 //  * in compliance with the License. You may obtain a copy of the License at
 //  * http://opensource.org/licenses/MIT
@@ -8,7 +8,7 @@
 //  * either express or implied. See the License for the specific language governing permissions and
 //  * limitations under the License.
 
-package asyncdownload
+package v2
 
 import (
 	"context"
@@ -27,13 +27,13 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-type v2Scheduler struct {
-	store             *v2Store
-	gseService        transferFileClient
-	provider          sourceDownloader
+type Scheduler struct {
+	store             *Store
+	gseService        TransferFileClient
+	provider          SourceDownloader
 	redLock           *lock.RedisLock
 	fileLock          *lock.FileLock
-	metric            *metric
+	metric            Metrics
 	instance          string
 	serverAgentID     string
 	serverContainerID string
@@ -42,17 +42,17 @@ type v2Scheduler struct {
 	cfg               cc.AsyncDownloadV2
 }
 
-func newV2Scheduler(store *v2Store, gseService transferFileClient, provider sourceDownloader, redLock *lock.RedisLock,
-	fileLock *lock.FileLock, mc *metric, serverAgentID, serverContainerID, agentUser, cacheDir string,
-	cfg cc.AsyncDownloadV2) *v2Scheduler {
-	return &v2Scheduler{
+func NewScheduler(store *Store, gseService TransferFileClient, provider SourceDownloader, redLock *lock.RedisLock,
+	fileLock *lock.FileLock, mc Metrics, serverAgentID, serverContainerID, agentUser, cacheDir string,
+	cfg cc.AsyncDownloadV2) *Scheduler {
+	return &Scheduler{
 		store:             store,
 		gseService:        gseService,
 		provider:          provider,
 		redLock:           redLock,
 		fileLock:          fileLock,
 		metric:            mc,
-		instance:          buildTargetID(serverAgentID, serverContainerID),
+		instance:          BuildTargetID(serverAgentID, serverContainerID),
 		serverAgentID:     serverAgentID,
 		serverContainerID: serverContainerID,
 		agentUser:         agentUser,
@@ -61,29 +61,25 @@ func newV2Scheduler(store *v2Store, gseService transferFileClient, provider sour
 	}
 }
 
-func (s *v2Scheduler) enabled() bool {
+func (s *Scheduler) Enabled() bool {
 	return s != nil
 }
 
-func (s *v2Scheduler) processDueBatches(ctx context.Context) (int, error) {
-	batchIDs, err := s.store.listDueBatchIDs(ctx, time.Now(), s.cfg.MaxDueBatchesPerTick)
+func (s *Scheduler) ProcessDueBatches(ctx context.Context) (int, error) {
+	batchIDs, err := s.store.ListDueBatchIDs(ctx, time.Now(), s.cfg.MaxDueBatchesPerTick)
 	if err != nil {
 		return 0, err
 	}
 	if s.metric != nil {
-		if s.metric.batchDueBacklog != nil {
-			s.metric.batchDueBacklog.Set(float64(len(batchIDs)))
-		}
-		if s.metric.batchOldestDueAgeSeconds != nil {
-			if len(batchIDs) == 0 {
-				s.metric.batchOldestDueAgeSeconds.Set(0)
-			} else if batch, batchErr := s.store.getBatch(ctx, batchIDs[0]); batchErr == nil {
-				s.metric.batchOldestDueAgeSeconds.Set(time.Since(batch.OpenUntil).Seconds())
-			}
+		s.metric.SetV2DueBacklog(len(batchIDs))
+		if len(batchIDs) == 0 {
+			s.metric.SetV2OldestDueAgeSeconds(0)
+		} else if batch, batchErr := s.store.GetBatch(ctx, batchIDs[0]); batchErr == nil {
+			s.metric.SetV2OldestDueAgeSeconds(time.Since(batch.OpenUntil).Seconds())
 		}
 	}
 	for _, batchID := range batchIDs {
-		if err := s.processBatch(ctx, batchID); err != nil {
+		if err := s.ProcessBatch(ctx, batchID); err != nil {
 			logs.Errorf("process v2 batch %s failed, err: %v", batchID, err)
 		}
 	}
@@ -109,14 +105,14 @@ func splitTargets(targets []string, shardSize int) [][]string {
 	return shards
 }
 
-func (s *v2Scheduler) processBatch(ctx context.Context, batchID string) error {
+func (s *Scheduler) ProcessBatch(ctx context.Context, batchID string) error {
 	lockKey := fmt.Sprintf("AsyncDownloadBatchDispatchV2:%s", batchID)
 	if !s.redLock.TryAcquire(lockKey) {
 		return nil
 	}
 	defer s.redLock.Release(lockKey)
 
-	batch, err := s.store.getBatch(ctx, batchID)
+	batch, err := s.store.GetBatch(ctx, batchID)
 	if err != nil {
 		return err
 	}
@@ -133,39 +129,43 @@ func (s *v2Scheduler) processBatch(ctx context.Context, batchID string) error {
 	batch.DispatchLeaseUntil = now.Add(time.Duration(s.cfg.DispatchLeaseSeconds) * time.Second)
 	batch.DispatchAttempt++
 	batch.OpenUntil = time.Time{}
-	if err := s.store.saveBatch(ctx, batch); err != nil {
-		return err
+	if saveErr := s.store.SaveBatch(ctx, batch); saveErr != nil {
+		return saveErr
 	}
-	s.metric.observeV2BatchTransition(batch, oldState)
-	_ = s.store.clearOpenBatchID(ctx, buildBatchScopeKey(
-		buildFileVersionKey(batch.BizID, batch.AppID, batch.FilePath, batch.FileName, batch.FileSignature),
+	s.metric.ObserveV2BatchTransition(batch, oldState)
+	_ = s.store.ClearOpenBatchID(ctx, BuildBatchScopeKey(
+		BuildFileVersionKey(batch.BizID, batch.AppID, batch.FilePath, batch.FileName, batch.FileSignature),
 		batch.TargetUser, batch.TargetFileDir))
 
-	targets, err := s.store.listBatchTargets(ctx, batchID)
+	targets, err := s.store.ListBatchTargets(ctx, batchID)
 	if err != nil {
 		return err
 	}
 	shards := splitTargets(targets, s.cfg.ShardSize)
 	batch.ShardCount = len(shards)
-	if err := s.store.saveBatch(ctx, batch); err != nil {
+	if err := s.store.SaveBatch(ctx, batch); err != nil {
 		return err
 	}
-	logs.Infof("v2 batch dispatch, biz_id=%d app_id=%d batch_id=%s file=%s/%s shard_count=%d",
-		batch.BizID, batch.AppID, batch.BatchID, batch.FilePath, batch.FileName, batch.ShardCount)
+	logs.Infof(
+		"v2 batch dispatch, biz_id=%d app_id=%d batch_id=%s file=%s/%s shard_count=%d "+
+			"target_user=%s target_dir=%s target_count=%d dispatch_attempt=%d dispatch_lease_until=%s",
+		batch.BizID, batch.AppID, batch.BatchID, batch.FilePath, batch.FileName, batch.ShardCount,
+		batch.TargetUser, batch.TargetFileDir, batch.TargetCount, batch.DispatchAttempt,
+		batch.DispatchLeaseUntil.Format(time.RFC3339Nano))
 
 	for _, shard := range shards {
 		mapping, err := s.dispatchShard(ctx, batch, shard)
 		if err != nil {
 			logs.Errorf("dispatch batch %s shard failed, err: %v", batchID, err)
 		}
-		if err := s.store.recordBatchDispatch(ctx, batchID, mapping); err != nil {
+		if err := s.store.RecordBatchDispatch(ctx, batchID, mapping); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *v2Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownloadV2Batch,
+func (s *Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownloadV2Batch,
 	targetIDs []string) (map[string]string, error) {
 	start := time.Now()
 	mapping := make(map[string]string, len(targetIDs))
@@ -198,7 +198,7 @@ func (s *v2Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownl
 
 	targetAgents := make([]gse.TransferFileAgent, 0, len(targetIDs))
 	for _, targetID := range targetIDs {
-		agentID, containerID := parseTargetID(targetID)
+		agentID, containerID := ParseTargetID(targetID)
 		targetAgents = append(targetAgents, gse.TransferFileAgent{
 			BkAgentID:     agentID,
 			BkContainerID: containerID,
@@ -248,8 +248,8 @@ func (s *v2Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownl
 	return mapping, nil
 }
 
-func (s *v2Scheduler) refreshDispatchingBatches(ctx context.Context) error {
-	batchIDs, err := s.store.listDispatchingBatchIDs(ctx)
+func (s *Scheduler) refreshDispatchingBatches(ctx context.Context) error {
+	batchIDs, err := s.store.ListDispatchingBatchIDs(ctx)
 	if err != nil {
 		return err
 	}
@@ -261,8 +261,8 @@ func (s *v2Scheduler) refreshDispatchingBatches(ctx context.Context) error {
 	return nil
 }
 
-func (s *v2Scheduler) refreshDispatchingBatch(ctx context.Context, batchID string) error {
-	batch, err := s.store.getBatch(ctx, batchID)
+func (s *Scheduler) refreshDispatchingBatch(ctx context.Context, batchID string) error {
+	batch, err := s.store.GetBatch(ctx, batchID)
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (s *v2Scheduler) refreshDispatchingBatch(ctx context.Context, batchID strin
 		return nil
 	}
 
-	dispatchState, err := s.store.listBatchDispatchState(ctx, batchID)
+	dispatchState, err := s.store.ListBatchDispatchState(ctx, batchID)
 	if err != nil {
 		return err
 	}
@@ -290,8 +290,9 @@ func (s *v2Scheduler) refreshDispatchingBatch(ctx context.Context, batchID strin
 		}
 		sort.Strings(taskIDs)
 		for _, gseTaskID := range taskIDs {
-			resp, err := s.gseService.GetExtensionsTransferFileResult(kt.Ctx, &gse.GetTransferFileResultReq{TaskID: gseTaskID})
-			if err != nil {
+			resp, resultErr := s.gseService.GetExtensionsTransferFileResult(kt.Ctx,
+				&gse.GetTransferFileResultReq{TaskID: gseTaskID})
+			if resultErr != nil {
 				continue
 			}
 			for _, result := range resp.Result {
@@ -303,14 +304,14 @@ func (s *v2Scheduler) refreshDispatchingBatch(ctx context.Context, batchID strin
 						if mappedTaskID != gseTaskID {
 							continue
 						}
-						if err := s.updateTaskStateByTarget(ctx, batchID, targetID,
-							types.AsyncDownloadJobStatusFailed, result.ErrorMsg); err != nil {
-							return err
+						if updateErr := s.updateTaskStateByTarget(ctx, batchID, targetID,
+							types.AsyncDownloadJobStatusFailed, result.ErrorMsg); updateErr != nil {
+							return updateErr
 						}
 					}
 					continue
 				}
-				targetID := buildTargetID(result.Content.DestAgentID, result.Content.DestContainerID)
+				targetID := BuildTargetID(result.Content.DestAgentID, result.Content.DestContainerID)
 				if dispatchState[targetID] != gseTaskID {
 					continue
 				}
@@ -341,22 +342,22 @@ func (s *v2Scheduler) refreshDispatchingBatch(ctx context.Context, batchID strin
 	if runningCount == 0 && pendingCount == 0 {
 		oldState := batch.State
 		batch.State = deriveTerminalBatchState(successCount, failedCount, timeoutCount)
-		if err := s.store.saveBatch(ctx, batch); err != nil {
+		if err := s.store.SaveBatch(ctx, batch); err != nil {
 			return err
 		}
-		s.metric.observeV2BatchTransition(batch, oldState)
+		s.metric.ObserveV2BatchTransition(batch, oldState)
 		return s.finalizeCompletedBatch(ctx, batch)
 	}
 
 	if !oldLeaseUntil.IsZero() && time.Now().After(oldLeaseUntil) {
-		return s.repairTerminalBatch(ctx, batchID, types.AsyncDownloadBatchStatePartial)
+		return s.RepairTerminalBatch(ctx, batchID, types.AsyncDownloadBatchStatePartial)
 	}
 	batch.DispatchHeartbeatAt = time.Now()
 	batch.DispatchLeaseUntil = batch.DispatchHeartbeatAt.Add(time.Duration(s.cfg.DispatchLeaseSeconds) * time.Second)
-	return s.store.saveBatch(ctx, batch)
+	return s.store.SaveBatch(ctx, batch)
 }
 
-func (s *v2Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string) error {
+func (s *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string) error {
 	if s.provider == nil {
 		return nil
 	}
@@ -384,14 +385,20 @@ func (s *v2Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature stri
 	return file.Sync()
 }
 
-func (s *v2Scheduler) observeShardDispatch(status string, start time.Time) {
-	if s.metric == nil {
-		return
+func (s *Scheduler) observeShardDispatch(status string, start time.Time) {
+	if s.metric != nil {
+		s.metric.ObserveV2ShardDispatch(status, time.Since(start))
 	}
-	if s.metric.shardDispatchCounter != nil {
-		s.metric.shardDispatchCounter.WithLabelValues(status).Inc()
-	}
-	if s.metric.shardDurationSeconds != nil {
-		s.metric.shardDurationSeconds.WithLabelValues(status).Observe(time.Since(start).Seconds())
-	}
+}
+
+func (s *Scheduler) Store() *Store {
+	return s.store
+}
+
+func (s *Scheduler) Metrics() Metrics {
+	return s.metric
+}
+
+func (s *Scheduler) GSEService() TransferFileClient {
+	return s.gseService
 }

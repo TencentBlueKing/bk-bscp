@@ -22,6 +22,7 @@ import (
 
 	prm "github.com/prometheus/client_golang/prometheus"
 
+	v2pkg "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/asyncdownload/v2"
 	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
@@ -42,7 +43,7 @@ func NewService(cs *clientset.ClientSet, mc *metric, redLock *lock.RedisLock) (*
 		redis:   cs.Redis(),
 		redLock: redLock,
 		metric:  mc,
-		v2:      newV2Service(cs.Redis(), redLock, mc, cc.FeedServer().GSE.AsyncDownloadV2),
+		v2:      v2pkg.NewService(cs.Redis(), redLock, mc, cc.FeedServer().GSE.AsyncDownloadV2),
 	}, nil
 }
 
@@ -52,7 +53,7 @@ type Service struct {
 	redis   bedis.Client
 	redLock *lock.RedisLock
 	metric  *metric
-	v2      *v2Service
+	v2      *v2pkg.Service
 }
 
 // CreateAsyncDownloadTask creates a new async download task.
@@ -60,13 +61,13 @@ func (ad *Service) CreateAsyncDownloadTask(kt *kit.Kit, bizID, appID uint32, fil
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
 	start := time.Now()
 	mode := "v1"
-	if ad.v2 != nil && ad.v2.enabled() {
+	if ad.v2 != nil && ad.v2.Enabled() {
 		mode = "v2"
 	}
 	logs.CtxInfof(kt.Ctx, "create async download task started, biz:%d, app:%d, file:%s, target:%s:%s, target_user:%s, target_dir:%s, mode:%s",
 		bizID, appID, path.Join(filePath, fileName), targetAgentID, targetContainerID, targetUser, targetDir, mode)
-	if ad.v2 != nil && ad.v2.enabled() {
-		taskID, err := ad.v2.createTask(kt, bizID, appID, filePath, fileName,
+	if ad.v2 != nil && ad.v2.Enabled() {
+		taskID, err := ad.v2.CreateTask(kt, bizID, appID, filePath, fileName,
 			targetAgentID, targetContainerID, targetUser, targetDir, signature)
 		if err != nil {
 			logs.CtxErrorf(kt.Ctx, "create async download task failed, biz:%d, app:%d, file:%s, mode:%s, duration_ms:%d, err:%v",
@@ -118,8 +119,8 @@ func (ad *Service) CreateAsyncDownloadTask(kt *kit.Kit, bizID, appID uint32, fil
 // GetAsyncDownloadTask get async download task record.
 func (ad *Service) GetAsyncDownloadTask(kt *kit.Kit, bizID uint32, taskID string) (
 	*types.AsyncDownloadTask, error) {
-	if ad.v2 != nil && ad.v2.enabled() {
-		if task, err := ad.v2.getAsyncDownloadTask(kt.Ctx, taskID); err == nil {
+	if ad.v2 != nil && ad.v2.Enabled() {
+		if task, err := ad.v2.GetAsyncDownloadTask(kt.Ctx, taskID); err == nil {
 			return task, nil
 		}
 	}
@@ -147,8 +148,8 @@ func (ad *Service) GetAsyncDownloadTask(kt *kit.Kit, bizID uint32, taskID string
 // task is in instance level, so do not need to lock it.
 func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID string) (
 	string, error) {
-	if ad.v2 != nil && ad.v2.enabled() {
-		if status, err := ad.v2.getTaskStatus(kt.Ctx, taskID); err == nil {
+	if ad.v2 != nil && ad.v2.Enabled() {
+		if status, err := ad.v2.GetTaskStatus(kt.Ctx, taskID); err == nil {
 			return status, nil
 		}
 	}

@@ -1,5 +1,5 @@
 // * Tencent is pleased to support the open source community by making Blueking Container Service available.
-//  * Copyright (C) 20\d\d THL A29 Limited, a Tencent company. All rights reserved.
+//  * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
 //  * Licensed under the MIT License (the "License"); you may not use this file except
 //  * in compliance with the License. You may obtain a copy of the License at
 //  * http://opensource.org/licenses/MIT
@@ -8,7 +8,7 @@
 //  * either express or implied. See the License for the specific language governing permissions and
 //  * limitations under the License.
 
-package asyncdownload
+package v2
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/jsoni"
 )
 
-type v2Store struct {
+type Store struct {
 	bds bedis.Client
 	cfg cc.AsyncDownloadV2
 
@@ -33,51 +33,51 @@ type v2Store struct {
 	saveBatchHook  func(batch *types.AsyncDownloadV2Batch, call int) error
 }
 
-func newV2Store(bds bedis.Client, cfg cc.AsyncDownloadV2) *v2Store {
-	return &v2Store{bds: bds, cfg: cfg}
+func NewStore(bds bedis.Client, cfg cc.AsyncDownloadV2) *Store {
+	return &Store{bds: bds, cfg: cfg}
 }
 
-func (s *v2Store) createBatchAndTask(ctx context.Context, fileVersionKey, batchID, targetID, taskID string,
+func (s *Store) CreateBatchAndTask(ctx context.Context, fileVersionKey, batchID, targetID, taskID string,
 	batch *types.AsyncDownloadV2Batch, task *types.AsyncDownloadV2Task) error {
-	if err := s.saveBatch(ctx, batch); err != nil {
+	if err := s.SaveBatch(ctx, batch); err != nil {
 		return err
 	}
-	if err := s.saveTask(ctx, task); err != nil {
+	if err := s.SaveTask(ctx, task); err != nil {
 		return err
 	}
-	if err := s.bds.HSets(ctx, batchTargetsKey(batchID), map[string]string{targetID: taskID}, s.batchTTL()); err != nil {
+	if err := s.bds.HSets(ctx, batchTargetsKey(batchID), map[string]string{targetID: taskID}, s.BatchTTL()); err != nil {
 		return err
 	}
-	if err := s.bds.HSets(ctx, batchTasksKey(batchID), map[string]string{taskID: targetID}, s.batchTTL()); err != nil {
+	if err := s.bds.HSets(ctx, batchTasksKey(batchID), map[string]string{taskID: targetID}, s.BatchTTL()); err != nil {
 		return err
 	}
 	if err := s.bds.Set(ctx, inflightKey(fileVersionKey,
-		buildInflightTargetKey(targetID, task.TargetUser, task.TargetFileDir)), taskID, s.taskTTL()); err != nil {
+		BuildInflightTargetKey(targetID, task.TargetUser, task.TargetFileDir)), taskID, s.TaskTTL()); err != nil {
 		return err
 	}
-	if err := s.bds.Set(ctx, batchOpenKey(buildBatchScopeKey(fileVersionKey, batch.TargetUser, batch.TargetFileDir)),
-		batchID, s.batchTTL()); err != nil {
+	if err := s.bds.Set(ctx, batchOpenKey(BuildBatchScopeKey(fileVersionKey, batch.TargetUser, batch.TargetFileDir)),
+		batchID, s.BatchTTL()); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *v2Store) addTaskToBatch(ctx context.Context, batchID, fileVersionKey, targetID, taskID string,
+func (s *Store) AddTaskToBatch(ctx context.Context, batchID, fileVersionKey, targetID, taskID string,
 	task *types.AsyncDownloadV2Task) error {
-	if err := s.saveTask(ctx, task); err != nil {
+	if err := s.SaveTask(ctx, task); err != nil {
 		return err
 	}
-	if err := s.bds.HSets(ctx, batchTargetsKey(batchID), map[string]string{targetID: taskID}, s.batchTTL()); err != nil {
+	if err := s.bds.HSets(ctx, batchTargetsKey(batchID), map[string]string{targetID: taskID}, s.BatchTTL()); err != nil {
 		return err
 	}
-	if err := s.bds.HSets(ctx, batchTasksKey(batchID), map[string]string{taskID: targetID}, s.batchTTL()); err != nil {
+	if err := s.bds.HSets(ctx, batchTasksKey(batchID), map[string]string{taskID: targetID}, s.BatchTTL()); err != nil {
 		return err
 	}
 	return s.bds.Set(ctx, inflightKey(fileVersionKey,
-		buildInflightTargetKey(targetID, task.TargetUser, task.TargetFileDir)), taskID, s.taskTTL())
+		BuildInflightTargetKey(targetID, task.TargetUser, task.TargetFileDir)), taskID, s.TaskTTL())
 }
 
-func (s *v2Store) saveBatch(ctx context.Context, batch *types.AsyncDownloadV2Batch) error {
+func (s *Store) SaveBatch(ctx context.Context, batch *types.AsyncDownloadV2Batch) error {
 	s.saveBatchCalls++
 	if s.saveBatchHook != nil {
 		if err := s.saveBatchHook(batch, s.saveBatchCalls); err != nil {
@@ -88,12 +88,12 @@ func (s *v2Store) saveBatch(ctx context.Context, batch *types.AsyncDownloadV2Bat
 	if err != nil {
 		return err
 	}
-	if err := s.bds.Set(ctx, batchMetaKey(batch.BatchID), string(payload), s.batchTTL()); err != nil {
-		return err
+	if setErr := s.bds.Set(ctx, batchMetaKey(batch.BatchID), string(payload), s.BatchTTL()); setErr != nil {
+		return setErr
 	}
 	if batch.State == types.AsyncDownloadBatchStateCollecting && !batch.OpenUntil.IsZero() {
-		if _, err := s.bds.ZAdd(ctx, v2DueBatchesKey, float64(batch.OpenUntil.Unix()), batch.BatchID); err != nil {
-			return err
+		if _, addErr := s.bds.ZAdd(ctx, v2DueBatchesKey, float64(batch.OpenUntil.Unix()), batch.BatchID); addErr != nil {
+			return addErr
 		}
 		return nil
 	}
@@ -101,31 +101,31 @@ func (s *v2Store) saveBatch(ctx context.Context, batch *types.AsyncDownloadV2Bat
 	return err
 }
 
-func (s *v2Store) saveTask(ctx context.Context, task *types.AsyncDownloadV2Task) error {
+func (s *Store) SaveTask(ctx context.Context, task *types.AsyncDownloadV2Task) error {
 	payload, err := jsoni.Marshal(task)
 	if err != nil {
 		return err
 	}
-	return s.bds.Set(ctx, taskMetaKey(task.TaskID), string(payload), s.taskTTL())
+	return s.bds.Set(ctx, taskMetaKey(task.TaskID), string(payload), s.TaskTTL())
 }
 
-func (s *v2Store) getInflightTaskID(ctx context.Context, fileVersionKey, inflightTargetKey string) (string, error) {
+func (s *Store) GetInflightTaskID(ctx context.Context, fileVersionKey, inflightTargetKey string) (string, error) {
 	return s.bds.Get(ctx, inflightKey(fileVersionKey, inflightTargetKey))
 }
 
-func (s *v2Store) clearInflightTaskID(ctx context.Context, fileVersionKey, inflightTargetKey string) error {
+func (s *Store) ClearInflightTaskID(ctx context.Context, fileVersionKey, inflightTargetKey string) error {
 	return s.bds.Delete(ctx, inflightKey(fileVersionKey, inflightTargetKey))
 }
 
-func (s *v2Store) getOpenBatchID(ctx context.Context, batchScopeKey string) (string, error) {
+func (s *Store) GetOpenBatchID(ctx context.Context, batchScopeKey string) (string, error) {
 	return s.bds.Get(ctx, batchOpenKey(batchScopeKey))
 }
 
-func (s *v2Store) clearOpenBatchID(ctx context.Context, batchScopeKey string) error {
+func (s *Store) ClearOpenBatchID(ctx context.Context, batchScopeKey string) error {
 	return s.bds.Delete(ctx, batchOpenKey(batchScopeKey))
 }
 
-func (s *v2Store) getBatch(ctx context.Context, batchID string) (*types.AsyncDownloadV2Batch, error) {
+func (s *Store) GetBatch(ctx context.Context, batchID string) (*types.AsyncDownloadV2Batch, error) {
 	payload, err := s.bds.Get(ctx, batchMetaKey(batchID))
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (s *v2Store) getBatch(ctx context.Context, batchID string) (*types.AsyncDow
 	return batch, nil
 }
 
-func (s *v2Store) getTask(ctx context.Context, taskID string) (*types.AsyncDownloadV2Task, error) {
+func (s *Store) GetTask(ctx context.Context, taskID string) (*types.AsyncDownloadV2Task, error) {
 	payload, err := s.bds.Get(ctx, taskMetaKey(taskID))
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (s *v2Store) getTask(ctx context.Context, taskID string) (*types.AsyncDownl
 	return task, nil
 }
 
-func (s *v2Store) getBatchTaskID(ctx context.Context, batchID, targetID string) (string, error) {
+func (s *Store) GetBatchTaskID(ctx context.Context, batchID, targetID string) (string, error) {
 	taskID, err := s.bds.HGet(ctx, batchTargetsKey(batchID), targetID)
 	if err == bedis.ErrKeyNotExist {
 		return "", nil
@@ -163,7 +163,7 @@ func (s *v2Store) getBatchTaskID(ctx context.Context, batchID, targetID string) 
 	return taskID, err
 }
 
-func (s *v2Store) listBatchTargets(ctx context.Context, batchID string) ([]string, error) {
+func (s *Store) ListBatchTargets(ctx context.Context, batchID string) ([]string, error) {
 	items, err := s.bds.HGetAll(ctx, batchTargetsKey(batchID))
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (s *v2Store) listBatchTargets(ctx context.Context, batchID string) ([]strin
 	return targets, nil
 }
 
-func (s *v2Store) listBatchTasks(ctx context.Context, batchID string) ([]string, error) {
+func (s *Store) ListBatchTasks(ctx context.Context, batchID string) ([]string, error) {
 	items, err := s.bds.HGetAll(ctx, batchTasksKey(batchID))
 	if err != nil {
 		return nil, err
@@ -189,11 +189,11 @@ func (s *v2Store) listBatchTasks(ctx context.Context, batchID string) ([]string,
 	return taskIDs, nil
 }
 
-func (s *v2Store) listBatchTargetTasks(ctx context.Context, batchID string) (map[string]string, error) {
+func (s *Store) ListBatchTargetTasks(ctx context.Context, batchID string) (map[string]string, error) {
 	return s.bds.HGetAll(ctx, batchTargetsKey(batchID))
 }
 
-func (s *v2Store) listDueBatchIDs(ctx context.Context, now time.Time, limit int) ([]string, error) {
+func (s *Store) ListDueBatchIDs(ctx context.Context, now time.Time, limit int) ([]string, error) {
 	if limit <= 0 {
 		return []string{}, nil
 	}
@@ -216,12 +216,12 @@ func (s *v2Store) listDueBatchIDs(ctx context.Context, now time.Time, limit int)
 	return batchIDs, nil
 }
 
-func (s *v2Store) removeDueBatchID(ctx context.Context, batchID string) error {
+func (s *Store) RemoveDueBatchID(ctx context.Context, batchID string) error {
 	_, err := s.bds.ZRem(ctx, v2DueBatchesKey, batchID)
 	return err
 }
 
-func (s *v2Store) listDispatchingBatchIDs(ctx context.Context) ([]string, error) {
+func (s *Store) ListDispatchingBatchIDs(ctx context.Context) ([]string, error) {
 	keys, err := s.bds.Keys(ctx, batchMetaPattern())
 	if err != nil {
 		return nil, err
@@ -247,27 +247,36 @@ func (s *v2Store) listDispatchingBatchIDs(ctx context.Context) ([]string, error)
 	return batchIDs, nil
 }
 
-func (s *v2Store) recordBatchDispatch(ctx context.Context, batchID string, mapping map[string]string) error {
+func (s *Store) RecordBatchDispatch(ctx context.Context, batchID string, mapping map[string]string) error {
 	if len(mapping) == 0 {
 		return nil
 	}
-	return s.bds.HSets(ctx, batchDispatchedTargetsKey(batchID), mapping, s.batchTTL())
+	return s.bds.HSets(ctx, batchDispatchedTargetsKey(batchID), mapping, s.BatchTTL())
 }
 
-func (s *v2Store) listBatchDispatchState(ctx context.Context, batchID string) (map[string]string, error) {
+func (s *Store) ListBatchDispatchState(ctx context.Context, batchID string) (map[string]string, error) {
 	return s.bds.HGetAll(ctx, batchDispatchedTargetsKey(batchID))
 }
 
-func (s *v2Store) batchTTL() int {
+func (s *Store) BatchTTL() int {
 	if s.cfg.BatchTTLSeconds > 0 {
 		return s.cfg.BatchTTLSeconds
 	}
 	return 86400
 }
 
-func (s *v2Store) taskTTL() int {
+func (s *Store) TaskTTL() int {
 	if s.cfg.TaskTTLSeconds > 0 {
 		return s.cfg.TaskTTLSeconds
 	}
 	return 86400
+}
+
+func (s *Store) Client() bedis.Client {
+	return s.bds
+}
+
+func (s *Store) SetSaveBatchHook(hook func(batch *types.AsyncDownloadV2Batch, call int) error) {
+	s.saveBatchCalls = 0
+	s.saveBatchHook = hook
 }

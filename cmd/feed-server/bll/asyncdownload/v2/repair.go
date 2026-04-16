@@ -1,5 +1,5 @@
 // * Tencent is pleased to support the open source community by making Blueking Container Service available.
-//  * Copyright (C) 20\d\d THL A29 Limited, a Tencent company. All rights reserved.
+//  * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
 //  * Licensed under the MIT License (the "License"); you may not use this file except
 //  * in compliance with the License. You may obtain a copy of the License at
 //  * http://opensource.org/licenses/MIT
@@ -8,7 +8,7 @@
 //  * either express or implied. See the License for the specific language governing permissions and
 //  * limitations under the License.
 
-package asyncdownload
+package v2
 
 import (
 	"context"
@@ -17,33 +17,33 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 )
 
-func (s *v2Scheduler) finalizeCompletedBatch(ctx context.Context, batch *types.AsyncDownloadV2Batch) error {
-	taskIDs, err := s.store.listBatchTasks(ctx, batch.BatchID)
+func (s *Scheduler) finalizeCompletedBatch(ctx context.Context, batch *types.AsyncDownloadV2Batch) error {
+	taskIDs, err := s.store.ListBatchTasks(ctx, batch.BatchID)
 	if err != nil {
 		return err
 	}
 	for _, taskID := range taskIDs {
-		task, err := s.store.getTask(ctx, taskID)
+		task, err := s.store.GetTask(ctx, taskID)
 		if err != nil {
 			return err
 		}
 		if !isFinalTaskState(task.State) {
 			continue
 		}
-		if err := s.store.clearInflightTaskID(ctx, buildFileVersionKey(task.BizID, task.AppID, task.FilePath, task.FileName,
-			task.FileSignature), buildInflightTargetKey(task.TargetID, task.TargetUser, task.TargetFileDir)); err != nil {
+		if err := s.store.ClearInflightTaskID(ctx, BuildFileVersionKey(task.BizID, task.AppID, task.FilePath, task.FileName,
+			task.FileSignature), BuildInflightTargetKey(task.TargetID, task.TargetUser, task.TargetFileDir)); err != nil {
 			return err
 		}
 	}
-	_ = s.store.removeDueBatchID(ctx, batch.BatchID)
-	_ = s.store.clearOpenBatchID(ctx, buildBatchScopeKey(
-		buildFileVersionKey(batch.BizID, batch.AppID, batch.FilePath, batch.FileName, batch.FileSignature),
+	_ = s.store.RemoveDueBatchID(ctx, batch.BatchID)
+	_ = s.store.ClearOpenBatchID(ctx, BuildBatchScopeKey(
+		BuildFileVersionKey(batch.BizID, batch.AppID, batch.FilePath, batch.FileName, batch.FileSignature),
 		batch.TargetUser, batch.TargetFileDir))
 	return nil
 }
 
-func (s *v2Scheduler) repairTerminalBatch(ctx context.Context, batchID, batchState string) error {
-	batch, err := s.store.getBatch(ctx, batchID)
+func (s *Scheduler) RepairTerminalBatch(ctx context.Context, batchID, batchState string) error {
+	batch, err := s.store.GetBatch(ctx, batchID)
 	if err != nil {
 		return err
 	}
@@ -54,8 +54,8 @@ func (s *v2Scheduler) repairTerminalBatch(ctx context.Context, batchID, batchSta
 	} else {
 		batch.FinalReason = "orphan_after_dispatch_cutoff"
 	}
-	if err := s.finalizeBatchTasks(ctx, batchID, batchState); err != nil {
-		return err
+	if finalizeErr := s.FinalizeBatchTasks(ctx, batchID, batchState); finalizeErr != nil {
+		return finalizeErr
 	}
 	successCount, failedCount, timeoutCount, _, _, err := s.countBatchTaskStates(ctx, batchID)
 	if err != nil {
@@ -64,20 +64,20 @@ func (s *v2Scheduler) repairTerminalBatch(ctx context.Context, batchID, batchSta
 	batch.SuccessCount = successCount
 	batch.FailedCount = failedCount
 	batch.TimeoutCount = timeoutCount
-	if err := s.store.saveBatch(ctx, batch); err != nil {
+	if err := s.store.SaveBatch(ctx, batch); err != nil {
 		return err
 	}
-	s.metric.observeV2BatchTransition(batch, oldState)
+	s.metric.ObserveV2BatchTransition(batch, oldState)
 	return s.finalizeCompletedBatch(ctx, batch)
 }
 
-func (s *v2Scheduler) finalizeBatchTasks(ctx context.Context, batchID, batchState string) error {
-	taskIDs, err := s.store.listBatchTasks(ctx, batchID)
+func (s *Scheduler) FinalizeBatchTasks(ctx context.Context, batchID, batchState string) error {
+	taskIDs, err := s.store.ListBatchTasks(ctx, batchID)
 	if err != nil {
 		return err
 	}
 	for _, taskID := range taskIDs {
-		task, err := s.store.getTask(ctx, taskID)
+		task, err := s.store.GetTask(ctx, taskID)
 		if err != nil || isFinalTaskState(task.State) {
 			continue
 		}
@@ -91,26 +91,26 @@ func (s *v2Scheduler) finalizeBatchTasks(ctx context.Context, batchID, batchStat
 			task.State = types.AsyncDownloadJobStatusFailed
 			task.ErrMsg = "orphan_after_dispatch_cutoff"
 		}
-		if s.metric != nil && s.metric.taskRepairCounter != nil {
-			s.metric.taskRepairCounter.WithLabelValues(task.ErrMsg).Inc()
+		if s.metric != nil {
+			s.metric.IncV2TaskRepair(task.ErrMsg)
 		}
 		task.UpdatedAt = time.Now()
-		if err := s.store.saveTask(ctx, task); err != nil {
+		if err := s.store.SaveTask(ctx, task); err != nil {
 			return err
 		}
-		s.metric.observeV2TaskTransition(task, oldState, oldUpdatedAt)
+		s.metric.ObserveV2TaskTransition(task, oldState, oldUpdatedAt)
 	}
 	return nil
 }
 
-func (s *v2Scheduler) countBatchTaskStates(ctx context.Context, batchID string) (int, int, int, int, int, error) {
-	taskIDs, err := s.store.listBatchTasks(ctx, batchID)
+func (s *Scheduler) countBatchTaskStates(ctx context.Context, batchID string) (int, int, int, int, int, error) {
+	taskIDs, err := s.store.ListBatchTasks(ctx, batchID)
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
 	}
 	var successCount, failedCount, timeoutCount, runningCount, pendingCount int
 	for _, taskID := range taskIDs {
-		task, err := s.store.getTask(ctx, taskID)
+		task, err := s.store.GetTask(ctx, taskID)
 		if err != nil {
 			return 0, 0, 0, 0, 0, err
 		}
@@ -141,15 +141,15 @@ func deriveTerminalBatchState(successCount, failedCount, timeoutCount int) strin
 	}
 }
 
-func (s *v2Scheduler) updateTaskStateByTarget(ctx context.Context, batchID, targetID, state, errMsg string) error {
-	taskID, err := s.store.getBatchTaskID(ctx, batchID, targetID)
+func (s *Scheduler) updateTaskStateByTarget(ctx context.Context, batchID, targetID, state, errMsg string) error {
+	taskID, err := s.store.GetBatchTaskID(ctx, batchID, targetID)
 	if err != nil {
 		return err
 	}
 	if taskID == "" {
 		return nil
 	}
-	task, err := s.store.getTask(ctx, taskID)
+	task, err := s.store.GetTask(ctx, taskID)
 	if err != nil {
 		return err
 	}
@@ -158,9 +158,9 @@ func (s *v2Scheduler) updateTaskStateByTarget(ctx context.Context, batchID, targ
 	task.State = state
 	task.ErrMsg = errMsg
 	task.UpdatedAt = time.Now()
-	if err := s.store.saveTask(ctx, task); err != nil {
+	if err := s.store.SaveTask(ctx, task); err != nil {
 		return err
 	}
-	s.metric.observeV2TaskTransition(task, oldState, oldUpdatedAt)
+	s.metric.ObserveV2TaskTransition(task, oldState, oldUpdatedAt)
 	return nil
 }

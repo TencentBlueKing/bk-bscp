@@ -29,6 +29,8 @@ var (
 )
 
 // InitMetric init the async doenload related prometheus metrics
+//
+//nolint:funlen // metric registration is intentionally kept in one place.
 func InitMetric() *metric {
 	asyncDownloadMetricOnce.Do(func() {
 		m := new(metric)
@@ -239,6 +241,10 @@ func (m *metric) observeV2BatchCreated(batch *types.AsyncDownloadV2Batch) {
 	).Inc()
 }
 
+func (m *metric) ObserveV2BatchCreated(batch *types.AsyncDownloadV2Batch) {
+	m.observeV2BatchCreated(batch)
+}
+
 func (m *metric) observeV2BatchTransition(batch *types.AsyncDownloadV2Batch, oldState string) {
 	if m == nil || batch == nil || oldState == "" || oldState == batch.State {
 		return
@@ -265,6 +271,10 @@ func (m *metric) observeV2BatchTransition(batch *types.AsyncDownloadV2Batch, old
 	}
 }
 
+func (m *metric) ObserveV2BatchTransition(batch *types.AsyncDownloadV2Batch, oldState string) {
+	m.observeV2BatchTransition(batch, oldState)
+}
+
 func (m *metric) observeV2TaskCreated(task *types.AsyncDownloadV2Task) {
 	if m == nil || task == nil || m.v2TaskStateCounter == nil {
 		return
@@ -274,6 +284,10 @@ func (m *metric) observeV2TaskCreated(task *types.AsyncDownloadV2Task) {
 		strconv.Itoa(int(task.AppID)),
 		task.State,
 	).Inc()
+}
+
+func (m *metric) ObserveV2TaskCreated(task *types.AsyncDownloadV2Task) {
+	m.observeV2TaskCreated(task)
 }
 
 func (m *metric) observeV2TaskTransition(task *types.AsyncDownloadV2Task, oldState string, oldUpdatedAt time.Time) {
@@ -299,5 +313,42 @@ func (m *metric) observeV2TaskTransition(task *types.AsyncDownloadV2Task, oldSta
 			strconv.Itoa(int(task.AppID)),
 			task.State,
 		).Inc()
+	}
+}
+
+func (m *metric) ObserveV2TaskTransition(task *types.AsyncDownloadV2Task, oldState string, oldUpdatedAt time.Time) {
+	m.observeV2TaskTransition(task, oldState, oldUpdatedAt)
+}
+
+func (m *metric) SetV2DueBacklog(count int) {
+	if m == nil || m.batchDueBacklog == nil {
+		return
+	}
+	m.batchDueBacklog.Set(float64(count))
+}
+
+func (m *metric) SetV2OldestDueAgeSeconds(age float64) {
+	if m == nil || m.batchOldestDueAgeSeconds == nil {
+		return
+	}
+	m.batchOldestDueAgeSeconds.Set(age)
+}
+
+func (m *metric) IncV2TaskRepair(reason string) {
+	if m == nil || m.taskRepairCounter == nil {
+		return
+	}
+	m.taskRepairCounter.WithLabelValues(reason).Inc()
+}
+
+func (m *metric) ObserveV2ShardDispatch(status string, duration time.Duration) {
+	if m == nil {
+		return
+	}
+	if m.shardDispatchCounter != nil {
+		m.shardDispatchCounter.WithLabelValues(status).Inc()
+	}
+	if m.shardDurationSeconds != nil {
+		m.shardDurationSeconds.WithLabelValues(status).Observe(duration.Seconds())
 	}
 }

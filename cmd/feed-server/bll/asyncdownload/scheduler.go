@@ -24,6 +24,7 @@ import (
 
 	prm "github.com/prometheus/client_golang/prometheus"
 
+	v2pkg "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/asyncdownload/v2"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bcs"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
@@ -65,7 +66,7 @@ type Scheduler struct {
 	serverAgentID     string
 	serverContainerID string
 	metric            *metric
-	v2                *v2Scheduler
+	v2                *v2pkg.Scheduler
 }
 
 // NewScheduler create a async download scheduler
@@ -122,7 +123,7 @@ func NewScheduler(mc *metric, redLock *lock.RedisLock, gseService *gse.Service) 
 		serverAgentID:     serverAgentID,
 		serverContainerID: serverContainerID,
 		metric:            mc,
-		v2: newV2Scheduler(newV2Store(bds, cc.FeedServer().GSE.AsyncDownloadV2), gseService, provider, redLock,
+		v2: v2pkg.NewScheduler(v2pkg.NewStore(bds, cc.FeedServer().GSE.AsyncDownloadV2), gseService, provider, redLock,
 			fileLock, mc, serverAgentID, serverContainerID, cc.FeedServer().GSE.AgentUser,
 			cc.FeedServer().GSE.CacheDir, cc.FeedServer().GSE.AsyncDownloadV2),
 	}, nil
@@ -131,7 +132,7 @@ func NewScheduler(mc *metric, redLock *lock.RedisLock, gseService *gse.Service) 
 // Run run a scheduled task
 func (a *Scheduler) Run() {
 	go a.runV1DrainLoop()
-	if a.v2 != nil && a.v2.enabled() {
+	if a.v2 != nil && a.v2.Enabled() {
 		go a.runV2Loop()
 	}
 }
@@ -159,7 +160,7 @@ func (a *Scheduler) runV2Loop() {
 	for {
 		select {
 		case <-ticker.C:
-			if _, err := a.v2.processDueBatches(a.ctx); err != nil {
+			if _, err := a.v2.ProcessDueBatches(a.ctx); err != nil {
 				logs.Errorf("run async download v2 pass failed, err: %s", err.Error())
 			}
 		case <-a.ctx.Done():
@@ -172,10 +173,6 @@ func (a *Scheduler) runV2Loop() {
 // Stop stop scheduled task
 func (a *Scheduler) Stop() {
 	a.cancel()
-}
-
-func (a *Scheduler) do() {
-	_ = a.runOneV1DrainPass(a.ctx)
 }
 
 func (a *Scheduler) runOneV1DrainPass(ctx context.Context) error {
