@@ -92,6 +92,45 @@ func NewVaultMigrator(cfg *config.Config, sourceDB, targetDB *gorm.DB) (*VaultMi
 	}, nil
 }
 
+// checkConnectivity verifies that both source and target Vault instances are reachable and the tokens are valid
+func (m *VaultMigrator) checkConnectivity() error {
+	log.Println("Checking Vault connectivity...")
+
+	// Check source Vault
+	sourceHealth, err := m.sourceVault.Sys().Health()
+	if err != nil {
+		return fmt.Errorf("source Vault is unreachable at %s: %w", m.cfg.Source.Vault.Address, err)
+	}
+	if sourceHealth.Sealed {
+		return fmt.Errorf("source Vault at %s is sealed", m.cfg.Source.Vault.Address)
+	}
+
+	// Verify source token by looking up self
+	_, err = m.sourceVault.Auth().Token().LookupSelf()
+	if err != nil {
+		return fmt.Errorf("source Vault token is invalid: %w", err)
+	}
+	log.Printf("  Source Vault OK (%s)", m.cfg.Source.Vault.Address)
+
+	// Check target Vault
+	targetHealth, err := m.targetVault.Sys().Health()
+	if err != nil {
+		return fmt.Errorf("target Vault is unreachable at %s: %w", m.cfg.Target.Vault.Address, err)
+	}
+	if targetHealth.Sealed {
+		return fmt.Errorf("target Vault at %s is sealed", m.cfg.Target.Vault.Address)
+	}
+
+	// Verify target token by looking up self
+	_, err = m.targetVault.Auth().Token().LookupSelf()
+	if err != nil {
+		return fmt.Errorf("target Vault token is invalid: %w", err)
+	}
+	log.Printf("  Target Vault OK (%s)", m.cfg.Target.Vault.Address)
+
+	return nil
+}
+
 // SetIDMapper sets the ID mapper from MySQL migration
 // This must be called before Migrate() when using incremental migration
 func (m *VaultMigrator) SetIDMapper(mapper *IDMapper) {
@@ -100,6 +139,10 @@ func (m *VaultMigrator) SetIDMapper(mapper *IDMapper) {
 
 // Migrate performs the Vault KV data migration with ID mapping support
 func (m *VaultMigrator) Migrate() (*VaultMigrationResult, error) {
+	if err := m.checkConnectivity(); err != nil {
+		return nil, fmt.Errorf("vault connectivity check failed: %w", err)
+	}
+
 	startTime := time.Now()
 	result := &VaultMigrationResult{
 		Success: true,
@@ -213,7 +256,7 @@ func (m *VaultMigrator) getKvRecordsBatch(offset, limit int) ([]KvRecord, error)
 	if m.cfg.Migration.HasBizFilter() {
 		query = query.Where("biz_id IN ?", m.cfg.Migration.BizIDs)
 	}
-	if err := query.Offset(offset).Limit(limit).Find(&records).Error; err != nil {
+	if err := query.Order("id").Offset(offset).Limit(limit).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil
@@ -241,7 +284,7 @@ func (m *VaultMigrator) getReleasedKvRecordsBatch(offset, limit int) ([]Released
 	if m.cfg.Migration.HasBizFilter() {
 		query = query.Where("biz_id IN ?", m.cfg.Migration.BizIDs)
 	}
-	if err := query.Offset(offset).Limit(limit).Find(&records).Error; err != nil {
+	if err := query.Order("id").Offset(offset).Limit(limit).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil
@@ -367,10 +410,15 @@ type VaultCleanupResult struct {
 	Success     bool
 }
 
-// CleanupTarget deletes all migrated KV data from target Vault
-// Uses source database to get KV records (since target DB may not have data yet)
-// If biz_id filter is configured, only deletes KVs for those businesses
+// CleanupTarget deletes all migrated KV data from target Vault.
+// Reads from TARGET database to get the correct (already-mapped) IDs for Vault path construction.
+// If biz_id filter is configured, only deletes KVs for those businesses.
+// IMPORTANT: This must be called BEFORE MySQL cleanup, because it relies on target DB records.
 func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
+	if err := m.checkConnectivity(); err != nil {
+		return nil, fmt.Errorf("vault connectivity check failed: %w", err)
+	}
+
 	startTime := time.Now()
 	result := &VaultCleanupResult{
 		Success: true,
@@ -379,18 +427,18 @@ func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	// Log biz_id filter info
 	if m.cfg.Migration.HasBizFilter() {
 		log.Printf("Vault cleanup with biz_id filter: %v", m.cfg.Migration.BizIDs)
 	}
 
-	// Step 1: Delete unreleased KV data (use source DB to get records)
-	log.Println("Cleaning up unreleased KV data from target Vault...")
 	batchSize := m.cfg.Migration.BatchSize
+
+	// Step 1: Delete unreleased KV data using target DB records (already have mapped IDs)
+	log.Println("Cleaning up unreleased KV data from target Vault...")
 	for offset := 0; ; offset += batchSize {
-		kvRecords, err := m.getKvRecordsBatch(offset, batchSize)
+		kvRecords, err := m.getTargetKvRecordsBatch(offset, batchSize)
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to get KV records batch at offset %d: %v", offset, err))
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get target KV records batch at offset %d: %v", offset, err))
 			result.Success = false
 			result.Duration = time.Since(startTime)
 			return result, err
@@ -401,8 +449,9 @@ func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
 		}
 
 		for _, kv := range kvRecords {
-			if deleteErr := m.deleteKv(ctx, kv); deleteErr != nil {
-				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete KV %d: %v", kv.ID, deleteErr))
+			targetPath := fmt.Sprintf(kvPath, kv.BizID, kv.AppID, kv.Key)
+			if deleteErr := m.targetVault.KVv2(MountPath).DeleteMetadata(ctx, targetPath); deleteErr != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete KV %d at %s: %v", kv.ID, targetPath, deleteErr))
 				if !m.cfg.Migration.ContinueOnError {
 					result.Success = false
 					result.Duration = time.Since(startTime)
@@ -415,12 +464,12 @@ func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
 	}
 	log.Printf("  Deleted %d unreleased KVs", result.DeletedKvs)
 
-	// Step 2: Delete released KV data (use source DB to get records)
+	// Step 2: Delete released KV data using target DB records (already have mapped IDs)
 	log.Println("Cleaning up released KV data from target Vault...")
 	for offset := 0; ; offset += batchSize {
-		releasedKvRecords, err := m.getReleasedKvRecordsBatch(offset, batchSize)
+		releasedKvRecords, err := m.getTargetReleasedKvRecordsBatch(offset, batchSize)
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to get released KV records batch at offset %d: %v", offset, err))
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get target released KV records batch at offset %d: %v", offset, err))
 			result.Success = false
 			result.Duration = time.Since(startTime)
 			return result, err
@@ -431,8 +480,9 @@ func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
 		}
 
 		for _, rkv := range releasedKvRecords {
-			if err := m.deleteReleasedKv(ctx, rkv); err != nil {
-				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete released KV %d: %v", rkv.ID, err))
+			targetPath := fmt.Sprintf(releasedKvPath, rkv.BizID, rkv.AppID, rkv.ReleaseID, rkv.Key)
+			if err := m.targetVault.KVv2(MountPath).DeleteMetadata(ctx, targetPath); err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete released KV %d at %s: %v", rkv.ID, targetPath, err))
 				if !m.cfg.Migration.ContinueOnError {
 					result.Success = false
 					result.Duration = time.Since(startTime)
@@ -452,30 +502,215 @@ func (m *VaultMigrator) CleanupTarget() (*VaultCleanupResult, error) {
 	return result, nil
 }
 
-// deleteKv deletes a single unreleased KV from target Vault
-// Uses ID mapping for the target path
-func (m *VaultMigrator) deleteKv(ctx context.Context, kv KvRecord) error {
-	targetPath := m.getTargetKvPath(kv)
-
-	// Delete all versions and metadata
-	err := m.targetVault.KVv2(MountPath).DeleteMetadata(ctx, targetPath)
-	if err != nil {
-		return fmt.Errorf("failed to delete from target Vault path %s: %w", targetPath, err)
+// getTargetKvRecordsBatch retrieves a batch of KV records from TARGET MySQL (for cleanup)
+func (m *VaultMigrator) getTargetKvRecordsBatch(offset, limit int) ([]KvRecord, error) {
+	var records []KvRecord
+	query := m.targetDB.Table("kvs")
+	if m.cfg.Migration.HasBizFilter() {
+		query = query.Where("biz_id IN ?", m.cfg.Migration.BizIDs)
 	}
-
-	return nil
+	if err := query.Order("id").Offset(offset).Limit(limit).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
 }
 
-// deleteReleasedKv deletes a single released KV from target Vault
-// Uses ID mapping for the target path
-func (m *VaultMigrator) deleteReleasedKv(ctx context.Context, rkv ReleasedKvRecord) error {
-	targetPath := m.getTargetReleasedKvPath(rkv)
+// getTargetReleasedKvRecordsBatch retrieves a batch of released KV records from TARGET MySQL (for cleanup)
+func (m *VaultMigrator) getTargetReleasedKvRecordsBatch(offset, limit int) ([]ReleasedKvRecord, error) {
+	var records []ReleasedKvRecord
+	query := m.targetDB.Table("released_kvs")
+	if m.cfg.Migration.HasBizFilter() {
+		query = query.Where("biz_id IN ?", m.cfg.Migration.BizIDs)
+	}
+	if err := query.Order("id").Offset(offset).Limit(limit).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
 
-	// Delete all versions and metadata
-	err := m.targetVault.KVv2(MountPath).DeleteMetadata(ctx, targetPath)
-	if err != nil {
-		return fmt.Errorf("failed to delete from target Vault path %s: %w", targetPath, err)
+// VaultDirectScanResult contains results from probing Vault based on DB records
+type VaultDirectScanResult struct {
+	SourceBizScans []BizVaultScan
+	TargetBizScans []BizVaultScan
+	Duration       time.Duration
+	Errors         []string
+}
+
+// BizVaultScan contains per-biz DB record count vs Vault existence count
+type BizVaultScan struct {
+	BizID    uint32
+	KvDB     int64
+	KvVault  int64
+	RKvDB    int64
+	RKvVault int64
+}
+
+// TotalKvDB returns total unreleased KV DB count across all biz scans
+func totalKvDB(scans []BizVaultScan) int64 {
+	var n int64
+	for _, s := range scans {
+		n += s.KvDB
+	}
+	return n
+}
+
+// TotalKvVault returns total unreleased KV Vault found count across all biz scans
+func totalKvVault(scans []BizVaultScan) int64 {
+	var n int64
+	for _, s := range scans {
+		n += s.KvVault
+	}
+	return n
+}
+
+// TotalRKvDB returns total released KV DB count across all biz scans
+func totalRKvDB(scans []BizVaultScan) int64 {
+	var n int64
+	for _, s := range scans {
+		n += s.RKvDB
+	}
+	return n
+}
+
+// TotalRKvVault returns total released KV Vault found count across all biz scans
+func totalRKvVault(scans []BizVaultScan) int64 {
+	var n int64
+	for _, s := range scans {
+		n += s.RKvVault
+	}
+	return n
+}
+
+// ScanVault reads KV/released KV records from both source and target DB,
+// then probes the corresponding Vault to check if each secret actually exists.
+func (m *VaultMigrator) ScanVault() (*VaultDirectScanResult, error) {
+	if err := m.checkConnectivity(); err != nil {
+		return nil, fmt.Errorf("vault connectivity check failed: %w", err)
 	}
 
-	return nil
+	startTime := time.Now()
+	result := &VaultDirectScanResult{}
+	ctx := context.Background()
+	batchSize := m.cfg.Migration.BatchSize
+
+	// Source: read source DB records, probe source Vault
+	log.Println("  Scanning source Vault (based on source DB records)...")
+	sourceBizMap := make(map[uint32]*BizVaultScan)
+
+	for offset := 0; ; offset += batchSize {
+		records, err := m.getKvRecordsBatch(offset, batchSize)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get source KV batch: %v", err))
+			break
+		}
+		if len(records) == 0 {
+			break
+		}
+		for _, kv := range records {
+			biz := getOrCreateBizScan(sourceBizMap, kv.BizID)
+			biz.KvDB++
+			path := m.getSourceKvPath(kv)
+			if _, err := m.sourceVault.KVv2(MountPath).Get(ctx, path); err == nil {
+				biz.KvVault++
+			}
+		}
+	}
+
+	for offset := 0; ; offset += batchSize {
+		records, err := m.getReleasedKvRecordsBatch(offset, batchSize)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get source released KV batch: %v", err))
+			break
+		}
+		if len(records) == 0 {
+			break
+		}
+		for _, rkv := range records {
+			biz := getOrCreateBizScan(sourceBizMap, rkv.BizID)
+			biz.RKvDB++
+			path := m.getSourceReleasedKvPath(rkv)
+			if _, err := m.sourceVault.KVv2(MountPath).Get(ctx, path); err == nil {
+				biz.RKvVault++
+			}
+		}
+	}
+
+	result.SourceBizScans = bizMapToSortedSlice(sourceBizMap)
+	log.Printf("    Source: KVs %d/%d, Released KVs %d/%d found in Vault",
+		totalKvVault(result.SourceBizScans), totalKvDB(result.SourceBizScans),
+		totalRKvVault(result.SourceBizScans), totalRKvDB(result.SourceBizScans))
+
+	// Target: read target DB records, probe target Vault
+	log.Println("  Scanning target Vault (based on target DB records)...")
+	targetBizMap := make(map[uint32]*BizVaultScan)
+
+	for offset := 0; ; offset += batchSize {
+		records, err := m.getTargetKvRecordsBatch(offset, batchSize)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get target KV batch: %v", err))
+			break
+		}
+		if len(records) == 0 {
+			break
+		}
+		for _, kv := range records {
+			biz := getOrCreateBizScan(targetBizMap, kv.BizID)
+			biz.KvDB++
+			path := fmt.Sprintf(kvPath, kv.BizID, kv.AppID, kv.Key)
+			if _, err := m.targetVault.KVv2(MountPath).Get(ctx, path); err == nil {
+				biz.KvVault++
+			}
+		}
+	}
+
+	for offset := 0; ; offset += batchSize {
+		records, err := m.getTargetReleasedKvRecordsBatch(offset, batchSize)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to get target released KV batch: %v", err))
+			break
+		}
+		if len(records) == 0 {
+			break
+		}
+		for _, rkv := range records {
+			biz := getOrCreateBizScan(targetBizMap, rkv.BizID)
+			biz.RKvDB++
+			path := fmt.Sprintf(releasedKvPath, rkv.BizID, rkv.AppID, rkv.ReleaseID, rkv.Key)
+			if _, err := m.targetVault.KVv2(MountPath).Get(ctx, path); err == nil {
+				biz.RKvVault++
+			}
+		}
+	}
+
+	result.TargetBizScans = bizMapToSortedSlice(targetBizMap)
+	log.Printf("    Target: KVs %d/%d, Released KVs %d/%d found in Vault",
+		totalKvVault(result.TargetBizScans), totalKvDB(result.TargetBizScans),
+		totalRKvVault(result.TargetBizScans), totalRKvDB(result.TargetBizScans))
+
+	result.Duration = time.Since(startTime)
+	return result, nil
+}
+
+func getOrCreateBizScan(m map[uint32]*BizVaultScan, bizID uint32) *BizVaultScan {
+	if s, ok := m[bizID]; ok {
+		return s
+	}
+	s := &BizVaultScan{BizID: bizID}
+	m[bizID] = s
+	return s
+}
+
+func bizMapToSortedSlice(m map[uint32]*BizVaultScan) []BizVaultScan {
+	scans := make([]BizVaultScan, 0, len(m))
+	for _, s := range m {
+		scans = append(scans, *s)
+	}
+	for i := 0; i < len(scans)-1; i++ {
+		for j := i + 1; j < len(scans); j++ {
+			if scans[i].BizID > scans[j].BizID {
+				scans[i], scans[j] = scans[j], scans[i]
+			}
+		}
+	}
+	return scans
 }

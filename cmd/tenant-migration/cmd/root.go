@@ -124,6 +124,8 @@ func applyBizIDsFlag() error {
 	return nil
 }
 
+var autoConfirmMigrate bool
+
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
@@ -132,7 +134,9 @@ var migrateCmd = &cobra.Command{
 
 This command migrates:
 - MySQL data with tenant_id population
-- Vault KV data via API (if configured)`,
+- Vault KV data via API (if configured)
+
+The --biz-ids flag is required to explicitly specify which businesses to migrate.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if cfg == nil {
 			fmt.Println("Error: configuration not loaded")
@@ -144,12 +148,39 @@ This command migrates:
 			os.Exit(1)
 		}
 
+		if !cfg.Migration.HasBizFilter() {
+			fmt.Println("Error: --biz-ids is required for migrate command.")
+			fmt.Println("Usage: migrate --biz-ids '1001,1002' -c config.yaml")
+			os.Exit(1)
+		}
+
 		m, err := migrator.NewMigrator(cfg)
 		if err != nil {
 			fmt.Printf("Error creating migrator: %v\n", err)
 			os.Exit(1)
 		}
 		defer m.Close()
+
+		existingData := m.CheckTargetData()
+		if len(existingData) > 0 {
+			fmt.Printf("\nError: Target database already has data for biz_ids %v:\n", cfg.Migration.BizIDs)
+			for _, item := range existingData {
+				fmt.Printf("  - %s: %d records\n", item.Table, item.Count)
+			}
+			fmt.Println("\nPlease run 'cleanup' first to avoid duplicate data:")
+			fmt.Printf("  cleanup --biz-ids %s -c %s -f\n", bizIDs, cfgFile)
+			os.Exit(1)
+		}
+
+		if !autoConfirmMigrate {
+			fmt.Printf("About to migrate data for biz_ids %v\n", cfg.Migration.BizIDs)
+			fmt.Print("Continue? [y/N]: ")
+			var confirm string
+			if _, scanErr := fmt.Scanln(&confirm); scanErr != nil || (confirm != "y" && confirm != "Y") {
+				fmt.Println("Migration canceled.")
+				return
+			}
+		}
 
 		report, err := m.Run()
 		if err != nil {
@@ -220,6 +251,11 @@ Use --all to scan all tables in the databases.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if cfg == nil {
 			fmt.Println("Error: configuration not loaded")
+			os.Exit(1)
+		}
+
+		if err := applyBizIDsFlag(); err != nil {
+			fmt.Printf("Error parsing biz-ids: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -316,7 +352,8 @@ var versionCmd = &cobra.Command{
 func init() {
 	// Add migrate flags
 	migrateCmd.Flags().StringVar(&bizIDs, "biz-ids", "",
-		"Comma-separated list of business IDs to migrate (e.g., '1001,1002,1003'). Overrides config file setting.")
+		"Comma-separated list of business IDs to migrate (required, e.g., '1001,1002,1003').")
+	migrateCmd.Flags().BoolVarP(&autoConfirmMigrate, "yes", "y", false, "Skip confirmation prompt")
 
 	// Add cleanup flags
 	cleanupCmd.Flags().BoolVarP(&forceCleanup, "force", "f", false, "Skip confirmation prompt")
@@ -325,4 +362,6 @@ func init() {
 
 	// Add scan flags
 	scanCmd.Flags().BoolVarP(&scanAllTables, "all", "a", false, "Scan all tables in databases (not just configured tables)")
+	scanCmd.Flags().StringVar(&bizIDs, "biz-ids", "",
+		"Comma-separated list of business IDs to scan (e.g., '1001,1002,1003'). Overrides config file setting.")
 }
