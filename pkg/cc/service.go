@@ -73,15 +73,16 @@ type Setting interface {
 
 // GlobalSettings 全局配置, 配置所有模块可访问
 type GlobalSettings struct {
-	BaseConf     BaseConf          `yaml:"baseConf"`
-	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
-	IAM          IAM               `yaml:"iam"`
-	Esb          Esb               `yaml:"esb"` // esb 配置逐步废弃
-	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
-	GSE          GSE               `yaml:"gse"`
-	CMDB         CMDBConfig        `yaml:"cmdb"`
-	BCS          BCS               `yaml:"bcs"`
-	PushProvider PushProvider      `yaml:"pushProvider"`
+	BaseConf      BaseConf          `yaml:"baseConf"`
+	LoginAuth     LoginAuthSettings `yaml:"loginAuth"`
+	IAM           IAM               `yaml:"iam"`
+	Esb           Esb               `yaml:"esb"` // esb 配置逐步废弃
+	FeatureFlags  FeatureFlags      `yaml:"featureFlags"`
+	GSE           GSE               `yaml:"gse"`
+	CMDB          CMDBConfig        `yaml:"cmdb"`
+	BCS           BCS               `yaml:"bcs"`
+	PushProvider  PushProvider      `yaml:"pushProvider"`
+	TaskFramework TaskFramework     `yaml:"taskFramework"`
 }
 
 // BaseConf 基础配置
@@ -336,8 +337,9 @@ type DataServiceSetting struct {
 	CMDB         CMDBConfig    `yaml:"cmdb"`
 	ITSM         ITSMConfig    `yaml:"itsm"`
 	Crontab      CrontabConfig `yaml:"crontab"`
-	GSE          GSE           `yaml:"gse"`
-	PushProvider PushProvider  `yaml:"pushProvider"`
+	GSE           GSE           `yaml:"gse"`
+	PushProvider  PushProvider  `yaml:"pushProvider"`
+	TaskFramework TaskFramework `yaml:"taskFramework"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -364,6 +366,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.GSE.getFromEnv()
 	s.GSE.trySetDefault()
 	s.CMDB.trySetDefault()
+	s.TaskFramework.trySetDefault()
 }
 
 // Validate DataServiceSetting option.
@@ -402,6 +405,10 @@ func (s DataServiceSetting) Validate() error {
 	}
 
 	if err := s.Crontab.validate(); err != nil {
+		return err
+	}
+
+	if err := s.TaskFramework.validate(); err != nil {
 		return err
 	}
 

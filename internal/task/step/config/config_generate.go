@@ -13,12 +13,11 @@
 package config
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
@@ -27,14 +26,15 @@ import (
 func GenerateConfig(tenantID string, bizID, batchID, configTemplateID uint32, configTemplateName string,
 	operateType table.ConfigOperateType,
 	operatorUser string, template *table.Template, templateRevision *table.TemplateRevision, process *table.Process,
-	processInstance *table.ProcessInstance, generateConfigTimeout time.Duration) *types.Step {
+	processInstance *table.ProcessInstance) *types.Step {
 	logs.V(3).Infof("generate config: bizID: %d, configTemplateID: %d, processAlias: %s, moduleInstSeq: %d, operateType: %s",
 		bizID, configTemplateID, process.Spec.Alias, processInstance.Spec.ModuleInstSeq, operateType)
 
+	tf := cc.G().TaskFramework.ConfigGenerate.GenerateConfig
 	generate := types.NewStep(config.GenerateConfigStepName.String(), config.GenerateConfigStepName.String()).
 		SetAlias("generate_config").
-		SetMaxExecution(generateConfigTimeout).
-		SetMaxTries(0)
+		SetMaxExecution(tf.MaxExecution).
+		SetMaxTries(tf.MaxRetries)
 	lo.Must0(generate.SetPayload(config.GenerateConfigPayload{
 		TenantID:           tenantID,
 		BizID:              bizID,

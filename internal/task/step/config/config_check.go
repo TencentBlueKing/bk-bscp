@@ -17,6 +17,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
@@ -33,13 +34,14 @@ func CheckConfigMD5(
 	processInstance *table.ProcessInstance,
 ) *types.Step {
 
+	tf := cc.G().TaskFramework.ConfigCheck.CheckConfigMD5
 	step := types.NewStep(
 		config.CheckConfigMD5StepName.String(),
 		config.CheckConfigMD5StepName.String(),
 	).
 		SetAlias("check_config_md5").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(tf.MaxExecution).
+		SetMaxTries(tf.MaxRetries)
 
 	lo.Must0(step.SetPayload(config.CheckConfigPayload{
 		TenantID:           tenantID,
@@ -67,13 +69,14 @@ func FetchConfigContent(tenantID string, bizID, batchID, configTemplateID uint32
 	templateRevision *table.TemplateRevision,
 	process *table.Process,
 	processInstance *table.ProcessInstance) *types.Step {
+	ftf := cc.G().TaskFramework.ConfigCheck.FetchConfigContent
 	step := types.NewStep(
 		config.FetchConfigContentStepName.String(),
 		config.FetchConfigContentStepName.String(),
 	).
 		SetAlias("fetch_config_content").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(ftf.MaxExecution).
+		SetMaxTries(ftf.MaxRetries)
 
 	lo.Must0(step.SetPayload(config.CheckConfigPayload{
 		TenantID:           tenantID,

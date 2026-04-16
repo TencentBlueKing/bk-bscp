@@ -15,14 +15,12 @@ package common
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
@@ -37,17 +35,6 @@ import (
 )
 
 const (
-	// maxWait 脚本执行轮询总超时
-	maxWait = 10 * time.Second
-	// interval 脚本执行轮询间隔
-	interval = 2 * time.Second
-
-	// procOperateInterval 用户发起的进程操作轮询间隔
-	procOperateInterval = 3 * time.Second
-	// procOperateMaxRetries 用户发起的进程操作允许的 115 最大重试次数
-	// 配合 procOperateInterval=3s，总等待约 3 分钟
-	procOperateMaxRetries = 60
-
 	dimBizName  = "biz_name"
 	dimTaskID   = "task_id"
 	dimOperator = "operator"
@@ -135,7 +122,9 @@ type Executor struct {
 	// GseConf GSE 运行时配置
 	// 包含 GSE 服务地址、鉴权信息等静态配置
 	GseConf cc.GSE
-	RedLock *lock.RedisLock
+	// TaskConf 异步任务框架时间控制配置
+	TaskConf cc.TaskFramework
+	RedLock  *lock.RedisLock
 }
 
 // TaskPayload 公用的配置，作为任务快照，方便进行获取以及对比
@@ -253,12 +242,12 @@ func (e *Executor) WaitProcOperateTaskFinish(
 			inProgressCount++
 			if inProgressCount%10 == 1 {
 				logs.Infof("WaitTaskFinish task %s in progress, retry=%d/%d",
-					gseTaskID, inProgressCount, procOperateMaxRetries)
+					gseTaskID, inProgressCount, e.TaskConf.ProcessPoll.MaxRetries)
 			}
 
-			if inProgressCount >= procOperateMaxRetries {
+			if inProgressCount >= e.TaskConf.ProcessPoll.MaxRetries {
 				logs.Warnf("WaitTaskFinish task %s exceeded max retries (%d), errorCode=%d, errorMsg=%s",
-					gseTaskID, procOperateMaxRetries,
+					gseTaskID, e.TaskConf.ProcessPoll.MaxRetries,
 					procResult.ErrorCode, procResult.ErrorMsg)
 				return task.ErrEndLoop
 			}
@@ -271,7 +260,7 @@ func (e *Executor) WaitProcOperateTaskFinish(
 			gseTaskID, procResult.ErrorCode, inProgressCount)
 		return task.ErrEndLoop
 
-	}, task.LoopInterval(procOperateInterval))
+	}, task.LoopInterval(e.TaskConf.ProcessPoll.PollInterval))
 
 	if err != nil {
 		logs.Errorf("WaitTaskFinish error, gseTaskID %s, err=%+v", gseTaskID, err)
@@ -330,60 +319,58 @@ func (e *Executor) WaitTransferFileTaskFinish(
 }
 
 // WaitExecuteScriptFinish 等待脚本执行任务完成
-func (e *Executor) WaitExecuteScriptFinish(ctx context.Context, gseTaskID, bkAgentID string) (*gse.ExecuteScriptResult, error) {
+func (e *Executor) WaitExecuteScriptFinish(ctx context.Context, gseTaskID, bkAgentID string) (
+	*gse.ExecuteScriptResult, error) {
+
 	var result *gse.ExecuteScriptResult
 
-	err := wait.PollUntilContextTimeout(
-		ctx,
-		interval,
-		maxWait,
-		true,
-		func(ctx context.Context) (bool, error) {
-			resp, err := e.GseService.GetExecuteScriptResult(ctx, &gse.GetExecuteScriptResultReq{
-				TaskID: gseTaskID,
-				AgentTasks: []gse.AgentTaskQuery{
-					{
-						BkAgentID: bkAgentID,
-						AtomicTasks: []gse.AtomicTaskQuery{
-							{Offset: 0},
-						},
+	pollCtx, cancel := context.WithTimeout(ctx, e.TaskConf.ScriptExecution.PollTimeout)
+	defer cancel()
+
+	err := task.LoopDoFunc(pollCtx, func() error {
+		resp, err := e.GseService.GetExecuteScriptResult(pollCtx, &gse.GetExecuteScriptResultReq{
+			TaskID: gseTaskID,
+			AgentTasks: []gse.AgentTaskQuery{
+				{
+					BkAgentID: bkAgentID,
+					AtomicTasks: []gse.AtomicTaskQuery{
+						{Offset: 0},
 					},
 				},
-			})
-			if err != nil {
-				return false, fmt.Errorf("get execute script result failed, taskID=%s, err=%v", gseTaskID, err)
+			},
+		})
+		if err != nil {
+			logs.Warnf("WaitExecuteScriptFinish get gse task state error, taskID=%s, err=%v", gseTaskID, err)
+			return nil
+		}
+
+		result = resp
+
+		if len(result.Result) == 0 {
+			logs.Warnf("WaitExecuteScriptFinish task %s result is empty", gseTaskID)
+			return nil
+		}
+
+		for _, r := range result.Result {
+			if r.ErrorCode == 0 && r.Status == 1 {
+				logs.Infof("WaitExecuteScriptFinish script executing, task=%s, agentID=%s, containerID=%s",
+					gseTaskID, r.BkAgentID, r.BkContainerID)
+				return nil
 			}
 
-			result = resp
-
-			// 是否仍存在执行中的任务
-			for _, r := range result.Result {
-				// 正在执行：status=1
-				if r.ErrorCode == 0 && r.Status == 1 {
-					logs.Infof("script executing, task=%s, agentID=%s, containerID=%s", gseTaskID, r.BkAgentID, r.BkContainerID)
-					return false, nil
-				}
-
-				// 兼容 GSE 其他 executing 状态
-				if gse.IsInProgress(r.ErrorCode) {
-					logs.Infof(
-						"script in progress, task=%s, agentID=%s, containerID=%s, errorCode=%d",
-						gseTaskID, r.BkAgentID, r.BkContainerID, r.ErrorCode,
-					)
-					return false, nil
-				}
+			if gse.IsInProgress(r.ErrorCode) {
+				logs.Infof("WaitExecuteScriptFinish script in progress, task=%s, agentID=%s, errorCode=%d",
+					gseTaskID, r.BkAgentID, r.ErrorCode)
+				return nil
 			}
+		}
 
-			// 全部非执行中
-			return true, nil
-		},
-	)
+		logs.Infof("WaitExecuteScriptFinish task %s finished", gseTaskID)
+		return task.ErrEndLoop
+	}, task.LoopInterval(e.TaskConf.ScriptExecution.PollInterval))
 
 	if err != nil {
-		if wait.Interrupted(err) || errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("wait execute script timeout, taskID=%s, maxWait=%s", gseTaskID, maxWait)
-		}
-		return nil, err
+		return nil, fmt.Errorf("get execute script result failed, taskID=%s, err=%v", gseTaskID, err)
 	}
 
 	return result, nil

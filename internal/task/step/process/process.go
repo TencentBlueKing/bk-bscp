@@ -13,21 +13,13 @@
 package process
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-)
-
-const (
-	// MaxExecutionTime 进程任务单步最大执行时间（含模板渲染与 GSE 调用）
-	MaxExecutionTime = 3 * time.Minute
-	// MaxTries 最大重试次数
-	MaxTries = 3
 )
 
 // ValidateOperateProcess 校验操作是否合法
@@ -45,11 +37,12 @@ func ValidateOperateProcess(
 ) *types.Step {
 	logs.V(3).Infof("validate operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
+	vtf := cc.G().TaskFramework.ProcessOperate.ValidateOperateProcess
 	validate := types.NewStep(process.ValidateOperateProcessStepName.String(),
 		process.ValidateOperateProcessStepName.String()).
 		SetAlias("validate_operate_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0) // 校验操作是否合法，不需要重试
+		SetMaxExecution(vtf.MaxExecution).
+		SetMaxTries(vtf.MaxRetries)
 	lo.Must0(validate.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,
 		BizID:                     bizID,
@@ -80,11 +73,12 @@ func CompareWithCMDBProcessInfo(
 	logs.V(3).Infof("compare with cmdb process info: bizID: %d, processID: %d, processInstanceID: %d, needCompareCMDB: %t",
 		bizID, processID, processInstanceID, needCompareCMDB)
 
+	ctf := cc.G().TaskFramework.ProcessOperate.CompareWithCMDBProcessInfo
 	compare := types.NewStep(process.CompareWithCMDBProcessInfoStepName.String(),
 		process.CompareWithCMDBProcessInfoStepName.String()).
 		SetAlias("compare_with_cmdb_process_info").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(ctf.MaxExecution).
+		SetMaxTries(ctf.MaxRetries)
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,
@@ -115,11 +109,12 @@ func CompareWithGSEProcessStatus(
 	logs.V(3).Infof("compare with gse process status: bizID: %d, processID: %d, processInstanceID: %d",
 		bizID, processID, processInstanceID)
 
+	stf := cc.G().TaskFramework.ProcessOperate.CompareWithGSEProcessStatus
 	compare := types.NewStep(process.CompareWithGSEProcessStatusStepName.String(),
 		process.CompareWithGSEProcessStatusStepName.String()).
 		SetAlias("compare_with_gse_process_status").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(stf.MaxExecution).
+		SetMaxTries(stf.MaxRetries)
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,
@@ -149,11 +144,12 @@ func CompareWithGSEProcessConfig(
 	logs.V(3).Infof("compare with gse process config: bizID: %d, processID: %d, processInstanceID: %d",
 		bizID, processID, processInstanceID)
 
+	gcf := cc.G().TaskFramework.ProcessOperate.CompareWithGSEProcessConfig
 	compare := types.NewStep(process.CompareWithGSEProcessConfigStepName.String(),
 		process.CompareWithGSEProcessConfigStepName.String()).
 		SetAlias("compare_with_gse_process_config").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(gcf.MaxExecution).
+		SetMaxTries(gcf.MaxRetries)
 
 	lo.Must0(compare.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,
@@ -184,10 +180,11 @@ func OperateProcess(
 	logs.V(3).Infof("operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
 
+	otf := cc.G().TaskFramework.ProcessOperate.OperateProcess
 	operate := types.NewStep(process.OperateProcessStepName.String(), process.OperateProcessStepName.String()).
 		SetAlias("operate_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0) // 进程操作只操作一次，避免重复操作
+		SetMaxExecution(otf.MaxExecution).
+		SetMaxTries(otf.MaxRetries)
 
 	lo.Must0(operate.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,
@@ -218,10 +215,11 @@ func FinalizeOperateProcess(
 	logs.V(3).Infof("finalize process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
 
+	ftf := cc.G().TaskFramework.ProcessOperate.FinalizeOperateProcess
 	finalize := types.NewStep(process.FinalizeOperateProcessStepName.String(), process.FinalizeOperateProcessStepName.String()).
 		SetAlias("finalize_operate_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(ftf.MaxExecution).
+		SetMaxTries(ftf.MaxRetries)
 
 	lo.Must0(finalize.SetPayload(process.OperatePayload{
 		TenantID:                  tenantID,

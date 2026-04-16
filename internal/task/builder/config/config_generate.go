@@ -14,7 +14,6 @@ package config
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
@@ -22,11 +21,8 @@ import (
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	configExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/step/config"
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
-
-const defaultGenerateConfigTimeout = 2 * time.Minute
 
 // GenerateConfigTask task generate config
 type GenerateConfigTask struct {
@@ -42,7 +38,6 @@ type GenerateConfigTask struct {
 	templateRevision   *table.TemplateRevision
 	process            *table.Process
 	processInstance    *table.ProcessInstance
-	gseConf            cc.GSE
 }
 
 // NewConfigGenerateTask xxx
@@ -60,7 +55,6 @@ func NewConfigGenerateTask(opts common.ConfigTaskOptions) types.TaskBuilder {
 		templateRevision:   opts.TemplateRevision,
 		process:            opts.Process,
 		processInstance:    opts.ProcessInstance,
-		gseConf:            cc.G().GSE,
 	}
 }
 
@@ -84,10 +78,6 @@ func (t *GenerateConfigTask) FinalizeTask(task *types.Task) error {
 }
 
 func (t *GenerateConfigTask) Steps() ([]*types.Step, error) {
-	// 生成配置超时时间处理
-	if t.gseConf.GenerateConfigTimeout == 0 {
-		t.gseConf.GenerateConfigTimeout = defaultGenerateConfigTimeout
-	}
 	return []*types.Step{
 		config.GenerateConfig(
 			t.tenantID,
@@ -101,7 +91,6 @@ func (t *GenerateConfigTask) Steps() ([]*types.Step, error) {
 			t.templateRevision,
 			t.process,
 			t.processInstance,
-			t.gseConf.GenerateConfigTimeout,
 		),
 	}, nil
 }

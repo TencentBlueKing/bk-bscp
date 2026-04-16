@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -51,6 +52,7 @@ func NewGenerateConfigExecutor(dao dao.Set, cmdbService bkcmdb.Service, repo rep
 	return &GenerateConfigExecutor{
 		Executor: &common.Executor{
 			Dao:         dao,
+			TaskConf:    cc.G().TaskFramework,
 			CMDBService: cmdbService,
 			PM:          pm,
 		},

@@ -1660,6 +1660,8 @@ type GSE struct {
 	GenerateConfigTimeout time.Duration `yaml:"generate_config_timeout"`
 	// AsyncDownloadV2 configures the async download v2 feature.
 	AsyncDownloadV2 AsyncDownloadV2 `yaml:"asyncDownloadV2"`
+	// MaxBackups is the maximum number of script backups to keep.
+	MaxBackups int `yaml:"max_backups"`
 }
 
 func (g *GSE) TrySetDefaultForTest() {
@@ -1719,6 +1721,210 @@ func (g GSE) validate() error {
 			"pod id, container name must all be set")
 	}
 	return nil
+}
+
+// StepTiming 步骤级超时与重试配置
+type StepTiming struct {
+	MaxExecution time.Duration `yaml:"maxExecution"`
+	MaxRetries   uint32        `yaml:"maxRetries"`
+}
+
+// ConfigGenerateSteps 配置生成步骤
+type ConfigGenerateSteps struct {
+	GenerateConfig StepTiming `yaml:"generateConfig"`
+}
+
+func (s *ConfigGenerateSteps) trySetDefault() {
+	trySetStepDefault(&s.GenerateConfig, 3*time.Minute, 0)
+}
+
+// ConfigPushSteps 配置下发步骤
+type ConfigPushSteps struct {
+	ValidatePushConfig StepTiming `yaml:"validatePushConfig"`
+	ReleaseConfig      StepTiming `yaml:"releaseConfig"`
+}
+
+func (s *ConfigPushSteps) trySetDefault() {
+	trySetStepDefault(&s.ValidatePushConfig, 3*time.Minute, 0)
+	trySetStepDefault(&s.ReleaseConfig, 3*time.Minute, 0)
+}
+
+// ConfigCheckSteps 配置检查步骤
+type ConfigCheckSteps struct {
+	CheckConfigMD5     StepTiming `yaml:"checkConfigMD5"`
+	FetchConfigContent StepTiming `yaml:"fetchConfigContent"`
+}
+
+func (s *ConfigCheckSteps) trySetDefault() {
+	trySetStepDefault(&s.CheckConfigMD5, 3*time.Minute, 0)
+	trySetStepDefault(&s.FetchConfigContent, 3*time.Minute, 0)
+}
+
+// ProcessOperateSteps 进程操作步骤
+type ProcessOperateSteps struct {
+	ValidateOperateProcess      StepTiming `yaml:"validateOperateProcess"`
+	CompareWithCMDBProcessInfo  StepTiming `yaml:"compareWithCMDBProcessInfo"`
+	CompareWithGSEProcessStatus StepTiming `yaml:"compareWithGSEProcessStatus"`
+	CompareWithGSEProcessConfig StepTiming `yaml:"compareWithGSEProcessConfig"`
+	OperateProcess              StepTiming `yaml:"operateProcess"`
+	FinalizeOperateProcess      StepTiming `yaml:"finalizeOperateProcess"`
+}
+
+func (s *ProcessOperateSteps) trySetDefault() {
+	trySetStepDefault(&s.ValidateOperateProcess, 3*time.Minute, 0)
+	trySetStepDefault(&s.CompareWithCMDBProcessInfo, 3*time.Minute, 3)
+	trySetStepDefault(&s.CompareWithGSEProcessStatus, 3*time.Minute, 3)
+	trySetStepDefault(&s.CompareWithGSEProcessConfig, 3*time.Minute, 3)
+	trySetStepDefault(&s.OperateProcess, 3*time.Minute, 0)
+	trySetStepDefault(&s.FinalizeOperateProcess, 3*time.Minute, 3)
+}
+
+// ProcessUpdateRegisterSteps 更新托管步骤
+type ProcessUpdateRegisterSteps struct {
+	ValidateOperate    StepTiming `yaml:"validateOperate"`
+	StopProcess        StepTiming `yaml:"stopProcess"`
+	RegisterProcess    StepTiming `yaml:"registerProcess"`
+	StartProcess       StepTiming `yaml:"startProcess"`
+	OperationCompleted StepTiming `yaml:"operationCompleted"`
+}
+
+func (s *ProcessUpdateRegisterSteps) trySetDefault() {
+	trySetStepDefault(&s.ValidateOperate, 3*time.Minute, 3)
+	trySetStepDefault(&s.StopProcess, 3*time.Minute, 3)
+	trySetStepDefault(&s.RegisterProcess, 3*time.Minute, 3)
+	trySetStepDefault(&s.StartProcess, 3*time.Minute, 3)
+	trySetStepDefault(&s.OperationCompleted, 3*time.Minute, 3)
+}
+
+// SyncCMDBSteps CMDB 同步步骤
+type SyncCMDBSteps struct {
+	SyncCMDB StepTiming `yaml:"syncCMDB"`
+}
+
+func (s *SyncCMDBSteps) trySetDefault() {
+	trySetStepDefault(&s.SyncCMDB, 3*time.Minute, 3)
+}
+
+// SyncGSESteps GSE 同步步骤
+type SyncGSESteps struct {
+	// SyncGseStatus 按业务维度全量同步 GSE 进程状态（遍历该业务下所有进程，批量查询 GSE 并更新本地状态）
+	SyncGseStatus StepTiming `yaml:"syncGseStatus"`
+	// ProcessStateSync 单进程维度的状态同步（只同步指定进程及其实例的 GSE 运行状态和托管状态，并落库）
+	ProcessStateSync StepTiming `yaml:"processStateSync"`
+}
+
+func (s *SyncGSESteps) trySetDefault() {
+	trySetStepDefault(&s.SyncGseStatus, 3*time.Minute, 0)
+	trySetStepDefault(&s.ProcessStateSync, 1*time.Minute, 0)
+}
+
+// ScriptExecutionConfig GSE 脚本执行轮询控制
+// 用于 ReleaseConfig / CheckConfigMD5 / FetchConfigContent 等通过 GSE 下发脚本的场景
+type ScriptExecutionConfig struct {
+	// TimeoutSec GSE Agent 侧单个原子任务的脚本执行超时（秒），作为 gse.AtomicTask.TimeoutSeconds 传入
+	TimeoutSec int `yaml:"timeoutSec"`
+	// PollTimeout 轮询 GSE 脚本执行结果的总超时，超过后放弃等待
+	PollTimeout time.Duration `yaml:"pollTimeout"`
+	// PollInterval 轮询 GSE 脚本执行结果的间隔
+	PollInterval time.Duration `yaml:"pollInterval"`
+}
+
+func (c *ScriptExecutionConfig) trySetDefault() {
+	if c.TimeoutSec == 0 {
+		c.TimeoutSec = 180
+	}
+	if c.PollTimeout == 0 {
+		c.PollTimeout = 240 * time.Second
+	}
+	if c.PollInterval == 0 {
+		c.PollInterval = 2 * time.Second
+	}
+}
+
+func (c ScriptExecutionConfig) validate() error {
+	if c.TimeoutSec <= 0 {
+		return errors.New("taskFramework.scriptExecution.timeoutSec must be > 0")
+	}
+	if c.PollTimeout <= 0 {
+		return errors.New("taskFramework.scriptExecution.pollTimeout must be > 0")
+	}
+	if c.PollInterval <= 0 {
+		return errors.New("taskFramework.scriptExecution.pollInterval must be > 0")
+	}
+	if c.PollInterval >= c.PollTimeout {
+		return errors.New("taskFramework.scriptExecution.pollInterval must be < pollTimeout")
+	}
+	return nil
+}
+
+// ProcessPollConfig GSE 进程操作轮询控制
+type ProcessPollConfig struct {
+	PollInterval time.Duration `yaml:"pollInterval"`
+	MaxRetries   int           `yaml:"maxRetries"`
+}
+
+func (c *ProcessPollConfig) trySetDefault() {
+	if c.PollInterval == 0 {
+		c.PollInterval = 3 * time.Second
+	}
+	if c.MaxRetries == 0 {
+		c.MaxRetries = 60
+	}
+}
+
+func (c ProcessPollConfig) validate() error {
+	if c.PollInterval <= 0 {
+		return errors.New("taskFramework.processPoll.pollInterval must be > 0")
+	}
+	if c.MaxRetries <= 0 {
+		return errors.New("taskFramework.processPoll.maxRetries must be > 0")
+	}
+	return nil
+}
+
+// TaskFramework 异步任务框架时间控制总配置
+type TaskFramework struct {
+	ConfigGenerate        ConfigGenerateSteps        `yaml:"configGenerate"`
+	ConfigPush            ConfigPushSteps            `yaml:"configPush"`
+	ConfigCheck           ConfigCheckSteps           `yaml:"configCheck"`
+	ProcessOperate        ProcessOperateSteps        `yaml:"processOperate"`
+	ProcessUpdateRegister ProcessUpdateRegisterSteps `yaml:"processUpdateRegister"`
+	SyncCMDB              SyncCMDBSteps              `yaml:"syncCMDB"`
+	SyncGSE               SyncGSESteps               `yaml:"syncGSE"`
+	ScriptExecution       ScriptExecutionConfig      `yaml:"scriptExecution"`
+	ProcessPoll           ProcessPollConfig          `yaml:"processPoll"`
+}
+
+func (tf *TaskFramework) trySetDefault() {
+	tf.ConfigGenerate.trySetDefault()
+	tf.ConfigPush.trySetDefault()
+	tf.ConfigCheck.trySetDefault()
+	tf.ProcessOperate.trySetDefault()
+	tf.ProcessUpdateRegister.trySetDefault()
+	tf.SyncCMDB.trySetDefault()
+	tf.SyncGSE.trySetDefault()
+	tf.ScriptExecution.trySetDefault()
+	tf.ProcessPoll.trySetDefault()
+}
+
+func (tf TaskFramework) validate() error {
+	if err := tf.ScriptExecution.validate(); err != nil {
+		return err
+	}
+	if err := tf.ProcessPoll.validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// trySetStepDefault 为 StepTiming 设置默认值（仅在未配置时填充）
+func trySetStepDefault(s *StepTiming, maxExecution time.Duration, maxRetries uint32) {
+	if s.MaxExecution == 0 {
+		s.MaxExecution = maxExecution
+	}
+	if s.MaxRetries == 0 {
+		s.MaxRetries = maxRetries
+	}
 }
 
 // Gorm defines the grom related settings.

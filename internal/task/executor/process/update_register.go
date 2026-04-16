@@ -29,6 +29,7 @@ import (
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -68,6 +69,7 @@ func NewUpdateRegisterExecutor(gseService *gse.Service, cmdbService bkcmdb.Servi
 			CMDBService: cmdbService,
 			Dao:         dao,
 			RedLock:     redLock,
+			TaskConf:    cc.G().TaskFramework,
 		},
 	}
 }

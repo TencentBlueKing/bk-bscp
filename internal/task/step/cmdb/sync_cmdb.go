@@ -13,30 +13,23 @@
 package cmdb
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-const (
-	// MaxExecutionTime 最大执行时间
-	MaxExecutionTime = 2 * time.Minute
-	// MaxTries 最大重试次数
-	MaxTries = 3
-)
-
-// Biz 同步业务步骤
+// SyncCMDB 同步业务步骤
 func SyncCMDB(tenantID string, bizID uint32) *types.Step {
 	logs.V(3).Infof("Start synchronizing CMDB, tenantID=%s, bizID=%d", tenantID, bizID)
 
+	tf := cc.G().TaskFramework.SyncCMDB.SyncCMDB
 	syncCmdb := types.NewStep("sync-cmdb-task", cmdbGse.SyncCMDB.String()).
 		SetAlias("sync-cmdb").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(tf.MaxExecution).
+		SetMaxTries(tf.MaxRetries)
 
 	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncCMDBPayload{
 		BizID:    bizID,

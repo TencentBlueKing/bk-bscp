@@ -12,140 +12,53 @@
 
 下面这张图描述当前 V2 的业务工作流程，不包含代码方法名，重点说明请求如何进入收集、何时开始分发、以及结果如何收敛。
 
-```plantuml
-@startuml
-title Async Download V2 工作流程
+```mermaid
+flowchart TD
+    A[客户端发起异步下载请求] --> B[feed-server 校验请求与目标信息]
+    B --> C[生成或查找目标任务]
 
-skinparam backgroundColor white
-skinparam activity {
-  BackgroundColor #F8FAFC
-  BorderColor #334155
-  FontColor #0F172A
-  DiamondBackgroundColor #E0F2FE
-  DiamondBorderColor #0369A1
-  StartColor #16A34A
-  EndColor #DC2626
-  BarColor #64748B
-}
+    C --> D{该目标任务是否已存在且仍可复用}
+    D -- 是 --> E[直接返回已有任务ID]
+    D -- 否 --> F[进入同文件 同目标目录 同目标用户的收集窗口]
 
-start
+    F --> G{是否已有可加入的收集批次}
+    G -- 是 --> H[把目标加入现有批次<br/>记录任务与批次关系<br/>必要时顺延收集截止时间]
+    G -- 否 --> I[创建新的收集批次<br/>记录首个目标任务<br/>把批次放入待调度队列]
+    H --> J[返回任务ID]
+    I --> J
 
-partition "客户端请求" {
-  :发起异步下载请求;
-}
+    J --> K[调度器周期性扫描已到期批次]
+    K --> L{批次是否已到达收集截止时间}
+    L -- 否 --> M[继续等待下一个调度周期]
+    L -- 是 --> N[将批次切换为分发中<br/>读取批次内全部目标<br/>按分片大小拆分目标集合]
 
-partition "feed-server" {
-  :校验请求与目标信息;
-  :生成或查找目标任务;
-}
+    N --> O[逐个分片准备源文件]
+    O --> P[向 GSE 发起分发]
+    P --> Q{分片下发是否成功}
+    Q -- 是 --> R[把该分片目标标记为运行中<br/>记录分片与 GSE 任务关系]
+    Q -- 否 --> S[把该分片目标直接标记为失败]
 
-if (该目标任务是否已存在且仍可复用?) then (是)
-  partition "feed-server" {
-    :直接返回已有任务ID;
-  }
-else (否)
-  partition "feed-server" {
-    :进入同文件、同目标目录、同目标用户的收集窗口;
-  }
+    M --> T[调度器周期性刷新分发中批次]
+    R --> T
+    S --> T
+    T --> U[查询 GSE 执行结果]
+    U --> V{是否已拿到目标结果}
 
-  if (是否已有可加入的收集批次?) then (是)
-    partition "feed-server" {
-      :把目标加入现有批次;
-      :记录任务与批次关系;
-      :必要时顺延收集截止时间;
-      :返回任务ID;
-    }
-  else (否)
-    partition "feed-server" {
-      :创建新的收集批次;
-      :记录首个目标任务;
-      :把批次放入待调度队列;
-      :返回任务ID;
-    }
-  endif
-endif
+    V -- 是 --> W[逐个目标更新为成功 失败或超时<br/>统计批次内各状态数量]
+    W --> X{批次内是否全部收敛}
+    X -- 是 --> Y[将批次收敛为完成 部分成功或失败<br/>写入最终原因]
+    X -- 否 --> Z[维持分发中状态并继续等待]
 
-partition "调度器" {
-  :周期性扫描已到期批次;
-}
+    V -- 否 --> AA{分发租约是否过期或任务异常悬挂}
+    AA -- 是 --> AB[执行修复逻辑<br/>把悬挂目标补偿为失败<br/>重新计算批次最终状态]
+    AA -- 否 --> AC[继续等待下一轮刷新]
 
-if (批次是否已到达收集截止时间?) then (是)
-  partition "调度器" {
-    :将批次切换为分发中;
-    :读取批次内全部目标;
-    :按分片大小拆分目标集合;
-  }
-
-  partition "调度器/GSE" {
-    :逐个分片准备源文件;
-    :向 GSE 发起分发;
-  }
-
-  if (分片下发是否成功?) then (是)
-    partition "调度器" {
-      :把该分片目标标记为运行中;
-      :记录分片与 GSE 任务关系;
-    }
-  else (否)
-    partition "调度器" {
-      :把该分片目标直接标记为失败;
-    }
-  endif
-else (否)
-  partition "调度器" {
-    :继续等待下一个调度周期;
-  }
-endif
-
-partition "调度器" {
-  :周期性刷新分发中批次;
-}
-
-partition "调度器/GSE" {
-  :查询 GSE 执行结果;
-}
-
-if (是否已拿到目标结果?) then (是)
-  partition "调度器" {
-    :逐个目标更新为成功、失败或超时;
-    :统计批次内各状态数量;
-  }
-
-  if (批次内是否全部收敛?) then (是)
-    partition "调度器" {
-      :将批次收敛为完成、部分成功或失败;
-      :写入最终原因;
-    }
-  else (否)
-    partition "调度器" {
-      :维持分发中状态并继续等待;
-    }
-  endif
-else (否)
-  if (分发租约是否过期或任务异常悬挂?) then (是)
-    partition "调度器" {
-      :执行修复逻辑;
-      :把悬挂目标补偿为失败;
-      :重新计算批次最终状态;
-    }
-  else (否)
-    partition "调度器" {
-      :继续等待下一轮刷新;
-    }
-  endif
-endif
-
-partition "客户端查询" {
-  :客户端轮询任务状态;
-}
-
-partition "feed-server" {
-  :读取任务当前状态;
-  :返回 Pending、Running、Success、Failed 或 Timeout;
-}
-
-stop
-@enduml
+    Y --> AD[客户端轮询任务状态]
+    Z --> AD
+    AB --> AD
+    AC --> AD
+    AD --> AE[feed-server 读取任务当前状态]
+    AE --> AF[返回 Pending Running Success Failed 或 Timeout]
 ```
 
 补充说明：
