@@ -41,6 +41,14 @@ var (
 	AsyncDownloadJobStatusTimeout = "Timeout"
 )
 
+const (
+	AsyncDownloadBatchStateCollecting  = "Collecting"
+	AsyncDownloadBatchStateDispatching = "Dispatching"
+	AsyncDownloadBatchStateDone        = "Done"
+	AsyncDownloadBatchStatePartial     = "Partial"
+	AsyncDownloadBatchStateFailed      = "Failed"
+)
+
 // AppInstanceMeta defines an app instance's metadata information.
 type AppInstanceMeta struct {
 	BizID     uint32            `json:"bizID"`
@@ -170,6 +178,48 @@ type AsyncDownloadJob struct {
 type AsyncDownloadTarget struct {
 	AgentID     string `json:"agent_id"`
 	ContainerID string `json:"container_id"`
+}
+
+// AsyncDownloadV2Batch defines async download v2 batch.
+type AsyncDownloadV2Batch struct {
+	BatchID             string    `json:"batch_id"`
+	TenantID            string    `json:"tenant_id"`
+	BizID               uint32    `json:"biz_id"`
+	AppID               uint32    `json:"app_id"`
+	FilePath            string    `json:"file_path"`
+	FileName            string    `json:"file_name"`
+	FileSignature       string    `json:"file_signature"`
+	State               string    `json:"state"`
+	OpenUntil           time.Time `json:"open_until"`
+	CreatedAt           time.Time `json:"created_at"`
+	DispatchStartedAt   time.Time `json:"dispatch_started_at"`
+	DispatchOwner       string    `json:"dispatch_owner"`
+	DispatchLeaseUntil  time.Time `json:"dispatch_lease_until"`
+	DispatchHeartbeatAt time.Time `json:"dispatch_heartbeat_at"`
+	DispatchAttempt     int       `json:"dispatch_attempt"`
+	TargetCount         int       `json:"target_count"`
+	SuccessCount        int       `json:"success_count"`
+	FailedCount         int       `json:"failed_count"`
+	TimeoutCount        int       `json:"timeout_count"`
+	ShardCount          int       `json:"shard_count"`
+	FinalReason         string    `json:"final_reason"`
+}
+
+// AsyncDownloadV2Task defines async download v2 task.
+type AsyncDownloadV2Task struct {
+	TaskID        string    `json:"task_id"`
+	BatchID       string    `json:"batch_id"`
+	TargetID      string    `json:"target_id"`
+	BizID         uint32    `json:"biz_id"`
+	AppID         uint32    `json:"app_id"`
+	TenantID      string    `json:"tenant_id"`
+	FilePath      string    `json:"file_path"`
+	FileName      string    `json:"file_name"`
+	FileSignature string    `json:"file_signature"`
+	State         string    `json:"state"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	ErrMsg        string    `json:"err_msg"`
 }
 
 // AsyncDownloadTask defines async download task.

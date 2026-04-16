@@ -447,6 +447,7 @@ func (s *FeedServerSetting) trySetDefault() {
 	s.FSLocalCache.trySetDefault()
 	s.Downstream.trySetDefault()
 	s.GSE.getFromEnv()
+	// GSE defaults include async download v2 runtime defaults.
 	s.GSE.trySetDefault()
 	s.RedisCluster.trySetDefault()
 	s.MRLimiter.trySetDefault()

@@ -1552,6 +1552,81 @@ type BCS struct {
 	Token string `yaml:"token"`
 }
 
+// AsyncDownloadV2 defines async download v2 related runtime.
+type AsyncDownloadV2 struct {
+	Enabled                  bool `yaml:"enabled"`
+	CollectWindowSeconds     int  `yaml:"collectWindowSeconds"`
+	MaxTargetsPerBatch       int  `yaml:"maxTargetsPerBatch"`
+	ShardSize                int  `yaml:"shardSize"`
+	DispatchHeartbeatSeconds int  `yaml:"dispatchHeartbeatSeconds"`
+	DispatchLeaseSeconds     int  `yaml:"dispatchLeaseSeconds"`
+	MaxDispatchAttempts      int  `yaml:"maxDispatchAttempts"`
+	MaxDueBatchesPerTick     int  `yaml:"maxDueBatchesPerTick"`
+	TaskTTLSeconds           int  `yaml:"taskTTLSeconds"`
+	BatchTTLSeconds          int  `yaml:"batchTTLSeconds"`
+}
+
+func (v *AsyncDownloadV2) trySetDefault() {
+	if v.CollectWindowSeconds == 0 {
+		v.CollectWindowSeconds = 10
+	}
+	if v.MaxTargetsPerBatch == 0 {
+		v.MaxTargetsPerBatch = 5000
+	}
+	if v.ShardSize == 0 {
+		v.ShardSize = 500
+	}
+	if v.DispatchHeartbeatSeconds == 0 {
+		v.DispatchHeartbeatSeconds = 15
+	}
+	if v.DispatchLeaseSeconds == 0 {
+		v.DispatchLeaseSeconds = 60
+	}
+	if v.MaxDispatchAttempts == 0 {
+		v.MaxDispatchAttempts = 3
+	}
+	if v.MaxDueBatchesPerTick == 0 {
+		v.MaxDueBatchesPerTick = 100
+	}
+	if v.TaskTTLSeconds == 0 {
+		v.TaskTTLSeconds = 86400
+	}
+	if v.BatchTTLSeconds == 0 {
+		v.BatchTTLSeconds = 86400
+	}
+}
+
+func (v AsyncDownloadV2) validate() error {
+	if v.CollectWindowSeconds <= 0 {
+		return errors.New("async download v2 collect window seconds must be greater than 0")
+	}
+	if v.MaxTargetsPerBatch <= 0 {
+		return errors.New("async download v2 max targets per batch must be greater than 0")
+	}
+	if v.ShardSize <= 0 {
+		return errors.New("async download v2 shard size must be greater than 0")
+	}
+	if v.DispatchHeartbeatSeconds <= 0 {
+		return errors.New("async download v2 dispatch heartbeat seconds must be greater than 0")
+	}
+	if v.DispatchLeaseSeconds <= 0 {
+		return errors.New("async download v2 dispatch lease seconds must be greater than 0")
+	}
+	if v.MaxDispatchAttempts <= 0 {
+		return errors.New("async download v2 max dispatch attempts must be greater than 0")
+	}
+	if v.MaxDueBatchesPerTick <= 0 {
+		return errors.New("async download v2 max due batches per tick must be greater than 0")
+	}
+	if v.TaskTTLSeconds <= 0 {
+		return errors.New("async download v2 task ttl seconds must be greater than 0")
+	}
+	if v.BatchTTLSeconds <= 0 {
+		return errors.New("async download v2 batch ttl seconds must be greater than 0")
+	}
+	return nil
+}
+
 // GSE defines all the gse related runtime.
 type GSE struct {
 	// Enabled is the flag to enable gse p2p download.
@@ -1582,6 +1657,12 @@ type GSE struct {
 	WindowsScriptStoreDir string `yaml:"windows_script_store_dir"`
 	// GenerateConfigTimeout is the timeout for generating gse agent configuration.
 	GenerateConfigTimeout time.Duration `yaml:"generate_config_timeout"`
+	// AsyncDownloadV2 configures the async download v2 feature.
+	AsyncDownloadV2 AsyncDownloadV2 `yaml:"asyncDownloadV2"`
+}
+
+func (g *GSE) TrySetDefaultForTest() {
+	g.trySetDefault()
 }
 
 func (g *GSE) trySetDefault() {
@@ -1600,6 +1681,7 @@ func (g *GSE) trySetDefault() {
 	if g.WindowsScriptStoreDir == "" {
 		g.WindowsScriptStoreDir = `c:\tmp\bkbscp\Administrator`
 	}
+	g.AsyncDownloadV2.trySetDefault()
 }
 
 func (g *GSE) getFromEnv() {
@@ -1622,6 +1704,9 @@ func (g *GSE) getFromEnv() {
 
 // validate gse runtime
 func (g GSE) validate() error {
+	if err := g.AsyncDownloadV2.validate(); err != nil {
+		return err
+	}
 	if !g.Enabled {
 		return nil
 	}
