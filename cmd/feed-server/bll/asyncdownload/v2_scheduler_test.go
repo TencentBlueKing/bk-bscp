@@ -168,30 +168,30 @@ func TestAsyncDownloadV2RecordsLifecycleMetrics(t *testing.T) {
 	require.Equal(t, 1, processed)
 
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadBatchStateCollecting)))
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadBatchStateDispatching)))
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2BatchStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadBatchStateDone)))
 
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadJobStatusPending)))
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadJobStatusRunning)))
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2TaskStateCounter.WithLabelValues("706", "192",
 			types.AsyncDownloadJobStatusSuccess)))
 
 	require.Equal(t, uint64(1), histogramSampleCount(t,
-		sch.metric.v2BatchStateDurationSeconds.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2BatchStateDurationSeconds.WithLabelValues("706", "192",
 			types.AsyncDownloadBatchStateCollecting)))
 	require.Equal(t, uint64(1), histogramSampleCount(t,
-		sch.metric.v2TaskStateDurationSeconds.WithLabelValues("706", "192", "/cfg/protocol.tar.gz",
+		sch.metric.v2TaskStateDurationSeconds.WithLabelValues("706", "192",
 			types.AsyncDownloadJobStatusPending)))
 }
 

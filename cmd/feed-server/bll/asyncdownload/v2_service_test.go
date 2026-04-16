@@ -86,9 +86,9 @@ func TestCreateAsyncDownloadTaskV2RecordsLifecycleMetrics(t *testing.T) {
 	require.NotEmpty(t, taskID)
 
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		svc.metric.v2BatchStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz", types.AsyncDownloadBatchStateCollecting)))
+		svc.metric.v2BatchStateCounter.WithLabelValues("706", "192", types.AsyncDownloadBatchStateCollecting)))
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		svc.metric.v2TaskStateCounter.WithLabelValues("706", "192", "/cfg/protocol.tar.gz", types.AsyncDownloadJobStatusPending)))
+		svc.metric.v2TaskStateCounter.WithLabelValues("706", "192", types.AsyncDownloadJobStatusPending)))
 }
 
 func TestGetAsyncDownloadTaskStatusFallsBackToV1DuringMigration(t *testing.T) {
@@ -452,15 +452,15 @@ func newTestMetric() *metric {
 				Name: "batch_oldest_due_age_seconds_test",
 			}),
 			v2BatchStateCounter: prm.NewCounterVec(prm.CounterOpts{Name: "v2_batch_state_count_test"},
-				[]string{"biz", "app", "file", "state"}),
+				[]string{"biz", "app", "state"}),
 			v2BatchStateDurationSeconds: prm.NewHistogramVec(
 				prm.HistogramOpts{Name: "v2_batch_state_duration_seconds_test"},
-				[]string{"biz", "app", "file", "state"}),
+				[]string{"biz", "app", "state"}),
 			v2TaskStateCounter: prm.NewCounterVec(prm.CounterOpts{Name: "v2_task_state_count_test"},
-				[]string{"biz", "app", "file", "state"}),
+				[]string{"biz", "app", "state"}),
 			v2TaskStateDurationSeconds: prm.NewHistogramVec(
 				prm.HistogramOpts{Name: "v2_task_state_duration_seconds_test"},
-				[]string{"biz", "app", "file", "state"}),
+				[]string{"biz", "app", "state"}),
 			taskRepairCounter: prm.NewCounterVec(prm.CounterOpts{Name: "task_repair_count_test"},
 				[]string{"reason"}),
 			shardDispatchCounter: prm.NewCounterVec(prm.CounterOpts{Name: "shard_dispatch_count_test"},
