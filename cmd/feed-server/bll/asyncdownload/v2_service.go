@@ -1,3 +1,13 @@
+// * Tencent is pleased to support the open source community by making Blueking Container Service available.
+//  * Copyright (C) 20\d\d THL A29 Limited, a Tencent company. All rights reserved.
+//  * Licensed under the MIT License (the "License"); you may not use this file except
+//  * in compliance with the License. You may obtain a copy of the License at
+//  * http://opensource.org/licenses/MIT
+//  * Unless required by applicable law or agreed to in writing, software distributed under
+//  * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//  * either express or implied. See the License for the specific language governing permissions and
+//  * limitations under the License.
+
 package asyncdownload
 
 import (
@@ -92,9 +102,9 @@ func (s *v2Service) createOrJoinBatch(kt *kit.Kit, bizID, appID uint32, filePath
 			if taskID, err := s.store.getBatchTaskID(kt.Ctx, openBatchID, targetID); err == nil && taskID != "" {
 				return taskID, nil
 			}
-				if s.cfg.MaxTargetsPerBatch <= 0 || batch.TargetCount < s.cfg.MaxTargetsPerBatch {
-					task := newV2Task(kt.TenantID, bizID, appID, openBatchID, targetID, filePath, fileName, signature,
-						targetUser, targetDir, now)
+			if s.cfg.MaxTargetsPerBatch <= 0 || batch.TargetCount < s.cfg.MaxTargetsPerBatch {
+				task := newV2Task(kt.TenantID, bizID, appID, openBatchID, targetID, filePath, fileName, signature,
+					targetUser, targetDir, now)
 				oldOpenUntil := batch.OpenUntil
 				batch.TargetCount++
 				batch.OpenUntil = now.Add(time.Duration(s.cfg.CollectWindowSeconds) * time.Second)
@@ -105,14 +115,14 @@ func (s *v2Service) createOrJoinBatch(kt *kit.Kit, bizID, appID uint32, filePath
 				if err := s.store.saveBatch(kt.Ctx, batch); err != nil {
 					return "", err
 				}
-					if err := s.store.addTaskToBatch(kt.Ctx, openBatchID, fileVersionKey, targetID, task.TaskID, task); err != nil {
-						return "", err
-					}
-					s.metric.observeV2TaskCreated(task)
-					if batch.TargetCount >= s.cfg.MaxTargetsPerBatch {
-						_ = s.store.clearOpenBatchID(kt.Ctx, batchScopeKey)
-					}
-					return task.TaskID, nil
+				if err := s.store.addTaskToBatch(kt.Ctx, openBatchID, fileVersionKey, targetID, task.TaskID, task); err != nil {
+					return "", err
+				}
+				s.metric.observeV2TaskCreated(task)
+				if batch.TargetCount >= s.cfg.MaxTargetsPerBatch {
+					_ = s.store.clearOpenBatchID(kt.Ctx, batchScopeKey)
+				}
+				return task.TaskID, nil
 			}
 			_ = s.store.clearOpenBatchID(kt.Ctx, batchScopeKey)
 		}

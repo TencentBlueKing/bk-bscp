@@ -90,10 +90,10 @@ func InitMetric() *metric {
 		})
 		metrics.Register().MustRegister(m.sourceFilesCounter)
 
-			m.batchDueBacklog = prometheus.NewGauge(prometheus.GaugeOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "batch_due_backlog",
+		m.batchDueBacklog = prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "batch_due_backlog",
 			Help:        "the number of async download v2 batches waiting to be dispatched",
 			ConstLabels: labels,
 		})
@@ -105,51 +105,51 @@ func InitMetric() *metric {
 			Name:        "batch_oldest_due_age_seconds",
 			Help:        "the age in seconds of the oldest async download v2 due batch",
 			ConstLabels: labels,
-			})
-			metrics.Register().MustRegister(m.batchOldestDueAgeSeconds)
+		})
+		metrics.Register().MustRegister(m.batchOldestDueAgeSeconds)
 
-			m.v2BatchStateCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "v2_batch_state_count",
-				Help:        "the count of async download v2 batch state entries",
-				ConstLabels: labels,
-			}, []string{"biz", "app", "state"})
-			metrics.Register().MustRegister(m.v2BatchStateCounter)
+		m.v2BatchStateCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "v2_batch_state_count",
+			Help:        "the count of async download v2 batch state entries",
+			ConstLabels: labels,
+		}, []string{"biz", "app", "state"})
+		metrics.Register().MustRegister(m.v2BatchStateCounter)
 
-			m.v2BatchStateDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "v2_batch_state_duration_seconds",
-				Help:        "the duration(seconds) spent in async download v2 batch states",
-				ConstLabels: labels,
-				Buckets:     []float64{1, 2, 4, 6, 10, 15, 30, 50, 100, 150, 200, 400, 600},
-			}, []string{"biz", "app", "state"})
-			metrics.Register().MustRegister(m.v2BatchStateDurationSeconds)
+		m.v2BatchStateDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "v2_batch_state_duration_seconds",
+			Help:        "the duration(seconds) spent in async download v2 batch states",
+			ConstLabels: labels,
+			Buckets:     []float64{1, 2, 4, 6, 10, 15, 30, 50, 100, 150, 200, 400, 600},
+		}, []string{"biz", "app", "state"})
+		metrics.Register().MustRegister(m.v2BatchStateDurationSeconds)
 
-			m.v2TaskStateCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "v2_task_state_count",
-				Help:        "the count of async download v2 task state entries",
-				ConstLabels: labels,
-			}, []string{"biz", "app", "state"})
-			metrics.Register().MustRegister(m.v2TaskStateCounter)
+		m.v2TaskStateCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "v2_task_state_count",
+			Help:        "the count of async download v2 task state entries",
+			ConstLabels: labels,
+		}, []string{"biz", "app", "state"})
+		metrics.Register().MustRegister(m.v2TaskStateCounter)
 
-			m.v2TaskStateDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "v2_task_state_duration_seconds",
-				Help:        "the duration(seconds) spent in async download v2 task states",
-				ConstLabels: labels,
-				Buckets:     []float64{1, 2, 4, 6, 10, 15, 30, 50, 100, 150, 200, 400, 600},
-			}, []string{"biz", "app", "state"})
-			metrics.Register().MustRegister(m.v2TaskStateDurationSeconds)
+		m.v2TaskStateDurationSeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "v2_task_state_duration_seconds",
+			Help:        "the duration(seconds) spent in async download v2 task states",
+			ConstLabels: labels,
+			Buckets:     []float64{1, 2, 4, 6, 10, 15, 30, 50, 100, 150, 200, 400, 600},
+		}, []string{"biz", "app", "state"})
+		metrics.Register().MustRegister(m.v2TaskStateDurationSeconds)
 
-			m.taskRepairCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-				Namespace:   metrics.Namespace,
-				Subsystem:   metrics.AsyncDownload,
-				Name:        "task_repair_count",
+		m.taskRepairCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace:   metrics.Namespace,
+			Subsystem:   metrics.AsyncDownload,
+			Name:        "task_repair_count",
 			Help:        "the count of async download v2 task repairs",
 			ConstLabels: labels,
 		}, []string{"reason"})
