@@ -53,6 +53,7 @@ func newProcess(db *gorm.DB, opts ...gen.DOOption) process {
 	_process.ProcNum = field.NewUint(tableName, "proc_num")
 	_process.FuncName = field.NewString(tableName, "func_name")
 	_process.NewAlias = field.NewString(tableName, "new_alias")
+	_process.AgentStatus = field.NewString(tableName, "agent_status")
 	_process.Creator = field.NewString(tableName, "creator")
 	_process.Reviser = field.NewString(tableName, "reviser")
 	_process.CreatedAt = field.NewTime(tableName, "created_at")
@@ -93,6 +94,7 @@ type process struct {
 	ProcNum              field.Uint
 	FuncName             field.String
 	NewAlias             field.String
+	AgentStatus          field.String
 	Creator              field.String
 	Reviser              field.String
 	CreatedAt            field.Time
@@ -139,6 +141,7 @@ func (p *process) updateTableName(table string) *process {
 	p.ProcNum = field.NewUint(table, "proc_num")
 	p.FuncName = field.NewString(table, "func_name")
 	p.NewAlias = field.NewString(table, "new_alias")
+	p.AgentStatus = field.NewString(table, "agent_status")
 	p.Creator = field.NewString(table, "creator")
 	p.Reviser = field.NewString(table, "reviser")
 	p.CreatedAt = field.NewTime(table, "created_at")
@@ -167,7 +170,7 @@ func (p *process) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *process) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 30)
+	p.fieldMap = make(map[string]field.Expr, 31)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
@@ -194,6 +197,7 @@ func (p *process) fillFieldMap() {
 	p.fieldMap["proc_num"] = p.ProcNum
 	p.fieldMap["func_name"] = p.FuncName
 	p.fieldMap["new_alias"] = p.NewAlias
+	p.fieldMap["agent_status"] = p.AgentStatus
 	p.fieldMap["creator"] = p.Creator
 	p.fieldMap["reviser"] = p.Reviser
 	p.fieldMap["created_at"] = p.CreatedAt
