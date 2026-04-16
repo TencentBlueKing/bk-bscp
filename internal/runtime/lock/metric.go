@@ -13,44 +13,56 @@
 package lock
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 )
 
+var (
+	resourceLockMetricOnce sync.Once
+	resourceLockMetricInst *resourceLockMetric
+	redisLockMetricOnce    sync.Once
+	redisLockMetricInst    *redisLockMetric
+)
+
 func initResourceLockMetric() *resourceLockMetric {
-	m := new(resourceLockMetric)
-	labels := prometheus.Labels{}
-	m.totalCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	resourceLockMetricOnce.Do(func() {
+		m := new(resourceLockMetric)
+		labels := prometheus.Labels{}
+		m.totalCounter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   metrics.Namespace,
+				Subsystem:   metrics.ResourceLockSubSys,
+				Name:        "total_count",
+				Help:        "the total request counts which are try to acquire the resource lock",
+				ConstLabels: labels,
+			}, []string{})
+		metrics.Register().MustRegister(m.totalCounter)
+
+		m.acquiredRate = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace:   metrics.Namespace,
 			Subsystem:   metrics.ResourceLockSubSys,
-			Name:        "total_count",
-			Help:        "the total request counts which are try to acquire the resource lock",
+			Name:        "acquired_rate",
+			Help:        "the acquire rate is the value of acquired_count/total_count",
 			ConstLabels: labels,
 		}, []string{})
-	metrics.Register().MustRegister(m.totalCounter)
+		metrics.Register().MustRegister(m.acquiredRate)
 
-	m.acquiredRate = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   metrics.Namespace,
-		Subsystem:   metrics.ResourceLockSubSys,
-		Name:        "acquired_rate",
-		Help:        "the acquire rate is the value of acquired_count/total_count",
-		ConstLabels: labels,
-	}, []string{})
-	metrics.Register().MustRegister(m.acquiredRate)
+		m.acquiredCounter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   metrics.Namespace,
+				Subsystem:   metrics.ResourceLockSubSys,
+				Name:        "acquired_count",
+				Help:        "the total request count which are are successfully acquire the resource lock",
+				ConstLabels: labels,
+			}, []string{})
+		metrics.Register().MustRegister(m.acquiredCounter)
+		resourceLockMetricInst = m
+	})
 
-	m.acquiredCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace:   metrics.Namespace,
-			Subsystem:   metrics.ResourceLockSubSys,
-			Name:        "acquired_count",
-			Help:        "the total request count which are are successfully acquire the resource lock",
-			ConstLabels: labels,
-		}, []string{})
-	metrics.Register().MustRegister(m.acquiredCounter)
-
-	return m
+	return resourceLockMetricInst
 }
 
 type resourceLockMetric struct {
@@ -65,47 +77,50 @@ type resourceLockMetric struct {
 }
 
 func initRedisLockMetric() *redisLockMetric {
-	m := new(redisLockMetric)
-	labels := prometheus.Labels{}
-	m.timeoutCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	redisLockMetricOnce.Do(func() {
+		m := new(redisLockMetric)
+		labels := prometheus.Labels{}
+		m.timeoutCounter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   metrics.Namespace,
+				Subsystem:   metrics.RedisLockSubSys,
+				Name:        "timeout_count",
+				Help:        "the total timeout count of the redis lock",
+				ConstLabels: labels,
+			}, []string{})
+
+		m.totalCounter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   metrics.Namespace,
+				Subsystem:   metrics.RedisLockSubSys,
+				Name:        "total_count",
+				Help:        "the total request counts which are try to acquire the redis lock",
+				ConstLabels: labels,
+			}, []string{})
+		metrics.Register().MustRegister(m.totalCounter)
+
+		m.acquiredRate = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace:   metrics.Namespace,
 			Subsystem:   metrics.RedisLockSubSys,
-			Name:        "timeout_count",
-			Help:        "the total timeout count of the redis lock",
+			Name:        "acquired_rate",
+			Help:        "the acquire rate is the value of acquired_count/total_count",
 			ConstLabels: labels,
 		}, []string{})
+		metrics.Register().MustRegister(m.acquiredRate)
 
-	m.totalCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace:   metrics.Namespace,
-			Subsystem:   metrics.RedisLockSubSys,
-			Name:        "total_count",
-			Help:        "the total request counts which are try to acquire the redis lock",
-			ConstLabels: labels,
-		}, []string{})
-	metrics.Register().MustRegister(m.totalCounter)
+		m.acquiredCounter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace:   metrics.Namespace,
+				Subsystem:   metrics.RedisLockSubSys,
+				Name:        "acquired_count",
+				Help:        "the total request count which are are successfully acquire the redis lock",
+				ConstLabels: labels,
+			}, []string{})
+		metrics.Register().MustRegister(m.acquiredCounter)
+		redisLockMetricInst = m
+	})
 
-	m.acquiredRate = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:   metrics.Namespace,
-		Subsystem:   metrics.RedisLockSubSys,
-		Name:        "acquired_rate",
-		Help:        "the acquire rate is the value of acquired_count/total_count",
-		ConstLabels: labels,
-	}, []string{})
-	metrics.Register().MustRegister(m.acquiredRate)
-
-	m.acquiredCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace:   metrics.Namespace,
-			Subsystem:   metrics.RedisLockSubSys,
-			Name:        "acquired_count",
-			Help:        "the total request count which are are successfully acquire the redis lock",
-			ConstLabels: labels,
-		}, []string{})
-	metrics.Register().MustRegister(m.acquiredCounter)
-
-	return m
+	return redisLockMetricInst
 }
 
 type redisLockMetric struct {

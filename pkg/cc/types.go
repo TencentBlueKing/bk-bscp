@@ -1554,6 +1554,7 @@ type BCS struct {
 
 // AsyncDownloadV2 defines async download v2 related runtime.
 type AsyncDownloadV2 struct {
+	// Enabled is deprecated in feed-server runtime and no longer gates v2 execution.
 	Enabled                  bool `yaml:"enabled"`
 	CollectWindowSeconds     int  `yaml:"collectWindowSeconds"`
 	MaxTargetsPerBatch       int  `yaml:"maxTargetsPerBatch"`

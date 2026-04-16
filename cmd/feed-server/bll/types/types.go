@@ -189,6 +189,8 @@ type AsyncDownloadV2Batch struct {
 	FilePath            string    `json:"file_path"`
 	FileName            string    `json:"file_name"`
 	FileSignature       string    `json:"file_signature"`
+	TargetUser          string    `json:"target_user"`
+	TargetFileDir       string    `json:"target_file_dir"`
 	State               string    `json:"state"`
 	OpenUntil           time.Time `json:"open_until"`
 	CreatedAt           time.Time `json:"created_at"`
@@ -216,6 +218,8 @@ type AsyncDownloadV2Task struct {
 	FilePath      string    `json:"file_path"`
 	FileName      string    `json:"file_name"`
 	FileSignature string    `json:"file_signature"`
+	TargetUser    string    `json:"target_user"`
+	TargetFileDir string    `json:"target_file_dir"`
 	State         string    `json:"state"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`

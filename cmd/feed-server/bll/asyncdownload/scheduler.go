@@ -43,18 +43,29 @@ var (
 	JobTimeoutSeconds = 10 * 60
 )
 
+type transferFileClient interface {
+	AsyncExtensionsTransferFile(ctx context.Context, req *gse.TransferFileReq) (*gse.CommonTaskRespData, error)
+	AsyncTerminateTransferFile(ctx context.Context, req *gse.TerminateTransferFileTaskReq) (*gse.CommonTaskRespData, error)
+	GetExtensionsTransferFileResult(ctx context.Context, req *gse.GetTransferFileResultReq) (*gse.TransferFileResultData, error)
+}
+
+type sourceDownloader interface {
+	Download(kt *kit.Kit, sign string) (io.ReadCloser, int64, error)
+}
+
 // Scheduler scheduled task to process download jobs
 type Scheduler struct {
-	gseService        *gse.Service
+	gseService        transferFileClient
 	ctx               context.Context
 	cancel            context.CancelFunc
 	bds               bedis.Client
 	redLock           *lock.RedisLock
 	fileLock          *lock.FileLock
-	provider          repository.Provider
+	provider          sourceDownloader
 	serverAgentID     string
 	serverContainerID string
 	metric            *metric
+	v2                *v2Scheduler
 }
 
 // NewScheduler create a async download scheduler
@@ -111,25 +122,51 @@ func NewScheduler(mc *metric, redLock *lock.RedisLock, gseService *gse.Service) 
 		serverAgentID:     serverAgentID,
 		serverContainerID: serverContainerID,
 		metric:            mc,
+		v2: newV2Scheduler(newV2Store(bds, cc.FeedServer().GSE.AsyncDownloadV2), gseService, provider, redLock,
+			fileLock, mc, serverAgentID, serverContainerID, cc.FeedServer().GSE.AgentUser,
+			cc.FeedServer().GSE.CacheDir, cc.FeedServer().GSE.AsyncDownloadV2),
 	}, nil
 }
 
 // Run run a scheduled task
 func (a *Scheduler) Run() {
+	go a.runV1DrainLoop()
+	if a.v2 != nil && a.v2.enabled() {
+		go a.runV2Loop()
+	}
+}
 
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+func (a *Scheduler) runV1DrainLoop() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				a.do()
-			case <-a.ctx.Done():
-				logs.Infof("async downloader stopped")
-				return
+	for {
+		select {
+		case <-ticker.C:
+			if err := a.runOneV1DrainPass(a.ctx); err != nil {
+				logs.Errorf("run async download v1 drain pass failed, err: %s", err.Error())
 			}
+		case <-a.ctx.Done():
+			logs.Infof("async downloader stopped")
+			return
 		}
-	}()
+	}
+}
+
+func (a *Scheduler) runV2Loop() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if _, err := a.v2.processDueBatches(a.ctx); err != nil {
+				logs.Errorf("run async download v2 pass failed, err: %s", err.Error())
+			}
+		case <-a.ctx.Done():
+			logs.Infof("async download v2 scheduler stopped")
+			return
+		}
+	}
 }
 
 // Stop stop scheduled task
@@ -138,62 +175,64 @@ func (a *Scheduler) Stop() {
 }
 
 func (a *Scheduler) do() {
+	_ = a.runOneV1DrainPass(a.ctx)
+}
 
-	keys, err := a.bds.Keys(a.ctx, "AsyncDownloadJob:*")
+func (a *Scheduler) runOneV1DrainPass(ctx context.Context) error {
+	keys, err := a.bds.Keys(ctx, "AsyncDownloadJob:*")
 	if err != nil {
-		logs.Errorf("list async download job keys from redis failed, err: %s", err.Error())
-		return
+		return err
 	}
 
 	for _, key := range keys {
-		if err := func() error {
-			// lock by job to prevent from
-			// 1. concurrency writing in api AsyncDownload
-			// 2. concurrency writing in other feedserver instance cronjob
-			if a.redLock.TryAcquire(key) {
-				defer a.redLock.Release(key)
-				data, err := a.bds.Get(a.ctx, key)
-				if err != nil {
-					return err
-				}
-				if data == "" {
-					return nil
-				}
-				job := &types.AsyncDownloadJob{}
-				if err := jsoni.Unmarshal([]byte(data), job); err != nil {
-					return err
-				}
-				switch job.Status {
-				case types.AsyncDownloadJobStatusPending:
-					if time.Since(job.CreateTime) < 15*time.Second {
-						// continue to collect target clients
-
-						// TODO: optimize the logic to collect target clients
-						// 1. create a new job set execute time as 5 seconds later
-						// 2. if any target collected during pending, set the execute time as 5 seconds later from now
-						// 3. if execute time expired, stop collect, start to download
-						return nil
-					}
-					return a.handleDownload(job)
-				case types.AsyncDownloadJobStatusRunning:
-					return a.checkJobStatus(job)
-				case types.AsyncDownloadJobStatusSuccess,
-					types.AsyncDownloadJobStatusFailed,
-					types.AsyncDownloadJobStatusTimeout:
-					return nil
-				default:
-					logs.Errorf("invalid async download job status: %s", job.Status)
-				}
-			}
-			return nil
-		}(); err != nil {
+		if err := a.handleOneLegacyJob(ctx, key); err != nil {
 			logs.Errorf("handle async download job %s failed, err: %s", key, err.Error())
 		}
 	}
+	return nil
+}
+
+func (a *Scheduler) handleOneLegacyJob(ctx context.Context, key string) error {
+	// lock by job to prevent from
+	// 1. concurrency writing in api AsyncDownload
+	// 2. concurrency writing in other feedserver instance cronjob
+	if !a.redLock.TryAcquire(key) {
+		return nil
+	}
+	defer a.redLock.Release(key)
+
+	data, err := a.bds.Get(ctx, key)
+	if err != nil {
+		return err
+	}
+	if data == "" {
+		return nil
+	}
+	job := &types.AsyncDownloadJob{}
+	if err := jsoni.Unmarshal([]byte(data), job); err != nil {
+		return err
+	}
+	switch job.Status {
+	case types.AsyncDownloadJobStatusPending:
+		if time.Since(job.CreateTime) < 15*time.Second {
+			return nil
+		}
+		return a.handleDownload(job)
+	case types.AsyncDownloadJobStatusRunning:
+		return a.checkJobStatus(job)
+	case types.AsyncDownloadJobStatusSuccess,
+		types.AsyncDownloadJobStatusFailed,
+		types.AsyncDownloadJobStatusTimeout:
+		return nil
+	default:
+		logs.Errorf("invalid async download job status: %s", job.Status)
+	}
+	return nil
 }
 
 func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
-	logs.Infof("handle async download job %s, biz_id: %d, app_id: %d", job.JobID, job.BizID, job.AppID)
+	start := time.Now()
+	logs.Infof("handle async download job started, job_id: %s, biz_id: %d, app_id: %d", job.JobID, job.BizID, job.AppID)
 	kt := kit.NewWithTenant(job.TenantID)
 	kt.BizID = job.BizID
 	kt.AppID = job.AppID
@@ -213,9 +252,14 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 	// filepath = source/{biz_id}/{sha256}
 	signature := job.FileSignature
 	serverFilePath := path.Join(sourceDir, signature)
+	downloadStart := time.Now()
 	if err := a.checkAndDownloadFile(kt, serverFilePath, signature); err != nil {
+		logs.Errorf("handle async download job failed while preparing source file, job_id: %s, duration_ms: %d, source_prepare_ms: %d, err: %v",
+			job.JobID, time.Since(start).Milliseconds(), time.Since(downloadStart).Milliseconds(), err)
 		return err
 	}
+	logs.Infof("handle async download source file prepared, job_id: %s, source_prepare_ms: %d",
+		job.JobID, time.Since(downloadStart).Milliseconds())
 
 	// 3. 创建GSE文件传输任务
 	targetAgents := make([]gse.TransferFileAgent, 0, len(job.Targets))
@@ -251,8 +295,11 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 			},
 		},
 	}
+	gseStart := time.Now()
 	resp, err := a.gseService.AsyncExtensionsTransferFile(a.ctx, transferFileReq)
 	if err != nil {
+		logs.Errorf("handle async download job failed while creating gse task, job_id: %s, duration_ms: %d, gse_create_ms: %d, err: %v",
+			job.JobID, time.Since(start).Milliseconds(), time.Since(gseStart).Milliseconds(), err)
 		return fmt.Errorf("create gse transfer file task failed, %s", err.Error())
 	}
 	// 4. 更新任务状态
@@ -261,6 +308,9 @@ func (a *Scheduler) handleDownload(job *types.AsyncDownloadJob) error {
 	if err := a.updateAsyncDownloadJobStatus(a.ctx, job); err != nil {
 		return err
 	}
+
+	logs.Infof("handle async download job finished, job_id: %s, gse_task_id: %s, duration_ms: %d, gse_create_ms: %d",
+		job.JobID, job.GSETaskID, time.Since(start).Milliseconds(), time.Since(gseStart).Milliseconds())
 
 	return nil
 }
@@ -308,6 +358,7 @@ func (a *Scheduler) updateAsyncDownloadJobStatus(ctx context.Context, job *types
 }
 
 func (a *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string) error {
+	start := time.Now()
 	// block until file download to avoid repeat download from another job
 	a.fileLock.Acquire(filePath)
 	defer a.fileLock.Release(filePath)
@@ -315,6 +366,8 @@ func (a *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string
 		if !os.IsNotExist(iErr) {
 			return iErr
 		}
+		logs.Infof("async download source file cache miss, file_path: %s, signature: %s",
+			filePath, signature)
 		// not exists in feed server, download to local disk
 		file, iErr := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 		if iErr != nil {
@@ -333,7 +386,12 @@ func (a *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string
 		if e := file.Sync(); e != nil {
 			return e
 		}
+		logs.Infof("async download source file downloaded, file_path: %s, signature: %s, duration_ms: %d",
+			filePath, signature, time.Since(start).Milliseconds())
+		return nil
 	}
+	logs.Infof("async download source file cache hit, file_path: %s, signature: %s, duration_ms: %d",
+		filePath, signature, time.Since(start).Milliseconds())
 	return nil
 }
 
