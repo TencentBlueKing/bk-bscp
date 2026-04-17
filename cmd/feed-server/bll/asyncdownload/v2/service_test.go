@@ -261,67 +261,7 @@ func TestCreateStatusWithSimulatedGSEPartial(t *testing.T) {
 	require.Equal(t, types.AsyncDownloadBatchStatePartial, batch.State)
 }
 
-func TestRunningTaskRepairsAfterDispatchLeaseTimeout(t *testing.T) {
-	svc, sch, kt := newIntegratedTestHarness(t)
-	gseClient := mustGetFakeTransferClient(t, sch)
-	gseClient.resultBuilder = func(_ string, req *gse.TransferFileReq) []gse.TransferFileResultDataResult {
-		return []gse.TransferFileResultDataResult{{
-			ErrorCode: 115,
-			Content: gse.TransferFileResultDataResultContent{
-				DestAgentID:     req.Tasks[0].Target.Agents[0].BkAgentID,
-				DestContainerID: req.Tasks[0].Target.Agents[0].BkContainerID,
-				DestFileDir:     req.Tasks[0].Target.StoreDir,
-				DestFileName:    req.Tasks[0].Target.FileName,
-			},
-		}}
-	}
-
-	taskID, err := svc.CreateTask(kt, 706, 192, "/cfg", "protocol.tar.gz",
-		"agent-a", "container-a", "tester", "/data/releases", "sig-1")
-	require.NoError(t, err)
-	forceTaskBatchDue(t, svc, sch, kt, taskID)
-
-	processed, err := sch.ProcessDueBatches(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, 1, processed)
-
-	status, err := svc.GetTaskStatus(kt.Ctx, taskID)
-	require.NoError(t, err)
-	require.Equal(t, types.AsyncDownloadJobStatusRunning, status)
-
-	task, err := svc.Store().GetTask(kt.Ctx, taskID)
-	require.NoError(t, err)
-	batch, err := sch.Store().GetBatch(kt.Ctx, task.BatchID)
-	require.NoError(t, err)
-	batch.DispatchLeaseUntil = time.Now().Add(-time.Second)
-	require.NoError(t, sch.Store().SaveBatch(kt.Ctx, batch))
-
-	processed, err = sch.ProcessDueBatches(context.Background())
-	require.NoError(t, err)
-	require.GreaterOrEqual(t, processed, 0)
-
-	status, err = svc.GetTaskStatus(kt.Ctx, taskID)
-	require.NoError(t, err)
-	require.Equal(t, types.AsyncDownloadJobStatusTimeout, status)
-
-	task, err = svc.Store().GetTask(kt.Ctx, taskID)
-	require.NoError(t, err)
-	require.Equal(t, "dispatch_timeout", task.ErrMsg)
-
-	batch, err = sch.Store().GetBatch(kt.Ctx, task.BatchID)
-	require.NoError(t, err)
-	require.Equal(t, types.AsyncDownloadBatchStateFailed, batch.State)
-	require.Equal(t, "dispatch_timeout", batch.FinalReason)
-	require.Equal(t, 1, batch.TimeoutCount)
-
-	require.Len(t, gseClient.terminateReqs, 1)
-	require.Equal(t, "gse-task-1", gseClient.terminateReqs[0].TaskID)
-	require.Len(t, gseClient.terminateReqs[0].Agents, 1)
-	require.Equal(t, "agent-a", gseClient.terminateReqs[0].Agents[0].BkAgentID)
-	require.Equal(t, "container-a", gseClient.terminateReqs[0].Agents[0].BkContainerID)
-}
-
-func TestRepeatedRunningResultDoesNotExtendDispatchLeaseWithoutProgress(t *testing.T) {
+func TestRepeatedRunningResultExtendsLeaseWhenGSEHeartbeatIsObserved(t *testing.T) {
 	svc, sch, kt := newIntegratedTestHarness(t)
 	gseClient := mustGetFakeTransferClient(t, sch)
 	gseClient.resultBuilder = func(_ string, req *gse.TransferFileReq) []gse.TransferFileResultDataResult {
@@ -362,9 +302,50 @@ func TestRepeatedRunningResultDoesNotExtendDispatchLeaseWithoutProgress(t *testi
 
 	batch, err = sch.Store().GetBatch(kt.Ctx, task.BatchID)
 	require.NoError(t, err)
-	require.Equal(t, shortLeaseUntil.UnixMilli(), batch.DispatchLeaseUntil.UnixMilli())
+	require.True(t, batch.DispatchLeaseUntil.After(shortLeaseUntil))
+	require.True(t, batch.DispatchHeartbeatAt.After(shortLeaseUntil.Add(-120*time.Millisecond)))
 
 	time.Sleep(time.Until(shortLeaseUntil) + 40*time.Millisecond)
+
+	status, err := svc.GetTaskStatus(kt.Ctx, taskID)
+	require.NoError(t, err)
+	require.Equal(t, types.AsyncDownloadJobStatusRunning, status)
+
+	require.Empty(t, gseClient.terminateReqs)
+}
+
+func TestRunningTaskTimesOutAfterAbsoluteDispatchTimeout(t *testing.T) {
+	svc, sch, kt := newIntegratedTestHarness(t)
+	gseClient := mustGetFakeTransferClient(t, sch)
+	gseClient.resultBuilder = func(_ string, req *gse.TransferFileReq) []gse.TransferFileResultDataResult {
+		return []gse.TransferFileResultDataResult{{
+			ErrorCode: 115,
+			Content: gse.TransferFileResultDataResultContent{
+				DestAgentID:     req.Tasks[0].Target.Agents[0].BkAgentID,
+				DestContainerID: req.Tasks[0].Target.Agents[0].BkContainerID,
+				DestFileDir:     req.Tasks[0].Target.StoreDir,
+				DestFileName:    req.Tasks[0].Target.FileName,
+			},
+		}}
+	}
+
+	taskID, err := svc.CreateTask(kt, 706, 192, "/cfg", "protocol.tar.gz",
+		"agent-a", "container-a", "tester", "/data/releases", "sig-1")
+	require.NoError(t, err)
+	forceTaskBatchDue(t, svc, sch, kt, taskID)
+
+	processed, err := sch.ProcessDueBatches(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 1, processed)
+
+	task, err := svc.Store().GetTask(kt.Ctx, taskID)
+	require.NoError(t, err)
+	batch, err := sch.Store().GetBatch(kt.Ctx, task.BatchID)
+	require.NoError(t, err)
+
+	batch.DispatchStartedAt = time.Now().Add(-21 * time.Minute)
+	batch.DispatchLeaseUntil = time.Now().Add(time.Minute)
+	require.NoError(t, sch.Store().SaveBatch(kt.Ctx, batch))
 
 	processed, err = sch.ProcessDueBatches(context.Background())
 	require.NoError(t, err)
@@ -377,6 +358,11 @@ func TestRepeatedRunningResultDoesNotExtendDispatchLeaseWithoutProgress(t *testi
 	task, err = svc.Store().GetTask(kt.Ctx, taskID)
 	require.NoError(t, err)
 	require.Equal(t, "dispatch_timeout", task.ErrMsg)
+
+	batch, err = sch.Store().GetBatch(kt.Ctx, task.BatchID)
+	require.NoError(t, err)
+	require.Equal(t, types.AsyncDownloadBatchStateFailed, batch.State)
+	require.Equal(t, "dispatch_timeout", batch.FinalReason)
 
 	require.Len(t, gseClient.terminateReqs, 1)
 	require.Equal(t, "gse-task-1", gseClient.terminateReqs[0].TaskID)

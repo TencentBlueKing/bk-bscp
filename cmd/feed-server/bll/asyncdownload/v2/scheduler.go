@@ -42,6 +42,8 @@ type Scheduler struct {
 	cfg               cc.AsyncDownloadV2
 }
 
+const maxDispatchDuration = 20 * time.Minute
+
 func NewScheduler(store *Store, gseService TransferFileClient, provider SourceDownloader, redLock *lock.RedisLock,
 	fileLock *lock.FileLock, mc Metrics, serverAgentID, serverContainerID, agentUser, cacheDir string,
 	cfg cc.AsyncDownloadV2) *Scheduler {
@@ -298,10 +300,18 @@ func (s *Scheduler) refreshDispatchingBatch(ctx context.Context, batchID string)
 		return s.finalizeCompletedBatch(ctx, batch)
 	}
 
+	if hasDispatchExceededMaxDuration(batch) {
+		return s.RepairTimeoutBatch(ctx, batchID)
+	}
+
 	if !oldLeaseUntil.IsZero() && time.Now().After(oldLeaseUntil) {
 		return s.RepairTimeoutBatch(ctx, batchID)
 	}
 	return s.store.SaveBatch(ctx, batch)
+}
+
+func hasDispatchExceededMaxDuration(batch *types.AsyncDownloadV2Batch) bool {
+	return batch != nil && !batch.DispatchStartedAt.IsZero() && time.Since(batch.DispatchStartedAt) > maxDispatchDuration
 }
 
 func (s *Scheduler) refreshDispatchProgress(ctx context.Context, batch *types.AsyncDownloadV2Batch,
@@ -310,29 +320,35 @@ func (s *Scheduler) refreshDispatchProgress(ctx context.Context, batch *types.As
 		return nil
 	}
 
-	progressed, err := s.refreshDispatchProgressFromGSE(ctx, batch.BatchID, batch.TenantID, dispatchState)
+	signal, err := s.refreshDispatchProgressFromGSE(ctx, batch.BatchID, batch.TenantID, dispatchState)
 	if err != nil {
 		return err
 	}
-	if progressed {
+	if signal.progressed || signal.heartbeatSeen {
 		batch.DispatchHeartbeatAt = time.Now()
 		batch.DispatchLeaseUntil = batch.DispatchHeartbeatAt.Add(time.Duration(s.cfg.DispatchLeaseSeconds) * time.Second)
 	}
 	return nil
 }
 
+type dispatchRefreshSignal struct {
+	progressed    bool
+	heartbeatSeen bool
+}
+
 func (s *Scheduler) refreshDispatchProgressFromGSE(ctx context.Context, batchID, tenantID string,
-	dispatchState map[string]string) (bool, error) {
+	dispatchState map[string]string) (dispatchRefreshSignal, error) {
 	kt := kit.NewWithTenant(tenantID)
-	progressed := false
+	signal := dispatchRefreshSignal{}
 	for _, gseTaskID := range collectDispatchTaskIDs(dispatchState) {
-		changed, err := s.refreshGSETaskProgress(kt.Ctx, ctx, batchID, dispatchState, gseTaskID)
+		taskSignal, err := s.refreshGSETaskProgress(kt.Ctx, ctx, batchID, dispatchState, gseTaskID)
 		if err != nil {
-			return false, err
+			return dispatchRefreshSignal{}, err
 		}
-		progressed = progressed || changed
+		signal.progressed = signal.progressed || taskSignal.progressed
+		signal.heartbeatSeen = signal.heartbeatSeen || taskSignal.heartbeatSeen
 	}
-	return progressed, nil
+	return signal, nil
 }
 
 func collectDispatchTaskIDs(dispatchState map[string]string) []string {
@@ -353,48 +369,52 @@ func collectDispatchTaskIDs(dispatchState map[string]string) []string {
 }
 
 func (s *Scheduler) refreshGSETaskProgress(gseCtx, ctx context.Context, batchID string,
-	dispatchState map[string]string, gseTaskID string) (bool, error) {
+	dispatchState map[string]string, gseTaskID string) (dispatchRefreshSignal, error) {
 	resp, err := s.gseService.GetExtensionsTransferFileResult(gseCtx, &gse.GetTransferFileResultReq{TaskID: gseTaskID})
 	if err != nil {
-		return false, nil
+		return dispatchRefreshSignal{}, nil
 	}
 
-	progressed := false
+	signal := dispatchRefreshSignal{}
 	for _, result := range resp.Result {
-		changed, err := s.applyDispatchResult(ctx, batchID, dispatchState, gseTaskID, result)
+		resultSignal, err := s.applyDispatchResult(ctx, batchID, dispatchState, gseTaskID, result)
 		if err != nil {
-			return false, err
+			return dispatchRefreshSignal{}, err
 		}
-		progressed = progressed || changed
+		signal.progressed = signal.progressed || resultSignal.progressed
+		signal.heartbeatSeen = signal.heartbeatSeen || resultSignal.heartbeatSeen
 	}
-	return progressed, nil
+	return signal, nil
 }
 
 func (s *Scheduler) applyDispatchResult(ctx context.Context, batchID string, dispatchState map[string]string,
-	gseTaskID string, result gse.TransferFileResultDataResult) (bool, error) {
+	gseTaskID string, result gse.TransferFileResultDataResult) (dispatchRefreshSignal, error) {
 	if result.Content.Type == "upload" {
 		return s.applyUploadDispatchResult(ctx, batchID, dispatchState, gseTaskID, result)
 	}
 
 	targetID := BuildTargetID(result.Content.DestAgentID, result.Content.DestContainerID)
 	if dispatchState[targetID] != gseTaskID {
-		return false, nil
+		return dispatchRefreshSignal{}, nil
 	}
 
 	switch result.ErrorCode {
 	case 0:
-		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusSuccess, "")
+		changed, err := s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusSuccess, "")
+		return dispatchRefreshSignal{progressed: changed}, err
 	case 115:
-		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusRunning, "")
+		changed, err := s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusRunning, "")
+		return dispatchRefreshSignal{progressed: changed, heartbeatSeen: true}, err
 	default:
-		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
+		changed, err := s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
+		return dispatchRefreshSignal{progressed: changed}, err
 	}
 }
 
 func (s *Scheduler) applyUploadDispatchResult(ctx context.Context, batchID string, dispatchState map[string]string,
-	gseTaskID string, result gse.TransferFileResultDataResult) (bool, error) {
+	gseTaskID string, result gse.TransferFileResultDataResult) (dispatchRefreshSignal, error) {
 	if result.ErrorCode == 0 || result.ErrorCode == 115 {
-		return false, nil
+		return dispatchRefreshSignal{heartbeatSeen: result.ErrorCode == 115}, nil
 	}
 
 	progressed := false
@@ -404,11 +424,11 @@ func (s *Scheduler) applyUploadDispatchResult(ctx context.Context, batchID strin
 		}
 		changed, err := s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
 		if err != nil {
-			return false, err
+			return dispatchRefreshSignal{}, err
 		}
 		progressed = progressed || changed
 	}
-	return progressed, nil
+	return dispatchRefreshSignal{progressed: progressed}, nil
 }
 
 func (s *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string) error {

@@ -86,7 +86,7 @@ func (s *Scheduler) RepairTimeoutBatch(ctx context.Context, batchID string) erro
 		return err
 	}
 	oldState := batch.State
-	s.terminateBatchDispatches(batch)
+	terminatedTaskCount, terminatedGSETaskCount := s.terminateBatchDispatches(batch)
 	if finalizeErr := s.FinalizeTimeoutBatchTasks(ctx, batchID); finalizeErr != nil {
 		return finalizeErr
 	}
@@ -102,6 +102,10 @@ func (s *Scheduler) RepairTimeoutBatch(ctx context.Context, batchID string) erro
 	if err := s.store.SaveBatch(ctx, batch); err != nil {
 		return err
 	}
+	logs.Infof("v2 batch timeout repaired, batch_id=%s old_state=%s final_state=%s reason=%s "+
+		"success_count=%d failed_count=%d timeout_count=%d terminated_targets=%d terminated_gse_tasks=%d",
+		batch.BatchID, oldState, batch.State, batch.FinalReason, batch.SuccessCount, batch.FailedCount,
+		batch.TimeoutCount, terminatedTaskCount, terminatedGSETaskCount)
 	s.metric.ObserveV2BatchTransition(batch, oldState)
 	return s.finalizeCompletedBatch(ctx, batch)
 }
@@ -145,20 +149,20 @@ func (s *Scheduler) finalizeBatchTasks(ctx context.Context, batchID, taskState, 
 	return nil
 }
 
-func (s *Scheduler) terminateBatchDispatches(batch *types.AsyncDownloadV2Batch) {
+func (s *Scheduler) terminateBatchDispatches(batch *types.AsyncDownloadV2Batch) (int, int) {
 	if s.gseService == nil || batch == nil {
-		return
+		return 0, 0
 	}
 	kt := kit.NewWithTenant(batch.TenantID)
 	dispatchState, err := s.store.ListBatchDispatchState(kt.Ctx, batch.BatchID)
 	if err != nil {
 		logs.Errorf("list batch dispatch state for timeout batch %s failed, err: %v", batch.BatchID, err)
-		return
+		return 0, 0
 	}
 	targetTasks, err := s.store.ListBatchTargetTasks(kt.Ctx, batch.BatchID)
 	if err != nil {
 		logs.Errorf("list batch target tasks for timeout batch %s failed, err: %v", batch.BatchID, err)
-		return
+		return 0, 0
 	}
 	groupedAgents := make(map[string][]gse.TransferFileAgent)
 	for targetID, gseTaskID := range dispatchState {
@@ -184,10 +188,14 @@ func (s *Scheduler) terminateBatchDispatches(batch *types.AsyncDownloadV2Batch) 
 			BkContainerID: containerID,
 		})
 	}
+	terminatedTargetCount := 0
+	terminatedGSETaskCount := 0
 	for gseTaskID, agents := range groupedAgents {
 		if len(agents) == 0 {
 			continue
 		}
+		terminatedTargetCount += len(agents)
+		terminatedGSETaskCount++
 		if _, err := s.gseService.AsyncTerminateTransferFile(kt.Ctx, &gse.TerminateTransferFileTaskReq{
 			TaskID: gseTaskID,
 			Agents: agents,
@@ -196,6 +204,7 @@ func (s *Scheduler) terminateBatchDispatches(batch *types.AsyncDownloadV2Batch) 
 				gseTaskID, batch.BatchID, err)
 		}
 	}
+	return terminatedTargetCount, terminatedGSETaskCount
 }
 
 func (s *Scheduler) countBatchTaskStates(ctx context.Context, batchID string) (int, int, int, int, int, error) {
