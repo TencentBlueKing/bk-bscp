@@ -124,6 +124,7 @@ type fakeTransferClient struct {
 	lastTransferReq      *gse.TransferFileReq
 	lastTransferTenantID string
 	lastResultTenantID   string
+	terminateReqs        []*gse.TerminateTransferFileTaskReq
 	results              map[string][]gse.TransferFileResultDataResult
 	resultBuilder        func(taskID string, req *gse.TransferFileReq) []gse.TransferFileResultDataResult
 }
@@ -160,8 +161,15 @@ func (f *fakeTransferClient) AsyncExtensionsTransferFile(ctx context.Context,
 	return &gse.CommonTaskRespData{Result: gse.CommonTaskRespResult{TaskID: f.transferTaskID}}, nil
 }
 
-func (f *fakeTransferClient) AsyncTerminateTransferFile(context.Context,
-	*gse.TerminateTransferFileTaskReq) (*gse.CommonTaskRespData, error) {
+func (f *fakeTransferClient) AsyncTerminateTransferFile(ctx context.Context,
+	req *gse.TerminateTransferFileTaskReq) (*gse.CommonTaskRespData, error) {
+	if req != nil {
+		cloned := &gse.TerminateTransferFileTaskReq{
+			TaskID: req.TaskID,
+			Agents: append([]gse.TransferFileAgent(nil), req.Agents...),
+		}
+		f.terminateReqs = append(f.terminateReqs, cloned)
+	}
 	return &gse.CommonTaskRespData{}, nil
 }
 

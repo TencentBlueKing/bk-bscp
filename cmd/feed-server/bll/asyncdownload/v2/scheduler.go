@@ -175,7 +175,7 @@ func (s *Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownloa
 
 	if s.gseService == nil || s.provider == nil || s.cacheDir == "" {
 		for _, targetID := range targetIDs {
-			if err := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusRunning, ""); err != nil {
+			if _, err := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusRunning, ""); err != nil {
 				return nil, err
 			}
 			mapping[targetID] = "local"
@@ -229,7 +229,7 @@ func (s *Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownloa
 	})
 	if err != nil {
 		for _, targetID := range targetIDs {
-			if updateErr := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusFailed,
+			if _, updateErr := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusFailed,
 				err.Error()); updateErr != nil {
 				return nil, updateErr
 			}
@@ -239,7 +239,7 @@ func (s *Scheduler) dispatchShard(ctx context.Context, batch *types.AsyncDownloa
 	}
 
 	for _, targetID := range targetIDs {
-		if err := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusRunning, ""); err != nil {
+		if _, err := s.updateTaskStateByTarget(ctx, batch.BatchID, targetID, types.AsyncDownloadJobStatusRunning, ""); err != nil {
 			return nil, err
 		}
 		mapping[targetID] = resp.Result.TaskID
@@ -274,60 +274,9 @@ func (s *Scheduler) refreshDispatchingBatch(ctx context.Context, batchID string)
 	if err != nil {
 		return err
 	}
-	if s.gseService != nil {
-		kt := kit.NewWithTenant(batch.TenantID)
-		taskIDs := make([]string, 0)
-		seen := make(map[string]struct{})
-		for _, gseTaskID := range dispatchState {
-			if gseTaskID == "" || gseTaskID == "local" {
-				continue
-			}
-			if _, ok := seen[gseTaskID]; ok {
-				continue
-			}
-			seen[gseTaskID] = struct{}{}
-			taskIDs = append(taskIDs, gseTaskID)
-		}
-		sort.Strings(taskIDs)
-		for _, gseTaskID := range taskIDs {
-			resp, resultErr := s.gseService.GetExtensionsTransferFileResult(kt.Ctx,
-				&gse.GetTransferFileResultReq{TaskID: gseTaskID})
-			if resultErr != nil {
-				continue
-			}
-			for _, result := range resp.Result {
-				if result.Content.Type == "upload" {
-					if result.ErrorCode == 0 || result.ErrorCode == 115 {
-						continue
-					}
-					for targetID, mappedTaskID := range dispatchState {
-						if mappedTaskID != gseTaskID {
-							continue
-						}
-						if updateErr := s.updateTaskStateByTarget(ctx, batchID, targetID,
-							types.AsyncDownloadJobStatusFailed, result.ErrorMsg); updateErr != nil {
-							return updateErr
-						}
-					}
-					continue
-				}
-				targetID := BuildTargetID(result.Content.DestAgentID, result.Content.DestContainerID)
-				if dispatchState[targetID] != gseTaskID {
-					continue
-				}
-				switch result.ErrorCode {
-				case 0:
-					err = s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusSuccess, "")
-				case 115:
-					err = s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusRunning, "")
-				default:
-					err = s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
-				}
-				if err != nil {
-					return err
-				}
-			}
-		}
+	err = s.refreshDispatchProgress(ctx, batch, dispatchState)
+	if err != nil {
+		return err
 	}
 
 	successCount, failedCount, timeoutCount, runningCount, pendingCount, err := s.countBatchTaskStates(ctx, batchID)
@@ -350,11 +299,116 @@ func (s *Scheduler) refreshDispatchingBatch(ctx context.Context, batchID string)
 	}
 
 	if !oldLeaseUntil.IsZero() && time.Now().After(oldLeaseUntil) {
-		return s.RepairTerminalBatch(ctx, batchID, types.AsyncDownloadBatchStatePartial)
+		return s.RepairTimeoutBatch(ctx, batchID)
 	}
-	batch.DispatchHeartbeatAt = time.Now()
-	batch.DispatchLeaseUntil = batch.DispatchHeartbeatAt.Add(time.Duration(s.cfg.DispatchLeaseSeconds) * time.Second)
 	return s.store.SaveBatch(ctx, batch)
+}
+
+func (s *Scheduler) refreshDispatchProgress(ctx context.Context, batch *types.AsyncDownloadV2Batch,
+	dispatchState map[string]string) error {
+	if s.gseService == nil {
+		return nil
+	}
+
+	progressed, err := s.refreshDispatchProgressFromGSE(ctx, batch.BatchID, batch.TenantID, dispatchState)
+	if err != nil {
+		return err
+	}
+	if progressed {
+		batch.DispatchHeartbeatAt = time.Now()
+		batch.DispatchLeaseUntil = batch.DispatchHeartbeatAt.Add(time.Duration(s.cfg.DispatchLeaseSeconds) * time.Second)
+	}
+	return nil
+}
+
+func (s *Scheduler) refreshDispatchProgressFromGSE(ctx context.Context, batchID, tenantID string,
+	dispatchState map[string]string) (bool, error) {
+	kt := kit.NewWithTenant(tenantID)
+	progressed := false
+	for _, gseTaskID := range collectDispatchTaskIDs(dispatchState) {
+		changed, err := s.refreshGSETaskProgress(kt.Ctx, ctx, batchID, dispatchState, gseTaskID)
+		if err != nil {
+			return false, err
+		}
+		progressed = progressed || changed
+	}
+	return progressed, nil
+}
+
+func collectDispatchTaskIDs(dispatchState map[string]string) []string {
+	taskIDs := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, gseTaskID := range dispatchState {
+		if gseTaskID == "" || gseTaskID == "local" {
+			continue
+		}
+		if _, ok := seen[gseTaskID]; ok {
+			continue
+		}
+		seen[gseTaskID] = struct{}{}
+		taskIDs = append(taskIDs, gseTaskID)
+	}
+	sort.Strings(taskIDs)
+	return taskIDs
+}
+
+func (s *Scheduler) refreshGSETaskProgress(gseCtx, ctx context.Context, batchID string,
+	dispatchState map[string]string, gseTaskID string) (bool, error) {
+	resp, err := s.gseService.GetExtensionsTransferFileResult(gseCtx, &gse.GetTransferFileResultReq{TaskID: gseTaskID})
+	if err != nil {
+		return false, nil
+	}
+
+	progressed := false
+	for _, result := range resp.Result {
+		changed, err := s.applyDispatchResult(ctx, batchID, dispatchState, gseTaskID, result)
+		if err != nil {
+			return false, err
+		}
+		progressed = progressed || changed
+	}
+	return progressed, nil
+}
+
+func (s *Scheduler) applyDispatchResult(ctx context.Context, batchID string, dispatchState map[string]string,
+	gseTaskID string, result gse.TransferFileResultDataResult) (bool, error) {
+	if result.Content.Type == "upload" {
+		return s.applyUploadDispatchResult(ctx, batchID, dispatchState, gseTaskID, result)
+	}
+
+	targetID := BuildTargetID(result.Content.DestAgentID, result.Content.DestContainerID)
+	if dispatchState[targetID] != gseTaskID {
+		return false, nil
+	}
+
+	switch result.ErrorCode {
+	case 0:
+		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusSuccess, "")
+	case 115:
+		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusRunning, "")
+	default:
+		return s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
+	}
+}
+
+func (s *Scheduler) applyUploadDispatchResult(ctx context.Context, batchID string, dispatchState map[string]string,
+	gseTaskID string, result gse.TransferFileResultDataResult) (bool, error) {
+	if result.ErrorCode == 0 || result.ErrorCode == 115 {
+		return false, nil
+	}
+
+	progressed := false
+	for targetID, mappedTaskID := range dispatchState {
+		if mappedTaskID != gseTaskID {
+			continue
+		}
+		changed, err := s.updateTaskStateByTarget(ctx, batchID, targetID, types.AsyncDownloadJobStatusFailed, result.ErrorMsg)
+		if err != nil {
+			return false, err
+		}
+		progressed = progressed || changed
+	}
+	return progressed, nil
 }
 
 func (s *Scheduler) checkAndDownloadFile(kt *kit.Kit, filePath, signature string) error {

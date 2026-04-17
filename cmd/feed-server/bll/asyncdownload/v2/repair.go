@@ -15,6 +15,15 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+)
+
+const (
+	batchFinalReasonFailed          = "batch_failed"
+	batchFinalReasonDispatchTimeout = "dispatch_timeout"
+	batchFinalReasonDispatchCutoff  = "orphan_after_dispatch_cutoff"
 )
 
 func (s *Scheduler) finalizeCompletedBatch(ctx context.Context, batch *types.AsyncDownloadV2Batch) error {
@@ -50,9 +59,9 @@ func (s *Scheduler) RepairTerminalBatch(ctx context.Context, batchID, batchState
 	oldState := batch.State
 	batch.State = batchState
 	if batchState == types.AsyncDownloadBatchStateFailed {
-		batch.FinalReason = "batch_failed"
+		batch.FinalReason = batchFinalReasonFailed
 	} else {
-		batch.FinalReason = "orphan_after_dispatch_cutoff"
+		batch.FinalReason = batchFinalReasonDispatchCutoff
 	}
 	if finalizeErr := s.FinalizeBatchTasks(ctx, batchID, batchState); finalizeErr != nil {
 		return finalizeErr
@@ -71,7 +80,46 @@ func (s *Scheduler) RepairTerminalBatch(ctx context.Context, batchID, batchState
 	return s.finalizeCompletedBatch(ctx, batch)
 }
 
+func (s *Scheduler) RepairTimeoutBatch(ctx context.Context, batchID string) error {
+	batch, err := s.store.GetBatch(ctx, batchID)
+	if err != nil {
+		return err
+	}
+	oldState := batch.State
+	s.terminateBatchDispatches(batch)
+	if finalizeErr := s.FinalizeTimeoutBatchTasks(ctx, batchID); finalizeErr != nil {
+		return finalizeErr
+	}
+	successCount, failedCount, timeoutCount, _, _, err := s.countBatchTaskStates(ctx, batchID)
+	if err != nil {
+		return err
+	}
+	batch.State = deriveTerminalBatchState(successCount, failedCount, timeoutCount)
+	batch.FinalReason = batchFinalReasonDispatchTimeout
+	batch.SuccessCount = successCount
+	batch.FailedCount = failedCount
+	batch.TimeoutCount = timeoutCount
+	if err := s.store.SaveBatch(ctx, batch); err != nil {
+		return err
+	}
+	s.metric.ObserveV2BatchTransition(batch, oldState)
+	return s.finalizeCompletedBatch(ctx, batch)
+}
+
 func (s *Scheduler) FinalizeBatchTasks(ctx context.Context, batchID, batchState string) error {
+	switch batchState {
+	case types.AsyncDownloadBatchStateFailed:
+		return s.finalizeBatchTasks(ctx, batchID, types.AsyncDownloadJobStatusFailed, batchFinalReasonFailed)
+	default:
+		return s.finalizeBatchTasks(ctx, batchID, types.AsyncDownloadJobStatusFailed, batchFinalReasonDispatchCutoff)
+	}
+}
+
+func (s *Scheduler) FinalizeTimeoutBatchTasks(ctx context.Context, batchID string) error {
+	return s.finalizeBatchTasks(ctx, batchID, types.AsyncDownloadJobStatusTimeout, batchFinalReasonDispatchTimeout)
+}
+
+func (s *Scheduler) finalizeBatchTasks(ctx context.Context, batchID, taskState, errMsg string) error {
 	taskIDs, err := s.store.ListBatchTasks(ctx, batchID)
 	if err != nil {
 		return err
@@ -83,14 +131,8 @@ func (s *Scheduler) FinalizeBatchTasks(ctx context.Context, batchID, batchState 
 		}
 		oldState := task.State
 		oldUpdatedAt := task.UpdatedAt
-		switch batchState {
-		case types.AsyncDownloadBatchStateFailed:
-			task.State = types.AsyncDownloadJobStatusFailed
-			task.ErrMsg = "batch_failed"
-		default:
-			task.State = types.AsyncDownloadJobStatusFailed
-			task.ErrMsg = "orphan_after_dispatch_cutoff"
-		}
+		task.State = taskState
+		task.ErrMsg = errMsg
 		if s.metric != nil {
 			s.metric.IncV2TaskRepair(task.ErrMsg)
 		}
@@ -101,6 +143,59 @@ func (s *Scheduler) FinalizeBatchTasks(ctx context.Context, batchID, batchState 
 		s.metric.ObserveV2TaskTransition(task, oldState, oldUpdatedAt)
 	}
 	return nil
+}
+
+func (s *Scheduler) terminateBatchDispatches(batch *types.AsyncDownloadV2Batch) {
+	if s.gseService == nil || batch == nil {
+		return
+	}
+	kt := kit.NewWithTenant(batch.TenantID)
+	dispatchState, err := s.store.ListBatchDispatchState(kt.Ctx, batch.BatchID)
+	if err != nil {
+		logs.Errorf("list batch dispatch state for timeout batch %s failed, err: %v", batch.BatchID, err)
+		return
+	}
+	targetTasks, err := s.store.ListBatchTargetTasks(kt.Ctx, batch.BatchID)
+	if err != nil {
+		logs.Errorf("list batch target tasks for timeout batch %s failed, err: %v", batch.BatchID, err)
+		return
+	}
+	groupedAgents := make(map[string][]gse.TransferFileAgent)
+	for targetID, gseTaskID := range dispatchState {
+		if gseTaskID == "" || gseTaskID == "local" {
+			continue
+		}
+		taskID := targetTasks[targetID]
+		if taskID == "" {
+			continue
+		}
+		task, err := s.store.GetTask(kt.Ctx, taskID)
+		if err != nil {
+			logs.Errorf("get task %s for timeout batch %s failed, err: %v", taskID, batch.BatchID, err)
+			continue
+		}
+		if isFinalTaskState(task.State) {
+			continue
+		}
+		agentID, containerID := ParseTargetID(targetID)
+		groupedAgents[gseTaskID] = append(groupedAgents[gseTaskID], gse.TransferFileAgent{
+			User:          task.TargetUser,
+			BkAgentID:     agentID,
+			BkContainerID: containerID,
+		})
+	}
+	for gseTaskID, agents := range groupedAgents {
+		if len(agents) == 0 {
+			continue
+		}
+		if _, err := s.gseService.AsyncTerminateTransferFile(kt.Ctx, &gse.TerminateTransferFileTaskReq{
+			TaskID: gseTaskID,
+			Agents: agents,
+		}); err != nil {
+			logs.Errorf("terminate timeout transfer file task %s for batch %s failed, err: %v",
+				gseTaskID, batch.BatchID, err)
+		}
+	}
 }
 
 func (s *Scheduler) countBatchTaskStates(ctx context.Context, batchID string) (int, int, int, int, int, error) {
@@ -141,26 +236,29 @@ func deriveTerminalBatchState(successCount, failedCount, timeoutCount int) strin
 	}
 }
 
-func (s *Scheduler) updateTaskStateByTarget(ctx context.Context, batchID, targetID, state, errMsg string) error {
+func (s *Scheduler) updateTaskStateByTarget(ctx context.Context, batchID, targetID, state, errMsg string) (bool, error) {
 	taskID, err := s.store.GetBatchTaskID(ctx, batchID, targetID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if taskID == "" {
-		return nil
+		return false, nil
 	}
 	task, err := s.store.GetTask(ctx, taskID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	oldState := task.State
 	oldUpdatedAt := task.UpdatedAt
+	if task.State == state && task.ErrMsg == errMsg {
+		return false, nil
+	}
 	task.State = state
 	task.ErrMsg = errMsg
 	task.UpdatedAt = time.Now()
 	if err := s.store.SaveTask(ctx, task); err != nil {
-		return err
+		return false, err
 	}
 	s.metric.ObserveV2TaskTransition(task, oldState, oldUpdatedAt)
-	return nil
+	return oldState != state, nil
 }

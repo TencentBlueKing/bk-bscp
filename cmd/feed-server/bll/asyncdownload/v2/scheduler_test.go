@@ -80,16 +80,16 @@ func TestSchedulerLimitsDueBatchFetch(t *testing.T) {
 	require.Equal(t, 100, processed)
 }
 
-func TestRepairMarksOrphanTaskFailedAfterDispatchCutoff(t *testing.T) {
+func TestRepairMarksTimeoutTaskAfterDispatchCutoff(t *testing.T) {
 	sch, store := newTestScheduler(t)
 	batchID, taskID := seedBatchWithPendingTaskNotDispatched(t, store)
 
-	err := sch.RepairTerminalBatch(context.Background(), batchID, types.AsyncDownloadBatchStatePartial)
+	err := sch.RepairTimeoutBatch(context.Background(), batchID)
 	require.NoError(t, err)
 
 	task := mustGetTask(t, store, taskID)
-	require.Equal(t, types.AsyncDownloadJobStatusFailed, task.State)
-	require.Equal(t, "orphan_after_dispatch_cutoff", task.ErrMsg)
+	require.Equal(t, types.AsyncDownloadJobStatusTimeout, task.State)
+	require.Equal(t, "dispatch_timeout", task.ErrMsg)
 }
 
 func TestRepairFailsTasksWhenBatchFails(t *testing.T) {
@@ -123,10 +123,44 @@ func TestRepairRecordsTaskRepairMetric(t *testing.T) {
 	sch, store := newTestScheduler(t)
 	batchID, _ := seedBatchWithPendingTaskNotDispatched(t, store)
 
-	err := sch.RepairTerminalBatch(context.Background(), batchID, types.AsyncDownloadBatchStatePartial)
+	err := sch.RepairTimeoutBatch(context.Background(), batchID)
 	require.NoError(t, err)
 	require.Equal(t, float64(1), testutil.ToFloat64(
-		sch.Metrics().(*testMetrics).taskRepairCounter.WithLabelValues("orphan_after_dispatch_cutoff")))
+		sch.Metrics().(*testMetrics).taskRepairCounter.WithLabelValues("dispatch_timeout")))
+}
+
+func TestPendingTaskWithoutDispatchMappingDoesNotExtendLeaseWithoutProgress(t *testing.T) {
+	sch, store := newTestScheduler(t)
+	batchID, taskID := seedBatchWithPendingTaskNotDispatched(t, store)
+
+	batch := mustGetBatch(t, store, batchID)
+	shortLeaseUntil := time.Now().Add(120 * time.Millisecond)
+	batch.DispatchLeaseUntil = shortLeaseUntil
+	require.NoError(t, store.SaveBatch(context.Background(), batch))
+
+	time.Sleep(40 * time.Millisecond)
+
+	processed, err := sch.ProcessDueBatches(context.Background())
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, processed, 0)
+
+	batch = mustGetBatch(t, store, batchID)
+	require.Equal(t, shortLeaseUntil.UnixMilli(), batch.DispatchLeaseUntil.UnixMilli())
+
+	time.Sleep(time.Until(shortLeaseUntil) + 40*time.Millisecond)
+
+	processed, err = sch.ProcessDueBatches(context.Background())
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, processed, 0)
+
+	task := mustGetTask(t, store, taskID)
+	require.Equal(t, types.AsyncDownloadJobStatusTimeout, task.State)
+	require.Equal(t, "dispatch_timeout", task.ErrMsg)
+
+	batch = mustGetBatch(t, store, batchID)
+	require.Equal(t, types.AsyncDownloadBatchStateFailed, batch.State)
+	require.Equal(t, "dispatch_timeout", batch.FinalReason)
+	require.Equal(t, 1, batch.TimeoutCount)
 }
 
 func TestLifecycleMetrics(t *testing.T) {
