@@ -92,6 +92,8 @@ type Service interface {
 	// FindHostByServiceTemplate 查询服务模板下的主机
 	FindHostByServiceTemplate(ctx context.Context, req *ListHostByServiceTemplateReq) (
 		*ListHostByServiceTemplateResp, error)
+	// ListProcessRelatedInfo 查询进程相关信息
+	ListProcessRelatedInfo(ctx context.Context, req *ListProcessRelatedInfoReq) (*ListProcessRelatedInfoData, error)
 }
 
 // New cmdb service

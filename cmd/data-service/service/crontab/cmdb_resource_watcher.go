@@ -413,7 +413,7 @@ func (c *cmdbResourceWatcher) handleProcessCreateEventsBatch(kt *kit.Kit, events
 		}
 
 		svc := cmdb.NewSyncCMDBService(kt.TenantID, bizID, c.cmdb, c.dao)
-		res, err := svc.SyncByProcessIDs(kt.Ctx, procs)
+		res, err := svc.SyncBizProcessesByIDsWithMode(kt.Ctx, procs)
 		if err != nil {
 			logs.Errorf("[CMDB][ProcessSync] create sync failed, bizID=%d, err=%v", bizID, err)
 			continue

@@ -323,9 +323,10 @@ type ServiceTemplate struct {
 
 // PageParam 公共分页参数
 type PageParam struct {
-	Start int    `json:"start"`          // 记录开始位置，默认0
-	Limit int    `json:"limit"`          // 每页限制条数，最大500
-	Sort  string `json:"sort,omitempty"` // 排序字段
+	Start       int    `json:"start"`                  // 记录开始位置，默认0
+	Limit       int    `json:"limit"`                  // 每页限制条数，最大500
+	Sort        string `json:"sort,omitempty"`         // 排序字段
+	ReturnTotal bool   `json:"return_total,omitempty"` // 是否返回总数 (首次请求时传true)
 }
 
 // ServiceTemplateListResp 响应结果
@@ -983,4 +984,134 @@ type ListHostByServiceTemplateReq struct {
 type ListHostByServiceTemplateResp struct {
 	Count int        `json:"count"` // 总数
 	Info  []HostInfo `json:"info"`  // 返回结果
+}
+
+// ListProcessRelatedInfoReq 查询进程关联信息请求参数
+type ListProcessRelatedInfoReq struct {
+	BkBizID         int                    `json:"bk_biz_id"`                  // 业务ID (必填)
+	Page            *PageParam             `json:"page,omitempty"`             // 分页参数
+	Set             *SetFilter             `json:"set,omitempty"`              // 集群筛选
+	Module          *ModuleFilter          `json:"module,omitempty"`           // 模块筛选
+	ServiceInstance *ServiceInstanceFilter `json:"service_instance,omitempty"` // 服务实例筛选
+	ProcessFilter   *ProcessFilter         `json:"process,omitempty"`          // 进程属性过滤条件
+	Fields          []string               `json:"fields,omitempty"`           // 指定返回字段列表
+}
+
+// SetFilter 集群筛选
+type SetFilter struct {
+	BkSetIDs []int64 `json:"bk_set_ids"` // 集群ID列表
+}
+
+// ModuleFilter 模块筛选
+type ModuleFilter struct {
+	BkModuleIDs []int64 `json:"bk_module_ids"` // 模块ID列表
+}
+
+// ServiceInstanceFilter 服务实例筛选
+type ServiceInstanceFilter struct {
+	IDs []int64 `json:"ids"` // 服务实例ID列表
+}
+
+// ProcessFilter 进程属性过滤条件
+type ProcessFilter struct {
+	BkProcessIDs  []int64  `json:"bk_process_ids"`  // 进程ID列表
+	BkProcessName []string `json:"bk_process_name"` // 进程名称列表
+}
+
+// ListProcessRelatedInfoResponseData 响应数据
+type ListProcessRelatedInfoData struct {
+	Count int                       `json:"count"` // 总数
+	Info  []*ProcessRelatedInfoItem `json:"info"`  // 进程关联信息列表
+}
+
+// ProcessRelatedInfoItem 单条进程关联信息
+type ProcessRelatedInfoItem struct {
+	Set             *ProcessSetInfo         `json:"set"`
+	Module          *ProcessModuleInfo      `json:"module"`
+	Host            *ProcessHostInfo        `json:"host"`
+	ServiceInstance *ProcessServiceInstInfo `json:"service_instance"`
+	ProcessTemplate *ProcessTemplateRefInfo `json:"process_template"`
+	Process         *ProcessDetailInfo      `json:"process"`
+}
+
+// ProcessSetInfo 集群信息
+type ProcessSetInfo struct {
+	BkSetID   int64  `json:"bk_set_id"`   // 集群ID
+	BkSetEnv  string `json:"bk_set_env"`  // 环境类型: "3"(测试), "1"(正式) 等
+	BkSetName string `json:"bk_set_name"` // 集群名称
+}
+
+// ProcessModuleInfo 模块信息
+type ProcessModuleInfo struct {
+	BkModuleID   int64  `json:"bk_module_id"`   // 模块ID
+	BkModuleName string `json:"bk_module_name"` // 模块名称
+}
+
+// ProcessHostInfo 主机信息
+type ProcessHostInfo struct {
+	BkHostID        int64  `json:"bk_host_id"`            // 主机ID
+	BkCloudID       int    `json:"bk_cloud_id"`           // 云区域ID
+	BkHostInnerIP   string `json:"bk_host_innerip"`       // 内网IPv4地址
+	BkHostInnerIPV6 string `json:"bk_host_innerip_v6"`    // 内网IPv6地址 (可选)
+	BkAgentID       string `json:"bk_agent_id,omitempty"` // Agent ID (可选)
+}
+
+// ProcessServiceInstInfo 服务实例信息
+type ProcessServiceInstInfo struct {
+	ID   int64  `json:"id"`   // 服务实例ID
+	Name string `json:"name"` // 服务实例名称
+}
+
+// ProcessTemplateRefInfo 进程模板引用信息
+type ProcessTemplateRefInfo struct {
+	ID int64 `json:"id"` // 进程模板ID
+}
+
+// ProcessDetailInfo 进程详细信息 (包含 PROCESS_INSTANCE_BASE 所有字段)
+type ProcessDetailInfo struct {
+	// ---- 标识字段 ----
+	BkBizID           int64  `json:"bk_biz_id"`                     // 业务ID
+	BkProcessID       int64  `json:"bk_process_id"`                 // 进程实例ID
+	BkFuncID          string `json:"bk_func_id,omitempty"`          // 功能ID
+	BkFuncName        string `json:"bk_func_name"`                  // 功能名称 (如 "java", "nginx")
+	BkProcessName     string `json:"bk_process_name"`               // 进程名称
+	ProcessTemplateID int64  `json:"process_template_id,omitempty"` // 进程模板ID (部分场景有此字段)
+
+	// ---- 进程基础属性 ----
+	ProcNum  int    `json:"proc_num"` // 进程数量
+	Priority int    `json:"priority"` // 启动优先级
+	User     string `json:"user"`     // 进程运行用户
+	Timeout  int    `json:"timeout"`  // 超时时间(秒)
+
+	// ---- 路径与命令 ----
+	WorkPath          string `json:"work_path"`            // 工作目录
+	PidFile           string `json:"pid_file"`             // PID文件路径
+	StartCmd          string `json:"start_cmd"`            // 启动命令
+	StopCmd           string `json:"stop_cmd"`             // 停止命令
+	ReloadCmd         string `json:"reload_cmd"`           // 重载命令
+	RestartCmd        string `json:"restart_cmd"`          // 重启命令
+	FaceStopCmd       string `json:"face_stop_cmd"`        // 强制停止命令
+	BkStartParamRegex string `json:"bk_start_param_regex"` // 启动参数正则
+	BkStartCheckSecs  int    `json:"bk_start_check_secs"`  // 启动检查间隔(秒)
+	Description       string `json:"description"`          // 描述
+
+	// ---- 自动启动 ----
+	AutoStart *bool `json:"auto_start,omitempty"` // 是否自动启动
+
+	// ---- 元数据 ----
+	BkSupplierAccount string `json:"bk_supplier_account"` // 供应商账号
+	LastTime          string `json:"last_time"`           // 最后修改时间 (ISO8601格式)
+	CreateTime        string `json:"create_time"`         // 创建时间 (ISO8601格式)
+
+	// ---- 绑定端口信息 ----
+	BindInfo []ProcessBindInfo `json:"bind_info"` // 端口绑定信息列表
+}
+
+// ProcessBindInfo 进程绑定信息 (端口绑定)
+type ProcessBindInfo struct {
+	IP       string `json:"ip"`       // IP地址
+	Port     string `json:"port"`     // 端口号
+	Protocol string `json:"protocol"` // 协议: "1"(TCP), "2"(UDP) 等
+	Enable   bool   `json:"enable"`   // 是否启用
+	RowID    int    `json:"row_id"`   // 行号
 }

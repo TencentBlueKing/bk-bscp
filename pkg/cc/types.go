@@ -2009,6 +2009,8 @@ type CMDBConfig struct {
 	BkUserName        string `yaml:"bkUserName"`
 	WebHost           string `yaml:"webHost"`
 	BkSupplierAccount string `yaml:"bkSupplierAccount"`
+	// 是否启用新的进程同步逻辑
+	UseNewProcessSync bool `yaml:"useNewProcessSync"`
 }
 
 // trySetDefault try set the default value of cmdb config
