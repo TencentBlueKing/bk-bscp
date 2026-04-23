@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest/client"
@@ -212,7 +210,7 @@ func (a *apiGw) CreateResourceVersion(gwName string, req *CreateResourceVersionR
 	if err != nil {
 		return nil, fmt.Errorf("create resource version serialization JSON failed: %s", err.Error())
 	}
-	spew.Dump(string(jsonData))
+
 	request, err := a.newRequest("POST", url, jsonData)
 	if err != nil {
 		return nil, err
@@ -230,8 +228,6 @@ func (a *apiGw) CreateResourceVersion(gwName string, req *CreateResourceVersionR
 	if err = json.NewDecoder(resp.Body).Decode(result); err != nil {
 		return nil, err
 	}
-
-	spew.Dump(result)
 	return result, nil
 }
 
@@ -353,8 +349,10 @@ func (a *apiGw) newRequest(method, url string, body []byte) (*http.Request, erro
 	var err error
 
 	if len(body) > 0 {
+		fmt.Printf("[apigw request] method=%s, url=%s, body=%s\n", method, url, string(body))
 		req, err = http.NewRequest(method, url, bytes.NewBuffer(body))
 	} else {
+		fmt.Printf("[apigw request] method=%s, url=%s, body=<empty>\n", method, url)
 		req, err = http.NewRequest(method, url, nil)
 	}
 
