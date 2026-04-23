@@ -28,6 +28,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -50,6 +51,243 @@ func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service, dao dao.
 		svc:      svc,
 		dao:      dao,
 	}
+}
+
+// SyncBizProcessesWithMode 同步业务进程
+func (s *syncCMDBService) SyncBizProcessesWithMode(ctx context.Context) error {
+	if cc.G().CMDB.UseNewProcessSync {
+		return s.SyncBizProcesses(ctx)
+	}
+	return s.SyncSingleBiz(ctx)
+}
+
+// SyncBizProcessesByIDsWithMode 根据进程ID同步业务进程（增量同步）
+func (s *syncCMDBService) SyncBizProcessesByIDsWithMode(ctx context.Context, processes []bkcmdb.ProcessInfo) (
+	*SyncProcessResult, error) {
+	if cc.G().CMDB.UseNewProcessSync {
+		processIDs := make([]int64, 0, len(processes))
+		for _, p := range processes {
+			processIDs = append(processIDs, int64(p.BkProcessID))
+		}
+		return s.SyncBizProcessesByIDs(ctx, processIDs)
+	}
+	return s.SyncByProcessIDs(ctx, processes)
+}
+
+// SyncBizProcesses 同步业务进程
+func (s *syncCMDBService) SyncBizProcesses(ctx context.Context) error {
+	kt := kit.MustGetKit(ctx)
+
+	tenantID := s.getTenantID()
+
+	// 1. 获取业务下全量的进程相关信息
+	processData, err := s.fetchAllProcessRelatedInfo(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("[SyncBizProcesses] failed to fetch process related info: %v", err)
+	}
+
+	processes := s.buildProcessEntities(processData, tenantID)
+	if len(processes) == 0 {
+		logs.Warnf("[SyncBizProcesses] no process to sync, bizID=%d", s.bizID)
+		return nil
+	}
+
+	if err := s.fillServiceTemplateID(ctx, processes); err != nil {
+		return fmt.Errorf("[SyncBizProcesses] fill template id failed: %w", err)
+	}
+
+	if _, err := s.syncProcessesWithTx(kt, processes); err != nil {
+		return err
+	}
+
+	logs.Infof("[SyncBizProcesses] success bizID=%d count=%d", s.bizID, len(processes))
+	return nil
+}
+
+// SyncBizProcessesByIDs 根据进程ID同步业务进程
+func (s *syncCMDBService) SyncBizProcessesByIDs(ctx context.Context, processIDs []int64) (*SyncProcessResult, error) {
+	kt := kit.MustGetKit(ctx)
+
+	tenantID := s.getTenantID()
+
+	if len(processIDs) == 0 {
+		logs.Warnf("[SyncBizProcessesByIDs] empty processIDs, skip sync, bizID=%d", s.bizID)
+		return nil, nil
+	}
+
+	// 1. 获取业务下全量的进程相关信息
+	processData, err := s.fetchAllProcessRelatedInfo(ctx, processIDs)
+	if err != nil {
+		return nil, fmt.Errorf("[SyncBizProcessesByIDs] failed to fetch process related info: %v", err)
+	}
+
+	processes := s.buildProcessEntities(processData, tenantID)
+	if len(processes) == 0 {
+		logs.Warnf("[SyncBizProcessesByIDs] no process to sync, bizID=%d", s.bizID)
+		return &SyncProcessResult{}, nil
+	}
+
+	if err = s.fillServiceTemplateID(ctx, processes); err != nil {
+		return nil, fmt.Errorf("[SyncBizProcessesByIDs] fill template id failed: %w", err)
+	}
+	res, err := s.syncProcessesWithTx(kt, processes)
+	if err != nil {
+		return nil, err
+	}
+
+	logs.Infof("[SyncBizProcessesByIDs] success bizID=%d count=%d", s.bizID, len(processes))
+	return res, nil
+}
+
+func (s *syncCMDBService) syncProcessesWithTx(kt *kit.Kit, newProcesses []*table.Process) (*SyncProcessResult, error) {
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
+	oldProcesses, err := s.dao.Process().ListProcByBizIDWithTx(kt, tx, uint32(s.bizID))
+	if err != nil {
+		return nil, fmt.Errorf("[syncProcesses] list old failed: %w", err)
+	}
+
+	// 多租户：只处理当前租户的进程
+	if s.tenantID != "" {
+		filtered := make([]*table.Process, 0, len(oldProcesses))
+		for _, p := range oldProcesses {
+			if p != nil && p.Attachment != nil && p.Attachment.TenantID == s.tenantID {
+				filtered = append(filtered, p)
+			}
+		}
+		oldProcesses = filtered
+	}
+
+	res, err := SyncProcessData(kt, s.dao, tx, uint32(s.bizID), oldProcesses, newProcesses)
+	if err != nil {
+		return nil, fmt.Errorf("[syncProcesses] sync failed: %w", err)
+	}
+
+	if err = CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
+		return nil, fmt.Errorf("[syncProcesses] conflict check failed: %w", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("[syncProcesses] commit failed: %w", err)
+	}
+
+	committed = true
+
+	return res, nil
+}
+
+func (s *syncCMDBService) buildProcessEntities(data []*bkcmdb.ProcessRelatedInfoItem, tenantID string) []*table.Process {
+
+	now := time.Now()
+	result := make([]*table.Process, 0, len(data))
+
+	for _, item := range data {
+		sourceData, err := s.buildSourceData(item)
+		if err != nil {
+			logs.Errorf("[buildProcessEntities] source data failed: %v", err)
+			continue
+		}
+
+		proc := &table.Process{
+			Attachment: &table.ProcessAttachment{
+				TenantID:          tenantID,
+				BizID:             uint32(item.Process.BkBizID),
+				CcProcessID:       uint32(item.Process.BkProcessID),
+				SetID:             uint32(item.Set.BkSetID),
+				ModuleID:          uint32(item.Module.BkModuleID),
+				ServiceInstanceID: uint32(item.ServiceInstance.ID),
+				HostID:            uint32(item.Host.BkHostID),
+				CloudID:           uint32(item.Host.BkCloudID),
+				AgentID:           item.Host.BkAgentID,
+				ProcessTemplateID: uint32(item.ProcessTemplate.ID),
+			},
+			Spec: &table.ProcessSpec{
+				SetName:      item.Set.BkSetName,
+				ModuleName:   item.Module.BkModuleName,
+				ServiceName:  item.ServiceInstance.Name,
+				Environment:  item.Set.BkSetEnv,
+				Alias:        item.Process.BkProcessName,
+				InnerIP:      item.Host.BkHostInnerIP,
+				InnerIPV6:    item.Host.BkHostInnerIPV6,
+				SourceData:   sourceData,
+				PrevData:     "{}",
+				ProcNum:      uint(item.Process.ProcNum),
+				FuncName:     item.Process.BkFuncName,
+				CcSyncStatus: table.Synced,
+			},
+			Revision: &table.Revision{
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		}
+
+		result = append(result, proc)
+	}
+
+	return result
+}
+
+func (s *syncCMDBService) buildSourceData(item *bkcmdb.ProcessRelatedInfoItem) (string, error) {
+	info := table.ProcessInfo{
+		BkStartParamRegex: item.Process.BkStartParamRegex,
+		WorkPath:          item.Process.WorkPath,
+		PidFile:           item.Process.PidFile,
+		User:              item.Process.User,
+		ReloadCmd:         item.Process.ReloadCmd,
+		RestartCmd:        item.Process.RestartCmd,
+		StartCmd:          item.Process.StartCmd,
+		StopCmd:           item.Process.StopCmd,
+		FaceStopCmd:       item.Process.FaceStopCmd,
+		Timeout:           item.Process.Timeout,
+		StartCheckSecs:    item.Process.BkStartCheckSecs,
+	}
+
+	return info.Value()
+}
+
+// fillServiceTemplateID 根据 module_id 批量查询并填充 service_template_id（避免单条查询）
+func (s *syncCMDBService) fillServiceTemplateID(ctx context.Context, processes []*table.Process) error {
+	moduleIDs := make([]int, 0, len(processes))
+	for _, p := range processes {
+		moduleIDs = append(moduleIDs, int(p.Attachment.ModuleID))
+	}
+
+	resp, err := s.svc.FindModuleBatch(ctx, &bkcmdb.ModuleReq{
+		BkBizID: s.bizID,
+		BkIDs:   moduleIDs,
+		Fields:  []string{"service_template_id", "bk_module_id"},
+	})
+	if err != nil {
+		return err
+	}
+
+	mapping := make(map[int]int)
+	for _, m := range resp {
+		mapping[m.BkModuleID] = m.ServiceTemplateID
+	}
+
+	for _, p := range processes {
+		if id, ok := mapping[int(p.Attachment.ModuleID)]; ok {
+			p.Attachment.ServiceTemplateID = uint32(id)
+		}
+	}
+
+	return nil
+}
+
+func (s *syncCMDBService) getTenantID() string {
+	if s.tenantID == "" {
+		return "default"
+	}
+	return s.tenantID
 }
 
 // SyncSingleBiz 对单个业务执行全量进程同步
@@ -191,10 +429,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	}
 
 	// 构建并立即入库（多租户：写入时带上 tenantID）
-	tenantID := s.tenantID
-	if tenantID == "" {
-		tenantID = "default"
-	}
+	tenantID := s.getTenantID()
 	newProcesses := buildProcessesFromSets(tenantID, s.bizID, sets)
 
 	tx := s.dao.GenQuery().Begin()
@@ -464,10 +699,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 		})
 	}
 
-	tenantID := s.tenantID
-	if tenantID == "" {
-		tenantID = "default"
-	}
+	tenantID := s.getTenantID()
 	processBatch := buildProcessesFromSets(tenantID, s.bizID, sets)
 
 	kt := kit.MustGetKit(ctx)
@@ -861,8 +1093,8 @@ func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID
 func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
 	var (
 		start = 0
-		limit = 100
-		all   []T
+		limit = 500 // ← 固定每页500条
+		all   []T   // ← 内部维护的全量切片
 		total = 0
 	)
 
@@ -1814,4 +2046,26 @@ func calcModuleInstSeqUpdatesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, para
 	})
 
 	return collectSeqUpdates(instances), nil
+}
+
+// fetchAllProcessRelatedInfo 返回所有进程相关信息
+func (s *syncCMDBService) fetchAllProcessRelatedInfo(ctx context.Context, processIDs []int64) ([]*bkcmdb.ProcessRelatedInfoItem, error) {
+	return PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ProcessRelatedInfoItem, int, error) {
+		req := &bkcmdb.ListProcessRelatedInfoReq{
+			BkBizID: s.bizID,
+			Page:    page,
+		}
+		// 只有在有值时才设置过滤条件
+		if len(processIDs) > 0 {
+			req.ProcessFilter = &bkcmdb.ProcessFilter{
+				BkProcessIDs: processIDs,
+			}
+		}
+		resp, err := s.svc.ListProcessRelatedInfo(ctx, req)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		return resp.Info, resp.Count, nil
+	})
 }

@@ -13,20 +13,14 @@
 package config
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-)
-
-const (
-	// MaxExecutionTime 最大执行时间
-	MaxExecutionTime = 30 * time.Second
 )
 
 // ValidatePushConfig 验证配置下发步骤
@@ -40,10 +34,11 @@ func ValidatePushConfig(
 ) *types.Step {
 	logs.V(3).Infof("validate push config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
+	tf := cc.G().TaskFramework.ConfigPush.ValidatePushConfig
 	validate := types.NewStep(config.ValidatePushConfigStepName.String(), config.ValidatePushConfigStepName.String()).
 		SetAlias("validate_push_config").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(tf.MaxExecution).
+		SetMaxTries(tf.MaxRetries)
 
 	lo.Must0(validate.SetPayload(config.PushConfigPayload{
 		TenantID:     tenantID,
@@ -68,10 +63,11 @@ func DownloadConfig(
 ) *types.Step {
 	logs.V(3).Infof("download config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
+	dtf := cc.G().TaskFramework.ConfigPush.ValidatePushConfig
 	download := types.NewStep(config.DownloadConfigStepName.String(), config.DownloadConfigStepName.String()).
 		SetAlias("download_config").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(dtf.MaxExecution).
+		SetMaxTries(dtf.MaxRetries)
 
 	lo.Must0(download.SetPayload(config.PushConfigPayload{
 		TenantID:     tenantID,
@@ -90,10 +86,11 @@ func PushConfigToTarget(tenantID string, bizID, batchID uint32, operateType tabl
 	generateTaskID string, generateTaskPayload *executorCommon.TaskPayload) *types.Step {
 	logs.V(3).Infof("push config to target: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
+	ptf := cc.G().TaskFramework.ConfigPush.ValidatePushConfig
 	push := types.NewStep(config.PushConfigStepName.String(), config.PushConfigStepName.String()).
 		SetAlias("push_config_to_target").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(ptf.MaxExecution).
+		SetMaxTries(ptf.MaxRetries)
 
 	lo.Must0(push.SetPayload(config.PushConfigPayload{
 		TenantID:     tenantID,
@@ -117,10 +114,11 @@ func ReleaseConfig(
 ) *types.Step {
 	logs.V(3).Infof("release config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
 
+	rtf := cc.G().TaskFramework.ConfigPush.ReleaseConfig
 	push := types.NewStep(config.ReleaseConfigStepName.String(), config.ReleaseConfigStepName.String()).
 		SetAlias("release_config").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(0)
+		SetMaxExecution(rtf.MaxExecution).
+		SetMaxTries(rtf.MaxRetries)
 
 	lo.Must0(push.SetPayload(config.PushConfigPayload{
 		TenantID:     tenantID,

@@ -30,6 +30,7 @@ func newArchivedApp(db *gorm.DB, opts ...gen.DOOption) archivedApp {
 	_archivedApp.ID = field.NewUint32(tableName, "id")
 	_archivedApp.BizID = field.NewUint32(tableName, "biz_id")
 	_archivedApp.AppID = field.NewUint32(tableName, "app_id")
+	_archivedApp.TenantID = field.NewString(tableName, "tenant_id")
 	_archivedApp.CreatedAt = field.NewTime(tableName, "created_at")
 
 	_archivedApp.fillFieldMap()
@@ -44,6 +45,7 @@ type archivedApp struct {
 	ID        field.Uint32
 	BizID     field.Uint32
 	AppID     field.Uint32
+	TenantID  field.String
 	CreatedAt field.Time
 
 	fieldMap map[string]field.Expr
@@ -64,6 +66,7 @@ func (a *archivedApp) updateTableName(table string) *archivedApp {
 	a.ID = field.NewUint32(table, "id")
 	a.BizID = field.NewUint32(table, "biz_id")
 	a.AppID = field.NewUint32(table, "app_id")
+	a.TenantID = field.NewString(table, "tenant_id")
 	a.CreatedAt = field.NewTime(table, "created_at")
 
 	a.fillFieldMap()
@@ -91,10 +94,11 @@ func (a *archivedApp) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (a *archivedApp) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 4)
+	a.fieldMap = make(map[string]field.Expr, 5)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["biz_id"] = a.BizID
 	a.fieldMap["app_id"] = a.AppID
+	a.fieldMap["tenant_id"] = a.TenantID
 	a.fieldMap["created_at"] = a.CreatedAt
 }
 

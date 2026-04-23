@@ -43,6 +43,12 @@ const (
 	hostRelation = "host_relation"
 	// config key for biz host cursor
 	bizHostCursorKey = "biz_host_cursor"
+	// listBizHostsChunkSize limits the number of host IDs sent per ListBizHosts call
+	// to avoid oversized CMDB requests.
+	listBizHostsChunkSize = 500
+	// findHostBizRelationsChunkSize limits the number of host IDs sent per
+	// FindHostBizRelations call.
+	findHostBizRelationsChunkSize = 500
 )
 
 // getBizHostCursorKey 获取带租户前缀的游标 key
@@ -208,171 +214,193 @@ func (w *WatchBizHostRelation) watchBizHost(kt *kit.Kit) {
 	}
 }
 
-// processEvents process event list
+// compressedIntent represents the final state of a (bizID, hostID) pair
+// within a single watch batch after event compression.
+type compressedIntent struct {
+	bizID  int
+	hostID int
+	// finalOp is one of bizHostRelationCreateEvent / bizHostRelationDeleteEvent.
+	finalOp string
+}
+
+// compressEvents collapses events by (bizID, hostID), keeping the last event
+// type seen for each pair. Order of first appearance is preserved for
+// deterministic downstream processing.
+func compressEvents(events []bkcmdb.HostRelationEvent) []compressedIntent {
+	type key struct{ biz, host int }
+	ordered := make([]key, 0, len(events))
+	state := make(map[key]string, len(events))
+
+	for _, ev := range events {
+		if ev.BkDetail == nil || ev.BkDetail.BkBizID == nil || ev.BkDetail.BkHostID == nil {
+			logs.Warnf("invalid host relation event detail: %+v", ev.BkDetail)
+			continue
+		}
+		if ev.BkEventType != bizHostRelationCreateEvent && ev.BkEventType != bizHostRelationDeleteEvent {
+			logs.Warnf("unknown event type: %s", ev.BkEventType)
+			continue
+		}
+		k := key{biz: *ev.BkDetail.BkBizID, host: *ev.BkDetail.BkHostID}
+		if _, ok := state[k]; !ok {
+			ordered = append(ordered, k)
+		}
+		state[k] = ev.BkEventType
+	}
+
+	intents := make([]compressedIntent, 0, len(ordered))
+	for _, k := range ordered {
+		intents = append(intents, compressedIntent{bizID: k.biz, hostID: k.host, finalOp: state[k]})
+	}
+	return intents
+}
+
+// processEvents compresses the event batch, filters non-BSCP biz once per biz,
+// and then executes batched CMDB/DB operations per biz.
 func (w *WatchBizHostRelation) processEvents(kt *kit.Kit, events []bkcmdb.HostRelationEvent) {
-	// 记录非BSCP业务，避免重复查询数据库判断是否属于BSCP
-	invaluedBiz := make(map[int]struct{}, 0)
-	for _, event := range events {
-		if err := w.processEvent(kt, event, invaluedBiz); err != nil {
-			logs.Errorf("process event failed, event: %+v, err: %v", event, err)
-			// Skip failed events, rely on full data sync and other fallback measures
+	intents := compressEvents(events)
+	if len(intents) == 0 {
+		return
+	}
+	if len(intents) != len(events) {
+		logs.Infof("host relation events compressed: %d -> %d", len(events), len(intents))
+	}
+
+	// Resolve BSCP membership once per unique biz.
+	uniqBizs := make(map[int]struct{})
+	for _, intent := range intents {
+		uniqBizs[intent.bizID] = struct{}{}
+	}
+	bscpBizs := make(map[int]bool, len(uniqBizs))
+	for bizID := range uniqBizs {
+		belongs, err := w.set.App().CheckBizExists(kt, uint32(bizID))
+		if err != nil {
+			logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", bizID, err)
+			continue
+		}
+		bscpBizs[bizID] = belongs
+	}
+
+	// Group final intents by biz.
+	createByBiz := make(map[int][]int)
+	deleteByBiz := make(map[int][]int)
+	for _, intent := range intents {
+		if !bscpBizs[intent.bizID] {
+			continue
+		}
+		switch intent.finalOp {
+		case bizHostRelationCreateEvent:
+			createByBiz[intent.bizID] = append(createByBiz[intent.bizID], intent.hostID)
+		case bizHostRelationDeleteEvent:
+			deleteByBiz[intent.bizID] = append(deleteByBiz[intent.bizID], intent.hostID)
+		}
+	}
+
+	for bizID, hostIDs := range createByBiz {
+		if err := w.processBizCreates(kt, bizID, hostIDs); err != nil {
+			logs.Errorf("process biz[%d] creates failed, hosts=%d, err: %v", bizID, len(hostIDs), err)
+			continue
+		}
+	}
+	for bizID, hostIDs := range deleteByBiz {
+		if err := w.processBizDeletes(kt, bizID, hostIDs); err != nil {
+			logs.Errorf("process biz[%d] deletes failed, hosts=%d, err: %v", bizID, len(hostIDs), err)
 			continue
 		}
 	}
 }
 
-// processEvent process single event
-func (w *WatchBizHostRelation) processEvent(
-	kt *kit.Kit, event bkcmdb.HostRelationEvent,
-	invaluedBiz map[int]struct{},
-) error {
-	switch event.BkEventType {
-	case bizHostRelationCreateEvent:
-		return w.handleHostRelationCreateEvent(kt, event, invaluedBiz)
-	case bizHostRelationDeleteEvent:
-		return w.handleHostRelationDeleteEvent(kt, event, invaluedBiz)
-	default:
-		logs.Warnf("unknown event type: %s", event.BkEventType)
-		return nil
-	}
-}
+// processBizCreates resolves host details via a single batched ListBizHosts
+// call per chunk and upserts the results in one BatchUpsert.
+func (w *WatchBizHostRelation) processBizCreates(kt *kit.Kit, bizID int, hostIDs []int) error {
+	for start := 0; start < len(hostIDs); start += listBizHostsChunkSize {
+		end := start + listBizHostsChunkSize
+		if end > len(hostIDs) {
+			end = len(hostIDs)
+		}
+		chunk := hostIDs[start:end]
 
-// handleHostRelationEvent handle host relation event
-func (w *WatchBizHostRelation) handleHostRelationCreateEvent(
-	kt *kit.Kit,
-	event bkcmdb.HostRelationEvent,
-	invaluedBiz map[int]struct{},
-) error {
-	if event.BkDetail == nil {
-		logs.Warnf("host relation event has nil detail, skipping")
-		return nil
-	}
-
-	detail := event.BkDetail
-	if detail.BkBizID == nil || detail.BkHostID == nil {
-		logs.Warnf("invalid host relation event detail: %+v", detail)
-		return nil
-	}
-	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
-		return nil
-	}
-	belongsToBSCP, err := w.set.App().CheckBizExists(kt, uint32(*detail.BkBizID))
-	if err != nil {
-		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
-		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
-	}
-
-	if !belongsToBSCP {
-		invaluedBiz[*detail.BkBizID] = struct{}{}
-		return nil
-	}
-
-	bizHost := &table.BizHost{
-		TenantID: kt.TenantID,
-		BizID:    uint(*detail.BkBizID),
-		HostID:   uint(*detail.BkHostID),
-	}
-	// query host detail
-	hostResult, err := w.cmdbService.ListBizHosts(kt.Ctx, &bkcmdb.ListBizHostsRequest{
-		BkBizID: *detail.BkBizID,
-		Page: bkcmdb.PageParam{
-			Start: 0,
-			Limit: 1,
-		},
-		Fields: []string{"bk_host_id", "bk_agent_id", "bk_host_innerip"},
-		HostPropertyFilter: &bkcmdb.HostPropertyFilter{
-			Condition: bkcmdb.HostPropertyConditionAnd,
-			Rules: []bkcmdb.HostPropertyRule{
-				{Field: "bk_host_id", Operator: bkcmdb.HostPropertyOperatorEqual, Value: *detail.BkHostID},
+		hostResult, err := w.cmdbService.ListBizHosts(kt.Ctx, &bkcmdb.ListBizHostsRequest{
+			BkBizID: bizID,
+			Page: bkcmdb.PageParam{
+				Start: 0,
+				Limit: len(chunk),
 			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("list biz hosts failed: %w", err)
-	}
+			Fields: []string{"bk_host_id", "bk_agent_id", "bk_host_innerip"},
+			HostPropertyFilter: &bkcmdb.HostPropertyFilter{
+				Condition: bkcmdb.HostPropertyConditionAnd,
+				Rules: []bkcmdb.HostPropertyRule{
+					{Field: "bk_host_id", Operator: bkcmdb.HostPropertyOperatorIn, Value: chunk},
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("list biz[%d] hosts failed: %w", bizID, err)
+		}
+		if len(hostResult.Info) == 0 {
+			continue
+		}
 
-	if len(hostResult.Info) == 0 {
-		return nil
-	}
-	host := hostResult.Info[0]
-	bizHost.AgentID = host.BkAgentID
-	bizHost.BKHostInnerIP = host.BkHostInnerIP
-
-	if err := w.set.BizHost().Upsert(kt, bizHost); err != nil {
-		return fmt.Errorf("upsert biz[%d] host[%d] failed: %w", detail.BkBizID, detail.BkHostID, err)
+		bizHosts := make([]*table.BizHost, 0, len(hostResult.Info))
+		for _, h := range hostResult.Info {
+			bizHosts = append(bizHosts, &table.BizHost{
+				TenantID:      kt.TenantID,
+				BizID:         uint(bizID),
+				HostID:        uint(h.BkHostID),
+				AgentID:       h.BkAgentID,
+				BKHostInnerIP: h.BkHostInnerIP,
+			})
+		}
+		if err := w.set.BizHost().BatchUpsert(kt, bizHosts); err != nil {
+			return fmt.Errorf("batch upsert biz[%d] hosts failed: %w", bizID, err)
+		}
 	}
 	return nil
 }
 
-// handleHostRelationDeleteEvent handle host relation delete event
-func (w *WatchBizHostRelation) handleHostRelationDeleteEvent(
-	kt *kit.Kit,
-	event bkcmdb.HostRelationEvent,
-	invaluedBiz map[int]struct{},
-) error {
-	if event.BkDetail == nil {
-		logs.Warnf("host relation event has nil detail, skipping")
+// processBizDeletes verifies which hostIDs are still associated with the biz
+// via a single batched FindHostBizRelations call per chunk and then removes
+// the truly-deleted ones in one BatchDelete.
+func (w *WatchBizHostRelation) processBizDeletes(kt *kit.Kit, bizID int, hostIDs []int) error {
+	toDelete := make([]uint, 0, len(hostIDs))
+
+	for start := 0; start < len(hostIDs); start += findHostBizRelationsChunkSize {
+		end := start + findHostBizRelationsChunkSize
+		if end > len(hostIDs) {
+			end = len(hostIDs)
+		}
+		chunk := hostIDs[start:end]
+
+		if err := w.rateLimiter.Wait(kt.Ctx); err != nil {
+			return fmt.Errorf("rate limiter wait failed: %w", err)
+		}
+		relations, err := w.cmdbService.FindHostBizRelations(kt.Ctx, &bkcmdb.FindHostBizRelationsRequest{
+			BkBizID:  bizID,
+			BkHostID: chunk,
+		})
+		if err != nil {
+			return fmt.Errorf("find host biz relations for biz[%d] failed: %w", bizID, err)
+		}
+
+		existSet := make(map[int]struct{}, len(relations))
+		for _, r := range relations {
+			existSet[r.BkHostID] = struct{}{}
+		}
+		for _, hostID := range chunk {
+			if _, ok := existSet[hostID]; ok {
+				continue
+			}
+			toDelete = append(toDelete, uint(hostID))
+		}
+	}
+
+	if len(toDelete) == 0 {
 		return nil
 	}
 
-	detail := event.BkDetail
-	if detail.BkBizID == nil || detail.BkHostID == nil {
-		logs.Warnf("invalid host relation event detail: %+v", detail)
-		return nil
+	if err := w.set.BizHost().BatchDelete(kt, uint(bizID), toDelete); err != nil {
+		return fmt.Errorf("batch delete biz[%d] hosts failed: %w", bizID, err)
 	}
-	if _, ok := invaluedBiz[*detail.BkBizID]; ok {
-		return nil
-	}
-	// check if biz belongs to BSCP (with cache optimization)
-	belongsToBSCP, err := w.set.App().CheckBizExists(kt, uint32(*detail.BkBizID))
-	if err != nil {
-		logs.Errorf("check if biz %d belongs to BSCP failed, err: %v", *detail.BkBizID, err)
-		return fmt.Errorf("check biz belongs to BSCP failed: %w", err)
-	}
-
-	if !belongsToBSCP {
-		// biz does not belong to BSCP, skip deletion
-		return nil
-	}
-
-	// check if host biz relation exists through CMDB API (need rate limiting)
-	relationExists, err := w.verifyHostBizRelation(kt, *detail.BkBizID, *detail.BkHostID)
-	if err != nil {
-		logs.Errorf("verify host biz relation failed, biz: %d, host: %d, err: %v", *detail.BkBizID, *detail.BkHostID, err)
-		return fmt.Errorf("verify host biz relation failed: %w", err)
-	}
-
-	if relationExists {
-		// host biz relation exists, skip deletion
-		return nil
-	}
-
-	if err := w.set.BizHost().Delete(kt, uint(*detail.BkBizID), uint(*detail.BkHostID)); err != nil {
-		return fmt.Errorf("delete biz[%d] host[%d] failed: %w", detail.BkBizID, detail.BkHostID, err)
-	}
-
 	return nil
-}
-
-// verifyHostBizRelation verify host biz relation exists
-func (w *WatchBizHostRelation) verifyHostBizRelation(kt *kit.Kit, bizID int, hostID int) (bool, error) {
-	// apply rate limiter
-	if err := w.rateLimiter.Wait(kt.Ctx); err != nil {
-		return false, fmt.Errorf("rate limiter wait failed: %w", err)
-	}
-
-	req := &bkcmdb.FindHostBizRelationsRequest{
-		BkBizID:  bizID,
-		BkHostID: []int{hostID},
-	}
-
-	relationResult, err := w.cmdbService.FindHostBizRelations(kt.Ctx, req)
-	if err != nil {
-		return false, fmt.Errorf("find host biz relations failed: %w", err)
-	}
-
-	// check if relation exists
-	return len(relationResult) > 0, nil
 }
 
 // InitBizHostCursor initializes biz host cursor to the latest position

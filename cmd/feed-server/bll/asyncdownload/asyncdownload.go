@@ -22,9 +22,11 @@ import (
 
 	prm "github.com/prometheus/client_golang/prometheus"
 
+	v2pkg "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/asyncdownload/v2"
 	clientset "github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/client-set"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/bll/types"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
@@ -38,29 +40,52 @@ func NewService(cs *clientset.ClientSet, mc *metric, redLock *lock.RedisLock) (*
 
 	return &Service{
 		enabled: cc.FeedServer().GSE.Enabled,
-		cs:      cs,
+		redis:   cs.Redis(),
 		redLock: redLock,
 		metric:  mc,
+		v2:      v2pkg.NewService(cs.Redis(), redLock, mc, cc.FeedServer().GSE.AsyncDownloadV2),
 	}, nil
 }
 
 // Service defines async download related operations.
 type Service struct {
 	enabled bool
-	cs      *clientset.ClientSet
+	redis   bedis.Client
 	redLock *lock.RedisLock
 	metric  *metric
+	v2      *v2pkg.Service
 }
 
 // CreateAsyncDownloadTask creates a new async download task.
 func (ad *Service) CreateAsyncDownloadTask(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
+	start := time.Now()
+	mode := "v1"
+	if ad.v2 != nil && ad.v2.Enabled() {
+		mode = "v2"
+	}
+	logs.CtxInfof(kt.Ctx, "create async download task started, biz:%d, app:%d, file:%s, target:%s:%s, target_user:%s, target_dir:%s, mode:%s",
+		bizID, appID, path.Join(filePath, fileName), targetAgentID, targetContainerID, targetUser, targetDir, mode)
+	if ad.v2 != nil && ad.v2.Enabled() {
+		taskID, err := ad.v2.CreateTask(kt, bizID, appID, filePath, fileName,
+			targetAgentID, targetContainerID, targetUser, targetDir, signature)
+		if err != nil {
+			logs.CtxErrorf(kt.Ctx, "create async download task failed, biz:%d, app:%d, file:%s, mode:%s, duration_ms:%d, err:%v",
+				bizID, appID, path.Join(filePath, fileName), mode, time.Since(start).Milliseconds(), err)
+			return "", err
+		}
+		logs.CtxInfof(kt.Ctx, "create async download task finished, biz:%d, app:%d, file:%s, task_id:%s, mode:%s, duration_ms:%d",
+			bizID, appID, path.Join(filePath, fileName), taskID, mode, time.Since(start).Milliseconds())
+		return taskID, nil
+	}
 	taskID := fmt.Sprintf("AsyncDownloadTask:%d:%d:%s:%s",
 		bizID, appID, path.Join(filePath, fileName), uuid.UUID())
 
 	jobID, err := ad.upsertAsyncDownloadJob(kt, bizID, appID, filePath, fileName, targetAgentID,
 		targetContainerID, targetUser, targetDir, signature)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "create async download task failed when upserting job, biz:%d, app:%d, file:%s, mode:%s, duration_ms:%d, err:%v",
+			bizID, appID, path.Join(filePath, fileName), mode, time.Since(start).Milliseconds(), err)
 		return "", err
 	}
 	task := &types.AsyncDownloadTask{
@@ -77,35 +102,42 @@ func (ad *Service) CreateAsyncDownloadTask(kt *kit.Kit, bizID, appID uint32, fil
 	}
 
 	if err = ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
-		logs.Errorf("upsert async download task %s failed, err %s", taskID, err.Error())
+		logs.CtxErrorf(kt.Ctx, "upsert async download task %s failed, err %s", taskID, err.Error())
 		return "", err
 	}
-	logs.Infof("upsert async download task %s success, biz:%d, app:%d, file:%s, status:%s",
+	logs.CtxInfof(kt.Ctx, "upsert async download task %s success, biz:%d, app:%d, file:%s, status:%s",
 		taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
 	ad.metric.taskCounter.With(prm.Labels{"biz": strconv.Itoa(int(task.BizID)),
 		"app": strconv.Itoa(int(task.AppID)), "file": path.Join(task.FilePath, task.FileName), "status": task.Status}).
 		Inc()
 
+	logs.CtxInfof(kt.Ctx, "create async download task finished, biz:%d, app:%d, file:%s, task_id:%s, job_id:%s, mode:%s, duration_ms:%d",
+		bizID, appID, path.Join(filePath, fileName), taskID, jobID, mode, time.Since(start).Milliseconds())
 	return taskID, nil
 }
 
 // GetAsyncDownloadTask get async download task record.
 func (ad *Service) GetAsyncDownloadTask(kt *kit.Kit, bizID uint32, taskID string) (
 	*types.AsyncDownloadTask, error) {
+	if ad.v2 != nil && ad.v2.Enabled() {
+		if task, err := ad.v2.GetAsyncDownloadTask(kt.Ctx, taskID); err == nil {
+			return task, nil
+		}
+	}
 
-	taskData, err := ad.cs.Redis().Get(kt.Ctx, taskID)
+	taskData, err := ad.redis.Get(kt.Ctx, taskID)
 	if err != nil {
 		return nil, err
 	}
 	if taskData == "" {
 		// task not exists
-		logs.Errorf("async download task %s not exists in redis", taskID)
+		logs.CtxErrorf(kt.Ctx, "async download task %s not exists in redis", taskID)
 		return nil, fmt.Errorf("async download task %s not exists in redis", taskID)
 	}
 
 	task := new(types.AsyncDownloadTask)
 	if err := jsoni.UnmarshalFromString(taskData, &task); err != nil {
-		logs.Errorf("unmarshal task %s failed, err %s", taskID, err.Error())
+		logs.CtxErrorf(kt.Ctx, "unmarshal task %s failed, err %s", taskID, err.Error())
 		return nil, err
 	}
 
@@ -116,30 +148,35 @@ func (ad *Service) GetAsyncDownloadTask(kt *kit.Kit, bizID uint32, taskID string
 // task is in instance level, so do not need to lock it.
 func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID string) (
 	string, error) {
+	if ad.v2 != nil && ad.v2.Enabled() {
+		if status, err := ad.v2.GetTaskStatus(kt.Ctx, taskID); err == nil {
+			return status, nil
+		}
+	}
 
-	taskData, err := ad.cs.Redis().Get(kt.Ctx, taskID)
+	taskData, err := ad.redis.Get(kt.Ctx, taskID)
 	if err != nil {
 		return "", err
 	}
 	if taskData == "" {
 		// task not exists
-		logs.Errorf("async download task %s not exists in redis", taskID)
+		logs.CtxErrorf(kt.Ctx, "async download task %s not exists in redis", taskID)
 		return "", fmt.Errorf("async download task %s not exists in redis", taskID)
 	}
 
 	task := new(types.AsyncDownloadTask)
 	if e := jsoni.UnmarshalFromString(taskData, &task); e != nil {
-		logs.Errorf("unmarshal task %s failed, err %s", taskID, e.Error())
+		logs.CtxErrorf(kt.Ctx, "unmarshal task %s failed, err %s", taskID, e.Error())
 		return "", e
 	}
 
-	jobData, err := ad.cs.Redis().Get(kt.Ctx, task.JobID)
+	jobData, err := ad.redis.Get(kt.Ctx, task.JobID)
 	if err != nil {
 		return "", err
 	}
 	if jobData == "" {
 		// job not exists
-		logs.Errorf("async download job %s not exists in redis, it should not happen!", task.JobID)
+		logs.CtxErrorf(kt.Ctx, "async download job %s not exists in redis, it should not happen!", task.JobID)
 		return "", fmt.Errorf("async download job %s not exists in redis", taskID)
 	}
 
@@ -154,28 +191,28 @@ func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID 
 	if _, ok := job.SuccessTargets[fmt.Sprintf("%s:%s", task.TargetAgentID, task.TargetContainerID)]; ok {
 		task.Status = types.AsyncDownloadJobStatusSuccess
 		if err := ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
-			logs.Errorf("update task %s status to success failed, err %s", taskID, err.Error())
+			logs.CtxErrorf(kt.Ctx, "update task %s status to success failed, err %s", taskID, err.Error())
 		}
 	}
 
 	if _, ok := job.FailedTargets[fmt.Sprintf("%s:%s", task.TargetAgentID, task.TargetContainerID)]; ok {
 		task.Status = types.AsyncDownloadJobStatusFailed
 		if err := ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
-			logs.Errorf("update task %s status to success failed, err %s", taskID, err.Error())
+			logs.CtxErrorf(kt.Ctx, "update task %s status to success failed, err %s", taskID, err.Error())
 		}
 	}
 
 	if _, ok := job.TimeoutTargets[fmt.Sprintf("%s:%s", task.TargetAgentID, task.TargetContainerID)]; ok {
 		task.Status = types.AsyncDownloadJobStatusTimeout
 		if err := ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
-			logs.Errorf("update task %s status to success failed, err %s", taskID, err.Error())
+			logs.CtxErrorf(kt.Ctx, "update task %s status to success failed, err %s", taskID, err.Error())
 		}
 	}
 
 	if _, ok := job.DownloadingTargets[fmt.Sprintf("%s:%s", task.TargetAgentID, task.TargetContainerID)]; ok {
 		task.Status = types.AsyncDownloadJobStatusRunning
 		if err := ad.upsertAsyncDownloadTask(kt.Ctx, taskID, task); err != nil {
-			logs.Errorf("update task %s status to success failed, err %s", taskID, err.Error())
+			logs.CtxErrorf(kt.Ctx, "update task %s status to success failed, err %s", taskID, err.Error())
 		}
 	}
 
@@ -194,22 +231,31 @@ func (ad *Service) GetAsyncDownloadTaskStatus(kt *kit.Kit, bizID uint32, taskID 
 
 func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, filePath, fileName,
 	targetAgentID, targetContainerID, targetUser, targetDir, signature string) (string, error) {
+	start := time.Now()
 	fileKey := fmt.Sprintf("AsyncDownloadJob:%d:%d:%s:*", bizID, appID, path.Join(filePath, fileName))
 	// lock by file to prevent concurrency writing in other requests
+	lockWaitStart := time.Now()
 	ad.redLock.Acquire(fileKey)
 	defer ad.redLock.Release(fileKey)
-	keys, err := ad.cs.Redis().Keys(kt.Ctx, fileKey)
+	logs.CtxInfof(kt.Ctx, "async download file lock acquired, file_key:%s, wait_ms:%d",
+		fileKey, time.Since(lockWaitStart).Milliseconds())
+	keys, err := ad.redis.Keys(kt.Ctx, fileKey)
 	if err != nil {
 		return "", err
 	}
+	logs.CtxInfof(kt.Ctx, "async download scanned existing jobs, file_key:%s, key_count:%d, duration_ms:%d",
+		fileKey, len(keys), time.Since(start).Milliseconds())
 	for _, key := range keys {
 		if jobID, ok := func() (string, bool) {
 			// lock by job to prevent concurrency writing in job manager
+			jobLockWaitStart := time.Now()
 			ad.redLock.Acquire(key)
 			defer ad.redLock.Release(key)
-			data, e := ad.cs.Redis().Get(kt.Ctx, key)
+			logs.CtxInfof(kt.Ctx, "async download job lock acquired, job_id:%s, wait_ms:%d",
+				key, time.Since(jobLockWaitStart).Milliseconds())
+			data, e := ad.redis.Get(kt.Ctx, key)
 			if e != nil {
-				logs.Errorf("get key %s from redis failed, err %s", key, e.Error())
+				logs.CtxErrorf(kt.Ctx, "get key %s from redis failed, err %s", key, e.Error())
 				return "", false
 			}
 			if data == "" {
@@ -217,7 +263,7 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 			}
 			job := &types.AsyncDownloadJob{}
 			if e := jsoni.UnmarshalFromString(data, &job); e != nil {
-				logs.Errorf("unmarshal job %s failed, err %s", key, e.Error())
+				logs.CtxErrorf(kt.Ctx, "unmarshal job %s failed, err %s", key, e.Error())
 				return "", false
 			}
 			if job.Status == types.AsyncDownloadJobStatusPending {
@@ -228,11 +274,11 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 				})
 				js, e := jsoni.Marshal(job)
 				if e != nil {
-					logs.Errorf("marshal job %s failed, err %s", key, e.Error())
+					logs.CtxErrorf(kt.Ctx, "marshal job %s failed, err %s", key, e.Error())
 					return "", false
 				}
-				if e := ad.cs.Redis().Set(kt.Ctx, key, string(js), 30*60); e != nil {
-					logs.Errorf("set job %s to redis failed, err %s", key, e.Error())
+				if e := ad.redis.Set(kt.Ctx, key, string(js), 30*60); e != nil {
+					logs.CtxErrorf(kt.Ctx, "set job %s to redis failed, err %s", key, e.Error())
 					return "", false
 				}
 				return key, true
@@ -240,7 +286,8 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 			return "", false
 
 		}(); ok {
-			logs.Infof("async download, job %s exists, update it", jobID)
+			logs.CtxInfof(kt.Ctx, "async download reused pending job, job_id:%s, file:%s, duration_ms:%d",
+				jobID, path.Join(filePath, fileName), time.Since(start).Milliseconds())
 			return jobID, nil
 		}
 	}
@@ -281,8 +328,9 @@ func (ad *Service) upsertAsyncDownloadJob(kt *kit.Kit, bizID, appID uint32, file
 		"app": strconv.Itoa(int(job.AppID)), "file": path.Join(job.FilePath, job.FileName),
 		"targets": strconv.Itoa(len(job.Targets)), "status": job.Status}).Inc()
 
-	logs.Infof("async download, create new job %s", jobID)
-	return jobID, ad.cs.Redis().Set(kt.Ctx, jobID, string(js), 30*60)
+	logs.CtxInfof(kt.Ctx, "async download created new job, job_id:%s, file:%s, duration_ms:%d",
+		jobID, path.Join(filePath, fileName), time.Since(start).Milliseconds())
+	return jobID, ad.redis.Set(kt.Ctx, jobID, string(js), 30*60)
 }
 
 func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,
@@ -291,7 +339,7 @@ func (ad *Service) upsertAsyncDownloadTask(ctx context.Context, taskID string,
 	if err != nil {
 		return err
 	}
-	logs.Infof("upsert async download task %s, biz:%d, app:%d, file:%s, status:%s",
+	logs.CtxInfof(ctx, "upsert async download task %s, biz:%d, app:%d, file:%s, status:%s",
 		taskID, task.BizID, task.AppID, path.Join(task.FilePath, task.FileName), task.Status)
-	return ad.cs.Redis().Set(ctx, taskID, string(js), 30*60)
+	return ad.redis.Set(ctx, taskID, string(js), 30*60)
 }

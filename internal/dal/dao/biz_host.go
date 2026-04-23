@@ -30,12 +30,16 @@ type BizHost interface {
 	List(kit *kit.Kit, bizID uint) ([]*table.BizHost, error)
 	// ListAllByHostID list all biz host relationships by hostID
 	ListAllByHostID(kit *kit.Kit, hostID uint) ([]*table.BizHost, error)
+	// ListAllByHostIDs list all biz host relationships by hostID list
+	ListAllByHostIDs(kit *kit.Kit, hostIDs []uint) ([]*table.BizHost, error)
 	// GetByAgentID get biz host relationship by agentID
 	GetByAgentID(kit *kit.Kit, agentID string) (*table.BizHost, error)
 	// UpdateByBizHost update biz host by bizID and hostID (only if exists)
 	UpdateByBizHost(kit *kit.Kit, bizHost *table.BizHost) error
 	// Delete delete biz host relationship
 	Delete(kit *kit.Kit, bizID, hostID uint) error
+	// BatchDelete batch delete biz host relationships of a biz by hostID list
+	BatchDelete(kit *kit.Kit, bizID uint, hostIDs []uint) error
 	// QueryOldestBizHosts query oldest biz host relationships for cleanup
 	QueryOldestBizHosts(kit *kit.Kit, limit int) ([]*table.BizHost, error)
 }
@@ -93,6 +97,32 @@ func (dao *bizHostDao) Delete(kit *kit.Kit, bizID, hostID uint) error {
 		Delete(&table.BizHost{})
 
 	return err
+}
+
+// BatchDelete batch delete biz host relationships of a biz by hostID list
+func (dao *bizHostDao) BatchDelete(kit *kit.Kit, bizID uint, hostIDs []uint) error {
+	if len(hostIDs) == 0 {
+		return nil
+	}
+
+	m := dao.genQ.BizHost
+	_, err := dao.genQ.BizHost.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.HostID.In(hostIDs...)).
+		Delete(&table.BizHost{})
+
+	return err
+}
+
+// ListAllByHostIDs list all biz host relationships by hostID list
+func (dao *bizHostDao) ListAllByHostIDs(kit *kit.Kit, hostIDs []uint) ([]*table.BizHost, error) {
+	if len(hostIDs) == 0 {
+		return nil, nil
+	}
+
+	m := dao.genQ.BizHost
+	return dao.genQ.BizHost.WithContext(kit.Ctx).
+		Where(m.HostID.In(hostIDs...)).
+		Find()
 }
 
 // UpdateByBizHost update biz host by bizID and hostID (only if exists)

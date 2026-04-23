@@ -17,6 +17,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
@@ -39,11 +40,12 @@ func ValidateOperateStep(
 	logs.V(3).Infof("ValidateOperateStep: bizID: %d, processID: %d, processInstanceID: %d",
 		bizID, processID, processInstanceID)
 
+	vtf := cc.G().TaskFramework.ProcessUpdateRegister.ValidateOperate
 	setp := types.NewStep(process.ValidateOperateStepName.String(),
 		process.ValidateOperateStepName.String()).
 		SetAlias("validate_operate").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(vtf.MaxExecution).
+		SetMaxTries(vtf.MaxRetries)
 
 	lo.Must0(setp.SetPayload(process.UpdateRegisterPayload{
 		TenantID:                  tenantID,
@@ -74,11 +76,12 @@ func StopProcessStep(
 	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
+	sptf := cc.G().TaskFramework.ProcessUpdateRegister.StopProcess
 	setp := types.NewStep(process.StopProcessStepName.String(),
 		process.StopProcessStepName.String()).
 		SetAlias("stop_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(sptf.MaxExecution).
+		SetMaxTries(sptf.MaxRetries)
 
 	lo.Must0(setp.SetPayload(process.UpdateRegisterPayload{
 		TenantID:                  tenantID,
@@ -106,11 +109,12 @@ func RegisterProcessStep(
 	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
+	rptf := cc.G().TaskFramework.ProcessUpdateRegister.RegisterProcess
 	setp := types.NewStep(process.RegisterProcessStepName.String(),
 		process.RegisterProcessStepName.String()).
 		SetAlias("register_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(rptf.MaxExecution).
+		SetMaxTries(rptf.MaxRetries)
 
 	lo.Must0(setp.SetPayload(process.UpdateRegisterPayload{
 		TenantID:                  tenantID,
@@ -138,11 +142,12 @@ func StartProcessStep(
 	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
+	stptf := cc.G().TaskFramework.ProcessUpdateRegister.StartProcess
 	setp := types.NewStep(process.StartProcessStepName.String(),
 		process.StartProcessStepName.String()).
 		SetAlias("start_process").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(stptf.MaxExecution).
+		SetMaxTries(stptf.MaxRetries)
 
 	lo.Must0(setp.SetPayload(process.UpdateRegisterPayload{
 		TenantID:                  tenantID,
@@ -170,11 +175,12 @@ func OperationCompletedStep(
 	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
+	octf := cc.G().TaskFramework.ProcessUpdateRegister.OperationCompleted
 	setp := types.NewStep(process.OperationCompletedStepName.String(),
 		process.OperationCompletedStepName.String()).
 		SetAlias("operation_completed").
-		SetMaxExecution(MaxExecutionTime).
-		SetMaxTries(MaxTries)
+		SetMaxExecution(octf.MaxExecution).
+		SetMaxTries(octf.MaxRetries)
 
 	lo.Must0(setp.SetPayload(process.UpdateRegisterPayload{
 		TenantID:                  tenantID,

@@ -27,6 +27,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -67,6 +68,7 @@ func NewProcessExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, pm 
 			CMDBService: cmdbService,
 			Dao:         dao,
 			PM:          pm,
+			TaskConf:    cc.G().TaskFramework,
 		},
 	}
 }

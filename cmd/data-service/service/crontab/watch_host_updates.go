@@ -191,86 +191,76 @@ func (w *WatchHostUpdates) watchHostUpdates(kt *kit.Kit) {
 	}
 }
 
-// processHostEvents process host event list
+// compressHostUpdateEvents collapses host update events by bk_host_id, keeping
+// only the last seen agentID per hostID. Order of first appearance is
+// preserved for deterministic downstream processing.
+func compressHostUpdateEvents(events []bkcmdb.HostEvent) map[int]string {
+	latest := make(map[int]string, len(events))
+	for _, ev := range events {
+		if ev.BkEventType != hostUpdateEvent {
+			logs.Warnf("unknown host event type: %s", ev.BkEventType)
+			continue
+		}
+		if ev.BkDetail == nil || ev.BkDetail.BkHostID == nil {
+			logs.Warnf("invalid host update event detail: %+v", ev.BkDetail)
+			continue
+		}
+		agentID := ""
+		if ev.BkDetail.BkAgentID != nil {
+			agentID = *ev.BkDetail.BkAgentID
+		}
+		latest[*ev.BkDetail.BkHostID] = agentID
+	}
+	return latest
+}
+
+// processHostEvents compresses host update events to the latest agentID per
+// hostID, batch-loads existing biz_host rows once, then batch-upserts only the
+// rows whose agentID actually changed.
 func (w *WatchHostUpdates) processHostEvents(kt *kit.Kit, events []bkcmdb.HostEvent) {
-	// 记录已经查询过的主机，避免重复查询数据库
-	invaluedHost := make(map[int]struct{}, 0)
-	for _, event := range events {
-		if err := w.processHostEvent(kt, event, invaluedHost); err != nil {
-			logs.Warnf("process host event failed, event: %s, err: %v", event.BkCursor, err)
-			// Skip failed events, rely on full data sync and other fallback measures
-			continue
-		}
+	latest := compressHostUpdateEvents(events)
+	if len(latest) == 0 {
+		return
 	}
-}
-
-// processHostEvent process single host event
-func (w *WatchHostUpdates) processHostEvent(
-	kt *kit.Kit,
-	event bkcmdb.HostEvent,
-	invaluedHost map[int]struct{},
-) error {
-	switch event.BkEventType {
-	case hostUpdateEvent:
-		return w.handleHostUpdateEvent(kt, event, invaluedHost)
-	default:
-		// unknown host event type, skip
-		logs.Warnf("unknown host event type: %s", event.BkEventType)
-		return nil
-	}
-}
-
-// handleHostUpdateEvent handle host update event
-func (w *WatchHostUpdates) handleHostUpdateEvent(
-	kt *kit.Kit,
-	event bkcmdb.HostEvent,
-	invaluedHost map[int]struct{},
-) error {
-	if event.BkDetail == nil {
-		return errors.New("host update event has nil detail")
+	if len(latest) != len(events) {
+		logs.Infof("host update events compressed: %d -> %d", len(events), len(latest))
 	}
 
-	detail := event.BkDetail
-	if detail.BkHostID == nil {
-		return errors.New("invalid host update event detail")
+	hostIDs := make([]uint, 0, len(latest))
+	for hostID := range latest {
+		hostIDs = append(hostIDs, uint(hostID))
 	}
 
-	hostID := *detail.BkHostID
-	agentID := ""
-	if detail.BkAgentID != nil {
-		agentID = *detail.BkAgentID
-	}
-	if _, ok := invaluedHost[hostID]; ok {
-		return nil
-	}
-
-	// Check if this host exists in biz_host table
-	existingBizHosts, err := w.set.BizHost().ListAllByHostID(kt, uint(hostID))
+	existing, err := w.set.BizHost().ListAllByHostIDs(kt, hostIDs)
 	if err != nil {
-		return fmt.Errorf("query biz hosts for hostID %d failed: %w", hostID, err)
+		logs.Errorf("query biz hosts by hostIDs failed, count=%d, err: %v", len(hostIDs), err)
+		return
+	}
+	if len(existing) == 0 {
+		return
 	}
 
-	if len(existingBizHosts) == 0 {
-		invaluedHost[hostID] = struct{}{}
-		return nil
-	}
-	if len(existingBizHosts) > 1 {
-		// host should only belong to one biz, if multiple biz relations exist, it is considered abnormal
-		logs.Warnf("found multiple business relationships for host %d", hostID)
-	}
-
-	// Update agentID for all business relationships of this host
-	for _, bizHost := range existingBizHosts {
-		// Update the agentID
-		bizHost.AgentID = agentID
-		if err := w.set.BizHost().UpdateByBizHost(kt, bizHost); err != nil {
-			// Update failed means the relationship may have been removed, skip
-			logs.Warnf("update biz[%d] host[%d] agentID failed: %v", bizHost.BizID, bizHost.HostID, err)
+	toUpdate := make([]*table.BizHost, 0, len(existing))
+	for _, bizHost := range existing {
+		newAgentID, ok := latest[int(bizHost.HostID)]
+		if !ok {
 			continue
 		}
+		if bizHost.AgentID == newAgentID {
+			continue
+		}
+		bizHost.AgentID = newAgentID
+		toUpdate = append(toUpdate, bizHost)
 	}
 
-	return nil
+	if len(toUpdate) == 0 {
+		return
+	}
+
+	if err := w.set.BizHost().BatchUpsert(kt, toUpdate); err != nil {
+		logs.Warnf("batch upsert biz host agentID failed, count=%d, err: %v", len(toUpdate), err)
+		return
+	}
 }
 
 // InitHostDetailCursor initializes host detail cursor to the latest position

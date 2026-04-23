@@ -163,10 +163,12 @@ func restyResponseToCurl(resp *resty.Response) string {
 
 func restyErrHook(r *resty.Request, err error) {
 	klog.Infof("[%s] RESP: [err] %s", RequestIDValue(r.RawRequest.Context()), err)
+	recordErrorMetrics(r)
 }
 
 func restyAfterResponseHook(c *resty.Client, r *resty.Response) error {
 	klog.Infof("[%s] RESP: %s", RequestIDValue(r.Request.Context()), restyResponseToCurl(r))
+	recordResponseMetrics(r)
 	return nil
 }
 

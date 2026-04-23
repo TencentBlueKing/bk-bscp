@@ -187,7 +187,7 @@ func (s *Service) Messaging(ctx context.Context, msg *pbfs.MessagingMeta) (*pbfs
 	ra := &meta.ResourceAttribute{Basic: meta.Basic{Type: meta.Sidecar, Action: meta.Access}, BizID: im.Meta.BizID}
 	authorized, err := s.bll.Auth().Authorize(im.Kit, ra)
 	if err != nil {
-		return nil, status.Errorf(codes.Aborted, err.Error())
+		return nil, status.Error(codes.Aborted, err.Error())
 	}
 
 	if !authorized {
@@ -723,55 +723,88 @@ func (s *Service) ListApps(ctx context.Context, req *pbfs.ListAppsReq) (*pbfs.Li
 
 // AsyncDownload 异步 p2p 下载，文件名为 sha256
 func (s *Service) AsyncDownload(ctx context.Context, req *pbfs.AsyncDownloadReq) (*pbfs.AsyncDownloadResp, error) {
-	kit := kit.FromGrpcContext(ctx)
+	kt := kit.FromGrpcContext(ctx)
+	start := time.Now()
+	logs.CtxInfof(kt.Ctx, "async download request started, biz_id: %d, app_id: %d, file: %s/%s, file_dir: %s",
+		req.BizId, req.FileMeta.ConfigItemAttachment.AppId, req.FileMeta.ConfigItemSpec.Path,
+		req.FileMeta.ConfigItemSpec.Name, req.FileDir)
 
 	// 鉴权
 	credential := getCredential(ctx)
-	app, err := s.bll.AppCache().GetMeta(kit, req.BizId, req.FileMeta.ConfigItemAttachment.AppId)
+	app, err := s.bll.AppCache().GetMeta(kt, req.BizId, req.FileMeta.ConfigItemAttachment.AppId)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download get app meta failed, biz_id: %d, app_id: %d, duration_ms: %d, err: %v",
+			req.BizId, req.FileMeta.ConfigItemAttachment.AppId, time.Since(start).Milliseconds(), err)
 		return nil, status.Errorf(codes.Aborted, "get app %d metadata failed, %s",
 			req.FileMeta.ConfigItemAttachment.AppId, err.Error())
 	}
 	if !credential.MatchApp(app.Name) {
+		logs.CtxErrorf(kt.Ctx, "async download app permission denied, biz_id: %d, app: %s, duration_ms: %d",
+			req.BizId, app.Name, time.Since(start).Milliseconds())
 		return nil, status.Errorf(codes.PermissionDenied, "not have app %s permission", app.Name)
 	}
 
 	req.FileMeta.ConfigItemSpec.Path = tools.ConvertBackslashes(req.FileMeta.ConfigItemSpec.Path)
 
 	if !credential.MatchConfigItem(app.Name, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name) {
+		logs.CtxErrorf(kt.Ctx, "async download file permission denied, biz_id: %d, app: %s, file: %s/%s, duration_ms: %d",
+			req.BizId, app.Name, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name,
+			time.Since(start).Milliseconds())
 		return nil, status.Error(codes.PermissionDenied, "no permission download file")
 	}
 
 	gseConf := cc.FeedServer().GSE
 	if !gseConf.Enabled {
+		logs.CtxErrorf(kt.Ctx, "async download rejected because p2p is disabled, biz_id: %d, app_id: %d, duration_ms: %d",
+			req.BizId, req.FileMeta.ConfigItemAttachment.AppId, time.Since(start).Milliseconds())
 		return nil, status.Error(codes.FailedPrecondition, "p2p download is disabled in server")
 	}
 
 	// 获取客户端信息，check 是否支持 p2p 下载
-	clientAgentID, clientContainerID, err := s.getAsyncDownloadAgentInfo(ctx, req)
+	agentInfoStart := time.Now()
+	clientAgentID, clientContainerID, err := s.getAsyncDownloadAgentInfo(kt.Ctx, req)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download get client agent info failed, biz_id: %d, app_id: %d, duration_ms: %d, step_duration_ms: %d, err: %v",
+			req.BizId, req.FileMeta.ConfigItemAttachment.AppId, time.Since(start).Milliseconds(),
+			time.Since(agentInfoStart).Milliseconds(), err)
 		return nil, err
 	}
+	logs.CtxInfof(kt.Ctx, "async download resolved client agent info, biz_id: %d, app_id: %d, agent_id: %s, container_id: %s, step_duration_ms: %d",
+		req.BizId, req.FileMeta.ConfigItemAttachment.AppId, clientAgentID, clientContainerID,
+		time.Since(agentInfoStart).Milliseconds())
 
 	// 验证agentID是否属于指定的业务
+	verifyStart := time.Now()
 	if err = s.verifyAgentBelongsToBiz(
-		kit,
+		kt,
 		clientAgentID,
 		req.BizId,
 		req.FileMeta.ConfigItemAttachment.AppId,
 		app.Name,
 	); err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download verify agent belongs failed, biz_id: %d, app_id: %d, agent_id: %s, duration_ms: %d, step_duration_ms: %d, err: %v",
+			req.BizId, req.FileMeta.ConfigItemAttachment.AppId, clientAgentID, time.Since(start).Milliseconds(),
+			time.Since(verifyStart).Milliseconds(), err)
 		return nil, err
 	}
+	logs.CtxInfof(kt.Ctx, "async download verified agent belongs to biz, biz_id: %d, app_id: %d, agent_id: %s, step_duration_ms: %d",
+		req.BizId, req.FileMeta.ConfigItemAttachment.AppId, clientAgentID, time.Since(verifyStart).Milliseconds())
 
 	// 创建下载任务
-	taskID, err := s.bll.AsyncDownload().CreateAsyncDownloadTask(kit, req.BizId,
+	createTaskStart := time.Now()
+	taskID, err := s.bll.AsyncDownload().CreateAsyncDownloadTask(kt, req.BizId,
 		req.FileMeta.ConfigItemAttachment.AppId, req.FileMeta.ConfigItemSpec.Path, req.FileMeta.ConfigItemSpec.Name,
 		clientAgentID, clientContainerID, req.FileMeta.ConfigItemSpec.Permission.User, req.FileDir,
 		req.FileMeta.CommitSpec.Content.Signature)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download create task failed, biz_id: %d, app_id: %d, agent_id: %s, duration_ms: %d, step_duration_ms: %d, err: %v",
+			req.BizId, req.FileMeta.ConfigItemAttachment.AppId, clientAgentID, time.Since(start).Milliseconds(),
+			time.Since(createTaskStart).Milliseconds(), err)
 		return nil, err
 	}
+	logs.CtxInfof(kt.Ctx, "async download request finished, biz_id: %d, app_id: %d, task_id: %s, duration_ms: %d, create_task_duration_ms: %d",
+		req.BizId, req.FileMeta.ConfigItemAttachment.AppId, taskID, time.Since(start).Milliseconds(),
+		time.Since(createTaskStart).Milliseconds())
 
 	r := &pbfs.AsyncDownloadResp{
 		TaskId: taskID,
@@ -825,35 +858,48 @@ func (s *Service) getAsyncDownloadAgentInfo(ctx context.Context, req *pbfs.Async
 // AsyncDownloadStatus 查询异步 p2p 下载任务状态
 func (s *Service) AsyncDownloadStatus(ctx context.Context, req *pbfs.AsyncDownloadStatusReq) (
 	*pbfs.AsyncDownloadStatusResp, error) {
-	kit := kit.FromGrpcContext(ctx)
+	kt := kit.FromGrpcContext(ctx)
+	start := time.Now()
+	logs.CtxInfof(kt.Ctx, "async download status request started, biz_id: %d, task_id: %s",
+		req.BizId, req.TaskId)
 
 	// 1.1 从 Redis 获取到任务对应的服务、文件信息，用token鉴权
-	task, err := s.bll.AsyncDownload().GetAsyncDownloadTask(kit, req.BizId, req.TaskId)
+	task, err := s.bll.AsyncDownload().GetAsyncDownloadTask(kt, req.BizId, req.TaskId)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download status get task failed, biz_id: %d, task_id: %s, duration_ms: %d, err: %v",
+			req.BizId, req.TaskId, time.Since(start).Milliseconds(), err)
 		return nil, err
 	}
 	// 1. 鉴权
 	credential := getCredential(ctx)
-	app, err := s.bll.AppCache().GetMeta(kit, task.BizID, task.AppID)
+	app, err := s.bll.AppCache().GetMeta(kt, task.BizID, task.AppID)
 	if err != nil {
+		logs.CtxErrorf(kt.Ctx, "async download status get app meta failed, biz_id: %d, app_id: %d, task_id: %s, duration_ms: %d, err: %v",
+			task.BizID, task.AppID, req.TaskId, time.Since(start).Milliseconds(), err)
 		return nil, status.Errorf(codes.Aborted, "get app %d metadata failed, %s",
 			task.AppID, err.Error())
 	}
 	if !credential.MatchApp(app.Name) {
+		logs.CtxErrorf(kt.Ctx, "async download status app permission denied, biz_id: %d, app: %s, task_id: %s, duration_ms: %d",
+			task.BizID, app.Name, req.TaskId, time.Since(start).Milliseconds())
 		return nil, status.Errorf(codes.PermissionDenied, "have not app %s permission", app.Name)
 	}
 
 	if !credential.MatchConfigItem(app.Name, task.FilePath, task.FileName) {
+		logs.CtxErrorf(kt.Ctx, "async download status file permission denied, biz_id: %d, app: %s, task_id: %s, file: %s/%s, duration_ms: %d",
+			task.BizID, app.Name, req.TaskId, task.FilePath, task.FileName, time.Since(start).Milliseconds())
 		return nil, status.Error(codes.PermissionDenied, "no permission download file")
 	}
 
-	taskStatus, err := s.bll.AsyncDownload().GetAsyncDownloadTaskStatus(kit, req.BizId, req.TaskId)
+	taskStatus, err := s.bll.AsyncDownload().GetAsyncDownloadTaskStatus(kt, req.BizId, req.TaskId)
 	if err != nil {
-		logs.Errorf("failed get async download task status, %s, biz_id: %d, task_id: %s", err.Error(), req.BizId, req.TaskId)
+		logs.CtxErrorf(kt.Ctx, "async download status query failed, biz_id: %d, task_id: %s, duration_ms: %d, err: %v",
+			req.BizId, req.TaskId, time.Since(start).Milliseconds(), err)
 		return nil, err
 	}
 
-	logs.Infof("get async download task status, biz_id: %d, task_id: %s, status: %s", req.BizId, req.TaskId, taskStatus)
+	logs.CtxInfof(kt.Ctx, "async download status request finished, biz_id: %d, task_id: %s, status: %s, duration_ms: %d",
+		req.BizId, req.TaskId, taskStatus, time.Since(start).Milliseconds())
 
 	var status pbfs.AsyncDownloadStatus
 
@@ -1141,8 +1187,10 @@ func (s *Service) handleResourceUsageMetrics(bizID uint32, appName string, resou
 // verifyAgentBelongsToBiz 验证 agent 是否属于指定的业务
 // nolint
 func (s *Service) verifyAgentBelongsToBiz(kt *kit.Kit, agentID string, bizID uint32, appID uint32, appName string) error {
+	start := time.Now()
 	if agentID == "" {
-		logs.Warnf("verify agent id belongs to biz, agentID is empty, appID: %d, appName: %s", appID, appName)
+		logs.CtxWarnf(kt.Ctx, "verify agent id belongs to biz skipped, agentID is empty, appID: %d, appName: %s, duration_ms: %d",
+			appID, appName, time.Since(start).Milliseconds())
 		return nil
 	}
 
@@ -1150,7 +1198,8 @@ func (s *Service) verifyAgentBelongsToBiz(kt *kit.Kit, agentID string, bizID uin
 	// 检查 app 是否在白名单中
 	isInWhitelist := verifyAgentIDBelongs.IsAppAllowed(appID)
 	if isInWhitelist {
-		logs.Warnf("verify agent id belongs to biz, appID is in whitelist, appID: %d, appName: %s", appID, appName)
+		logs.CtxWarnf(kt.Ctx, "verify agent id belongs to biz skipped because app is in whitelist, appID: %d, appName: %s, duration_ms: %d",
+			appID, appName, time.Since(start).Milliseconds())
 		return nil
 	}
 
@@ -1162,22 +1211,27 @@ func (s *Service) verifyAgentBelongsToBiz(kt *kit.Kit, agentID string, bizID uin
 	// 查询一次，但是不判断结果，只用作日志记录
 	if !verifyAgentIDBelongs.Enabled {
 		if err != nil {
-			logs.Errorf("[log verify agent id]get agent biz failed, agent: %s, app: %s, err: %s", agentID, appName, err.Error())
+			logs.CtxErrorf(kt.Ctx, "[log verify agent id]get agent biz failed, agent: %s, app: %s, duration_ms: %d, err: %s",
+				agentID, appName, time.Since(start).Milliseconds(), err.Error())
 			return nil
 		}
 		if getAgentBizResp == nil {
-			logs.Errorf("[log verify agent id]get agent biz not found, agent: %s, app: %s", agentID, appName)
+			logs.CtxErrorf(kt.Ctx, "[log verify agent id]get agent biz not found, agent: %s, app: %s, duration_ms: %d",
+				agentID, appName, time.Since(start).Milliseconds())
 			return nil
 		}
 		if !getAgentBizResp.Found {
-			logs.Errorf("[log verify agent id]get agent biz not found, agent: %s, app: %s", agentID, appName)
+			logs.CtxErrorf(kt.Ctx, "[log verify agent id]get agent biz not found, agent: %s, app: %s, duration_ms: %d",
+				agentID, appName, time.Since(start).Milliseconds())
 			return nil
 		}
 		if getAgentBizResp.BizId != bizID {
-			logs.Errorf("[log verify agent id]agent biz mismatch, agent: %s, app: %s, expected biz: %d, actual biz: %d", agentID, appName, bizID, getAgentBizResp.BizId)
+			logs.CtxErrorf(kt.Ctx, "[log verify agent id]agent biz mismatch, agent: %s, app: %s, expected biz: %d, actual biz: %d, duration_ms: %d",
+				agentID, appName, bizID, getAgentBizResp.BizId, time.Since(start).Milliseconds())
 			return nil
 		}
-		logs.Infof("[log verify agent id]verify agent id belongs to biz, agent belongs to biz, agent: %s, app: %s", agentID, appName)
+		logs.CtxInfof(kt.Ctx, "[log verify agent id]verify agent id belongs to biz, agent belongs to biz, agent: %s, app: %s, duration_ms: %d",
+			agentID, appName, time.Since(start).Milliseconds())
 		return nil
 	}
 
@@ -1185,13 +1239,16 @@ func (s *Service) verifyAgentBelongsToBiz(kt *kit.Kit, agentID string, bizID uin
 	needFallback := err != nil || getAgentBizResp == nil || !getAgentBizResp.Found
 	if verifyAgentIDBelongs.NeedFallbackToCmdb && needFallback {
 		fallbackReason := s.getFallbackReason(err, getAgentBizResp)
-		logs.Warnf("get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, agentID)
+		logs.CtxWarnf(kt.Ctx, "get agent biz %s, trying CMDB fallback, agent: %s", fallbackReason, agentID)
 
 		// 验证 agent 是否属于当前业务
 		if err = s.validateAgentIsInBiz(kt.Ctx, agentID, bizID); err != nil {
-			logs.Errorf("validate agent belongs to biz failed, use cmdb fallback, %s", err.Error())
+			logs.CtxErrorf(kt.Ctx, "validate agent belongs to biz failed, use cmdb fallback, duration_ms: %d, err: %s",
+				time.Since(start).Milliseconds(), err.Error())
 			return err
 		}
+		logs.CtxInfof(kt.Ctx, "verify agent belongs to biz success with CMDB fallback, agent: %s, biz_id: %d, duration_ms: %d",
+			agentID, bizID, time.Since(start).Milliseconds())
 		return nil
 	}
 
@@ -1206,6 +1263,9 @@ func (s *Service) verifyAgentBelongsToBiz(kt *kit.Kit, agentID string, bizID uin
 			"agent %s belongs to business %d, not %d, and app %s is not in cross-business whitelist",
 			agentID, getAgentBizResp.BizId, bizID, appName)
 	}
+
+	logs.CtxInfof(kt.Ctx, "verify agent belongs to biz success, agent: %s, biz_id: %d, duration_ms: %d",
+		agentID, bizID, time.Since(start).Milliseconds())
 
 	return nil
 }
@@ -1245,7 +1305,7 @@ func (s *Service) validateAgentIsInBiz(ctx context.Context, agentID string, bizI
 		},
 	})
 	if err != nil {
-		logs.Errorf("failed to query CMDB for agent %s in business %d, err: %v", agentID, bizID, err)
+		logs.CtxErrorf(ctx, "failed to query CMDB for agent %s in business %d, err: %v", agentID, bizID, err)
 		return status.Errorf(codes.Internal, "CMDB fallback failed for agent %s in business %d: %v", agentID, bizID, err)
 	}
 

@@ -55,6 +55,19 @@ loginAuth: null
 network:
   bindIP: [ip]
   gwHttpPort: 80
+gse:
+  enabled: false
+  asyncDownloadV2:
+    enabled: false
+    collectWindowSeconds: 10
+    maxTargetsPerBatch: 5000
+    shardSize: 500
+    dispatchHeartbeatSeconds: 15
+    dispatchLeaseSeconds: 60
+    maxDispatchAttempts: 3
+    maxDueBatchesPerTick: 100
+    taskTTLSeconds: 86400
+    batchTTLSeconds: 86400
 rateLimiter:
   biz:
     default:

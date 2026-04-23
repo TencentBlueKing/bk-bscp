@@ -453,12 +453,41 @@ func getSystemCommonAttributes(objID string) []string {
 }
 
 // getAllSetFields 获取所有 Set 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
+// 实现两级缓存机制：
+// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
+// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllSetFields(ctx context.Context) ([]string, error) {
-	// 如果已缓存，直接返回
+	// 第一级：检查本地缓存
 	if len(s.setFieldsCache) > 0 {
 		return s.setFieldsCache, nil
 	}
 
+	// 第二级：检查全局缓存
+	globalCache := GetGlobalObjectAttrCache()
+	if cachedValue, exists := globalCache.Get(s.bizID, BK_SET_OBJ_ID); exists {
+		if fields, ok := cachedValue.([]string); ok {
+			// 保存到本地缓存（提高后续访问速度）
+			s.setFieldsCache = fields
+			return fields, nil
+		}
+	}
+
+	// 缓存未命中，调用 API 获取数据
+	fields, err := s.fetchAndProcessSetFields(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 存储到全局缓存
+	globalCache.Set(s.bizID, BK_SET_OBJ_ID, fields)
+
+	// 存储到本地缓存
+	s.setFieldsCache = fields
+	return fields, nil
+}
+
+// fetchAndProcessSetFields 从 CMDB 获取并处理 Set 字段列表
+func (s *CCTopoXMLService) fetchAndProcessSetFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
 	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
 		BkObjID: BK_SET_OBJ_ID,
@@ -505,18 +534,45 @@ func (s *CCTopoXMLService) getAllSetFields(ctx context.Context) ([]string, error
 		}
 	}
 
-	// 缓存结果
-	s.setFieldsCache = fields
 	return fields, nil
 }
 
 // getAllModuleFields 获取所有 Module 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
+// 实现两级缓存机制：
+// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
+// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllModuleFields(ctx context.Context) ([]string, error) {
-	// 如果已缓存，直接返回
+	// 第一级：检查本地缓存
 	if len(s.moduleFieldsCache) > 0 {
 		return s.moduleFieldsCache, nil
 	}
 
+	// 第二级：检查全局缓存
+	globalCache := GetGlobalObjectAttrCache()
+	if cachedValue, exists := globalCache.Get(s.bizID, BK_MODULE_OBJ_ID); exists {
+		if fields, ok := cachedValue.([]string); ok {
+			// 保存到本地缓存（提高后续访问速度）
+			s.moduleFieldsCache = fields
+			return fields, nil
+		}
+	}
+
+	// 缓存未命中，调用 API 获取数据
+	fields, err := s.fetchAndProcessModuleFields(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 存储到全局缓存
+	globalCache.Set(s.bizID, BK_MODULE_OBJ_ID, fields)
+
+	// 存储到本地缓存
+	s.moduleFieldsCache = fields
+	return fields, nil
+}
+
+// fetchAndProcessModuleFields 从 CMDB 获取并处理 Module 字段列表
+func (s *CCTopoXMLService) fetchAndProcessModuleFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
 	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
 		BkObjID: BK_MODULE_OBJ_ID,
@@ -565,18 +621,45 @@ func (s *CCTopoXMLService) getAllModuleFields(ctx context.Context) ([]string, er
 		}
 	}
 
-	// 缓存结果
-	s.moduleFieldsCache = fields
 	return fields, nil
 }
 
 // getAllHostFields 获取所有 Host 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
+// 实现两级缓存机制：
+// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
+// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllHostFields(ctx context.Context) ([]string, error) {
-	// 如果已缓存，直接返回
+	// 第一级：检查本地缓存
 	if len(s.hostFieldsCache) > 0 {
 		return s.hostFieldsCache, nil
 	}
 
+	// 第二级：检查全局缓存
+	globalCache := GetGlobalObjectAttrCache()
+	if cachedValue, exists := globalCache.Get(s.bizID, BK_HOST_OBJ_ID); exists {
+		if fields, ok := cachedValue.([]string); ok {
+			// 保存到本地缓存（提高后续访问速度）
+			s.hostFieldsCache = fields
+			return fields, nil
+		}
+	}
+
+	// 缓存未命中，调用 API 获取数据
+	fields, err := s.fetchAndProcessHostFields(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 存储到全局缓存
+	globalCache.Set(s.bizID, BK_HOST_OBJ_ID, fields)
+
+	// 存储到本地缓存
+	s.hostFieldsCache = fields
+	return fields, nil
+}
+
+// fetchAndProcessHostFields 从 CMDB 获取并处理 Host 字段列表
+func (s *CCTopoXMLService) fetchAndProcessHostFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
 	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
 		BkObjID: BK_HOST_OBJ_ID,
@@ -629,8 +712,6 @@ func (s *CCTopoXMLService) getAllHostFields(ctx context.Context) ([]string, erro
 		}
 	}
 
-	// 缓存结果
-	s.hostFieldsCache = fields
 	return fields, nil
 }
 

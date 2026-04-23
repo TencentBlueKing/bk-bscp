@@ -60,6 +60,7 @@ var (
 	searchObjectAttr          = "%s/api/v3/find/objectattr"
 	listServiceInstanceDetail = "%s/api/v3/findmany/proc/service_instance/details"
 	findHostByServiceTemplate = "%s/api/v3/findmany/hosts/by_service_templates/biz/%d"
+	processRelatedInfo        = "%s/api/v3/findmany/proc/process_related_info/biz/%d"
 )
 
 type HTTPMethod string
@@ -534,6 +535,19 @@ func (bkcmdb *CMDBService) FindHostByServiceTemplate(ctx context.Context, req *L
 	url := fmt.Sprintf(findHostByServiceTemplate, bkcmdb.Host, req.BizID)
 
 	resp := new(ListHostByServiceTemplateResp)
+	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ListProcessRelatedInfo 查询进程相关信息
+func (bkcmdb *CMDBService) ListProcessRelatedInfo(ctx context.Context, req *ListProcessRelatedInfoReq) (
+	*ListProcessRelatedInfoData, error) {
+	url := fmt.Sprintf(processRelatedInfo, bkcmdb.Host, req.BkBizID)
+
+	resp := new(ListProcessRelatedInfoData)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, &resp); err != nil {
 		return nil, err
 	}

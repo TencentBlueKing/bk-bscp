@@ -53,6 +53,7 @@ func NewCheckConfigExecutor(dao dao.Set, gseService *gse.Service, cmdbService bk
 			Dao:         dao,
 			GseService:  gseService,
 			GseConf:     cc.G().GSE,
+			TaskConf:    cc.G().TaskFramework,
 			CMDBService: cmdbService,
 			PM:          pm,
 		},
@@ -144,7 +145,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 			{
 				Command:        command,
 				AtomicTaskID:   0,
-				TimeoutSeconds: scriptTimeoutSec,
+				TimeoutSeconds: e.TaskConf.ScriptExecution.TimeoutSec,
 			},
 		},
 		AtomicTasksRelations: []gse.AtomicTaskRelation{
@@ -312,7 +313,7 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 			{
 				Command:        command,
 				AtomicTaskID:   0,
-				TimeoutSeconds: scriptTimeoutSec,
+				TimeoutSeconds: e.TaskConf.ScriptExecution.TimeoutSec,
 			},
 		},
 		AtomicTasksRelations: []gse.AtomicTaskRelation{

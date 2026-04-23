@@ -195,7 +195,7 @@ func LogUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 				"service", service, "method", method, "grpc.duration", time.Since(st))
 		}()
 
-		resp, err = handler(ctx, req)
+		resp, err = handler(kt.Ctx, req)
 		return resp, err
 	}
 }

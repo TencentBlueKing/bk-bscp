@@ -72,11 +72,15 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		klog.Errorf("get rpc ctx failed, will ignore")
 	}
 
-	rid := md[lowRidKey]
-	if len(rid) != 0 {
-		kit.Rid = rid[0]
+	if ctxRid, ok := ctx.Value(constant.RidKey).(string); ok && ctxRid != "" { //nolint:staticcheck
+		kit.Rid = ctxRid
 	} else {
-		kit.Rid = "bscp-" + uuid.UUID()
+		rid := md[lowRidKey]
+		if len(rid) != 0 {
+			kit.Rid = rid[0]
+		} else {
+			kit.Rid = "bscp-" + uuid.UUID()
+		}
 	}
 
 	lang := md[lowLangKey]
@@ -146,7 +150,7 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		kit.BizID = ctxBizID
 	}
 
-	kit.Ctx = context.WithValue(kit.Ctx, constant.RidKey, rid) //nolint
+	kit.Ctx = context.WithValue(kit.Ctx, constant.RidKey, kit.Rid) //nolint
 
 	// Note: need to add supplier id and authorization field.
 	return kit

@@ -13,30 +13,26 @@
 package gse
 
 import (
-	"time"
-
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"github.com/samber/lo"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	processStateSync "github.com/TencentBlueKing/bk-bscp/internal/task/executor/gse"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-)
-
-const (
-	// maxExecutionTime 最大执行时间
-	maxExecutionTime = 2 * time.Minute
 )
 
 // SyncGseStatus 同步gse状态
 func SyncGseStatus(tenantID string, bizID uint32, opType gse.OpType) *types.Step {
 	logs.V(3).Infof("Start synchronizing GSE, tenantID=%s, bizID=%d, opType=%v", tenantID, bizID, opType)
 
+	tf := cc.G().TaskFramework.SyncGSE.SyncGseStatus
 	syncCmdb := types.NewStep("sync-gse-task", cmdbGse.SyncGSE.String()).
 		SetAlias("sync-gse").
-		SetMaxExecution(maxExecutionTime)
+		SetMaxExecution(tf.MaxExecution).
+		SetMaxTries(tf.MaxRetries)
 
 	lo.Must0(syncCmdb.SetPayload(cmdbGse.SyncGSEPayload{
 		TenantID: tenantID,
@@ -51,9 +47,11 @@ func SyncGseStatus(tenantID string, bizID uint32, opType gse.OpType) *types.Step
 func ProcessStateSync(tenantID string, bizID uint32, process *table.Process,
 	processInstances []*table.ProcessInstance) *types.Step {
 
+	ptf := cc.G().TaskFramework.SyncGSE.ProcessStateSync
 	syncCmdb := types.NewStep("process-state-sync-task", processStateSync.ProcessStateSync.String()).
 		SetAlias("process-state-sync").
-		SetMaxExecution(maxExecutionTime)
+		SetMaxExecution(ptf.MaxExecution).
+		SetMaxTries(ptf.MaxRetries)
 
 	lo.Must0(syncCmdb.SetPayload(processStateSync.ProcessStateSyncPayload{
 		TenantID:         tenantID,
