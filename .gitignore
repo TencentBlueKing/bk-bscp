@@ -24,3 +24,11 @@ render/python/.venv/
 render/python/dist/
 render/python/build/
 .ftp
+
+### AI tooling (OpenSpec / Cursor / Claude / Copilot) ###
+.claude/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/
+openspec/
