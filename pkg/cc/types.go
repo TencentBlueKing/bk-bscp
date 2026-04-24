@@ -1198,6 +1198,12 @@ type WatchHostUpdatesConfig struct {
 	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
+// WatchCmdbResourceConfig defines watch cmdb resource task configuration options.
+type WatchCmdbResourceConfig struct {
+	// Enabled defines whether the watch cmdb resource task is enabled
+	Enabled bool `yaml:"enabled"`
+}
+
 // SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
 type SyncCmdbGseConfig struct {
 	// Enabled defines whether the sync cmdb and gse task is enabled
@@ -1218,6 +1224,9 @@ type CrontabConfig struct {
 	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
 	// WatchHostUpdates defines watch host updates task configuration
 	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
+	// WatchCmdbResource defines watch cmdb resource task configuration
+	// TODO: 后续WatchBizHostRelation 和 WatchHostUpdates 合并为 WatchCmdbResource
+	WatchCmdbResource WatchCmdbResourceConfig `yaml:"watchCmdbResource"`
 	// SyncCmdbGse defines sync cmdb and gse task configuration
 	SyncCmdbGse SyncCmdbGseConfig `yaml:"syncCmdbGse"`
 }
@@ -1379,12 +1388,12 @@ type RateLimiter struct {
 
 // ComponentRateLimit defines component-level outbound request throttling.
 type ComponentRateLimit struct {
-	Enabled        bool                             `yaml:"enabled"`
-	FailOpen       *bool                            `yaml:"failOpen"`
-	WindowSeconds  uint                             `yaml:"windowSeconds"`
-	KeyTTLSeconds  uint                             `yaml:"keyTTLSeconds"`
-	MaxWaitSeconds uint                             `yaml:"maxWaitSeconds"`
-	RedisCluster   RedisCluster                     `yaml:"redisCluster"`
+	Enabled        bool                              `yaml:"enabled"`
+	FailOpen       *bool                             `yaml:"failOpen"`
+	WindowSeconds  uint                              `yaml:"windowSeconds"`
+	KeyTTLSeconds  uint                              `yaml:"keyTTLSeconds"`
+	MaxWaitSeconds uint                              `yaml:"maxWaitSeconds"`
+	RedisCluster   RedisCluster                      `yaml:"redisCluster"`
 	Components     map[string]ComponentRateLimitRule `yaml:"components"`
 }
 
