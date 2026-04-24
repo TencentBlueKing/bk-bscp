@@ -83,7 +83,8 @@
     v-model:show="diffSliderData.open"
     :space-id="spaceId"
     :template-space-id="templateSpaceId"
-    :crt-version="diffSliderData.data" />
+    :crt-version="diffSliderData.data"
+    :create-mode="!isViewMode" />
 </template>
 <script lang="ts" setup>
   import { computed, onMounted, ref, watch } from 'vue';

@@ -57,6 +57,7 @@
     spaceId: string;
     templateSpaceId: number;
     crtVersion: DiffSliderDataType;
+    createMode?: boolean; // 新建版本对比没有版本id
   }>();
 
   const emits = defineEmits(['update:show']);
@@ -78,12 +79,27 @@
   watch(
     () => props.show,
     async (val) => {
-      if (val) {
-        getVersionList();
-        const detail: ITemplateVersionItem = await getTemplateVersionDetail(props.crtVersion.versionId);
-        configDiffData.value.contentType = detail.spec.file_type === 'binary' ? 'file' : 'text';
-        configDiffData.value.current.content = props.crtVersion.content || await getConfigContent(detail);
-        configDiffData.value.current.permission = props.crtVersion.permission;
+      if (!val) return;
+
+      const diffData = configDiffData.value;
+      const current = diffData.current;
+      const { crtVersion, createMode } = props;
+
+      try {
+        await getVersionList();
+        diffData.contentType = 'text';
+        current.content = crtVersion.content ?? '';
+        if (!createMode) {
+          const detail: ITemplateVersionItem = await getTemplateVersionDetail(crtVersion.versionId);
+          const isBinary = detail.spec.file_type === 'binary';
+          diffData.contentType = isBinary ? 'file' : 'text';
+          if (!crtVersion.content && !isBinary) {
+            current.content = await getConfigContent(detail);
+          }
+        }
+        current.permission = crtVersion.permission;
+      } catch (e) {
+        console.error(e);
       }
     },
   );
@@ -96,7 +112,10 @@
       all: true,
     };
     const res = await getTemplateVersionList(props.spaceId, props.templateSpaceId, props.crtVersion.id, params);
-    versionList.value = res.details.filter((item: ITemplateVersionItem) => item.id !== props.crtVersion.versionId);
+    // 新建版本时可以选中载入版本进行diff
+    versionList.value = props.createMode
+      ? res.details
+      : res.details.filter((item: ITemplateVersionItem) => item.id !== props.crtVersion.versionId);
     versionListLoading.value = false;
   };
 
