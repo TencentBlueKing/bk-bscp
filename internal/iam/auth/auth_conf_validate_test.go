@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 )
 
@@ -87,5 +88,24 @@ func TestValidateAuthConf(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %q", tc.wantErr, err.Error())
 			}
 		})
+	}
+}
+
+func TestBuildCMDBConfigUsesLocalUseESBSetting(t *testing.T) {
+	cc.SetG(cc.GlobalSettings{
+		CMDB: cc.CMDBConfig{
+			UseEsb: true,
+		},
+	})
+
+	cfg := buildCMDBConfig(&pbas.CMDB{
+		Host:       "https://cmdb.example.com",
+		AppCode:    "app_code",
+		AppSecret:  "app_secret",
+		BkUserName: "admin",
+	})
+
+	if !cfg.UseEsb {
+		t.Fatalf("expected cmdb useEsb to inherit local global config")
 	}
 }

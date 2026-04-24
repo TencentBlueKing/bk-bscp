@@ -144,12 +144,7 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		TLS:       esbTLS,
 	}
 
-	cmdbCfg := &cc.CMDBConfig{
-		Host:       cmdbConf.GetHost(),
-		AppCode:    cmdbConf.GetAppCode(),
-		AppSecret:  cmdbConf.GetAppSecret(),
-		BkUserName: cmdbConf.GetBkUserName(),
-	}
+	cmdbCfg := buildCMDBConfig(cmdbConf)
 
 	authLoginClient := bkpaas.NewAuthLoginClient(conf)
 	klog.InfoS("init authlogin client done", "host", conf.Host, "inner_host", conf.InnerHost, "provider", conf.Provider)
@@ -186,6 +181,16 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 	}
 
 	return authz, nil
+}
+
+func buildCMDBConfig(cmdbConf *pbas.CMDB) *cc.CMDBConfig {
+	return &cc.CMDBConfig{
+		Host:       cmdbConf.GetHost(),
+		AppCode:    cmdbConf.GetAppCode(),
+		AppSecret:  cmdbConf.GetAppSecret(),
+		BkUserName: cmdbConf.GetBkUserName(),
+		UseEsb:     cc.G().CMDB.UseEsb,
+	}
 }
 
 func validateAuthConf(resp *pbas.GetAuthConfResp) error {
