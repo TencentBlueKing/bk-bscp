@@ -14,6 +14,7 @@ package bkcmdb
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	esbbklogin "github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/bklogin"
@@ -121,5 +122,28 @@ func TestListAllBusinessUsesESBWhenConfigured(t *testing.T) {
 	}
 	if esbCMDB.searchCalled != 0 {
 		t.Fatalf("expected direct SearchBusiness not to be called for ListAllBusiness, got %d", esbCMDB.searchCalled)
+	}
+}
+
+func TestNewAllowsUseESBWithoutESBClient(t *testing.T) {
+	if _, err := New(&cc.CMDBConfig{UseEsb: true}, nil); err != nil {
+		t.Fatalf("new cmdb service should not require esb client until esb method is called: %v", err)
+	}
+}
+
+func TestESBBusinessMethodsFailWhenESBClientMissing(t *testing.T) {
+	svc, err := New(&cc.CMDBConfig{UseEsb: true}, nil)
+	if err != nil {
+		t.Fatalf("new cmdb service failed: %v", err)
+	}
+
+	if _, err = svc.SearchBusiness(context.Background(), &esbcmdb.SearchBizParams{}); err == nil ||
+		!strings.Contains(err.Error(), "esb cmdb client is nil") {
+		t.Fatalf("expected SearchBusiness to fail with missing esb cmdb client, got %v", err)
+	}
+
+	if _, err = svc.ListAllBusiness(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "esb cmdb client is nil") {
+		t.Fatalf("expected ListAllBusiness to fail with missing esb cmdb client, got %v", err)
 	}
 }

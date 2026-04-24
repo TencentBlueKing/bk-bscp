@@ -15,7 +15,6 @@ package bkcmdb
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
@@ -105,14 +104,8 @@ func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
 	}
 
 	svc := &CMDBService{CMDBConfig: cfg}
-	if cfg.UseEsb {
-		if esbClient == nil {
-			return nil, fmt.Errorf("cmdb useEsb is enabled, but esb client is nil")
-		}
+	if cfg.UseEsb && esbClient != nil {
 		svc.esbCMDB = esbClient.Cmdb()
-		if svc.esbCMDB == nil {
-			return nil, fmt.Errorf("cmdb useEsb is enabled, but esb cmdb client is nil")
-		}
 	}
 
 	return svc, nil
