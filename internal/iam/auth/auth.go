@@ -189,7 +189,7 @@ func buildCMDBConfig(cmdbConf *pbas.CMDB) *cc.CMDBConfig {
 		AppCode:    cmdbConf.GetAppCode(),
 		AppSecret:  cmdbConf.GetAppSecret(),
 		BkUserName: cmdbConf.GetBkUserName(),
-		UseEsb:     cc.G().CMDB.UseEsb,
+		UseEsb:     cmdbConf.GetUseEsb(),
 	}
 }
 
