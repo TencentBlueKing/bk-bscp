@@ -1,10 +1,25 @@
 package metrics
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
+
+type staticGatherer struct {
+	mfs []*dto.MetricFamily
+	err error
+}
+
+func (g staticGatherer) Gather() ([]*dto.MetricFamily, error) {
+	return g.mfs, g.err
+}
+
+func metricFamily(name string) *dto.MetricFamily {
+	return &dto.MetricFamily{Name: &name}
+}
 
 func TestMetricFamilyFilterGathererKeepsOnlyConfiguredMetrics(t *testing.T) {
 	reg := prometheus.NewRegistry()
@@ -29,6 +44,33 @@ func TestMetricFamilyFilterGathererKeepsOnlyConfiguredMetrics(t *testing.T) {
 		t.Fatalf("gather metrics failed: %v", err)
 	}
 
+	if len(mfs) != 1 {
+		t.Fatalf("expected one filtered metric family, got %d", len(mfs))
+	}
+	if got := mfs[0].GetName(); got != "task_execute_total" {
+		t.Fatalf("expected task_execute_total, got %s", got)
+	}
+}
+
+func TestMetricFamilyFilterGathererDropsGatherErrorsAfterFiltering(t *testing.T) {
+	gatherErr := errors.New("unrelated collector failed")
+	gatherer := metricFamilyFilterGatherer{
+		gatherer: staticGatherer{
+			mfs: []*dto.MetricFamily{
+				metricFamily("task_execute_total"),
+				metricFamily("unrelated_metric"),
+			},
+			err: gatherErr,
+		},
+		names: map[string]struct{}{
+			"task_execute_total": {},
+		},
+	}
+
+	mfs, err := gatherer.Gather()
+	if err != nil {
+		t.Fatalf("expected filtered gatherer to suppress gather error, got %v", err)
+	}
 	if len(mfs) != 1 {
 		t.Fatalf("expected one filtered metric family, got %d", len(mfs))
 	}

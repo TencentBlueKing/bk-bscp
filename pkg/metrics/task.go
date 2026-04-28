@@ -23,7 +23,7 @@ func (g metricFamilyFilterGatherer) Gather() ([]*dto.MetricFamily, error) {
 		return nil, nil
 	}
 
-	mfs, err := g.gatherer.Gather()
+	mfs, _ := g.gatherer.Gather()
 	filtered := make([]*dto.MetricFamily, 0, len(g.names))
 	for _, mf := range mfs {
 		if mf == nil {
@@ -34,7 +34,10 @@ func (g metricFamilyFilterGatherer) Gather() ([]*dto.MetricFamily, error) {
 		}
 	}
 
-	return filtered, err
+	// This gatherer exposes a filtered best-effort view over DefaultGatherer.
+	// Errors from unrelated default collectors must not break the service
+	// metrics endpoint after non-task metric families have been filtered out.
+	return filtered, nil
 }
 
 func taskMetricGatherer() prometheus.Gatherer {
