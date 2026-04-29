@@ -85,6 +85,8 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 	}
 
 	if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+		logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+			renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 		return xmlStr, nil
 	}
 
@@ -92,6 +94,8 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 		s.bizID, renderCacheKindTopoXML, setEnv)
 	value, err, _ := renderCacheFlight.Do(flightKey, func() (interface{}, error) {
 		if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 			return xmlStr, nil
 		}
 
@@ -105,9 +109,13 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 				s.tenantID, s.bizID, setEnv)
 		}
 		if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 			return xmlStr, nil
 		}
 
+		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, set_env: %s, source: cmdb",
+			renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 		xmlStr, buildErr := s.buildTopoTreeXML(ctx, setEnv)
 		if buildErr != nil {
 			return "", buildErr
@@ -900,6 +908,8 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 	}
 
 	if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+		logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+			renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 		return attrs, nil
 	}
 
@@ -907,6 +917,8 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 		renderCacheKindBizGlobalVariables)
 	value, err, _ := renderCacheFlight.Do(flightKey, func() (interface{}, error) {
 		if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 			return attrs, nil
 		}
 
@@ -919,9 +931,13 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 			logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
 		}
 		if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 			return attrs, nil
 		}
 
+		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, source: cmdb",
+			renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 		attrs, buildErr := s.buildBizObjectAttributes(ctx)
 		if buildErr != nil {
 			return nil, buildErr

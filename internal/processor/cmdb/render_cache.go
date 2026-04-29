@@ -191,7 +191,11 @@ func (c *RedisCMDBRenderCache) InvalidateBiz(ctx context.Context, tenantID strin
 			keys = append(keys, lockKey)
 		}
 	}
-	return c.store.Delete(ctx, keys...)
+	if err = c.store.Delete(ctx, keys...); err != nil {
+		return err
+	}
+	logs.Infof("cmdb render cache invalidated, tenant: %s, biz: %d", tenantID, bizID)
+	return nil
 }
 
 func (c *RedisCMDBRenderCache) AcquireBuildLock(
