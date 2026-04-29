@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -205,6 +206,7 @@ func BuildProcessContextParamsFromSource(
 	ctx context.Context,
 	source ProcessInfoSource,
 	cmdbService bkcmdb.Service,
+	caches ...cmdb.CMDBRenderCache,
 ) ProcessContextParams {
 	var (
 		moduleInstSeq int
@@ -270,8 +272,19 @@ func BuildProcessContextParamsFromSource(
 	var ccXML string
 	var globalVars map[string]interface{}
 	if cmdbService != nil && bizID > 0 {
+		var renderCache cmdb.CMDBRenderCache
+		if len(caches) > 0 {
+			renderCache = caches[0]
+		}
+		tenantID := ""
+		if process != nil && process.Attachment != nil {
+			tenantID = process.Attachment.TenantID
+		}
+		if tenantID == "" {
+			tenantID = kit.FromGrpcContext(ctx).TenantID
+		}
 		// 创建 CC 拓扑 XML 服务
-		topoService := cmdb.NewCCTopoXMLService(int(bizID), cmdbService)
+		topoService := cmdb.NewCCTopoXMLServiceWithTenant(tenantID, int(bizID), cmdbService, renderCache)
 
 		// 获取进程所属 Set 的环境类型（bk_set_env），用于过滤拓扑
 		var setEnv string

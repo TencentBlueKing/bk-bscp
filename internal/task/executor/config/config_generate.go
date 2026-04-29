@@ -24,6 +24,7 @@ import (
 	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -43,7 +44,8 @@ const (
 // ConfigExecutor config step executor
 type GenerateConfigExecutor struct {
 	*common.Executor
-	Repo repository.Provider // 仓库服务，用于下载配置内容
+	Repo            repository.Provider // 仓库服务，用于下载配置内容
+	CMDBRenderCache processorcmdb.CMDBRenderCache
 }
 
 // NewConfigExecutor new config executor
@@ -63,6 +65,11 @@ func NewGenerateConfigExecutor(dao dao.Set, cmdbService bkcmdb.Service, repo rep
 // SetCMDBService 设置 CMDB 服务（用于获取 CC 拓扑 XML）
 func (e *GenerateConfigExecutor) SetCMDBService(cmdbService bkcmdb.Service) {
 	e.CMDBService = cmdbService
+}
+
+// SetCMDBRenderCache 设置 CMDB 渲染缓存。
+func (e *GenerateConfigExecutor) SetCMDBRenderCache(renderCache processorcmdb.CMDBRenderCache) {
+	e.CMDBRenderCache = renderCache
 }
 
 // GenerateConfigPayload generate config payload
@@ -198,7 +205,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 			templateContent: configContent,
 		}
 		renderStart := time.Now()
-		contextParams := render.BuildProcessContextParamsFromSource(kt.Ctx, source, e.CMDBService)
+		contextParams := render.BuildProcessContextParamsFromSource(kt.Ctx, source, e.CMDBService, e.CMDBRenderCache)
 		logs.V(3).Infof("build process context params from source, context params: %+v, template id: %d",
 			contextParams, generatePayload.TemplateRevision.Attachment.TemplateID)
 		// 使用公共方法渲染模板

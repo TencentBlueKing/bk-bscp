@@ -18,6 +18,7 @@ import (
 	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/executor/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
@@ -30,7 +31,7 @@ import (
 // RegisterExecutor 中可以补充参数，比如执行器依赖的配置，执行器依赖的第三方服务等
 // nolint: revive
 func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao dao.Set, repo repository.Provider,
-	redLock *lock.RedisLock, pm pushmanager.Service) {
+	redLock *lock.RedisLock, pm pushmanager.Service, renderCache processorcmdb.CMDBRenderCache) {
 	// 注册 process 执行器
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, pm, dao)
 	process.RegisterExecutor(processExecutor)
@@ -39,7 +40,7 @@ func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao
 	process.RegisterUpdateRegisterExecutor(updateRegisterExecutor)
 
 	// 注册 同步cmdb和gse 执行器
-	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(gseService, bkcmdbService, dao)
+	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(gseService, bkcmdbService, dao, renderCache)
 	cmdbGse.RegisterExecutor(cmdbGseExecutor)
 
 	gseSyncExecutor := gseSync.NewProcessStateSyncExecutor(bkcmdbService, gseService, dao)
@@ -49,6 +50,7 @@ func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao
 	configGenerateExecutor := config.NewGenerateConfigExecutor(dao, bkcmdbService, repo, pm)
 	// 设置 CMDB 服务，用于获取 CC 拓扑 XML
 	configGenerateExecutor.SetCMDBService(bkcmdbService)
+	configGenerateExecutor.SetCMDBRenderCache(renderCache)
 	config.RegisterGenerateConfigExecutor(configGenerateExecutor)
 
 	// 注册 配置下发执行器
