@@ -95,7 +95,12 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 			return xmlStr, nil
 		}
 
-		if ok := s.acquireOrWaitTopoCache(ctx, setEnv); !ok {
+		lockAcquiredAt := time.Now()
+		cacheReady, lockAcquired := s.acquireOrWaitTopoCache(ctx, setEnv)
+		if lockAcquired {
+			defer s.releaseTopoCacheLock(ctx, setEnv, lockAcquiredAt)
+		}
+		if !cacheReady {
 			logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
 				s.tenantID, s.bizID, setEnv)
 		}
@@ -202,17 +207,27 @@ func (s *CCTopoXMLService) buildTopoTreeXML(ctx context.Context, setEnv string) 
 	return xmlStr, nil
 }
 
-func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv string) bool {
+func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv string) (bool, bool) {
 	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
 	if err != nil {
 		logs.Warnf("acquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
 			s.tenantID, s.bizID, setEnv, err)
-		return true
+		return true, false
 	}
 	if locked {
-		return true
+		return true, true
 	}
-	return s.waitTopoCache(ctx, setEnv)
+	return s.waitTopoCache(ctx, setEnv), false
+}
+
+func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv string, acquiredAt time.Time) {
+	if time.Since(acquiredAt) >= cacheBuildWaitTTL(s.cache) {
+		return
+	}
+	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv); err != nil {
+		logs.Warnf("release cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+			s.tenantID, s.bizID, setEnv, err)
+	}
 }
 
 func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) bool {
@@ -895,7 +910,12 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 			return attrs, nil
 		}
 
-		if ok := s.acquireOrWaitBizObjectAttributesCache(ctx); !ok {
+		lockAcquiredAt := time.Now()
+		cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(ctx)
+		if lockAcquired {
+			defer s.releaseBizObjectAttributesCacheLock(ctx, lockAcquiredAt)
+		}
+		if !cacheReady {
 			logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
 		}
 		if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
@@ -1035,17 +1055,27 @@ func (s *CCTopoXMLService) searchObjectAttrs(ctx context.Context, objID string) 
 	})
 }
 
-func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Context) bool {
+func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Context) (bool, bool) {
 	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
 	if err != nil {
 		logs.Warnf("acquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
 			s.tenantID, s.bizID, err)
-		return true
+		return true, false
 	}
 	if locked {
-		return true
+		return true, true
 	}
-	return s.waitBizObjectAttributesCache(ctx)
+	return s.waitBizObjectAttributesCache(ctx), false
+}
+
+func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Context, acquiredAt time.Time) {
+	if time.Since(acquiredAt) >= cacheBuildWaitTTL(s.cache) {
+		return
+	}
+	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, ""); err != nil {
+		logs.Warnf("release cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+			s.tenantID, s.bizID, err)
+	}
 }
 
 func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) bool {

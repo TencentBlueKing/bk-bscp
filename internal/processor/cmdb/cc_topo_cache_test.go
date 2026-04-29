@@ -165,6 +165,29 @@ func TestCCTopoXMLService_GetBizObjectAttributesStoresRenderCache(t *testing.T) 
 	}
 }
 
+func TestCCTopoXMLService_GetBizObjectAttributesReleasesBuildLock(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, DefaultRenderCacheOptions())
+	mockSvc := newCountingObjectAttrCMDB()
+	svc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, mockSvc, cache)
+
+	if _, err := svc.GetBizObjectAttributes(context.Background()); err != nil {
+		t.Fatalf("GetBizObjectAttributes failed: %v", err)
+	}
+
+	locked, err := cache.AcquireBuildLock(context.Background(), tenantID, bizID, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("AcquireBuildLock failed: %v", err)
+	}
+	if !locked {
+		t.Fatal("build lock should be released after GetBizObjectAttributes builds cache")
+	}
+}
+
 func TestCCTopoXMLService_GetBizObjectAttributesCoalescesConcurrentCacheMiss(t *testing.T) {
 	const (
 		tenantID = "tenant-a"

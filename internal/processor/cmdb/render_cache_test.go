@@ -76,6 +76,21 @@ func (s *fakeRenderCacheStore) HSets(_ context.Context, hashKey string, kv map[s
 	return nil
 }
 
+func (s *fakeRenderCacheStore) HGetAll(_ context.Context, hashKey string) (map[string]string, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	fields := s.hashes[hashKey]
+	if fields == nil {
+		return map[string]string{}, nil
+	}
+	result := make(map[string]string, len(fields))
+	for field, value := range fields {
+		result[field] = value
+	}
+	return result, nil
+}
+
 func (s *fakeRenderCacheStore) SetNX(_ context.Context, key string, value interface{}, ttlSeconds int) (bool, error) {
 	if s.err != nil {
 		return false, s.err
@@ -204,5 +219,77 @@ func TestRedisCMDBRenderCacheInvalidatesSingleBiz(t *testing.T) {
 	}
 	if got, ok := cache.GetTopoXML(ctx, "tenant-b", 42, "3"); !ok || got != "tenant-b-topo" {
 		t.Fatalf("tenant-b topo cache = %q, %v, want tenant-b-topo true", got, ok)
+	}
+}
+
+func TestRedisCMDBRenderCacheReleasesBuildLock(t *testing.T) {
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, DefaultRenderCacheOptions())
+	ctx := context.Background()
+
+	locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("AcquireBuildLock failed: %v", err)
+	}
+	if !locked {
+		t.Fatal("first AcquireBuildLock should acquire lock")
+	}
+	if locked, err = cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, ""); err != nil {
+		t.Fatalf("second AcquireBuildLock failed: %v", err)
+	} else if locked {
+		t.Fatal("second AcquireBuildLock should be blocked by existing lock")
+	}
+
+	if err = cache.ReleaseBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, ""); err != nil {
+		t.Fatalf("ReleaseBuildLock failed: %v", err)
+	}
+	if locked, err = cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, ""); err != nil {
+		t.Fatalf("third AcquireBuildLock failed: %v", err)
+	} else if !locked {
+		t.Fatal("AcquireBuildLock should acquire lock after release")
+	}
+}
+
+func TestRedisCMDBRenderCacheInvalidatesBuildLocks(t *testing.T) {
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, DefaultRenderCacheOptions())
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		kind     string
+		identity string
+	}{
+		{kind: renderCacheKindTopoXML, identity: "3"},
+		{kind: renderCacheKindBizGlobalVariables},
+	} {
+		locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, tc.kind, tc.identity)
+		if err != nil {
+			t.Fatalf("AcquireBuildLock failed, kind: %s, identity: %s, err: %v", tc.kind, tc.identity, err)
+		}
+		if !locked {
+			t.Fatalf("AcquireBuildLock should acquire lock, kind: %s, identity: %s", tc.kind, tc.identity)
+		}
+	}
+
+	if err := cache.InvalidateBiz(ctx, "tenant-a", 42); err != nil {
+		t.Fatalf("InvalidateBiz failed: %v", err)
+	}
+
+	for _, tc := range []struct {
+		kind     string
+		identity string
+	}{
+		{kind: renderCacheKindTopoXML, identity: "3"},
+		{kind: renderCacheKindBizGlobalVariables},
+	} {
+		locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, tc.kind, tc.identity)
+		if err != nil {
+			t.Fatalf("AcquireBuildLock after invalidation failed, kind: %s, identity: %s, err: %v",
+				tc.kind, tc.identity, err)
+		}
+		if !locked {
+			t.Fatalf("AcquireBuildLock should acquire after invalidation, kind: %s, identity: %s",
+				tc.kind, tc.identity)
+		}
 	}
 }

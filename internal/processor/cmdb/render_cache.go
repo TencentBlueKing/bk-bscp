@@ -34,6 +34,7 @@ type RenderCache interface {
 	SetBizObjectAttributes(ctx context.Context, tenantID string, bizID int, attrs map[string][]ObjectAttribute)
 	InvalidateBiz(ctx context.Context, tenantID string, bizID int) error
 	AcquireBuildLock(ctx context.Context, tenantID string, bizID int, kind string, identity string) (bool, error)
+	ReleaseBuildLock(ctx context.Context, tenantID string, bizID int, kind string, identity string) error
 	BuildLockTTL() time.Duration
 }
 
@@ -72,6 +73,7 @@ type renderCacheStore interface {
 	Set(ctx context.Context, key string, value interface{}, ttlSeconds int) error
 	HGet(ctx context.Context, hashKey string, field string) (string, error)
 	HSets(ctx context.Context, hashKey string, kv map[string]string, ttlSeconds int) error
+	HGetAll(ctx context.Context, hashKey string) (map[string]string, error)
 	SetNX(ctx context.Context, key string, value interface{}, ttlSeconds int) (bool, error)
 	Delete(ctx context.Context, keys ...string) error
 }
@@ -175,7 +177,21 @@ func (c *RedisCMDBRenderCache) InvalidateBiz(ctx context.Context, tenantID strin
 	if c == nil || c.store == nil {
 		return nil
 	}
-	return c.store.Delete(ctx, c.topoXMLKey(tenantID, bizID), c.bizObjectAttributesKey(tenantID, bizID))
+	keys := []string{
+		c.topoXMLKey(tenantID, bizID),
+		c.bizObjectAttributesKey(tenantID, bizID),
+		c.buildLockKey(tenantID, bizID, renderCacheKindBizGlobalVariables, ""),
+		c.buildLockIndexKey(tenantID, bizID),
+	}
+	locks, err := c.store.HGetAll(ctx, c.buildLockIndexKey(tenantID, bizID))
+	if err != nil {
+		logs.Warnf("get cmdb render cache lock index failed, tenant: %s, biz: %d, err: %v", tenantID, bizID, err)
+	} else {
+		for lockKey := range locks {
+			keys = append(keys, lockKey)
+		}
+	}
+	return c.store.Delete(ctx, keys...)
 }
 
 func (c *RedisCMDBRenderCache) AcquireBuildLock(
@@ -183,7 +199,25 @@ func (c *RedisCMDBRenderCache) AcquireBuildLock(
 	if c == nil || c.store == nil {
 		return true, nil
 	}
-	return c.store.SetNX(ctx, c.buildLockKey(tenantID, bizID, kind, identity), "1", ttlSeconds(c.options.BuildLockTTL))
+	lockKey := c.buildLockKey(tenantID, bizID, kind, identity)
+	locked, err := c.store.SetNX(ctx, lockKey, "1", ttlSeconds(c.options.BuildLockTTL))
+	if err != nil || !locked {
+		return locked, err
+	}
+	if err = c.store.HSets(ctx, c.buildLockIndexKey(tenantID, bizID), map[string]string{lockKey: "1"},
+		ttlSeconds(c.options.BuildLockTTL)); err != nil {
+		_ = c.store.Delete(ctx, lockKey)
+		return false, err
+	}
+	return true, nil
+}
+
+func (c *RedisCMDBRenderCache) ReleaseBuildLock(
+	ctx context.Context, tenantID string, bizID int, kind string, identity string) error {
+	if c == nil || c.store == nil {
+		return nil
+	}
+	return c.store.Delete(ctx, c.buildLockKey(tenantID, bizID, kind, identity))
 }
 
 func (c *RedisCMDBRenderCache) BuildLockTTL() time.Duration {
@@ -207,6 +241,10 @@ func (c *RedisCMDBRenderCache) buildLockKey(tenantID string, bizID int, kind str
 		"bscp:cmdb:render:v1:tenant:%s:biz:%d:lock:%s:%s",
 		normalizeTenantID(tenantID), bizID, kind, hex.EncodeToString(hash[:]),
 	)
+}
+
+func (c *RedisCMDBRenderCache) buildLockIndexKey(tenantID string, bizID int) string {
+	return fmt.Sprintf("bscp:cmdb:render:v1:tenant:%s:biz:%d:lock_index", normalizeTenantID(tenantID), bizID)
 }
 
 func topoXMLField(setEnv string) string {
@@ -295,6 +333,11 @@ func (c *memoryCMDBRenderCache) InvalidateBiz(_ context.Context, tenantID string
 func (c *memoryCMDBRenderCache) AcquireBuildLock(
 	_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
 	return true, nil
+}
+
+func (c *memoryCMDBRenderCache) ReleaseBuildLock(
+	_ context.Context, _ string, _ int, _ string, _ string) error {
+	return nil
 }
 
 func (c *memoryCMDBRenderCache) BuildLockTTL() time.Duration {

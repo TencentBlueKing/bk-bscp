@@ -45,6 +45,7 @@
 - Test: `internal/task/executor/cmdb_gse/cmdb_sync_gse_test.go`
 
 - [x] `SyncCMDB` 成功后调用 `InvalidateBiz(ctx, tenantID, bizID)`。
+- [x] `InvalidateBiz` 同步删除该业务的构建锁索引和 lock key，避免同步后残留 lock 触发无意义等待。
 - [x] 失效失败只记录 warning，不影响同步任务成功结果。
 - [x] watch set/module/host/host_relation 不接入失效逻辑，依赖手动/定时同步主动失效和 TTL 兜底。
 
