@@ -92,23 +92,23 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s:%s", normalizeTenantID(s.tenantID),
 		s.bizID, renderCacheKindTopoXML, setEnv)
-	value, err, _ := renderCacheFlight.Do(flightKey, func() (interface{}, error) {
-		if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+	value, err := doRenderCacheFlight(ctx, flightKey, func(buildCtx context.Context) (interface{}, error) {
+		if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
 			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
 				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 			return xmlStr, nil
 		}
 
 		lockAcquiredAt := time.Now()
-		cacheReady, lockAcquired := s.acquireOrWaitTopoCache(ctx, setEnv)
+		cacheReady, lockAcquired := s.acquireOrWaitTopoCache(buildCtx, setEnv)
 		if lockAcquired {
-			defer s.releaseTopoCacheLock(ctx, setEnv, lockAcquiredAt)
+			defer s.releaseTopoCacheLock(buildCtx, setEnv, lockAcquiredAt)
 		}
 		if !cacheReady {
 			logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
 				s.tenantID, s.bizID, setEnv)
 		}
-		if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+		if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
 			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
 				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
 			return xmlStr, nil
@@ -116,11 +116,11 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 
 		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, set_env: %s, source: cmdb",
 			renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
-		xmlStr, buildErr := s.buildTopoTreeXML(ctx, setEnv)
+		xmlStr, buildErr := s.buildTopoTreeXML(buildCtx, setEnv)
 		if buildErr != nil {
 			return "", buildErr
 		}
-		s.cache.SetTopoXML(ctx, s.tenantID, s.bizID, setEnv, xmlStr)
+		s.cache.SetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv, xmlStr)
 		return xmlStr, nil
 	})
 	if err != nil {
@@ -131,6 +131,27 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 		return "", fmt.Errorf("cmdb topo xml cache value has unexpected type %T", value)
 	}
 	return xmlStr, nil
+}
+
+func doRenderCacheFlight(
+	ctx context.Context, key string, fn func(buildCtx context.Context) (interface{}, error),
+) (interface{}, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	// 缓存构建不能绑定首个请求的取消，否则 leader 超时会让所有 follower 共享失败且无法回填缓存。
+	buildCtx := context.WithoutCancel(ctx)
+	ch := renderCacheFlight.DoChan(key, func() (interface{}, error) {
+		return fn(buildCtx)
+	})
+
+	select {
+	case result := <-ch:
+		return result.Val, result.Err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 func (s *CCTopoXMLService) buildTopoTreeXML(ctx context.Context, setEnv string) (string, error) {
@@ -225,7 +246,7 @@ func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv st
 	if locked {
 		return true, true
 	}
-	return s.waitTopoCache(ctx, setEnv), false
+	return s.waitTopoCache(ctx, setEnv)
 }
 
 func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv string, acquiredAt time.Time) {
@@ -238,7 +259,7 @@ func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv stri
 	}
 }
 
-func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) bool {
+func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) (bool, bool) {
 	waitTTL := cacheBuildWaitTTL(s.cache)
 	timer := time.NewTimer(waitTTL)
 	defer timer.Stop()
@@ -248,12 +269,21 @@ func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) boo
 	for {
 		select {
 		case <-ctx.Done():
-			return false
+			return false, false
 		case <-timer.C:
-			return false
+			return false, false
 		case <-ticker.C:
 			if _, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
-				return true
+				return true, false
+			}
+			locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
+			if err != nil {
+				logs.Warnf("reacquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+					s.tenantID, s.bizID, setEnv, err)
+				return true, false
+			}
+			if locked {
+				return true, true
 			}
 		}
 	}
@@ -915,22 +945,22 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s", normalizeTenantID(s.tenantID), s.bizID,
 		renderCacheKindBizGlobalVariables)
-	value, err, _ := renderCacheFlight.Do(flightKey, func() (interface{}, error) {
-		if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+	value, err := doRenderCacheFlight(ctx, flightKey, func(buildCtx context.Context) (interface{}, error) {
+		if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
 			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
 				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 			return attrs, nil
 		}
 
 		lockAcquiredAt := time.Now()
-		cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(ctx)
+		cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(buildCtx)
 		if lockAcquired {
-			defer s.releaseBizObjectAttributesCacheLock(ctx, lockAcquiredAt)
+			defer s.releaseBizObjectAttributesCacheLock(buildCtx, lockAcquiredAt)
 		}
 		if !cacheReady {
 			logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
 		}
-		if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+		if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
 			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
 				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
 			return attrs, nil
@@ -938,11 +968,11 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, source: cmdb",
 			renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
-		attrs, buildErr := s.buildBizObjectAttributes(ctx)
+		attrs, buildErr := s.buildBizObjectAttributes(buildCtx)
 		if buildErr != nil {
 			return nil, buildErr
 		}
-		s.cache.SetBizObjectAttributes(ctx, s.tenantID, s.bizID, attrs)
+		s.cache.SetBizObjectAttributes(buildCtx, s.tenantID, s.bizID, attrs)
 		return attrs, nil
 	})
 	if err != nil {
@@ -1081,7 +1111,7 @@ func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Con
 	if locked {
 		return true, true
 	}
-	return s.waitBizObjectAttributesCache(ctx), false
+	return s.waitBizObjectAttributesCache(ctx)
 }
 
 func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Context, acquiredAt time.Time) {
@@ -1094,7 +1124,7 @@ func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Conte
 	}
 }
 
-func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) bool {
+func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) (bool, bool) {
 	waitTTL := cacheBuildWaitTTL(s.cache)
 	timer := time.NewTimer(waitTTL)
 	defer timer.Stop()
@@ -1104,12 +1134,21 @@ func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) boo
 	for {
 		select {
 		case <-ctx.Done():
-			return false
+			return false, false
 		case <-timer.C:
-			return false
+			return false, false
 		case <-ticker.C:
 			if _, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
-				return true
+				return true, false
+			}
+			locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
+			if err != nil {
+				logs.Warnf("reacquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+					s.tenantID, s.bizID, err)
+				return true, false
+			}
+			if locked {
+				return true, true
 			}
 		}
 	}

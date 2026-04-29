@@ -14,9 +14,12 @@ package cmdb
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 )
@@ -66,6 +69,90 @@ type panicTopoCMDB struct {
 
 func (m *panicTopoCMDB) FindTopoBrief(_ context.Context, _ int) (*bkcmdb.TopoBriefResp, error) {
 	panic("FindTopoBrief should not be called when topo XML cache hits")
+}
+
+type cancelAwareObjectAttrCMDB struct {
+	bkcmdb.Service
+	started chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func newCancelAwareObjectAttrCMDB() *cancelAwareObjectAttrCMDB {
+	return &cancelAwareObjectAttrCMDB{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+}
+
+func (m *cancelAwareObjectAttrCMDB) SearchObjectAttr(ctx context.Context,
+	req bkcmdb.SearchObjectAttrReq) ([]bkcmdb.ObjectAttrInfo, error) {
+	m.once.Do(func() {
+		close(m.started)
+	})
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-m.release:
+		return []bkcmdb.ObjectAttrInfo{
+			{
+				BkBizID:        req.BkBizID,
+				BkObjID:        req.BkObjID,
+				BkPropertyID:   req.BkObjID + "_custom",
+				BkPropertyName: req.BkObjID + " custom",
+			},
+		}, nil
+	}
+}
+
+type reacquirableRenderCache struct {
+	RenderCache
+	released chan struct{}
+	ttl      time.Duration
+
+	mu           sync.Mutex
+	acquireCount int
+}
+
+func newReacquirableRenderCache(ttl time.Duration) *reacquirableRenderCache {
+	return &reacquirableRenderCache{
+		released: make(chan struct{}),
+		ttl:      ttl,
+	}
+}
+
+func (c *reacquirableRenderCache) GetTopoXML(_ context.Context, _ string, _ int, _ string) (string, bool) {
+	return "", false
+}
+
+func (c *reacquirableRenderCache) GetBizObjectAttributes(
+	_ context.Context, _ string, _ int) (map[string][]ObjectAttribute, bool) {
+	return nil, false
+}
+
+func (c *reacquirableRenderCache) AcquireBuildLock(
+	_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
+	c.mu.Lock()
+	c.acquireCount++
+	c.mu.Unlock()
+
+	select {
+	case <-c.released:
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
+func (c *reacquirableRenderCache) BuildLockTTL() time.Duration {
+	return c.ttl
+}
+
+func (c *reacquirableRenderCache) countAcquireBuildLock() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.acquireCount
 }
 
 type ttlRenderCache struct {
@@ -185,6 +272,95 @@ func TestCCTopoXMLService_GetBizObjectAttributesReleasesBuildLock(t *testing.T) 
 	}
 	if !locked {
 		t.Fatal("build lock should be released after GetBizObjectAttributes builds cache")
+	}
+}
+
+func TestCCTopoXMLService_GetBizObjectAttributesLeaderCancelDoesNotFailFollower(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	renderCacheFlight = singleflight.Group{}
+	t.Cleanup(func() {
+		renderCacheFlight = singleflight.Group{}
+	})
+
+	cache := NewMemoryCMDBRenderCache()
+	mockSvc := newCancelAwareObjectAttrCMDB()
+	leader := NewCCTopoXMLServiceWithTenant(tenantID, bizID, mockSvc, cache)
+	follower := NewCCTopoXMLServiceWithTenant(tenantID, bizID, mockSvc, cache)
+
+	leaderCtx, cancelLeader := context.WithCancel(context.Background())
+	leaderErr := make(chan error, 1)
+	go func() {
+		_, err := leader.GetBizObjectAttributes(leaderCtx)
+		leaderErr <- err
+	}()
+
+	<-mockSvc.started
+
+	followerErr := make(chan error, 1)
+	go func() {
+		_, err := follower.GetBizObjectAttributes(context.Background())
+		followerErr <- err
+	}()
+
+	time.Sleep(10 * time.Millisecond)
+	cancelLeader()
+
+	if err := <-leaderErr; !errors.Is(err, context.Canceled) {
+		t.Fatalf("leader GetBizObjectAttributes err = %v, want context.Canceled", err)
+	}
+	close(mockSvc.release)
+
+	if err := <-followerErr; err != nil {
+		t.Fatalf("follower GetBizObjectAttributes failed: %v", err)
+	}
+}
+
+func TestCCTopoXMLService_WaitBizObjectAttributesCacheReacquiresReleasedLock(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	cache := newReacquirableRenderCache(300 * time.Millisecond)
+	svc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, newCountingObjectAttrCMDB(), cache)
+
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		close(cache.released)
+	}()
+
+	cacheReady, lockAcquired := svc.acquireOrWaitBizObjectAttributesCache(context.Background())
+	if !cacheReady || !lockAcquired {
+		t.Fatalf("acquireOrWaitBizObjectAttributesCache = (%v, %v), want (true, true)",
+			cacheReady, lockAcquired)
+	}
+	if got := cache.countAcquireBuildLock(); got < 2 {
+		t.Fatalf("AcquireBuildLock calls = %d, want at least 2", got)
+	}
+}
+
+func TestCCTopoXMLService_WaitTopoCacheReacquiresReleasedLock(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+		setEnv   = "3"
+	)
+	cache := newReacquirableRenderCache(300 * time.Millisecond)
+	svc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, newCountingObjectAttrCMDB(), cache)
+
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		close(cache.released)
+	}()
+
+	cacheReady, lockAcquired := svc.acquireOrWaitTopoCache(context.Background(), setEnv)
+	if !cacheReady || !lockAcquired {
+		t.Fatalf("acquireOrWaitTopoCache = (%v, %v), want (true, true)", cacheReady, lockAcquired)
+	}
+	if got := cache.countAcquireBuildLock(); got < 2 {
+		t.Fatalf("AcquireBuildLock calls = %d, want at least 2", got)
 	}
 }
 
