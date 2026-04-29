@@ -318,6 +318,37 @@ func TestCCTopoXMLService_GetBizObjectAttributesLeaderCancelDoesNotFailFollower(
 	}
 }
 
+func TestDoRenderCacheFlightCancelsBuildAtConfiguredTimeout(t *testing.T) {
+	renderCacheFlight = singleflight.Group{}
+	t.Cleanup(func() {
+		renderCacheFlight = singleflight.Group{}
+	})
+
+	const buildTimeout = 30 * time.Millisecond
+	started := make(chan struct{})
+	start := time.Now()
+	value, err := doRenderCacheFlight(context.Background(), "build-timeout", buildTimeout,
+		func(buildCtx context.Context) (interface{}, error) {
+			close(started)
+			<-buildCtx.Done()
+			return nil, buildCtx.Err()
+		})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("doRenderCacheFlight err = %v, want context.DeadlineExceeded", err)
+	}
+	if value != nil {
+		t.Fatalf("doRenderCacheFlight value = %v, want nil", value)
+	}
+	if elapsed := time.Since(start); elapsed > 500*time.Millisecond {
+		t.Fatalf("doRenderCacheFlight elapsed = %v, want bounded by build timeout", elapsed)
+	}
+	select {
+	case <-started:
+	default:
+		t.Fatal("singleflight build function was not called")
+	}
+}
+
 func TestCCTopoXMLService_WaitBizObjectAttributesCacheReacquiresReleasedLock(t *testing.T) {
 	const (
 		tenantID = "tenant-a"

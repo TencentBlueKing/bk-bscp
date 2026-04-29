@@ -92,37 +92,38 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s:%s", normalizeTenantID(s.tenantID),
 		s.bizID, renderCacheKindTopoXML, setEnv)
-	value, err := doRenderCacheFlight(ctx, flightKey, func(buildCtx context.Context) (interface{}, error) {
-		if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
-			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
-				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
-			return xmlStr, nil
-		}
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildWaitTTL(s.cache),
+		func(buildCtx context.Context) (interface{}, error) {
+			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+					renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+				return xmlStr, nil
+			}
 
-		lockAcquiredAt := time.Now()
-		cacheReady, lockAcquired := s.acquireOrWaitTopoCache(buildCtx, setEnv)
-		if lockAcquired {
-			defer s.releaseTopoCacheLock(buildCtx, setEnv, lockAcquiredAt)
-		}
-		if !cacheReady {
-			logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
-				s.tenantID, s.bizID, setEnv)
-		}
-		if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
-			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
-				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
-			return xmlStr, nil
-		}
+			lockAcquiredAt := time.Now()
+			cacheReady, lockAcquired := s.acquireOrWaitTopoCache(buildCtx, setEnv)
+			if lockAcquired {
+				defer s.releaseTopoCacheLock(buildCtx, setEnv, lockAcquiredAt)
+			}
+			if !cacheReady {
+				logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
+					s.tenantID, s.bizID, setEnv)
+			}
+			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+					renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+				return xmlStr, nil
+			}
 
-		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, set_env: %s, source: cmdb",
-			renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
-		xmlStr, buildErr := s.buildTopoTreeXML(buildCtx, setEnv)
-		if buildErr != nil {
-			return "", buildErr
-		}
-		s.cache.SetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv, xmlStr)
-		return xmlStr, nil
-	})
+			logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, set_env: %s, source: cmdb",
+				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+			xmlStr, buildErr := s.buildTopoTreeXML(buildCtx, setEnv)
+			if buildErr != nil {
+				return "", buildErr
+			}
+			s.cache.SetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv, xmlStr)
+			return xmlStr, nil
+		})
 	if err != nil {
 		return "", err
 	}
@@ -134,15 +135,19 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 }
 
 func doRenderCacheFlight(
-	ctx context.Context, key string, fn func(buildCtx context.Context) (interface{}, error),
+	ctx context.Context, key string, buildTimeout time.Duration, fn func(buildCtx context.Context) (interface{}, error),
 ) (interface{}, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if buildTimeout <= 0 {
+		buildTimeout = DefaultRenderCacheOptions().BuildLockTTL
+	}
 
 	// 缓存构建不能绑定首个请求的取消，否则 leader 超时会让所有 follower 共享失败且无法回填缓存。
-	buildCtx := context.WithoutCancel(ctx)
 	ch := renderCacheFlight.DoChan(key, func() (interface{}, error) {
+		buildCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), buildTimeout)
+		defer cancel()
 		return fn(buildCtx)
 	})
 
@@ -945,36 +950,37 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s", normalizeTenantID(s.tenantID), s.bizID,
 		renderCacheKindBizGlobalVariables)
-	value, err := doRenderCacheFlight(ctx, flightKey, func(buildCtx context.Context) (interface{}, error) {
-		if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
-			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
-				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
-			return attrs, nil
-		}
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildWaitTTL(s.cache),
+		func(buildCtx context.Context) (interface{}, error) {
+			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+					renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+				return attrs, nil
+			}
 
-		lockAcquiredAt := time.Now()
-		cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(buildCtx)
-		if lockAcquired {
-			defer s.releaseBizObjectAttributesCacheLock(buildCtx, lockAcquiredAt)
-		}
-		if !cacheReady {
-			logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
-		}
-		if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
-			logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
-				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
-			return attrs, nil
-		}
+			lockAcquiredAt := time.Now()
+			cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(buildCtx)
+			if lockAcquired {
+				defer s.releaseBizObjectAttributesCacheLock(buildCtx, lockAcquiredAt)
+			}
+			if !cacheReady {
+				logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
+			}
+			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+					renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+				return attrs, nil
+			}
 
-		logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, source: cmdb",
-			renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
-		attrs, buildErr := s.buildBizObjectAttributes(buildCtx)
-		if buildErr != nil {
-			return nil, buildErr
-		}
-		s.cache.SetBizObjectAttributes(buildCtx, s.tenantID, s.bizID, attrs)
-		return attrs, nil
-	})
+			logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, source: cmdb",
+				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+			attrs, buildErr := s.buildBizObjectAttributes(buildCtx)
+			if buildErr != nil {
+				return nil, buildErr
+			}
+			s.cache.SetBizObjectAttributes(buildCtx, s.tenantID, s.bizID, attrs)
+			return attrs, nil
+		})
 	if err != nil {
 		return nil, err
 	}

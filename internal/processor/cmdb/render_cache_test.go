@@ -22,7 +22,7 @@ import (
 type fakeRenderCacheStore struct {
 	values  map[string]string
 	hashes  map[string]map[string]string
-	ttl     map[string]int
+	ttl     map[string]time.Duration
 	deleted []string
 	err     error
 }
@@ -31,7 +31,7 @@ func newFakeRenderCacheStore() *fakeRenderCacheStore {
 	return &fakeRenderCacheStore{
 		values: make(map[string]string),
 		hashes: make(map[string]map[string]string),
-		ttl:    make(map[string]int),
+		ttl:    make(map[string]time.Duration),
 	}
 }
 
@@ -47,7 +47,16 @@ func (s *fakeRenderCacheStore) Set(_ context.Context, key string, value interfac
 		return s.err
 	}
 	s.values[key] = value.(string)
-	s.ttl[key] = ttlSeconds
+	s.ttl[key] = time.Duration(ttlSeconds) * time.Second
+	return nil
+}
+
+func (s *fakeRenderCacheStore) SetWithDuration(_ context.Context, key string, value interface{}, ttl time.Duration) error {
+	if s.err != nil {
+		return s.err
+	}
+	s.values[key] = value.(string)
+	s.ttl[key] = ttl
 	return nil
 }
 
@@ -72,7 +81,22 @@ func (s *fakeRenderCacheStore) HSets(_ context.Context, hashKey string, kv map[s
 	for k, v := range kv {
 		s.hashes[hashKey][k] = v
 	}
-	s.ttl[hashKey] = ttlSeconds
+	s.ttl[hashKey] = time.Duration(ttlSeconds) * time.Second
+	return nil
+}
+
+func (s *fakeRenderCacheStore) HSetsWithDuration(_ context.Context,
+	hashKey string, kv map[string]string, ttl time.Duration) error {
+	if s.err != nil {
+		return s.err
+	}
+	if s.hashes[hashKey] == nil {
+		s.hashes[hashKey] = make(map[string]string)
+	}
+	for k, v := range kv {
+		s.hashes[hashKey][k] = v
+	}
+	s.ttl[hashKey] = ttl
 	return nil
 }
 
@@ -99,7 +123,20 @@ func (s *fakeRenderCacheStore) SetNX(_ context.Context, key string, value interf
 		return false, nil
 	}
 	s.values[key] = value.(string)
-	s.ttl[key] = ttlSeconds
+	s.ttl[key] = time.Duration(ttlSeconds) * time.Second
+	return true, nil
+}
+
+func (s *fakeRenderCacheStore) SetNXWithDuration(
+	_ context.Context, key string, value interface{}, ttl time.Duration) (bool, error) {
+	if s.err != nil {
+		return false, s.err
+	}
+	if _, exists := s.values[key]; exists {
+		return false, nil
+	}
+	s.values[key] = value.(string)
+	s.ttl[key] = ttl
 	return true, nil
 }
 
@@ -154,8 +191,8 @@ func TestRedisCMDBRenderCacheKeysIncludeTenantAndSetEnv(t *testing.T) {
 	if !ok || tenantBFormal != "tenant-b-formal" {
 		t.Fatalf("tenant-b topo cache = %q, %v, want tenant-b-formal true", tenantBFormal, ok)
 	}
-	if got := store.ttl[cache.topoXMLKey("tenant-a", 42)]; got != 60 {
-		t.Fatalf("topo xml ttl = %d, want 60", got)
+	if got := store.ttl[cache.topoXMLKey("tenant-a", 42)]; got != time.Minute {
+		t.Fatalf("topo xml ttl = %v, want %v", got, time.Minute)
 	}
 }
 
@@ -203,8 +240,8 @@ func TestRedisCMDBRenderCacheInvalidatesSingleBiz(t *testing.T) {
 		BK_SET_OBJ_ID: {{BkPropertyID: "set_cached"}},
 	})
 
-	if got := store.ttl[cache.bizObjectAttributesKey("tenant-a", 42)]; got != 120 {
-		t.Fatalf("biz global variables ttl = %d, want 120", got)
+	if got := store.ttl[cache.bizObjectAttributesKey("tenant-a", 42)]; got != 2*time.Minute {
+		t.Fatalf("biz global variables ttl = %v, want %v", got, 2*time.Minute)
 	}
 
 	if err := cache.InvalidateBiz(ctx, "tenant-a", 42); err != nil {
@@ -219,6 +256,30 @@ func TestRedisCMDBRenderCacheInvalidatesSingleBiz(t *testing.T) {
 	}
 	if got, ok := cache.GetTopoXML(ctx, "tenant-b", 42, "3"); !ok || got != "tenant-b-topo" {
 		t.Fatalf("tenant-b topo cache = %q, %v, want tenant-b-topo true", got, ok)
+	}
+}
+
+func TestRedisCMDBRenderCacheUsesDurationForBuildLockTTL(t *testing.T) {
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, RenderCacheOptions{
+		BuildLockTTL: 1500 * time.Millisecond,
+	})
+	ctx := context.Background()
+
+	locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("AcquireBuildLock failed: %v", err)
+	}
+	if !locked {
+		t.Fatal("AcquireBuildLock should acquire lock")
+	}
+
+	lockKey := cache.buildLockKey("tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if got := store.ttl[lockKey]; got != 1500*time.Millisecond {
+		t.Fatalf("build lock ttl = %v, want %v", got, 1500*time.Millisecond)
+	}
+	if got := store.ttl[cache.buildLockIndexKey("tenant-a", 42)]; got != 1500*time.Millisecond {
+		t.Fatalf("build lock index ttl = %v, want %v", got, 1500*time.Millisecond)
 	}
 }
 

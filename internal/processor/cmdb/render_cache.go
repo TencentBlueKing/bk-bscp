@@ -70,12 +70,46 @@ func (o RenderCacheOptions) withDefaults() RenderCacheOptions {
 
 type renderCacheStore interface {
 	Get(ctx context.Context, key string) (string, error)
-	Set(ctx context.Context, key string, value interface{}, ttlSeconds int) error
+	SetWithDuration(ctx context.Context, key string, value interface{}, ttl time.Duration) error
 	HGet(ctx context.Context, hashKey string, field string) (string, error)
-	HSets(ctx context.Context, hashKey string, kv map[string]string, ttlSeconds int) error
+	HSetsWithDuration(ctx context.Context, hashKey string, kv map[string]string, ttl time.Duration) error
 	HGetAll(ctx context.Context, hashKey string) (map[string]string, error)
-	SetNX(ctx context.Context, key string, value interface{}, ttlSeconds int) (bool, error)
+	SetNXWithDuration(ctx context.Context, key string, value interface{}, ttl time.Duration) (bool, error)
 	Delete(ctx context.Context, keys ...string) error
+}
+
+type bedisRenderCacheStore struct {
+	bedis.Client
+}
+
+func (s bedisRenderCacheStore) SetWithDuration(
+	ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	if store, ok := s.Client.(interface {
+		SetWithDuration(context.Context, string, interface{}, time.Duration) error
+	}); ok {
+		return store.SetWithDuration(ctx, key, value, ttl)
+	}
+	return s.Set(ctx, key, value, ttlSeconds(ttl))
+}
+
+func (s bedisRenderCacheStore) HSetsWithDuration(
+	ctx context.Context, hashKey string, kv map[string]string, ttl time.Duration) error {
+	if store, ok := s.Client.(interface {
+		HSetsWithDuration(context.Context, string, map[string]string, time.Duration) error
+	}); ok {
+		return store.HSetsWithDuration(ctx, hashKey, kv, ttl)
+	}
+	return s.HSets(ctx, hashKey, kv, ttlSeconds(ttl))
+}
+
+func (s bedisRenderCacheStore) SetNXWithDuration(
+	ctx context.Context, key string, value interface{}, ttl time.Duration) (bool, error) {
+	if store, ok := s.Client.(interface {
+		SetNXWithDuration(context.Context, string, interface{}, time.Duration) (bool, error)
+	}); ok {
+		return store.SetNXWithDuration(ctx, key, value, ttl)
+	}
+	return s.SetNX(ctx, key, value, ttlSeconds(ttl))
 }
 
 // RedisCMDBRenderCache is a Redis-backed cache shared by data-service replicas.
@@ -89,7 +123,7 @@ func NewRedisCMDBRenderCache(redis bedis.Client, options RenderCacheOptions) Ren
 	if redis == nil {
 		return nil
 	}
-	return newRedisCMDBRenderCacheWithStore(redis, options)
+	return newRedisCMDBRenderCacheWithStore(bedisRenderCacheStore{Client: redis}, options)
 }
 
 func newRedisCMDBRenderCacheWithStore(store renderCacheStore, options RenderCacheOptions) *RedisCMDBRenderCache {
@@ -127,7 +161,7 @@ func (c *RedisCMDBRenderCache) SetTopoXML(ctx context.Context, tenantID string, 
 
 	key := c.topoXMLKey(tenantID, bizID)
 	field := topoXMLField(setEnv)
-	if err := c.store.HSets(ctx, key, map[string]string{field: xml}, ttlSeconds(c.options.TopoXMLTTL)); err != nil {
+	if err := c.store.HSetsWithDuration(ctx, key, map[string]string{field: xml}, c.options.TopoXMLTTL); err != nil {
 		logs.Warnf("set cmdb topo xml cache failed, key: %s, err: %v", key, err)
 	}
 }
@@ -168,7 +202,7 @@ func (c *RedisCMDBRenderCache) SetBizObjectAttributes(
 		logs.Warnf("marshal cmdb biz object attributes cache failed, key: %s, err: %v", key, err)
 		return
 	}
-	if err := c.store.Set(ctx, key, string(payload), ttlSeconds(c.options.BizGlobalVariablesTTL)); err != nil {
+	if err := c.store.SetWithDuration(ctx, key, string(payload), c.options.BizGlobalVariablesTTL); err != nil {
 		logs.Warnf("set cmdb biz object attributes cache failed, key: %s, err: %v", key, err)
 	}
 }
@@ -204,12 +238,12 @@ func (c *RedisCMDBRenderCache) AcquireBuildLock(
 		return true, nil
 	}
 	lockKey := c.buildLockKey(tenantID, bizID, kind, identity)
-	locked, err := c.store.SetNX(ctx, lockKey, "1", ttlSeconds(c.options.BuildLockTTL))
+	locked, err := c.store.SetNXWithDuration(ctx, lockKey, "1", c.options.BuildLockTTL)
 	if err != nil || !locked {
 		return locked, err
 	}
-	if err = c.store.HSets(ctx, c.buildLockIndexKey(tenantID, bizID), map[string]string{lockKey: "1"},
-		ttlSeconds(c.options.BuildLockTTL)); err != nil {
+	if err = c.store.HSetsWithDuration(ctx, c.buildLockIndexKey(tenantID, bizID), map[string]string{lockKey: "1"},
+		c.options.BuildLockTTL); err != nil {
 		_ = c.store.Delete(ctx, lockKey)
 		return false, err
 	}
@@ -264,7 +298,10 @@ func normalizeTenantID(tenantID string) string {
 }
 
 func ttlSeconds(ttl time.Duration) int {
-	seconds := int(ttl.Seconds())
+	seconds := int(ttl / time.Second)
+	if ttl%time.Second != 0 {
+		seconds++
+	}
 	if seconds <= 0 {
 		return 1
 	}
