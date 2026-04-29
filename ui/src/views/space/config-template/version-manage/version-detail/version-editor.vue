@@ -64,7 +64,7 @@
     <Variable v-show="suffix === 'variable'" :bk-biz-id="spaceId" @close="suffix = ''" />
   </div>
   <div class="action-btns">
-    <bk-button v-if="isViewMode && isLatest" :disabled="!isAssociated" theme="primary" @click="handleConfigIssue">
+    <bk-button v-if="isViewMode && isLatest" :disabled="!data.is_proc_bound" theme="primary" @click="handleConfigIssue">
       {{ t('配置下发') }}
     </bk-button>
     <bk-button
@@ -105,7 +105,7 @@
   import useGlobalStore from '../../../../../store/global';
   import { storeToRefs } from 'pinia';
 
-  const { isAssociated, perms } = storeToRefs(useConfigTemplateStore());
+  const { perms } = storeToRefs(useConfigTemplateStore());
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
   const router = useRouter();
@@ -119,7 +119,6 @@
     templateName: string;
     type: string;
     data: ITemplateVersionEditingData;
-    isAssociated: boolean;
     isLatest: boolean;
   }>();
   const fileModes = [
