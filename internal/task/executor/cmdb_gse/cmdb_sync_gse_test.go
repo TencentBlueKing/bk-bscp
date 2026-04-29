@@ -9,7 +9,7 @@ import (
 )
 
 type recordingRenderCache struct {
-	processorcmdb.CMDBRenderCache
+	processorcmdb.RenderCache
 	tenantID string
 	bizID    int
 	err      error

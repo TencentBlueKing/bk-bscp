@@ -206,7 +206,7 @@ func BuildProcessContextParamsFromSource(
 	ctx context.Context,
 	source ProcessInfoSource,
 	cmdbService bkcmdb.Service,
-	caches ...cmdb.CMDBRenderCache,
+	caches ...cmdb.RenderCache,
 ) ProcessContextParams {
 	var (
 		moduleInstSeq int
@@ -272,7 +272,7 @@ func BuildProcessContextParamsFromSource(
 	var ccXML string
 	var globalVars map[string]interface{}
 	if cmdbService != nil && bizID > 0 {
-		var renderCache cmdb.CMDBRenderCache
+		var renderCache cmdb.RenderCache
 		if len(caches) > 0 {
 			renderCache = caches[0]
 		}

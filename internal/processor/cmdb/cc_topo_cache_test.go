@@ -69,7 +69,7 @@ func (m *panicTopoCMDB) FindTopoBrief(_ context.Context, _ int) (*bkcmdb.TopoBri
 }
 
 type ttlRenderCache struct {
-	CMDBRenderCache
+	RenderCache
 	ttl time.Duration
 }
 

@@ -45,7 +45,7 @@ const (
 type GenerateConfigExecutor struct {
 	*common.Executor
 	Repo            repository.Provider // 仓库服务，用于下载配置内容
-	CMDBRenderCache processorcmdb.CMDBRenderCache
+	CMDBRenderCache processorcmdb.RenderCache
 }
 
 // NewConfigExecutor new config executor
@@ -68,7 +68,7 @@ func (e *GenerateConfigExecutor) SetCMDBService(cmdbService bkcmdb.Service) {
 }
 
 // SetCMDBRenderCache 设置 CMDB 渲染缓存。
-func (e *GenerateConfigExecutor) SetCMDBRenderCache(renderCache processorcmdb.CMDBRenderCache) {
+func (e *GenerateConfigExecutor) SetCMDBRenderCache(renderCache processorcmdb.RenderCache) {
 	e.CMDBRenderCache = renderCache
 }
 

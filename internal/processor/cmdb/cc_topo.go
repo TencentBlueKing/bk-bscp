@@ -19,9 +19,10 @@ import (
 	"sort"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"golang.org/x/sync/singleflight"
 )
 
 // CCTopoXMLService 用于获取和构建 CC 拓扑 XML 的服务
@@ -30,7 +31,7 @@ type CCTopoXMLService struct {
 	tenantID string
 	bizID    int
 	svc      bkcmdb.Service
-	cache    CMDBRenderCache
+	cache    RenderCache
 	// 缓存字段列表，避免重复查询
 	setFieldsCache    []string
 	moduleFieldsCache []string
@@ -54,14 +55,14 @@ const (
 var renderCacheFlight singleflight.Group
 
 // NewCCTopoXMLService 创建 CC 拓扑 XML 服务
-func NewCCTopoXMLService(bizID int, svc bkcmdb.Service, caches ...CMDBRenderCache) *CCTopoXMLService {
+func NewCCTopoXMLService(bizID int, svc bkcmdb.Service, caches ...RenderCache) *CCTopoXMLService {
 	return NewCCTopoXMLServiceWithTenant("", bizID, svc, caches...)
 }
 
 // NewCCTopoXMLServiceWithTenant 创建带租户隔离缓存的 CC 拓扑 XML 服务
 func NewCCTopoXMLServiceWithTenant(
-	tenantID string, bizID int, svc bkcmdb.Service, caches ...CMDBRenderCache) *CCTopoXMLService {
-	var cache CMDBRenderCache
+	tenantID string, bizID int, svc bkcmdb.Service, caches ...RenderCache) *CCTopoXMLService {
+	var cache RenderCache
 	if len(caches) > 0 {
 		cache = caches[0]
 	}
@@ -1068,7 +1069,7 @@ func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) boo
 	}
 }
 
-func cacheBuildWaitTTL(cache CMDBRenderCache) time.Duration {
+func cacheBuildWaitTTL(cache RenderCache) time.Duration {
 	waitTTL := cache.BuildLockTTL()
 	if waitTTL <= 0 {
 		return DefaultRenderCacheOptions().BuildLockTTL

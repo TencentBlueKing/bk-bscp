@@ -4,7 +4,7 @@
 
 **Goal:** 降低配置渲染瞬间对 CMDB 的访问峰值，只缓存渲染聚合结果，并在 CMDB 同步成功后主动失效。
 
-**Architecture:** `data-service` 使用已有 Redis 配置创建共享的 `CMDBRenderCache`，缓存 `topo_xml` 和 `biz_global_variables` 两类渲染聚合数据。渲染路径读取缓存，未命中时回源 CMDB 并写入；`SyncCMDB` 步骤成功后按 `tenantID + bizID` 删除缓存；watch 事件不删除缓存，避免高频事件打穿。
+**Architecture:** `data-service` 使用已有 Redis 配置创建共享的 `RenderCache`，缓存 `topo_xml` 和 `biz_global_variables` 两类渲染聚合数据。渲染路径读取缓存，未命中时回源 CMDB 并写入；`SyncCMDB` 步骤成功后按 `tenantID + bizID` 删除缓存；watch 事件不删除缓存，避免高频事件打穿。
 
 **Tech Stack:** Go、Redis、`internal/dal/bedis`、`render`、task executor、`go test`。
 
@@ -18,7 +18,7 @@
 - Test: `internal/processor/cmdb/render_cache_test.go`
 
 - [x] 新增 `cmdb.renderCache.topoXmlTTL`、`cmdb.renderCache.bizGlobalVariablesTTL`、`cmdb.renderCache.buildLockTTL` 配置，默认分别为 `1h`、`5m`、`30s`；`topoXmlTTL` 和 `bizGlobalVariablesTTL` 与旧项目缓存时间保持一致。
-- [x] `CMDBRenderCache` 增加按业务删除方法，Redis 实现删除 `topo_xml` 和 `biz_global_variables`。
+- [x] `RenderCache` 增加按业务删除方法，Redis 实现删除 `topo_xml` 和 `biz_global_variables`。
 - [x] 测试 Redis key 按 `tenantID + bizID` 隔离，TTL 使用配置值，删除只影响指定业务。
 
 ### Task 2: 渲染链路接入聚合缓存
@@ -33,8 +33,8 @@
 - Modify: `cmd/data-service/app/app.go`
 - Test: `render/context_test.go` 或现有 CMDB processor 测试
 
-- [x] `BuildProcessContextParamsFromSource` 支持传入 `CMDBRenderCache`，创建 `CCTopoXMLService` 时带上缓存。
-- [x] `data-service` 复用已有 Redis client 创建 `CMDBRenderCache`，传给 service 和 config generate executor。
+- [x] `BuildProcessContextParamsFromSource` 支持传入 `RenderCache`，创建 `CCTopoXMLService` 时带上缓存。
+- [x] `data-service` 复用已有 Redis client 创建 `RenderCache`，传给 service 和 config generate executor。
 - [x] 不缓存 `ListBizHosts`、`FindHostBizRelations` 等底层接口，缓存边界只在 `GetTopoTreeXML` 与 `GetBizObjectAttributes`。
 
 ### Task 3: 同步成功后主动失效

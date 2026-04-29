@@ -35,7 +35,7 @@ const (
 
 // NewSyncCMDBExecutor new sync cmdb gse executor
 func NewSyncCmdbGseExecutor(gseSvc *gseSvc.Service, cmdbSvc bkcmdb.Service,
-	dao dao.Set, renderCache processorcmdb.CMDBRenderCache) *syncCmdbGseExecutor {
+	dao dao.Set, renderCache processorcmdb.RenderCache) *syncCmdbGseExecutor {
 	return &syncCmdbGseExecutor{
 		cmdbSvc:     cmdbSvc,
 		dao:         dao,
@@ -49,7 +49,7 @@ type syncCmdbGseExecutor struct {
 	cmdbSvc     bkcmdb.Service
 	gseSvc      *gseSvc.Service
 	dao         dao.Set
-	renderCache processorcmdb.CMDBRenderCache
+	renderCache processorcmdb.RenderCache
 }
 
 // SyncCMDBPayload 同步cmdb相关负载

@@ -110,7 +110,7 @@ type dataService struct {
 	ssd             serviced.ServiceDiscover
 	taskManager     *task.TaskManager
 	cmdb            bkcmdb.Service
-	cmdbRenderCache processorcmdb.CMDBRenderCache
+	cmdbRenderCache processorcmdb.RenderCache
 	gseSvc          *gse.Service
 }
 

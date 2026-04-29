@@ -26,8 +26,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
-// CMDBRenderCache caches CMDB aggregation results used by config rendering.
-type CMDBRenderCache interface {
+// RenderCache caches CMDB aggregation results used by config rendering.
+type RenderCache interface {
 	GetTopoXML(ctx context.Context, tenantID string, bizID int, setEnv string) (string, bool)
 	SetTopoXML(ctx context.Context, tenantID string, bizID int, setEnv string, xml string)
 	GetBizObjectAttributes(ctx context.Context, tenantID string, bizID int) (map[string][]ObjectAttribute, bool)
@@ -83,7 +83,7 @@ type RedisCMDBRenderCache struct {
 }
 
 // NewRedisCMDBRenderCache creates a Redis-backed render cache.
-func NewRedisCMDBRenderCache(redis bedis.Client, options RenderCacheOptions) CMDBRenderCache {
+func NewRedisCMDBRenderCache(redis bedis.Client, options RenderCacheOptions) RenderCache {
 	if redis == nil {
 		return nil
 	}
@@ -236,7 +236,7 @@ type memoryCMDBRenderCache struct {
 }
 
 // NewMemoryCMDBRenderCache creates an in-memory render cache for tests.
-func NewMemoryCMDBRenderCache() CMDBRenderCache {
+func NewMemoryCMDBRenderCache() RenderCache {
 	return &memoryCMDBRenderCache{
 		topoXML:             make(map[string]string),
 		bizObjectAttributes: make(map[string]map[string][]ObjectAttribute),

@@ -31,7 +31,7 @@ import (
 // RegisterExecutor 中可以补充参数，比如执行器依赖的配置，执行器依赖的第三方服务等
 // nolint: revive
 func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao dao.Set, repo repository.Provider,
-	redLock *lock.RedisLock, pm pushmanager.Service, renderCache processorcmdb.CMDBRenderCache) {
+	redLock *lock.RedisLock, pm pushmanager.Service, renderCache processorcmdb.RenderCache) {
 	// 注册 process 执行器
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, pm, dao)
 	process.RegisterExecutor(processExecutor)

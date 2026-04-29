@@ -54,7 +54,7 @@ type Service struct {
 	tmplProc            tmplprocess.TmplProcessor
 	itsm                itsm.Service
 	cmdb                bkcmdb.Service
-	cmdbRenderCache     processorcmdb.CMDBRenderCache
+	cmdbRenderCache     processorcmdb.RenderCache
 	taskManager         *task.TaskManager
 	gseSvc              *gse.Service
 	configKVCache       *ConfigKVCache
@@ -64,7 +64,7 @@ type Service struct {
 // NewService create a service instance.
 func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set, esb client.Client,
 	repo repository.Provider, cmdb bkcmdb.Service, taskManager *task.TaskManager, gseSvc *gse.Service,
-	cmdbRenderCache processorcmdb.CMDBRenderCache) (*Service, error) {
+	cmdbRenderCache processorcmdb.RenderCache) (*Service, error) {
 	state, ok := sd.(serviced.State)
 	if !ok {
 		return nil, errors.New("discover convert state failed")
