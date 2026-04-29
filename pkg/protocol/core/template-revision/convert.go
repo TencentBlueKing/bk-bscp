@@ -99,29 +99,31 @@ func PbTemplateRevisionAttachment(at *table.TemplateRevisionAttachment) *Templat
 }
 
 // PbTemplateRevisions convert table TemplateRevision to pb TemplateRevision
-func PbTemplateRevisions(s []*table.TemplateRevision, templateNames map[uint32]string) []*TemplateRevision {
+func PbTemplateRevisions(s []*table.TemplateRevision, templateNames map[uint32]string,
+	isProcBounds map[uint32]bool) []*TemplateRevision {
 	if s == nil {
 		return make([]*TemplateRevision, 0)
 	}
 
 	result := make([]*TemplateRevision, 0)
 	for _, one := range s {
-		result = append(result, PbTemplateRevision(one, templateNames[one.Attachment.TemplateID]))
+		result = append(result, PbTemplateRevision(one, templateNames[one.Attachment.TemplateID], isProcBounds[one.Attachment.TemplateID]))
 	}
 
 	return result
 }
 
 // PbTemplateRevision convert table TemplateRevision to pb TemplateRevision
-func PbTemplateRevision(s *table.TemplateRevision, templateName string) *TemplateRevision {
+func PbTemplateRevision(s *table.TemplateRevision, templateName string, isProcBound bool) *TemplateRevision {
 	if s == nil {
 		return nil
 	}
 
 	return &TemplateRevision{
-		Id:         s.ID,
-		Spec:       PbTemplateRevisionSpec(s.Spec, templateName),
-		Attachment: PbTemplateRevisionAttachment(s.Attachment),
-		Revision:   pbbase.PbCreatedRevision(s.Revision),
+		Id:          s.ID,
+		Spec:        PbTemplateRevisionSpec(s.Spec, templateName),
+		Attachment:  PbTemplateRevisionAttachment(s.Attachment),
+		Revision:    pbbase.PbCreatedRevision(s.Revision),
+		IsProcBound: isProcBound,
 	}
 }
