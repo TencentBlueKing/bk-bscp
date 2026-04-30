@@ -393,9 +393,6 @@
   };
 
   const handleGoVersionManage = (configTemplate: IConfigTemplateItem) => {
-    configTemplateStore.$patch((state) => {
-      state.isAssociated = configTemplate.is_proc_bound;
-    });
     router.push({
       name: 'config-template-version-manage',
       params: {

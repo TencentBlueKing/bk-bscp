@@ -15,7 +15,9 @@
         <span class="name">{{ info.name }}</span>
       </div>
       <div class="command">
-        {{ $t('将执行{n}命令', { n: info.label }) }}
+        <div class="label">
+          {{ $t('将执行{n}命令', { n: info.label }) }}
+        </div>
         <div class="content">
           <bk-overflow-title type="tips"> {{ info.command }}</bk-overflow-title>
         </div>
@@ -70,8 +72,12 @@
       background: #f5f7fa;
       border-radius: 2px;
       line-height: 46px;
+      .label {
+        white-space: nowrap;
+      }
       .content {
-        width: 240px;
+        flex: 1;
+        overflow: hidden;
       }
     }
   }
