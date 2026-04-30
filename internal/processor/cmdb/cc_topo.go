@@ -103,7 +103,11 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 			lockAcquiredAt := time.Now()
 			cacheReady, lockAcquired := s.acquireOrWaitTopoCache(buildCtx, setEnv)
 			if lockAcquired {
-				defer s.releaseTopoCacheLock(buildCtx, setEnv, lockAcquiredAt)
+				lockCtx := buildCtx
+				var stopRenew func()
+				buildCtx, stopRenew = s.keepBuildLockRenewed(buildCtx, renderCacheKindTopoXML, setEnv)
+				defer s.releaseTopoCacheLock(context.WithoutCancel(lockCtx), setEnv, lockAcquiredAt)
+				defer stopRenew()
 			}
 			if !cacheReady {
 				logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
@@ -121,6 +125,9 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 			xmlStr, buildErr := s.buildTopoTreeXML(buildCtx, setEnv)
 			if buildErr != nil {
 				return "", buildErr
+			}
+			if err := buildCtx.Err(); err != nil {
+				return "", err
 			}
 			s.cache.SetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv, xmlStr)
 			return xmlStr, nil
@@ -142,7 +149,7 @@ func doRenderCacheFlight(
 		return nil, err
 	}
 	if buildTimeout <= 0 {
-		buildTimeout = DefaultRenderCacheOptions().BuildLockTTL
+		buildTimeout = DefaultRenderCacheOptions().BuildTimeout
 	}
 
 	// 缓存构建不能绑定首个请求的取消，否则 leader 超时会让所有 follower 共享失败且无法回填缓存。
@@ -256,7 +263,7 @@ func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv st
 }
 
 func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv string, acquiredAt time.Time) {
-	if time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
+	if _, ok := s.cache.(buildLockRenewer); !ok && time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
 		return
 	}
 	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv); err != nil {
@@ -277,22 +284,26 @@ func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) (bo
 		case <-ctx.Done():
 			return false, false
 		case <-timer.C:
-			return false, false
+			return s.tryAcquireTopoCache(ctx, setEnv)
 		case <-ticker.C:
-			if _, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
-				return true, false
-			}
-			locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
-			if err != nil {
-				logs.Warnf("reacquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
-					s.tenantID, s.bizID, setEnv, err)
-				return true, false
-			}
-			if locked {
-				return true, true
+			if cacheReady, lockAcquired := s.tryAcquireTopoCache(ctx, setEnv); cacheReady || lockAcquired {
+				return cacheReady, lockAcquired
 			}
 		}
 	}
+}
+
+func (s *CCTopoXMLService) tryAcquireTopoCache(ctx context.Context, setEnv string) (bool, bool) {
+	if _, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+		return true, false
+	}
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
+	if err != nil {
+		logs.Warnf("reacquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+			s.tenantID, s.bizID, setEnv, err)
+		return true, false
+	}
+	return locked, locked
 }
 
 // extractTopoInfo 从拓扑树中提取 Set 和 Module 信息
@@ -962,7 +973,11 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 			lockAcquiredAt := time.Now()
 			cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(buildCtx)
 			if lockAcquired {
-				defer s.releaseBizObjectAttributesCacheLock(buildCtx, lockAcquiredAt)
+				lockCtx := buildCtx
+				var stopRenew func()
+				buildCtx, stopRenew = s.keepBuildLockRenewed(buildCtx, renderCacheKindBizGlobalVariables, "")
+				defer s.releaseBizObjectAttributesCacheLock(context.WithoutCancel(lockCtx), lockAcquiredAt)
+				defer stopRenew()
 			}
 			if !cacheReady {
 				logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
@@ -979,6 +994,9 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 			attrs, buildErr := s.buildBizObjectAttributes(buildCtx)
 			if buildErr != nil {
 				return nil, buildErr
+			}
+			if err := buildCtx.Err(); err != nil {
+				return nil, err
 			}
 			s.cache.SetBizObjectAttributes(buildCtx, s.tenantID, s.bizID, attrs)
 			return attrs, nil
@@ -1123,7 +1141,7 @@ func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Con
 }
 
 func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Context, acquiredAt time.Time) {
-	if time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
+	if _, ok := s.cache.(buildLockRenewer); !ok && time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
 		return
 	}
 	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, ""); err != nil {
@@ -1144,21 +1162,72 @@ func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) (bo
 		case <-ctx.Done():
 			return false, false
 		case <-timer.C:
-			return false, false
+			return s.tryAcquireBizObjectAttributesCache(ctx)
 		case <-ticker.C:
-			if _, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
-				return true, false
-			}
-			locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
-			if err != nil {
-				logs.Warnf("reacquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
-					s.tenantID, s.bizID, err)
-				return true, false
-			}
-			if locked {
-				return true, true
+			if cacheReady, lockAcquired := s.tryAcquireBizObjectAttributesCache(ctx); cacheReady || lockAcquired {
+				return cacheReady, lockAcquired
 			}
 		}
+	}
+}
+
+func (s *CCTopoXMLService) tryAcquireBizObjectAttributesCache(ctx context.Context) (bool, bool) {
+	if _, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+		return true, false
+	}
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		logs.Warnf("reacquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+			s.tenantID, s.bizID, err)
+		return true, false
+	}
+	return locked, locked
+}
+
+type buildLockRenewer interface {
+	RenewBuildLock(ctx context.Context, tenantID string, bizID int, kind string, identity string) (bool, error)
+}
+
+func (s *CCTopoXMLService) keepBuildLockRenewed(
+	ctx context.Context, kind string, identity string) (context.Context, func()) {
+	renewer, ok := s.cache.(buildLockRenewer)
+	if !ok {
+		return ctx, func() {}
+	}
+	interval := cacheBuildLockTTL(s.cache) / 3
+	if interval <= 0 {
+		return ctx, func() {}
+	}
+	renewCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-renewCtx.Done():
+				return
+			case <-ticker.C:
+				renewed, err := renewer.RenewBuildLock(renewCtx, s.tenantID, s.bizID, kind, identity)
+				if err != nil {
+					logs.Warnf("renew cmdb render cache lock failed, tenant: %s, biz: %d, kind: %s, identity: %s, err: %v",
+						s.tenantID, s.bizID, kind, identity, err)
+					cancel()
+					return
+				}
+				if !renewed {
+					logs.Warnf("cmdb render cache lock lost, tenant: %s, biz: %d, kind: %s, identity: %s",
+						s.tenantID, s.bizID, kind, identity)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return renewCtx, func() {
+		cancel()
+		<-done
 	}
 }
 

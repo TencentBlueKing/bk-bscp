@@ -23,6 +23,7 @@ type fakeRenderCacheStore struct {
 	values  map[string]string
 	hashes  map[string]map[string]string
 	ttl     map[string]time.Duration
+	renewed []string
 	deleted []string
 	err     error
 }
@@ -140,6 +141,32 @@ func (s *fakeRenderCacheStore) SetNXWithDuration(
 	return true, nil
 }
 
+func (s *fakeRenderCacheStore) RenewLockWithDuration(
+	_ context.Context, key string, value string, ttl time.Duration) (bool, error) {
+	if s.err != nil {
+		return false, s.err
+	}
+	if s.values[key] != value {
+		return false, nil
+	}
+	s.ttl[key] = ttl
+	s.renewed = append(s.renewed, key)
+	return true, nil
+}
+
+func (s *fakeRenderCacheStore) ReleaseLock(_ context.Context, key string, value string) (bool, error) {
+	if s.err != nil {
+		return false, s.err
+	}
+	if s.values[key] != value {
+		return false, nil
+	}
+	delete(s.values, key)
+	delete(s.ttl, key)
+	s.deleted = append(s.deleted, key)
+	return true, nil
+}
+
 func (s *fakeRenderCacheStore) Delete(_ context.Context, keys ...string) error {
 	if s.err != nil {
 		return s.err
@@ -168,8 +195,8 @@ func TestDefaultRenderCacheOptionsMatchLegacyProject(t *testing.T) {
 	if options.BuildTimeout != 5*time.Minute {
 		t.Fatalf("build timeout = %v, want %v", options.BuildTimeout, 5*time.Minute)
 	}
-	if options.BuildLockTTL != 5*time.Minute {
-		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 5*time.Minute)
+	if options.BuildLockTTL != 30*time.Second {
+		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 30*time.Second)
 	}
 }
 
@@ -186,8 +213,8 @@ func TestRenderCacheOptionsKeepsBuildTimeoutSeparateFromWaitTTL(t *testing.T) {
 	if options.BuildTimeout != 2*time.Minute {
 		t.Fatalf("build timeout = %v, want %v", options.BuildTimeout, 2*time.Minute)
 	}
-	if options.BuildLockTTL != 2*time.Minute {
-		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 2*time.Minute)
+	if options.BuildLockTTL != 30*time.Second {
+		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 30*time.Second)
 	}
 }
 
@@ -305,6 +332,55 @@ func TestRedisCMDBRenderCacheUsesDurationForBuildLockTTL(t *testing.T) {
 	}
 	if got := store.ttl[cache.buildLockIndexKey("tenant-a", 42)]; got != 1500*time.Millisecond {
 		t.Fatalf("build lock index ttl = %v, want %v", got, 1500*time.Millisecond)
+	}
+}
+
+func TestRedisCMDBRenderCacheRenewsOwnedBuildLock(t *testing.T) {
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, RenderCacheOptions{
+		BuildLockTTL: 1500 * time.Millisecond,
+	})
+	ctx := context.Background()
+
+	locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("AcquireBuildLock failed: %v", err)
+	}
+	if !locked {
+		t.Fatal("AcquireBuildLock should acquire lock")
+	}
+	renewed, err := cache.RenewBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("RenewBuildLock failed: %v", err)
+	}
+	if !renewed {
+		t.Fatal("RenewBuildLock should renew owned lock")
+	}
+	if got := len(store.renewed); got != 1 {
+		t.Fatalf("renew calls = %d, want 1", got)
+	}
+}
+
+func TestRedisCMDBRenderCacheReleaseDoesNotDeleteOtherOwnerLock(t *testing.T) {
+	store := newFakeRenderCacheStore()
+	cache := newRedisCMDBRenderCacheWithStore(store, DefaultRenderCacheOptions())
+	ctx := context.Background()
+
+	locked, err := cache.AcquireBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		t.Fatalf("AcquireBuildLock failed: %v", err)
+	}
+	if !locked {
+		t.Fatal("AcquireBuildLock should acquire lock")
+	}
+
+	lockKey := cache.buildLockKey("tenant-a", 42, renderCacheKindBizGlobalVariables, "")
+	store.values[lockKey] = "another-owner"
+	if err = cache.ReleaseBuildLock(ctx, "tenant-a", 42, renderCacheKindBizGlobalVariables, ""); err != nil {
+		t.Fatalf("ReleaseBuildLock failed: %v", err)
+	}
+	if got := store.values[lockKey]; got != "another-owner" {
+		t.Fatalf("lock owner = %q, want another-owner", got)
 	}
 }
 

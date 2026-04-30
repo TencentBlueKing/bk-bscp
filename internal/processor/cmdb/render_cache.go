@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -53,7 +54,7 @@ func DefaultRenderCacheOptions() RenderCacheOptions {
 		TopoXMLTTL:            time.Hour,
 		BizGlobalVariablesTTL: 5 * time.Minute,
 		BuildWaitTTL:          30 * time.Second,
-		BuildLockTTL:          5 * time.Minute,
+		BuildLockTTL:          30 * time.Second,
 		BuildTimeout:          5 * time.Minute,
 	}
 }
@@ -75,9 +76,6 @@ func (o RenderCacheOptions) withDefaults() RenderCacheOptions {
 	if o.BuildLockTTL <= 0 {
 		o.BuildLockTTL = defaults.BuildLockTTL
 	}
-	if o.BuildLockTTL < o.BuildTimeout {
-		o.BuildLockTTL = o.BuildTimeout
-	}
 	return o
 }
 
@@ -88,6 +86,8 @@ type renderCacheStore interface {
 	HSetsWithDuration(ctx context.Context, hashKey string, kv map[string]string, ttl time.Duration) error
 	HGetAll(ctx context.Context, hashKey string) (map[string]string, error)
 	SetNXWithDuration(ctx context.Context, key string, value interface{}, ttl time.Duration) (bool, error)
+	RenewLockWithDuration(ctx context.Context, key string, value string, ttl time.Duration) (bool, error)
+	ReleaseLock(ctx context.Context, key string, value string) (bool, error)
 	Delete(ctx context.Context, keys ...string) error
 }
 
@@ -125,10 +125,50 @@ func (s bedisRenderCacheStore) SetNXWithDuration(
 	return s.SetNX(ctx, key, value, ttlSeconds(ttl))
 }
 
+func (s bedisRenderCacheStore) RenewLockWithDuration(
+	ctx context.Context, key string, value string, ttl time.Duration) (bool, error) {
+	if store, ok := s.Client.(interface {
+		Do(context.Context, ...interface{}) (interface{}, error)
+	}); ok {
+		result, err := store.Do(ctx, "EVAL",
+			`if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("PEXPIRE", KEYS[1], ARGV[2]) else return 0 end`,
+			1, key, value, ttlMilliseconds(ttl))
+		if err != nil {
+			return false, err
+		}
+		return redisIntResult(result) == 1, nil
+	}
+	current, err := s.Get(ctx, key)
+	if err != nil || current != value {
+		return false, err
+	}
+	return true, s.SetWithDuration(ctx, key, value, ttl)
+}
+
+func (s bedisRenderCacheStore) ReleaseLock(ctx context.Context, key string, value string) (bool, error) {
+	if store, ok := s.Client.(interface {
+		Do(context.Context, ...interface{}) (interface{}, error)
+	}); ok {
+		result, err := store.Do(ctx, "EVAL",
+			`if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end`,
+			1, key, value)
+		if err != nil {
+			return false, err
+		}
+		return redisIntResult(result) == 1, nil
+	}
+	current, err := s.Get(ctx, key)
+	if err != nil || current != value {
+		return false, err
+	}
+	return true, s.Delete(ctx, key)
+}
+
 // RedisCMDBRenderCache is a Redis-backed cache shared by data-service replicas.
 type RedisCMDBRenderCache struct {
-	store   renderCacheStore
-	options RenderCacheOptions
+	store      renderCacheStore
+	options    RenderCacheOptions
+	ownerToken string
 }
 
 // NewRedisCMDBRenderCache creates a Redis-backed render cache.
@@ -141,8 +181,9 @@ func NewRedisCMDBRenderCache(redis bedis.Client, options RenderCacheOptions) Ren
 
 func newRedisCMDBRenderCacheWithStore(store renderCacheStore, options RenderCacheOptions) *RedisCMDBRenderCache {
 	return &RedisCMDBRenderCache{
-		store:   store,
-		options: options.withDefaults(),
+		store:      store,
+		options:    options.withDefaults(),
+		ownerToken: uuid.UUID(),
 	}
 }
 
@@ -251,7 +292,7 @@ func (c *RedisCMDBRenderCache) AcquireBuildLock(
 		return true, nil
 	}
 	lockKey := c.buildLockKey(tenantID, bizID, kind, identity)
-	locked, err := c.store.SetNXWithDuration(ctx, lockKey, "1", c.options.BuildLockTTL)
+	locked, err := c.store.SetNXWithDuration(ctx, lockKey, c.ownerToken, c.options.BuildLockTTL)
 	if err != nil || !locked {
 		return locked, err
 	}
@@ -263,12 +304,22 @@ func (c *RedisCMDBRenderCache) AcquireBuildLock(
 	return true, nil
 }
 
+func (c *RedisCMDBRenderCache) RenewBuildLock(
+	ctx context.Context, tenantID string, bizID int, kind string, identity string) (bool, error) {
+	if c == nil || c.store == nil {
+		return true, nil
+	}
+	return c.store.RenewLockWithDuration(ctx, c.buildLockKey(tenantID, bizID, kind, identity),
+		c.ownerToken, c.options.BuildLockTTL)
+}
+
 func (c *RedisCMDBRenderCache) ReleaseBuildLock(
 	ctx context.Context, tenantID string, bizID int, kind string, identity string) error {
 	if c == nil || c.store == nil {
 		return nil
 	}
-	return c.store.Delete(ctx, c.buildLockKey(tenantID, bizID, kind, identity))
+	_, err := c.store.ReleaseLock(ctx, c.buildLockKey(tenantID, bizID, kind, identity), c.ownerToken)
+	return err
 }
 
 func (c *RedisCMDBRenderCache) BuildLockTTL() time.Duration {
@@ -333,6 +384,25 @@ func ttlSeconds(ttl time.Duration) int {
 		return 1
 	}
 	return seconds
+}
+
+func ttlMilliseconds(ttl time.Duration) int64 {
+	milliseconds := ttl.Milliseconds()
+	if milliseconds <= 0 {
+		return 1
+	}
+	return milliseconds
+}
+
+func redisIntResult(result interface{}) int64 {
+	switch value := result.(type) {
+	case int64:
+		return value
+	case int:
+		return int64(value)
+	default:
+		return 0
+	}
 }
 
 type memoryCMDBRenderCache struct {

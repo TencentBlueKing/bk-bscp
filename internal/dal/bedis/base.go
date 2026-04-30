@@ -122,6 +122,11 @@ func (bs *bedis) SetNXWithDuration(ctx context.Context, key string, value interf
 	return bs.client.SetNX(ctx, key, value, ttl).Result()
 }
 
+// Do runs a raw redis command.
+func (bs *bedis) Do(ctx context.Context, args ...interface{}) (interface{}, error) {
+	return bs.client.Do(ctx, args...).Result()
+}
+
 // Incr atomically increments a key and returns the new value.
 func (bs *bedis) Incr(ctx context.Context, key string) (int64, error) {
 	start := time.Now()

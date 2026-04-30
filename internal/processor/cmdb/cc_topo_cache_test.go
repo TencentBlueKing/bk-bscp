@@ -169,6 +169,8 @@ type lockedRenderCache struct {
 	buildLockTTL time.Duration
 	buildWaitTTL time.Duration
 	buildTimeout time.Duration
+	renewCount   int
+	mu           sync.Mutex
 }
 
 func (c lockedRenderCache) GetTopoXML(_ context.Context, _ string, _ int, _ string) (string, bool) {
@@ -210,6 +212,62 @@ func (c lockedRenderCache) BuildTimeout() time.Duration {
 	return c.buildTimeout
 }
 
+func (c *lockedRenderCache) RenewBuildLock(_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.renewCount++
+	return true, nil
+}
+
+func (c *lockedRenderCache) countRenewBuildLock() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.renewCount
+}
+
+type longBuildRenewCache struct {
+	RenderCache
+	buildLockTTL time.Duration
+	buildWaitTTL time.Duration
+	buildTimeout time.Duration
+
+	mu         sync.Mutex
+	renewCount int
+}
+
+func (c *longBuildRenewCache) AcquireBuildLock(_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
+	return true, nil
+}
+
+func (c *longBuildRenewCache) ReleaseBuildLock(_ context.Context, _ string, _ int, _ string, _ string) error {
+	return nil
+}
+
+func (c *longBuildRenewCache) RenewBuildLock(_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.renewCount++
+	return true, nil
+}
+
+func (c *longBuildRenewCache) BuildLockTTL() time.Duration {
+	return c.buildLockTTL
+}
+
+func (c *longBuildRenewCache) BuildWaitTTL() time.Duration {
+	return c.buildWaitTTL
+}
+
+func (c *longBuildRenewCache) BuildTimeout() time.Duration {
+	return c.buildTimeout
+}
+
+func (c *longBuildRenewCache) countRenewBuildLock() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.renewCount
+}
+
 func TestCacheBuildWaitTTLHonorsConfiguredLockTTL(t *testing.T) {
 	const configuredTTL = 30 * time.Second
 
@@ -223,7 +281,7 @@ func TestCCTopoXMLService_WaitTimeoutDoesNotBuildWithoutLock(t *testing.T) {
 		tenantID = "tenant-a"
 		bizID    = 42
 	)
-	cache := lockedRenderCache{
+	cache := &lockedRenderCache{
 		buildLockTTL: 200 * time.Millisecond,
 		buildWaitTTL: 30 * time.Millisecond,
 		buildTimeout: 200 * time.Millisecond,
@@ -238,6 +296,30 @@ func TestCCTopoXMLService_WaitTimeoutDoesNotBuildWithoutLock(t *testing.T) {
 		if got := mockSvc.callCount(objID); got != 0 {
 			t.Fatalf("SearchObjectAttr for %s called %d times, want 0", objID, got)
 		}
+	}
+}
+
+func TestCCTopoXMLService_RenewsBuildLockDuringLongBuild(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	cache := NewMemoryCMDBRenderCache()
+	lockCache := &longBuildRenewCache{
+		RenderCache:  cache,
+		buildLockTTL: 30 * time.Millisecond,
+		buildWaitTTL: 30 * time.Millisecond,
+		buildTimeout: 300 * time.Millisecond,
+	}
+	mockSvc := newCountingObjectAttrCMDB()
+	mockSvc.delay = 25 * time.Millisecond
+	svc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, mockSvc, lockCache)
+
+	if _, err := svc.GetBizObjectAttributes(context.Background()); err != nil {
+		t.Fatalf("GetBizObjectAttributes failed: %v", err)
+	}
+	if got := lockCache.countRenewBuildLock(); got == 0 {
+		t.Fatal("RenewBuildLock should be called during long cache build")
 	}
 }
 

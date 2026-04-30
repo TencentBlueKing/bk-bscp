@@ -2128,7 +2128,7 @@ func (c *CMDBRenderCacheConfig) trySetDefault() {
 	}
 	buildLockTTLDefaulted := c.BuildLockTTL == ""
 	if c.BuildLockTTL == "" {
-		c.BuildLockTTL = "5m"
+		c.BuildLockTTL = "30s"
 	}
 	if c.BuildWaitTTL == "" {
 		if buildLockTTLDefaulted {

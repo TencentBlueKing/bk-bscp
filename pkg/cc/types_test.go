@@ -29,8 +29,8 @@ func TestCMDBRenderCacheDefaultDurations(t *testing.T) {
 	if got, err := conf.BuildTimeoutDuration(); err != nil || got != 5*time.Minute {
 		t.Fatalf("build timeout = %v, err: %v, want %v", got, err, 5*time.Minute)
 	}
-	if got, err := conf.BuildLockTTLDuration(); err != nil || got != 5*time.Minute {
-		t.Fatalf("build lock ttl = %v, err: %v, want %v", got, err, 5*time.Minute)
+	if got, err := conf.BuildLockTTLDuration(); err != nil || got != 30*time.Second {
+		t.Fatalf("build lock ttl = %v, err: %v, want %v", got, err, 30*time.Second)
 	}
 }
 
