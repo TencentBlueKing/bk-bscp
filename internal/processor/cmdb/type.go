@@ -46,6 +46,7 @@ type Host struct {
 	IPV6    string // 内网 IPv6，同步自 CC bk_host_innerip_v6
 	CloudId int
 	AgentID string
+	OsType  string // "linux": 1, "win": 2
 }
 
 // SvcInst 服务实例

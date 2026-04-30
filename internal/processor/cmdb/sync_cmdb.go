@@ -352,7 +352,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 	var hosts []Host
 	for _, h := range listHosts {
 		hosts = append(hosts, Host{ID: h.BkHostID, IP: h.BkHostInnerIP, IPV6: h.BkHostInnerIPV6,
-			CloudId: h.BkCloudID, AgentID: h.BkAgentID})
+			CloudId: h.BkCloudID, AgentID: h.BkAgentID, OsType: h.BkOSType})
 	}
 
 	// 4. 服务实例
@@ -622,6 +622,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 					"bk_host_innerip_v6",
 					"bk_cloud_id",
 					"bk_agent_id",
+					"bk_os_type",
 				},
 				Page: bkcmdb.PageParam{Start: 0, Limit: 500},
 			},
@@ -637,6 +638,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 				IPV6:    h.BkHostInnerIPV6,
 				CloudId: h.BkCloudID,
 				AgentID: h.BkAgentID,
+				OsType:  h.BkOSType,
 			})
 		}
 	}
@@ -934,6 +936,7 @@ func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Pro
 							PrevData:             "{}",
 							ProcNum:              uint(proc.ProcNum),
 							FuncName:             proc.FuncName,
+							OsType:               h.OsType,
 						},
 						Revision: &table.Revision{
 							CreatedAt: now,
@@ -1045,6 +1048,7 @@ func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTem
 					"bk_host_innerip_v6",
 					"bk_cloud_id",
 					"bk_agent_id",
+					"bk_os_type",
 				},
 				Page: page,
 			})
@@ -1368,8 +1372,15 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	infoChanged := !equal
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
 
-	if !nameChanged && !infoChanged && !numChanged {
+	osTypeChanged := newP.Spec.OsType != "" && newP.Spec.OsType != oldP.Spec.OsType
+
+	if !nameChanged && !infoChanged && !numChanged && !osTypeChanged {
 		return result, nil
+	}
+
+	// OsType 补全
+	if osTypeChanged {
+		oldP.Spec.OsType = newP.Spec.OsType
 	}
 
 	// 是否安全
