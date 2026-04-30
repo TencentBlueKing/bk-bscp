@@ -13,12 +13,14 @@
 package cmdbGse
 
 import (
+	"context"
+
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	gseSvc "github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
+	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -33,19 +35,21 @@ const (
 
 // NewSyncCMDBExecutor new sync cmdb gse executor
 func NewSyncCmdbGseExecutor(gseSvc *gseSvc.Service, cmdbSvc bkcmdb.Service,
-	dao dao.Set) *syncCmdbGseExecutor {
+	dao dao.Set, renderCache processorcmdb.RenderCache) *syncCmdbGseExecutor {
 	return &syncCmdbGseExecutor{
-		cmdbSvc: cmdbSvc,
-		dao:     dao,
-		gseSvc:  gseSvc,
+		cmdbSvc:     cmdbSvc,
+		dao:         dao,
+		gseSvc:      gseSvc,
+		renderCache: renderCache,
 	}
 }
 
 // syncCmdbGseExecutor sync cmdb gse executor
 type syncCmdbGseExecutor struct {
-	cmdbSvc bkcmdb.Service
-	gseSvc  *gseSvc.Service
-	dao     dao.Set
+	cmdbSvc     bkcmdb.Service
+	gseSvc      *gseSvc.Service
+	dao         dao.Set
+	renderCache processorcmdb.RenderCache
 }
 
 // SyncCMDBPayload 同步cmdb相关负载
@@ -70,13 +74,23 @@ func (s *syncCmdbGseExecutor) SyncCMDB(c *istep.Context) error {
 
 	// 同步cc数据
 	kt := kit.NewWithTenant(payload.TenantID)
-	syncSvc := cmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.dao)
+	syncSvc := processorcmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.dao)
 	if err := syncSvc.SyncBizProcessesWithMode(kt.Ctx); err != nil {
 		logs.Errorf("tenant: %s biz: %d sync cmdb data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}
 
+	s.invalidateRenderCache(kt.Ctx, payload.TenantID, payload.BizID)
 	return nil
+}
+
+func (s *syncCmdbGseExecutor) invalidateRenderCache(ctx context.Context, tenantID string, bizID uint32) {
+	if s.renderCache == nil {
+		return
+	}
+	if err := s.renderCache.InvalidateBiz(ctx, tenantID, int(bizID)); err != nil {
+		logs.Warnf("invalidate cmdb render cache failed, tenant: %s, biz: %d, err: %v", tenantID, bizID, err)
+	}
 }
 
 // SyncGSE implements istep.Step.

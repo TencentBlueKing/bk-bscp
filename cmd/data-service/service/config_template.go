@@ -684,7 +684,7 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTe
 	}
 
 	// 使用 CCTopoXMLService 获取业务对象属性（复用 cc_topo.go 中的逻辑）
-	topoService := cmdb.NewCCTopoXMLService(bizID, s.cmdb)
+	topoService := cmdb.NewCCTopoXMLServiceWithTenant(grpcKit.TenantID, bizID, s.cmdb, s.cmdbRenderCache)
 	objectAttrs, err := topoService.GetBizObjectAttributes(grpcKit.Ctx)
 	if err != nil {
 		logs.Errorf("get biz object attributes failed, err: %v, rid: %s", err, grpcKit.Rid)

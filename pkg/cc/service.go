@@ -422,6 +422,10 @@ func (s DataServiceSetting) Validate() error {
 		return err
 	}
 
+	if err := s.CMDB.validate(); err != nil {
+		return err
+	}
+
 	if err := s.TaskFramework.validate(); err != nil {
 		return err
 	}

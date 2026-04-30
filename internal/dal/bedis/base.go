@@ -24,9 +24,13 @@ import (
 
 // Set a key with value
 func (bs *bedis) Set(ctx context.Context, key string, value interface{}, ttlSeconds int) error {
+	return bs.SetWithDuration(ctx, key, value, time.Duration(ttlSeconds)*time.Second)
+}
 
+// SetWithDuration a key with value and duration ttl.
+func (bs *bedis) SetWithDuration(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	start := time.Now()
-	_, err := bs.client.Set(ctx, key, value, time.Duration(ttlSeconds)*time.Second).Result()
+	_, err := bs.client.Set(ctx, key, value, ttl).Result()
 	if err != nil {
 		bs.mc.errCounter.With(prm.Labels{"cmd": "set"}).Inc()
 		return err
@@ -110,7 +114,17 @@ func (bs *bedis) HGetWithTxnPipe(ctx context.Context, hashKey string, field stri
 
 // SetNX set a key if the key is not exist.
 func (bs *bedis) SetNX(ctx context.Context, key string, value interface{}, ttlSeconds int) (bool, error) {
-	return bs.client.SetNX(ctx, key, value, time.Duration(ttlSeconds)*time.Second).Result()
+	return bs.SetNXWithDuration(ctx, key, value, time.Duration(ttlSeconds)*time.Second)
+}
+
+// SetNXWithDuration set a key if the key is not exist with duration ttl.
+func (bs *bedis) SetNXWithDuration(ctx context.Context, key string, value interface{}, ttl time.Duration) (bool, error) {
+	return bs.client.SetNX(ctx, key, value, ttl).Result()
+}
+
+// Do runs a raw redis command.
+func (bs *bedis) Do(ctx context.Context, args ...interface{}) (interface{}, error) {
+	return bs.client.Do(ctx, args...).Result()
 }
 
 // Incr atomically increments a key and returns the new value.
@@ -208,6 +222,12 @@ func (bs *bedis) MGet(ctx context.Context, key ...string) ([]string, error) {
 
 // HSets set the hash key and kv list with a ttl.
 func (bs *bedis) HSets(ctx context.Context, hashKey string, kv map[string]string, ttlSeconds int) error {
+	return bs.HSetsWithDuration(ctx, hashKey, kv, time.Duration(ttlSeconds)*time.Second)
+}
+
+// HSetsWithDuration set the hash key and kv list with a duration ttl.
+func (bs *bedis) HSetsWithDuration(ctx context.Context,
+	hashKey string, kv map[string]string, ttl time.Duration) error {
 	if len(hashKey) == 0 || len(kv) == 0 {
 		return errors.New("invalid redis HSET args, hash key or values is empty")
 	}
@@ -220,7 +240,7 @@ func (bs *bedis) HSets(ctx context.Context, hashKey string, kv map[string]string
 		pipe.HSet(ctx, hashKey, k, v)
 	}
 	// set expire ttl.
-	pipe.Expire(ctx, hashKey, time.Duration(ttlSeconds)*time.Second)
+	pipe.Expire(ctx, hashKey, ttl)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

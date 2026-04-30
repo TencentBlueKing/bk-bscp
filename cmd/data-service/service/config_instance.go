@@ -940,7 +940,7 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 		processInstance: processInstance,
 		req:             req,
 	}
-	contextParams := render.BuildProcessContextParamsFromSource(grpcKit.Ctx, source, s.cmdb)
+	contextParams := render.BuildProcessContextParamsFromSource(grpcKit.Ctx, source, s.cmdb, s.cmdbRenderCache)
 
 	// 5. 展开 Ginclude 引用
 	templateContent := req.GetTemplateContent()
