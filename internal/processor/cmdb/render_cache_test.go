@@ -162,8 +162,32 @@ func TestDefaultRenderCacheOptionsMatchLegacyProject(t *testing.T) {
 	if options.BizGlobalVariablesTTL != 5*time.Minute {
 		t.Fatalf("biz global variables ttl = %v, want %v", options.BizGlobalVariablesTTL, 5*time.Minute)
 	}
-	if options.BuildLockTTL != 30*time.Second {
-		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 30*time.Second)
+	if options.BuildWaitTTL != 30*time.Second {
+		t.Fatalf("build wait ttl = %v, want %v", options.BuildWaitTTL, 30*time.Second)
+	}
+	if options.BuildTimeout != 5*time.Minute {
+		t.Fatalf("build timeout = %v, want %v", options.BuildTimeout, 5*time.Minute)
+	}
+	if options.BuildLockTTL != 5*time.Minute {
+		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 5*time.Minute)
+	}
+}
+
+func TestRenderCacheOptionsKeepsBuildTimeoutSeparateFromWaitTTL(t *testing.T) {
+	options := RenderCacheOptions{
+		BuildWaitTTL: 30 * time.Second,
+		BuildTimeout: 2 * time.Minute,
+		BuildLockTTL: 30 * time.Second,
+	}.withDefaults()
+
+	if options.BuildWaitTTL != 30*time.Second {
+		t.Fatalf("build wait ttl = %v, want %v", options.BuildWaitTTL, 30*time.Second)
+	}
+	if options.BuildTimeout != 2*time.Minute {
+		t.Fatalf("build timeout = %v, want %v", options.BuildTimeout, 2*time.Minute)
+	}
+	if options.BuildLockTTL != 2*time.Minute {
+		t.Fatalf("build lock ttl = %v, want %v", options.BuildLockTTL, 2*time.Minute)
 	}
 }
 
@@ -263,6 +287,7 @@ func TestRedisCMDBRenderCacheUsesDurationForBuildLockTTL(t *testing.T) {
 	store := newFakeRenderCacheStore()
 	cache := newRedisCMDBRenderCacheWithStore(store, RenderCacheOptions{
 		BuildLockTTL: 1500 * time.Millisecond,
+		BuildTimeout: 1500 * time.Millisecond,
 	})
 	ctx := context.Background()
 

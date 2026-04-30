@@ -283,10 +283,20 @@ func newCMDBRenderCacheOptions(cfg cc.CMDBRenderCacheConfig) (processorcmdb.Rend
 	if err != nil {
 		return processorcmdb.RenderCacheOptions{}, err
 	}
+	buildWaitTTL, err := cfg.BuildWaitTTLDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	buildTimeout, err := cfg.BuildTimeoutDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
 	return processorcmdb.RenderCacheOptions{
 		TopoXMLTTL:            topoXMLTTL,
 		BizGlobalVariablesTTL: bizGlobalVariablesTTL,
+		BuildWaitTTL:          buildWaitTTL,
 		BuildLockTTL:          buildLockTTL,
+		BuildTimeout:          buildTimeout,
 	}, nil
 }
 

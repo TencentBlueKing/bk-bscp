@@ -2102,7 +2102,9 @@ type CMDBConfig struct {
 type CMDBRenderCacheConfig struct {
 	TopoXMLTTL            string `yaml:"topoXmlTTL"`
 	BizGlobalVariablesTTL string `yaml:"bizGlobalVariablesTTL"`
+	BuildWaitTTL          string `yaml:"buildWaitTTL"`
 	BuildLockTTL          string `yaml:"buildLockTTL"`
+	BuildTimeout          string `yaml:"buildTimeout"`
 }
 
 // trySetDefault try set the default value of cmdb config
@@ -2124,8 +2126,19 @@ func (c *CMDBRenderCacheConfig) trySetDefault() {
 	if c.BizGlobalVariablesTTL == "" {
 		c.BizGlobalVariablesTTL = "5m"
 	}
+	buildLockTTLDefaulted := c.BuildLockTTL == ""
 	if c.BuildLockTTL == "" {
-		c.BuildLockTTL = "30s"
+		c.BuildLockTTL = "5m"
+	}
+	if c.BuildWaitTTL == "" {
+		if buildLockTTLDefaulted {
+			c.BuildWaitTTL = "30s"
+		} else {
+			c.BuildWaitTTL = c.BuildLockTTL
+		}
+	}
+	if c.BuildTimeout == "" {
+		c.BuildTimeout = "5m"
 	}
 }
 
@@ -2137,6 +2150,12 @@ func (c CMDBRenderCacheConfig) validate() error {
 		return err
 	}
 	if _, err := c.BuildLockTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BuildWaitTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BuildTimeoutDuration(); err != nil {
 		return err
 	}
 	return nil
@@ -2155,6 +2174,16 @@ func (c CMDBRenderCacheConfig) BizGlobalVariablesTTLDuration() (time.Duration, e
 // BuildLockTTLDuration parses cache build lock ttl.
 func (c CMDBRenderCacheConfig) BuildLockTTLDuration() (time.Duration, error) {
 	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildLockTTL", c.BuildLockTTL)
+}
+
+// BuildWaitTTLDuration parses cache build wait ttl.
+func (c CMDBRenderCacheConfig) BuildWaitTTLDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildWaitTTL", c.BuildWaitTTL)
+}
+
+// BuildTimeoutDuration parses cache build timeout.
+func (c CMDBRenderCacheConfig) BuildTimeoutDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildTimeout", c.BuildTimeout)
 }
 
 func parseCMDBRenderCacheDuration(name string, value string) (time.Duration, error) {

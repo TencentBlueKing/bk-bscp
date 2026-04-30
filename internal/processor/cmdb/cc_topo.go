@@ -92,7 +92,7 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s:%s", normalizeTenantID(s.tenantID),
 		s.bizID, renderCacheKindTopoXML, setEnv)
-	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildWaitTTL(s.cache),
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildTimeout(s.cache),
 		func(buildCtx context.Context) (interface{}, error) {
 			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
 				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
@@ -108,6 +108,7 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 			if !cacheReady {
 				logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
 					s.tenantID, s.bizID, setEnv)
+				return "", fmt.Errorf("wait cmdb topo xml render cache timeout")
 			}
 			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
 				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
@@ -255,7 +256,7 @@ func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv st
 }
 
 func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv string, acquiredAt time.Time) {
-	if time.Since(acquiredAt) >= cacheBuildWaitTTL(s.cache) {
+	if time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
 		return
 	}
 	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv); err != nil {
@@ -950,7 +951,7 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 
 	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s", normalizeTenantID(s.tenantID), s.bizID,
 		renderCacheKindBizGlobalVariables)
-	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildWaitTTL(s.cache),
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildTimeout(s.cache),
 		func(buildCtx context.Context) (interface{}, error) {
 			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
 				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
@@ -965,6 +966,7 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 			}
 			if !cacheReady {
 				logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
+				return nil, fmt.Errorf("wait cmdb biz global variables cache timeout")
 			}
 			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
 				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
@@ -1121,7 +1123,7 @@ func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Con
 }
 
 func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Context, acquiredAt time.Time) {
-	if time.Since(acquiredAt) >= cacheBuildWaitTTL(s.cache) {
+	if time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
 		return
 	}
 	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, ""); err != nil {
@@ -1161,9 +1163,33 @@ func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) (bo
 }
 
 func cacheBuildWaitTTL(cache RenderCache) time.Duration {
+	if provider, ok := cache.(interface{ BuildWaitTTL() time.Duration }); ok {
+		waitTTL := provider.BuildWaitTTL()
+		if waitTTL > 0 {
+			return waitTTL
+		}
+	}
+	waitTTL := cache.BuildLockTTL()
+	if waitTTL <= 0 {
+		return DefaultRenderCacheOptions().BuildWaitTTL
+	}
+	return waitTTL
+}
+
+func cacheBuildLockTTL(cache RenderCache) time.Duration {
 	waitTTL := cache.BuildLockTTL()
 	if waitTTL <= 0 {
 		return DefaultRenderCacheOptions().BuildLockTTL
 	}
 	return waitTTL
+}
+
+func cacheBuildTimeout(cache RenderCache) time.Duration {
+	if provider, ok := cache.(interface{ BuildTimeout() time.Duration }); ok {
+		timeout := provider.BuildTimeout()
+		if timeout > 0 {
+			return timeout
+		}
+	}
+	return DefaultRenderCacheOptions().BuildTimeout
 }

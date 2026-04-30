@@ -14,9 +14,52 @@ package cc
 
 import (
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+func TestCMDBRenderCacheDefaultDurations(t *testing.T) {
+	var conf CMDBRenderCacheConfig
+	conf.trySetDefault()
+
+	if got, err := conf.BuildWaitTTLDuration(); err != nil || got != 30*time.Second {
+		t.Fatalf("build wait ttl = %v, err: %v, want %v", got, err, 30*time.Second)
+	}
+	if got, err := conf.BuildTimeoutDuration(); err != nil || got != 5*time.Minute {
+		t.Fatalf("build timeout = %v, err: %v, want %v", got, err, 5*time.Minute)
+	}
+	if got, err := conf.BuildLockTTLDuration(); err != nil || got != 5*time.Minute {
+		t.Fatalf("build lock ttl = %v, err: %v, want %v", got, err, 5*time.Minute)
+	}
+}
+
+func TestCMDBRenderCacheDefaultWaitTTLKeepsConfiguredLockCompatibility(t *testing.T) {
+	var conf CMDBRenderCacheConfig
+	if err := yaml.Unmarshal([]byte("buildLockTTL: 45s\n"), &conf); err != nil {
+		t.Fatalf("unmarshal render cache config failed: %v", err)
+	}
+	conf.trySetDefault()
+
+	if got, err := conf.BuildWaitTTLDuration(); err != nil || got != 45*time.Second {
+		t.Fatalf("build wait ttl = %v, err: %v, want %v", got, err, 45*time.Second)
+	}
+}
+
+func TestCMDBRenderCacheBuildTimeoutCanBeConfiguredSeparately(t *testing.T) {
+	var conf CMDBRenderCacheConfig
+	if err := yaml.Unmarshal([]byte("buildWaitTTL: 10s\nbuildTimeout: 2m\nbuildLockTTL: 2m\n"), &conf); err != nil {
+		t.Fatalf("unmarshal render cache config failed: %v", err)
+	}
+	conf.trySetDefault()
+
+	if got, err := conf.BuildWaitTTLDuration(); err != nil || got != 10*time.Second {
+		t.Fatalf("build wait ttl = %v, err: %v, want %v", got, err, 10*time.Second)
+	}
+	if got, err := conf.BuildTimeoutDuration(); err != nil || got != 2*time.Minute {
+		t.Fatalf("build timeout = %v, err: %v, want %v", got, err, 2*time.Minute)
+	}
+}
 
 func TestWatchCmdbResourceDefaultDisabled(t *testing.T) {
 	var conf CrontabConfig

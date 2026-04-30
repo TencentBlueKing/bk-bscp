@@ -42,15 +42,19 @@ type RenderCache interface {
 type RenderCacheOptions struct {
 	TopoXMLTTL            time.Duration
 	BizGlobalVariablesTTL time.Duration
+	BuildWaitTTL          time.Duration
 	BuildLockTTL          time.Duration
+	BuildTimeout          time.Duration
 }
 
-// DefaultRenderCacheOptions returns production defaults compatible with the old project.
+// DefaultRenderCacheOptions returns production defaults for CMDB render cache.
 func DefaultRenderCacheOptions() RenderCacheOptions {
 	return RenderCacheOptions{
 		TopoXMLTTL:            time.Hour,
 		BizGlobalVariablesTTL: 5 * time.Minute,
-		BuildLockTTL:          30 * time.Second,
+		BuildWaitTTL:          30 * time.Second,
+		BuildLockTTL:          5 * time.Minute,
+		BuildTimeout:          5 * time.Minute,
 	}
 }
 
@@ -62,8 +66,17 @@ func (o RenderCacheOptions) withDefaults() RenderCacheOptions {
 	if o.BizGlobalVariablesTTL <= 0 {
 		o.BizGlobalVariablesTTL = defaults.BizGlobalVariablesTTL
 	}
+	if o.BuildWaitTTL <= 0 {
+		o.BuildWaitTTL = defaults.BuildWaitTTL
+	}
+	if o.BuildTimeout <= 0 {
+		o.BuildTimeout = defaults.BuildTimeout
+	}
 	if o.BuildLockTTL <= 0 {
 		o.BuildLockTTL = defaults.BuildLockTTL
+	}
+	if o.BuildLockTTL < o.BuildTimeout {
+		o.BuildLockTTL = o.BuildTimeout
 	}
 	return o
 }
@@ -263,6 +276,20 @@ func (c *RedisCMDBRenderCache) BuildLockTTL() time.Duration {
 		return 0
 	}
 	return c.options.BuildLockTTL
+}
+
+func (c *RedisCMDBRenderCache) BuildWaitTTL() time.Duration {
+	if c == nil {
+		return 0
+	}
+	return c.options.BuildWaitTTL
+}
+
+func (c *RedisCMDBRenderCache) BuildTimeout() time.Duration {
+	if c == nil {
+		return 0
+	}
+	return c.options.BuildTimeout
 }
 
 func (c *RedisCMDBRenderCache) topoXMLKey(tenantID string, bizID int) string {

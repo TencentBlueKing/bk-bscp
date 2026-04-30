@@ -164,11 +164,80 @@ func (c ttlRenderCache) BuildLockTTL() time.Duration {
 	return c.ttl
 }
 
+type lockedRenderCache struct {
+	RenderCache
+	buildLockTTL time.Duration
+	buildWaitTTL time.Duration
+	buildTimeout time.Duration
+}
+
+func (c lockedRenderCache) GetTopoXML(_ context.Context, _ string, _ int, _ string) (string, bool) {
+	return "", false
+}
+
+func (c lockedRenderCache) SetTopoXML(_ context.Context, _ string, _ int, _ string, _ string) {
+}
+
+func (c lockedRenderCache) GetBizObjectAttributes(
+	_ context.Context, _ string, _ int) (map[string][]ObjectAttribute, bool) {
+	return nil, false
+}
+
+func (c lockedRenderCache) SetBizObjectAttributes(_ context.Context, _ string, _ int, _ map[string][]ObjectAttribute) {
+}
+
+func (c lockedRenderCache) InvalidateBiz(_ context.Context, _ string, _ int) error {
+	return nil
+}
+
+func (c lockedRenderCache) AcquireBuildLock(_ context.Context, _ string, _ int, _ string, _ string) (bool, error) {
+	return false, nil
+}
+
+func (c lockedRenderCache) ReleaseBuildLock(_ context.Context, _ string, _ int, _ string, _ string) error {
+	return nil
+}
+
+func (c lockedRenderCache) BuildLockTTL() time.Duration {
+	return c.buildLockTTL
+}
+
+func (c lockedRenderCache) BuildWaitTTL() time.Duration {
+	return c.buildWaitTTL
+}
+
+func (c lockedRenderCache) BuildTimeout() time.Duration {
+	return c.buildTimeout
+}
+
 func TestCacheBuildWaitTTLHonorsConfiguredLockTTL(t *testing.T) {
 	const configuredTTL = 30 * time.Second
 
 	if got := cacheBuildWaitTTL(ttlRenderCache{ttl: configuredTTL}); got != configuredTTL {
 		t.Fatalf("cacheBuildWaitTTL = %v, want %v", got, configuredTTL)
+	}
+}
+
+func TestCCTopoXMLService_WaitTimeoutDoesNotBuildWithoutLock(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	cache := lockedRenderCache{
+		buildLockTTL: 200 * time.Millisecond,
+		buildWaitTTL: 30 * time.Millisecond,
+		buildTimeout: 200 * time.Millisecond,
+	}
+	mockSvc := newCountingObjectAttrCMDB()
+	svc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, mockSvc, cache)
+
+	if _, err := svc.GetBizObjectAttributes(context.Background()); err == nil {
+		t.Fatal("GetBizObjectAttributes should fail when waiting for existing builder times out")
+	}
+	for _, objID := range []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID} {
+		if got := mockSvc.callCount(objID); got != 0 {
+			t.Fatalf("SearchObjectAttr for %s called %d times, want 0", objID, got)
+		}
 	}
 }
 
