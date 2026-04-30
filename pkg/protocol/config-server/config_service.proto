@@ -91,9 +91,7 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/list/app/app/biz_id/{biz_id}"
       body: "*"
-      additional_bindings {
-        get: "/api/v1/config/list/app/app/biz_id/{biz_id}"
-      }
+      additional_bindings { get: "/api/v1/config/list/app/app/biz_id/{biz_id}" }
     };
   }
   // 克隆服务
