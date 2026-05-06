@@ -132,7 +132,7 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 // BizTopo implements pbds.DataServer.
 func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizTopoResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
-	// 1. 查询业务实例拓扑 search_biz_inst_topo
+	// 1. 查询业务拓扑简要信息
 	topo, err := s.cmdb.FindTopoBrief(grpcKit.Ctx, int(req.GetBizId()))
 	if err != nil {
 		return nil, err
@@ -141,135 +141,98 @@ func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizT
 		return nil, fmt.Errorf("empty topo nodes")
 	}
 
-	// 2. 转换为 pb 结构
-	pbTopo := pbct.ConvertTopoBriefNodes(topo.Nodes)
-
-	// 3. 获取模板ID并回填到拓扑树中
-	err = s.fillServiceTemplateIDToTopo(grpcKit.Ctx, pbTopo, int(req.GetBizId()))
+	// 2. 查询表获取进程数并回填到拓扑树中
+	topoNodes, err := s.enrichTopoNodes(grpcKit, int(req.GetBizId()), topo.Nodes)
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. 查询表获取进程数并回填到拓扑树中
-	if err := s.fillProcessCount(grpcKit, int(req.GetBizId()), pbTopo); err != nil {
-		return nil, err
-	}
-
 	return &pbds.BizTopoResp{
-		BizTopoNodes: pbTopo,
+		BizTopoNodes: topoNodes,
 	}, nil
 }
 
-func (s *Service) fillProcessCount(kit *kit.Kit, bizID int, topo []*pbct.BizTopoNode) error {
+func (s *Service) enrichTopoNodes(kit *kit.Kit, bizID int, nodes []*bkcmdb.TopoBriefNode) (
+	[]*pbct.BizTopoNode, error) {
+	topo := pbct.ConvertTopoBriefNodes(nodes)
+	// 收集所有 ModuleID
+	var modIDs []int
+	s.traverseTopo(nodes, func(node *bkcmdb.TopoBriefNode) {
+		if node.Obj == constant.BK_MODULE_OBJ_ID {
+			modIDs = append(modIDs, node.ID)
+		}
+	})
+
+	if len(modIDs) == 0 {
+		return nil, fmt.Errorf("no valid module IDs found")
+	}
+
+	// 查询模块详情
+	modDetails, err := s.fetchAllModuleDetails(kit.Ctx, bizID, modIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 模块id -> 模板id 映射关系
+	modInfoMap := make(map[uint32]uint32)
+	for _, m := range modDetails {
+		modInfoMap[uint32(m.BkModuleID)] = uint32(m.ServiceTemplateID)
+	}
+
+	// 模块下服务模板的进程数
+	process, _, err := s.dao.Process().List(kit, uint32(bizID), nil, &types.BasePage{All: true})
+	if err != nil {
+		return nil, err
+	}
+
+	modCountMap := make(map[uint32]uint32)
+	processTemplateIDs := map[uint32][]uint32{} // 模块ID -> 进程模板ID列表
+	for _, v := range process {
+		modCountMap[v.Attachment.ModuleID]++
+		if v.Attachment.ProcessTemplateID != 0 {
+			processTemplateIDs[v.Attachment.ModuleID] = append(processTemplateIDs[v.Attachment.ModuleID],
+				v.Attachment.ProcessTemplateID)
+		}
+	}
+
+	// 回填所有数据并聚合 Set 计数
 	for _, set := range topo {
 		var setTotal uint32
 		for _, module := range set.Child {
 			if module.BkObjId != constant.BK_MODULE_OBJ_ID {
 				continue
 			}
-			var (
-				cnt int64
-				err error
-			)
 
-			// 情况 1：模板模块（使用服务模板统计）
-			if module.ServiceTemplateId != 0 {
-				cnt, err = s.dao.Process().ProcessCountByServiceTemplate(kit, uint32(bizID), module.ServiceTemplateId)
-				if err != nil {
-					return err
-				}
-				module.ProcessCount = uint32(cnt)
-				setTotal += uint32(cnt)
-				continue
+			// 1. 回填模板ID
+			if id, ok := modInfoMap[module.BkInstId]; ok {
+				module.ServiceTemplateId = id
 			}
 
-			// 普通模块（使用 ServiceInstance → ProcessInstance）
-			svcInsts, err := s.processCountByServiceInstance(kit, bizID, int(module.BkInstId))
-			if err != nil {
-				return err
+			// 2. 回填进程数
+			if count, ok := modCountMap[module.BkInstId]; ok {
+				module.ProcessCount = count
 			}
 
-			// 累加每个 ServiceInstanceInfo.ProcessCount
-			mTotal := uint32(0)
-			for _, inst := range svcInsts {
-				mTotal += inst.ProcessCount
+			// 3. 回填进程模块ID
+			if ids, ok := processTemplateIDs[module.BkInstId]; ok {
+				module.ProcessTemplateIds = ids
 			}
 
-			module.ProcessCount = mTotal
-			setTotal += mTotal
+			setTotal += module.ProcessCount
 		}
-
-		// set 层聚合模块进程数
 		set.ProcessCount = setTotal
 	}
 
-	return nil
+	return topo, nil
 }
 
-// fillServiceTemplateIDToTopo 在业务拓扑树中回填 service_template_id
-func (s *Service) fillServiceTemplateIDToTopo(ctx context.Context, topo []*pbct.BizTopoNode, bizID int) error {
-
-	// 1. 获取所有 module 节点
-	modules := listTargetObjNodeFromTopo(topo, constant.BK_MODULE_OBJ_ID)
-
-	if len(modules) == 0 {
-		return nil
-	}
-
-	// 2. 提取 module ID 列表（去重）
-	modIDSet := make(map[int]struct{})
-	for _, m := range modules {
-		modIDSet[int(m.BkInstId)] = struct{}{}
-	}
-	modIDs := make([]int, 0, len(modIDSet))
-	for id := range modIDSet {
-		modIDs = append(modIDs, id)
-	}
-
-	// 3. 批量查询模块详情 find_module_batch
-	modDetailResp, err := s.fetchAllModuleDetails(ctx, bizID, modIDs)
-	if err != nil {
-		return fmt.Errorf("find module batch failed: %w", err)
-	}
-
-	// // 4. 构建 map[module_id]service_template_id
-	modIDToServTplID := make(map[int]int)
-	for _, md := range modDetailResp {
-		modIDToServTplID[md.BkModuleID] = md.ServiceTemplateID
-	}
-
-	// 5. 回填 service_template_id 到拓扑树中
-	fillServiceTemplateIDs(topo, modIDToServTplID)
-
-	return nil
-}
-
-// fillServiceTemplateIDs 回填 service_template_id 到拓扑树中
-func fillServiceTemplateIDs(topo []*pbct.BizTopoNode, modIDToServTplID map[int]int) {
-	for _, set := range topo {
-		for _, module := range set.Child {
-			if module.BkObjId == constant.BK_MODULE_OBJ_ID {
-				if tplID, ok := modIDToServTplID[int(module.BkInstId)]; ok {
-					module.ServiceTemplateId = uint32(tplID)
-				}
-			}
+// 统一遍历逻辑，减少重复代码
+func (s *Service) traverseTopo(nodes []*bkcmdb.TopoBriefNode, fn func(node *bkcmdb.TopoBriefNode)) {
+	for _, node := range nodes {
+		for _, module := range node.Nodes {
+			fn(module)
 		}
 	}
-}
-
-// listTargetObjNodeFromTopo 从 topo 树中提取指定类型的节点，例如 module
-func listTargetObjNodeFromTopo(topo []*pbct.BizTopoNode, targetObj string) []*pbct.BizTopoNode {
-	modules := make([]*pbct.BizTopoNode, 0)
-
-	for _, set := range topo {
-		for _, module := range set.Child {
-			if module.BkObjId == targetObj {
-				modules = append(modules, module)
-			}
-		}
-	}
-
-	return modules
 }
 
 // fetchAllModuleDetails 由于cmdb限制一次查询模块详情的数量，故此处做批量查询
@@ -585,19 +548,32 @@ func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplate
 		return nil, err
 	}
 
-	processesCount := map[int]uint32{}
+	// 收集所有模板 ID，批量查询进程数
+	var tplIDs []uint32
 	for _, v := range resp {
 		if v.ID != 0 {
-			cnt, err := s.dao.Process().ProcessCountByServiceTemplate(grpcKit, req.GetBizId(), uint32(v.ID))
-			if err != nil {
-				return nil, err
+			tplIDs = append(tplIDs, uint32(v.ID))
+		}
+	}
+
+	modCountMap := make(map[uint32]uint32)
+	processTemplateIDs := map[uint32][]uint32{} // 服务模板ID -> 进程模板ID列表
+	if len(tplIDs) > 0 {
+		process, err := s.dao.Process().BatchProcessByServiceTemplates(grpcKit, req.GetBizId(), tplIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range process {
+			modCountMap[v.Attachment.ServiceTemplateID]++
+			if v.Attachment.ProcessTemplateID != 0 {
+				processTemplateIDs[v.Attachment.ServiceTemplateID] = append(processTemplateIDs[v.Attachment.ServiceTemplateID],
+					v.Attachment.ProcessTemplateID)
 			}
-			processesCount[v.ID] = uint32(cnt)
 		}
 	}
 
 	return &pbds.ServiceTemplateResp{
-		ServiceTemplates: pbct.ConvertServiceTemplates(resp, processesCount),
+		ServiceTemplates: pbct.ConvertServiceTemplates(resp, modCountMap, processTemplateIDs),
 	}, nil
 }
 
@@ -608,6 +584,12 @@ func (s *Service) ProcessTemplate(ctx context.Context, req *pbds.ProcessTemplate
 	resp, err := s.cmdb.ListProcTemplate(grpcKit.Ctx, &bkcmdb.ListProcTemplateReq{
 		BkBizID:           int(req.GetBizId()),
 		ServiceTemplateID: int(req.GetServiceTemplateId()),
+		ProcessTemplateIDs: func() []uint32 {
+			if ids := req.GetProcessTemplateIds(); len(ids) > 0 {
+				return ids
+			}
+			return []uint32{0}
+		}(),
 	})
 	if err != nil {
 		return nil, err
@@ -645,12 +627,19 @@ func (s *Service) processCountByServiceInstance(kit *kit.Kit, bizID, moduleID in
 
 	svcInsts := pbct.ConvertServiceInstances(svcInstances.Info)
 
-	for _, inst := range svcInsts {
-		count, err := s.dao.Process().ProcessCountByServiceInstance(kit, uint32(bizID), uint32(inst.Id))
+	// 批量查询所有服务实例的进程数
+	if len(svcInsts) > 0 {
+		var instIDs []uint32
+		for _, inst := range svcInsts {
+			instIDs = append(instIDs, uint32(inst.Id))
+		}
+		counts, err := s.dao.Process().BatchProcessCountByServiceInstances(kit, uint32(bizID), instIDs)
 		if err != nil {
 			return nil, err
 		}
-		inst.ProcessCount = uint32(count)
+		for _, inst := range svcInsts {
+			inst.ProcessCount = counts[uint32(inst.Id)]
+		}
 	}
 
 	return svcInsts, nil

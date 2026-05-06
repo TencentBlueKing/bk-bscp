@@ -1623,7 +1623,8 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   // 根据服务模板查询模板进程列表
   rpc ProcessTemplate(ProcessTemplateReq) returns (ProcessTemplateResp) {
     option (google.api.http) = {
-      get: "/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"
+      post: "/api/v1/config/biz_id/{biz_id}/process_template/{service_template_id}"
+      body: "*"
     };
   }
   // 配置实例列表
@@ -4889,6 +4890,8 @@ message ProcessTemplateReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 service_template_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务模板ID" }];
+  repeated uint32 process_template_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID列表" }];
 }
 
 message ProcessTemplateResp {

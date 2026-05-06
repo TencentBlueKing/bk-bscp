@@ -58,8 +58,6 @@ type Process interface {
 	GetByHostIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, hostID uint32) ([]uint32, error)
 	// GetBySetIDWithTx queries all process IDs under a set.
 	GetBySetIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, setID uint32) ([]uint32, error)
-	ProcessCountByServiceInstance(kit *kit.Kit, bizID, serviceInstanceID uint32) (int64, error)
-	ProcessCountByServiceTemplate(kit *kit.Kit, bizID, serviceTemplateID uint32) (int64, error)
 	// GetByOperateRange 根据操作范围查询进程
 	GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error)
 	// GetByCcProcessIDAndAliasTx 查找同 CcProcessID + 同新别名
@@ -76,6 +74,11 @@ type Process interface {
 	UpdateSyncStatusAndAliasTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Process) error
 	// GetByIDWithTx get client by id.
 	GetByIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) (*table.Process, error)
+	// BatchProcessCountByServiceInstances 根据服务实例 ID 列表，批量统计进程数
+	BatchProcessCountByServiceInstances(kit *kit.Kit, bizID uint32, instIDs []uint32) (map[uint32]uint32, error)
+	// BatchProcessByServiceTemplates 根据服务模板 ID 列表，批量查询进程
+	BatchProcessByServiceTemplates(kit *kit.Kit, bizID uint32, tplIDs []uint32) ([]*table.Process, error)
+	CountGroupByModuleID(kit *kit.Kit, bizID uint32) (map[uint32]uint32, error)
 }
 
 var _ Process = new(processDao)
@@ -84,6 +87,74 @@ type processDao struct {
 	genQ     *gen.Query
 	idGen    IDGenInterface
 	auditDao AuditDao
+}
+
+// CountGroupByModuleID implements [Process].
+func (dao *processDao) CountGroupByModuleID(kit *kit.Kit, bizID uint32) (map[uint32]uint32, error) {
+
+	m := dao.genQ.Process
+	type rowResult struct {
+		ModuleID uint32
+		Cnt      uint32
+	}
+	var results []rowResult
+
+	err := dao.genQ.Process.WithContext(kit.Ctx).
+		Select(m.ModuleID, m.ID.Count().As("cnt")).
+		Where(m.BizID.Eq(bizID), m.CcSyncStatus.Neq(table.Deleted.String())).
+		Group(m.ModuleID).
+		Scan(&results)
+	if err != nil {
+		return nil, err
+	}
+
+	countMap := make(map[uint32]uint32, len(results))
+	for _, r := range results {
+		countMap[r.ModuleID] = r.Cnt
+	}
+	return countMap, nil
+}
+
+// BatchProcessByServiceTemplates 根据服务模板 ID 列表，批量查询进程
+func (dao *processDao) BatchProcessByServiceTemplates(kit *kit.Kit, bizID uint32,
+	tplIDs []uint32) ([]*table.Process, error) {
+
+	m := dao.genQ.Process
+
+	return dao.genQ.Process.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ServiceTemplateID.In(tplIDs...), m.CcSyncStatus.Neq(table.Deleted.String())).Find()
+}
+
+// BatchProcessCountByServiceInstances 批量统计多个服务实例下的进程数
+func (dao *processDao) BatchProcessCountByServiceInstances(kit *kit.Kit, bizID uint32,
+	instIDs []uint32) (map[uint32]uint32, error) {
+
+	if len(instIDs) == 0 {
+		return map[uint32]uint32{}, nil
+	}
+
+	m := dao.genQ.Process
+	type rowResult struct {
+		ServiceInstanceID uint32
+		Cnt               uint32
+	}
+	var results []rowResult
+
+	err := dao.genQ.Process.WithContext(kit.Ctx).
+		Select(m.ServiceInstanceID, m.ID.Count().As("cnt")).
+		Where(m.BizID.Eq(bizID), m.ServiceInstanceID.In(instIDs...),
+			m.CcSyncStatus.Neq(table.Deleted.String())).
+		Group(m.ServiceInstanceID).
+		Scan(&results)
+	if err != nil {
+		return nil, err
+	}
+
+	countMap := make(map[uint32]uint32, len(results))
+	for _, r := range results {
+		countMap[r.ServiceInstanceID] = r.Cnt
+	}
+	return countMap, nil
 }
 
 // GetByIDWithTx implements [Process].
