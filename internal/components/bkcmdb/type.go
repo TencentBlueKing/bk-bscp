@@ -343,9 +343,9 @@ type PropertyField struct {
 
 // ListProcTemplateReq xxx
 type ListProcTemplateReq struct {
-	BkBizID           int `json:"bk_biz_id"`           // 业务ID
-	ServiceTemplateID int `json:"service_template_id"` // 服务模板ID，service_template_id和process_template_ids至少传一个
-	ProcessTemplateID int `json:"process_template_id"` // 进程模板ID数组，最多200个，service_template_id和process_template_ids至少传一个
+	BkBizID            int      `json:"bk_biz_id"`            // 业务ID
+	ServiceTemplateID  int      `json:"service_template_id"`  // 服务模板ID，service_template_id和process_template_ids至少传一个
+	ProcessTemplateIDs []uint32 `json:"process_template_ids"` // 进程模板ID数组，最多200个，service_template_id和process_template_ids至少传一个
 }
 
 type ListProcTemplateResp struct {
