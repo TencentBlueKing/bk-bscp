@@ -9861,7 +9861,7 @@
       }
     },
     "/api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}": {
-      "get": {
+      "post": {
         "summary": "根据服务模板查询模板进程列表",
         "operationId": "Config_ProcessTemplate",
         "responses": {
@@ -9894,6 +9894,14 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigProcessTemplateBody"
+            }
           }
         ],
         "tags": [
@@ -13283,6 +13291,19 @@
           "type": "integer",
           "format": "int64",
           "description": "模块下的递增ID序号(未提供则默认渲染序列号最小的实例)"
+        }
+      }
+    },
+    "ConfigProcessTemplateBody": {
+      "type": "object",
+      "properties": {
+        "processTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "进程模板ID列表"
         }
       }
     },
@@ -19243,6 +19264,14 @@
           "type": "integer",
           "format": "int64",
           "title": "进程数量"
+        },
+        "processTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": "进程模板ID列表"
         }
       },
       "title": "BizTopoNode 业务拓扑节点信息"
@@ -19454,6 +19483,14 @@
           "type": "integer",
           "format": "int64",
           "title": "进程数量"
+        },
+        "processTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": "进程模板ID列表"
         }
       },
       "title": "ServiceTemplate 服务模板信息"
@@ -21365,6 +21402,9 @@
         },
         "revision": {
           "$ref": "#/definitions/pbbaseCreatedRevision"
+        },
+        "isProcBound": {
+          "type": "boolean"
         }
       },
       "title": "Template source resource reference: pkg/dal/table/template_revision.go"

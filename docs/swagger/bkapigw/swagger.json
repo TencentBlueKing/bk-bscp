@@ -1237,7 +1237,7 @@
       }
     },
     "/api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}": {
-      "get": {
+      "post": {
         "tags": [
           "Config"
         ],
@@ -1259,6 +1259,14 @@
             "name": "serviceTemplateId",
             "in": "path",
             "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigProcessTemplateBody"
+            }
           }
         ],
         "responses": {
@@ -2085,6 +2093,19 @@
         },
         "processInstanceIds": {
           "description": "进程实例ID",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    "ConfigProcessTemplateBody": {
+      "type": "object",
+      "properties": {
+        "processTemplateIds": {
+          "description": "进程模板ID列表",
           "type": "array",
           "items": {
             "type": "integer",
@@ -2963,6 +2984,14 @@
           "format": "int64",
           "title": "进程数量"
         },
+        "processTemplateIds": {
+          "type": "array",
+          "title": "进程模板ID列表",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
         "serviceTemplateId": {
           "type": "integer",
           "format": "int64",
@@ -3178,6 +3207,14 @@
           "type": "integer",
           "format": "int64",
           "title": "进程数量"
+        },
+        "processTemplateIds": {
+          "type": "array",
+          "title": "进程模板ID列表",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       }
     },

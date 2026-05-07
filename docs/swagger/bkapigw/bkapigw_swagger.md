@@ -36,7 +36,7 @@
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance/{serviceInstanceId} | [Config_ProcessInstance](#config-process-instance) | 根据服务实例查询实例进程列表 |
-| GET | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
+| POST | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig](#config-push-config) | 配置下发 |
 | GET | /api/v1/config/biz_id/{bizId}/service_instance/{moduleId} | [Config_ServiceInstance](#config-service-instance) | 根据模块获取服务实例列表 |
@@ -1196,7 +1196,7 @@ Content-Type: application/json
 ### <span id="config-process-template"></span> 根据服务模板查询模板进程列表 (*Config_ProcessTemplate*)
 
 ```
-GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}
+POST /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}
 ```
 
 #### 输入参数
@@ -1205,6 +1205,7 @@ GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}
 |------|--------|------|---------|
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | serviceTemplateId | int64 (formatted integer) | ✓ | 服务模板ID |
+| processTemplateIds | []int64 (formatted integer) |  | 进程模板ID列表 |
 
 #### 输出参数
 
@@ -1214,10 +1215,14 @@ GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId}
 #### 输入示例
 
 ```bash
-GET /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} HTTP/1.1
+POST /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} HTTP/1.1
 Content-Type: application/json
 
-
+{
+  "processTemplateIds": [
+    {}
+  ]
+}
 ```
 
 #### 输出示例
@@ -1967,6 +1972,21 @@ Content-Type: application/json
 | operateType | string| `string` |  | | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete |  |
 | processIds | []int64 (formatted integer)| `[]int64` |  | | 进程ID |  |
 | processInstanceIds | []int64 (formatted integer)| `[]int64` |  | | 进程实例ID |  |
+
+
+
+### <span id="config-process-template-body"></span> ConfigProcessTemplateBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| processTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 进程模板ID列表 |  |
 
 
 
@@ -2739,6 +2759,7 @@ Content-Type: application/json
 | child | \[\][interface{}](#interface)| `[]interface{}` |  | |  |  |
 | default | int64 (formatted integer)| `int64` |  | |  |  |
 | processCount | int64 (formatted integer)| `int64` |  | |  |  |
+| processTemplateIds | []int64 (formatted integer)| `[]int64` |  | |  |  |
 | serviceTemplateId | int64 (formatted integer)| `int64` |  | |  |  |
 
 
@@ -2917,6 +2938,7 @@ Content-Type: application/json
 | id | int64 (formatted integer)| `int64` |  | |  |  |
 | name | string| `string` |  | |  |  |
 | processCount | int64 (formatted integer)| `int64` |  | |  |  |
+| processTemplateIds | []int64 (formatted integer)| `[]int64` |  | |  |  |
 
 
 
