@@ -19,7 +19,7 @@
         @deselect="handleRemoveTemplate"
         @tag-remove="handleRemoveTemplate"
         @clear="emits('clearTemplate')">
-        <bk-option v-for="item in templateList" :id="item.id" :key="item.id" :name="item.spec.name" />
+        <bk-option v-for="item in templateList" :id="item.id" :key="item.id" :name="item.spec.template_name" />
       </bk-select>
     </div>
   </div>

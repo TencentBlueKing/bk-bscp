@@ -28,7 +28,6 @@
         :config-template-id="configTemplateId"
         :list="versionList"
         :pagination="pagination"
-        :is-associated="isAssociated"
         :is-search-empty="isSearchEmpty"
         @page-value-change="pagination.current = $event"
         @page-limit-change="handlePageLimitChange"
@@ -46,7 +45,6 @@
         :pagination="pagination"
         :type="versionDetailModeData.type"
         :version-id="versionDetailModeData.id"
-        :is-associated="isAssociated"
         @created="handleCreatedVersion"
         @close="versionDetailModeData.open = false"
         @select="handleOpenDetailTable($event, 'view')" />
@@ -92,7 +90,7 @@
   const { pagination, updatePagination } = useTablePagination('templateVersionManage');
   const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const configTemplateStore = useConfigTemplateStore();
-  const { createVerson, isAssociated } = storeToRefs(configTemplateStore);
+  const { createVerson } = storeToRefs(configTemplateStore);
 
   const route = useRoute();
   const router = useRouter();

@@ -15,6 +15,7 @@ message TemplateRevision {
   TemplateRevisionSpec spec = 2;
   TemplateRevisionAttachment attachment = 3;
   pbbase.CreatedRevision revision = 4;
+  bool is_proc_bound = 5;
 }
 
 // TemplateRevisionSpec source resource reference: pkg/dal/table/template_revision.go

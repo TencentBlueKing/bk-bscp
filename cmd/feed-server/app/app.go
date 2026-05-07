@@ -31,6 +31,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/feed-server/service"
+	componentratelimit "github.com/TencentBlueKing/bk-bscp/internal/components/ratelimit"
 	"github.com/TencentBlueKing/bk-bscp/internal/ratelimiter"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
@@ -92,6 +93,10 @@ func (fs *feedServer) prepare(opt *options.Option) error {
 	// init metrics
 	metrics.InitMetrics(net.JoinHostPort(cc.FeedServer().Network.BindIP,
 		strconv.Itoa(int(cc.FeedServer().Network.RpcPort))))
+
+	if err := componentratelimit.Setup(cc.FeedServerName); err != nil {
+		return fmt.Errorf("setup component rate limit failed, err: %v", err)
+	}
 
 	etcdOpt, err := cc.FeedServer().Service.Etcd.ToConfig()
 	if err != nil {

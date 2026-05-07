@@ -36,10 +36,12 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
+	componentratelimit "github.com/TencentBlueKing/bk-bscp/internal/components/ratelimit"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/bedis"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
+	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/brpc"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
@@ -96,19 +98,20 @@ func Run(opt *options.Option) error {
 }
 
 type dataService struct {
-	serve       *grpc.Server
-	gwServe     *http.Server
-	service     *service.Service
-	sd          serviced.Service
-	daoSet      dao.Set
-	vault       vault.Set
-	esb         client.Client
-	spaceMgr    *space.Manager
-	repo        repository.Provider
-	ssd         serviced.ServiceDiscover
-	taskManager *task.TaskManager
-	cmdb        bkcmdb.Service
-	gseSvc      *gse.Service
+	serve           *grpc.Server
+	gwServe         *http.Server
+	service         *service.Service
+	sd              serviced.Service
+	daoSet          dao.Set
+	vault           vault.Set
+	esb             client.Client
+	spaceMgr        *space.Manager
+	repo            repository.Provider
+	ssd             serviced.ServiceDiscover
+	taskManager     *task.TaskManager
+	cmdb            bkcmdb.Service
+	cmdbRenderCache processorcmdb.RenderCache
+	gseSvc          *gse.Service
 }
 
 // prepare do prepare jobs before run data service.
@@ -126,6 +129,10 @@ func (ds *dataService) prepare(opt *options.Option) error {
 	// init metrics
 	metrics.InitMetrics(net.JoinHostPort(cc.DataService().Network.BindIP,
 		strconv.Itoa(int(cc.DataService().Network.RpcPort))))
+
+	if err := componentratelimit.Setup(cc.DataServiceName); err != nil {
+		return fmt.Errorf("setup component rate limit failed, err: %v", err)
+	}
 
 	etcdOpt, err := cc.DataService().Service.Etcd.ToConfig()
 	if err != nil {
@@ -235,8 +242,13 @@ func (ds *dataService) initTaskManager() error {
 	if err != nil {
 		return fmt.Errorf("new redis cluster failed, err: %v", err)
 	}
+	renderCacheOptions, err := newCMDBRenderCacheOptions(cc.DataService().CMDB.RenderCache)
+	if err != nil {
+		return err
+	}
+	ds.cmdbRenderCache = processorcmdb.NewRedisCMDBRenderCache(bds, renderCacheOptions)
 	redLock := lock.NewRedisLock(bds, 60)
-	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock, pm)
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock, pm, ds.cmdbRenderCache)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),
@@ -256,6 +268,36 @@ func (ds *dataService) initTaskManager() error {
 		}
 	}()
 	return nil
+}
+
+func newCMDBRenderCacheOptions(cfg cc.CMDBRenderCacheConfig) (processorcmdb.RenderCacheOptions, error) {
+	topoXMLTTL, err := cfg.TopoXMLTTLDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	bizGlobalVariablesTTL, err := cfg.BizGlobalVariablesTTLDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	buildLockTTL, err := cfg.BuildLockTTLDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	buildWaitTTL, err := cfg.BuildWaitTTLDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	buildTimeout, err := cfg.BuildTimeoutDuration()
+	if err != nil {
+		return processorcmdb.RenderCacheOptions{}, err
+	}
+	return processorcmdb.RenderCacheOptions{
+		TopoXMLTTL:            topoXMLTTL,
+		BizGlobalVariablesTTL: bizGlobalVariablesTTL,
+		BuildWaitTTL:          buildWaitTTL,
+		BuildLockTTL:          buildLockTTL,
+		BuildTimeout:          buildTimeout,
+	}, nil
 }
 
 func initVault() (vault.Set, error) {
@@ -316,7 +358,9 @@ func (ds *dataService) listenAndServe() error {
 	}
 
 	serve := grpc.NewServer(opts...)
-	svc, err := service.NewService(ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb, ds.taskManager, ds.gseSvc)
+	svc, err := service.NewService(
+		ds.sd, ds.ssd, ds.daoSet, ds.vault, ds.esb, ds.repo, ds.cmdb, ds.taskManager, ds.gseSvc, ds.cmdbRenderCache,
+	)
 	if err != nil {
 		return err
 	}
@@ -550,8 +594,10 @@ func (ds *dataService) startCronTasks() {
 	}
 
 	// 监听cmdb资源变化
-	watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager)
-	watchCmdb.Run()
+	if crontabConfig.WatchCmdbResource.Enabled {
+		watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager)
+		watchCmdb.Run()
+	}
 
 	// 初始化ITSM模板[只有v4版本才需要]
 	if cc.DataService().ITSM.EnableV4 {

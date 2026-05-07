@@ -72,22 +72,23 @@ message ConfigTemplateAttachment {
 
 // BizTopoNode 业务拓扑节点信息
 message BizTopoNode {
-  uint32 bk_inst_id = 1;           // 实例ID
-  string bk_inst_name = 2;         // 实例展示名
-  string bk_obj_icon = 3;          // 模型图标
-  string bk_obj_id = 4;            // 模型ID
-  string bk_obj_name = 5;          // 模型展示名
-  repeated BizTopoNode child = 6;  // 子节点（递归）
-  uint32 default = 7;              // 业务类型 / 集群类型
-  uint32 service_template_id = 8;  // 服务模板ID
-  uint32 process_count = 9;        // 进程数量
+  uint32 bk_inst_id = 1;                      // 实例ID
+  string bk_inst_name = 2;                    // 实例展示名
+  string bk_obj_icon = 3;                     // 模型图标
+  string bk_obj_id = 4;                       // 模型ID
+  string bk_obj_name = 5;                     // 模型展示名
+  repeated BizTopoNode child = 6;             // 子节点（递归）
+  uint32 default = 7;                         // 业务类型 / 集群类型
+  uint32 service_template_id = 8;             // 服务模板ID
+  uint32 process_count = 9;                   // 进程数量
+  repeated uint32 process_template_ids = 10;  // 进程模板ID列表
 }
-
 // ServiceTemplate 服务模板信息
 message ServiceTemplate {
-  uint32 id = 1;             // 服务模板ID
-  string name = 2;           // 服务模板名称
-  uint32 process_count = 3;  // 进程数量
+  uint32 id = 1;                             // 服务模板ID
+  string name = 2;                           // 服务模板名称
+  uint32 process_count = 3;                  // 进程数量
+  repeated uint32 process_template_ids = 4;  // 进程模板ID列表
 }
 
 // ProcTemplate 进程模板数据

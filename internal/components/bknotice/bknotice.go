@@ -85,7 +85,6 @@ func RegisterSystem(ctx context.Context) error {
 
 // GetCurrentAnnouncements 获取系统当前通知
 func GetCurrentAnnouncements(ctx context.Context, lang string) ([]Announcement, error) {
-
 	url := fmt.Sprintf("%s/v1/announcement/get_current_announcements/?platform=%s&language=%s",
 		cc.ApiServer().BKNotice.Host, cc.ApiServer().Esb.AppCode, lang)
 

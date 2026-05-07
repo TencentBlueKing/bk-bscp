@@ -22,7 +22,6 @@
         :template-name="templateName"
         :data="versionEditingData"
         :type="props.type"
-        :is-associated="props.isAssociated"
         :is-latest="isLatestVersion"
         @created="emits('created')"
         @close="emits('close')" />
@@ -50,7 +49,6 @@
     pagination: IPagination;
     type: string;
     versionId: number;
-    isAssociated: boolean;
   }>();
 
   const emits = defineEmits(['close', 'select', 'created']);
@@ -75,6 +73,7 @@
       sign: '',
       byte_size: 0,
       full_path: '',
+      is_proc_bound: false,
     };
     if (props.versionId) {
       const version = props.list.find((item) => item.id === props.versionId);
@@ -93,6 +92,7 @@
           sign,
           byte_size,
           full_path: path + name,
+          is_proc_bound: version.is_proc_bound,
         };
       }
     }

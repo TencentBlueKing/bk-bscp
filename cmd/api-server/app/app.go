@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/options"
 	"github.com/TencentBlueKing/bk-bscp/cmd/api-server/service"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bknotice"
+	componentratelimit "github.com/TencentBlueKing/bk-bscp/internal/components/ratelimit"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -69,6 +70,10 @@ func (as *apiServer) prepare(opt *options.Option) error {
 	metrics.InitMetrics(net.JoinHostPort(cc.ApiServer().Network.BindIP,
 		strconv.Itoa(int(cc.ApiServer().Network.HttpPort))))
 	metrics.Register().MustRegister(metrics.BSCPServerHandledTotal)
+
+	if err := componentratelimit.Setup(cc.APIServerName); err != nil {
+		return fmt.Errorf("setup component rate limit failed, err: %v", err)
+	}
 
 	etcdOpt, err := cc.ApiServer().Service.Etcd.ToConfig()
 	if err != nil {

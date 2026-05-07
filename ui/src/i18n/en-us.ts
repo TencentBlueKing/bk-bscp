@@ -127,7 +127,7 @@ export default {
   业务: 'Business',
   操作记录: 'Operation Log',
   进程与配置管理: 'Process and Config Management',
-
+  配置模板: 'Config Template',
 
   // 配置管理
   版本名称: 'Version Name',

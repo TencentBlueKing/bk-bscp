@@ -134,14 +134,17 @@ func (s *Service) ListTemplateRevisions(ctx context.Context,
 		return nil, err
 	}
 
+	// 获取模板id => 是否绑定了进程
+	isProcBounds := make(map[uint32]bool, len(configTemplates))
 	templateNames := map[uint32]string{}
 	for _, v := range configTemplates {
 		templateNames[v.Attachment.TemplateID] = v.Spec.Name
+		isProcBounds[v.Attachment.TemplateID] = len(v.Attachment.CcProcessIDs) > 0 || len(v.Attachment.CcTemplateProcessIDs) > 0
 	}
 
 	resp := &pbds.ListTemplateRevisionsResp{
 		Count:   uint32(count),
-		Details: pbtr.PbTemplateRevisions(details, templateNames),
+		Details: pbtr.PbTemplateRevisions(details, templateNames, isProcBounds),
 	}
 	return resp, nil
 }
@@ -179,7 +182,7 @@ func (s *Service) ListTemplateRevisionsByIDs(ctx context.Context, req *pbds.List
 	}
 
 	resp := &pbds.ListTemplateRevisionsByIDsResp{
-		Details: pbtr.PbTemplateRevisions(details, map[uint32]string{}),
+		Details: pbtr.PbTemplateRevisions(details, map[uint32]string{}, map[uint32]bool{}),
 	}
 	return resp, nil
 }

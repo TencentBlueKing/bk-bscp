@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/vault"
+	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/serviced"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
@@ -53,6 +54,7 @@ type Service struct {
 	tmplProc            tmplprocess.TmplProcessor
 	itsm                itsm.Service
 	cmdb                bkcmdb.Service
+	cmdbRenderCache     processorcmdb.RenderCache
 	taskManager         *task.TaskManager
 	gseSvc              *gse.Service
 	configKVCache       *ConfigKVCache
@@ -61,7 +63,8 @@ type Service struct {
 
 // NewService create a service instance.
 func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Set, vaultSet vault.Set, esb client.Client,
-	repo repository.Provider, cmdb bkcmdb.Service, taskManager *task.TaskManager, gseSvc *gse.Service) (*Service, error) {
+	repo repository.Provider, cmdb bkcmdb.Service, taskManager *task.TaskManager, gseSvc *gse.Service,
+	cmdbRenderCache processorcmdb.RenderCache) (*Service, error) {
 	state, ok := sd.(serviced.State)
 	if !ok {
 		return nil, errors.New("discover convert state failed")
@@ -101,17 +104,18 @@ func NewService(sd serviced.Service, ssd serviced.ServiceDiscover, daoSet dao.Se
 	}
 
 	svc := &Service{
-		dao:         daoSet,
-		vault:       vaultSet,
-		gateway:     gateway,
-		esb:         esb,
-		repo:        repo,
-		tmplProc:    tmplprocess.NewTmplProcessor(),
-		cs:          pbcs.NewCacheClient(csConn),
-		itsm:        itsm.NewITSMService(),
-		cmdb:        cmdb,
-		taskManager: taskManager,
-		gseSvc:      gseSvc,
+		dao:             daoSet,
+		vault:           vaultSet,
+		gateway:         gateway,
+		esb:             esb,
+		repo:            repo,
+		tmplProc:        tmplprocess.NewTmplProcessor(),
+		cs:              pbcs.NewCacheClient(csConn),
+		itsm:            itsm.NewITSMService(),
+		cmdb:            cmdb,
+		cmdbRenderCache: cmdbRenderCache,
+		taskManager:     taskManager,
+		gseSvc:          gseSvc,
 	}
 
 	svc.InitConfigKVCache()

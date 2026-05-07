@@ -102,5 +102,11 @@ func New(cfg *cc.CMDBConfig, esbClient client.Client) (Service, error) {
 	if cfg.BkSupplierAccount == "" {
 		cfg.BkSupplierAccount = "0"
 	}
-	return &CMDBService{cfg}, nil
+
+	svc := &CMDBService{CMDBConfig: cfg}
+	if cfg.UseEsb && esbClient != nil {
+		svc.esbCMDB = esbClient.Cmdb()
+	}
+
+	return svc, nil
 }

@@ -9,7 +9,6 @@
       placement="bottom"
       theme="light process-op-popover"
       :arrow="false"
-      width="80"
       @after-show="isPopoverOpen = true"
       @after-hidden="isPopoverOpen = false">
       <bk-button :class="['more-op-btn', { 'popover-open': isPopoverOpen }]" :disabled="count === 0">

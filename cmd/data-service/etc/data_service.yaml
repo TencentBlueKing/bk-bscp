@@ -190,4 +190,7 @@ crontab:
     enabled: true
     # watch host update events interval (default: 30s)
     interval: 30s
-
+  # watch cmdb set/module/process resource task configuration
+  watchCmdbResource:
+    # whether the watch cmdb resource task is enabled (default: false)
+    enabled: false

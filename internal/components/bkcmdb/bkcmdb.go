@@ -73,6 +73,7 @@ const (
 // CMDBService bkcmdb client
 type CMDBService struct {
 	*cc.CMDBConfig
+	esbCMDB cmdb.Client
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
@@ -136,6 +137,14 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 // SearchBusiness 组件化的函数
 func (bkcmdb *CMDBService) SearchBusiness(ctx context.Context, params *cmdb.SearchBizParams) (
 	*cmdb.SearchBizResult, error) {
+
+	if bkcmdb.UseEsb {
+		if bkcmdb.esbCMDB == nil {
+			return nil, fmt.Errorf("cmdb useEsb is enabled, but esb cmdb client is nil")
+		}
+		return bkcmdb.esbCMDB.SearchBusiness(ctx, params)
+	}
+
 	// bk_supplier_account 是无效参数, 占位用
 	url := fmt.Sprintf(searchBusiness, bkcmdb.Host)
 
@@ -158,6 +167,13 @@ func (bkcmdb *CMDBService) SearchBusiness(ctx context.Context, params *cmdb.Sear
 
 // ListAllBusiness 获取所有业务列表
 func (bkcmdb *CMDBService) ListAllBusiness(ctx context.Context) (*cmdb.SearchBizResult, error) {
+	if bkcmdb.UseEsb {
+		if bkcmdb.esbCMDB == nil {
+			return nil, fmt.Errorf("cmdb useEsb is enabled, but esb cmdb client is nil")
+		}
+		return bkcmdb.esbCMDB.ListAllBusiness(ctx)
+	}
+
 	params := &cmdb.SearchBizParams{}
 	bizRes, err := bkcmdb.SearchBusiness(ctx, params)
 	if err != nil {

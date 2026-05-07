@@ -114,8 +114,9 @@ func (s *Service) ProcessTemplate(ctx context.Context, req *pbcs.ProcessTemplate
 		return nil, err
 	}
 	resp, err := s.client.DS.ProcessTemplate(grpcKit.RpcCtx(), &pbds.ProcessTemplateReq{
-		BizId:             req.GetBizId(),
-		ServiceTemplateId: req.GetServiceTemplateId(),
+		BizId:              req.GetBizId(),
+		ServiceTemplateId:  req.GetServiceTemplateId(),
+		ProcessTemplateIds: req.GetProcessTemplateIds(),
 	})
 	if err != nil {
 		return nil, err

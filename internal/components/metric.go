@@ -13,6 +13,7 @@
 package components
 
 import (
+	"context"
 	"runtime"
 	"strconv"
 	"strings"
@@ -65,11 +66,35 @@ func initThirdPartyMetric() *tpMetric {
 	return thirdPartyMetric
 }
 
+type componentCallerCtxKey struct{}
+
+type componentCallerInfo struct {
+	component string
+	caller    string
+}
+
+// withComponentCaller stores resolved component and caller into the context.
+func withComponentCaller(ctx context.Context, component, caller string) context.Context {
+	return context.WithValue(ctx, componentCallerCtxKey{}, &componentCallerInfo{
+		component: component,
+		caller:    caller,
+	})
+}
+
+// componentCallerFromCtx retrieves pre-resolved component and caller from the context.
+// Falls back to runtime stack walking if not present.
+func componentCallerFromCtx(ctx context.Context) (string, string) {
+	if info, ok := ctx.Value(componentCallerCtxKey{}).(*componentCallerInfo); ok {
+		return info.component, info.caller
+	}
+	return resolveComponentAndCaller()
+}
+
 // recordResponseMetrics records metrics for a successful HTTP response.
 func recordResponseMetrics(resp *resty.Response) {
 	m := initThirdPartyMetric()
 
-	component, caller := resolveComponentAndCaller()
+	component, caller := componentCallerFromCtx(resp.Request.Context())
 	method := resp.Request.Method
 	status := statusGroup(resp.StatusCode())
 
@@ -81,7 +106,7 @@ func recordResponseMetrics(resp *resty.Response) {
 func recordErrorMetrics(req *resty.Request) {
 	m := initThirdPartyMetric()
 
-	component, caller := resolveComponentAndCaller()
+	component, caller := componentCallerFromCtx(req.RawRequest.Context())
 	method := req.Method
 
 	m.requestsTotal.WithLabelValues(component, method, "error", caller).Inc()

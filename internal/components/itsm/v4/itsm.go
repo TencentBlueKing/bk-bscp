@@ -107,7 +107,6 @@ func GetAuthHeader(ctx context.Context) map[string]string {
 
 // ItsmRequest itsm request
 func ItsmRequest(ctx context.Context, method, reqURL string, data any) ([]byte, error) {
-
 	client := components.GetClient().R().
 		SetContext(ctx).
 		SetHeaders(GetAuthHeader(ctx))

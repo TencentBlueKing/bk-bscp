@@ -44,7 +44,11 @@
         </bk-button>
         <template v-else>
           <bk-button @click="stepsStatus.curStep = 1">{{ t('上一步') }}</bk-button>
-          <bk-button :disabled="pending" :loading="pending" theme="primary" @click="handleIssue">
+          <bk-button
+            :disabled="pending"
+            :loading="pending"
+            theme="primary"
+            @click="handleIssue">
             {{ t('立即下发') }}
           </bk-button>
         </template>
@@ -351,7 +355,7 @@
     justify-content: center;
     gap: 8px;
     .bk-button {
-      width: 88px;
+      min-width: 88px;
     }
   }
 

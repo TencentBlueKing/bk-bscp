@@ -1,7 +1,7 @@
 <template>
   <div class="info-wrap">
     <div v-for="item in infoList" :key="item.value" class="info-item">
-      <div class="label">{{ item.label }}：</div>
+      <div :class="['label', { en: locale === 'en' }]">{{ item.label }}：</div>
       <div class="value" @click="handleGoProcess(item.value)">
         <bk-overflow-title :class="{ theme: item.value === 'operate_range' }" type="tips">
           <span v-if="item.value === 'environment'">{{
@@ -28,7 +28,7 @@
     taskDetail: Record<string, any>;
   }>();
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const taskStore = useTaskStore();
 
@@ -108,9 +108,12 @@
       height: 32px;
       .label {
         margin-right: 8px;
-        width: 70px;
+        min-width: 70px;
         text-align: right;
         color: #4d4f56;
+        &,.en {
+          min-width: 120px;
+        }
       }
       .value {
         min-width: 200px;

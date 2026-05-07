@@ -17,6 +17,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"sort"
+	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
@@ -25,8 +28,10 @@ import (
 // CCTopoXMLService 用于获取和构建 CC 拓扑 XML 的服务
 // 参考 Python 代码中的 CMDBHandler.cache_topo_tree_attr 方法
 type CCTopoXMLService struct {
-	bizID int
-	svc   bkcmdb.Service
+	tenantID string
+	bizID    int
+	svc      bkcmdb.Service
+	cache    RenderCache
 	// 缓存字段列表，避免重复查询
 	setFieldsCache    []string
 	moduleFieldsCache []string
@@ -42,11 +47,30 @@ const (
 	BK_HOST_OBJ_ID = "host"
 )
 
+const (
+	renderCacheKindTopoXML            = "topo_xml"
+	renderCacheKindBizGlobalVariables = "biz_global_variables"
+)
+
+var renderCacheFlight singleflight.Group
+
 // NewCCTopoXMLService 创建 CC 拓扑 XML 服务
-func NewCCTopoXMLService(bizID int, svc bkcmdb.Service) *CCTopoXMLService {
+func NewCCTopoXMLService(bizID int, svc bkcmdb.Service, caches ...RenderCache) *CCTopoXMLService {
+	return NewCCTopoXMLServiceWithTenant("", bizID, svc, caches...)
+}
+
+// NewCCTopoXMLServiceWithTenant 创建带租户隔离缓存的 CC 拓扑 XML 服务
+func NewCCTopoXMLServiceWithTenant(
+	tenantID string, bizID int, svc bkcmdb.Service, caches ...RenderCache) *CCTopoXMLService {
+	var cache RenderCache
+	if len(caches) > 0 {
+		cache = caches[0]
+	}
 	return &CCTopoXMLService{
-		bizID: bizID,
-		svc:   svc,
+		tenantID: tenantID,
+		bizID:    bizID,
+		svc:      svc,
+		cache:    cache,
 	}
 }
 
@@ -56,6 +80,94 @@ func NewCCTopoXMLService(bizID int, svc bkcmdb.Service) *CCTopoXMLService {
 // 返回包含所有 Set、Module、Host 及其属性的完整 XML 字符串
 // 结构：Application -> Set -> Module -> Host
 func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (string, error) {
+	if s.cache == nil {
+		return s.buildTopoTreeXML(ctx, setEnv)
+	}
+
+	if xmlStr, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+		logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+			renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+		return xmlStr, nil
+	}
+
+	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s:%s", normalizeTenantID(s.tenantID),
+		s.bizID, renderCacheKindTopoXML, setEnv)
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildTimeout(s.cache),
+		func(buildCtx context.Context) (interface{}, error) {
+			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+					renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+				return xmlStr, nil
+			}
+
+			lockAcquiredAt := time.Now()
+			cacheReady, lockAcquired := s.acquireOrWaitTopoCache(buildCtx, setEnv)
+			if lockAcquired {
+				lockCtx := buildCtx
+				var stopRenew func()
+				buildCtx, stopRenew = s.keepBuildLockRenewed(buildCtx, renderCacheKindTopoXML, setEnv)
+				defer s.releaseTopoCacheLock(context.WithoutCancel(lockCtx), setEnv, lockAcquiredAt)
+				defer stopRenew()
+			}
+			if !cacheReady {
+				logs.Warnf("wait cmdb topo xml render cache timeout, tenant: %s, biz: %d, set_env: %s",
+					s.tenantID, s.bizID, setEnv)
+				return "", fmt.Errorf("wait cmdb topo xml render cache timeout")
+			}
+			if xmlStr, exists := s.cache.GetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d, set_env: %s",
+					renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+				return xmlStr, nil
+			}
+
+			logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, set_env: %s, source: cmdb",
+				renderCacheKindTopoXML, s.tenantID, s.bizID, setEnv)
+			xmlStr, buildErr := s.buildTopoTreeXML(buildCtx, setEnv)
+			if buildErr != nil {
+				return "", buildErr
+			}
+			if err := buildCtx.Err(); err != nil {
+				return "", err
+			}
+			s.cache.SetTopoXML(buildCtx, s.tenantID, s.bizID, setEnv, xmlStr)
+			return xmlStr, nil
+		})
+	if err != nil {
+		return "", err
+	}
+	xmlStr, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("cmdb topo xml cache value has unexpected type %T", value)
+	}
+	return xmlStr, nil
+}
+
+func doRenderCacheFlight(
+	ctx context.Context, key string, buildTimeout time.Duration, fn func(buildCtx context.Context) (interface{}, error),
+) (interface{}, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if buildTimeout <= 0 {
+		buildTimeout = DefaultRenderCacheOptions().BuildTimeout
+	}
+
+	// 缓存构建不能绑定首个请求的取消，否则 leader 超时会让所有 follower 共享失败且无法回填缓存。
+	ch := renderCacheFlight.DoChan(key, func() (interface{}, error) {
+		buildCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), buildTimeout)
+		defer cancel()
+		return fn(buildCtx)
+	})
+
+	select {
+	case result := <-ch:
+		return result.Val, result.Err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (s *CCTopoXMLService) buildTopoTreeXML(ctx context.Context, setEnv string) (string, error) {
 	// 1. 获取拓扑结构（使用 FindTopoBrief 接口，SearchBizInstTopo 已废弃）
 	topoBrief, err := s.svc.FindTopoBrief(ctx, s.bizID)
 	if err != nil {
@@ -135,6 +247,63 @@ func (s *CCTopoXMLService) GetTopoTreeXML(ctx context.Context, setEnv string) (s
 	// 添加 XML 声明
 	xmlStr := xml.Header + string(xmlData)
 	return xmlStr, nil
+}
+
+func (s *CCTopoXMLService) acquireOrWaitTopoCache(ctx context.Context, setEnv string) (bool, bool) {
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
+	if err != nil {
+		logs.Warnf("acquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+			s.tenantID, s.bizID, setEnv, err)
+		return true, false
+	}
+	if locked {
+		return true, true
+	}
+	return s.waitTopoCache(ctx, setEnv)
+}
+
+func (s *CCTopoXMLService) releaseTopoCacheLock(ctx context.Context, setEnv string, acquiredAt time.Time) {
+	if _, ok := s.cache.(buildLockRenewer); !ok && time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
+		return
+	}
+	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv); err != nil {
+		logs.Warnf("release cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+			s.tenantID, s.bizID, setEnv, err)
+	}
+}
+
+func (s *CCTopoXMLService) waitTopoCache(ctx context.Context, setEnv string) (bool, bool) {
+	waitTTL := cacheBuildWaitTTL(s.cache)
+	timer := time.NewTimer(waitTTL)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false, false
+		case <-timer.C:
+			return s.tryAcquireTopoCache(ctx, setEnv)
+		case <-ticker.C:
+			if cacheReady, lockAcquired := s.tryAcquireTopoCache(ctx, setEnv); cacheReady || lockAcquired {
+				return cacheReady, lockAcquired
+			}
+		}
+	}
+}
+
+func (s *CCTopoXMLService) tryAcquireTopoCache(ctx context.Context, setEnv string) (bool, bool) {
+	if _, exists := s.cache.GetTopoXML(ctx, s.tenantID, s.bizID, setEnv); exists {
+		return true, false
+	}
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindTopoXML, setEnv)
+	if err != nil {
+		logs.Warnf("reacquire cmdb topo xml render cache lock failed, tenant: %s, biz: %d, set_env: %s, err: %v",
+			s.tenantID, s.bizID, setEnv, err)
+		return true, false
+	}
+	return locked, locked
 }
 
 // extractTopoInfo 从拓扑树中提取 Set 和 Module 信息
@@ -453,35 +622,16 @@ func getSystemCommonAttributes(objID string) []string {
 }
 
 // getAllSetFields 获取所有 Set 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
-// 实现两级缓存机制：
-// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
-// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllSetFields(ctx context.Context) ([]string, error) {
-	// 第一级：检查本地缓存
 	if len(s.setFieldsCache) > 0 {
 		return s.setFieldsCache, nil
 	}
 
-	// 第二级：检查全局缓存
-	globalCache := GetGlobalObjectAttrCache()
-	if cachedValue, exists := globalCache.Get(s.bizID, BK_SET_OBJ_ID); exists {
-		if fields, ok := cachedValue.([]string); ok {
-			// 保存到本地缓存（提高后续访问速度）
-			s.setFieldsCache = fields
-			return fields, nil
-		}
-	}
-
-	// 缓存未命中，调用 API 获取数据
 	fields, err := s.fetchAndProcessSetFields(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 存储到全局缓存
-	globalCache.Set(s.bizID, BK_SET_OBJ_ID, fields)
-
-	// 存储到本地缓存
 	s.setFieldsCache = fields
 	return fields, nil
 }
@@ -489,10 +639,7 @@ func (s *CCTopoXMLService) getAllSetFields(ctx context.Context) ([]string, error
 // fetchAndProcessSetFields 从 CMDB 获取并处理 Set 字段列表
 func (s *CCTopoXMLService) fetchAndProcessSetFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
-	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
-		BkObjID: BK_SET_OBJ_ID,
-		BkBizID: s.bizID,
-	})
+	attrs, err := s.searchObjectAttrs(ctx, BK_SET_OBJ_ID)
 	if err != nil {
 		return nil, fmt.Errorf("search set object attr failed: %w", err)
 	}
@@ -538,35 +685,16 @@ func (s *CCTopoXMLService) fetchAndProcessSetFields(ctx context.Context) ([]stri
 }
 
 // getAllModuleFields 获取所有 Module 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
-// 实现两级缓存机制：
-// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
-// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllModuleFields(ctx context.Context) ([]string, error) {
-	// 第一级：检查本地缓存
 	if len(s.moduleFieldsCache) > 0 {
 		return s.moduleFieldsCache, nil
 	}
 
-	// 第二级：检查全局缓存
-	globalCache := GetGlobalObjectAttrCache()
-	if cachedValue, exists := globalCache.Get(s.bizID, BK_MODULE_OBJ_ID); exists {
-		if fields, ok := cachedValue.([]string); ok {
-			// 保存到本地缓存（提高后续访问速度）
-			s.moduleFieldsCache = fields
-			return fields, nil
-		}
-	}
-
-	// 缓存未命中，调用 API 获取数据
 	fields, err := s.fetchAndProcessModuleFields(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 存储到全局缓存
-	globalCache.Set(s.bizID, BK_MODULE_OBJ_ID, fields)
-
-	// 存储到本地缓存
 	s.moduleFieldsCache = fields
 	return fields, nil
 }
@@ -574,10 +702,7 @@ func (s *CCTopoXMLService) getAllModuleFields(ctx context.Context) ([]string, er
 // fetchAndProcessModuleFields 从 CMDB 获取并处理 Module 字段列表
 func (s *CCTopoXMLService) fetchAndProcessModuleFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
-	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
-		BkObjID: BK_MODULE_OBJ_ID,
-		BkBizID: s.bizID,
-	})
+	attrs, err := s.searchObjectAttrs(ctx, BK_MODULE_OBJ_ID)
 	if err != nil {
 		return nil, fmt.Errorf("search module object attr failed: %w", err)
 	}
@@ -625,35 +750,16 @@ func (s *CCTopoXMLService) fetchAndProcessModuleFields(ctx context.Context) ([]s
 }
 
 // getAllHostFields 获取所有 Host 字段列表（动态获取，与 Python 的 biz_global_variables 一致）
-// 实现两级缓存机制：
-// 1. 本地缓存（CCTopoXMLService 实例级别）- 快速访问
-// 2. 全局缓存（跨实例共享）- 避免重复 API 查询
 func (s *CCTopoXMLService) getAllHostFields(ctx context.Context) ([]string, error) {
-	// 第一级：检查本地缓存
 	if len(s.hostFieldsCache) > 0 {
 		return s.hostFieldsCache, nil
 	}
 
-	// 第二级：检查全局缓存
-	globalCache := GetGlobalObjectAttrCache()
-	if cachedValue, exists := globalCache.Get(s.bizID, BK_HOST_OBJ_ID); exists {
-		if fields, ok := cachedValue.([]string); ok {
-			// 保存到本地缓存（提高后续访问速度）
-			s.hostFieldsCache = fields
-			return fields, nil
-		}
-	}
-
-	// 缓存未命中，调用 API 获取数据
 	fields, err := s.fetchAndProcessHostFields(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 存储到全局缓存
-	globalCache.Set(s.bizID, BK_HOST_OBJ_ID, fields)
-
-	// 存储到本地缓存
 	s.hostFieldsCache = fields
 	return fields, nil
 }
@@ -661,10 +767,7 @@ func (s *CCTopoXMLService) getAllHostFields(ctx context.Context) ([]string, erro
 // fetchAndProcessHostFields 从 CMDB 获取并处理 Host 字段列表
 func (s *CCTopoXMLService) fetchAndProcessHostFields(ctx context.Context) ([]string, error) {
 	// 使用 SearchObjectAttr 动态获取所有属性
-	attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
-		BkObjID: BK_HOST_OBJ_ID,
-		BkBizID: s.bizID,
-	})
+	attrs, err := s.searchObjectAttrs(ctx, BK_HOST_OBJ_ID)
 	if err != nil {
 		return nil, fmt.Errorf("search host object attr failed: %w", err)
 	}
@@ -847,6 +950,68 @@ type ObjectAttribute struct {
 // 4. 按属性名称排序
 // 5. 按对象ID分组
 func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[string][]ObjectAttribute, error) {
+	if s.cache == nil {
+		return s.buildBizObjectAttributes(ctx)
+	}
+
+	if attrs, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+		logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+			renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+		return attrs, nil
+	}
+
+	flightKey := fmt.Sprintf("tenant:%s:biz:%d:%s", normalizeTenantID(s.tenantID), s.bizID,
+		renderCacheKindBizGlobalVariables)
+	value, err := doRenderCacheFlight(ctx, flightKey, cacheBuildTimeout(s.cache),
+		func(buildCtx context.Context) (interface{}, error) {
+			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+					renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+				return attrs, nil
+			}
+
+			lockAcquiredAt := time.Now()
+			cacheReady, lockAcquired := s.acquireOrWaitBizObjectAttributesCache(buildCtx)
+			if lockAcquired {
+				lockCtx := buildCtx
+				var stopRenew func()
+				buildCtx, stopRenew = s.keepBuildLockRenewed(buildCtx, renderCacheKindBizGlobalVariables, "")
+				defer s.releaseBizObjectAttributesCacheLock(context.WithoutCancel(lockCtx), lockAcquiredAt)
+				defer stopRenew()
+			}
+			if !cacheReady {
+				logs.Warnf("wait cmdb biz global variables cache timeout, tenant: %s, biz: %d", s.tenantID, s.bizID)
+				return nil, fmt.Errorf("wait cmdb biz global variables cache timeout")
+			}
+			if attrs, exists := s.cache.GetBizObjectAttributes(buildCtx, s.tenantID, s.bizID); exists {
+				logs.Infof("cmdb render cache hit, kind: %s, tenant: %s, biz: %d",
+					renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+				return attrs, nil
+			}
+
+			logs.Infof("cmdb render cache miss, kind: %s, tenant: %s, biz: %d, source: cmdb",
+				renderCacheKindBizGlobalVariables, s.tenantID, s.bizID)
+			attrs, buildErr := s.buildBizObjectAttributes(buildCtx)
+			if buildErr != nil {
+				return nil, buildErr
+			}
+			if err := buildCtx.Err(); err != nil {
+				return nil, err
+			}
+			s.cache.SetBizObjectAttributes(buildCtx, s.tenantID, s.bizID, attrs)
+			return attrs, nil
+		})
+	if err != nil {
+		return nil, err
+	}
+	attrs, ok := value.(map[string][]ObjectAttribute)
+	if !ok {
+		return nil, fmt.Errorf("cmdb biz object attributes cache value has unexpected type %T", value)
+	}
+	return cloneObjectAttributeMap(attrs), nil
+}
+
+func (s *CCTopoXMLService) buildBizObjectAttributes(ctx context.Context) (map[string][]ObjectAttribute, error) {
 	// 定义对象ID列表（对应 Python 的 bk_obj_ids）
 	objIDs := []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID}
 
@@ -854,10 +1019,7 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 	allObjectAttributes := make([]ObjectAttribute, 0)
 	for _, objID := range objIDs {
 		// 查询对象属性
-		attrs, err := s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
-			BkObjID: objID,
-			BkBizID: s.bizID,
-		})
+		attrs, err := s.searchObjectAttrs(ctx, objID)
 		if err != nil {
 			return nil, fmt.Errorf("search %s object attr failed: %w", objID, err)
 		}
@@ -956,4 +1118,147 @@ func (s *CCTopoXMLService) GetBizObjectAttributes(ctx context.Context) (map[stri
 	}
 
 	return result, nil
+}
+
+func (s *CCTopoXMLService) searchObjectAttrs(ctx context.Context, objID string) ([]bkcmdb.ObjectAttrInfo, error) {
+	return s.svc.SearchObjectAttr(ctx, bkcmdb.SearchObjectAttrReq{
+		BkObjID: objID,
+		BkBizID: s.bizID,
+	})
+}
+
+func (s *CCTopoXMLService) acquireOrWaitBizObjectAttributesCache(ctx context.Context) (bool, bool) {
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		logs.Warnf("acquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+			s.tenantID, s.bizID, err)
+		return true, false
+	}
+	if locked {
+		return true, true
+	}
+	return s.waitBizObjectAttributesCache(ctx)
+}
+
+func (s *CCTopoXMLService) releaseBizObjectAttributesCacheLock(ctx context.Context, acquiredAt time.Time) {
+	if _, ok := s.cache.(buildLockRenewer); !ok && time.Since(acquiredAt) >= cacheBuildLockTTL(s.cache) {
+		return
+	}
+	if err := s.cache.ReleaseBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, ""); err != nil {
+		logs.Warnf("release cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+			s.tenantID, s.bizID, err)
+	}
+}
+
+func (s *CCTopoXMLService) waitBizObjectAttributesCache(ctx context.Context) (bool, bool) {
+	waitTTL := cacheBuildWaitTTL(s.cache)
+	timer := time.NewTimer(waitTTL)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false, false
+		case <-timer.C:
+			return s.tryAcquireBizObjectAttributesCache(ctx)
+		case <-ticker.C:
+			if cacheReady, lockAcquired := s.tryAcquireBizObjectAttributesCache(ctx); cacheReady || lockAcquired {
+				return cacheReady, lockAcquired
+			}
+		}
+	}
+}
+
+func (s *CCTopoXMLService) tryAcquireBizObjectAttributesCache(ctx context.Context) (bool, bool) {
+	if _, exists := s.cache.GetBizObjectAttributes(ctx, s.tenantID, s.bizID); exists {
+		return true, false
+	}
+	locked, err := s.cache.AcquireBuildLock(ctx, s.tenantID, s.bizID, renderCacheKindBizGlobalVariables, "")
+	if err != nil {
+		logs.Warnf("reacquire cmdb biz global variables cache lock failed, tenant: %s, biz: %d, err: %v",
+			s.tenantID, s.bizID, err)
+		return true, false
+	}
+	return locked, locked
+}
+
+type buildLockRenewer interface {
+	RenewBuildLock(ctx context.Context, tenantID string, bizID int, kind string, identity string) (bool, error)
+}
+
+func (s *CCTopoXMLService) keepBuildLockRenewed(
+	ctx context.Context, kind string, identity string) (context.Context, func()) {
+	renewer, ok := s.cache.(buildLockRenewer)
+	if !ok {
+		return ctx, func() {}
+	}
+	interval := cacheBuildLockTTL(s.cache) / 3
+	if interval <= 0 {
+		return ctx, func() {}
+	}
+	renewCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-renewCtx.Done():
+				return
+			case <-ticker.C:
+				renewed, err := renewer.RenewBuildLock(renewCtx, s.tenantID, s.bizID, kind, identity)
+				if err != nil {
+					logs.Warnf("renew cmdb render cache lock failed, tenant: %s, biz: %d, kind: %s, identity: %s, err: %v",
+						s.tenantID, s.bizID, kind, identity, err)
+					cancel()
+					return
+				}
+				if !renewed {
+					logs.Warnf("cmdb render cache lock lost, tenant: %s, biz: %d, kind: %s, identity: %s",
+						s.tenantID, s.bizID, kind, identity)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return renewCtx, func() {
+		cancel()
+		<-done
+	}
+}
+
+func cacheBuildWaitTTL(cache RenderCache) time.Duration {
+	if provider, ok := cache.(interface{ BuildWaitTTL() time.Duration }); ok {
+		waitTTL := provider.BuildWaitTTL()
+		if waitTTL > 0 {
+			return waitTTL
+		}
+	}
+	waitTTL := cache.BuildLockTTL()
+	if waitTTL <= 0 {
+		return DefaultRenderCacheOptions().BuildWaitTTL
+	}
+	return waitTTL
+}
+
+func cacheBuildLockTTL(cache RenderCache) time.Duration {
+	waitTTL := cache.BuildLockTTL()
+	if waitTTL <= 0 {
+		return DefaultRenderCacheOptions().BuildLockTTL
+	}
+	return waitTTL
+}
+
+func cacheBuildTimeout(cache RenderCache) time.Duration {
+	if provider, ok := cache.(interface{ BuildTimeout() time.Duration }); ok {
+		timeout := provider.BuildTimeout()
+		if timeout > 0 {
+			return timeout
+		}
+	}
+	return DefaultRenderCacheOptions().BuildTimeout
 }

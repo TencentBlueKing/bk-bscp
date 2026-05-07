@@ -133,27 +133,29 @@ func mapObjMeta(obj string) (id, name, icon string) {
 }
 
 // ConvertServiceTemplates 批量转换 []*bkcmdb.ServiceTemplate -> []*ServiceTemplate
-func ConvertServiceTemplates(src []*bkcmdb.ServiceTemplate, processesCount map[int]uint32) []*ServiceTemplate {
+func ConvertServiceTemplates(src []*bkcmdb.ServiceTemplate, processesCount map[uint32]uint32,
+	processTemplateIDs map[uint32][]uint32) []*ServiceTemplate {
 	if src == nil {
 		return nil
 	}
 	res := make([]*ServiceTemplate, 0, len(src))
 	for _, s := range src {
-		res = append(res, ConvertServiceTemplate(s, processesCount[s.ID]))
+		res = append(res, ConvertServiceTemplate(s, processesCount[uint32(s.ID)], processTemplateIDs[uint32(s.ID)]))
 	}
 	return res
 }
 
 // ConvertServiceTemplate 单个转换
-func ConvertServiceTemplate(s *bkcmdb.ServiceTemplate, count uint32) *ServiceTemplate {
+func ConvertServiceTemplate(s *bkcmdb.ServiceTemplate, count uint32, processTemplateIDs []uint32) *ServiceTemplate {
 	if s == nil {
 		return nil
 	}
 
 	return &ServiceTemplate{
-		Id:           uint32(s.ID),
-		Name:         s.Name,
-		ProcessCount: count,
+		Id:                 uint32(s.ID),
+		Name:               s.Name,
+		ProcessCount:       count,
+		ProcessTemplateIds: processTemplateIDs,
 	}
 }
 

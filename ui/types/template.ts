@@ -150,6 +150,7 @@ export interface ITemplateVersionItem {
     creator: string;
     create_at: string;
   };
+  is_proc_bound: boolean;
 }
 
 // 模板版本编辑数据
@@ -165,6 +166,7 @@ export interface ITemplateVersionEditingData {
   byte_size: number;
   template_name?: string;
   full_path?: string;
+  is_proc_bound?: boolean;
 }
 
 // 业务下所有模板套餐列表（按模板空间分组）

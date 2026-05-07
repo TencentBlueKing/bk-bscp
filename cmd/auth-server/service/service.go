@@ -322,6 +322,7 @@ func (s *Service) GetAuthConf(_ context.Context,
 			AppCode:    cc.G().CMDB.AppCode,
 			AppSecret:  cc.G().CMDB.AppSecret,
 			BkUserName: cc.G().CMDB.BkUserName,
+			UseEsb:     cc.G().CMDB.UseEsb,
 		},
 	}
 	return resp, nil

@@ -1198,6 +1198,12 @@ type WatchHostUpdatesConfig struct {
 	QpsLimit float64 `yaml:"qpsLimit"`
 }
 
+// WatchCmdbResourceConfig defines watch cmdb resource task configuration options.
+type WatchCmdbResourceConfig struct {
+	// Enabled defines whether the watch cmdb resource task is enabled
+	Enabled bool `yaml:"enabled"`
+}
+
 // SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
 type SyncCmdbGseConfig struct {
 	// Enabled defines whether the sync cmdb and gse task is enabled
@@ -1218,6 +1224,9 @@ type CrontabConfig struct {
 	WatchBizHostRelation WatchBizHostRelationConfig `yaml:"watchBizHostRelation"`
 	// WatchHostUpdates defines watch host updates task configuration
 	WatchHostUpdates WatchHostUpdatesConfig `yaml:"watchHostUpdates"`
+	// WatchCmdbResource defines watch cmdb resource task configuration
+	// TODO: 后续WatchBizHostRelation 和 WatchHostUpdates 合并为 WatchCmdbResource
+	WatchCmdbResource WatchCmdbResourceConfig `yaml:"watchCmdbResource"`
 	// SyncCmdbGse defines sync cmdb and gse task configuration
 	SyncCmdbGse SyncCmdbGseConfig `yaml:"syncCmdbGse"`
 }
@@ -1377,6 +1386,81 @@ type RateLimiter struct {
 	IP              BasicRL `yaml:"ip"`
 }
 
+// ComponentRateLimit defines component-level outbound request throttling.
+type ComponentRateLimit struct {
+	Enabled        bool                              `yaml:"enabled"`
+	FailOpen       *bool                             `yaml:"failOpen"`
+	WindowSeconds  uint                              `yaml:"windowSeconds"`
+	KeyTTLSeconds  uint                              `yaml:"keyTTLSeconds"`
+	MaxWaitSeconds uint                              `yaml:"maxWaitSeconds"`
+	RedisCluster   RedisCluster                      `yaml:"redisCluster"`
+	Components     map[string]ComponentRateLimitRule `yaml:"components"`
+}
+
+// ComponentRateLimitRule defines rate limit options for one component.
+type ComponentRateLimitRule struct {
+	Enabled bool `yaml:"enabled"`
+	Limit   uint `yaml:"limit"`
+}
+
+// trySetDefault sets defaults for component-level throttling.
+func (c *ComponentRateLimit) trySetDefault() {
+	if c.FailOpen == nil {
+		failOpen := true
+		c.FailOpen = &failOpen
+	}
+	if c.WindowSeconds == 0 {
+		c.WindowSeconds = 1
+	}
+	if c.KeyTTLSeconds == 0 {
+		c.KeyTTLSeconds = c.WindowSeconds + 2
+	}
+	if c.MaxWaitSeconds == 0 {
+		c.MaxWaitSeconds = 10
+	}
+	if c.Components == nil {
+		c.Components = make(map[string]ComponentRateLimitRule)
+	}
+}
+
+// validate component-level throttling configuration.
+func (c ComponentRateLimit) validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	if err := c.RedisCluster.validate(); err != nil {
+		return fmt.Errorf("component rate limit redis: %w", err)
+	}
+
+	if c.WindowSeconds == 0 {
+		return errors.New("component rate limit windowSeconds must be greater than 0")
+	}
+	if c.KeyTTLSeconds == 0 {
+		return errors.New("component rate limit keyTTLSeconds must be greater than 0")
+	}
+	if c.KeyTTLSeconds < c.WindowSeconds {
+		return errors.New("component rate limit keyTTLSeconds must be greater than or equal to windowSeconds")
+	}
+	for component, rule := range c.Components {
+		if !rule.Enabled {
+			continue
+		}
+		if rule.Limit == 0 {
+			return fmt.Errorf("component rate limit %s limit must be greater than 0", component)
+		}
+	}
+	return nil
+}
+
+// FailOpenEnabled returns whether runtime errors should fail open.
+func (c ComponentRateLimit) FailOpenEnabled() bool {
+	if c.FailOpen == nil {
+		return true
+	}
+	return *c.FailOpen
+}
+
 // metrics 上报时过滤的业务名单
 type Metric struct {
 	BlacklistBizIDs []uint32 `yaml:"blacklistBizIds"`
@@ -1426,8 +1510,8 @@ func (rl RateLimiter) validate() error {
 
 	for bizID, l := range rl.Biz.Spec {
 		if l.Burst < l.Limit {
-			return fmt.Errorf("invalid rateLimiter.biz.spec.%d.burst value %d, "+
-				"should >= rateLimiter.biz.spec.%d.limit value %d", bizID, l.Burst, bizID, l.Limit)
+			return fmt.Errorf("invalid rateLimiter.biz.spec.%s.burst value %d, "+
+				"should >= rateLimiter.biz.spec.%s.limit value %d", bizID, l.Burst, bizID, l.Limit)
 		}
 	}
 
@@ -2002,15 +2086,25 @@ type ITSMConfig struct {
 
 // CMDBConfig cmdb相关的配置
 type CMDBConfig struct {
-	AppCode           string `yaml:"appCode"`
-	AppSecret         string `yaml:"appSecret"`
-	Host              string `yaml:"host"`
-	UseEsb            bool   `yaml:"useEsb"`
-	BkUserName        string `yaml:"bkUserName"`
-	WebHost           string `yaml:"webHost"`
-	BkSupplierAccount string `yaml:"bkSupplierAccount"`
+	AppCode           string                `yaml:"appCode"`
+	AppSecret         string                `yaml:"appSecret"`
+	Host              string                `yaml:"host"`
+	UseEsb            bool                  `yaml:"useEsb"`
+	BkUserName        string                `yaml:"bkUserName"`
+	WebHost           string                `yaml:"webHost"`
+	BkSupplierAccount string                `yaml:"bkSupplierAccount"`
+	RenderCache       CMDBRenderCacheConfig `yaml:"renderCache"`
 	// 是否启用新的进程同步逻辑
 	UseNewProcessSync bool `yaml:"useNewProcessSync"`
+}
+
+// CMDBRenderCacheConfig defines render-time CMDB aggregation cache settings.
+type CMDBRenderCacheConfig struct {
+	TopoXMLTTL            string `yaml:"topoXmlTTL"`
+	BizGlobalVariablesTTL string `yaml:"bizGlobalVariablesTTL"`
+	BuildWaitTTL          string `yaml:"buildWaitTTL"`
+	BuildLockTTL          string `yaml:"buildLockTTL"`
+	BuildTimeout          string `yaml:"buildTimeout"`
 }
 
 // trySetDefault try set the default value of cmdb config
@@ -2018,6 +2112,89 @@ func (c *CMDBConfig) trySetDefault() {
 	if c.BkSupplierAccount == "" {
 		c.BkSupplierAccount = "0"
 	}
+	c.RenderCache.trySetDefault()
+}
+
+func (c *CMDBConfig) validate() error {
+	return c.RenderCache.validate()
+}
+
+func (c *CMDBRenderCacheConfig) trySetDefault() {
+	if c.TopoXMLTTL == "" {
+		c.TopoXMLTTL = "1h"
+	}
+	if c.BizGlobalVariablesTTL == "" {
+		c.BizGlobalVariablesTTL = "5m"
+	}
+	buildLockTTLDefaulted := c.BuildLockTTL == ""
+	if c.BuildLockTTL == "" {
+		c.BuildLockTTL = "30s"
+	}
+	if c.BuildWaitTTL == "" {
+		if buildLockTTLDefaulted {
+			c.BuildWaitTTL = "30s"
+		} else {
+			c.BuildWaitTTL = c.BuildLockTTL
+		}
+	}
+	if c.BuildTimeout == "" {
+		c.BuildTimeout = "5m"
+	}
+}
+
+func (c CMDBRenderCacheConfig) validate() error {
+	if _, err := c.TopoXMLTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BizGlobalVariablesTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BuildLockTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BuildWaitTTLDuration(); err != nil {
+		return err
+	}
+	if _, err := c.BuildTimeoutDuration(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TopoXMLTTLDuration parses topo xml cache ttl.
+func (c CMDBRenderCacheConfig) TopoXMLTTLDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.topoXmlTTL", c.TopoXMLTTL)
+}
+
+// BizGlobalVariablesTTLDuration parses biz global variables cache ttl.
+func (c CMDBRenderCacheConfig) BizGlobalVariablesTTLDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.bizGlobalVariablesTTL", c.BizGlobalVariablesTTL)
+}
+
+// BuildLockTTLDuration parses cache build lock ttl.
+func (c CMDBRenderCacheConfig) BuildLockTTLDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildLockTTL", c.BuildLockTTL)
+}
+
+// BuildWaitTTLDuration parses cache build wait ttl.
+func (c CMDBRenderCacheConfig) BuildWaitTTLDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildWaitTTL", c.BuildWaitTTL)
+}
+
+// BuildTimeoutDuration parses cache build timeout.
+func (c CMDBRenderCacheConfig) BuildTimeoutDuration() (time.Duration, error) {
+	return parseCMDBRenderCacheDuration("cmdb.renderCache.buildTimeout", c.BuildTimeout)
+}
+
+func parseCMDBRenderCacheDuration(name string, value string) (time.Duration, error) {
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s duration %q: %w", name, value, err)
+	}
+	if duration <= 0 {
+		return 0, fmt.Errorf("invalid %s duration %q: must be positive", name, value)
+	}
+	return duration, nil
 }
 
 // VerifyAgentIDBelongs defines apps that can download across different businesses

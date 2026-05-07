@@ -93,14 +93,15 @@ type BaseConf struct {
 
 // ApiServerSetting defines api server used setting options.
 type ApiServerSetting struct {
-	Network      Network      `yaml:"network"`
-	Service      Service      `yaml:"service"`
-	Log          LogOption    `yaml:"log"`
-	Repo         Repository   `yaml:"repository"`
-	BKNotice     BKNotice     `yaml:"bkNotice"`
-	Esb          Esb          `yaml:"esb"`
-	ApiGateway   ApiGateway   `yaml:"apiGateway"`
-	FeatureFlags FeatureFlags `yaml:"featureFlags"`
+	Network            Network            `yaml:"network"`
+	Service            Service            `yaml:"service"`
+	Log                LogOption          `yaml:"log"`
+	Repo               Repository         `yaml:"repository"`
+	BKNotice           BKNotice           `yaml:"bkNotice"`
+	Esb                Esb                `yaml:"esb"`
+	ApiGateway         ApiGateway         `yaml:"apiGateway"`
+	FeatureFlags       FeatureFlags       `yaml:"featureFlags"`
+	ComponentRateLimit ComponentRateLimit `yaml:"componentRateLimit"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -120,6 +121,7 @@ func (s *ApiServerSetting) trySetDefault() {
 	s.Log.trySetDefault()
 	s.Repo.trySetDefault()
 	s.FeatureFlags.trySetDefault()
+	s.ComponentRateLimit.trySetDefault()
 }
 
 // Validate ApiServerSetting option.
@@ -141,19 +143,24 @@ func (s ApiServerSetting) Validate() error {
 		return err
 	}
 
+	if err := s.ComponentRateLimit.validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // AuthServerSetting defines auth server used setting options.
 type AuthServerSetting struct {
-	Network      Network           `yaml:"network"`
-	Service      Service           `yaml:"service"`
-	Log          LogOption         `yaml:"log"`
-	LoginAuth    LoginAuthSettings `yaml:"loginAuth"`
-	IAM          IAM               `yaml:"iam"`
-	Esb          Esb               `yaml:"esb"`
-	ApiGateway   ApiGateway        `yaml:"apiGateway"`
-	FeatureFlags FeatureFlags      `yaml:"featureFlags"`
+	Network            Network            `yaml:"network"`
+	Service            Service            `yaml:"service"`
+	Log                LogOption          `yaml:"log"`
+	LoginAuth          LoginAuthSettings  `yaml:"loginAuth"`
+	IAM                IAM                `yaml:"iam"`
+	Esb                Esb                `yaml:"esb"`
+	ApiGateway         ApiGateway         `yaml:"apiGateway"`
+	FeatureFlags       FeatureFlags       `yaml:"featureFlags"`
+	ComponentRateLimit ComponentRateLimit `yaml:"componentRateLimit"`
 }
 
 // LoginAuthSettings login conf
@@ -188,6 +195,7 @@ func (s *AuthServerSetting) trySetDefault() {
 	s.Network.trySetDefault()
 	s.Service.trySetDefault()
 	s.Log.trySetDefault()
+	s.ComponentRateLimit.trySetDefault()
 }
 
 // Validate AuthServerSetting option.
@@ -202,6 +210,10 @@ func (s AuthServerSetting) Validate() error {
 	}
 
 	if err := s.IAM.validate(); err != nil {
+		return err
+	}
+
+	if err := s.ComponentRateLimit.validate(); err != nil {
 		return err
 	}
 
@@ -327,19 +339,20 @@ type DataServiceSetting struct {
 	Service Service   `yaml:"service"`
 	Log     LogOption `yaml:"log"`
 
-	Credential   Credential    `yaml:"credential"`
-	Sharding     Sharding      `yaml:"sharding"`
-	Esb          Esb           `yaml:"esb"`
-	Repo         Repository    `yaml:"repository"`
-	Vault        Vault         `yaml:"vault"`
-	FeatureFlags FeatureFlags  `yaml:"featureFlags"`
-	Gorm         Gorm          `yaml:"gorm"`
-	CMDB         CMDBConfig    `yaml:"cmdb"`
-	ITSM         ITSMConfig    `yaml:"itsm"`
-	Crontab      CrontabConfig `yaml:"crontab"`
-	GSE           GSE           `yaml:"gse"`
-	PushProvider  PushProvider  `yaml:"pushProvider"`
-	TaskFramework TaskFramework `yaml:"taskFramework"`
+	Credential         Credential         `yaml:"credential"`
+	Sharding           Sharding           `yaml:"sharding"`
+	Esb                Esb                `yaml:"esb"`
+	Repo               Repository         `yaml:"repository"`
+	Vault              Vault              `yaml:"vault"`
+	FeatureFlags       FeatureFlags       `yaml:"featureFlags"`
+	Gorm               Gorm               `yaml:"gorm"`
+	CMDB               CMDBConfig         `yaml:"cmdb"`
+	ITSM               ITSMConfig         `yaml:"itsm"`
+	Crontab            CrontabConfig      `yaml:"crontab"`
+	GSE                GSE                `yaml:"gse"`
+	PushProvider       PushProvider       `yaml:"pushProvider"`
+	TaskFramework      TaskFramework      `yaml:"taskFramework"`
+	ComponentRateLimit ComponentRateLimit `yaml:"componentRateLimit"`
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -367,6 +380,7 @@ func (s *DataServiceSetting) trySetDefault() {
 	s.GSE.trySetDefault()
 	s.CMDB.trySetDefault()
 	s.TaskFramework.trySetDefault()
+	s.ComponentRateLimit.trySetDefault()
 }
 
 // Validate DataServiceSetting option.
@@ -408,7 +422,15 @@ func (s DataServiceSetting) Validate() error {
 		return err
 	}
 
+	if err := s.CMDB.validate(); err != nil {
+		return err
+	}
+
 	if err := s.TaskFramework.validate(); err != nil {
+		return err
+	}
+
+	if err := s.ComponentRateLimit.validate(); err != nil {
 		return err
 	}
 
@@ -421,17 +443,18 @@ type FeedServerSetting struct {
 	Service Service   `yaml:"service"`
 	Log     LogOption `yaml:"log"`
 
-	Repository   Repository          `yaml:"repository"`
-	Esb          Esb                 `yaml:"esb"`
-	BCS          BCS                 `yaml:"bcs"`
-	GSE          GSE                 `yaml:"gse"`
-	RedisCluster RedisCluster        `yaml:"redisCluster"`
-	FSLocalCache FSLocalCache        `yaml:"fsLocalCache"`
-	Downstream   Downstream          `yaml:"downstream"`
-	MRLimiter    MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
-	RateLimiter  RateLimiter         `yaml:"rateLimiter"`
-	Metric       Metric              `yaml:"metrics"`
-	CMDB         CMDBConfig          `yaml:"cmdb"`
+	Repository         Repository          `yaml:"repository"`
+	Esb                Esb                 `yaml:"esb"`
+	BCS                BCS                 `yaml:"bcs"`
+	GSE                GSE                 `yaml:"gse"`
+	RedisCluster       RedisCluster        `yaml:"redisCluster"`
+	FSLocalCache       FSLocalCache        `yaml:"fsLocalCache"`
+	Downstream         Downstream          `yaml:"downstream"`
+	MRLimiter          MatchReleaseLimiter `yaml:"matchReleaseLimiter"`
+	RateLimiter        RateLimiter         `yaml:"rateLimiter"`
+	Metric             Metric              `yaml:"metrics"`
+	CMDB               CMDBConfig          `yaml:"cmdb"`
+	ComponentRateLimit ComponentRateLimit  `yaml:"componentRateLimit"`
 	// VerifyAgentIDBelongs defines apps that can download across different businesses
 	VerifyAgentIDBelongs VerifyAgentIDBelongs `yaml:"verifyAgentIDBelongs"`
 }
@@ -460,6 +483,7 @@ func (s *FeedServerSetting) trySetDefault() {
 	s.MRLimiter.trySetDefault()
 	s.RateLimiter.trySetDefault()
 	s.VerifyAgentIDBelongs.trySetDefault()
+	s.ComponentRateLimit.trySetDefault()
 }
 
 // Validate FeedServerSetting option.
@@ -502,6 +526,10 @@ func (s FeedServerSetting) Validate() error {
 	}
 
 	if err := s.RedisCluster.validate(); err != nil {
+		return err
+	}
+
+	if err := s.ComponentRateLimit.validate(); err != nil {
 		return err
 	}
 

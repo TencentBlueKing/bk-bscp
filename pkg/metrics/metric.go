@@ -143,6 +143,8 @@ func InitMetrics(endpoint string) {
 		"git_hash":   version.GITHASH,
 	}).Set(1)
 
-	// set up metrics http handler
-	httpHandler = promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+	// set up metrics http handler. The task framework registers its collectors
+	// into the default registry, so expose only those task metrics alongside
+	// BSCP's isolated registry to avoid duplicate Go/process metrics.
+	httpHandler = promhttp.HandlerFor(prometheus.Gatherers{registry, taskMetricGatherer()}, promhttp.HandlerOpts{})
 }

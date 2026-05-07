@@ -89,3 +89,17 @@ func TestValidateAuthConf(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildCMDBConfigUsesAuthConfUseESBSetting(t *testing.T) {
+	cfg := buildCMDBConfig(&pbas.CMDB{
+		Host:       "https://cmdb.example.com",
+		AppCode:    "app_code",
+		AppSecret:  "app_secret",
+		BkUserName: "admin",
+		UseEsb:     true,
+	})
+
+	if !cfg.UseEsb {
+		t.Fatalf("expected cmdb useEsb to inherit auth conf")
+	}
+}
