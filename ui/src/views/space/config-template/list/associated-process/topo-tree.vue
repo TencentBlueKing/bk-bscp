@@ -152,7 +152,11 @@
         }
         // ------- 3. 服务模板 → 模板进程 -------
         else if (topoNode.topoType === 'serviceTemplate') {
-          const res = await getProcessListFormServiceTemplate(props.bkBizId, topoNode.service_template_id);
+          const res = await getProcessListFormServiceTemplate(
+            props.bkBizId,
+            topoNode.service_template_id,
+            topoNode.process_template_ids,
+          );
           topoNode.child = res.process_templates.map((item: any) => {
             return {
               topoParentName: topoNode.topoName,

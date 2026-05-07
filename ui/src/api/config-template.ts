@@ -37,8 +37,14 @@ export const getProcessListFormServiceInstance = (biz_id: string, service_instan
  * @param biz_id
  * @param service_template_id
  */
-export const getProcessListFormServiceTemplate = (biz_id: string, service_template_id: number) =>
-  http.get(`/config/biz_id/${biz_id}/process_template/${service_template_id}`).then((res) => res.data);
+export const getProcessListFormServiceTemplate = (
+  biz_id: string,
+  service_template_id: number,
+  process_template_ids: number[],
+) =>
+  http
+    .post(`/config/biz_id/${biz_id}/process_template/${service_template_id}`, { process_template_ids })
+    .then((res) => res.data);
 
 /**
  * 获取配置模板列表

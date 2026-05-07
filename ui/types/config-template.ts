@@ -9,6 +9,7 @@ export interface ITopoTreeNodeRes {
   host_count: number;
   process_count: number;
   service_template_id: number;
+  process_template_ids: number[]
 }
 
 // 前端加工后的拓扑节点（只保留需要字段）
@@ -29,6 +30,7 @@ export interface ITopoTreeNode {
   topoProcessCount?: number;
   service_instance_id?: number;
   processId?: number;
+  process_template_ids: number[];
 }
 
 export interface ITemplateTreeNodeRes {
@@ -43,6 +45,7 @@ export interface ITemplateTreeNodeRes {
   name: string;
   service_category_id: number;
   process_count: number;
+  process_template_ids: number[];
 }
 
 export interface IProcessPreviewItem {

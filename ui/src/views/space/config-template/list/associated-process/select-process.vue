@@ -156,6 +156,7 @@
         topoName: node.bk_inst_name,
         service_template_id: node.service_template_id,
         bk_inst_id: node.bk_inst_id,
+        process_template_ids: node.process_template_ids,
       };
       if (node.bk_obj_id === 'set') {
         topo.topoType = 'set';
@@ -185,6 +186,7 @@
         topoChecked: false,
         service_template_id: item.id,
         topoProcessCount: item.process_count,
+        process_template_ids: item.process_template_ids,
       };
     });
   };
