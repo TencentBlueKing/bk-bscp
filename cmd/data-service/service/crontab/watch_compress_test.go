@@ -19,8 +19,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 )
 
-func intPtr(v int) *int          { return &v }
-func strPtr(v string) *string    { return &v }
+func intPtr(v int) *int       { return &v }
+func strPtr(v string) *string { return &v }
 
 func relEvent(eventType string, bizID, hostID *int) bkcmdb.HostRelationEvent {
 	var detail *bkcmdb.HostRelationDetail

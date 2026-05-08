@@ -20230,6 +20230,14 @@
         "newAlias": {
           "type": "string",
           "description": "新进程别名"
+        },
+        "osType": {
+          "type": "string",
+          "description": "操作系统类型"
+        },
+        "agentStatus": {
+          "type": "string",
+          "description": "Agent状态"
         }
       },
       "title": "ProcessSpec source resource reference: pkg/dal/table/process.go"

@@ -96,6 +96,8 @@ func PbProcessSpec(spec *table.ProcessSpec, bindTemplateIds []uint32, url string
 		BindTemplateIds:      bindTemplateIds,
 		ProcessConfigViewUrl: url,
 		NewAlias:             spec.NewAlias,
+		OsType:               spec.OsType,
+		AgentStatus:          spec.AgentStatus.String(),
 	}
 }
 

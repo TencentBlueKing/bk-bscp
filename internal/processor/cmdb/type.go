@@ -41,12 +41,13 @@ type Module struct {
 
 // Host 主机
 type Host struct {
-	ID      int
-	IP      string
-	IPV6    string // 内网 IPv6，同步自 CC bk_host_innerip_v6
-	CloudId int
-	AgentID string
-	OsType  string // "linux": 1, "win": 2
+	ID         int
+	IP         string
+	IPV6       string // 内网 IPv6，同步自 CC bk_host_innerip_v6
+	CloudId    int
+	AgentID    string
+	OsType     string // "linux": 1, "win": 2
+	AgentState string
 }
 
 // SvcInst 服务实例
