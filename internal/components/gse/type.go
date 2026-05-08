@@ -737,3 +737,18 @@ type AgentAtomicTaskResult struct {
 	// AtomicTaskID 原子任务 ID
 	AtomicTaskID int `json:"atomic_task_id"`
 }
+
+// ListAgentStateReq 定义“批量查询 Agent 状态”接口的请求参数结构
+type ListAgentStateReq struct {
+	AgentIDList []string `json:"agent_id_list"` // 目标节点 Agent ID 列表
+}
+
+// ListAgentStateData 定义“批量查询 Agent 状态”接口的响应数据结构
+type ListAgentStateData struct {
+	BkAgentID string `json:"bk_agent_id"` // Agent ID
+	BkCloudID int    `json:"bk_cloud_id"` // 云区域 ID
+	Version   string `json:"version"`     // Agent 版本
+	RunMode   int    `json:"run_mode"`    // Agent运行模式, 0:proxy 1:agent
+	// Agent当前运行状态码, -1:未知 0:初始安装 1:启动中 2:运行中 3:有损状态 4:繁忙状态 5:升级中 6:停止中 7:解除安装
+	StatusCode int `json:"status_code"`
+}
