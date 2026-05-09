@@ -173,64 +173,140 @@ func (s *Service) enrichTopoNodes(kit *kit.Kit, bizID int, nodes []*bkcmdb.TopoB
 		return nil, err
 	}
 
-	// 模块id -> 模板id 映射关系
+	// moduleID -> serviceTemplateID
 	modInfoMap := make(map[uint32]uint32)
 	for _, m := range modDetails {
 		modInfoMap[uint32(m.BkModuleID)] = uint32(m.ServiceTemplateID)
 	}
 
 	// 查询业务下所有进程，统计每个模块的进程数并回填到拓扑树中
-	process, _, err := s.dao.Process().List(kit, uint32(bizID), nil, &types.BasePage{All: true})
+	processes, _, err := s.dao.Process().List(kit, uint32(bizID), nil, &types.BasePage{All: true})
 	if err != nil {
 		return nil, err
 	}
 
-	modCountMap := make(map[uint32]uint32)
-	processTemplateIDs := map[uint32][]uint32{} // 模块ID -> 进程模板ID列表
-	for _, v := range process {
-		modCountMap[v.Attachment.ModuleID]++
-		if v.Attachment.ProcessTemplateID != 0 {
-			processTemplateIDs[v.Attachment.ModuleID] = append(processTemplateIDs[v.Attachment.ModuleID],
-				v.Attachment.ProcessTemplateID)
+	// moduleID -> CcProcessID set
+	moduleProcessSet := make(map[uint32]map[uint32]struct{})
+
+	// moduleID -> processTemplateID list
+	processTemplateIDs := make(map[uint32][]uint32)
+
+	for _, proc := range processes {
+		modID := proc.Attachment.ModuleID
+		procID := proc.Attachment.CcProcessID
+
+		// 初始化
+		if _, ok := moduleProcessSet[modID]; !ok {
+			moduleProcessSet[modID] = make(map[uint32]struct{})
+		}
+
+		// 去重 CcProcessID
+		moduleProcessSet[modID][procID] = struct{}{}
+
+		// process template
+		if proc.Attachment.ProcessTemplateID != 0 {
+			processTemplateIDs[modID] = append(
+				processTemplateIDs[modID],
+				proc.Attachment.ProcessTemplateID,
+			)
 		}
 	}
 
-	// 回填所有数据并聚合 Set 计数
-	for _, set := range topo {
-		var setTotal uint32
-		for _, module := range set.Child {
-			if module.BkObjId != constant.BK_MODULE_OBJ_ID {
-				continue
-			}
-
-			// 1. 回填模板ID
-			if id, ok := modInfoMap[module.BkInstId]; ok {
-				module.ServiceTemplateId = id
-			}
-
-			// 2. 回填进程数
-			if count, ok := modCountMap[module.BkInstId]; ok {
-				module.ProcessCount = count
-			}
-
-			// 3. 回填进程模块ID
-			if ids, ok := processTemplateIDs[module.BkInstId]; ok {
-				module.ProcessTemplateIds = ids
-			}
-
-			setTotal += module.ProcessCount
-		}
-		set.ProcessCount = setTotal
-	}
+	// 回填 ServiceTemplateID
+	s.fillServiceTemplateIDToTopo(topo, modInfoMap)
+	// 回填 ProcessTemplateIDs
+	s.fillProcessTemplateIDsToTopo(topo, processTemplateIDs)
+	// 递归统计 ProcessCount
+	s.fillProcessCountToTopo(topo, moduleProcessSet)
 
 	return topo, nil
 }
 
-// 统一遍历逻辑，减少重复代码
+func (s *Service) fillServiceTemplateIDToTopo(nodes []*pbct.BizTopoNode, modInfoMap map[uint32]uint32) {
+	for _, node := range nodes {
+		if node.BkObjId == constant.BK_MODULE_OBJ_ID {
+			if templateID, ok := modInfoMap[node.BkInstId]; ok {
+				node.ServiceTemplateId = templateID
+			}
+		}
+
+		if len(node.Child) > 0 {
+			s.fillServiceTemplateIDToTopo(node.Child, modInfoMap)
+		}
+	}
+}
+
+func (s *Service) fillProcessTemplateIDsToTopo(nodes []*pbct.BizTopoNode, processTemplateIDs map[uint32][]uint32) {
+	for _, node := range nodes {
+		if node.BkObjId == constant.BK_MODULE_OBJ_ID {
+			if ids, ok := processTemplateIDs[node.BkInstId]; ok {
+				node.ProcessTemplateIds = ids
+			}
+		}
+
+		if len(node.Child) > 0 {
+			s.fillProcessTemplateIDsToTopo(node.Child, processTemplateIDs)
+		}
+	}
+}
+
+// fillProcessCountToTopo
+//
+// 递归统计整个拓扑树的进程数量。
+//
+//	模块:
+//	    process_count = 当前模块下去重后的 processID 数量
+//
+//	父节点:
+//	    process_count = 所有子节点 processID 的并集数量
+//
+// 返回值：
+// 当前节点下所有 processID 的去重集合
+func (s *Service) fillProcessCountToTopo(nodes []*pbct.BizTopoNode, moduleProcessSet map[uint32]map[uint32]struct{}) map[uint32]struct{} {
+
+	totalProcessSet := make(map[uint32]struct{})
+
+	for _, node := range nodes {
+
+		// 当前节点 process 集合
+		currentProcessSet := make(map[uint32]struct{})
+
+		// module 节点
+		if node.BkObjId == constant.BK_MODULE_OBJ_ID {
+
+			if procSet, ok := moduleProcessSet[node.BkInstId]; ok {
+
+				for pid := range procSet {
+					currentProcessSet[pid] = struct{}{}
+				}
+			}
+
+		} else {
+			// 非 module 节点递归聚合 child
+			currentProcessSet = s.fillProcessCountToTopo(
+				node.Child,
+				moduleProcessSet,
+			)
+		}
+
+		// 当前节点 process_count
+		node.ProcessCount = uint32(len(currentProcessSet))
+
+		// 向上聚合
+		for pid := range currentProcessSet {
+			totalProcessSet[pid] = struct{}{}
+		}
+	}
+
+	return totalProcessSet
+}
+
+// traverseTopo 遍历 CMDB 原始拓扑树
 func (s *Service) traverseTopo(nodes []*bkcmdb.TopoBriefNode, fn func(node *bkcmdb.TopoBriefNode)) {
 	for _, node := range nodes {
-		for _, module := range node.Nodes {
-			fn(module)
+		fn(node)
+		if len(node.Nodes) > 0 {
+			s.traverseTopo(node.Nodes, fn)
 		}
 	}
 }
@@ -467,7 +543,7 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 	err = s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kit, tx, []*table.TemplateSet{templateSet}, true)
 	if err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, errf.Errorf(errf.DBOpFailed, i18n.T(kit, "batch add templates to template sets failed, err: %s", err))
+		return 0, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "batch add templates to template sets failed, err: %s", err))
 	}
 
 	return templateID, nil
@@ -556,24 +632,70 @@ func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplate
 		}
 	}
 
-	modCountMap := make(map[uint32]uint32)
-	processTemplateIDs := map[uint32][]uint32{} // 服务模板ID -> 进程模板ID列表
-	if len(tplIDs) > 0 {
-		process, err := s.dao.Process().BatchProcessByServiceTemplates(grpcKit, req.GetBizId(), tplIDs)
-		if err != nil {
-			return nil, err
+	// serviceTemplateID -> process count
+	processCountMap := make(map[uint32]uint32)
+
+	// serviceTemplateID -> processTemplateIDs
+	processTemplateIDs := make(map[uint32][]uint32)
+	if len(tplIDs) == 0 {
+		return &pbds.ServiceTemplateResp{
+			ServiceTemplates: []*pbct.ServiceTemplate{},
+		}, nil
+	}
+
+	processes, err := s.dao.Process().BatchProcessByServiceTemplates(grpcKit, req.GetBizId(), tplIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// serviceTemplateID -> processID set
+	serviceProcessSet := make(map[uint32]map[uint32]struct{})
+
+	// serviceTemplateID -> processTemplateID set
+	serviceProcessTemplateSet := make(map[uint32]map[uint32]struct{})
+
+	for _, proc := range processes {
+
+		serviceTplID := proc.Attachment.ServiceTemplateID
+
+		// 初始化 process set
+		if _, ok := serviceProcessSet[serviceTplID]; !ok {
+			serviceProcessSet[serviceTplID] = make(map[uint32]struct{})
 		}
-		for _, v := range process {
-			modCountMap[v.Attachment.ServiceTemplateID]++
-			if v.Attachment.ProcessTemplateID != 0 {
-				processTemplateIDs[v.Attachment.ServiceTemplateID] = append(processTemplateIDs[v.Attachment.ServiceTemplateID],
-					v.Attachment.ProcessTemplateID)
+
+		// process 去重
+		serviceProcessSet[serviceTplID][proc.Attachment.CcProcessID] = struct{}{}
+
+		// process template 去重
+		if proc.Attachment.ProcessTemplateID != 0 {
+
+			if _, ok := serviceProcessTemplateSet[serviceTplID]; !ok {
+				serviceProcessTemplateSet[serviceTplID] = make(map[uint32]struct{})
 			}
+
+			serviceProcessTemplateSet[serviceTplID][proc.Attachment.ProcessTemplateID] = struct{}{}
 		}
 	}
 
+	// 计算 process count
+	for serviceTplID, procSet := range serviceProcessSet {
+		processCountMap[serviceTplID] = uint32(len(procSet))
+	}
+
+	// 转换 process template ids
+	for serviceTplID, templateSet := range serviceProcessTemplateSet {
+
+		ids := make([]uint32, 0, len(templateSet))
+
+		for templateID := range templateSet {
+			ids = append(ids, templateID)
+		}
+
+		processTemplateIDs[serviceTplID] = ids
+	}
+
 	return &pbds.ServiceTemplateResp{
-		ServiceTemplates: pbct.ConvertServiceTemplates(resp, modCountMap, processTemplateIDs),
+		ServiceTemplates: pbct.ConvertServiceTemplates(resp, processCountMap, processTemplateIDs),
 	}, nil
 }
 
