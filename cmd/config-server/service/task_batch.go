@@ -14,7 +14,10 @@ package service
 
 import (
 	"context"
+	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
@@ -109,7 +112,7 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 	}
 
 	switch req.GetTaskAction() {
-	case "config_publish":
+	case constant.TaskActionConfigPublish:
 		res = append(res, &meta.ResourceAttribute{
 			Basic: meta.Basic{
 				Type:   meta.ProcConfigMgmt,
@@ -117,7 +120,7 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 			},
 			BizID: req.BizId,
 		})
-	case "config_generate":
+	case constant.TaskActionConfigGenerate:
 		res = append(res, &meta.ResourceAttribute{
 			Basic: meta.Basic{
 				Type:   meta.ProcConfigMgmt,
@@ -125,7 +128,7 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 			},
 			BizID: req.BizId,
 		})
-	case "process_operations":
+	case constant.TaskActionProcessOperations:
 		res = append(res, &meta.ResourceAttribute{
 			Basic: meta.Basic{
 				Type:   meta.ProcConfigMgmt,
@@ -133,6 +136,8 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbcs.RetryTasksReq) (*pbc
 			},
 			BizID: req.BizId,
 		})
+	default:
+		return nil, errors.New(i18n.T(grpcKit, "undefined task action"))
 	}
 
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {

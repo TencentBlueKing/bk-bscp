@@ -353,10 +353,10 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 	if r.ErrorCode != 0 || r.ScriptExitCode != 0 {
 		logs.Errorf(
 			"[FetchConfigContent STEP]: cat script execution failed, agent=%s, container=%s, "+
-				"errorCode=%d, scriptExitCode=%d, msg=%s, screen=%s",
+				"errorCode=%d, scriptExitCode=%d, msg=%s",
 			r.BkAgentID, r.BkContainerID,
 			r.ErrorCode, r.ScriptExitCode,
-			r.ErrorMsg, r.Screen,
+			r.ErrorMsg,
 		)
 		return fmt.Errorf(
 			"cat script execution failed, agent=%s, container=%s, "+

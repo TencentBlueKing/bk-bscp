@@ -368,6 +368,7 @@ func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
 				return file.Err
 			}
 			if file.ContentLength == 0 {
+				file.Content.Close()
 				continue
 			}
 			fileName := filepath.Join(file.FolderName, file.Revision.Path, file.Revision.Name)

@@ -178,7 +178,7 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 	}
 
 	// 1. 查询 TaskBatch 信息
-	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBatchId())
+	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
 		return nil, fmt.Errorf("get task batch failed: %v", err)
@@ -442,7 +442,7 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 	var retryCount uint32
 
 	// 查询任务批次信息
-	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBatchId())
+	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
 		return nil, fmt.Errorf("get task batch failed: %v", err)

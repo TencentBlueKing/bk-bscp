@@ -311,7 +311,8 @@ func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, fields .
 			)`
 
 	q := dao.genQ.Process.WithContext(kit.Ctx).
-		Where(dao.genQ.Process.BizID.Eq(bizID), utils.RawCond(sql, "deleted", "running", "managed"))
+		Where(dao.genQ.Process.BizID.Eq(bizID)).
+		Where(utils.RawCond(sql, "deleted", "running", "managed"))
 
 	return q.Distinct(fields...).Select(fields...).Find()
 }

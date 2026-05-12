@@ -287,3 +287,14 @@ const (
 	// ConfigTemplateName 配置模板名称
 	ConfigTemplateName = "config_template_name: %s"
 )
+
+const (
+	// TaskActionConfigPublish 表示配置发布动作
+	TaskActionConfigPublish = "config_publish"
+
+	// TaskActionConfigGenerate 表示配置生成动作
+	TaskActionConfigGenerate = "config_generate"
+
+	// TaskActionProcessOperations 表示进程操作动作
+	TaskActionProcessOperations = "process_operations"
+)
