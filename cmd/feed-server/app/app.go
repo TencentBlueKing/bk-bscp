@@ -148,7 +148,11 @@ func (fs *feedServer) listenAndServe() error {
 	if ipBurst == 0 {
 		ipBurst = ratelimiter.DefaultIPLimit * 2 // 设置默认值，防止配置错误
 	}
-	ipLimiter := ratelimiter.NewGlobalRL(ipLimit, ipBurst)
+	maxCacheSize := cc.FeedServer().RateLimiter.IP.MaxCacheSize
+	if maxCacheSize == 0 {
+		maxCacheSize = cc.DefaultMaxCacheSize // 设置默认值，防止配置错误
+	}
+	ipLimiter := ratelimiter.NewGlobalRL(ipLimit, ipBurst, maxCacheSize)
 
 	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(1 * 1024 * 1024),
 		// add bscp unary interceptor and standard grpc server metrics interceptor.

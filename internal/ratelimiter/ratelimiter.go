@@ -22,13 +22,16 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/realip"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"golang.org/x/time/rate"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
 const (
-	DefaultIPLimit = 1024 * 10 // DefaultIPLimit ip默认来源是Peer Addr，当做全局限速, Burst可以默认*2
+	// DefaultIPLimit ip默认来源是Peer Addr，当做全局限速, Burst可以默认*2
+	DefaultIPLimit = 1024 * 10
 )
 
 // RateLimiter is interface for rate limiter
@@ -44,7 +47,7 @@ type RateLimiter interface {
 // New news a rate limiter
 // it is intended for direct use for other package
 func New(config cc.RateLimiter) *RL {
-	globalLimiter := NewGlobalRL(config.Global.Limit, config.Global.Burst)
+	globalLimiter := NewGlobalRL(config.Global.Limit, config.Global.Burst, config.Global.MaxCacheSize)
 	bizLimiters := NewBizRLs(config.Biz)
 	return &RL{
 		enable:   config.Enable,
@@ -88,9 +91,9 @@ type globalRL struct {
 }
 
 // NewGlobalRL news a global rate limiter
-func NewGlobalRL(limit, burst uint) *globalRL {
+func NewGlobalRL(limit, burst, maxCacheSize uint) *globalRL {
 	return &globalRL{
-		baseRL: newBaseRL(limit, burst),
+		baseRL: newBaseRL(limit, burst, maxCacheSize),
 	}
 }
 
@@ -105,7 +108,7 @@ type bizRLs struct {
 func NewBizRLs(b cc.BizRLs) *bizRLs {
 	bizLimiters := make(map[string]*baseRL)
 	for bizID, rl := range b.Spec {
-		bizLimiters[bizID] = newBaseRL(rl.Limit, rl.Burst)
+		bizLimiters[bizID] = newBaseRL(rl.Limit, rl.Burst, rl.MaxCacheSize)
 	}
 	return &bizRLs{
 		defaultConf: b.Default,
@@ -122,7 +125,7 @@ func (b *bizRLs) getLimiter(bizID uint) *baseRL {
 	if limiter, exists := b.bizLimiters[biz]; exists {
 		return limiter
 	}
-	defaultLimiter := newBaseRL(b.defaultConf.Limit, b.defaultConf.Burst)
+	defaultLimiter := newBaseRL(b.defaultConf.Limit, b.defaultConf.Burst, b.defaultConf.MaxCacheSize)
 	b.bizLimiters[biz] = defaultLimiter
 	return defaultLimiter
 }
@@ -135,7 +138,7 @@ type baseRL struct {
 	delayCnt          int64
 	delayMilliseconds int64
 	mutex             sync.Mutex
-	dynamicLimiter    map[string]*rate.Limiter
+	dynamicLimiter    *lru.Cache[string, *rate.Limiter]
 }
 
 // StatsData is stats data
@@ -152,16 +155,30 @@ var MB = 1024 * 1024
 // limit为流量速率限制，单位为MB/s，burst为允许处理的突发流量上限，单位为MB（允许系统在短时间内处理比速率限制更多的流量）
 // 内部实现使用令牌桶算法，令牌恢复速率为limit，在令牌被消耗完且不再有任何令牌消耗时，令牌数恢复至burst需要burst/limit秒
 // 举例说明：limit为100，burst为200，则将创建一个每秒生成100MB令牌、容量为200MB的限流器
-func newBaseRL(limit, burst uint) *baseRL {
+// maxCacheSize为动态限流器缓存大小
+func newBaseRL(limit, burst, maxCacheSize uint) *baseRL {
+	// 如果外部传入 0，强制使用全局默认值，防止 lru.New 返回 nil
+	safeSize := int(maxCacheSize)
+	if safeSize <= 0 {
+		safeSize = cc.DefaultMaxCacheSize
+	}
+
+	// 初始化 LRU 缓存
+	cache, err := lru.New[string, *rate.Limiter](safeSize)
+	if err != nil {
+		logs.Errorf("critical error: failed to initialize rate limiter lru cache: %v", err)
+	}
+
 	conf := &cc.BasicRL{
-		Limit: limit,
-		Burst: burst,
+		Limit:        limit,
+		Burst:        burst,
+		MaxCacheSize: maxCacheSize,
 	}
 
 	return &baseRL{
 		limiter:        rate.NewLimiter(rate.Limit(int(limit)*MB), int(burst)*MB),
 		conf:           conf,
-		dynamicLimiter: make(map[string]*rate.Limiter),
+		dynamicLimiter: cache,
 	}
 }
 
@@ -188,15 +205,16 @@ func (r *baseRL) Stats() *StatsData {
 
 // getLimiter get rate limiter for specific key
 func (r *baseRL) getLimiter(key string) *rate.Limiter {
+	// LRU 本身是线程安全的，但为了保证 Check-then-Add 的原子性，防止高并发下对同一 IP 重复创建
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if limiter, ok := r.dynamicLimiter[key]; ok {
+	if limiter, ok := r.dynamicLimiter.Get(key); ok {
 		return limiter
 	}
 
 	limiter := rate.NewLimiter(rate.Limit(r.conf.Limit), int(r.conf.Burst))
-	r.dynamicLimiter[key] = limiter
+	r.dynamicLimiter.Add(key, limiter)
 	return limiter
 }
 
