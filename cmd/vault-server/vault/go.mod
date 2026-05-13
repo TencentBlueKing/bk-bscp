@@ -3,15 +3,15 @@ module github.com/TencentBlueKing/bk-bscp/cmd/vault-server/vault
 go 1.25.0
 
 // Use OpenBao with MySQL storage backend support
-// Clone from: git clone -b v2.4.0-add-mysql-backend https://github.com/silenceper/openbao.git /data/go/src/github.com/openbao/openbao
-// SDK/API use official v2.4.0 versions.
+// Clone from: git clone -b v2.4.4-add-mysql-backend https://github.com/silenceper/openbao.git /data/go/src/github.com/openbao/openbao
+// OpenBao v2.4.4 root code depends on api/sdk/auth package content from the same fork commit.
 replace (
-	github.com/openbao/openbao => github.com/silenceper/openbao v0.0.0-20260122130045-49f33f9b2ca7
-	github.com/openbao/openbao/api/auth/approle/v2 => github.com/silenceper/openbao/api/auth/approle/v2 v2.4.0
-	github.com/openbao/openbao/api/auth/kubernetes/v2 => github.com/silenceper/openbao/api/auth/kubernetes/v2 v2.4.0
-	github.com/openbao/openbao/api/auth/userpass/v2 => github.com/silenceper/openbao/api/auth/userpass/v2 v2.4.0
-	github.com/openbao/openbao/api/v2 => github.com/openbao/openbao/api/v2 v2.4.0
-	github.com/openbao/openbao/sdk/v2 => github.com/openbao/openbao/sdk/v2 v2.4.0
+	github.com/openbao/openbao => github.com/silenceper/openbao v0.0.0-20260122122626-241b26e076be
+	github.com/openbao/openbao/api/auth/approle/v2 => github.com/silenceper/openbao/api/auth/approle/v2 v2.4.1-0.20260122122626-241b26e076be
+	github.com/openbao/openbao/api/auth/kubernetes/v2 => github.com/silenceper/openbao/api/auth/kubernetes/v2 v2.4.1-0.20260122122626-241b26e076be
+	github.com/openbao/openbao/api/auth/userpass/v2 => github.com/silenceper/openbao/api/auth/userpass/v2 v2.4.1-0.20260122122626-241b26e076be
+	github.com/openbao/openbao/api/v2 => github.com/silenceper/openbao/api/v2 v2.0.0-20260122122626-241b26e076be
+	github.com/openbao/openbao/sdk/v2 => github.com/silenceper/openbao/sdk/v2 v2.0.0-20260122122626-241b26e076be
 )
 
 require github.com/openbao/openbao v0.0.0
