@@ -397,6 +397,7 @@ func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.Cr
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Update}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {

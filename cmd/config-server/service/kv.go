@@ -897,8 +897,18 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearE
 		return nil, err
 	}
 
+	// 敏感信息类型需要判断是否隐藏密码
+	for _, v := range resp.GetDetails() {
+		if v.Spec.KvType != string(table.KvSecret) {
+			continue
+		}
+		if v.Spec.SecretHidden {
+			v.Spec.Value = i18n.T(kit, "sensitive data is not visible, unable to view actual content")
+		}
+	}
+
 	return &pbcs.FindNearExpiryCertKvsResp{
-		Details: resp.GetDetails(),
+		Details: resp.Details,
 		Count:   resp.GetCount(),
 	}, nil
 }

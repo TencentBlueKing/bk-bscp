@@ -1476,6 +1476,8 @@ type BizRLs struct {
 type BasicRL struct {
 	Limit uint `yaml:"limit"`
 	Burst uint `yaml:"burst"`
+	// MaxCacheSize 限制内存中保存的 IP 限流器数量。如果为 0，则使用默认值。
+	MaxCacheSize uint `yaml:"max_cache_size"`
 }
 
 const (
@@ -1489,6 +1491,8 @@ const (
 	DefaultBizRateLimit = 100 // 100MB/s = 800Mb/s
 	// DefaultBizRateBurst default biz rate burst
 	DefaultBizRateBurst = 200 // 200MB = 1600Mb
+	// DefaultMaxCacheSize 限制内存中保存的 IP 限流器数量，防止攻击者伪造大量 IP 导致 OOM
+	DefaultMaxCacheSize = 10000
 )
 
 // validate if the rate limiter is valid or not.
@@ -1532,6 +1536,10 @@ func (rl *RateLimiter) trySetDefault() {
 		rl.Global.Burst = DefaultGlobalRateBurst
 	}
 
+	if rl.Global.MaxCacheSize == 0 {
+		rl.Global.MaxCacheSize = DefaultMaxCacheSize
+	}
+
 	if rl.Biz.Default.Limit == 0 {
 		rl.Biz.Default.Limit = DefaultBizRateLimit
 	}
@@ -1540,19 +1548,23 @@ func (rl *RateLimiter) trySetDefault() {
 		rl.Biz.Default.Burst = DefaultBizRateBurst
 	}
 
+	if rl.Biz.Default.MaxCacheSize == 0 {
+		rl.Biz.Default.MaxCacheSize = DefaultMaxCacheSize
+	}
+
 	for bizID, l := range rl.Biz.Spec {
-		if l.Limit == 0 {
-			rl.Biz.Spec[bizID] = BasicRL{
-				Limit: DefaultBizRateLimit,
-				Burst: l.Burst,
-			}
+		newConf := l
+		if newConf.Limit == 0 {
+			newConf.Limit = DefaultBizRateLimit
 		}
-		if l.Burst == 0 {
-			rl.Biz.Spec[bizID] = BasicRL{
-				Limit: rl.Biz.Spec[bizID].Limit,
-				Burst: DefaultBizRateBurst,
-			}
+		if newConf.Burst == 0 {
+			newConf.Burst = DefaultBizRateBurst
 		}
+		if newConf.MaxCacheSize == 0 {
+			newConf.MaxCacheSize = DefaultMaxCacheSize
+		}
+
+		rl.Biz.Spec[bizID] = newConf
 	}
 }
 

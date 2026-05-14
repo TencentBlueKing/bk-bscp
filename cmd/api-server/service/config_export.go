@@ -368,11 +368,27 @@ func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
 				return file.Err
 			}
 			if file.ContentLength == 0 {
+				file.Content.Close()
 				continue
 			}
-			fileName := filepath.Join(file.FolderName, file.Revision.Path, file.Revision.Name)
-			trimmedPath := strings.TrimPrefix(fileName, "/")
-			writer, err := zipWriter.Create(trimmedPath)
+			// 构造相对路径。注意：revision.Path 可能包含 ../
+			// 把 folderName 作为根起点，将其余部分清洗
+
+			// 先清理用户的 Path 和 Name，合并成一个相对路径
+			userPath := filepath.Join("/", file.Revision.Path, file.Revision.Name)
+			// 使用 filepath.Clean 去掉其中的所有 ..
+			// 经过 Clean 之后，"/../../.ssh/auth" 会变成 "/.ssh/auth"
+			safeRelativePath := filepath.Clean(userPath)
+			// 将 folderName 与清理后的路径拼接
+			// 此时生成的路径一定是 folderName/xxx，且不带前导斜杠
+			zipEntryPath := filepath.Join(file.FolderName, safeRelativePath)
+
+			//  再次确保没有任何逻辑可以逃逸出 FolderName
+			// 替换所有的反斜杠（Windows环境兼容）并去掉可能存在的根前缀
+			zipEntryPath = filepath.ToSlash(zipEntryPath)
+			zipEntryPath = strings.TrimPrefix(zipEntryPath, "/")
+
+			writer, err := zipWriter.Create(zipEntryPath)
 			if err != nil {
 				file.Content.Close()
 				return fmt.Errorf("failed to create compressed file: %v", err)

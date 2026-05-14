@@ -773,6 +773,12 @@ func isBindRelation(
 // ConfigGenerateStatus 获取配置生成状态
 func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGenerateStatusReq) (*pbds.ConfigGenerateStatusResp, error) {
 	kt := kit.FromGrpcContext(ctx)
+
+	_, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
+	if err != nil {
+		return nil, err
+	}
+
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
 		return nil, fmt.Errorf("task storage not initialized")
@@ -987,8 +993,8 @@ func (p *previewRequestSource) NeedHelp() bool {
 }
 
 // verifyBatch 验证批次类型
-func verifyBatch(dao dao.Set, kt *kit.Kit, batchID uint32) (*table.TaskBatch, error) {
-	batch, err := dao.TaskBatch().GetByID(kt, batchID)
+func verifyBatch(dao dao.Set, kt *kit.Kit, bizID, batchID uint32) (*table.TaskBatch, error) {
+	batch, err := dao.TaskBatch().GetByID(kt, bizID, batchID)
 	if err != nil {
 		return nil, fmt.Errorf("get batch failed, batch_id: %d, err: %v", batchID, err)
 	}
@@ -1201,7 +1207,7 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 	kt := kit.FromGrpcContext(ctx)
 
 	// 验证批次
-	batch, err := verifyBatch(s.dao, kt, req.GetBatchId())
+	batch, err := verifyBatch(s.dao, kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		return nil, err
 	}
@@ -1303,7 +1309,7 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 	}
 
 	// 查询任务批次信息
-	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBatchId())
+	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
 		return nil, fmt.Errorf("get task batch failed: %v", err)
@@ -1852,6 +1858,11 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq)
 			return nil, errT
 		}
 
+		if tr != nil && tr.Attachment.TemplateID != req.GetConfigTemplateId() {
+			return nil, fmt.Errorf("template not match template revision, template_id=%d, template_revision_id=%d",
+				req.GetConfigTemplateId(), tr.Attachment.TemplateID)
+		}
+
 		return buildConfigViewResp(ct, tr, lastDispatched, nil), nil
 	}
 
@@ -1860,6 +1871,11 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq)
 		GetTemplateRevisionById(kt, req.GetBizId(), req.GetConfigVersionId())
 	if err != nil {
 		return nil, err
+	}
+
+	if tr != nil && tr.Attachment.TemplateID != req.GetConfigTemplateId() {
+		return nil, fmt.Errorf("template not match template revision, template_id=%d, template_revision_id=%d",
+			req.GetConfigTemplateId(), tr.Attachment.TemplateID)
 	}
 
 	previewConfig, err := s.buildPreviewConfig(kt, tr, req)

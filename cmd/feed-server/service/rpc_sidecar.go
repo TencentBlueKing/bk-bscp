@@ -16,7 +16,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -1109,7 +1111,17 @@ func (s *Service) GetSingleFileContent(req *pbfs.GetSingleFileContentReq,
 		return status.Error(codes.Aborted, fmt.Sprintf("get app id failed, %s", err.Error()))
 	}
 
-	filePath, fileName := tools.SplitPathAndName(req.FilePath)
+	// path.Clean 会处理所有的 .. 和冗余的斜杠
+	// 确保 "/app/dir/../secret/file" 变成 "/app/secret/file"
+	cleanedPath := path.Clean(req.FilePath)
+
+	// 如果 Clean 后的路径试图跳出根目录(变成 "..")，直接拦截
+	if strings.HasPrefix(cleanedPath, "..") {
+		return status.Error(codes.InvalidArgument, "invalid file path")
+	}
+
+	// 使用规范化后的路径进行拆分
+	filePath, fileName := tools.SplitPathAndName(cleanedPath)
 	if fileName == "" {
 		return status.Error(codes.InvalidArgument, "file name is required")
 	}

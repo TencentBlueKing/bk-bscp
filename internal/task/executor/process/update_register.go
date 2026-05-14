@@ -455,7 +455,7 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 				"batchID: %d, err: %v", payload.BatchID, err)
 		}
 
-		snapshot, err := u.updateBatchExtraDataWithLock(payload.TenantID, payload.BatchID, registerProcessSuccessDelta(cbErr))
+		snapshot, err := u.updateBatchExtraDataWithLock(payload.TenantID, payload.BizID, payload.BatchID, registerProcessSuccessDelta(cbErr))
 		if err != nil {
 			logs.Errorf("update batch extra data failed, batchID=%d, err=%v",
 				payload.BatchID, err)
@@ -551,7 +551,7 @@ type BatchConfigDecisionSnapshot struct {
 }
 
 // updateBatchExtraDataWithLock 更新任务批次的 ExtraData（RegisterProcess.SuccessCount），并发安全
-func (u *UpdateRegisterExecutor) updateBatchExtraDataWithLock(tenantID string, batchID uint32, delta uint32) (
+func (u *UpdateRegisterExecutor) updateBatchExtraDataWithLock(tenantID string, bizID, batchID uint32, delta uint32) (
 	*BatchConfigDecisionSnapshot, error) {
 
 	if delta == 0 {
@@ -564,7 +564,7 @@ func (u *UpdateRegisterExecutor) updateBatchExtraDataWithLock(tenantID string, b
 
 	kt := kit.NewWithTenant(tenantID)
 
-	task, err := u.Dao.TaskBatch().GetByID(kt, batchID)
+	task, err := u.Dao.TaskBatch().GetByID(kt, bizID, batchID)
 	if err != nil {
 		return nil, err
 	}

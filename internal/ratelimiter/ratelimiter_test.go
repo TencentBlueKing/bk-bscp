@@ -13,6 +13,7 @@
 package ratelimiter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -146,4 +147,27 @@ func testStats(t *testing.T, rl RateLimiter) {
 	assert.True(t, stats.DelayMilliseconds > 1000)
 	assert.True(t, stats.DelayMilliseconds <= 2000)
 	t.Logf("stats.DelayMilliseconds: %d", stats.DelayMilliseconds)
+}
+
+func TestLRULimit(t *testing.T) {
+	rl := newBaseRL(100, 200, 0)
+
+	// 模拟 50000 个不同的 IP
+	total := 50000
+
+	t.Run("Memory_Boundary_Test", func(t *testing.T) {
+
+		for i := 0; i < total; i++ {
+			ip := fmt.Sprintf("10.0.0.%d", i)
+			_ = rl.getLimiter(ip)
+		}
+
+		// 检查缓存长度是否被限制在 testCacheSize
+		currentSize := rl.dynamicLimiter.Len()
+		if currentSize > total {
+			t.Errorf("Cache exceeded limits! size: %d", currentSize)
+		} else {
+			t.Logf("Cache size correctly maintained at: %d", currentSize)
+		}
+	})
 }

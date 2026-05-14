@@ -91,6 +91,12 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Validate file name
+	if err = tools.ValidateFileName(kt, fileName); err != nil {
+		_ = render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
 	// Validation size
 	totleContentLength, singleContentLength := getUploadConfig(kt.BizID)
 
@@ -128,7 +134,7 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 	}
 
 	// 创建目录
-	dirPath := path.Join(os.TempDir(), constant.UploadTemporaryDirectory)
+	dirPath := filepath.Join(os.TempDir(), constant.UploadTemporaryDirectory)
 	if err = createTemporaryDirectory(dirPath); err != nil {
 		_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kt, "create directory failed, err: %v", err))))
 		return
@@ -139,6 +145,8 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kt, "create temporary directory failed, err: %v", err))))
 		return
 	}
+
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	if identifyFileType != archive.Unknown {
 		if err = archive.Unpack(combinedReader, identifyFileType, tempDir, singleContentLength*constant.MB); err != nil {
@@ -155,13 +163,11 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 			return
 		}
 	} else {
-		if err = saveFile(combinedReader, tempDir, fileName); err != nil {
-			_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kt, "upload file failed, err: %v", err))))
+		if err = tools.SecureSaveFile(kt, combinedReader, tempDir, fileName); err != nil {
+			_ = render.Render(w, r, rest.BadRequest(err))
 			return
 		}
 	}
-
-	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// 先扫描一遍文件夹，获取路径和名称，
 	fileItems, err := getFilePathsAndNames(tempDir)
@@ -303,6 +309,12 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Validate file name
+	if err = tools.ValidateFileName(kt, fileName); err != nil {
+		_ = render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
 	// Validation size
 	totleContentLength, singleContentLength := getUploadConfig(kt.BizID)
 	var maxSize int64
@@ -349,6 +361,8 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
 	if identifyFileType != archive.Unknown {
 		if err = archive.Unpack(combinedReader, identifyFileType, tempDir, singleContentLength*constant.MB); err != nil {
 			compare := new(errf.ErrorF)
@@ -364,13 +378,11 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	} else {
-		if err = saveFile(combinedReader, tempDir, fileName); err != nil {
-			_ = render.Render(w, r, rest.BadRequest(errors.New(i18n.T(kt, "upload file failed, err: %v", err))))
+		if err = tools.SecureSaveFile(kt, combinedReader, tempDir, fileName); err != nil {
+			_ = render.Render(w, r, rest.BadRequest(err))
 			return
 		}
 	}
-
-	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// 先扫描一遍文件夹，获取路径和名称，
 	fileItems, err := getFilePathsAndNames(tempDir)
@@ -821,28 +833,6 @@ func (c *configImport) checkFileConfictsWithTemplates(kt *kit.Kit, templateSpace
 	}
 
 	return tools.DetectFilePathConflicts(kt, files, filesToCompare)
-}
-
-// 临时保存文件
-func saveFile(reader io.Reader, tempDir, fileName string) error {
-	if filepath.Clean(tempDir) != tempDir {
-		return fmt.Errorf("invalid temp dir: %s", tempDir)
-	}
-	if filepath.Clean(fileName) != fileName {
-		return fmt.Errorf("invalid file name: %s", fileName)
-	}
-	// 创建文件
-	file, err := os.Create(tempDir + "/" + fileName)
-	if err != nil {
-		return fmt.Errorf("create temp file failed, err: %v", err.Error())
-	}
-	defer file.Close()
-
-	if _, err = io.Copy(file, reader); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Check if a directory exists and create it if it does not exist

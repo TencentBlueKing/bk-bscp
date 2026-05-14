@@ -466,6 +466,10 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templateSpaceID uint32,
 	templateSet *table.TemplateSet, req *pbds.CreateConfigTemplateReq, now time.Time) (uint32, error) {
 
+	if err := validatePath(kit, req.GetFullPath()); err != nil {
+		return 0, err
+	}
+
 	filePath, fileName := splitFullPath(req.GetFullPath())
 
 	// 1. 创建模板文件
@@ -976,6 +980,10 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		return nil, err
 	}
 
+	if err = validatePath(grpcKit, req.GetFullPath()); err != nil {
+		return nil, err
+	}
+
 	filePath, fileName := splitFullPath(req.GetFullPath())
 
 	spec := *revision.Spec
@@ -1164,6 +1172,35 @@ func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbds.DeleteConf
 	committed = true
 
 	return &pbds.DeleteConfigTemplateResp{}, nil
+}
+
+// validatePath 校验用户提交的 fullPath 是否包含危险字符，防止目录遍历攻击。
+// 允许的格式示例：a/b/c, /etc/nginx.conf, C:\Windows\temp, D:/app/conf
+// 禁止的格式示例：../etc/passwd, ./foo, ..\windows, 含 \x00
+func validatePath(kit *kit.Kit, fullPath string) error {
+	if fullPath == "" {
+		return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kit, "path cannot be empty"))
+	}
+
+	// 1. 禁止空字节注入
+	if strings.Contains(fullPath, "\x00") {
+		return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kit, "path cannot contain null character"))
+	}
+
+	// 2. 统一转换为正斜杠并按片段拆分
+	// 注意：如果是虚拟路径校验，统一使用正斜杠处理
+	checkPath := strings.ReplaceAll(fullPath, `\`, `/`)
+	segments := strings.Split(checkPath, "/")
+
+	for _, seg := range segments {
+		// 核心修复：拒绝任何等于 "." 或 ".." 的路径片段
+		if seg == ".." || seg == "." {
+			return errf.Errorf(errf.InvalidParameter, "%s",
+				i18n.T(kit, "path contains invalid segment: %s", seg))
+		}
+	}
+
+	return nil
 }
 
 // splitFullPath 将完整路径拆分为目录和文件名，兼容 Windows 和 Unix 风格路径

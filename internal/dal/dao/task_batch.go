@@ -38,7 +38,7 @@ type TaskBatchListFilter struct {
 // TaskBatch xxx
 type TaskBatch interface {
 	Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error)
-	GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error)
+	GetByID(kit *kit.Kit, bizID, batchID uint32) (*table.TaskBatch, error)
 	List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter, opt *types.BasePage) ([]*table.TaskBatch, int64, error)
 	UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error
 	ListExecutors(kit *kit.Kit, bizID uint32) ([]string, error)
@@ -97,11 +97,11 @@ func (dao *taskBatchDao) Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint3
 }
 
 // GetByID 根据ID获取批次信息
-func (dao *taskBatchDao) GetByID(kit *kit.Kit, batchID uint32) (*table.TaskBatch, error) {
+func (dao *taskBatchDao) GetByID(kit *kit.Kit, bizID, batchID uint32) (*table.TaskBatch, error) {
 	m := dao.genQ.TaskBatch
 	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
 
-	taskBatch, err := q.Where(m.ID.Eq(batchID)).Take()
+	taskBatch, err := q.Where(m.ID.Eq(batchID), m.BizID.Eq(bizID)).Take()
 	if err != nil {
 		return nil, err
 	}

@@ -214,6 +214,7 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbcs.PreviewConfigReq)
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.GenerateConfig}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
