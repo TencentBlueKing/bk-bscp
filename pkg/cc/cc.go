@@ -16,6 +16,7 @@ package cc
 import (
 	"sync"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -35,6 +36,11 @@ func InitRuntime(s Setting) {
 			settings: s,
 		}
 	})
+}
+
+// IsDevMode 是否本地开发模式
+func (g GlobalSettings) IsDevMode() bool {
+	return g.BaseConf.RunEnv == config.DevEnv
 }
 
 type runtime struct {

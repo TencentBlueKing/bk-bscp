@@ -128,6 +128,7 @@ func loadFromFile(conf []byte) (Setting, error) {
 		return nil, fmt.Errorf("unmarshal global Setting yaml from conf:\n%s failed, err: %v", conf, err)
 	}
 	g.TaskFramework.trySetDefault()
+	g.BaseConf.trySetDefault()
 	globalSettings = g
 
 	return s, nil

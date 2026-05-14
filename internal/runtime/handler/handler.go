@@ -31,6 +31,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/ctl"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
@@ -83,11 +84,13 @@ func RegisterCommonToolHandler() http.Handler {
 	// add metrics handler
 	mux.HandleFunc("/metrics", metrics.Handler().ServeHTTP)
 
-	// add pprof handler
-	mux.HandleFunc("/debug/", http.DefaultServeMux.ServeHTTP)
+	if cc.G().IsDevMode() {
+		// add pprof handler
+		mux.HandleFunc("/debug/", http.DefaultServeMux.ServeHTTP)
 
-	// add tools handler
-	mux.HandleFunc("/ctl", ctl.Handler().ServeHTTP)
+		// add tools handler
+		mux.HandleFunc("/ctl", ctl.Handler().ServeHTTP)
+	}
 
 	return mux
 }
@@ -120,6 +123,7 @@ func ReverseProxyHandler(name, prefix, remoteURL string) http.Handler {
 // CORS 跨域
 func CORS(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+
 		// cors 处理
 		origin := r.Header.Get("Origin")
 		if origin != "" {

@@ -33,6 +33,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/repository"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
@@ -89,13 +90,6 @@ func (a authorizer) initKitWithCookie(r *http.Request, k *kit.Kit, multiErr *mul
 	}
 
 	req := &pbas.UserCredentialReq{Uid: loginCred.UID, Token: loginCred.Token}
-	if req.Token == constant.BKTokenForTest {
-		username := r.Header.Get(constant.UserKey)
-		if username != "" {
-			k.User = username
-			return true
-		}
-	}
 
 	resp, err := a.authClient.GetUserInfo(k.RpcCtx(), req)
 	if err != nil {
@@ -119,6 +113,9 @@ func (a authorizer) initKitWithCookie(r *http.Request, k *kit.Kit, multiErr *mul
 
 // initKitWithDevEnv Dev环境, 可以设置环境变量鉴权
 func (a authorizer) initKitWithDevEnv(r *http.Request, k *kit.Kit, _ *multierror.Error) bool {
+	if !cc.G().IsDevMode() {
+		return false
+	}
 	user := os.Getenv("BK_USER_FOR_TEST")
 	appCode := os.Getenv("BK_APP_CODE_FOR_TEST")
 
@@ -337,7 +334,7 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 		}
 
 		// skip validate biz permission when user is for test
-		if strings.HasPrefix(kt.User, constant.BKUserForTestPrefix) {
+		if cc.G().IsDevMode() && strings.HasPrefix(kt.User, constant.BKUserForTestPrefix) {
 			ctx := kit.WithKit(r.Context(), kt)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return

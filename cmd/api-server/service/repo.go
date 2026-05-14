@@ -25,6 +25,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
 )
@@ -165,6 +166,14 @@ func (s *repoService) CompleteMultipartUploadFile(w http.ResponseWriter, r *http
 //	@ID			download_content
 func (s *repoService) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID},
+	}
+	if err := s.authorizer.Authorize(kt, res...); err != nil {
+		_ = render.Render(w, r, rest.GRPCErr(err))
+		return
+	}
 
 	sign, err := repository.GetFileSign(r)
 	if err != nil {

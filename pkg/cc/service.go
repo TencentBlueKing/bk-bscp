@@ -16,6 +16,8 @@ import (
 	"errors"
 	"net"
 	"sync"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 )
 
 var (
@@ -89,6 +91,13 @@ type GlobalSettings struct {
 type BaseConf struct {
 	AppCode   string `yaml:"app_code"`
 	AppSecret string `yaml:"app_secret"`
+	RunEnv    string `yaml:"run_env"`
+}
+
+func (b *BaseConf) trySetDefault() {
+	if b.RunEnv == "" {
+		b.RunEnv = config.ProdEnv
+	}
 }
 
 // ApiServerSetting defines api server used setting options.

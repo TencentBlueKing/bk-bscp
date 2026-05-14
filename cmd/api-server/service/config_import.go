@@ -82,6 +82,15 @@ func (c *configImport) TemplateConfigFileImport(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// 模板只有业务权限
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
+	}
+	if err := c.authorizer.Authorize(kt, res...); err != nil {
+		_ = render.Render(w, r, rest.GRPCErr(err))
+		return
+	}
+
 	fileName := chi.URLParam(r, "filename")
 
 	// 对获取到的URL参数进行解码
