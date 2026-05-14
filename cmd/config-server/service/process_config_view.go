@@ -15,6 +15,7 @@ package service
 import (
 	"context"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
@@ -26,6 +27,15 @@ func (s *Service) ManageConfigKV(ctx context.Context,
 	req *pbcs.ManageConfigKVReq) (*pbcs.ManageConfigKVResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}},
+		{Basic: meta.Basic{Type: meta.GlobalConfigKV, Action: meta.ManageGlobalConfigKV}},
+	}
+
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
 
 	dsReq := &pbds.ManageConfigKVReq{
 		Action:    req.Action,

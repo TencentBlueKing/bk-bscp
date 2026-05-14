@@ -72,4 +72,6 @@ const (
 	Audit ResourceType = "audit"
 	// ProcConfigMgmt resource's bscp process and config management resource type
 	ProcConfigMgmt ResourceType = "process_and_config_management"
+	// GlobalConfigKV 全局配置 KV 管理资源
+	GlobalConfigKV ResourceType = "global_config_kv"
 )

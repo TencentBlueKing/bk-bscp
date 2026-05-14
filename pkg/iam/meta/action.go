@@ -50,8 +50,12 @@ const (
 	SkipAction Action = "skip"
 	// Access means sidecar access the feed server action. and only for this scenario.
 	Access Action = "access"
-
+	// ProcessOperate 进程操作
 	ProcessOperate Action = "process_operate"
+	// GenerateConfig 生成配置
 	GenerateConfig Action = "generate_config"
-	ReleaseConfig  Action = "release_config"
+	// ReleaseConfig 发布配置
+	ReleaseConfig Action = "release_config"
+	// ManageGlobalConfigKV 对应“全局配置 KV 管理”操作
+	ManageGlobalConfigKV Action = "global_config_kv_manage"
 )
