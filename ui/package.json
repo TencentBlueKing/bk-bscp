@@ -78,9 +78,8 @@
     "immutable": "^5.1.5",
     "eslint-import-resolver-webpack": "^0.13.11",
     "buffer": "^6.0.3",
-    "rollup-plugin-visualizer/picomatch": "^4.0.4",
-    "@parcel/watcher/picomatch": "^4.0.4",
-    "@vue/language-core/minimatch": "^9.0.7",
-    "flat-cache/flatted": "^3.4.2"
+    "picomatch": "^4.0.4",
+    "minimatch": "^9.0.7",
+    "flatted": "^3.4.2"
   }
 }
