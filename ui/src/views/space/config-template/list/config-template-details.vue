@@ -212,7 +212,7 @@
       display: flex;
       align-items: center;
       .bk-button {
-        width: 88px;
+        min-width: 88px;
         margin-left: 8px;
       }
     }
