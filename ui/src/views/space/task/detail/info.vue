@@ -10,6 +10,9 @@
           <span v-else-if="item.value === 'operate_range'">
             {{ mergeOpRange(taskDetail.operate_range) }}
           </span>
+          <span v-else-if="item.value === 'creator'">
+            <UserName :name="taskDetail.creator" />
+          </span>
           <span v-else>{{ taskDetail![item.value as keyof typeof taskDetail] }}</span>
         </bk-overflow-title>
       </div>
@@ -23,6 +26,7 @@
   import { IOperateRange } from '../../../../../types/task';
   import { useRouter } from 'vue-router';
   import useTaskStore from '../../../../store/task';
+  import UserName from '../../../../components/user-name.vue';
 
   defineProps<{
     taskDetail: Record<string, any>;
