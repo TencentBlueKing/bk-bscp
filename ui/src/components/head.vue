@@ -8,18 +8,13 @@
         <span class="head-title"> {{ appGlobalConfig.i18n.name }} </span>
       </div>
       <div class="head-routes">
-        <div class="head-routes-scroll" ref="routesScrollRef" @scroll="handleRoutesScroll">
-          <div v-for="nav in navList" :key="nav.id">
+        <div v-for="nav in navList" :key="nav.id">
           <template v-if="nav.view">
-            <div
-              v-if="nav.children"
-              class="nav-item"
-              :data-nav-id="nav.id"
-              @mouseenter="(e) => handleSubNavEnter(e, nav.id)">
+            <div v-if="nav.children" class="nav-item">
               <div :class="['firstNav-item', { actived: isFirstNavActived(nav.module) }]">
                 {{ nav.name }}
               </div>
-              <div class="secondNav-list" :style="getSubNavStyle(nav.id)">
+              <div class="secondNav-list">
                 <div
                   v-for="secondNav in nav.children"
                   :key="secondNav.id"
@@ -36,7 +31,6 @@
               {{ nav.name }}
             </div>
           </template>
-          </div>
         </div>
       </div>
     </div>
@@ -242,38 +236,6 @@
     return spaceFeatureFlags.value.BIZ_VIEW && !showPermApplyPage.value && route.meta.navModule === secondNavName;
   };
 
-  const routesScrollRef = ref<HTMLElement | null>(null);
-  const hoveredNavId = ref<string | null>(null);
-  const subNavStyles = ref<Record<string, { left: string; minWidth: string }>>({});
-
-  const updateSubNavStyle = (el: HTMLElement, navId: string) => {
-    const rect = el.getBoundingClientRect();
-    subNavStyles.value = {
-      ...subNavStyles.value,
-      [navId]: {
-        left: `${rect.left}px`,
-        minWidth: `${rect.width}px`,
-      },
-    };
-  };
-
-  const handleSubNavEnter = (event: MouseEvent, navId: string) => {
-    hoveredNavId.value = navId;
-    updateSubNavStyle(event.currentTarget as HTMLElement, navId);
-  };
-
-  const getSubNavStyle = (navId: string) => subNavStyles.value[navId] || {};
-
-  const handleRoutesScroll = () => {
-    if (!hoveredNavId.value || !routesScrollRef.value) return;
-    const navEl = routesScrollRef.value.querySelector(
-      `[data-nav-id="${hoveredNavId.value}"]`,
-    ) as HTMLElement | null;
-    if (navEl) {
-      updateSubNavStyle(navEl, hoveredNavId.value);
-    }
-  };
-
   const handleNavClick = (navId: string) => {
     if (['service-all', 'client-statistics', 'client-search', 'configuration-example'].includes(navId)) {
       const lastAccessedServiceDetail = localStorage.getItem('lastAccessedServiceDetail');
@@ -453,54 +415,26 @@
     background: #182132;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 20px;
-    min-width: 0;
     .head-left {
       display: flex;
       align-items: center;
-      flex: 1 1 0;
-      min-width: 0;
-      overflow: hidden;
-      gap: 24px;
       .logo {
         display: inline-flex;
-        flex-shrink: 0;
         width: 30px;
         height: 30px;
       }
       .head-routes {
-        flex: 1 1 0;
-        width: 0;
-        min-width: 0;
-        overflow: visible;
-        font-size: 14px;
-      .head-routes-scroll {
         display: flex;
-        flex-wrap: nowrap;
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(150, 162, 185, 0.4) transparent;
-        &::-webkit-scrollbar {
-          height: 4px;
-        }
-        &::-webkit-scrollbar-thumb {
-          background: rgba(150, 162, 185, 0.4);
-          border-radius: 2px;
-        }
-        > div {
-          flex-shrink: 0;
-        }
+        padding-left: 90px;
+        font-size: 14px;
         .nav-item {
           position: relative;
-          flex-shrink: 0;
           height: 52px;
           line-height: 52px;
           padding: 0 16px;
           font-size: 14px;
-          white-space: nowrap;
           color: #96a2b9;
           cursor: pointer;
           a {
@@ -525,9 +459,11 @@
           }
           .secondNav-list {
             display: none;
-            position: fixed;
+            position: absolute;
             top: 52px;
-            z-index: 10000;
+            left: 0;
+            z-index: 9999;
+            width: 100%;
             background: #182132;
             border-radius: 0 0 2px 2px;
             padding: 4px 1px;
@@ -556,7 +492,6 @@
           height: 100%;
           display: flex;
           align-items: center;
-          white-space: nowrap;
           cursor: default;
           &.actived {
             color: #ffffff;
@@ -566,7 +501,6 @@
           }
         }
       }
-      }
 
       .head-title {
         display: inline-flex;
@@ -574,15 +508,14 @@
         font-weight: Bold;
         font-size: 18px;
         color: #96a2b9;
-        white-space: nowrap;
       }
     }
 
     .head-right {
       display: flex;
-      flex: 0 0 auto;
       align-items: center;
-      margin-left: 16px;
+      justify-self: flex-end;
+      justify-content: space-between;
       font-size: 14px;
       color: #979ba5;
     }
@@ -698,9 +631,7 @@
   }
   .title-wrap {
     display: flex;
-    flex-shrink: 0;
     align-items: center;
-    min-width: max-content;
     cursor: pointer;
   }
   .international {
