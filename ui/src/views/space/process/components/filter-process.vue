@@ -9,7 +9,8 @@
         {{ env.label }}
       </div>
     </div>
-    <div class="filter">
+    <div class="filter-scroll">
+      <div class="filter">
       <template v-if="filterType === 'filter'">
         <bk-select
           v-model="filterValues[filter.value as keyof typeof filterValues]"
@@ -51,6 +52,7 @@
         <Del class="icon" />
         {{ t('清空') }}
       </bk-button>
+      </div>
     </div>
   </div>
 </template>
@@ -217,23 +219,46 @@
 <style scoped lang="scss">
   .filter-wrap {
     display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
+    margin-left: auto;
+  }
+  .filter-scroll {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 2px;
+    }
   }
   .env-tabs {
     display: flex;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
     align-items: center;
+    box-sizing: border-box;
     padding: 4px;
     height: 32px;
-    line-height: 32px;
     background: #f0f1f5;
     border-radius: 2px;
     color: #4d4f56;
     font-size: 12px;
     .env {
+      flex-shrink: 0;
       height: 24px;
       line-height: 24px;
       padding: 0 12px;
+      white-space: nowrap;
       cursor: pointer;
       color: #4d4f56;
       &.active {
@@ -244,17 +269,22 @@
   }
   .filter {
     display: flex;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 10px;
     .bk-select,
     .bk-input {
+      flex-shrink: 0;
       width: 136px;
       &.issued {
         width: 162px;
       }
     }
     .op-btn {
+      flex-shrink: 0;
       font-size: 14px;
+      white-space: nowrap;
       .icon {
         margin-right: 8px;
       }

@@ -75,8 +75,11 @@
 <style scoped lang="scss">
   .op-content {
     display: flex;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
   }
   .more-op-btn {
     width: 80px;

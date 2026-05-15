@@ -676,17 +676,44 @@
 <style lang="scss" scoped>
   .status-and-screen {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 16px;
+    min-width: 0;
     margin-bottom: 16px;
+    :deep(.sync-status) {
+      flex: 1 1 0;
+      min-width: 0;
+    }
   }
   .op-wrap {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: nowrap;
     align-items: center;
+    gap: 16px;
+    min-width: 0;
     margin-bottom: 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 2px;
+    }
+    :deep(.op-content) {
+      flex-shrink: 0;
+      flex-wrap: nowrap;
+    }
     .search-select {
-      width: 957px;
+      flex: 1 1 0;
+      width: 0;
+      min-width: 240px;
+      max-width: 957px;
+      background: #fff;
     }
   }
   .table-wrap {

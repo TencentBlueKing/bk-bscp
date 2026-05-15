@@ -1,8 +1,8 @@
 <template>
   <div class="sync-status">
-    <span class="title">{{ $t('进程管理') }}</span>
-    <div class="line"></div>
-    <div class="status">
+    <div class="sync-status-head">
+      <span class="title">{{ $t('进程管理') }}</span>
+      <div class="line"></div>
       <bk-button
         class="sync-button"
         text
@@ -11,13 +11,15 @@
         @click="handleSyncStatus">
         <right-turn-line class="icon" />{{ $t('一键同步状态') }}
       </bk-button>
-      <span v-if="syncStatus === 'Success' || syncStatus === 'Failure'" class="sync-time">
+    </div>
+    <div v-if="syncStatus === 'Success' || syncStatus === 'Failure'" class="sync-status-extra">
+      <span class="sync-time">
         {{ $t('最近一次同步：{n}', { n: time }) }}
         <span :class="syncStatus">[{{ syncStatus === 'Success' ? $t('成功') : $t('失败') }}]</span>
       </span>
-      <span v-else-if="syncStatus === 'Running'">
-        <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
-      </span>
+    </div>
+    <div v-else-if="syncStatus === 'Running'" class="sync-status-extra">
+      <Spinner class="spinner-icon" /><span class="loading-text">{{ $t('数据同步中，请耐心等待刷新…') }}</span>
     </div>
   </div>
 </template>
@@ -89,6 +91,16 @@
 <style scoped lang="scss">
   .sync-status {
     display: flex;
+    flex: 1 1 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+  .sync-status-head {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
     align-items: center;
   }
   .title {
@@ -96,24 +108,29 @@
     color: #4d4f56;
     line-height: 24px;
     font-weight: 700;
+    white-space: nowrap;
   }
   .line {
+    flex-shrink: 0;
     margin: 0 16px;
     width: 1px;
     height: 16px;
     background: #dcdee5;
   }
   .sync-button {
+    flex-shrink: 0;
+    white-space: nowrap;
     .icon {
       font-size: 14px;
       margin-right: 4px;
     }
   }
-  .status {
-    display: flex;
-    align-items: center;
-    gap: 24px;
+  .sync-status-extra {
+    flex: 1 1 0;
+    min-width: 72px;
+    max-width: 240px;
     font-size: 12px;
+    line-height: 18px;
     .spinner-icon {
       color: #3a84ff;
       font-size: 14px;
@@ -121,15 +138,19 @@
     }
     .loading-text {
       color: #e38b02;
+      white-space: normal;
+      word-break: break-word;
     }
-    .sync-time {
-      color: #979ba5;
-      .Success {
-        color: #3fc06d;
-      }
-      .Failure {
-        color: #e24343;
-      }
+  }
+  .sync-time {
+    color: #979ba5;
+    white-space: normal;
+    word-break: break-word;
+    .Success {
+      color: #3fc06d;
+    }
+    .Failure {
+      color: #e24343;
     }
   }
 </style>
