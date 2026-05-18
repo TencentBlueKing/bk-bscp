@@ -14,7 +14,7 @@ replace (
 	github.com/openbao/openbao/sdk/v2 => github.com/silenceper/openbao/sdk/v2 v2.0.0-20260513110329-92aa53862362
 )
 
-require github.com/openbao/openbao v0.0.0
+require github.com/openbao/openbao v0.0.0-20260513110329-92aa53862362
 
 require (
 	cel.dev/expr v0.25.1 // indirect
