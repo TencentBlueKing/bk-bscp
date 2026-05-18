@@ -7,9 +7,9 @@ jobs:
       - name: Check PR naming convention
         run: |
           title="${{ github.event.pull_request.title }}"
-          pattern="^(feat|fix|docs|style|refactor|perf|test|chore|revert|build|ci): .*"
+          pattern="^((feat|fix|docs|style|refactor|perf|test|chore|revert|build|ci): .+|--story=[0-9]+[[:space:]]+.+|--bug=[0-9]+[[:space:]]+.+)$"
           if [[ ! $title =~ $pattern ]]; then
-            echo "PR title does not match naming convention. Example: 'feat: 添加新功能'.\
+            echo "PR title does not match naming convention. Example: 'feat: 添加新功能', '--story=123456789 示例描述' or '--bug=987654321 示例描述'.\
             You can refer to this address for details:\
             https://github.com/TencentBlueKing/bk-bscp/tree/master/docs/specification/commit-spec.md"
             exit 1
