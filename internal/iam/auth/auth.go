@@ -76,7 +76,7 @@ type Authorizer interface {
 }
 
 // NewAuthorizer create an authorizer for iam authorize related operation.
-func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
+func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig, authOpts ...Option) (Authorizer, error) {
 	opts := make([]grpc.DialOption, 0)
 
 	// add dial load balancer.
@@ -167,6 +167,7 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 		authLoginClient: authLoginClient,
 		gwParser:        nil,
 		spaceMgr:        spaceMgr,
+		isDevMode:       func() bool { return cc.G().IsDevMode() },
 	}
 
 	// 如果有公钥，初始化配置
@@ -178,6 +179,11 @@ func NewAuthorizer(sd serviced.Discover, tls cc.TLSConfig) (Authorizer, error) {
 
 		authz.gwParser = gwParser
 		klog.InfoS("init gw parser done", "fingerprint", gwParser.Fingerprint())
+	}
+
+	// apply options
+	for _, opt := range authOpts {
+		opt(authz)
 	}
 
 	return authz, nil
@@ -256,6 +262,17 @@ type authorizer struct {
 	authLoginClient bkpaas.AuthLoginClient
 	gwParser        gwparser.Parser
 	spaceMgr        *space.Manager
+	isDevMode       func() bool
+}
+
+// Option defines the option for NewAuthorizer.
+type Option func(*authorizer)
+
+// WithIsDevMode set the is dev mode check function.
+func WithIsDevMode(fn func() bool) Option {
+	return func(a *authorizer) {
+		a.isDevMode = fn
+	}
 }
 
 // AuthorizeDecision if user has permission to the resources, returns auth status per resource and for all.

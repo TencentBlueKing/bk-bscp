@@ -113,7 +113,7 @@ func (a authorizer) initKitWithCookie(r *http.Request, k *kit.Kit, multiErr *mul
 
 // initKitWithDevEnv Dev环境, 可以设置环境变量鉴权
 func (a authorizer) initKitWithDevEnv(r *http.Request, k *kit.Kit, _ *multierror.Error) bool {
-	if !cc.G().IsDevMode() {
+	if !a.isDevMode() {
 		return false
 	}
 	user := os.Getenv("BK_USER_FOR_TEST")

@@ -71,7 +71,7 @@ func NewWebServer(ctx context.Context, addr string, addrs []string) (*WebServer,
 	}
 
 	// 鉴权器
-	authorizer, err := auth.NewAuthorizer(dis, cc.TLSConfig{})
+	authorizer, err := auth.NewAuthorizer(dis, cc.TLSConfig{}, auth.WithIsDevMode(config.G.IsDevMode))
 	if err != nil {
 		return nil, fmt.Errorf("new authorizer failed, err: %v", err)
 	}
