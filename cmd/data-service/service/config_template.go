@@ -60,7 +60,7 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	}
 
 	if templateSpace == nil || templateSet == nil {
-		return nil, fmt.Errorf("No available space or packages")
+		return nil, errors.New(i18n.T(grpcKit, "no available space or packages"))
 	}
 
 	resp := &pbds.ListConfigTemplateResp{
@@ -82,7 +82,8 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 			All:   req.GetAll(),
 		})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "list config templates failed, err: %v", err))
 	}
 
 	if count == 0 {
@@ -105,7 +106,8 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	// 获取配置实例
 	ci, er := s.dao.ConfigInstance().ListConfigInstancesByTemplateID(grpcKit, req.GetBizId(), configTemplateIDs)
 	if er != nil {
-		return nil, er
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "list config instances by template ID failed, err: %v", er))
 	}
 	// 标记配置模板是否已下发过配置实例
 	releasedMap := make(map[uint32]bool, len(ci))
@@ -115,7 +117,8 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 
 	templates, err := s.dao.Template().ListByIDs(grpcKit, templateIDs)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "list templates by IDs failed, err: %v", err))
 	}
 
 	fullPaths := make(map[uint32]string, len(templates))
@@ -135,10 +138,11 @@ func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizT
 	// 1. 查询业务拓扑简要信息
 	topo, err := s.cmdb.FindTopoBrief(grpcKit.Ctx, int(req.GetBizId()))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(grpcKit, "find topo brief failed, err: %v", err))
 	}
 	if len(topo.Nodes) == 0 {
-		return nil, fmt.Errorf("empty topo nodes")
+		return nil, errf.Errorf(errf.InvalidParameter, "%s", i18n.T(grpcKit, "no available topo nodes"))
 	}
 
 	// 2. 查询表获取进程数并回填到拓扑树中
@@ -164,13 +168,14 @@ func (s *Service) enrichTopoNodes(kit *kit.Kit, bizID int, nodes []*bkcmdb.TopoB
 	})
 
 	if len(modIDs) == 0 {
-		return nil, fmt.Errorf("no valid module IDs found")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s", i18n.T(kit, "no valid module IDs found"))
 	}
 
 	// 查询模块详情
 	modDetails, err := s.fetchAllModuleDetails(kit.Ctx, bizID, modIDs)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(kit, "fetch all module details failed, err: %v", err))
 	}
 
 	// moduleID -> serviceTemplateID
@@ -182,7 +187,8 @@ func (s *Service) enrichTopoNodes(kit *kit.Kit, bizID int, nodes []*bkcmdb.TopoB
 	// 查询业务下所有进程，统计每个模块的进程数并回填到拓扑树中
 	processes, _, err := s.dao.Process().List(kit, uint32(bizID), nil, &types.BasePage{All: true})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "list processes failed, err: %v", err))
 	}
 
 	// moduleID -> CcProcessID set
@@ -373,12 +379,14 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	// 同一业务下不能出现同名的模板
 	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(kit, req.GetBizId(), 0, req.GetTemplateName())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "get config template by unique key failed, err: %v", err))
 	}
 
 	if ct != nil {
-		return nil, fmt.Errorf("the same template name already exists under this %d business: %s",
-			req.GetBizId(), req.GetTemplateName())
+		return nil, errf.Errorf(errf.AlreadyExists, "%s",
+			i18n.T(kit, "the same template name already exists under this %d business: %s",
+				req.GetBizId(), req.GetTemplateName()))
 	}
 
 	// 1. 开启事务
@@ -398,7 +406,8 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	items, _, err := s.dao.Template().List(kit, req.GetBizId(),
 		req.GetTemplateSpaceId(), &types.BasePage{All: true})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "list templates failed, err: %v", err))
 	}
 	existingPaths := []string{}
 	for _, v := range items {
@@ -414,14 +423,16 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	// 3. 通过空间和名称查询套餐
 	templateSet, err := s.dao.TemplateSet().GetByUniqueKey(kit, req.GetBizId(), req.GetTemplateSpaceId(), constant.DefaultTmplSetName)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "get template set failed, err: %v", err))
 	}
 
 	// 4. 创建模板和模板版本，并添加至默认套餐中
 	templateId, err := s.createTemplateAndRevision(kit, tx, req.GetTemplateSpaceId(), templateSet, req, now)
 	if err != nil {
 		logs.Errorf("[ConfigTemplate] createTemplateAndRevision failed, err=%v, rid=%s", err, kit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "create template and revision failed, err: %v", err))
 	}
 
 	// 5. 创建配置模板
@@ -447,13 +458,15 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbds.CreateConf
 	id, err := s.dao.ConfigTemplate().CreateWithTx(kit, tx, configTemplate)
 	if err != nil {
 		logs.Errorf("[ConfigTemplate] create config template failed, err: %v, rid: %s", err, kit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "create config template failed, err: %v", err))
 	}
 
 	// 6. 提交事务
 	if e := tx.Commit(); e != nil {
 		logs.Errorf("[ConfigTemplate] commit transaction failed, err: %v, rid: %s", e, kit.Rid)
-		return nil, e
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "create config template failed, err: %v", e))
 	}
 	committed = true
 
@@ -494,7 +507,8 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 	templateID, err := s.dao.Template().CreateWithTx(kit, tx, template, false, false)
 	if err != nil {
 		logs.Errorf("create template failed, err: %v, rid: %s", err, kit.Rid)
-		return 0, err
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "create template failed, err: %v", err))
 	}
 	// 2. 创建模板版本
 	var revisionName = req.GetRevisionName()
@@ -538,7 +552,8 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 				i18n.T(kit, "version number %s already exists. Please change it and try again.",
 					templateRevision.Spec.RevisionName))
 		}
-		return 0, err
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kit, "create template revision failed, err: %v", err))
 	}
 
 	templateSet.Spec.TemplateIDs = tools.MergeAndDeduplicate(templateSet.Spec.TemplateIDs, []uint32{templateID})
@@ -563,7 +578,7 @@ func (s *Service) getOrCreateTemplateSpace(kit *kit.Kit, bizID uint32, now time.
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "get default template configuration space failed, err: %v", err))
 	}
 
 	// create
@@ -580,7 +595,7 @@ func (s *Service) getOrCreateTemplateSpace(kit *kit.Kit, bizID uint32, now time.
 
 	_, err = s.dao.TemplateSpace().Create(kit, spec)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create default template configuration space failed, err: %v", err))
 	}
 
 	return spec, nil
@@ -596,7 +611,7 @@ func (s *Service) getOrCreateDefaultTemplateSet(kit *kit.Kit, bizID, spaceID uin
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "get default template set failed, err: %v", err))
 	}
 
 	set = &table.TemplateSet{
@@ -613,7 +628,7 @@ func (s *Service) getOrCreateDefaultTemplateSet(kit *kit.Kit, bizID, spaceID uin
 	}
 	_, err = s.dao.TemplateSet().Create(kit, set)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create default template set failed, err: %v", err))
 	}
 
 	return set, nil
@@ -625,7 +640,8 @@ func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplate
 
 	resp, err := s.fetchAllServiceTemplate(grpcKit.Ctx, int(req.GetBizId()))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(grpcKit, "fetch all service template failed, err: %v", err))
 	}
 
 	// 收集所有模板 ID，批量查询进程数
@@ -649,7 +665,8 @@ func (s *Service) ServiceTemplate(ctx context.Context, req *pbds.ServiceTemplate
 
 	processes, err := s.dao.Process().BatchProcessByServiceTemplates(grpcKit, req.GetBizId(), tplIDs)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "batch process by service templates failed, err: %v", err))
 	}
 
 	// serviceTemplateID -> processID set
@@ -718,7 +735,8 @@ func (s *Service) ProcessTemplate(ctx context.Context, req *pbds.ProcessTemplate
 		}(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(grpcKit, "list proc template failed, err: %v", err))
 	}
 
 	return &pbds.ProcessTemplateResp{
@@ -748,7 +766,8 @@ func (s *Service) processCountByServiceInstance(kit *kit.Kit, bizID, moduleID in
 		BkModuleID: moduleID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(kit, "list service instance failed, err: %v", err))
 	}
 
 	svcInsts := pbct.ConvertServiceInstances(svcInstances.Info)
@@ -761,7 +780,8 @@ func (s *Service) processCountByServiceInstance(kit *kit.Kit, bizID, moduleID in
 		}
 		counts, err := s.dao.Process().BatchProcessCountByServiceInstances(kit, uint32(bizID), instIDs)
 		if err != nil {
-			return nil, err
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kit, "batch process count by service instances failed, err: %v", err))
 		}
 		for _, inst := range svcInsts {
 			inst.ProcessCount = counts[uint32(inst.Id)]
@@ -780,7 +800,8 @@ func (s *Service) ProcessInstance(ctx context.Context, req *pbds.ProcessInstance
 		ServiceInstanceID: int(req.GetServiceInstanceId()),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(grpcKit, "list process instance failed, err: %v", err))
 	}
 
 	return &pbds.ProcessInstanceResp{
@@ -795,7 +816,8 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTe
 	// 获取业务ID
 	bizID := int(req.GetBizId())
 	if bizID == 0 {
-		return nil, fmt.Errorf("biz_id is required")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(grpcKit, "biz_id is required"))
 	}
 
 	// 使用 CCTopoXMLService 获取业务对象属性（复用 cc_topo.go 中的逻辑）
@@ -803,7 +825,8 @@ func (s *Service) ConfigTemplateVariable(ctx context.Context, req *pbds.ConfigTe
 	objectAttrs, err := topoService.GetBizObjectAttributes(grpcKit.Ctx)
 	if err != nil {
 		logs.Errorf("get biz object attributes failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(grpcKit, "get biz object attributes failed, err: %v", err))
 	}
 
 	// 转换为 ConfigTemplateVariable 格式
@@ -834,7 +857,8 @@ func (s *Service) BindProcessInstance(ctx context.Context, req *pbds.BindProcess
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by ID failed, err: %v", err))
 	}
 
 	configTemplate.Attachment.CcTemplateProcessIDs = req.GetCcTemplateProcessIds()
@@ -842,7 +866,8 @@ func (s *Service) BindProcessInstance(ctx context.Context, req *pbds.BindProcess
 
 	// 2. 更新配置模板
 	if err = s.dao.ConfigTemplate().Update(grpcKit, configTemplate); err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "update config template failed, err: %v", err))
 	}
 
 	return &pbds.BindProcessInstanceResp{
@@ -857,7 +882,8 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by ID failed, err: %v", err))
 	}
 
 	instanceProcesses := make([]*pbct.BindProcessInstance, 0)
@@ -869,7 +895,8 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 			TopIds: []uint32{},
 		})
 		if err != nil {
-			return nil, err
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(grpcKit, "list processes by cc process IDs failed, err: %v", err))
 		}
 		for _, v := range process {
 			instanceProcesses = append(instanceProcesses, &pbct.BindProcessInstance{
@@ -890,7 +917,8 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 			TopIds: []uint32{},
 		})
 		if err != nil {
-			return nil, err
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(grpcKit, "list processes by process template IDs failed, err: %v", err))
 		}
 		// 已查到的 ID，用于去重
 		foundIDs := make(map[uint32]struct{})
@@ -922,14 +950,16 @@ func (s *Service) PreviewBindProcessInstance(ctx context.Context, req *pbds.Prev
 					ProcessTemplateID: int(v),
 				})
 				if err != nil {
-					return nil, err
+					return nil, errf.Errorf(errf.DBOpFailed, "%s",
+						i18n.T(grpcKit, "get proc template failed, err: %v", err))
 				}
 				// 获取服务模板信息
 				svcTemplate, err := s.cmdb.GetServiceTemplate(grpcKit.Ctx, bkcmdb.ServiceTemplateReq{
 					ServiceTemplateID: procTemplate.ServiceTemplateID,
 				})
 				if err != nil {
-					return nil, err
+					return nil, errf.Errorf(errf.DBOpFailed, "%s",
+						i18n.T(grpcKit, "get service template failed, err: %v", err))
 				}
 				templateProcesses = append(templateProcesses, &pbct.BindProcessInstance{
 					Id:          v,
@@ -953,31 +983,35 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	// 同一业务下不能出现同名的模板
 	ct, err := s.dao.ConfigTemplate().GetByUniqueKey(grpcKit, req.GetBizId(), req.GetConfigTemplateId(), req.GetTemplateName())
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by unique key failed, err: %v", err))
 	}
 	if ct != nil {
-		return nil, fmt.Errorf(
-			"the same template name already exists under this %d business: %s", req.GetBizId(), req.GetTemplateName(),
-		)
+		return nil, errf.Errorf(errf.AlreadyExists, "%s",
+			i18n.T(grpcKit, "the same template name already exists under this %d business: %s",
+				req.GetBizId(), req.GetTemplateName()))
 	}
 
 	now := time.Now().UTC()
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template failed, err: %v", err))
 	}
 
 	// 2. 查询模板文件
 	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get template failed, err: %v", err))
 	}
 
 	// 3. 获取最新模板版本文件
 	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
 	}
 
 	if err = validatePath(grpcKit, req.GetFullPath()); err != nil {
@@ -1022,7 +1056,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 				i18n.T(grpcKit, "version number %s already exists. Please change it and try again.",
 					templateRevision.Spec.RevisionName))
 		}
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "create template revision failed, err: %v", err))
 	}
 	template.Revision.Reviser = grpcKit.User
 	template.Revision.UpdatedAt = now
@@ -1039,7 +1074,8 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	})
 	if err != nil {
 		logs.Errorf("update template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "update template failed, err: %v", err))
 	}
 
 	// 更新配置模板
@@ -1057,12 +1093,14 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	})
 	if err != nil {
 		logs.Errorf("update config template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "update config template failed, err: %v", err))
 	}
 
 	if e := tx.Commit(); e != nil {
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, grpcKit.Rid)
-		return nil, e
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "update config template failed, err: %v", e))
 	}
 	committed = true
 
@@ -1076,19 +1114,22 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by ID failed, err: %v", err))
 	}
 
 	// 2. 查询模板文件
 	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get template by ID failed, err: %v", err))
 	}
 
 	// 3. 获取最新模板版本文件
 	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
 	}
 
 	resp := &pbct.BindTemplate{
@@ -1123,7 +1164,8 @@ func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbds.DeleteConf
 	// 1. 获取配置模板
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by ID failed, err: %v", err))
 	}
 
 	tx := s.dao.GenQuery().Begin()
@@ -1139,35 +1181,41 @@ func (s *Service) DeleteConfigTemplate(ctx context.Context, req *pbds.DeleteConf
 	// 2. 删除模板文件
 	template, err := s.dao.Template().GetByID(grpcKit, req.GetBizId(), configTemplate.Attachment.TemplateID)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get template by ID failed, err: %v", err))
 	}
 
 	if err = s.dao.Template().DeleteWithTx(grpcKit, tx, template); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "delete template failed, err: %v", err))
 	}
 
 	// 3. 删除模板版本
 	if err = s.dao.TemplateRevision().DeleteForTmplWithTx(grpcKit, tx, req.GetBizId(), template.ID); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "delete template revision failed, err: %v", err))
 	}
 
 	// 4. 从套餐中删除
 	if err = s.dao.TemplateSet().DeleteTmplFromAllTmplSetsWithTx(grpcKit, tx, req.GetBizId(), template.ID); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "delete template from all sets failed, err: %v", err))
 	}
 
 	// 5. 删除配置模板
 	if err = s.dao.ConfigTemplate().DeleteWithTx(grpcKit, tx, configTemplate); err != nil {
 		logs.Errorf("delete template failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "delete config template failed, err: %v", err))
 	}
 
 	if err := tx.Commit(); err != nil {
 		logs.Errorf("commit transaction failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "commit transaction failed, err: %v", err))
 	}
 	committed = true
 

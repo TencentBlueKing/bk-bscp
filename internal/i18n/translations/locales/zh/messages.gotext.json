@@ -531,6 +531,11 @@
             "translation": "非灰度百分比标签在所有分组标签中必须一致"
         },
         {
+            "id": "undefined task action",
+            "message": "undefined task action",
+            "translation": "未定义的任务操作"
+        },
+        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "从模板集中删除模板失败"
@@ -991,6 +996,1085 @@
             ]
         },
         {
+            "id": "validate page parameters failed, err: {Err}",
+            "message": "validate page parameters failed, err: {Err}",
+            "translation": "校验分页参数失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get config template failed, err: {Err}",
+            "message": "get config template failed, err: {Err}",
+            "translation": "获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "biz id is required",
+            "message": "biz id is required",
+            "translation": "业务ID不能为空"
+        },
+        {
+            "id": "at least one config template group is required",
+            "message": "at least one config template group is required",
+            "translation": "至少需要一个配置模板组"
+        },
+        {
+            "id": "config template id is required",
+            "message": "config template id is required",
+            "translation": "配置模板ID不能为空"
+        },
+        {
+            "id": "config template version id is required",
+            "message": "config template version id is required",
+            "translation": "配置模板版本ID不能为空"
+        },
+        {
+            "id": "process list is required",
+            "message": "process list is required",
+            "translation": "进程列表不能为空"
+        },
+        {
+            "id": "get processes by operate range failed, err: {Err}",
+            "message": "get processes by operate range failed, err: {Err}",
+            "translation": "根据操作范围获取进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "no processes found for biz {BizID} with provided operate range",
+            "message": "no processes found for biz {BizID} with provided operate range",
+            "translation": "业务{BizID}在指定操作范围内未找到进程",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ]
+        },
+        {
+            "id": "get config templates by ids failed, err: {Err}",
+            "message": "get config templates by ids failed, err: {Err}",
+            "translation": "根据ID获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get config templates by names failed, err: {Err}",
+            "message": "get config templates by names failed, err: {Err}",
+            "translation": "根据名称获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get all config templates failed, err: {Err}",
+            "message": "get all config templates failed, err: {Err}",
+            "translation": "获取所有配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "no config templates found for biz {BizID}",
+            "message": "no config templates found for biz {BizID}",
+            "translation": "业务{BizID}未找到配置模板",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ]
+        },
+        {
+            "id": "list latest revisions failed, err: {Err}",
+            "message": "list latest revisions failed, err: {Err}",
+            "translation": "列出最新版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "latest revision not found for template {TemplateID}",
+            "message": "latest revision not found for template {TemplateID}",
+            "translation": "模板{TemplateID}未找到最新版本",
+            "placeholders": [
+                {
+                    "id": "TemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplate.Attachment.TemplateID"
+                }
+            ]
+        },
+        {
+            "id": "list config templates failed, err: {Err}",
+            "message": "list config templates failed, err: {Err}",
+            "translation": "列出配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get config template by id {Id} failed, err: {Err}",
+            "message": "get config template by id {Id} failed, err: {Err}",
+            "translation": "根据ID获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Id",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "id"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list config templates by names failed, err: {Err}",
+            "message": "list config templates by names failed, err: {Err}",
+            "translation": "根据名称列出配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "config templates not found for names: {MissingNames}",
+            "message": "config templates not found for names: {MissingNames}",
+            "translation": "以下名称的配置模板未找到: {MissingNames}",
+            "placeholders": [
+                {
+                    "id": "MissingNames",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "missingNames"
+                }
+            ]
+        },
+        {
+            "id": "list processes by template process ids failed, err: {Err}",
+            "message": "list processes by template process ids failed, err: {Err}",
+            "translation": "根据模板进程ID列出进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list filtered processes failed, err: {Err}",
+            "message": "list filtered processes failed, err: {Err}",
+            "translation": "列出过滤后进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get process instances failed, err: {Err}",
+            "message": "get process instances failed, err: {Err}",
+            "translation": "获取进程实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list config instances failed, err: {Err}",
+            "message": "list config instances failed, err: {Err}",
+            "translation": "列出配置实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get template failed, err: {Err}",
+            "message": "get template failed, err: {Err}",
+            "translation": "获取模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process not found for cc process id: {CcProcessID}",
+            "message": "process not found for cc process id: {CcProcessID}",
+            "translation": "根据cc进程ID未找到进程: {CcProcessID}",
+            "placeholders": [
+                {
+                    "id": "CcProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "ci.Attachment.CcProcessID"
+                }
+            ]
+        },
+        {
+            "id": "get latest template revision failed, err: {Err}",
+            "message": "get latest template revision failed, err: {Err}",
+            "translation": "获取最新模板版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list template revisions by ids failed, err: {Err}",
+            "message": "list template revisions by ids failed, err: {Err}",
+            "translation": "根据ID列出模板版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process {CcProcessID} is not in the config template",
+            "message": "process {CcProcessID} is not in the config template",
+            "translation": "进程{CcProcessID}不在配置模板中",
+            "placeholders": [
+                {
+                    "id": "CcProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "process.Attachment.CcProcessID"
+                }
+            ]
+        },
+        {
+            "id": "task storage not initialized",
+            "message": "task storage not initialized",
+            "translation": "任务存储未初始化"
+        },
+        {
+            "id": "list tasks failed, err: {Err}",
+            "message": "list tasks failed, err: {Err}",
+            "translation": "列出任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get common payload failed, err: {Err}",
+            "message": "get common payload failed, err: {Err}",
+            "translation": "获取公共负载失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get task failed, err: {Err}",
+            "message": "get task failed, err: {Err}",
+            "translation": "获取任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "task not found: {TaskId}",
+            "message": "task not found: {TaskId}",
+            "translation": "任务未找到: {TaskId}",
+            "placeholders": [
+                {
+                    "id": "TaskId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.TaskId"
+                }
+            ]
+        },
+        {
+            "id": "config payload not found in task",
+            "message": "config payload not found in task",
+            "translation": "任务中未找到配置负载"
+        },
+        {
+            "id": "biz_id is required",
+            "message": "biz_id is required",
+            "translation": "biz_id不能为空"
+        },
+        {
+            "id": "template_content is required",
+            "message": "template_content is required",
+            "translation": "template_content不能为空"
+        },
+        {
+            "id": "cc_process_id is required",
+            "message": "cc_process_id is required",
+            "translation": "cc_process_id不能为空"
+        },
+        {
+            "id": "query process by cc_process_id failed, err: {Err}",
+            "message": "query process by cc_process_id failed, err: {Err}",
+            "translation": "根据cc_process_id查询进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process not found for cc_process_id: {CcProcessId}",
+            "message": "process not found for cc_process_id: {CcProcessId}",
+            "translation": "根据cc_process_id未找到进程: {CcProcessId}",
+            "placeholders": [
+                {
+                    "id": "CcProcessId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetCcProcessId()"
+                }
+            ]
+        },
+        {
+            "id": "query process instance failed, err: {Err}",
+            "message": "query process instance failed, err: {Err}",
+            "translation": "查询进程实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "expand ginclude failed, err: {Err}",
+            "message": "expand ginclude failed, err: {Err}",
+            "translation": "展开ginclude失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "render template failed, err: {Err}",
+            "message": "render template failed, err: {Err}",
+            "translation": "渲染模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get batch failed, batch_id: {BatchID}, err: {Err}",
+            "message": "get batch failed, batch_id: {BatchID}, err: {Err}",
+            "translation": "获取批次失败, batch_id: {BatchID}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "BatchID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "batchID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "batch {BatchID} is not a config generate batch",
+            "message": "batch {BatchID} is not a config generate batch",
+            "translation": "批次{BatchID}不是配置生成批次",
+            "placeholders": [
+                {
+                    "id": "BatchID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "batchID"
+                }
+            ]
+        },
+        {
+            "id": "list task failed, err: {Err}",
+            "message": "list task failed, err: {Err}",
+            "translation": "列出任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get source batch task data failed, err: {Err}",
+            "message": "get source batch task data failed, err: {Err}",
+            "translation": "获取源批次任务数据失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create batch failed, err: {Err}",
+            "message": "create batch failed, err: {Err}",
+            "translation": "创建批次失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "check running config push tasks failed, err: {Err}",
+            "message": "check running config push tasks failed, err: {Err}",
+            "translation": "检查运行中的配置下发任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "config template already has running push tasks, please wait for completion",
+            "message": "config template already has running push tasks, please wait for completion",
+            "translation": "配置模板已有运行中的下发任务，请等待完成"
+        },
+        {
+            "id": "get config template {ConfigTemplateID} failed, err: {Err}",
+            "message": "get config template {ConfigTemplateID} failed, err: {Err}",
+            "translation": "获取配置模板{ConfigTemplateID}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get latest template revision for config template {ConfigTemplateID} failed, err: {Err}",
+            "message": "get latest template revision for config template {ConfigTemplateID} failed, err: {Err}",
+            "translation": "获取配置模板{ConfigTemplateID}的最新版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "config template {ConfigTemplateID} version is not the latest, current: {VersionID}, latest: {ID}, please regenerate config",
+            "message": "config template {ConfigTemplateID} version is not the latest, current: {VersionID}, latest: {ID}, please regenerate config",
+            "translation": "配置模板{ConfigTemplateID}版本不是最新的, 当前: {VersionID}, 最新: {ID}, 请重新生成配置",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "VersionID",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "versionID"
+                },
+                {
+                    "id": "ID",
+                    "string": "%[3]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 3,
+                    "expr": "latestRevision.ID"
+                }
+            ]
+        },
+        {
+            "id": "no success tasks found for batch {BatchId}",
+            "message": "no success tasks found for batch {BatchId}",
+            "translation": "批次{BatchId}未找到成功任务",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ]
+        },
+        {
+            "id": "config payload is nil for task {TaskID}",
+            "message": "config payload is nil for task {TaskID}",
+            "translation": "任务{TaskID}的配置负载为空",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ]
+        },
+        {
+            "id": "process payload is nil for task {TaskID}",
+            "message": "process payload is nil for task {TaskID}",
+            "translation": "任务{TaskID}的进程负载为空",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ]
+        },
+        {
+            "id": "config template id is not valid for task {TaskID}",
+            "message": "config template id is not valid for task {TaskID}",
+            "translation": "任务{TaskID}的配置模板ID无效",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ]
+        },
+        {
+            "id": "no valid tasks found for batch {BatchId}",
+            "message": "no valid tasks found for batch {BatchId}",
+            "translation": "批次{BatchId}未找到有效任务",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ]
+        },
+        {
+            "id": "get task batch failed, err: {Err}",
+            "message": "get task batch failed, err: {Err}",
+            "translation": "获取任务批次失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "task batch {BatchId} does not exist",
+            "message": "task batch {BatchId} does not exist",
+            "translation": "任务批次{BatchId}不存在",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ]
+        },
+        {
+            "id": "unknown operation type: {OperationType}",
+            "message": "unknown operation type: {OperationType}",
+            "translation": "未知操作类型: {OperationType}",
+            "placeholders": [
+                {
+                    "id": "OperationType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.GetOperationType()"
+                }
+            ]
+        },
+        {
+            "id": "regenerate task failed, err: {Err}",
+            "message": "regenerate task failed, err: {Err}",
+            "translation": "重新生成任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "query failed tasks failed, err: {Err}",
+            "message": "query failed tasks failed, err: {Err}",
+            "translation": "查询失败任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "reset counts for retry failed, err: {Err}",
+            "message": "reset counts for retry failed, err: {Err}",
+            "translation": "重置重试计数失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "retry failed task failed, err: {Err}",
+            "message": "retry failed task failed, err: {Err}",
+            "translation": "重试失败任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "config template version id is not latest",
+            "message": "config template version id is not latest",
+            "translation": "配置模板版本ID不是最新的"
+        },
+        {
+            "id": "get process failed, err: {Err}",
+            "message": "get process failed, err: {Err}",
+            "translation": "获取进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "some processes not found for biz {BizID}",
+            "message": "some processes not found for biz {BizID}",
+            "translation": "业务{BizID}部分进程未找到",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ]
+        },
+        {
+            "id": "invalid binding relationship",
+            "message": "invalid binding relationship",
+            "translation": "无效的绑定关系"
+        },
+        {
+            "id": "no tasks to create",
+            "message": "no tasks to create",
+            "translation": "没有可创建的任务"
+        },
+        {
+            "id": "unsupported config task mode: {Mode}",
+            "message": "unsupported config task mode: {Mode}",
+            "translation": "不支持的配置任务模式: {Mode}",
+            "placeholders": [
+                {
+                    "id": "Mode",
+                    "string": "%[1]v",
+                    "type": "github.com/TencentBlueKing/bk-bscp/cmd/data-service/service.ConfigTaskMode",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "mode"
+                }
+            ]
+        },
+        {
+            "id": "create run config generation or verification task failed, err: {Err}",
+            "message": "create run config generation or verification task failed, err: {Err}",
+            "translation": "创建配置生成或校验任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "payload not found in task",
+            "message": "payload not found in task",
+            "translation": "任务中未找到负载"
+        },
+        {
+            "id": "config instance not found, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "message": "config instance not found, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "translation": "配置实例未找到, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                },
+                {
+                    "id": "ConfigTemplateId",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "req.GetConfigTemplateId()"
+                },
+                {
+                    "id": "CcProcessId",
+                    "string": "%[3]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 3,
+                    "expr": "req.GetCcProcessId()"
+                },
+                {
+                    "id": "ModuleInstSeq",
+                    "string": "%[4]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 4,
+                    "expr": "req.GetModuleInstSeq()"
+                }
+            ]
+        },
+        {
+            "id": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "message": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "translation": "模板与模板版本不匹配, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetConfigTemplateId()"
+                },
+                {
+                    "id": "TemplateID",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "tr.Attachment.TemplateID"
+                }
+            ]
+        },
+        {
+            "id": "download template config failed, template id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "message": "download template config failed, template id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "translation": "下载模板配置失败, 模板id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "TemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "tr.Attachment.TemplateID"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "tr.Spec.Name"
+                },
+                {
+                    "id": "Path",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "tr.Spec.Path"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[4]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 4,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
             "id": "get config item failed, err: {Err}",
             "message": "get config item failed, err: {Err}",
             "translation": "获取配置项失败, err: {Err}",
@@ -1201,13 +2285,186 @@
             ]
         },
         {
-            "id": "batch add templates to template sets failed, err: {Err}",
-            "message": "batch add templates to template sets failed, err: {Err}",
-            "translation": "模板集批量添加模板失败, err: {Err}",
+            "id": "no available space or packages",
+            "message": "no available space or packages",
+            "translation": "没有可用的空间或套餐"
+        },
+        {
+            "id": "list config instances by template ID failed, err: {Error}",
+            "message": "list config instances by template ID failed, err: {Error}",
+            "translation": "根据模板ID列出配置实例失败, err: {Error}",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "er"
+                }
+            ]
+        },
+        {
+            "id": "list templates by IDs failed, err: {Err}",
+            "message": "list templates by IDs failed, err: {Err}",
+            "translation": "根据ID列出模板失败, err: {Err}",
             "placeholders": [
                 {
                     "id": "Err",
-                    "string": "%[1]s",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "find topo brief failed, err: {Err}",
+            "message": "find topo brief failed, err: {Err}",
+            "translation": "查找拓扑摘要失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "no available topo nodes",
+            "message": "no available topo nodes",
+            "translation": "没有可用的拓扑节点"
+        },
+        {
+            "id": "no valid module IDs found",
+            "message": "no valid module IDs found",
+            "translation": "未找到有效的模块ID"
+        },
+        {
+            "id": "fetch all module details failed, err: {Err}",
+            "message": "fetch all module details failed, err: {Err}",
+            "translation": "获取所有模块详情失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list processes failed, err: {Err}",
+            "message": "list processes failed, err: {Err}",
+            "translation": "列出进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get config template by unique key failed, err: {Err}",
+            "message": "get config template by unique key failed, err: {Err}",
+            "translation": "根据唯一键获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "the same template name already exists under this {BizId} business: {TemplateName}",
+            "message": "the same template name already exists under this {BizId} business: {TemplateName}",
+            "translation": "此业务{BizId}下已存在同名模板: {TemplateName}",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                },
+                {
+                    "id": "TemplateName",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "req.GetTemplateName()"
+                }
+            ]
+        },
+        {
+            "id": "get template set failed, err: {Err}",
+            "message": "get template set failed, err: {Err}",
+            "translation": "获取模板集失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create template and revision failed, err: {Err}",
+            "message": "create template and revision failed, err: {Err}",
+            "translation": "创建模板和版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create config template failed, err: {Err}",
+            "message": "create config template failed, err: {Err}",
+            "translation": "创建配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create template failed, err: {Err}",
+            "message": "create template failed, err: {Err}",
+            "translation": "创建模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
@@ -1227,6 +2484,421 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "templateRevision.Spec.RevisionName"
+                }
+            ]
+        },
+        {
+            "id": "create template revision failed, err: {Err}",
+            "message": "create template revision failed, err: {Err}",
+            "translation": "创建模板版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "batch add templates to template sets failed, err: {Err}",
+            "message": "batch add templates to template sets failed, err: {Err}",
+            "translation": "模板集批量添加模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]s",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get default template configuration space failed, err: {Err}",
+            "message": "get default template configuration space failed, err: {Err}",
+            "translation": "获取默认模板配置空间失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create default template configuration space failed, err: {Err}",
+            "message": "create default template configuration space failed, err: {Err}",
+            "translation": "创建默认模板配置空间失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get default template set failed, err: {Err}",
+            "message": "get default template set failed, err: {Err}",
+            "translation": "获取默认模板集失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create default template set failed, err: {Err}",
+            "message": "create default template set failed, err: {Err}",
+            "translation": "创建默认模板集失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "fetch all service template failed, err: {Err}",
+            "message": "fetch all service template failed, err: {Err}",
+            "translation": "获取所有服务模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "batch process by service templates failed, err: {Err}",
+            "message": "batch process by service templates failed, err: {Err}",
+            "translation": "按服务模板批量处理进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list proc template failed, err: {Err}",
+            "message": "list proc template failed, err: {Err}",
+            "translation": "列出进程模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list service instance failed, err: {Err}",
+            "message": "list service instance failed, err: {Err}",
+            "translation": "列出服务实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "batch process count by service instances failed, err: {Err}",
+            "message": "batch process count by service instances failed, err: {Err}",
+            "translation": "按服务实例批量统计进程数失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process instance failed, err: {Err}",
+            "message": "list process instance failed, err: {Err}",
+            "translation": "列出进程实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get biz object attributes failed, err: {Err}",
+            "message": "get biz object attributes failed, err: {Err}",
+            "translation": "获取业务对象属性失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get config template by ID failed, err: {Err}",
+            "message": "get config template by ID failed, err: {Err}",
+            "translation": "根据ID获取配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "update config template failed, err: {Err}",
+            "message": "update config template failed, err: {Err}",
+            "translation": "更新配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list processes by cc process IDs failed, err: {Err}",
+            "message": "list processes by cc process IDs failed, err: {Err}",
+            "translation": "根据CC进程ID列出进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list processes by process template IDs failed, err: {Err}",
+            "message": "list processes by process template IDs failed, err: {Err}",
+            "translation": "根据进程模板ID列出进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get proc template failed, err: {Err}",
+            "message": "get proc template failed, err: {Err}",
+            "translation": "获取进程模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get service template failed, err: {Err}",
+            "message": "get service template failed, err: {Err}",
+            "translation": "获取服务模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "update template failed, err: {Err}",
+            "message": "update template failed, err: {Err}",
+            "translation": "更新模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get template by ID failed, err: {Err}",
+            "message": "get template by ID failed, err: {Err}",
+            "translation": "根据ID获取模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "delete template failed, err: {Err}",
+            "message": "delete template failed, err: {Err}",
+            "translation": "删除模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "delete template revision failed, err: {Err}",
+            "message": "delete template revision failed, err: {Err}",
+            "translation": "删除模板版本失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "delete template from all sets failed, err: {Err}",
+            "message": "delete template from all sets failed, err: {Err}",
+            "translation": "从所有模板集中删除模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "delete config template failed, err: {Err}",
+            "message": "delete config template failed, err: {Err}",
+            "translation": "删除配置模板失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "commit transaction failed, err: {Err}",
+            "message": "commit transaction failed, err: {Err}",
+            "translation": "提交事务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "path cannot be empty",
+            "message": "path cannot be empty",
+            "translation": "路径不能为空"
+        },
+        {
+            "id": "path cannot contain null character",
+            "message": "path cannot contain null character",
+            "translation": "路径不能包含null字符"
+        },
+        {
+            "id": "path contains invalid segment: {Seg}",
+            "message": "path contains invalid segment: {Seg}",
+            "translation": "路径包含无效段: {Seg}",
+            "placeholders": [
+                {
+                    "id": "Seg",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "seg"
                 }
             ]
         },
@@ -1525,6 +3197,492 @@
             ]
         },
         {
+            "id": "get process instances by process IDs failed, err: {Err}",
+            "message": "get process instances by process IDs failed, err: {Err}",
+            "translation": "根据进程ID获取进程实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list config templates by CC process ID failed, err: {ErrP}",
+            "message": "list config templates by CC process ID failed, err: {ErrP}",
+            "translation": "根据CC进程ID列出配置模板失败, err: {ErrP}",
+            "placeholders": [
+                {
+                    "id": "ErrP",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "errP"
+                }
+            ]
+        },
+        {
+            "id": "list config templates by CC template process ID failed, err: {ErrT}",
+            "message": "list config templates by CC template process ID failed, err: {ErrT}",
+            "translation": "根据CC模板进程ID列出配置模板失败, err: {ErrT}",
+            "placeholders": [
+                {
+                    "id": "ErrT",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "errT"
+                }
+            ]
+        },
+        {
+            "id": "when ProcessInstanceId is specified, only one ProcessId is allowed",
+            "message": "when ProcessInstanceId is specified, only one ProcessId is allowed",
+            "translation": "指定了ProcessInstanceId时只允许一个ProcessId"
+        },
+        {
+            "id": "operate type is not supported: {Err}",
+            "message": "operate type is not supported: {Err}",
+            "translation": "不支持的操作类型: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "query_status operation is not supported",
+            "message": "query_status operation is not supported",
+            "translation": "不支持query_status操作"
+        },
+        {
+            "id": "no process instances found for processes matching operate range",
+            "message": "no process instances found for processes matching operate range",
+            "translation": "操作范围内未找到匹配的进程实例"
+        },
+        {
+            "id": "get process instances by IDs failed, err: {Err}",
+            "message": "get process instances by IDs failed, err: {Err}",
+            "translation": "根据IDs获取进程实例失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process instances not found for IDs {ProcessInstanceIDs}",
+            "message": "process instances not found for IDs {ProcessInstanceIDs}",
+            "translation": "以下ID的进程实例未找到: {ProcessInstanceIDs}",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceIDs",
+                    "string": "%[1]v",
+                    "type": "[]uint32",
+                    "underlyingType": "[]uint32",
+                    "argNum": 1,
+                    "expr": "processInstanceIDs"
+                }
+            ]
+        },
+        {
+            "id": "process not found for id {ProcessID}",
+            "message": "process not found for id {ProcessID}",
+            "translation": "根据ID未找到进程: {ProcessID}",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "insts[0].Attachment.ProcessID"
+                }
+            ]
+        },
+        {
+            "id": "get processes failed, err: {Err}",
+            "message": "get processes failed, err: {Err}",
+            "translation": "获取进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "no processes found for biz {BizID} with provided process IDs",
+            "message": "no processes found for biz {BizID} with provided process IDs",
+            "translation": "业务{BizID}在指定进程ID下未找到进程",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ]
+        },
+        {
+            "id": "no process instances found for process IDs {ProcessIDs}",
+            "message": "no process instances found for process IDs {ProcessIDs}",
+            "translation": "以下进程ID未找到进程实例: {ProcessIDs}",
+            "placeholders": [
+                {
+                    "id": "ProcessIDs",
+                    "string": "%[1]v",
+                    "type": "[]uint32",
+                    "underlyingType": "[]uint32",
+                    "argNum": 1,
+                    "expr": "processIDs"
+                }
+            ]
+        },
+        {
+            "id": "create task batch failed, err: {Err}",
+            "message": "create task batch failed, err: {Err}",
+            "translation": "创建任务批次失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "update process instance status failed, err: {Err}",
+            "message": "update process instance status failed, err: {Err}",
+            "translation": "更新进程实例状态失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process not found in processMap, processID={ProcessID}",
+            "message": "process not found in processMap, processID={ProcessID}",
+            "translation": "processMap中未找到进程, processID={ProcessID}",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.Attachment.ProcessID"
+                }
+            ]
+        },
+        {
+            "id": "build process operate task failed, err: {Err}",
+            "message": "build process operate task failed, err: {Err}",
+            "translation": "构建进程操作任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (sets) failed, err: {Err}",
+            "message": "list process filter options (sets) failed, err: {Err}",
+            "translation": "列出进程过滤选项(集群)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (modules) failed, err: {Err}",
+            "message": "list process filter options (modules) failed, err: {Err}",
+            "translation": "列出进程过滤选项(模块)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (service instances) failed, err: {Err}",
+            "message": "list process filter options (service instances) failed, err: {Err}",
+            "translation": "列出进程过滤选项(服务实例)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (CC process IDs) failed, err: {Err}",
+            "message": "list process filter options (CC process IDs) failed, err: {Err}",
+            "translation": "列出进程过滤选项(CC进程ID)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (aliases) failed, err: {Err}",
+            "message": "list process filter options (aliases) failed, err: {Err}",
+            "translation": "列出进程过滤选项(别名)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list failed tasks from task storage failed, err: {Err}",
+            "message": "list failed tasks from task storage failed, err: {Err}",
+            "translation": "从任务存储列出失败任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list processes failed for process instance topo, err: {Err}",
+            "message": "list processes failed for process instance topo, err: {Err}",
+            "translation": "为进程实例拓扑列出进程失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "unsupported managed status for delete: {ManagedStatus}",
+            "message": "unsupported managed status for delete: {ManagedStatus}",
+            "translation": "不支持删除的管理状态: {ManagedStatus}",
+            "placeholders": [
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "managedStatus"
+                }
+            ]
+        },
+        {
+            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translation": "不支持删除的进程状态: status={Status} managedStatus={ManagedStatus}",
+            "placeholders": [
+                {
+                    "id": "Status",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "status"
+                },
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[2]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "managedStatus"
+                }
+            ]
+        },
+        {
+            "id": "delete process instance {ID} failed, err: {Err}",
+            "message": "delete process instance {ID} failed, err: {Err}",
+            "translation": "删除进程实例{ID}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list process filter options (inner IP) failed, err: {Err}",
+            "message": "list process filter options (inner IP) failed, err: {Err}",
+            "translation": "列出进程过滤选项(内网IP)失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "Running",
+            "message": "Running",
+            "translation": "运行中"
+        },
+        {
+            "id": "PartiallyRunning",
+            "message": "PartiallyRunning",
+            "translation": "部分运行中"
+        },
+        {
+            "id": "Starting",
+            "message": "Starting",
+            "translation": "启动中"
+        },
+        {
+            "id": "Restarting",
+            "message": "Restarting",
+            "translation": "重启中"
+        },
+        {
+            "id": "Stopping",
+            "message": "Stopping",
+            "translation": "停止中"
+        },
+        {
+            "id": "Reloading",
+            "message": "Reloading",
+            "translation": "重载中"
+        },
+        {
+            "id": "NotRunning",
+            "message": "NotRunning",
+            "translation": "未运行"
+        },
+        {
+            "id": "StartingManagement",
+            "message": "StartingManagement",
+            "translation": "启动托管"
+        },
+        {
+            "id": "StoppingManagement",
+            "message": "StoppingManagement",
+            "translation": "停止托管"
+        },
+        {
+            "id": "Managed",
+            "message": "Managed",
+            "translation": "已托管"
+        },
+        {
+            "id": "Unmanaged",
+            "message": "Unmanaged",
+            "translation": "未托管"
+        },
+        {
+            "id": "PartiallyManaged",
+            "message": "PartiallyManaged",
+            "translation": "部分托管"
+        },
+        {
+            "id": "Normal",
+            "message": "Normal",
+            "translation": "正常"
+        },
+        {
+            "id": "Deleted",
+            "message": "Deleted",
+            "translation": "已删除"
+        },
+        {
+            "id": "Updated",
+            "message": "Updated",
+            "translation": "有更新"
+        },
+        {
+            "id": "Abnormal",
+            "message": "Abnormal",
+            "translation": "异常"
+        },
+        {
             "id": "release {Name} is deprecated, can not be submited",
             "message": "release {Name} is deprecated, can not be submited",
             "translation": "版本{Name}已弃用，无法提交",
@@ -1738,6 +3896,317 @@
             ]
         },
         {
+            "id": "process config view is not enabled for biz {BizId}",
+            "message": "process config view is not enabled for biz {BizId}",
+            "translation": "业务{BizId}未开启进程配置视图",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                }
+            ]
+        },
+        {
+            "id": "create sync cmdb task failed, err: {Err}",
+            "message": "create sync cmdb task failed, err: {Err}",
+            "translation": "创建同步CMDB任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get business data failed, err: {Err}",
+            "message": "get business data failed, err: {Err}",
+            "translation": "获取业务数据失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list task batch failed, err: {Err}",
+            "message": "list task batch failed, err: {Err}",
+            "translation": "列出任务批次失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list distinct executors failed, err: {Err}",
+            "message": "list distinct executors failed, err: {Err}",
+            "translation": "列出不同的执行者失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "task storage is not initialized",
+            "message": "task storage is not initialized",
+            "translation": "任务存储未初始化"
+        },
+        {
+            "id": "get task batch {BatchId} failed, err: {Err}",
+            "message": "get task batch {BatchId} failed, err: {Err}",
+            "translation": "获取任务批次{BatchId}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list tasks from task storage failed, err: {Err}",
+            "message": "list tasks from task storage failed, err: {Err}",
+            "translation": "从任务存储列出任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list tasks returned nil pagination",
+            "message": "list tasks returned nil pagination",
+            "translation": "列出任务返回nil分页"
+        },
+        {
+            "id": "task is nil",
+            "message": "task is nil",
+            "translation": "任务为空"
+        },
+        {
+            "id": "get common payload from task failed, err: {Err}",
+            "message": "get common payload from task failed, err: {Err}",
+            "translation": "从任务获取公共负载失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "list tasks from task storage failed for status {NormalizedStatus}, err: {Err}",
+            "message": "list tasks from task storage failed for status {NormalizedStatus}, err: {Err}",
+            "translation": "从任务存储按状态{NormalizedStatus}列出任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "NormalizedStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "normalizedStatus"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "invalid {FieldName} format: {Err}",
+            "message": "invalid {FieldName} format: {Err}",
+            "translation": "无效的{FieldName}格式: {Err}",
+            "placeholders": [
+                {
+                    "id": "FieldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "fieldName"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "reset task batch counts for retry failed, batchID: {ID}, err: {Err}",
+            "message": "reset task batch counts for retry failed, batchID: {ID}, err: {Err}",
+            "translation": "重置任务批次重试计数失败, batchID: {ID}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "taskBatch.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "operate process step not found for taskID: {TaskID}",
+            "message": "operate process step not found for taskID: {TaskID}",
+            "translation": "未找到任务{TaskID}的操作进程步骤",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                }
+            ]
+        },
+        {
+            "id": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
+            "message": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
+            "translation": "从任务步骤获取操作负载失败, taskID: {TaskID}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "message": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "translation": "根据ID获取进程实例{ProcessInstanceID}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "processPayload.ProcessInstanceID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process instance with ID {ProcessInstanceID} does not exist",
+            "message": "process instance with ID {ProcessInstanceID} does not exist",
+            "translation": "进程实例ID {ProcessInstanceID}不存在",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "processPayload.ProcessInstanceID"
+                }
+            ]
+        },
+        {
+            "id": "retry failed task {TaskID} failed, err: {Err}",
+            "message": "retry failed task {TaskID} failed, err: {Err}",
+            "translation": "重试失败任务{TaskID}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
             "id": "get app template bindings by template set ids, err: {Err}",
             "message": "get app template bindings by template set ids, err: {Err}",
             "translation": "按模板集ID获取应用程序模板绑定, err: {Err}",
@@ -1821,21 +4290,6 @@
             "id": "list app template bindings by app ids failed, err: {Err}",
             "message": "list app template bindings by app ids failed, err: {Err}",
             "translation": "按服务ID列出应用模板绑定失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]s",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "get template set failed, err: {Err}",
-            "message": "get template set failed, err: {Err}",
-            "translation": "获取模板集失败, err: {Err}",
             "placeholders": [
                 {
                     "id": "Err",
@@ -2234,21 +4688,6 @@
                     "underlyingType": "uint32",
                     "argNum": 1,
                     "expr": "id"
-                }
-            ]
-        },
-        {
-            "id": "get template failed, err: {Err}",
-            "message": "get template failed, err: {Err}",
-            "translation": "获取模板失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
                 }
             ]
         },
@@ -2689,9 +5128,9 @@
             ]
         },
         {
-            "id": "invalid name {Name}, there can't be any /",
-            "message": "invalid name {Name}, there can't be any /",
-            "translation": "名称 {Name} 无效，不能有 /",
+            "id": "invalid name {Name}, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space",
+            "message": "invalid name {Name}, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space",
+            "translation": "无效名称 {Name}, 只允许中文、英文、数字、下划线（_）、连字符（-）、点（.）和空格",
             "placeholders": [
                 {
                     "id": "Name",
@@ -2960,6 +5399,86 @@
             "translation": "无效的配置项ID"
         },
         {
+            "id": "ConfigFile",
+            "message": "ConfigFile",
+            "translation": "配置文件"
+        },
+        {
+            "id": "Process",
+            "message": "Process",
+            "translation": "进程"
+        },
+        {
+            "id": "Start",
+            "message": "Start",
+            "translation": "启动"
+        },
+        {
+            "id": "Stop",
+            "message": "Stop",
+            "translation": "停止"
+        },
+        {
+            "id": "Restart",
+            "message": "Restart",
+            "translation": "重启"
+        },
+        {
+            "id": "Reload",
+            "message": "Reload",
+            "translation": "重载"
+        },
+        {
+            "id": "Kill",
+            "message": "Kill",
+            "translation": "强制停止"
+        },
+        {
+            "id": "Register",
+            "message": "Register",
+            "translation": "托管"
+        },
+        {
+            "id": "Unregister",
+            "message": "Unregister",
+            "translation": "取消托管"
+        },
+        {
+            "id": "ConfigPublish",
+            "message": "ConfigPublish",
+            "translation": "配置下发"
+        },
+        {
+            "id": "ConfigGenerate",
+            "message": "ConfigGenerate",
+            "translation": "配置生成"
+        },
+        {
+            "id": "ConfigCheck",
+            "message": "ConfigCheck",
+            "translation": "配置检查"
+        },
+        {
+            "id": "Executing",
+            "message": "Executing",
+            "translation": "正在执行"
+        },
+        {
+            "id": "ExecutionSuccessful",
+            "message": "ExecutionSuccessful",
+            "translation": "执行成功"
+        },
+        {
+            "id": "ExecutionFailed",
+            "message": "ExecutionFailed",
+            "translation": "执行失败"
+        },
+        {
+            "id": "PartialFailure",
+            "message": "PartialFailure",
+            "translation": "部分失败"
+        },
+        {
             "id": "default_val {DefaultVal} is not a number type",
             "message": "default_val {DefaultVal} is not a number type",
             "translation": "default_val {DefaultVal} 不是数字类型",
@@ -2971,6 +5490,162 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "t.DefaultVal"
+                }
+            ]
+        },
+        {
+            "id": "invalid base directory",
+            "message": "invalid base directory",
+            "translation": "无效的根目录"
+        },
+        {
+            "id": "get absolute base path failed, baseDir: {BaseDir}, err: {Err}",
+            "message": "get absolute base path failed, baseDir: {BaseDir}, err: {Err}",
+            "translation": "获取绝对基本路径失败, baseDir: {BaseDir}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "BaseDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "baseDir"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get absolute destination path failed, path: {DstPath}, err: {Err}",
+            "message": "get absolute destination path failed, path: {DstPath}, err: {Err}",
+            "translation": "获取绝对目标路径失败, path: {DstPath}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "calculate relative path failed, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "message": "calculate relative path failed, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "translation": "计算相对路径失败, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "BaseAbs",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "baseAbs"
+                },
+                {
+                    "id": "DstAbs",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "dstAbs"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[3]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 3,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "invalid file path",
+            "message": "invalid file path",
+            "translation": "无效的文件路径"
+        },
+        {
+            "id": "create parent directory failed, dir: {ParentDir}, err: {Err}",
+            "message": "create parent directory failed, dir: {ParentDir}, err: {Err}",
+            "translation": "创建父目录失败, dir: {ParentDir}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ParentDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "parentDir"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "create file failed, path: {DstPath}, err: {Err}",
+            "message": "create file failed, path: {DstPath}, err: {Err}",
+            "translation": "创建文件失败, path: {DstPath}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "write file failed, path: {DstPath}, err: {Err}",
+            "message": "write file failed, path: {DstPath}, err: {Err}",
+            "translation": "文件写入失败, path: {DstPath}, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ]
         },

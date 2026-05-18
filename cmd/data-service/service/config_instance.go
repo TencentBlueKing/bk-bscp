@@ -33,7 +33,9 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcin "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-instance"
@@ -67,7 +69,8 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	// validate the page params
 	opt := &types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All}
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "validate page parameters failed, err: %v", err))
 	}
 
 	if req.ConfigTemplateId == 0 {
@@ -83,7 +86,8 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	// 获取配置模板信息
 	configTemplate, err := s.dao.ConfigTemplate().GetByID(kt, req.BizId, req.ConfigTemplateId)
 	if err != nil {
-		return nil, fmt.Errorf("get config template failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get config template failed, err: %v", err))
 	}
 
 	// 根据查询条件，获取过滤后的进程列表
@@ -129,7 +133,7 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	}
 
 	// 构建 PB 对象
-	pbConfigInstances, err := buildPbConfigInstances(finalConfigInstances, filteredProcesses, relatedData)
+	pbConfigInstances, err := buildPbConfigInstances(kt, finalConfigInstances, filteredProcesses, relatedData)
 	if err != nil {
 		return nil, err
 	}
@@ -158,22 +162,23 @@ func (s *Service) ListConfigInstances(ctx context.Context, req *pbds.ListConfigI
 	}, nil
 }
 
-func validateRequest(bizID uint32, ctgs []*pbcin.ConfigTemplateGroup) error {
+func validateRequest(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup) error {
 	if bizID == 0 {
-		return fmt.Errorf("biz id is required")
+		return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "biz id is required"))
 	}
 	if len(ctgs) == 0 {
-		return fmt.Errorf("at least one config template group is required")
+		return errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "at least one config template group is required"))
 	}
 	for _, group := range ctgs {
 		if group.ConfigTemplateId == 0 {
-			return fmt.Errorf("config template id is required")
+			return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "config template id is required"))
 		}
 		if group.ConfigTemplateVersionId == 0 {
-			return fmt.Errorf("config template version id is required")
+			return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "config template version id is required"))
 		}
 		if len(group.CcProcessIds) == 0 {
-			return fmt.Errorf("process list is required")
+			return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "process list is required"))
 		}
 	}
 	return nil
@@ -216,11 +221,13 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 	processes, err := s.dao.Process().GetByOperateRange(kt, bizID, operateRange)
 	if err != nil {
 		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, fmt.Errorf("get processes by operate range failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get processes by operate range failed, err: %v", err))
 	}
 
 	if len(processes) == 0 {
-		return nil, fmt.Errorf("no processes found for biz %d with provided operate range", bizID)
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no processes found for biz %d with provided operate range", bizID))
 	}
 
 	// 提取所有进程的 CcProcessID
@@ -236,26 +243,30 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 		configTemplates, err = s.getConfigTemplatesByIDs(kt, bizID, operateRange.GetConfigTemplateIds())
 		if err != nil {
 			logs.Errorf("get config templates by ids failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, fmt.Errorf("get config templates by ids failed: %w", err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get config templates by ids failed, err: %v", err))
 		}
 	} else if len(operateRange.GetConfigTemplateNames()) > 0 {
 		// 根据配置模版名称查询（当前插件版本仅支持配置模版名称查询）
 		configTemplates, err = s.getConfigTemplatesByNames(kt, bizID, operateRange.GetConfigTemplateNames())
 		if err != nil {
 			logs.Errorf("get config templates by names failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, fmt.Errorf("get config templates by names failed: %w", err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get config templates by names failed, err: %v", err))
 		}
 	} else {
 		// 未指定则下发所有配置模版
 		configTemplates, err = s.getAllConfigTemplates(kt, bizID)
 		if err != nil {
 			logs.Errorf("get all config templates failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, fmt.Errorf("get all config templates failed: %w", err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get all config templates failed, err: %v", err))
 		}
 	}
 
 	if len(configTemplates) == 0 {
-		return nil, fmt.Errorf("no config templates found for biz %d", bizID)
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no config templates found for biz %d", bizID))
 	}
 
 	// 查询所有配置模版的最新版本
@@ -266,7 +277,8 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 	latestRevisions, err := s.dao.TemplateRevision().ListLatestRevisionsGroupByTemplateIds(kt, templateIDs)
 	if err != nil {
 		logs.Errorf("list latest revisions failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, fmt.Errorf("list latest revisions failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list latest revisions failed, err: %v", err))
 	}
 
 	// 构建 templateID -> latestRevision 的映射
@@ -282,7 +294,8 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 		if !ok {
 			logs.Errorf("latest revision not found for template_id: %d, config_template_id: %d, rid: %s",
 				configTemplate.Attachment.TemplateID, configTemplate.ID, kt.Rid)
-			return nil, fmt.Errorf("latest revision not found for template %d", configTemplate.Attachment.TemplateID)
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "latest revision not found for template %d", configTemplate.Attachment.TemplateID))
 		}
 
 		// 构建配置模版组
@@ -302,7 +315,7 @@ func (s *Service) getAllConfigTemplates(kt *kit.Kit, bizID uint32) ([]*table.Con
 	// 获取或创建模板空间
 	templateSpace, err := s.getOrCreateTemplateSpace(kt, bizID, time.Now().UTC())
 	if err != nil {
-		return nil, fmt.Errorf("get or create template space failed: %w", err)
+		return nil, err
 	}
 
 	// 查询所有配置模版
@@ -310,7 +323,8 @@ func (s *Service) getAllConfigTemplates(kt *kit.Kit, bizID uint32) ([]*table.Con
 		All: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list config templates failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list config templates failed, err: %v", err))
 	}
 
 	return configTemplates, nil
@@ -333,7 +347,8 @@ func (s *Service) getConfigTemplatesByIDs(kt *kit.Kit, bizID uint32, ids []uint3
 	for id := range uniqueIDs {
 		configTemplate, err := s.dao.ConfigTemplate().GetByID(kt, bizID, id)
 		if err != nil {
-			return nil, fmt.Errorf("get config template by id %d failed: %w", id, err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get config template by id %d failed, err: %v", id, err))
 		}
 		configTemplates = append(configTemplates, configTemplate)
 	}
@@ -356,7 +371,8 @@ func (s *Service) getConfigTemplatesByNames(kt *kit.Kit, bizID uint32, names []s
 	// 根据名称查询配置模版
 	configTemplates, err := s.dao.ConfigTemplate().ListByNames(kt, bizID, names)
 	if err != nil {
-		return nil, fmt.Errorf("list config templates by names failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list config templates by names failed, err: %v", err))
 	}
 
 	// 验证是否所有名称都找到了对应的配置模版
@@ -375,7 +391,8 @@ func (s *Service) getConfigTemplatesByNames(kt *kit.Kit, bizID uint32, names []s
 
 		if len(missingNames) > 0 {
 			logs.Warnf("some config template names not found, missing names: %v, rid: %s", missingNames, kt.Rid)
-			return nil, fmt.Errorf("config templates not found for names: %v", missingNames)
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "config templates not found for names: %v", missingNames))
 		}
 	}
 
@@ -399,7 +416,8 @@ func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate
 			All: true,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("list processes by template process ids failed, err: %v", err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "list processes by template process ids failed, err: %v", err))
 		}
 	}
 	ccProcessIDs := make([]uint32, 0, len(processes)+len(configTemplate.Attachment.CcProcessIDs))
@@ -433,7 +451,8 @@ func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate
 		All: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list filtered processes failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list filtered processes failed, err: %v", err))
 	}
 
 	return filteredProcesses, nil
@@ -449,7 +468,8 @@ func getProcessInstances(kt *kit.Kit, dao dao.Set, bizID uint32, processes []*ta
 	// 查询进程实例列表
 	processInstances, err := dao.ProcessInstance().GetByProcessIDs(kt, bizID, processIDs)
 	if err != nil {
-		return nil, fmt.Errorf("get process instances failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get process instances failed, err: %v", err))
 	}
 
 	return processInstances, nil
@@ -519,7 +539,8 @@ func getActualConfigInstances(kt *kit.Kit, ds dao.Set, bizID uint32, configTempl
 		All: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list config instances failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list config instances failed, err: %v", err))
 	}
 
 	// 构建映射表
@@ -548,7 +569,8 @@ func getRelatedData(
 	// 查询template表，获取文件名及关联的最新版本
 	template, err := dao.Template().GetByID(kt, configTemplate.Attachment.BizID, configTemplate.Attachment.TemplateID)
 	if err != nil {
-		return nil, fmt.Errorf("get template failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get template failed, err: %v", err))
 	}
 
 	// 若是已存在的配置实例则ConfigVersionID不为0，根据ConfigVersionID查询版本信息，用于展示配置实例关联的版本及版本描述
@@ -562,7 +584,8 @@ func getRelatedData(
 	if len(configVersionIDs) > 0 {
 		templateRevisions, err := dao.TemplateRevision().ListByIDs(kt, configVersionIDs)
 		if err != nil {
-			return nil, fmt.Errorf("list template revisions failed, err: %v", err)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "list template revisions failed, err: %v", err))
 		}
 		for _, tr := range templateRevisions {
 			configVersionMap[tr.ID] = tr
@@ -577,7 +600,7 @@ func getRelatedData(
 }
 
 // buildPbConfigInstances 构建 PB 对象
-func buildPbConfigInstances(configInstances []*table.ConfigInstance, processes []*table.Process,
+func buildPbConfigInstances(kt *kit.Kit, configInstances []*table.ConfigInstance, processes []*table.Process,
 	data *relatedData) ([]*pbcin.ConfigInstance, error) {
 	// 构建 cc进程ID到进程对象的映射
 	ccProcessIDMap := make(map[uint32]*table.Process)
@@ -591,7 +614,8 @@ func buildPbConfigInstances(configInstances []*table.ConfigInstance, processes [
 		// 获取关联的进程信息
 		process, exists := ccProcessIDMap[ci.Attachment.CcProcessID]
 		if !exists {
-			return nil, fmt.Errorf("process not found for cc process id: %d", ci.Attachment.CcProcessID)
+			return nil, errf.Errorf(errf.Internal, "%s",
+				i18n.T(kt, "process not found for cc process id: %d", ci.Attachment.CcProcessID))
 		}
 
 		// 获取配置版本信息
@@ -662,7 +686,8 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 	latestRevision, err := dao.TemplateRevision().
 		GetLatestTemplateRevision(kt, configTemplate.Attachment.BizID, configTemplate.Attachment.TemplateID)
 	if err != nil {
-		return nil, fmt.Errorf("get latest template revision failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get latest template revision failed, err: %v", err))
 	}
 
 	uniqueRevisionIDs := make(map[uint32]struct{})
@@ -704,7 +729,8 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 	// 查询版本信息
 	templateRevisions, err := dao.TemplateRevision().ListByIDs(kt, versionIDs)
 	if err != nil {
-		return nil, fmt.Errorf("list template revisions by ids failed, err: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list template revisions by ids failed, err: %v", err))
 	}
 
 	// 构建 versions 返回项
@@ -719,10 +745,7 @@ func buildFilterOptions(kt *kit.Kit, dao dao.Set, configTemplate *table.ConfigTe
 }
 
 // newFilterOptions 构造统一返回结构
-func newFilterOptions(
-	latestRevision *table.TemplateRevision,
-	choices []*pbcin.Choice,
-) *pbcin.ConfigInstanceFilterOptions {
+func newFilterOptions(latestRevision *table.TemplateRevision, choices []*pbcin.Choice) *pbcin.ConfigInstanceFilterOptions {
 
 	return &pbcin.ConfigInstanceFilterOptions{
 		TemplateVersionChoices:     choices,
@@ -732,13 +755,8 @@ func newFilterOptions(
 }
 
 // isBindRelation 判断进程和配置模版的绑定关系是否正常，避免配置生成过程中进程与配置模版解绑
-func isBindRelation(
-	kt *kit.Kit,
-	dao dao.Set,
-	bizID uint32,
-	processes []*table.Process,
-	configTemplate *table.ConfigTemplate,
-) (bool, error) {
+func isBindRelation(kt *kit.Kit, dao dao.Set, bizID uint32, processes []*table.Process,
+	configTemplate *table.ConfigTemplate) (bool, error) {
 	var (
 		templateBoundProcesses []*table.Process
 		err                    error
@@ -752,7 +770,8 @@ func isBindRelation(
 			All: true,
 		})
 		if err != nil {
-			return false, fmt.Errorf("list processes by template process ids failed, err: %v", err)
+			return false, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "list processes by template process ids failed, err: %v", err))
 		}
 	}
 	templateBoundProcessIDs := make([]uint32, 0, len(templateBoundProcesses)+len(configTemplate.Attachment.CcProcessIDs))
@@ -764,7 +783,8 @@ func isBindRelation(
 	// 判断进程是否在配置模版关联的进程ID列表中
 	for _, process := range processes {
 		if !slices.Contains(templateBoundProcessIDs, process.Attachment.CcProcessID) {
-			return false, fmt.Errorf("process %d is not in the config template", process.Attachment.CcProcessID)
+			return false, errf.Errorf(errf.FailedPrecondition, "%s",
+				i18n.T(kt, "process %d is not in the config template", process.Attachment.CcProcessID))
 		}
 	}
 	return true, nil
@@ -781,7 +801,8 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGene
 
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized")
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage not initialized"))
 	}
 
 	// 分页查询所有任务数据
@@ -800,7 +821,8 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGene
 		pagination, err := taskStorage.ListTask(kt.Ctx, listOpt)
 		if err != nil {
 			logs.Errorf("list tasks failed, offset: %d, err: %v, rid: %s", offset, err, kt.Rid)
-			return nil, fmt.Errorf("list tasks failed: %v", err)
+			return nil, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "list tasks failed, err: %v", err))
 		}
 		// 没有更多数据，退出循环
 		if len(pagination.Items) == 0 {
@@ -823,7 +845,8 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGene
 		err := task.GetCommonPayload(commonPayload)
 		if err != nil {
 			logs.Errorf("get common payload failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, fmt.Errorf("get common payload failed: %v", err)
+			return nil, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "get common payload failed, err: %v", err))
 		}
 		configGenerateStatuses = append(configGenerateStatuses, &pbds.ConfigGenerateStatusResp_ConfigGenerateStatus{
 			ConfigInstanceKey: commonPayload.ConfigPayload.ConfigInstanceKey,
@@ -845,19 +868,22 @@ func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConf
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized")
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage not initialized"))
 	}
 
 	// 从 task storage 中获取任务
 	taskInfo, err := taskStorage.GetTask(ctx, req.TaskId)
 	if err != nil {
 		logs.Errorf("get task failed, taskID: %s, err: %v, rid: %s", req.TaskId, err, kt.Rid)
-		return nil, fmt.Errorf("get task failed: %v", err)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "get task failed, err: %v", err))
 	}
 
 	if taskInfo == nil {
 		logs.Errorf("task not found, taskID: %s, rid: %s", req.TaskId, kt.Rid)
-		return nil, fmt.Errorf("task not found: %s", req.TaskId)
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "task not found: %s", req.TaskId))
 	}
 
 	// 从 CommonPayload 中提取配置生成结果
@@ -865,13 +891,15 @@ func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConf
 	err = taskInfo.GetCommonPayload(&taskPayload)
 	if err != nil {
 		logs.Errorf("get common payload failed, taskID: %s, err: %v, rid: %s", req.TaskId, err, kt.Rid)
-		return nil, fmt.Errorf("get common payload failed: %v", err)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "get common payload failed, err: %v", err))
 	}
 
 	// 检查 ConfigPayload 是否存在
 	if taskPayload.ConfigPayload == nil {
 		logs.Errorf("config payload is nil, taskID: %s, rid: %s", req.TaskId, kt.Rid)
-		return nil, fmt.Errorf("config payload not found in task")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "config payload not found in task"))
 	}
 
 	// 返回配置内容
@@ -895,13 +923,16 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 
 	// 1. 参数校验
 	if req.GetBizId() == 0 {
-		return nil, fmt.Errorf("biz_id is required")
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(grpcKit, "biz_id is required"))
 	}
 	if req.GetTemplateContent() == "" {
-		return nil, fmt.Errorf("template_content is required")
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(grpcKit, "template_content is required"))
 	}
 	if req.GetCcProcessId() == 0 {
-		return nil, fmt.Errorf("cc_process_id is required")
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(grpcKit, "cc_process_id is required"))
 	}
 
 	// 2. 通过 cc_process_id 查询 Process
@@ -911,10 +942,12 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 		All: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("query process by cc_process_id failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "query process by cc_process_id failed, err: %v", err))
 	}
 	if len(processes) == 0 {
-		return nil, fmt.Errorf("process not found for cc_process_id: %d", req.GetCcProcessId())
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(grpcKit, "process not found for cc_process_id: %d", req.GetCcProcessId()))
 	}
 	process := processes[0]
 
@@ -922,7 +955,8 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 	var processInstance *table.ProcessInstance
 	processInstances, err := s.dao.ProcessInstance().GetByProcessIDs(grpcKit, req.GetBizId(), []uint32{process.ID})
 	if err != nil {
-		return nil, fmt.Errorf("query process instance failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "query process instance failed, err: %v", err))
 	}
 	if len(processInstances) > 0 {
 		// 如果提供了 module_inst_seq，优先使用匹配的实例
@@ -954,14 +988,16 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 		return executorCommon.ResolveGincludeTemplate(grpcKit, s.dao, s.repo, req.GetBizId(), templateName)
 	}, 10)
 	if err != nil {
-		return nil, fmt.Errorf("expand ginclude failed: %w", err)
+		return nil, errf.Errorf(errf.Internal, "%s",
+			i18n.T(grpcKit, "expand ginclude failed, err: %v", err))
 	}
 
 	// 6. 渲染模板
 	renderedContent, err := render.Template(templateContent, contextParams)
 	if err != nil {
 		logs.Errorf("render template failed, template content: %s, err: %v, rid: %s", req.GetTemplateContent(), err, grpcKit.Rid)
-		return nil, fmt.Errorf("render template failed: %v", err)
+		return nil, errf.Errorf(errf.Internal, "%s",
+			i18n.T(grpcKit, "render template failed, err: %v", err))
 	}
 
 	return &pbds.PreviewConfigResp{
@@ -996,11 +1032,13 @@ func (p *previewRequestSource) NeedHelp() bool {
 func verifyBatch(dao dao.Set, kt *kit.Kit, bizID, batchID uint32) (*table.TaskBatch, error) {
 	batch, err := dao.TaskBatch().GetByID(kt, bizID, batchID)
 	if err != nil {
-		return nil, fmt.Errorf("get batch failed, batch_id: %d, err: %v", batchID, err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get batch failed, batch_id: %d, err: %v", batchID, err))
 	}
 
 	if batch.Spec.TaskAction != table.TaskActionConfigGenerate {
-		return nil, fmt.Errorf("batch %d is not a config generate batch", batchID)
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "batch %d is not a config generate batch", batchID))
 	}
 
 	return batch, nil
@@ -1010,7 +1048,8 @@ func verifyBatch(dao dao.Set, kt *kit.Kit, bizID, batchID uint32) (*table.TaskBa
 func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
 	storage := taskpkg.GetGlobalStorage()
 	if storage == nil {
-		return nil, fmt.Errorf("task storage not initialized")
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage not initialized"))
 	}
 
 	const pageSize int64 = 100
@@ -1039,7 +1078,8 @@ func getSuccessTasks(kt *kit.Kit, batchID uint32) ([]*taskTypes.Task, error) {
 				"[getSuccessTasks] list task failed, batchID=%d, page=%d, offset=%d, rid=%s, err=%v",
 				batchID, page, offset, kt.Rid, err,
 			)
-			return nil, err
+			return nil, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "list task failed, err: %v", err))
 		}
 
 		if len(pagination.Items) == 0 {
@@ -1080,7 +1120,8 @@ func createBatch(dao dao.Set, kt *kit.Kit, bizID uint32, srcBatch *table.TaskBat
 	// 获取源批次的任务数据
 	taskData, err := srcBatch.Spec.GetTaskExecutionData()
 	if err != nil {
-		return 0, fmt.Errorf("get source batch task data failed: %v", err)
+		return 0, errf.Errorf(errf.Internal, "%s",
+			i18n.T(kt, "get source batch task data failed, err: %v", err))
 	}
 
 	// 添加配置模板ID列表，用于并发操作时判断配置模版是否在运行中的任务中
@@ -1112,7 +1153,8 @@ func createBatch(dao dao.Set, kt *kit.Kit, bizID uint32, srcBatch *table.TaskBat
 
 	batchID, err := dao.TaskBatch().Create(kt, batch)
 	if err != nil {
-		return 0, fmt.Errorf("create batch failed, err: %v", err)
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "create batch failed, err: %v", err))
 	}
 
 	return batchID, nil
@@ -1128,10 +1170,12 @@ func validateOperate(
 ) error {
 	hasRunning, err := dao.TaskBatch().HasRunningConfigPushTasks(kt, bizID, configTemplateIDs)
 	if err != nil {
-		return fmt.Errorf("check running config push tasks failed: %v", err)
+		return errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "check running config push tasks failed, err: %v", err))
 	}
 	if hasRunning {
-		return fmt.Errorf("config template already has running push tasks, please wait for completion")
+		return errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "config template already has running push tasks, please wait for completion"))
 	}
 
 	// 检查配置模板版本是否为最新版本
@@ -1139,19 +1183,22 @@ func validateOperate(
 		// 获取配置模板信息
 		configTemplate, err := dao.ConfigTemplate().GetByID(kt, bizID, configTemplateID)
 		if err != nil {
-			return fmt.Errorf("get config template %d failed: %v", configTemplateID, err)
+			return errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get config template %d failed, err: %v", configTemplateID, err))
 		}
 
 		// 获取模板的最新版本
 		latestRevision, err := dao.TemplateRevision().GetLatestTemplateRevision(kt, bizID, configTemplate.Attachment.TemplateID)
 		if err != nil {
-			return fmt.Errorf("get latest template revision for config template %d failed: %v", configTemplateID, err)
+			return errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get latest template revision for config template %d failed, err: %v", configTemplateID, err))
 		}
 
 		// 检查版本是否为最新
 		if versionID != latestRevision.ID {
-			return fmt.Errorf("config template %d version is not the latest, current: %d, latest: %d, please regenerate config",
-				configTemplateID, versionID, latestRevision.ID)
+			return errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "config template %d version is not the latest, current: %d, latest: %d, please regenerate config",
+					configTemplateID, versionID, latestRevision.ID))
 		}
 	}
 
@@ -1218,7 +1265,8 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 		return nil, err
 	}
 	if len(tasks) == 0 {
-		return nil, fmt.Errorf("no success tasks found for batch %d", req.GetBatchId())
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no success tasks found for batch %d", req.GetBatchId()))
 	}
 
 	// 获取配置生成任务的 payload，收集配置模板ID和版本信息
@@ -1234,15 +1282,18 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 
 		// 验证 payload 完整性
 		if payload.ConfigPayload == nil {
-			return nil, fmt.Errorf("config payload is nil for task %s", t.GetTaskID())
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "config payload is nil for task %s", t.GetTaskID()))
 		}
 		if payload.ProcessPayload == nil {
-			return nil, fmt.Errorf("process payload is nil for task %s", t.GetTaskID())
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "process payload is nil for task %s", t.GetTaskID()))
 		}
 
 		configTemplateID := payload.ConfigPayload.ConfigTemplateID
 		if configTemplateID == 0 {
-			return nil, fmt.Errorf("config template id is not valid for task %s", t.GetTaskID())
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "config template id is not valid for task %s", t.GetTaskID()))
 		}
 
 		payloadCache[t.GetTaskID()] = payload
@@ -1255,7 +1306,8 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 	}
 
 	if len(validTasks) == 0 {
-		return nil, fmt.Errorf("no valid tasks found for batch %d", req.GetBatchId())
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no valid tasks found for batch %d", req.GetBatchId()))
 	}
 
 	configTemplateIDs := make([]uint32, 0, len(templateVersionMap))
@@ -1305,18 +1357,21 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage not initialized"))
 	}
 
 	// 查询任务批次信息
 	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
-		return nil, fmt.Errorf("get task batch failed: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get task batch failed, err: %v", err))
 	}
 
 	if taskBatch == nil {
-		return nil, fmt.Errorf("get task batch failed task %d does not exist", req.GetBatchId())
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "task batch %d does not exist", req.GetBatchId()))
 	}
 
 	// task_id如果有值表示重试单个否则全部
@@ -1327,7 +1382,8 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 	case "retry":
 		err = s.retry(kt, taskStorage, taskBatch, req.TaskId)
 	default:
-		return &pbds.OperateGenerateConfigResp{}, fmt.Errorf("unknown operation type: %s", req.GetOperationType())
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "unknown operation type: %s", req.GetOperationType()))
 	}
 
 	if err != nil {
@@ -1351,7 +1407,8 @@ func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, taskBatch *t
 
 	tasks, err := taskStorage.ListTask(kt.Ctx, listOpt)
 	if err != nil {
-		return fmt.Errorf("list tasks failed: %v", err)
+		return errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "list tasks failed, err: %v", err))
 	}
 
 	if len(tasks.Items) == 0 {
@@ -1363,7 +1420,8 @@ func (s *Service) regenerate(kt *kit.Kit, taskStorage istore.Store, taskBatch *t
 		err = s.taskManager.RetryAll(task)
 		if err != nil {
 			logs.Errorf("regenerate task failed, taskID: %s, err: %v, rid: %s", task.TaskID, err, kt.Rid)
-			return fmt.Errorf("regenerate task failed: %v", err)
+			return errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "regenerate task failed, err: %v", err))
 		}
 	}
 
@@ -1383,7 +1441,8 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, taskBatch *table.
 	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, taskBatch.ID, taskID, string(table.TaskActionConfigGenerate))
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return fmt.Errorf("query failed tasks failed: %v", err)
+		return errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "query failed tasks failed, err: %v", err))
 	}
 
 	if len(failedTasks) == 0 {
@@ -1395,7 +1454,8 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, taskBatch *table.
 	retryCount := uint32(len(failedTasks))
 	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, taskBatch.ID, retryCount); err != nil {
 		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return fmt.Errorf("reset counts for retry failed: %v", err)
+		return errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "reset counts for retry failed, err: %v", err))
 	}
 
 	// 重试每个失败的任务
@@ -1403,7 +1463,8 @@ func (s *Service) retry(kt *kit.Kit, taskStorage istore.Store, taskBatch *table.
 		err = s.taskManager.RetryAll(failedTask)
 		if err != nil {
 			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return fmt.Errorf("retry failed task failed: %v", err)
+			return errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "retry failed task failed, err: %v", err))
 		}
 	}
 	logs.Infof("retry tasks completed, batchID: %d, retryCount: %d, rid: %s", taskBatch.ID, retryCount, kt.Rid)
@@ -1478,7 +1539,7 @@ func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*p
 // nolint:funlen
 func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup,
 	mode ConfigTaskMode, pluginMode bool) (uint32, error) {
-	if err := validateRequest(bizID, ctgs); err != nil {
+	if err := validateRequest(kt, bizID, ctgs); err != nil {
 		return 0, err
 	}
 
@@ -1491,23 +1552,27 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 		configTemplate, err := s.dao.ConfigTemplate().
 			GetByID(kt, bizID, group.ConfigTemplateId)
 		if err != nil {
-			return 0, fmt.Errorf("get config template failed, err: %v", err)
+			return 0, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get config template failed, err: %v", err))
 		}
 
 		template, err := s.dao.Template().
 			GetByID(kt, bizID, configTemplate.Attachment.TemplateID)
 		if err != nil {
-			return 0, fmt.Errorf("get template failed, err: %v", err)
+			return 0, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get template failed, err: %v", err))
 		}
 
 		latestRevision, err := s.dao.TemplateRevision().
 			GetLatestTemplateRevision(kt, bizID, configTemplate.Attachment.TemplateID)
 		if err != nil {
-			return 0, fmt.Errorf("get latest template revision failed, err: %v", err)
+			return 0, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get latest template revision failed, err: %v", err))
 		}
 
 		if group.ConfigTemplateVersionId != latestRevision.ID {
-			return 0, fmt.Errorf("config template version id is not latest")
+			return 0, errf.Errorf(errf.FailedPrecondition, "%s",
+				i18n.T(kt, "config template version id is not latest"))
 		}
 
 		processes, _, err := s.dao.Process().List(
@@ -1517,11 +1582,13 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			&types.BasePage{All: true},
 		)
 		if err != nil {
-			return 0, fmt.Errorf("get process failed, err: %v", err)
+			return 0, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get process failed, err: %v", err))
 		}
 
 		if len(processes) != len(group.CcProcessIds) || len(processes) == 0 {
-			return 0, fmt.Errorf("some processes not found for biz %d", bizID)
+			return 0, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "some processes not found for biz %d", bizID))
 		}
 
 		ok, err := isBindRelation(kt, s.dao, bizID, processes, configTemplate)
@@ -1529,7 +1596,8 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			return 0, err
 		}
 		if !ok {
-			return 0, fmt.Errorf("invalid binding relationship")
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "invalid binding relationship"))
 		}
 
 		processesForRange = append(processesForRange, processes...)
@@ -1559,7 +1627,8 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 	}
 
 	if len(taskInfos) == 0 {
-		return 0, fmt.Errorf("no tasks to create")
+		return 0, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no tasks to create"))
 	}
 
 	// 2. 创建 TaskBatch
@@ -1651,12 +1720,14 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 			builder = config.NewCheckConfigTask(opts)
 
 		default:
-			return 0, fmt.Errorf("unsupported config task mode: %v", mode)
+			return 0, errf.Errorf(errf.InvalidParameter, "%s",
+				i18n.T(kt, "unsupported config task mode: %v", mode))
 		}
 
 		taskObj, err := task.NewByTaskBuilder(builder)
 		if err != nil {
-			return 0, err
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "create run config generation or verification task failed, err: %v", err))
 		}
 
 		s.taskManager.Dispatch(taskObj)
@@ -1750,12 +1821,14 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq)
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage not initialized"))
 	}
 
 	taskInfo, err := taskStorage.GetTask(kt.Ctx, req.GetTaskId())
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "get task failed, err: %v", err))
 	}
 
 	// 从 CommonPayload 中提取配置生成结果
@@ -1763,13 +1836,15 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq)
 	err = taskInfo.GetCommonPayload(&taskPayload)
 	if err != nil {
 		logs.Errorf("get common payload failed, taskID: %s, err: %v, rid: %s", req.TaskId, err, kt.Rid)
-		return nil, fmt.Errorf("get common payload failed: %v", err)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "get common payload failed, err: %v", err))
 	}
 
 	// 检查 ConfigPayload 是否存在
 	if taskPayload.ConfigPayload == nil || taskPayload.ProcessPayload == nil {
 		logs.Errorf("payload is nil, taskID: %s, rid: %s", req.TaskId, kt.Rid)
-		return nil, fmt.Errorf("payload not found in task")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "payload not found in task"))
 	}
 
 	currentOnline := &pbcin.ConfigVersion{
@@ -1846,10 +1921,9 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq)
 	// 3. 现网配置视图（未指定版本）
 	if req.GetConfigVersionId() == 0 {
 		if ci == nil {
-			return nil, fmt.Errorf(
-				"config instance not found, biz_id=%d, config_template_id=%d, cc_process_id=%d, module_inst_seq=%d",
-				req.GetBizId(), req.GetConfigTemplateId(), req.GetCcProcessId(), req.GetModuleInstSeq(),
-			)
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "config instance not found, biz_id=%d, config_template_id=%d, cc_process_id=%d, module_inst_seq=%d",
+					req.GetBizId(), req.GetConfigTemplateId(), req.GetCcProcessId(), req.GetModuleInstSeq()))
 		}
 
 		tr, errT := s.dao.TemplateRevision().
@@ -1859,8 +1933,9 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq)
 		}
 
 		if tr != nil && tr.Attachment.TemplateID != req.GetConfigTemplateId() {
-			return nil, fmt.Errorf("template not match template revision, template_id=%d, template_revision_id=%d",
-				req.GetConfigTemplateId(), tr.Attachment.TemplateID)
+			return nil, errf.Errorf(errf.InvalidParameter, "%s",
+				i18n.T(kt, "template not match template revision, template_id=%d, template_revision_id=%d",
+					req.GetConfigTemplateId(), tr.Attachment.TemplateID))
 		}
 
 		return buildConfigViewResp(ct, tr, lastDispatched, nil), nil
@@ -1874,8 +1949,9 @@ func (s *Service) GetConfigView(ctx context.Context, req *pbds.GetConfigViewReq)
 	}
 
 	if tr != nil && tr.Attachment.TemplateID != req.GetConfigTemplateId() {
-		return nil, fmt.Errorf("template not match template revision, template_id=%d, template_revision_id=%d",
-			req.GetConfigTemplateId(), tr.Attachment.TemplateID)
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "template not match template revision, template_id=%d, template_revision_id=%d",
+				req.GetConfigTemplateId(), tr.Attachment.TemplateID))
 	}
 
 	previewConfig, err := s.buildPreviewConfig(kt, tr, req)
@@ -1905,10 +1981,9 @@ func (s *Service) buildPreviewConfig(kt *kit.Kit, tr *table.TemplateRevision, re
 
 	body, _, err := s.repo.Download(kt, tr.Spec.ContentSpec.Signature)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"download template config failed, template id: %d, name: %s, path: %s, err: %w",
-			tr.Attachment.TemplateID, tr.Spec.Name, tr.Spec.Path, err,
-		)
+		return nil, errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(kt, "download template config failed, template id: %d, name: %s, path: %s, err: %v",
+				tr.Attachment.TemplateID, tr.Spec.Name, tr.Spec.Path, err))
 	}
 	defer body.Close()
 

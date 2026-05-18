@@ -24,7 +24,9 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	commonExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbtb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch"
@@ -58,10 +60,11 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 
 	// 验证分页参数
 	if err := opt.Validate(types.DefaultPageOption); err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "validate page parameters failed, err: %v", err))
 	}
 
-	filter, err := buildTaskBatchListFilter(req)
+	filter, err := buildTaskBatchListFilter(kt, req)
 	if err != nil {
 		logs.Errorf("build task batch list filter failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -69,7 +72,8 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 	res, count, err := s.dao.TaskBatch().List(kt, req.BizId, filter, opt)
 	if err != nil {
 		logs.Errorf("list task batch failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list task batch failed, err: %v", err))
 	}
 
 	// 获取查询过滤选项
@@ -90,7 +94,7 @@ func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq)
 func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.FilterOptions, error) {
 	// 获取任务对象查询选项
 	taskObjectChoices := make([]*pbtb.Choice, 0)
-	for _, choice := range table.GetTaskObjectChoices() {
+	for _, choice := range table.GetTaskObjectChoices(kt) {
 		taskObjectChoices = append(taskObjectChoices, &pbtb.Choice{
 			Id:   choice.ID,
 			Name: choice.Name,
@@ -99,7 +103,7 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 
 	// 获取任务动作查询选项
 	taskActionChoices := make([]*pbtb.Choice, 0)
-	for _, choice := range table.GetTaskActionChoices() {
+	for _, choice := range table.GetTaskActionChoices(kt) {
 		taskActionChoices = append(taskActionChoices, &pbtb.Choice{
 			Id:   choice.ID,
 			Name: choice.Name,
@@ -108,7 +112,7 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 
 	// 获取执行状态查询选项
 	statusChoices := make([]*pbtb.Choice, 0)
-	for _, choice := range table.GetTaskBatchStatusChoices() {
+	for _, choice := range table.GetTaskBatchStatusChoices(kt) {
 		statusChoices = append(statusChoices, &pbtb.Choice{
 			Id:   choice.ID,
 			Name: choice.Name,
@@ -119,7 +123,8 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 	executorChoices := make([]*pbtb.Choice, 0)
 	executors, err := dao.ListExecutors(kt, bizID)
 	if err != nil {
-		return nil, fmt.Errorf("list distinct executors failed: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list distinct executors failed, err: %v", err))
 	}
 	for _, executor := range executors {
 		executorChoices = append(executorChoices, &pbtb.Choice{
@@ -137,7 +142,7 @@ func getFilterOptions(kt *kit.Kit, bizID uint32, dao dao.TaskBatch) (*pbtb.Filte
 }
 
 // buildTaskBatchListFilter 构建任务批次列表过滤条件
-func buildTaskBatchListFilter(req *pbds.ListTaskBatchReq) (*dao.TaskBatchListFilter, error) {
+func buildTaskBatchListFilter(kt *kit.Kit, req *pbds.ListTaskBatchReq) (*dao.TaskBatchListFilter, error) {
 	filter := &dao.TaskBatchListFilter{
 		TaskObjects: req.GetTaskObjects(),
 		TaskActions: req.GetTaskActions(),
@@ -147,10 +152,10 @@ func buildTaskBatchListFilter(req *pbds.ListTaskBatchReq) (*dao.TaskBatchListFil
 
 	// 解析时间范围参数
 	var err error
-	if filter.TimeRangeStart, err = parseTimeIfNotEmpty(req.TimeRangeStart, "time_range_start"); err != nil {
+	if filter.TimeRangeStart, err = parseTimeIfNotEmpty(kt, req.TimeRangeStart, "time_range_start"); err != nil {
 		return nil, err
 	}
-	if filter.TimeRangeEnd, err = parseTimeIfNotEmpty(req.TimeRangeEnd, "time_range_end"); err != nil {
+	if filter.TimeRangeEnd, err = parseTimeIfNotEmpty(kt, req.TimeRangeEnd, "time_range_end"); err != nil {
 		return nil, err
 	}
 
@@ -174,14 +179,16 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized")
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage is not initialized"))
 	}
 
 	// 1. 查询 TaskBatch 信息
 	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
-		return nil, fmt.Errorf("get task batch failed: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get task batch %d failed, err: %v", req.GetBatchId(), err))
 	}
 
 	if taskBatch == nil {
@@ -215,29 +222,31 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 	pagination, err := taskStorage.ListTask(ctx, listOpt)
 	if err != nil {
 		logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, fmt.Errorf("list tasks failed: %v", err)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "list tasks from task storage failed, err: %v", err))
 	}
 	if pagination == nil {
 		logs.Errorf("list tasks returned nil pagination, rid: %s", kt.Rid)
-		return nil, fmt.Errorf("list tasks returned nil pagination")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "list tasks returned nil pagination"))
 	}
 	// 解析每个 task 的 CommonPayload，构建 TaskDetail
 	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
 	var detail *pbtb.TaskDetail
 	for _, task := range pagination.Items {
-		detail, err = convertTaskToDetail(task)
+		detail, err = convertTaskToDetail(kt, task)
 		if err != nil {
 			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
-			return nil, fmt.Errorf("convert task to detail failed: %v", err)
+			return nil, err
 		}
 		taskDetails = append(taskDetails, detail)
 	}
 
 	// 计算状态统计
-	statistics, err := getTaskStatusStatistics(ctx, fmt.Sprintf("%d", req.GetBatchId()), string(taskBatch.Spec.TaskAction))
+	statistics, err := getTaskStatusStatistics(kt, fmt.Sprintf("%d", req.GetBatchId()), string(taskBatch.Spec.TaskAction))
 	if err != nil {
 		logs.Errorf("get task status statistics failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, fmt.Errorf("get task status statistics failed: %v", err)
+		return nil, err
 	}
 
 	// 转换为 proto TaskBatch 以获取字段
@@ -250,16 +259,18 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 }
 
 // convertTaskToDetail 将 task 转换为 pb 数据结构 TaskDetail
-func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
+func convertTaskToDetail(kt *kit.Kit, task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 	if task == nil {
-		return nil, fmt.Errorf("task is nil")
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "task is nil"))
 	}
 
 	// 解析 CommonPayload 为 ProcessPayload
 	var processPayload commonExecutor.TaskPayload
 	err := task.GetCommonPayload(&processPayload)
 	if err != nil {
-		return nil, fmt.Errorf("get common payload failed: %v", err)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "get common payload from task failed, err: %v", err))
 	}
 	// 构建返回的 TaskDetail
 	detail := &pbtb.TaskDetail{
@@ -294,10 +305,11 @@ func convertTaskToDetail(task *taskTypes.Task) (*pbtb.TaskDetail, error) {
 }
 
 // getTaskStatusStatistics 获取任务状态统计信息
-func getTaskStatusStatistics(ctx context.Context, taskIndex, taskType string) ([]*pbtb.TaskStatusStatItem, error) {
+func getTaskStatusStatistics(kt *kit.Kit, taskIndex, taskType string) ([]*pbtb.TaskStatusStatItem, error) {
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized")
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage is not initialized"))
 	}
 
 	// 定义需要统计的四种状态及其对应的实际查询状态列表
@@ -318,9 +330,10 @@ func getTaskStatusStatistics(ctx context.Context, taskIndex, taskType string) ([
 			Offset:     0,
 		}
 
-		pagination, err := taskStorage.ListTask(ctx, listOpt)
+		pagination, err := taskStorage.ListTask(kt.Ctx, listOpt)
 		if err != nil {
-			return nil, fmt.Errorf("list tasks failed for status %s: %v", normalizedStatus, err)
+			return nil, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "list tasks from task storage failed for status %s, err: %v", normalizedStatus, err))
 		}
 
 		statusCounts[normalizedStatus] = uint32(pagination.Count)
@@ -404,13 +417,14 @@ func parseTime(timeStr string) (time.Time, error) {
 }
 
 // parseTimeIfNotEmpty 如果时间字符串非空则解析，否则返回 nil
-func parseTimeIfNotEmpty(timeStr, fieldName string) (*time.Time, error) {
+func parseTimeIfNotEmpty(kt *kit.Kit, timeStr, fieldName string) (*time.Time, error) {
 	if timeStr == "" {
 		return nil, nil
 	}
 	t, err := parseTime(timeStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid %s format: %v", fieldName, err)
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "invalid %s format: %v", fieldName, err))
 	}
 	return &t, nil
 }
@@ -435,7 +449,8 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
-		return nil, fmt.Errorf("task storage not initialized, rid: %s", kt.Rid)
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(kt, "task storage is not initialized"))
 	}
 
 	var err error
@@ -445,11 +460,13 @@ func (s *Service) RetryTasks(ctx context.Context, req *pbds.RetryTasksReq) (*pbd
 	taskBatch, err := s.dao.TaskBatch().GetByID(kt, req.GetBizId(), req.GetBatchId())
 	if err != nil {
 		logs.Errorf("get task batch failed, batchID: %d, err: %v, rid: %s", req.GetBatchId(), err, kt.Rid)
-		return nil, fmt.Errorf("get task batch failed: %v", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get task batch %d failed, err: %v", req.GetBatchId(), err))
 	}
 
 	if taskBatch == nil {
-		return nil, fmt.Errorf("get task batch failed task %d does not exist", req.GetBatchId())
+		return nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "task batch %d does not exist", req.GetBatchId()))
 	}
 
 	switch taskBatch.Spec.TaskAction {
@@ -482,10 +499,10 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 	}
 
 	// 查询该批次所有失败的任务
-	failedTasks, err := queryFailedTasks(kt.Ctx, taskStorage, taskBatch.ID, string(taskBatch.Spec.TaskAction))
+	failedTasks, err := queryFailedTasks(kt, taskStorage, taskBatch.ID, string(taskBatch.Spec.TaskAction))
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("query failed tasks failed: %v", err)
+		return 0, err
 	}
 
 	if len(failedTasks) == 0 {
@@ -497,7 +514,8 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 	retryCount := uint32(len(failedTasks))
 	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, taskBatch.ID, retryCount); err != nil {
 		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("reset counts for retry failed: %v", err)
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "reset task batch counts for retry failed, batchID: %d, err: %v", taskBatch.ID, err))
 	}
 
 	// 重试每个失败的任务
@@ -506,32 +524,36 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 		finalizeStep, ok := failedTask.GetStep(process.FinalizeOperateProcessStepName.String())
 		if !ok {
 			logs.Errorf("operate step not found, taskID: %s, rid: %s", failedTask.TaskID, kt.Rid)
-			return 0, fmt.Errorf("operate step not found")
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "operate process step not found for taskID: %s", failedTask.TaskID))
 		}
 		var processPayload process.OperatePayload
 		if err := finalizeStep.GetPayload(&processPayload); err != nil {
 			logs.Errorf("get payload failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return 0, fmt.Errorf("get payload failed: %v", err)
+			return 0, errf.Errorf(errf.Internal, "%s",
+				i18n.T(kt, "get operate payload from task step failed, taskID: %s, err: %v", failedTask.TaskID, err))
 		}
 		// 获取进程实例
 		processInstance, err := s.dao.ProcessInstance().GetByID(kt, bizID, processPayload.ProcessInstanceID)
 		if err != nil {
 			logs.Errorf("get process instance failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
-			return 0, fmt.Errorf("get process instance failed: %v", err)
+			return 0, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "get process instance by ID %d failed, err: %v", processPayload.ProcessInstanceID, err))
 		}
 		if processInstance == nil {
 			logs.Errorf("process instance not found, processInstanceID: %d, rid: %s", processPayload.ProcessInstanceID, kt.Rid)
-			return 0, fmt.Errorf("process instance not found")
+			return 0, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "process instance with ID %d does not exist", processPayload.ProcessInstanceID))
 		}
 		// 更新进程实例状态
 		if err = updateProcessInstanceStatus(kt, s.dao, table.ProcessOperateType(taskBatch.Spec.TaskAction), processInstance, true); err != nil {
-			logs.Errorf("update process instance status failed, processInstanceID: %d, err: %v, rid: %s", processPayload.ProcessInstanceID, err, kt.Rid)
-			return 0, fmt.Errorf("update process instance status failed: %v", err)
+			return 0, err
 		}
 		err = s.taskManager.RetryAll(failedTask)
 		if err != nil {
 			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return 0, fmt.Errorf("retry failed task failed: %v", err)
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "retry failed task %s failed, err: %v", failedTask.TaskID, err))
 		}
 	}
 
@@ -551,7 +573,7 @@ func (s *Service) retryPushConfigTask(kt *kit.Kit, taskStorage istore.Store, tas
 		string(table.TaskActionConfigPublish))
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("query failed tasks failed: %v", err)
+		return 0, err
 	}
 
 	if len(failedTasks) == 0 {
@@ -563,14 +585,16 @@ func (s *Service) retryPushConfigTask(kt *kit.Kit, taskStorage istore.Store, tas
 	retryCount := uint32(len(failedTasks))
 	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, taskBatch.ID, retryCount); err != nil {
 		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("reset counts for retry failed: %v", err)
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "reset task batch counts for retry failed, batchID: %d, err: %v", taskBatch.ID, err))
 	}
 
 	// 重试每个失败的任务
 	for _, failedTask := range failedTasks {
 		if err = s.taskManager.RetryAll(failedTask); err != nil {
 			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return 0, fmt.Errorf("retry failed task failed: %v", err)
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "retry failed task %s failed, err: %v", failedTask.TaskID, err))
 		}
 	}
 
@@ -589,7 +613,7 @@ func (s *Service) retryCheckConfigTask(kt *kit.Kit, taskStorage istore.Store, ta
 	failedTasks, err := queryGenerateConfigFailedTasks(kt.Ctx, taskStorage, taskBatch.ID, "", string(table.TaskActionConfigCheck))
 	if err != nil {
 		logs.Errorf("query failed tasks failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("query failed tasks failed: %v", err)
+		return 0, err
 	}
 
 	if len(failedTasks) == 0 {
@@ -601,14 +625,16 @@ func (s *Service) retryCheckConfigTask(kt *kit.Kit, taskStorage istore.Store, ta
 	retryCount := uint32(len(failedTasks))
 	if err = s.dao.TaskBatch().ResetCountsForRetry(kt, taskBatch.ID, retryCount); err != nil {
 		logs.Errorf("reset counts for retry failed, batchID: %d, err: %v, rid: %s", taskBatch.ID, err, kt.Rid)
-		return 0, fmt.Errorf("reset counts for retry failed: %v", err)
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "reset task batch counts for retry failed, batchID: %d, err: %v", taskBatch.ID, err))
 	}
 
 	// 重试每个失败的任务
 	for _, failedTask := range failedTasks {
 		if err = s.taskManager.RetryAll(failedTask); err != nil {
 			logs.Errorf("retry failed task failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
-			return 0, fmt.Errorf("retry failed task failed: %v", err)
+			return 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "retry failed task %s failed, err: %v", failedTask.TaskID, err))
 		}
 	}
 

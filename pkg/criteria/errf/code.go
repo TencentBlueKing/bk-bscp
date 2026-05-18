@@ -64,6 +64,8 @@ const (
 	UnHealth int32 = 4000009
 	// ErrGroupAlreadyPublished means the group has already been published in specified app.
 	ErrGroupAlreadyPublished int32 = 4000010
+	// ThirdPartyAPIError means calling third-party API (e.g., CMDB, GSE) failed.
+	ThirdPartyAPIError int32 = 4000011
 )
 
 // Note: Sidecar related error code scope, ranges at [4090000, 409999]

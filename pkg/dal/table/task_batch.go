@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -86,36 +88,36 @@ type TaskBatchStatusChoice struct {
 }
 
 // GetTaskObjectChoices 获取所有任务对象查询选项
-func GetTaskObjectChoices() []TaskObjectChoice {
+func GetTaskObjectChoices(kt *kit.Kit) []TaskObjectChoice {
 	return []TaskObjectChoice{
-		{ID: string(TaskObjectConfigFile), Name: "配置文件"},
-		{ID: string(TaskObjectProcess), Name: "进程"},
+		{ID: string(TaskObjectConfigFile), Name: i18n.T(kt, "ConfigFile")},
+		{ID: string(TaskObjectProcess), Name: i18n.T(kt, "Process")},
 	}
 }
 
 // GetTaskActionChoices 获取所有任务动作查询选项
-func GetTaskActionChoices() []TaskActionChoice {
+func GetTaskActionChoices(kt *kit.Kit) []TaskActionChoice {
 	return []TaskActionChoice{
-		{ID: string(TaskActionStart), Name: "启动"},
-		{ID: string(TaskActionStop), Name: "停止"},
-		{ID: string(TaskActionRestart), Name: "重启"},
-		{ID: string(TaskActionReload), Name: "重载"},
-		{ID: string(TaskActionKill), Name: "强制停止"},
-		{ID: string(TaskActionRegister), Name: "托管"},
-		{ID: string(TaskActionUnregister), Name: "取消托管"},
-		{ID: string(TaskActionConfigPublish), Name: "配置下发"},
-		{ID: string(TaskActionConfigGenerate), Name: "配置生成"},
-		{ID: string(TaskActionConfigCheck), Name: "配置检查"},
+		{ID: string(TaskActionStart), Name: i18n.T(kt, "Start")},
+		{ID: string(TaskActionStop), Name: i18n.T(kt, "Stop")},
+		{ID: string(TaskActionRestart), Name: i18n.T(kt, "Restart")},
+		{ID: string(TaskActionReload), Name: i18n.T(kt, "Reload")},
+		{ID: string(TaskActionKill), Name: i18n.T(kt, "Kill")},
+		{ID: string(TaskActionRegister), Name: i18n.T(kt, "Register")},
+		{ID: string(TaskActionUnregister), Name: i18n.T(kt, "Unregister")},
+		{ID: string(TaskActionConfigPublish), Name: i18n.T(kt, "ConfigPublish")},
+		{ID: string(TaskActionConfigGenerate), Name: i18n.T(kt, "ConfigGenerate")},
+		{ID: string(TaskActionConfigCheck), Name: i18n.T(kt, "ConfigCheck")},
 	}
 }
 
 // GetTaskBatchStatusChoices 获取所有任务状态查询选项
-func GetTaskBatchStatusChoices() []TaskBatchStatusChoice {
+func GetTaskBatchStatusChoices(kt *kit.Kit) []TaskBatchStatusChoice {
 	return []TaskBatchStatusChoice{
-		{ID: string(TaskBatchStatusRunning), Name: "正在执行"},
-		{ID: string(TaskBatchStatusSucceed), Name: "执行成功"},
-		{ID: string(TaskBatchStatusFailed), Name: "执行失败"},
-		{ID: string(TaskBatchStatusPartlyFailed), Name: "部分失败"},
+		{ID: string(TaskBatchStatusRunning), Name: i18n.T(kt, "Executing")},
+		{ID: string(TaskBatchStatusSucceed), Name: i18n.T(kt, "ExecutionSuccessful")},
+		{ID: string(TaskBatchStatusFailed), Name: i18n.T(kt, "ExecutionFailed")},
+		{ID: string(TaskBatchStatusPartlyFailed), Name: i18n.T(kt, "PartialFailure")},
 	}
 }
 

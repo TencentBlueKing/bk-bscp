@@ -27,6 +27,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	cmdbGse "github.com/TencentBlueKing/bk-bscp/internal/task/builder/cmdb_gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -37,7 +39,8 @@ func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseSt
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	if !s.IsProcessConfigViewEnabled(req.GetBizId()) {
-		return nil, fmt.Errorf("process config view is not enabled for biz %d", req.GetBizId())
+		return nil, errf.Errorf(errf.InvalidArgument, "%s",
+			i18n.T(grpcKit, "process config view is not enabled for biz %d", req.GetBizId()))
 	}
 
 	processOperateTask, err := task.NewByTaskBuilder(
@@ -45,7 +48,8 @@ func (s *Service) SyncCmdbGseStatus(ctx context.Context, req *pbds.SyncCmdbGseSt
 	)
 	if err != nil {
 		logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, err
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(grpcKit, "create sync cmdb task failed, err: %v", err))
 	}
 
 	// 启动任务
@@ -66,7 +70,8 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, tenantID string, bizI
 			Fields: []string{"bk_biz_id", "bk_biz_name"},
 		})
 		if err != nil {
-			return fmt.Errorf("get business data failed: %v", err)
+			return errf.Errorf(errf.ThirdPartyAPIError, "%s",
+				i18n.T(grpcKit, "get business data failed, err: %v", err))
 		}
 
 		for _, item := range business.Info {
@@ -85,7 +90,8 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, tenantID string, bizI
 		)
 		if err != nil {
 			logs.Errorf("create sync cmdb task failed, err: %v, rid: %s", err, grpcKit.Rid)
-			return err
+			return errf.Errorf(errf.Unknown, "%s",
+				i18n.T(grpcKit, "create sync cmdb task failed, err: %v", err))
 		}
 		// 启动任务
 		s.taskManager.Dispatch(processOperateTask)
@@ -97,7 +103,7 @@ func (s *Service) SynchronizeCmdbData(ctx context.Context, tenantID string, bizI
 
 // CmdbGseStatus implements pbds.DataServer.
 func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq) (*pbds.CmdbGseStatusResp, error) {
-
+	grpcKit := kit.FromGrpcContext(ctx)
 	// 获取通过业务查询是否有同步任务
 	task, err := s.taskManager.ListTask(ctx, &iface.ListOption{
 		TaskType:      common.SyncCMDBGSETaskType,
@@ -108,7 +114,8 @@ func (s *Service) CmdbGseStatus(ctx context.Context, req *pbds.CmdbGseStatusReq)
 		Limit:         1,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.Unknown, "%s",
+			i18n.T(grpcKit, "list tasks failed, err: %v", err))
 	}
 
 	var (

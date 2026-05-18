@@ -28,7 +28,9 @@ import (
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbct "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/config-template"
@@ -48,7 +50,7 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		All:   req.GetAll(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list processes failed, err: %v", err))
 	}
 
 	processIDs := make([]uint32, 0, len(res))
@@ -62,7 +64,7 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 
 	procInst, err := s.dao.ProcessInstance().GetByProcessIDs(kt, req.GetBizId(), processIDs)
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "get process instances by process IDs failed, err: %v", err))
 	}
 
 	// 将 procInst 按 process_id 分组
@@ -76,7 +78,7 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 	for k, v := range ccProcessIDs {
 		templateIDs, errP := s.dao.ConfigTemplate().ListByCCProcessID(kt, req.GetBizId(), v)
 		if errP != nil {
-			return nil, errP
+			return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list config templates by CC process ID failed, err: %v", errP))
 		}
 		bindTemplateIds[k] = append(bindTemplateIds[k], templateIDs...)
 	}
@@ -84,7 +86,7 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 	for k, v := range ccTemplateProcessIDs {
 		templateIDs, errT := s.dao.ConfigTemplate().ListByCCTemplateProcessID(kt, req.GetBizId(), v)
 		if errT != nil {
-			return nil, errT
+			return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list config templates by CC template process ID failed, err: %v", errT))
 		}
 		bindTemplateIds[k] = append(bindTemplateIds[k], templateIDs...)
 	}
@@ -110,103 +112,12 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 	}, nil
 }
 
-func uniqueUint32(arr []uint32) []uint32 {
-	m := make(map[uint32]struct{})
-	res := make([]uint32, 0, len(arr))
-	for _, v := range arr {
-		if _, ok := m[v]; !ok {
-			m[v] = struct{}{}
-			res = append(res, v)
-		}
-	}
-	return res
-}
-
-func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterOptions, error) {
-
-	ips, err := s.dao.Process().ListBizFilterOptions(kt, bizID, field.NewString("", "inner_ip"))
-	if err != nil {
-		return nil, err
-	}
-
-	// Inner IP 选项
-	ipsOptions := make([]*pbtb.Choice, 0, len(ips))
-	for _, v := range ips {
-		ipsOptions = append(ipsOptions, &pbtb.Choice{
-			Id:   v.Spec.InnerIP,
-			Name: v.Spec.InnerIP,
-		})
-	}
-
-	makeChoices := func(values map[string]string) []*pbtb.Choice {
-		choices := make([]*pbtb.Choice, 0, len(values))
-		for k, v := range values {
-			choices = append(choices, &pbtb.Choice{
-				Id:   k,
-				Name: v,
-			})
-		}
-		return choices
-	}
-
-	// Process Status 选项
-	processStatusValues := map[string]string{
-		table.ProcessStatusRunning.String():       "运行中",
-		table.ProcessStatusPartlyRunning.String(): "部分运行",
-		table.ProcessStatusStarting.String():      "启动中",
-		table.ProcessStatusRestarting.String():    "重启中",
-		table.ProcessStatusStopping.String():      "停止中",
-		table.ProcessStatusReloading.String():     "重载中",
-		table.ProcessStatusStopped.String():       "未运行",
-	}
-	psOptions := makeChoices(processStatusValues)
-
-	// Managed Status 选项
-	managedStatusValues := map[string]string{
-		table.ProcessManagedStatusStarting.String():      "启动托管中",
-		table.ProcessManagedStatusStopping.String():      "停止托管中",
-		table.ProcessManagedStatusManaged.String():       "托管中",
-		table.ProcessManagedStatusUnmanaged.String():     "未托管",
-		table.ProcessManagedStatusPartlyManaged.String(): "部分托管",
-	}
-	msOptions := makeChoices(managedStatusValues)
-
-	// CC Sync Status 选项
-	ccSyncStatusValues := map[string]string{
-		table.Synced.String():   "正常",
-		table.Deleted.String():  "已删除",
-		table.Updated.String():  "有更新",
-		table.Abnormal.String(): "异常",
-	}
-	ccSyncOptions := makeChoices(ccSyncStatusValues)
-
-	filterOptions := &pbproc.FilterOptions{
-		InnerIps:        ipsOptions,
-		ProcessStatuses: psOptions,
-		ManagedStatuses: msOptions,
-		CcSyncStatuses:  ccSyncOptions,
-	}
-	return filterOptions, nil
-}
-
-func isStartSemantic(operateType string) bool {
-	switch table.TaskAction(operateType) {
-	case table.TaskActionRegister,
-		table.TaskActionStart,
-		table.TaskActionRestart,
-		table.TaskActionReload:
-		return true
-	default:
-		return false
-	}
-}
-
 // OperateProcess implements pbds.DataServer.
 func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessReq) (*pbds.OperateProcessResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
 	// 校验请求参数
-	if err := validateOperateRequest(req); err != nil {
+	if err := validateOperateRequest(kt, req); err != nil {
 		return nil, err
 	}
 
@@ -231,7 +142,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 	}
 
 	// 预处理，提前分类出需要下发任务的实例和需要直接删除的实例
-	toDispatch, toDelete, err := preResolveInstances(processInstances, processMap, table.ProcessOperateType(req.OperateType))
+	toDispatch, toDelete, err := preResolveInstances(kt, processInstances, processMap, table.ProcessOperateType(req.OperateType))
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +151,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 	if errB := batchDeleteProcessInstances(kt, s.dao, toDelete); errB != nil {
 		return nil, errB
 	}
-	logs.Infof("direct delete %d process instances, rid: %s", len(toDelete), kt.Rid)
+
 	// 没有需要下发的任务，直接返回
 	if len(toDispatch) == 0 {
 		return &pbds.OperateProcessResp{}, nil
@@ -301,20 +212,23 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 }
 
 // validateOperateRequest 校验操作请求参数
-func validateOperateRequest(req *pbds.OperateProcessReq) error {
+func validateOperateRequest(kt *kit.Kit, req *pbds.OperateProcessReq) error {
 	// 当指定了多个 processId 时，禁止指定 processInstanceId，因为一个实例只能对应一个进程，且无法支持多个进程的实例级操作
 	if len(req.ProcessIds) > 1 && len(req.ProcessInstanceIds) > 0 {
-		return fmt.Errorf("invalid request: when processInstanceId is specified, only one processId is allowed")
+		return errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "when ProcessInstanceId is specified, only one ProcessId is allowed"))
 	}
 
 	// 验证操作类型是否有效，目前只支持 start、stop、register、unregister、restart、reload、kill、update_register、delete
 	// delete 操作是用于取消托管或者停止多个实例
 	if err := table.ValidateOperateType(table.ProcessOperateType(req.OperateType)); err != nil {
-		return fmt.Errorf("invalid request: operate type is not supported: %w", err)
+		return errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "operate type is not supported: %v", err))
 	}
 	// query_status 操作仅用于服务端查询，不作为客户端操作类型
 	if req.OperateType == string(table.QueryStatusProcessOperate) {
-		return fmt.Errorf("query_status operation is not supported")
+		return errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "query_status operation is not supported"))
 	}
 	return nil
 }
@@ -345,11 +259,13 @@ func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pb
 	)
 	if err != nil {
 		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get processes by operate range failed, err: %v", err))
 	}
 
 	if len(processes) == 0 {
-		return nil, nil, fmt.Errorf("no processes found for biz %d with provided operate range", bizID)
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no processes found for biz %d with provided operate range", bizID))
 	}
 
 	// 提取进程ID列表
@@ -362,11 +278,13 @@ func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pb
 	processInstances, err := dao.ProcessInstance().GetByProcessIDs(kt, bizID, processIDs)
 	if err != nil {
 		logs.Errorf("get process instances failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get process instances failed, err: %v", err))
 	}
 
 	if len(processInstances) == 0 {
-		return nil, nil, fmt.Errorf("no process instances found for processes matching operate range")
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no process instances found for processes matching operate range"))
 	}
 
 	return processes, processInstances, nil
@@ -379,20 +297,24 @@ func getByProcessInstanceIDs(kt *kit.Kit, dao dao.Set, bizID uint32, processInst
 	insts, err := dao.ProcessInstance().GetByIDs(kt, bizID, processInstanceIDs)
 	if err != nil {
 		logs.Errorf("get process instances by ids failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get process instances by IDs failed, err: %v", err))
 	}
 	if len(insts) == 0 {
-		return nil, nil, fmt.Errorf("process instances not found for ids %v", processInstanceIDs)
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "process instances not found for IDs %v", processInstanceIDs))
 	}
 
 	// 查询进程信息
 	process, err := dao.Process().GetByID(kt, bizID, insts[0].Attachment.ProcessID)
 	if err != nil {
 		logs.Errorf("get process failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get process failed, err: %v", err))
 	}
 	if process == nil {
-		return nil, nil, fmt.Errorf("process not found for id %d", insts[0].Attachment.ProcessID)
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "process not found for id %d", insts[0].Attachment.ProcessID))
 	}
 
 	return []*table.Process{process}, insts, nil
@@ -405,20 +327,24 @@ func getByProcessIDs(kt *kit.Kit, dao dao.Set, bizID uint32, processIDs []uint32
 	processes, err := dao.Process().GetByIDs(kt, bizID, processIDs)
 	if err != nil {
 		logs.Errorf("get processes failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get processes failed, err: %v", err))
 	}
 	if len(processes) == 0 {
-		return nil, nil, fmt.Errorf("no processes found for biz %d with provided process IDs", bizID)
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no processes found for biz %d with provided process IDs", bizID))
 	}
 
 	// 查询进程实例列表
 	processInstances, err := dao.ProcessInstance().GetByProcessIDs(kt, bizID, processIDs)
 	if err != nil {
 		logs.Errorf("get process instances failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, nil, err
+		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "get process instances failed, err: %v", err))
 	}
 	if len(processInstances) == 0 {
-		return nil, nil, fmt.Errorf("no process instances found for process IDs %v", processIDs)
+		return nil, nil, errf.Errorf(errf.RecordNotFound, "%s",
+			i18n.T(kt, "no process instances found for process IDs %v", processIDs))
 	}
 
 	return processes, processInstances, nil
@@ -541,7 +467,8 @@ func createTaskBatch(kt *kit.Kit, dao dao.Set, operateType string, environment s
 	})
 	if err != nil {
 		logs.Errorf("create task batch failed, err: %v, rid: %s", err, kt.Rid)
-		return 0, err
+		return 0, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "create task batch failed, err: %v", err))
 	}
 
 	return batchID, nil
@@ -569,7 +496,8 @@ func updateProcessInstanceStatus(
 		"status_updated_at": time.Now(),
 	}, m.ID.Eq(processInstances.ID)); err != nil {
 		logs.Errorf("update process instance failed, err: %v, rid: %s", err, kt.Rid)
-		return err
+		return errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "update process instance status failed, err: %v", err))
 	}
 
 	return nil
@@ -586,18 +514,19 @@ type resolvedInstance struct {
 
 // preResolveInstances 预先解析每个实例的真实操作类型，并分类
 // 返回：需要下发任务的实例列表、需要直接删除的实例列表
-func preResolveInstances(processInstances []*table.ProcessInstance, processMap map[uint32]*table.Process,
+func preResolveInstances(kt *kit.Kit, processInstances []*table.ProcessInstance, processMap map[uint32]*table.Process,
 	operateType table.ProcessOperateType) (toDispatch []resolvedInstance, toDelete []*table.ProcessInstance, err error) {
 
 	for _, inst := range processInstances {
 		proc, ok := processMap[inst.Attachment.ProcessID]
 		if !ok {
-			return nil, nil, fmt.Errorf("process not found in processMap, processID=%d", inst.Attachment.ProcessID)
+			return nil, nil, errf.Errorf(errf.Internal, "%s",
+				i18n.T(kt, "process not found in processMap, processID=%d", inst.Attachment.ProcessID))
 		}
 
 		originalStatus := inst.Spec.Status
 		originalManaged := inst.Spec.ManagedStatus
-		finalOpType, err := resolveOperateType(operateType, originalStatus, originalManaged)
+		finalOpType, err := resolveOperateType(kt, operateType, originalStatus, originalManaged)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -648,7 +577,8 @@ func dispatchProcessTasks(kt *kit.Kit, dao dao.Set, taskManager *task.TaskManage
 		)
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
-			return dispatchedCount, err
+			return dispatchedCount, errf.Errorf(errf.Internal, "%s",
+				i18n.T(kt, "build process operate task failed, err: %v", err))
 		}
 
 		logs.Infof("dispatch process operate task, taskObj: %+v", taskObj)
@@ -663,14 +593,14 @@ func dispatchProcessTasks(kt *kit.Kit, dao dao.Set, taskManager *task.TaskManage
 // 规则：
 // 1. 非 delete 操作，保持不变
 // 2. delete 操作，根据进程状态和托管状态决定最终操作类型
-func resolveOperateType(operateType table.ProcessOperateType, status table.ProcessStatus,
+func resolveOperateType(kt *kit.Kit, operateType table.ProcessOperateType, status table.ProcessStatus,
 	managed table.ProcessManagedStatus) (table.ProcessOperateType, error) {
 
 	if operateType != table.DeleteProcessOperate {
 		return operateType, nil
 	}
 
-	return getDeleteProcessOperateType(status, managed)
+	return getDeleteProcessOperateType(kt, status, managed)
 }
 
 // buildProcessTask 构建进程操作任务
@@ -748,7 +678,8 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 	sets, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
 		field.NewUint32("", "set_id"), field.NewString("", "set_name"))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list process filter options (sets) failed, err: %v", err))
 	}
 	setOptions := make([]*pbproc.ProcessFilterOption, 0, len(sets))
 	for _, v := range sets {
@@ -761,7 +692,8 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 	modules, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
 		field.NewUint32("", "module_id"), field.NewString("", "module_name"))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list process filter options (modules) failed, err: %v", err))
 	}
 	moduleOptions := make([]*pbproc.ProcessFilterOption, 0, len(modules))
 	for _, v := range modules {
@@ -774,7 +706,8 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 	svcInsts, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(),
 		field.NewUint32("", "service_instance_id"), field.NewString("", "service_name"))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list process filter options (service instances) failed, err: %v", err))
 	}
 	svcInstOptions := make([]*pbproc.ProcessFilterOption, 0, len(svcInsts))
 	for _, v := range svcInsts {
@@ -786,7 +719,8 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 
 	processIds, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(), field.NewUint32("", "cc_process_id"))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list process filter options (CC process IDs) failed, err: %v", err))
 	}
 	processIDOptions := make([]*pbproc.ProcessFilterOption, 0, len(processIds))
 	for _, v := range processIds {
@@ -798,7 +732,8 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 
 	aliases, err := s.dao.Process().ListBizFilterOptions(kt, req.GetBizId(), field.NewString("", "alias"))
 	if err != nil {
-		return nil, err
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list process filter options (aliases) failed, err: %v", err))
 	}
 	processAliasesOptions := make([]*pbproc.ProcessFilterOption, 0, len(aliases))
 	for k, v := range aliases {
@@ -818,7 +753,7 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbds.ProcessFil
 }
 
 // queryFailedTasks 查询批次中所有失败的任务
-func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uint32, taskType string) ([]*taskTypes.Task, error) {
+func queryFailedTasks(kt *kit.Kit, taskStorage istore.Store, batchID uint32, taskType string) ([]*taskTypes.Task, error) {
 	var failedTasks []*taskTypes.Task
 
 	offset := int64(0)
@@ -833,9 +768,10 @@ func queryFailedTasks(ctx context.Context, taskStorage istore.Store, batchID uin
 			Limit:     limit,
 		}
 
-		pagination, err := taskStorage.ListTask(ctx, listOpt)
+		pagination, err := taskStorage.ListTask(kt.Ctx, listOpt)
 		if err != nil {
-			return nil, fmt.Errorf("list tasks failed: %v", err)
+			return nil, errf.Errorf(errf.Internal, "%s",
+				i18n.T(kt, "list failed tasks from task storage failed, err: %v", err))
 		}
 
 		// 将查询到的任务添加到结果集
@@ -861,7 +797,8 @@ func (s *Service) GetProcessInstanceTopo(ctx context.Context, req *pbds.GetProce
 		All: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list processes failed: %w", err)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "list processes failed for process instance topo, err: %v", err))
 	}
 
 	if count == 0 {
@@ -1002,10 +939,7 @@ func pruneEmptyNode(node *pbct.BizTopoNode) {
 //   - 托管状态为 Unmanaged（未托管）：执行 Delete（删除）
 //
 // 3. 其他状态均视为非法操作，返回错误。
-func getDeleteProcessOperateType(
-	status table.ProcessStatus,
-	managedStatus table.ProcessManagedStatus,
-) (table.ProcessOperateType, error) {
+func getDeleteProcessOperateType(kt *kit.Kit, status table.ProcessStatus, managedStatus table.ProcessManagedStatus) (table.ProcessOperateType, error) {
 
 	switch status {
 
@@ -1021,13 +955,13 @@ func getDeleteProcessOperateType(
 		if managedStatus == table.ProcessManagedStatusUnmanaged {
 			return table.DeleteProcessOperate, nil
 		}
-		return "", fmt.Errorf("unsupported managed status: %s", managedStatus)
+		return "", errf.Errorf(errf.FailedPrecondition, "%s",
+			i18n.T(kt, "unsupported managed status for delete: %s", managedStatus))
 	// 其他状态全部视为非法
 	default:
-		return "", fmt.Errorf(
-			"unsupported process state for delete: status=%s managedStatus=%s",
-			status, managedStatus,
-		)
+		return "", errf.Errorf(errf.FailedPrecondition, "%s",
+			i18n.T(kt, "unsupported process state for delete: status=%s managedStatus=%s",
+				status, managedStatus))
 	}
 }
 
@@ -1036,8 +970,100 @@ func batchDeleteProcessInstances(kt *kit.Kit, dao dao.Set, instances []*table.Pr
 	for _, inst := range instances {
 		if err := dao.ProcessInstance().Delete(kt, kt.BizID, inst.ID); err != nil {
 			logs.Errorf("direct delete process instance %d failed, err: %v, rid: %s", inst.ID, err, kt.Rid)
-			return err
+			return errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "delete process instance %d failed, err: %v", inst.ID, err))
 		}
 	}
 	return nil
+}
+
+func uniqueUint32(arr []uint32) []uint32 {
+	m := make(map[uint32]struct{})
+	res := make([]uint32, 0, len(arr))
+	for _, v := range arr {
+		if _, ok := m[v]; !ok {
+			m[v] = struct{}{}
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
+func (s *Service) buildfilterOptions(kt *kit.Kit, bizID uint32) (*pbproc.FilterOptions, error) {
+
+	ips, err := s.dao.Process().ListBizFilterOptions(kt, bizID, field.NewString("", "inner_ip"))
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list process filter options (inner IP) failed, err: %v", err))
+	}
+
+	// Inner IP 选项
+	ipsOptions := make([]*pbtb.Choice, 0, len(ips))
+	for _, v := range ips {
+		ipsOptions = append(ipsOptions, &pbtb.Choice{
+			Id:   v.Spec.InnerIP,
+			Name: v.Spec.InnerIP,
+		})
+	}
+
+	makeChoices := func(values map[string]string) []*pbtb.Choice {
+		choices := make([]*pbtb.Choice, 0, len(values))
+		for k, v := range values {
+			choices = append(choices, &pbtb.Choice{
+				Id:   k,
+				Name: v,
+			})
+		}
+		return choices
+	}
+
+	// Process Status 选项
+	processStatusValues := map[string]string{
+		table.ProcessStatusRunning.String():       i18n.T(kt, "Running"),
+		table.ProcessStatusPartlyRunning.String(): i18n.T(kt, "PartiallyRunning"),
+		table.ProcessStatusStarting.String():      i18n.T(kt, "Starting"),
+		table.ProcessStatusRestarting.String():    i18n.T(kt, "Restarting"),
+		table.ProcessStatusStopping.String():      i18n.T(kt, "Stopping"),
+		table.ProcessStatusReloading.String():     i18n.T(kt, "Reloading"),
+		table.ProcessStatusStopped.String():       i18n.T(kt, "NotRunning"),
+	}
+	psOptions := makeChoices(processStatusValues)
+
+	// Managed Status 选项
+	managedStatusValues := map[string]string{
+		table.ProcessManagedStatusStarting.String():      i18n.T(kt, "StartingManagement"),
+		table.ProcessManagedStatusStopping.String():      i18n.T(kt, "StoppingManagement"),
+		table.ProcessManagedStatusManaged.String():       i18n.T(kt, "Managed"),
+		table.ProcessManagedStatusUnmanaged.String():     i18n.T(kt, "Unmanaged"),
+		table.ProcessManagedStatusPartlyManaged.String(): i18n.T(kt, "PartiallyManaged"),
+	}
+	msOptions := makeChoices(managedStatusValues)
+
+	// CC Sync Status 选项
+	ccSyncStatusValues := map[string]string{
+		table.Synced.String():   i18n.T(kt, "Normal"),
+		table.Deleted.String():  i18n.T(kt, "Deleted"),
+		table.Updated.String():  i18n.T(kt, "Updated"),
+		table.Abnormal.String(): i18n.T(kt, "Abnormal"),
+	}
+	ccSyncOptions := makeChoices(ccSyncStatusValues)
+
+	filterOptions := &pbproc.FilterOptions{
+		InnerIps:        ipsOptions,
+		ProcessStatuses: psOptions,
+		ManagedStatuses: msOptions,
+		CcSyncStatuses:  ccSyncOptions,
+	}
+	return filterOptions, nil
+}
+
+func isStartSemantic(operateType string) bool {
+	switch table.TaskAction(operateType) {
+	case table.TaskActionRegister,
+		table.TaskActionStart,
+		table.TaskActionRestart,
+		table.TaskActionReload:
+		return true
+	default:
+		return false
+	}
 }

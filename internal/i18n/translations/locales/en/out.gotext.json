@@ -621,6 +621,13 @@
             "fuzzy": true
         },
         {
+            "id": "undefined task action",
+            "message": "undefined task action",
+            "translation": "undefined task action",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "delete template from template sets failed",
@@ -1141,6 +1148,1235 @@
             "fuzzy": true
         },
         {
+            "id": "validate page parameters failed, err: {Err}",
+            "message": "validate page parameters failed, err: {Err}",
+            "translation": "validate page parameters failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config template failed, err: {Err}",
+            "message": "get config template failed, err: {Err}",
+            "translation": "get config template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "biz id is required",
+            "message": "biz id is required",
+            "translation": "biz id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "at least one config template group is required",
+            "message": "at least one config template group is required",
+            "translation": "at least one config template group is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "config template id is required",
+            "message": "config template id is required",
+            "translation": "config template id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "config template version id is required",
+            "message": "config template version id is required",
+            "translation": "config template version id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "process list is required",
+            "message": "process list is required",
+            "translation": "process list is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get processes by operate range failed, err: {Err}",
+            "message": "get processes by operate range failed, err: {Err}",
+            "translation": "get processes by operate range failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no processes found for biz {BizID} with provided operate range",
+            "message": "no processes found for biz {BizID} with provided operate range",
+            "translation": "no processes found for biz {BizID} with provided operate range",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config templates by ids failed, err: {Err}",
+            "message": "get config templates by ids failed, err: {Err}",
+            "translation": "get config templates by ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config templates by names failed, err: {Err}",
+            "message": "get config templates by names failed, err: {Err}",
+            "translation": "get config templates by names failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get all config templates failed, err: {Err}",
+            "message": "get all config templates failed, err: {Err}",
+            "translation": "get all config templates failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no config templates found for biz {BizID}",
+            "message": "no config templates found for biz {BizID}",
+            "translation": "no config templates found for biz {BizID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list latest revisions failed, err: {Err}",
+            "message": "list latest revisions failed, err: {Err}",
+            "translation": "list latest revisions failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "latest revision not found for template {TemplateID}",
+            "message": "latest revision not found for template {TemplateID}",
+            "translation": "latest revision not found for template {TemplateID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplate.Attachment.TemplateID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list config templates failed, err: {Err}",
+            "message": "list config templates failed, err: {Err}",
+            "translation": "list config templates failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config template by id {Id} failed, err: {Err}",
+            "message": "get config template by id {Id} failed, err: {Err}",
+            "translation": "get config template by id {Id} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Id",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "id"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list config templates by names failed, err: {Err}",
+            "message": "list config templates by names failed, err: {Err}",
+            "translation": "list config templates by names failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config templates not found for names: {MissingNames}",
+            "message": "config templates not found for names: {MissingNames}",
+            "translation": "config templates not found for names: {MissingNames}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MissingNames",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "missingNames"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list processes by template process ids failed, err: {Err}",
+            "message": "list processes by template process ids failed, err: {Err}",
+            "translation": "list processes by template process ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list filtered processes failed, err: {Err}",
+            "message": "list filtered processes failed, err: {Err}",
+            "translation": "list filtered processes failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get process instances failed, err: {Err}",
+            "message": "get process instances failed, err: {Err}",
+            "translation": "get process instances failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list config instances failed, err: {Err}",
+            "message": "list config instances failed, err: {Err}",
+            "translation": "list config instances failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get template failed, err: {Err}",
+            "message": "get template failed, err: {Err}",
+            "translation": "get template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process not found for cc process id: {CcProcessID}",
+            "message": "process not found for cc process id: {CcProcessID}",
+            "translation": "process not found for cc process id: {CcProcessID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CcProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "ci.Attachment.CcProcessID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get latest template revision failed, err: {Err}",
+            "message": "get latest template revision failed, err: {Err}",
+            "translation": "get latest template revision failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list template revisions by ids failed, err: {Err}",
+            "message": "list template revisions by ids failed, err: {Err}",
+            "translation": "list template revisions by ids failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process {CcProcessID} is not in the config template",
+            "message": "process {CcProcessID} is not in the config template",
+            "translation": "process {CcProcessID} is not in the config template",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CcProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "process.Attachment.CcProcessID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "task storage not initialized",
+            "message": "task storage not initialized",
+            "translation": "task storage not initialized",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "list tasks failed, err: {Err}",
+            "message": "list tasks failed, err: {Err}",
+            "translation": "list tasks failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get common payload failed, err: {Err}",
+            "message": "get common payload failed, err: {Err}",
+            "translation": "get common payload failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get task failed, err: {Err}",
+            "message": "get task failed, err: {Err}",
+            "translation": "get task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "task not found: {TaskId}",
+            "message": "task not found: {TaskId}",
+            "translation": "task not found: {TaskId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.TaskId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config payload not found in task",
+            "message": "config payload not found in task",
+            "translation": "config payload not found in task",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "biz_id is required",
+            "message": "biz_id is required",
+            "translation": "biz_id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "template_content is required",
+            "message": "template_content is required",
+            "translation": "template_content is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "cc_process_id is required",
+            "message": "cc_process_id is required",
+            "translation": "cc_process_id is required",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "query process by cc_process_id failed, err: {Err}",
+            "message": "query process by cc_process_id failed, err: {Err}",
+            "translation": "query process by cc_process_id failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process not found for cc_process_id: {CcProcessId}",
+            "message": "process not found for cc_process_id: {CcProcessId}",
+            "translation": "process not found for cc_process_id: {CcProcessId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CcProcessId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetCcProcessId()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "query process instance failed, err: {Err}",
+            "message": "query process instance failed, err: {Err}",
+            "translation": "query process instance failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "expand ginclude failed, err: {Err}",
+            "message": "expand ginclude failed, err: {Err}",
+            "translation": "expand ginclude failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "render template failed, err: {Err}",
+            "message": "render template failed, err: {Err}",
+            "translation": "render template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get batch failed, batch_id: {BatchID}, err: {Err}",
+            "message": "get batch failed, batch_id: {BatchID}, err: {Err}",
+            "translation": "get batch failed, batch_id: {BatchID}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "batchID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch {BatchID} is not a config generate batch",
+            "message": "batch {BatchID} is not a config generate batch",
+            "translation": "batch {BatchID} is not a config generate batch",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "batchID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list task failed, err: {Err}",
+            "message": "list task failed, err: {Err}",
+            "translation": "list task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get source batch task data failed, err: {Err}",
+            "message": "get source batch task data failed, err: {Err}",
+            "translation": "get source batch task data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create batch failed, err: {Err}",
+            "message": "create batch failed, err: {Err}",
+            "translation": "create batch failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "check running config push tasks failed, err: {Err}",
+            "message": "check running config push tasks failed, err: {Err}",
+            "translation": "check running config push tasks failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config template already has running push tasks, please wait for completion",
+            "message": "config template already has running push tasks, please wait for completion",
+            "translation": "config template already has running push tasks, please wait for completion",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get config template {ConfigTemplateID} failed, err: {Err}",
+            "message": "get config template {ConfigTemplateID} failed, err: {Err}",
+            "translation": "get config template {ConfigTemplateID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get latest template revision for config template {ConfigTemplateID} failed, err: {Err}",
+            "message": "get latest template revision for config template {ConfigTemplateID} failed, err: {Err}",
+            "translation": "get latest template revision for config template {ConfigTemplateID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config template {ConfigTemplateID} version is not the latest, current: {VersionID}, latest: {ID}, please regenerate config",
+            "message": "config template {ConfigTemplateID} version is not the latest, current: {VersionID}, latest: {ID}, please regenerate config",
+            "translation": "config template {ConfigTemplateID} version is not the latest, current: {VersionID}, latest: {ID}, please regenerate config",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "configTemplateID"
+                },
+                {
+                    "id": "VersionID",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "versionID"
+                },
+                {
+                    "id": "ID",
+                    "string": "%[3]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 3,
+                    "expr": "latestRevision.ID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no success tasks found for batch {BatchId}",
+            "message": "no success tasks found for batch {BatchId}",
+            "translation": "no success tasks found for batch {BatchId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config payload is nil for task {TaskID}",
+            "message": "config payload is nil for task {TaskID}",
+            "translation": "config payload is nil for task {TaskID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process payload is nil for task {TaskID}",
+            "message": "process payload is nil for task {TaskID}",
+            "translation": "process payload is nil for task {TaskID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config template id is not valid for task {TaskID}",
+            "message": "config template id is not valid for task {TaskID}",
+            "translation": "config template id is not valid for task {TaskID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no valid tasks found for batch {BatchId}",
+            "message": "no valid tasks found for batch {BatchId}",
+            "translation": "no valid tasks found for batch {BatchId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get task batch failed, err: {Err}",
+            "message": "get task batch failed, err: {Err}",
+            "translation": "get task batch failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "task batch {BatchId} does not exist",
+            "message": "task batch {BatchId} does not exist",
+            "translation": "task batch {BatchId} does not exist",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unknown operation type: {OperationType}",
+            "message": "unknown operation type: {OperationType}",
+            "translation": "unknown operation type: {OperationType}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OperationType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.GetOperationType()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "regenerate task failed, err: {Err}",
+            "message": "regenerate task failed, err: {Err}",
+            "translation": "regenerate task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "query failed tasks failed, err: {Err}",
+            "message": "query failed tasks failed, err: {Err}",
+            "translation": "query failed tasks failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "reset counts for retry failed, err: {Err}",
+            "message": "reset counts for retry failed, err: {Err}",
+            "translation": "reset counts for retry failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "retry failed task failed, err: {Err}",
+            "message": "retry failed task failed, err: {Err}",
+            "translation": "retry failed task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "config template version id is not latest",
+            "message": "config template version id is not latest",
+            "translation": "config template version id is not latest",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get process failed, err: {Err}",
+            "message": "get process failed, err: {Err}",
+            "translation": "get process failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "some processes not found for biz {BizID}",
+            "message": "some processes not found for biz {BizID}",
+            "translation": "some processes not found for biz {BizID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid binding relationship",
+            "message": "invalid binding relationship",
+            "translation": "invalid binding relationship",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "no tasks to create",
+            "message": "no tasks to create",
+            "translation": "no tasks to create",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported config task mode: {Mode}",
+            "message": "unsupported config task mode: {Mode}",
+            "translation": "unsupported config task mode: {Mode}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Mode",
+                    "string": "%[1]v",
+                    "type": "github.com/TencentBlueKing/bk-bscp/cmd/data-service/service.ConfigTaskMode",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "mode"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create run config generation or verification task failed, err: {Err}",
+            "message": "create run config generation or verification task failed, err: {Err}",
+            "translation": "create run config generation or verification task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "payload not found in task",
+            "message": "payload not found in task",
+            "translation": "payload not found in task",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "config instance not found, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "message": "config instance not found, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "translation": "config instance not found, biz_id={BizId}, config_template_id={ConfigTemplateId}, cc_process_id={CcProcessId}, module_inst_seq={ModuleInstSeq}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                },
+                {
+                    "id": "ConfigTemplateId",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "req.GetConfigTemplateId()"
+                },
+                {
+                    "id": "CcProcessId",
+                    "string": "%[3]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 3,
+                    "expr": "req.GetCcProcessId()"
+                },
+                {
+                    "id": "ModuleInstSeq",
+                    "string": "%[4]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 4,
+                    "expr": "req.GetModuleInstSeq()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "message": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "translation": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ConfigTemplateId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetConfigTemplateId()"
+                },
+                {
+                    "id": "TemplateID",
+                    "string": "%[2]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 2,
+                    "expr": "tr.Attachment.TemplateID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "download template config failed, template id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "message": "download template config failed, template id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "translation": "download template config failed, template id: {TemplateID}, name: {Name}, path: {Path}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TemplateID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "tr.Attachment.TemplateID"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "tr.Spec.Name"
+                },
+                {
+                    "id": "Path",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "tr.Spec.Path"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[4]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 4,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "get config item failed, err: {Err}",
             "message": "get config item failed, err: {Err}",
             "translation": "get config item failed, err: {Err}",
@@ -1383,14 +2619,213 @@
             "fuzzy": true
         },
         {
-            "id": "batch add templates to template sets failed, err: {Err}",
-            "message": "batch add templates to template sets failed, err: {Err}",
-            "translation": "batch add templates to template sets failed, err: {Err}",
+            "id": "no available space or packages",
+            "message": "no available space or packages",
+            "translation": "no available space or packages",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "list config instances by template ID failed, err: {Error}",
+            "message": "list config instances by template ID failed, err: {Error}",
+            "translation": "list config instances by template ID failed, err: {Error}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "er"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list templates by IDs failed, err: {Err}",
+            "message": "list templates by IDs failed, err: {Err}",
+            "translation": "list templates by IDs failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
                     "id": "Err",
-                    "string": "%[1]s",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "find topo brief failed, err: {Err}",
+            "message": "find topo brief failed, err: {Err}",
+            "translation": "find topo brief failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no available topo nodes",
+            "message": "no available topo nodes",
+            "translation": "no available topo nodes",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "no valid module IDs found",
+            "message": "no valid module IDs found",
+            "translation": "no valid module IDs found",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "fetch all module details failed, err: {Err}",
+            "message": "fetch all module details failed, err: {Err}",
+            "translation": "fetch all module details failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list processes failed, err: {Err}",
+            "message": "list processes failed, err: {Err}",
+            "translation": "list processes failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config template by unique key failed, err: {Err}",
+            "message": "get config template by unique key failed, err: {Err}",
+            "translation": "get config template by unique key failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "the same template name already exists under this {BizId} business: {TemplateName}",
+            "message": "the same template name already exists under this {BizId} business: {TemplateName}",
+            "translation": "the same template name already exists under this {BizId} business: {TemplateName}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                },
+                {
+                    "id": "TemplateName",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "req.GetTemplateName()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get template set failed, err: {Err}",
+            "message": "get template set failed, err: {Err}",
+            "translation": "get template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create template and revision failed, err: {Err}",
+            "message": "create template and revision failed, err: {Err}",
+            "translation": "create template and revision failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create config template failed, err: {Err}",
+            "message": "create config template failed, err: {Err}",
+            "translation": "create config template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create template failed, err: {Err}",
+            "message": "create template failed, err: {Err}",
+            "translation": "create template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
@@ -1412,6 +2847,479 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "templateRevision.Spec.RevisionName"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create template revision failed, err: {Err}",
+            "message": "create template revision failed, err: {Err}",
+            "translation": "create template revision failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch add templates to template sets failed, err: {Err}",
+            "message": "batch add templates to template sets failed, err: {Err}",
+            "translation": "batch add templates to template sets failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]s",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get default template configuration space failed, err: {Err}",
+            "message": "get default template configuration space failed, err: {Err}",
+            "translation": "get default template configuration space failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create default template configuration space failed, err: {Err}",
+            "message": "create default template configuration space failed, err: {Err}",
+            "translation": "create default template configuration space failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get default template set failed, err: {Err}",
+            "message": "get default template set failed, err: {Err}",
+            "translation": "get default template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create default template set failed, err: {Err}",
+            "message": "create default template set failed, err: {Err}",
+            "translation": "create default template set failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "fetch all service template failed, err: {Err}",
+            "message": "fetch all service template failed, err: {Err}",
+            "translation": "fetch all service template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch process by service templates failed, err: {Err}",
+            "message": "batch process by service templates failed, err: {Err}",
+            "translation": "batch process by service templates failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list proc template failed, err: {Err}",
+            "message": "list proc template failed, err: {Err}",
+            "translation": "list proc template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list service instance failed, err: {Err}",
+            "message": "list service instance failed, err: {Err}",
+            "translation": "list service instance failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch process count by service instances failed, err: {Err}",
+            "message": "batch process count by service instances failed, err: {Err}",
+            "translation": "batch process count by service instances failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process instance failed, err: {Err}",
+            "message": "list process instance failed, err: {Err}",
+            "translation": "list process instance failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get biz object attributes failed, err: {Err}",
+            "message": "get biz object attributes failed, err: {Err}",
+            "translation": "get biz object attributes failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get config template by ID failed, err: {Err}",
+            "message": "get config template by ID failed, err: {Err}",
+            "translation": "get config template by ID failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "update config template failed, err: {Err}",
+            "message": "update config template failed, err: {Err}",
+            "translation": "update config template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list processes by cc process IDs failed, err: {Err}",
+            "message": "list processes by cc process IDs failed, err: {Err}",
+            "translation": "list processes by cc process IDs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list processes by process template IDs failed, err: {Err}",
+            "message": "list processes by process template IDs failed, err: {Err}",
+            "translation": "list processes by process template IDs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get proc template failed, err: {Err}",
+            "message": "get proc template failed, err: {Err}",
+            "translation": "get proc template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get service template failed, err: {Err}",
+            "message": "get service template failed, err: {Err}",
+            "translation": "get service template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "update template failed, err: {Err}",
+            "message": "update template failed, err: {Err}",
+            "translation": "update template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get template by ID failed, err: {Err}",
+            "message": "get template by ID failed, err: {Err}",
+            "translation": "get template by ID failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete template failed, err: {Err}",
+            "message": "delete template failed, err: {Err}",
+            "translation": "delete template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete template revision failed, err: {Err}",
+            "message": "delete template revision failed, err: {Err}",
+            "translation": "delete template revision failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete template from all sets failed, err: {Err}",
+            "message": "delete template from all sets failed, err: {Err}",
+            "translation": "delete template from all sets failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete config template failed, err: {Err}",
+            "message": "delete config template failed, err: {Err}",
+            "translation": "delete config template failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "commit transaction failed, err: {Err}",
+            "message": "commit transaction failed, err: {Err}",
+            "translation": "commit transaction failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "path cannot be empty",
+            "message": "path cannot be empty",
+            "translation": "path cannot be empty",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "path cannot contain null character",
+            "message": "path cannot contain null character",
+            "translation": "path cannot contain null character",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "path contains invalid segment: {Seg}",
+            "message": "path contains invalid segment: {Seg}",
+            "translation": "path contains invalid segment: {Seg}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Seg",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "seg"
                 }
             ],
             "fuzzy": true
@@ -1751,6 +3659,580 @@
             "fuzzy": true
         },
         {
+            "id": "get process instances by process IDs failed, err: {Err}",
+            "message": "get process instances by process IDs failed, err: {Err}",
+            "translation": "get process instances by process IDs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list config templates by CC process ID failed, err: {ErrP}",
+            "message": "list config templates by CC process ID failed, err: {ErrP}",
+            "translation": "list config templates by CC process ID failed, err: {ErrP}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ErrP",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "errP"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list config templates by CC template process ID failed, err: {ErrT}",
+            "message": "list config templates by CC template process ID failed, err: {ErrT}",
+            "translation": "list config templates by CC template process ID failed, err: {ErrT}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ErrT",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "errT"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "when ProcessInstanceId is specified, only one ProcessId is allowed",
+            "message": "when ProcessInstanceId is specified, only one ProcessId is allowed",
+            "translation": "when ProcessInstanceId is specified, only one ProcessId is allowed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "operate type is not supported: {Err}",
+            "message": "operate type is not supported: {Err}",
+            "translation": "operate type is not supported: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "query_status operation is not supported",
+            "message": "query_status operation is not supported",
+            "translation": "query_status operation is not supported",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "no process instances found for processes matching operate range",
+            "message": "no process instances found for processes matching operate range",
+            "translation": "no process instances found for processes matching operate range",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get process instances by IDs failed, err: {Err}",
+            "message": "get process instances by IDs failed, err: {Err}",
+            "translation": "get process instances by IDs failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process instances not found for IDs {ProcessInstanceIDs}",
+            "message": "process instances not found for IDs {ProcessInstanceIDs}",
+            "translation": "process instances not found for IDs {ProcessInstanceIDs}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceIDs",
+                    "string": "%[1]v",
+                    "type": "[]uint32",
+                    "underlyingType": "[]uint32",
+                    "argNum": 1,
+                    "expr": "processInstanceIDs"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process not found for id {ProcessID}",
+            "message": "process not found for id {ProcessID}",
+            "translation": "process not found for id {ProcessID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "insts[0].Attachment.ProcessID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get processes failed, err: {Err}",
+            "message": "get processes failed, err: {Err}",
+            "translation": "get processes failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no processes found for biz {BizID} with provided process IDs",
+            "message": "no processes found for biz {BizID} with provided process IDs",
+            "translation": "no processes found for biz {BizID} with provided process IDs",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "bizID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no process instances found for process IDs {ProcessIDs}",
+            "message": "no process instances found for process IDs {ProcessIDs}",
+            "translation": "no process instances found for process IDs {ProcessIDs}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessIDs",
+                    "string": "%[1]v",
+                    "type": "[]uint32",
+                    "underlyingType": "[]uint32",
+                    "argNum": 1,
+                    "expr": "processIDs"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create task batch failed, err: {Err}",
+            "message": "create task batch failed, err: {Err}",
+            "translation": "create task batch failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "update process instance status failed, err: {Err}",
+            "message": "update process instance status failed, err: {Err}",
+            "translation": "update process instance status failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process not found in processMap, processID={ProcessID}",
+            "message": "process not found in processMap, processID={ProcessID}",
+            "translation": "process not found in processMap, processID={ProcessID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.Attachment.ProcessID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "build process operate task failed, err: {Err}",
+            "message": "build process operate task failed, err: {Err}",
+            "translation": "build process operate task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (sets) failed, err: {Err}",
+            "message": "list process filter options (sets) failed, err: {Err}",
+            "translation": "list process filter options (sets) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (modules) failed, err: {Err}",
+            "message": "list process filter options (modules) failed, err: {Err}",
+            "translation": "list process filter options (modules) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (service instances) failed, err: {Err}",
+            "message": "list process filter options (service instances) failed, err: {Err}",
+            "translation": "list process filter options (service instances) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (CC process IDs) failed, err: {Err}",
+            "message": "list process filter options (CC process IDs) failed, err: {Err}",
+            "translation": "list process filter options (CC process IDs) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (aliases) failed, err: {Err}",
+            "message": "list process filter options (aliases) failed, err: {Err}",
+            "translation": "list process filter options (aliases) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list failed tasks from task storage failed, err: {Err}",
+            "message": "list failed tasks from task storage failed, err: {Err}",
+            "translation": "list failed tasks from task storage failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list processes failed for process instance topo, err: {Err}",
+            "message": "list processes failed for process instance topo, err: {Err}",
+            "translation": "list processes failed for process instance topo, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported managed status for delete: {ManagedStatus}",
+            "message": "unsupported managed status for delete: {ManagedStatus}",
+            "translation": "unsupported managed status for delete: {ManagedStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "managedStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translation": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Status",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "status"
+                },
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[2]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "managedStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete process instance {ID} failed, err: {Err}",
+            "message": "delete process instance {ID} failed, err: {Err}",
+            "translation": "delete process instance {ID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list process filter options (inner IP) failed, err: {Err}",
+            "message": "list process filter options (inner IP) failed, err: {Err}",
+            "translation": "list process filter options (inner IP) failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Running",
+            "message": "Running",
+            "translation": "Running",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "PartiallyRunning",
+            "message": "PartiallyRunning",
+            "translation": "PartiallyRunning",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Starting",
+            "message": "Starting",
+            "translation": "Starting",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Restarting",
+            "message": "Restarting",
+            "translation": "Restarting",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stopping",
+            "message": "Stopping",
+            "translation": "Stopping",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Reloading",
+            "message": "Reloading",
+            "translation": "Reloading",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "NotRunning",
+            "message": "NotRunning",
+            "translation": "NotRunning",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "StartingManagement",
+            "message": "StartingManagement",
+            "translation": "StartingManagement",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "StoppingManagement",
+            "message": "StoppingManagement",
+            "translation": "StoppingManagement",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Managed",
+            "message": "Managed",
+            "translation": "Managed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Unmanaged",
+            "message": "Unmanaged",
+            "translation": "Unmanaged",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "PartiallyManaged",
+            "message": "PartiallyManaged",
+            "translation": "PartiallyManaged",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Normal",
+            "message": "Normal",
+            "translation": "Normal",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Deleted",
+            "message": "Deleted",
+            "translation": "Deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Updated",
+            "message": "Updated",
+            "translation": "Updated",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Abnormal",
+            "message": "Abnormal",
+            "translation": "Abnormal",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "release {Name} is deprecated, can not be submited",
             "message": "release {Name} is deprecated, can not be submited",
             "translation": "release {Name} is deprecated, can not be submited",
@@ -2006,6 +4488,355 @@
             "fuzzy": true
         },
         {
+            "id": "process config view is not enabled for biz {BizId}",
+            "message": "process config view is not enabled for biz {BizId}",
+            "translation": "process config view is not enabled for biz {BizId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BizId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBizId()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create sync cmdb task failed, err: {Err}",
+            "message": "create sync cmdb task failed, err: {Err}",
+            "translation": "create sync cmdb task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get business data failed, err: {Err}",
+            "message": "get business data failed, err: {Err}",
+            "translation": "get business data failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list task batch failed, err: {Err}",
+            "message": "list task batch failed, err: {Err}",
+            "translation": "list task batch failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list distinct executors failed, err: {Err}",
+            "message": "list distinct executors failed, err: {Err}",
+            "translation": "list distinct executors failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "task storage is not initialized",
+            "message": "task storage is not initialized",
+            "translation": "task storage is not initialized",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get task batch {BatchId} failed, err: {Err}",
+            "message": "get task batch {BatchId} failed, err: {Err}",
+            "translation": "get task batch {BatchId} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BatchId",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "req.GetBatchId()"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list tasks from task storage failed, err: {Err}",
+            "message": "list tasks from task storage failed, err: {Err}",
+            "translation": "list tasks from task storage failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list tasks returned nil pagination",
+            "message": "list tasks returned nil pagination",
+            "translation": "list tasks returned nil pagination",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "task is nil",
+            "message": "task is nil",
+            "translation": "task is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get common payload from task failed, err: {Err}",
+            "message": "get common payload from task failed, err: {Err}",
+            "translation": "get common payload from task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "list tasks from task storage failed for status {NormalizedStatus}, err: {Err}",
+            "message": "list tasks from task storage failed for status {NormalizedStatus}, err: {Err}",
+            "translation": "list tasks from task storage failed for status {NormalizedStatus}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "NormalizedStatus",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "normalizedStatus"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid {FieldName} format: {Err}",
+            "message": "invalid {FieldName} format: {Err}",
+            "translation": "invalid {FieldName} format: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "FieldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "fieldName"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "reset task batch counts for retry failed, batchID: {ID}, err: {Err}",
+            "message": "reset task batch counts for retry failed, batchID: {ID}, err: {Err}",
+            "translation": "reset task batch counts for retry failed, batchID: {ID}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "taskBatch.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "operate process step not found for taskID: {TaskID}",
+            "message": "operate process step not found for taskID: {TaskID}",
+            "translation": "operate process step not found for taskID: {TaskID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
+            "message": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
+            "translation": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "message": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "translation": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "processPayload.ProcessInstanceID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process instance with ID {ProcessInstanceID} does not exist",
+            "message": "process instance with ID {ProcessInstanceID} does not exist",
+            "translation": "process instance with ID {ProcessInstanceID} does not exist",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessInstanceID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "processPayload.ProcessInstanceID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "retry failed task {TaskID} failed, err: {Err}",
+            "message": "retry failed task {TaskID} failed, err: {Err}",
+            "translation": "retry failed task {TaskID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "failedTask.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "get app template bindings by template set ids, err: {Err}",
             "message": "get app template bindings by template set ids, err: {Err}",
             "translation": "get app template bindings by template set ids, err: {Err}",
@@ -2101,23 +4932,6 @@
             "id": "list app template bindings by app ids failed, err: {Err}",
             "message": "list app template bindings by app ids failed, err: {Err}",
             "translation": "list app template bindings by app ids failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]s",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "get template set failed, err: {Err}",
-            "message": "get template set failed, err: {Err}",
-            "translation": "get template set failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -2573,23 +5387,6 @@
                     "underlyingType": "uint32",
                     "argNum": 1,
                     "expr": "id"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "get template failed, err: {Err}",
-            "message": "get template failed, err: {Err}",
-            "translation": "get template failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
                 }
             ],
             "fuzzy": true
@@ -3115,9 +5912,9 @@
             "fuzzy": true
         },
         {
-            "id": "invalid name {Name}, there can't be any /",
-            "message": "invalid name {Name}, there can't be any /",
-            "translation": "invalid name {Name}, there can't be any /",
+            "id": "invalid name {Name}, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space",
+            "message": "invalid name {Name}, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space",
+            "translation": "invalid name {Name}, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -3448,6 +6245,118 @@
             "fuzzy": true
         },
         {
+            "id": "ConfigFile",
+            "message": "ConfigFile",
+            "translation": "ConfigFile",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Process",
+            "message": "Process",
+            "translation": "Process",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Start",
+            "message": "Start",
+            "translation": "Start",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stop",
+            "message": "Stop",
+            "translation": "Stop",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Restart",
+            "message": "Restart",
+            "translation": "Restart",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Reload",
+            "message": "Reload",
+            "translation": "Reload",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Kill",
+            "message": "Kill",
+            "translation": "Kill",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Register",
+            "message": "Register",
+            "translation": "Register",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Unregister",
+            "message": "Unregister",
+            "translation": "Unregister",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ConfigPublish",
+            "message": "ConfigPublish",
+            "translation": "ConfigPublish",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ConfigGenerate",
+            "message": "ConfigGenerate",
+            "translation": "ConfigGenerate",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ConfigCheck",
+            "message": "ConfigCheck",
+            "translation": "ConfigCheck",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Executing",
+            "message": "Executing",
+            "translation": "Executing",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ExecutionSuccessful",
+            "message": "ExecutionSuccessful",
+            "translation": "ExecutionSuccessful",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ExecutionFailed",
+            "message": "ExecutionFailed",
+            "translation": "ExecutionFailed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "PartialFailure",
+            "message": "PartialFailure",
+            "translation": "PartialFailure",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "default_val {DefaultVal} is not a number type",
             "message": "default_val {DefaultVal} is not a number type",
             "translation": "default_val {DefaultVal} is not a number type",
@@ -3460,6 +6369,178 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "t.DefaultVal"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid base directory",
+            "message": "invalid base directory",
+            "translation": "invalid base directory",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "get absolute base path failed, baseDir: {BaseDir}, err: {Err}",
+            "message": "get absolute base path failed, baseDir: {BaseDir}, err: {Err}",
+            "translation": "get absolute base path failed, baseDir: {BaseDir}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BaseDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "baseDir"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get absolute destination path failed, path: {DstPath}, err: {Err}",
+            "message": "get absolute destination path failed, path: {DstPath}, err: {Err}",
+            "translation": "get absolute destination path failed, path: {DstPath}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "calculate relative path failed, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "message": "calculate relative path failed, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "translation": "calculate relative path failed, base: {BaseAbs}, dst: {DstAbs}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "BaseAbs",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "baseAbs"
+                },
+                {
+                    "id": "DstAbs",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "dstAbs"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[3]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 3,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "invalid file path",
+            "message": "invalid file path",
+            "translation": "invalid file path",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "create parent directory failed, dir: {ParentDir}, err: {Err}",
+            "message": "create parent directory failed, dir: {ParentDir}, err: {Err}",
+            "translation": "create parent directory failed, dir: {ParentDir}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ParentDir",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "parentDir"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "create file failed, path: {DstPath}, err: {Err}",
+            "message": "create file failed, path: {DstPath}, err: {Err}",
+            "translation": "create file failed, path: {DstPath}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "write file failed, path: {DstPath}, err: {Err}",
+            "message": "write file failed, path: {DstPath}, err: {Err}",
+            "translation": "write file failed, path: {DstPath}, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "DstPath",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "dstPath"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ],
             "fuzzy": true
