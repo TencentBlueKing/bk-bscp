@@ -323,17 +323,17 @@ class MakoNodeVisitor(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         """访问赋值节点"""
+        self.visit(node.value)
         for target in node.targets:
             self._unbind_target(target)
-        self.visit(node.value)
 
     def visit_AnnAssign(self, node):
         """访问带类型标注的赋值节点"""
-        self._unbind_target(node.target)
         if node.annotation is not None:
             self.visit(node.annotation)
         if node.value is not None:
             self.visit(node.value)
+        self._unbind_target(node.target)
 
     def visit_AugAssign(self, node):
         """访问复合赋值节点"""

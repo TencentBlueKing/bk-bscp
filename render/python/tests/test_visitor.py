@@ -53,6 +53,26 @@ ${safe_json.system("id")}""",
             with self.subTest(template=template):
                 self.assert_unsafe(template)
 
+    def test_allows_assignment_rhs_to_use_current_module_binding(self):
+        template = """<%
+import json
+json = json.dumps({"name": "bscp"})
+%>
+${json.replace("bscp", "BSCP")}"""
+
+        result = mako_render(template, {})
+
+        self.assertIn('"name": "BSCP"', result)
+
+    def test_rejects_module_calls_after_assignment_rebinds_name(self):
+        template = """<%
+import json
+json = json.dumps({"name": "bscp"})
+%>
+${json.dumps({"name": "bscp"})}"""
+
+        self.assert_unsafe(template)
+
     @unittest.skipIf(sys.version_info < (3, 10), "pattern matching requires Python 3.10+")
     def test_rejects_pattern_matching_rebound_allowed_module_names(self):
         template = """<%
