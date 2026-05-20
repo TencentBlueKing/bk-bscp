@@ -34,6 +34,18 @@ def clean_mako_content(content: str) -> str:
     return content
 
 
+def validate_filter_args(filter_args, node_visitor: ast.NodeVisitor):
+    if filter_args is None:
+        return
+
+    allowed_filters = getattr(node_visitor, "white_list_filters", MakoNodeVisitor.WHITE_LIST_FILTERS)
+    for filter_name in getattr(filter_args, "args", []):
+        if hasattr(node_visitor, "validate_filter_name"):
+            node_visitor.validate_filter_name(filter_name)
+        elif filter_name not in allowed_filters:
+            raise ForbiddenMakoTemplateException("发现非法过滤器使用:[{}]，请修改".format(filter_name))
+
+
 def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisitor):
     """
     解析 Mako 模板节点，逐个节点解析抽象语法树并检查安全性
@@ -45,11 +57,16 @@ def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisi
     for node in nodes:
         if isinstance(node, (parsetree.Code, parsetree.Expression)):
             code = node.text
+            if isinstance(node, parsetree.Expression):
+                validate_filter_args(getattr(node, "escapes_code", None), node_visitor)
         elif isinstance(node, parsetree.ControlLine):
             if node.isend:
                 continue
             code = PythonFragment(node.text).code
-        elif isinstance(node, (parsetree.Text, parsetree.TextTag, parsetree.Comment)):
+        elif isinstance(node, parsetree.TextTag):
+            validate_filter_args(getattr(node, "filter_args", None), node_visitor)
+            continue
+        elif isinstance(node, (parsetree.Text, parsetree.Comment)):
             continue
         else:
             raise ForbiddenMakoTemplateException("不支持[{}]节点".format(node.__class__.__name__))
@@ -59,8 +76,7 @@ def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisi
             # 对于代码节点，使用 "exec" 模式解析
             parse_mode = "eval" if isinstance(node, parsetree.Expression) else "exec"
             ast_node = ast.parse(code.strip(), "<unknown>", parse_mode)
-            for _node in ast.walk(ast_node):
-                node_visitor.visit(_node)
+            node_visitor.visit(ast_node)
         except SyntaxError:
             # 如果语法错误，跳过检查（Mako 会在渲染时处理）
             # 但这种情况应该很少见，因为 Mako 已经解析过了
@@ -95,4 +111,3 @@ def check_mako_template_safety(text: str, node_visitor: ast.NodeVisitor = None) 
     
     parse_template_nodes(lexer_template.nodes, node_visitor)
     return True
-
