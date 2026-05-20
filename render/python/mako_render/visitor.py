@@ -110,6 +110,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
         ast.Lambda,
         ast.ListComp,
         ast.Nonlocal,
+        ast.NamedExpr,
         ast.Raise,
         ast.SetComp,
         ast.Try,
@@ -126,7 +127,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
             white_list_modules: 自定义白名单模块列表（默认使用类属性）
         """
         self.white_list_modules = set(white_list_modules or self.WHITE_LIST_MODULES)
-        self.allowed_module_names = set(self.white_list_modules)
+        self.allowed_module_names = set()
 
     def _reject(self, message):
         raise ForbiddenMakoTemplateException(message)
@@ -143,6 +144,27 @@ class MakoNodeVisitor(ast.NodeVisitor):
 
     def _is_allowed_module_attr(self, node):
         return self._root_name(node) in self.allowed_module_names
+
+    def _validate_binding_name(self, name):
+        if self._is_dunder(name) or name in self.FORBIDDEN_NAMES:
+            self._reject("发现非法名称使用:[{}]，请修改".format(name))
+
+    def _unbind_target(self, target):
+        if isinstance(target, ast.Name):
+            self._validate_binding_name(target.id)
+            self.allowed_module_names.discard(target.id)
+            return
+
+        if isinstance(target, (ast.Tuple, ast.List)):
+            for element in target.elts:
+                self._unbind_target(element)
+            return
+
+        if isinstance(target, ast.Starred):
+            self._unbind_target(target.value)
+            return
+
+        self._reject("发现非法赋值目标:[{}]，请修改".format(target.__class__.__name__))
 
     def generic_visit(self, node):
         if isinstance(node, self.FORBIDDEN_NODE_TYPES):
@@ -180,10 +202,37 @@ class MakoNodeVisitor(ast.NodeVisitor):
             self._reject("发现非法函数调用:[{}]，请修改".format(func.__class__.__name__))
         self.generic_visit(node)
 
+    def visit_Assign(self, node):
+        """访问赋值节点"""
+        for target in node.targets:
+            self._unbind_target(target)
+        self.visit(node.value)
+
+    def visit_AnnAssign(self, node):
+        """访问带类型标注的赋值节点"""
+        self._unbind_target(node.target)
+        if node.annotation is not None:
+            self.visit(node.annotation)
+        if node.value is not None:
+            self.visit(node.value)
+
+    def visit_AugAssign(self, node):
+        """访问复合赋值节点"""
+        self._unbind_target(node.target)
+        self.visit(node.value)
+
+    def visit_For(self, node):
+        """访问循环节点"""
+        self._unbind_target(node.target)
+        self.visit(node.iter)
+        for child in node.body:
+            self.visit(child)
+        for child in node.orelse:
+            self.visit(child)
+
     def visit_Name(self, node):
         """访问名称节点"""
-        if self._is_dunder(node.id) or node.id in self.FORBIDDEN_NAMES:
-            raise ForbiddenMakoTemplateException("发现非法名称使用:[{}]，请修改".format(node.id))
+        self._validate_binding_name(node.id)
 
     def visit_Import(self, node):
         """访问导入节点"""
@@ -191,7 +240,9 @@ class MakoNodeVisitor(ast.NodeVisitor):
             module_name = name.name.split(".", 1)[0]
             if module_name not in self.white_list_modules:
                 self._reject("发现非法导入:[{}]，请修改".format(name.name))
-            self.allowed_module_names.add(name.asname or module_name)
+            binding_name = name.asname or module_name
+            self._validate_binding_name(binding_name)
+            self.allowed_module_names.add(binding_name)
 
     def visit_ImportFrom(self, node):
         """访问从模块导入节点"""
@@ -201,4 +252,4 @@ class MakoNodeVisitor(ast.NodeVisitor):
         for name in node.names:
             if name.name.startswith("_"):
                 self._reject("发现非法导入:[{}]，请修改".format(name.name))
-            self.allowed_module_names.add(name.asname or name.name)
+            self._validate_binding_name(name.asname or name.name)

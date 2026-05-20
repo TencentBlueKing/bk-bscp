@@ -25,6 +25,25 @@ class MakoSafetyTest(unittest.TestCase):
             '${sorted([2, 1])}',
             '${getattr(this, "cc_host", None)}',
             '${open("/etc/passwd").read()}',
+            '${json.system("id")}',
+        ]
+
+        for template in cases:
+            with self.subTest(template=template):
+                self.assert_unsafe(template)
+
+    def test_rejects_calls_on_rebound_allowed_module_names(self):
+        cases = [
+            """<%
+import json
+json = attacker
+%>
+${json.system("id")}""",
+            """<%
+import json as safe_json
+safe_json = attacker
+%>
+${safe_json.system("id")}""",
         ]
 
         for template in cases:
