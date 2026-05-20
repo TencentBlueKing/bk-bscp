@@ -791,3 +791,68 @@ func genProcConfigMgmtResource(a *meta.ResourceAttribute) (client.ActionID, []cl
 		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
 }
+
+// genGlobalConfigKVRes generate global config kv related iam resource.
+func genGlobalConfigKVRes(a *meta.ResourceAttribute) (*bkiam.Request, error) {
+	iamReq := bkiam.Request{
+		System:  sys.SystemIDBSCP,
+		Subject: dummyIAMUser,
+		Resources: []iam.ResourceNode{
+			{
+				System:    sys.SystemIDCMDB,
+				Type:      string(sys.Business),
+				ID:        strconv.FormatUint(uint64(a.BizID), 10),
+				Attribute: map[string]interface{}{},
+			},
+		},
+	}
+
+	switch a.Action {
+	case meta.ManageGlobalConfigKV:
+		iamReq.Action = bkiam.NewAction(string(sys.ManageGlobalConfigKV))
+	default:
+		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
+	}
+
+	return &iamReq, nil
+}
+
+// genGlobalConfigKVApplication generate global config kv related iam application.
+func genGlobalConfigKVApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, error) {
+	action := bkiam.ApplicationAction{
+		RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+			SystemID: sys.SystemIDCMDB,
+			Type:     string(sys.Business),
+			Instances: []bkiam.ApplicationResourceInstance{
+				[]iam.ApplicationResourceNode{{
+					Type: string(sys.Business),
+					ID:   strconv.FormatUint(uint64(a.BizID), 10),
+				}},
+			},
+		}},
+	}
+
+	switch a.Action {
+	case meta.ManageGlobalConfigKV:
+		action.ID = string(sys.ManageGlobalConfigKV)
+	default:
+		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
+	}
+	return action, nil
+}
+
+// genGlobalConfigKVResource generate global config kv related iam resource.
+func genGlobalConfigKVResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+	bizRes := client.Resource{
+		System: sys.SystemIDCMDB,
+		Type:   sys.Business,
+		ID:     strconv.FormatUint(uint64(a.BizID), 10),
+	}
+
+	switch a.Action {
+	case meta.ManageGlobalConfigKV:
+		return sys.ManageGlobalConfigKV, []client.Resource{bizRes}, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
+	}
+}

@@ -57,6 +57,7 @@ func genBizCommonActions() []client.CommonAction {
 				{ID: ConfigTemplateDelete},
 				{ID: ConfigGenerate},
 				{ID: ConfigRelease},
+				{ID: ManageGlobalConfigKV},
 			},
 		},
 	}
