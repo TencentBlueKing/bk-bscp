@@ -28,6 +28,8 @@ class MakoSafetyTest(unittest.TestCase):
             '${sorted([2, 1])}',
             '${getattr(this, "cc_host", None)}',
             '${open("/etc/passwd").read()}',
+            '${open("/etc/passwd").read().replace("a", "b")}',
+            '${__import__("os").system("id").replace("x", "y")}',
             '${json.system("id")}',
         ]
 

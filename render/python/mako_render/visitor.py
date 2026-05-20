@@ -294,6 +294,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
             return
 
         if node.attr in self.WHITE_LIST_ATTRS or node.attr in self.WHITE_LIST_METHODS:
+            self.visit(node.value)
             return
 
         self._reject("发现非法属性使用:[{}]，请修改".format(node.attr))
