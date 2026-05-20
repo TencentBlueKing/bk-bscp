@@ -55,6 +55,23 @@ ${safe_json.system("id")}""",
             with self.subTest(template=template):
                 self.assert_unsafe(template)
 
+    def test_rejects_unsafe_expression_filters(self):
+        cases = [
+            '${"open(\\"/etc/hosts\\").read()" | eval}',
+            '${"__import__(\\"os\\").system(\\"id\\")" | eval}',
+            '${"/etc/hosts" | open}',
+            '<%text filter="eval">1+1</%text>',
+        ]
+
+        for template in cases:
+            with self.subTest(template=template):
+                self.assert_unsafe(template)
+
+    def test_allows_safe_expression_filters(self):
+        result = mako_render('${"  <bscp>  " | h,trim}', {})
+
+        self.assertEqual("&lt;bscp&gt;", result)
+
     def test_allows_assignment_rhs_to_use_current_module_binding(self):
         template = """<%
 import json

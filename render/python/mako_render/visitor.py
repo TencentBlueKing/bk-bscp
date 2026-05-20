@@ -139,6 +139,18 @@ class MakoNodeVisitor(ast.NodeVisitor):
         "cc_set",
     }
 
+    # Mako 表达式过滤器会在表达式 AST 之外执行，只允许内置的纯转义/转换过滤器。
+    WHITE_LIST_FILTERS = {
+        "entity",
+        "h",
+        "n",
+        "str",
+        "trim",
+        "u",
+        "unicode",
+        "x",
+    }
+
     # 明确禁止的名称。普通上下文变量默认允许，但这些名称不能作为变量或函数出现。
     FORBIDDEN_NAMES = {
         "__import__",
@@ -202,6 +214,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
             white_list_modules: 自定义白名单模块列表（默认使用类属性）
         """
         self.white_list_modules = set(white_list_modules or self.WHITE_LIST_MODULES)
+        self.white_list_filters = set(self.WHITE_LIST_FILTERS)
         self.allowed_module_bindings = {}
         self.allowed_import_bindings = {}
 
@@ -255,6 +268,10 @@ class MakoNodeVisitor(ast.NodeVisitor):
     def _validate_binding_name(self, name):
         if self._is_dunder(name) or name in self.FORBIDDEN_NAMES:
             self._reject("发现非法名称使用:[{}]，请修改".format(name))
+
+    def validate_filter_name(self, name):
+        if name not in self.white_list_filters:
+            self._reject("发现非法过滤器使用:[{}]，请修改".format(name))
 
     def _unbind_target(self, target):
         if isinstance(target, ast.Name):

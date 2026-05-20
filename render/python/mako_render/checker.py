@@ -34,6 +34,18 @@ def clean_mako_content(content: str) -> str:
     return content
 
 
+def validate_filter_args(filter_args, node_visitor: ast.NodeVisitor):
+    if filter_args is None:
+        return
+
+    allowed_filters = getattr(node_visitor, "white_list_filters", MakoNodeVisitor.WHITE_LIST_FILTERS)
+    for filter_name in getattr(filter_args, "args", []):
+        if hasattr(node_visitor, "validate_filter_name"):
+            node_visitor.validate_filter_name(filter_name)
+        elif filter_name not in allowed_filters:
+            raise ForbiddenMakoTemplateException("发现非法过滤器使用:[{}]，请修改".format(filter_name))
+
+
 def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisitor):
     """
     解析 Mako 模板节点，逐个节点解析抽象语法树并检查安全性
@@ -45,11 +57,16 @@ def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisi
     for node in nodes:
         if isinstance(node, (parsetree.Code, parsetree.Expression)):
             code = node.text
+            if isinstance(node, parsetree.Expression):
+                validate_filter_args(getattr(node, "escapes_code", None), node_visitor)
         elif isinstance(node, parsetree.ControlLine):
             if node.isend:
                 continue
             code = PythonFragment(node.text).code
-        elif isinstance(node, (parsetree.Text, parsetree.TextTag, parsetree.Comment)):
+        elif isinstance(node, parsetree.TextTag):
+            validate_filter_args(getattr(node, "filter_args", None), node_visitor)
+            continue
+        elif isinstance(node, (parsetree.Text, parsetree.Comment)):
             continue
         else:
             raise ForbiddenMakoTemplateException("不支持[{}]节点".format(node.__class__.__name__))
