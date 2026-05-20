@@ -134,6 +134,19 @@ find all host element of set "qq"
 """
 
 
+def parse_cc_xml(cc_xml):
+    if isinstance(cc_xml, str):
+        xml_data = cc_xml.encode('utf-8')
+    else:
+        xml_data = cc_xml
+
+    parser = etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False, huge_tree=False)
+    cc = etree.fromstring(xml_data, parser=parser)
+    if cc.getroottree().docinfo.doctype:
+        raise ValueError("DOCTYPE is not allowed in 'cc_xml'")
+    return cc
+
+
 def main():
     """
     Main function to handle template rendering
@@ -211,10 +224,7 @@ def main():
             if cc_xml:
                 # Parse cc_xml into lxml Element
                 try:
-                    if isinstance(cc_xml, str):
-                        cc = etree.fromstring(cc_xml.encode('utf-8'))
-                    else:
-                        cc = etree.fromstring(cc_xml)
+                    cc = parse_cc_xml(cc_xml)
                     ctx['cc'] = cc
                 except (etree.XMLSyntaxError, etree.ParseError) as e:
                     # Provide descriptive error message indicating which field failed

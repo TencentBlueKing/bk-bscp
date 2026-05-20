@@ -11,6 +11,10 @@ import ast
 from .exceptions import ForbiddenMakoTemplateException
 
 
+def _optional_ast_node_types(*names):
+    return tuple(getattr(ast, name) for name in names if hasattr(ast, name))
+
+
 class MakoNodeVisitor(ast.NodeVisitor):
     """
     遍历语法树节点，只放行业务模板需要的语法和调用
@@ -18,13 +22,83 @@ class MakoNodeVisitor(ast.NodeVisitor):
     参考原项目：bk-process-config-manager/apps/utils/mako_utils/visitor.py
     """
 
-    # 允许导入的模块。导入别名会在 visit_Import/visit_ImportFrom 中加入 allowed_module_names。
+    # 允许导入的模块。实际可访问成员由 WHITE_LIST_MODULE_CALLS/WHITE_LIST_MODULE_ATTRS 继续收窄。
     WHITE_LIST_MODULES = {
         "datetime",
         "re",
         "random",
         "json",
         "math",
+    }
+
+    WHITE_LIST_MODULE_CALLS = {
+        "datetime": {
+            ("date",),
+            ("date", "today"),
+            ("datetime",),
+            ("datetime", "now"),
+            ("datetime", "utcnow"),
+            ("timedelta",),
+        },
+        "json": {
+            ("dumps",),
+            ("loads",),
+        },
+        "math": {
+            ("acos",),
+            ("asin",),
+            ("atan",),
+            ("atan2",),
+            ("ceil",),
+            ("cos",),
+            ("degrees",),
+            ("exp",),
+            ("fabs",),
+            ("floor",),
+            ("fmod",),
+            ("fsum",),
+            ("hypot",),
+            ("log",),
+            ("log10",),
+            ("pow",),
+            ("radians",),
+            ("sin",),
+            ("sqrt",),
+            ("tan",),
+            ("trunc",),
+        },
+        "random": {
+            ("choice",),
+            ("choices",),
+            ("randint",),
+            ("random",),
+            ("randrange",),
+            ("sample",),
+            ("uniform",),
+        },
+        "re": {
+            ("compile",),
+            ("fullmatch",),
+            ("match",),
+            ("search",),
+            ("split",),
+            ("sub",),
+        },
+    }
+
+    WHITE_LIST_MODULE_ATTRS = {
+        "datetime": {
+            ("date",),
+            ("datetime",),
+            ("timedelta",),
+        },
+        "math": {
+            ("e",),
+            ("inf",),
+            ("nan",),
+            ("pi",),
+            ("tau",),
+        },
     }
 
     # 业务模板常用的基础函数。未列出的 builtin 即使 Python 可用，也不能在模板中调用。
@@ -117,6 +191,7 @@ class MakoNodeVisitor(ast.NodeVisitor):
         ast.With,
         ast.Yield,
         ast.YieldFrom,
+        *_optional_ast_node_types("Match", "TryStar", "TypeAlias"),
     )
 
     def __init__(self, white_list_modules=None):
@@ -127,7 +202,8 @@ class MakoNodeVisitor(ast.NodeVisitor):
             white_list_modules: 自定义白名单模块列表（默认使用类属性）
         """
         self.white_list_modules = set(white_list_modules or self.WHITE_LIST_MODULES)
-        self.allowed_module_names = set()
+        self.allowed_module_bindings = {}
+        self.allowed_import_bindings = {}
 
     def _reject(self, message):
         raise ForbiddenMakoTemplateException(message)
@@ -135,15 +211,46 @@ class MakoNodeVisitor(ast.NodeVisitor):
     def _is_dunder(self, name):
         return name.startswith("__") and name.endswith("__")
 
-    def _root_name(self, node):
+    def _attribute_parts(self, node):
+        parts = []
         while isinstance(node, ast.Attribute):
+            parts.append(node.attr)
             node = node.value
-        if isinstance(node, ast.Name):
-            return node.id
-        return ""
+        if not isinstance(node, ast.Name):
+            return "", ()
+        parts.reverse()
+        return node.id, tuple(parts)
 
-    def _is_allowed_module_attr(self, node):
-        return self._root_name(node) in self.allowed_module_names
+    def _module_member_path(self, node):
+        root, parts = self._attribute_parts(node)
+        if root in self.allowed_module_bindings:
+            return self.allowed_module_bindings[root], parts
+        if root in self.allowed_import_bindings:
+            module_name, base_parts = self.allowed_import_bindings[root]
+            return module_name, base_parts + parts
+        return "", ()
+
+    def _validate_module_member_path(self, module_name, member_path):
+        if not module_name or not member_path:
+            return
+        for part in member_path:
+            if part.startswith("_"):
+                self._reject("发现非法属性使用:[{}]，请修改".format(part))
+
+    def _module_allowed_paths(self, module_name):
+        return (
+            self.WHITE_LIST_MODULE_CALLS.get(module_name, set())
+            | self.WHITE_LIST_MODULE_ATTRS.get(module_name, set())
+        )
+
+    def _is_allowed_module_attr_path(self, module_name, member_path):
+        self._validate_module_member_path(module_name, member_path)
+        allowed_paths = self._module_allowed_paths(module_name)
+        return any(path[: len(member_path)] == member_path for path in allowed_paths)
+
+    def _is_allowed_module_call_path(self, module_name, member_path):
+        self._validate_module_member_path(module_name, member_path)
+        return member_path in self.WHITE_LIST_MODULE_CALLS.get(module_name, set())
 
     def _validate_binding_name(self, name):
         if self._is_dunder(name) or name in self.FORBIDDEN_NAMES:
@@ -152,7 +259,8 @@ class MakoNodeVisitor(ast.NodeVisitor):
     def _unbind_target(self, target):
         if isinstance(target, ast.Name):
             self._validate_binding_name(target.id)
-            self.allowed_module_names.discard(target.id)
+            self.allowed_module_bindings.pop(target.id, None)
+            self.allowed_import_bindings.pop(target.id, None)
             return
 
         if isinstance(target, (ast.Tuple, ast.List)):
@@ -176,8 +284,11 @@ class MakoNodeVisitor(ast.NodeVisitor):
         if self._is_dunder(node.attr):
             raise ForbiddenMakoTemplateException("发现非法属性使用:[{}]，请修改".format(node.attr))
 
-        if self._is_allowed_module_attr(node):
-            return
+        module_name, member_path = self._module_member_path(node)
+        if module_name:
+            if self._is_allowed_module_attr_path(module_name, member_path):
+                return
+            self._reject("发现非法属性使用:[{}]，请修改".format(".".join(member_path)))
 
         if isinstance(node.value, ast.Name) and node.value.id == "this":
             return
@@ -191,12 +302,20 @@ class MakoNodeVisitor(ast.NodeVisitor):
         """访问函数调用节点"""
         func = node.func
         if isinstance(func, ast.Name):
-            if func.id not in self.WHITE_LIST_FUNCTIONS:
+            if func.id in self.allowed_import_bindings:
+                module_name, member_path = self.allowed_import_bindings[func.id]
+                if not self._is_allowed_module_call_path(module_name, member_path):
+                    self._reject("发现非法函数调用:[{}]，请修改".format(func.id))
+            elif func.id not in self.WHITE_LIST_FUNCTIONS:
                 self._reject("发现非法函数调用:[{}]，请修改".format(func.id))
         elif isinstance(func, ast.Attribute):
             if self._is_dunder(func.attr):
                 self._reject("发现非法函数调用:[{}]，请修改".format(func.attr))
-            if not self._is_allowed_module_attr(func) and func.attr not in self.WHITE_LIST_METHODS:
+            module_name, member_path = self._module_member_path(func)
+            if module_name:
+                if not self._is_allowed_module_call_path(module_name, member_path):
+                    self._reject("发现非法函数调用:[{}]，请修改".format(".".join(member_path)))
+            elif func.attr not in self.WHITE_LIST_METHODS:
                 self._reject("发现非法函数调用:[{}]，请修改".format(func.attr))
         else:
             self._reject("发现非法函数调用:[{}]，请修改".format(func.__class__.__name__))
@@ -238,18 +357,23 @@ class MakoNodeVisitor(ast.NodeVisitor):
         """访问导入节点"""
         for name in node.names:
             module_name = name.name.split(".", 1)[0]
-            if module_name not in self.white_list_modules:
+            if name.name != module_name or module_name not in self.white_list_modules:
                 self._reject("发现非法导入:[{}]，请修改".format(name.name))
             binding_name = name.asname or module_name
             self._validate_binding_name(binding_name)
-            self.allowed_module_names.add(binding_name)
+            self.allowed_module_bindings[binding_name] = module_name
 
     def visit_ImportFrom(self, node):
         """访问从模块导入节点"""
-        module_name = (node.module or "").split(".", 1)[0]
+        module_name = node.module or ""
         if node.level != 0 or module_name not in self.white_list_modules:
             self._reject("发现非法导入:[{}]，请修改".format(node.module or ""))
         for name in node.names:
-            if name.name.startswith("_"):
+            if name.name == "*" or name.name.startswith("_"):
                 self._reject("发现非法导入:[{}]，请修改".format(name.name))
-            self._validate_binding_name(name.asname or name.name)
+            binding_name = name.asname or name.name
+            member_path = (name.name,)
+            self._validate_binding_name(binding_name)
+            if not self._is_allowed_module_attr_path(module_name, member_path):
+                self._reject("发现非法导入:[{}]，请修改".format(name.name))
+            self.allowed_import_bindings[binding_name] = (module_name, member_path)

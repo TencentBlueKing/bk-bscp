@@ -5,16 +5,59 @@ Mako template rendering core logic
 """
 
 import sys
+from collections.abc import Mapping
+from types import SimpleNamespace
 from typing import Dict, Any
+
+from lxml import etree
 from mako.template import Template
 from mako.exceptions import MakoException, RichTraceback
 
 from .checker import clean_mako_content, check_mako_template_safety
 from .context import MakoSandbox
+from .exceptions import ForbiddenMakoTemplateException
 from .visitor import MakoNodeVisitor
 
 # Template cache to avoid repeated compilation
 TEMPLATE_CACHE = {}
+SAFE_CONTEXT_SCALAR_TYPES = (str, bytes, int, float, bool, type(None))
+SAFE_CONTEXT_SEQUENCE_TYPES = (list, tuple, set, frozenset)
+
+
+def _validate_context_value(value: Any, path: str, seen: set):
+    if isinstance(value, SAFE_CONTEXT_SCALAR_TYPES):
+        return
+    if callable(value):
+        raise ForbiddenMakoTemplateException("发现非法上下文可调用对象:[{}]，请修改".format(path))
+
+    value_id = id(value)
+    if value_id in seen:
+        return
+    seen.add(value_id)
+
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            _validate_context_value(item, "{}[{}]".format(path, repr(key)), seen)
+        return
+
+    if isinstance(value, SAFE_CONTEXT_SEQUENCE_TYPES):
+        for index, item in enumerate(value):
+            _validate_context_value(item, "{}[{}]".format(path, index), seen)
+        return
+
+    if isinstance(value, SimpleNamespace):
+        for key, item in vars(value).items():
+            _validate_context_value(item, "{}.{}".format(path, key), seen)
+        return
+
+    if isinstance(value, etree._Element):
+        return
+
+    raise ForbiddenMakoTemplateException("发现非法上下文对象:[{}]，请修改".format(path))
+
+
+def validate_context_safety(context: Dict[str, Any]):
+    _validate_context_value(context, "context", set())
 
 
 def get_cache_template(content: str, enable_safety_check: bool = True) -> Template:
@@ -66,6 +109,7 @@ def mako_render(content: str, context: Dict[str, Any], enable_safety_check: bool
     Raises:
         Exception: If template rendering fails
     """
+    validate_context_safety(context)
     template = get_cache_template(content, enable_safety_check=enable_safety_check)
     try:
         # 使用 MakoSandbox 上下文管理器来跟踪用户代码执行
