@@ -342,8 +342,8 @@ class MakoNodeVisitor(ast.NodeVisitor):
 
     def visit_For(self, node):
         """访问循环节点"""
-        self._unbind_target(node.target)
         self.visit(node.iter)
+        self._unbind_target(node.target)
         for child in node.body:
             self.visit(child)
         for child in node.orelse:

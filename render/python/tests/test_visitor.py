@@ -73,6 +73,28 @@ ${json.dumps({"name": "bscp"})}"""
 
         self.assert_unsafe(template)
 
+    def test_allows_for_iter_to_use_current_module_binding(self):
+        template = """<%
+import json
+%>
+% for json in [json.dumps({"name": "bscp"})]:
+${json.replace("bscp", "BSCP")}
+% endfor"""
+
+        result = mako_render(template, {})
+
+        self.assertIn('"name": "BSCP"', result)
+
+    def test_rejects_module_calls_after_for_target_rebinds_name(self):
+        template = """<%
+import json
+%>
+% for json in [json.dumps({"name": "bscp"})]:
+${json.dumps({"name": "bscp"})}
+% endfor"""
+
+        self.assert_unsafe(template)
+
     @unittest.skipIf(sys.version_info < (3, 10), "pattern matching requires Python 3.10+")
     def test_rejects_pattern_matching_rebound_allowed_module_names(self):
         template = """<%
