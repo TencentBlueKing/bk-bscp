@@ -1440,6 +1440,39 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/manage_config_kv": {
+      "post": {
+        "summary": "configs 表 KV 管理",
+        "operationId": "Config_ManageConfigKV",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVReq"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -2336,6 +2369,18 @@
         }
       }
     },
+    "pbcsConfigKVItem": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "ConfigKVItem configs 表的 KV 条目"
+    },
     "pbcsConfigTemplateVariableResp": {
       "type": "object",
       "properties": {
@@ -2525,6 +2570,45 @@
           }
         }
       }
+    },
+    "pbcsManageConfigKVReq": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "action 操作类型: \"upsert\", \"delete\", \"get\", \"list\", \"append\", \"remove\"\r\n  upsert  — 整体写入 KV（覆盖），kvs 必填\r\n  delete  — 删除指定 key，key 必填\r\n  get     — 精确获取单条，key 必填\r\n  list    — 按前缀批量查询，key_prefix 必填\r\n  append  — 向逗号分隔列表追加元素（自动去重），kvs 必填\r\n  remove  — 从逗号分隔列表移除元素，kvs 必填"
+        },
+        "kvs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
+          },
+          "title": "kvs 用于 upsert / append / remove 操作"
+        },
+        "key": {
+          "type": "string",
+          "title": "key 用于 delete / get"
+        },
+        "keyPrefix": {
+          "type": "string",
+          "title": "key_prefix 用于 list 按前缀查询"
+        }
+      },
+      "title": "ManageConfigKVReq 通用 configs 表管理请求"
+    },
+    "pbcsManageConfigKVResp": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
+          }
+        }
+      },
+      "title": "ManageConfigKVResp 通用 configs 表管理响应"
     },
     "pbcsOperateProcessResp": {
       "type": "object",
