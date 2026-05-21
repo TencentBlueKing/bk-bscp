@@ -120,9 +120,12 @@ func (dao *clientEventDao) List(kit *kit.Kit, bizID, appID, clientID uint32, sta
 	m := dao.genQ.ClientEvent
 	q := dao.genQ.ClientEvent.WithContext(kit.Ctx)
 
-	// 过滤当前ID和目标ID相等且状态不是成功的数据(跳过的数据)
+	// 过滤掉 OriginalReleaseID 与 TargetReleaseID 相等且状态为成功的数据（无变更，需跳过）
 	q = q.Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.ClientID.Eq(clientID),
-		q.Not(q.Where(m.OriginalReleaseID.EqCol(m.TargetReleaseID), m.ReleaseChangeStatus.Eq(string(table.Success)))))
+		field.Or(
+			m.OriginalReleaseID.NeqCol(m.TargetReleaseID),
+			m.ReleaseChangeStatus.Neq(string(table.Success)),
+		))
 
 	var err error
 	var conds []rawgen.Condition
