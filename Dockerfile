@@ -24,7 +24,7 @@ COPY scripts/itsm-templates/system_bk_bscp.json /bk-bscp/etc/itsm/system_bk_bscp
 # 复制 Python 模块到镜像中
 COPY render/python /bk-bscp/render/python
 WORKDIR /bk-bscp/render/python
-RUN uv sync --frozen
+RUN uv sync --frozen && rm -rf /root/.cache/uv
 RUN .venv/bin/python3 -c "import mako, lxml"
 WORKDIR /bk-bscp
 ENV BSCP_PYTHON_RENDER_PATH=/bk-bscp/render/python
