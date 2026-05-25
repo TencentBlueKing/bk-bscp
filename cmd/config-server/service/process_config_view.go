@@ -29,7 +29,6 @@ func (s *Service) ManageConfigKV(ctx context.Context,
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}},
 		{Basic: meta.Basic{Type: meta.GlobalConfigKV, Action: meta.ManageGlobalConfigKV}},
 	}
 
