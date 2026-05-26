@@ -1621,6 +1621,69 @@
         }
       }
     },
+    "/api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "审批同步，其中v2版本中itsm也是复用这个接口进行回调",
+        "operationId": "Config_Approve2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "name": "releaseId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigApproveBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsApproveResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "resourcePermissionRequired": true,
+            "userVerifiedRequired": false
+          },
+          "isPublic": false
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [

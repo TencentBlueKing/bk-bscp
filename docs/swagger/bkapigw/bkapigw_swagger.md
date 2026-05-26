@@ -14,6 +14,7 @@
 |---------|---------|--------|---------|
 | POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback | [Config_ApprovalCallback](#config-approval-callback) | itsm v4 回调接口 |
 | POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
+| POST | /api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve2](#config-approve2) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance | [Config_BindProcessInstance](#config-bind-process-instance) | 绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 根据业务查询拓扑 |
@@ -154,6 +155,45 @@ POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve
 
 ```bash
 POST /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve HTTP/1.1
+Content-Type: application/json
+
+{
+  "publishStatus": "",
+  "reason": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-approve2"></span> 审批同步，其中v2版本中itsm也是复用这个接口进行回调 (*Config_Approve2*)
+
+```
+POST /api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ |  |
+| bizId | int64 (formatted integer) | ✓ |  |
+| releaseId | int64 (formatted integer) | ✓ |  |
+| publishStatus | string |  |  |
+| reason | string |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve HTTP/1.1
 Content-Type: application/json
 
 {

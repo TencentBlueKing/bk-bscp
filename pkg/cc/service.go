@@ -186,8 +186,13 @@ type ApiGateway struct {
 	// AutoRegister 是否自动注册
 	AutoRegister bool `yaml:"autoRegister"`
 	// Host apigateway host
-	Host     string `yaml:"host"`
-	GWPubKey string `yaml:"gwPubkey"`
+	Host        string   `yaml:"host"`
+	GWPubKey    string   `yaml:"gwPubkey"`
+	Name        string   `yaml:"name"`
+	Env         string   `yaml:"env"`
+	Description string   `yaml:"description"`
+	IsPublic    bool     `yaml:"isPublic"`
+	Maintainers []string `yaml:"maintainers"`
 }
 
 // trySetFlagBindIP try set flag bind ip.

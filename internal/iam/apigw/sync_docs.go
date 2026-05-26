@@ -20,13 +20,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
 
-const (
-	// Name 网关名
-	Name        = "bk-bscp"
-	env         = "prod"
-	description = "服务配置中心（bk_bscp）API 网关，包含了服务、配置项/模板、版本、分组、发布等相关资源的查询和操作接口"
-)
-
 // ReleaseSwagger 导入swagge 文档
 // nolint:funlen
 func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version string) error {
@@ -38,10 +31,10 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 	}
 
 	// 创建或者更新网关
-	syncApiResp, err := gw.SyncApi(Name, &SyncApiReq{
-		Description: description,
-		Maintainers: []string{"admin"},
-		IsPublic:    true,
+	syncApiResp, err := gw.SyncApi(apiGwOpt.Name, &SyncApiReq{
+		Description: apiGwOpt.Description,
+		Maintainers: apiGwOpt.Maintainers,
+		IsPublic:    apiGwOpt.IsPublic,
 	})
 	if err != nil {
 		return fmt.Errorf("create or update gateway failed, err: %s", err.Error())
@@ -52,7 +45,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 
 	// 同步环境
 	syncStageResp, errS := gw.SyncStage(syncApiResp.Data.Name, &SyncStageReq{
-		Name: env,
+		Name: apiGwOpt.Env,
 		Vars: map[string]string{},
 		ProxyHttp: ProxyHttp{
 			Timeout: 30,
@@ -140,7 +133,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 	// 发布版本
 	releaseResp, err := gw.Release(syncApiResp.Data.Name, &ReleaseReq{
 		Version:    version,
-		StageNames: []string{env},
+		StageNames: []string{apiGwOpt.Env},
 		Comment:    fmt.Sprintf("发布 %s 版本", version),
 	})
 	if err != nil {

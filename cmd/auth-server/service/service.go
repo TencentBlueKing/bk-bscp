@@ -135,7 +135,7 @@ func (s *Service) handlerAutoRegister() error {
 			return err
 		}
 
-		result, err := gw.GetApigwPublicKey(apigw.Name)
+		result, err := gw.GetApigwPublicKey(cc.AuthServer().ApiGateway.Name)
 		if err != nil {
 			return err
 		}

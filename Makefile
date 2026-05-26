@@ -23,6 +23,8 @@ TAG ?=  $(shell git describe --tags --match='v*' --dirty='.dirty')
 export PROTOC_VERSION=25.1
 SKIP_FRONTEND_BUILD ?= false
 GOBUILD=CGO_ENABLED=0 go build -trimpath
+# 定义脚本路径变量
+INJECT_SCRIPT = scripts/bk_gateway/inject_bk_gateway.py
 
 
 
@@ -211,6 +213,8 @@ normalize_proto_docs:
 	@for f in ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json; do \
 		python3 -c "import json,sys;f=sys.argv[1];d=json.load(open(f));n=d.get('definitions',{}).get('pbctBizTopoNode',{}).get('properties',{}).get('child',{});n['items']={'type':'object','description':'recursive child node'};json.dump(d,open(f,'w'),ensure_ascii=False,indent=2);print(f+' fixed')" "$$f"; \
 	done
+	# 修正并注入 inner 接口的蓝鲸网关特殊参数
+	@python3 $(INJECT_SCRIPT) ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json
 
 .PHONY: markdown_docs
 markdown_docs: ${swag} ${swagger} normalize_proto_docs

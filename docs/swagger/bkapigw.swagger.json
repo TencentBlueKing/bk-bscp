@@ -323,6 +323,69 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve": {
+      "post": {
+        "summary": "审批同步，其中v2版本中itsm也是复用这个接口进行回调",
+        "operationId": "Config_Approve2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsApproveResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigApproveBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ],
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {
       "post": {
         "summary": "itsm v4 回调接口",

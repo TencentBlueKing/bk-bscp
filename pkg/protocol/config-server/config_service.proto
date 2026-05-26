@@ -1160,6 +1160,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/inner/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
+        body: "*"
+      }
     };
   }
 
