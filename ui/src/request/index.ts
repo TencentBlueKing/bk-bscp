@@ -35,7 +35,7 @@ http.interceptors.response.use(
       if (response.status === 401) {
         const urlStr = response.data.error.data.login_plain_url;
         const url = new URL(urlStr);
-        const loginUrl = `${urlStr + window.location.origin}/web/login_success.html`;
+        const loginUrl = `${urlStr + window.location.origin + (window as any).BK_STATIC_URL}/login_success.html`;
         globalStore.$patch((state) => {
           state.loginOriginUrl = url.origin;
         });
