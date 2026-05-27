@@ -1674,13 +1674,66 @@
           }
         },
         "x-bk-apigateway-resource": {
+          "isPublic": false,
           "allowApplyPermission": true,
           "authConfig": {
             "appVerifiedRequired": true,
-            "resourcePermissionRequired": true,
-            "userVerifiedRequired": false
-          },
-          "isPublic": false
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/api/v1/inner/feature_flags": {
+      "get": {
+        "description": "根据业务ID（biz）获取该业务下的特性开关以及资源配额限制。",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "系统相关"
+        ],
+        "summary": "获取特性开关及资源限制配置",
+        "operationId": "get_feature_flags",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "业务ID/业务标识",
+            "name": "biz",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取特性开关列表",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/service.FeatureFlags"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
         }
       }
     },
@@ -2309,6 +2362,27 @@
         "value": {
           "description": "配置项值",
           "type": "string"
+        }
+      }
+    },
+    "cc.ResourceLimit": {
+      "type": "object",
+      "properties": {
+        "appConfigCnt": {
+          "description": "AppConfigCnt 单个app下允许创建的配置数（模版+非模版），默认为2000",
+          "type": "integer"
+        },
+        "maxFileSize": {
+          "description": "MaxFileSize 配置文件大小上限，单位 MB，默认为200MB",
+          "type": "integer"
+        },
+        "maxUploadContentLength": {
+          "description": "MaxUploadContentLength 最大内容长度",
+          "type": "integer"
+        },
+        "tmplSetTmplCnt": {
+          "description": "TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000",
+          "type": "integer"
         }
       }
     },
@@ -3928,6 +4002,57 @@
           }
         },
         "message": {
+          "type": "string"
+        }
+      }
+    },
+    "service.FeatureFlags": {
+      "type": "object",
+      "properties": {
+        "BIZ_VIEW": {
+          "description": "BizView 是否开启业务体验",
+          "type": "boolean"
+        },
+        "ENABLE_TENANT_MODE": {
+          "description": "EnableTenantMode 是否开启租户模式",
+          "type": "boolean"
+        },
+        "PROCESS_CONFIG_VIEW": {
+          "description": "ProcessConfigView 进程与配置管理是否可见",
+          "type": "boolean"
+        },
+        "RESOURCE_LIMIT": {
+          "description": "ResourceLimit 业务资源限制",
+          "allOf": [
+            {
+              "$ref": "#/definitions/cc.ResourceLimit"
+            }
+          ]
+        },
+        "TENANT_MODE": {
+          "description": "TenantMode 租户模式",
+          "type": "string"
+        },
+        "TRPC_GO_PLUGIN": {
+          "description": "TrpcGoPlugin trpc go plugin",
+          "allOf": [
+            {
+              "$ref": "#/definitions/service.TrpcGoPlugin"
+            }
+          ]
+        }
+      }
+    },
+    "service.TrpcGoPlugin": {
+      "type": "object",
+      "properties": {
+        "bscp_module_domain": {
+          "type": "string"
+        },
+        "enable": {
+          "type": "boolean"
+        },
+        "module_domain": {
           "type": "string"
         }
       }

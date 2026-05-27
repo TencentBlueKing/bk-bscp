@@ -60,6 +60,12 @@
 | GET | /api/v1/biz/{biz_id}/content/metadata | [get_content_metadata](#get-content-metadata) | 获取文件内容元数据 |
 | PUT | /api/v1/biz/{biz_id}/content/upload | [upload_content](#upload-content) | 上传文件内容 |
 
+### 系统相关
+
+| Method  | URI     | Name   | Summary |
+|---------|---------|--------|---------|
+| GET | /api/v1/inner/feature_flags | [get_feature_flags](#get-feature-flags) | 获取特性开关及资源限制配置 |
+
 ## 接口详情
 
 ### <span id="config-approval-callback"></span> itsm v4 回调接口 (*Config_ApprovalCallback*)
@@ -1686,6 +1692,62 @@ Content-Type: application/json
 }
 ```
 
+### <span id="get-feature-flags"></span> 获取特性开关及资源限制配置 (*get_feature_flags*)
+
+```
+GET /api/v1/inner/feature_flags
+```
+
+根据业务ID（biz）获取该业务下的特性开关以及资源配额限制。
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| biz | string |  | 业务ID/业务标识 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+| code | integer | 返回码 |
+| message | string | 返回消息 |
+| code | integer | 返回码 |
+| message | string | 返回消息 |
+| data | object | 返回body |
+| data.BIZ_VIEW | boolean | BizView 是否开启业务体验 |
+| data.ENABLE_TENANT_MODE | boolean | EnableTenantMode 是否开启租户模式 |
+| data.PROCESS_CONFIG_VIEW | boolean | ProcessConfigView 进程与配置管理是否可见 |
+| data.RESOURCE_LIMIT | [ServiceFeatureFlags](#service-feature-flags) | ResourceLimit 业务资源限制 |
+| data.TENANT_MODE | string | TenantMode 租户模式 |
+| data.TRPC_GO_PLUGIN | [ServiceFeatureFlags](#service-feature-flags) | TrpcGoPlugin trpc go plugin |
+
+
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/feature_flags HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{
+  "data": {
+    "BIZ_VIEW": false,
+    "ENABLE_TENANT_MODE": false,
+    "PROCESS_CONFIG_VIEW": false,
+    "RESOURCE_LIMIT": {},
+    "TENANT_MODE": "",
+    "TRPC_GO_PLUGIN": {}
+  }
+}
+```
+
 ### <span id="upload-content"></span> 上传文件内容 (*upload_content*)
 
 ```
@@ -2118,6 +2180,24 @@ Content-Type: application/json
 | secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
 | secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |  |
 | value | string| `string` | ✓ | | 配置项值 |  |
+
+
+
+### <span id="cc-resource-limit"></span> cc.ResourceLimit
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appConfigCnt | integer| `int64` |  | | AppConfigCnt 单个app下允许创建的配置数（模版+非模版），默认为2000 |  |
+| maxFileSize | integer| `int64` |  | | MaxFileSize 配置文件大小上限，单位 MB，默认为200MB |  |
+| maxUploadContentLength | integer| `int64` |  | | MaxUploadContentLength 最大内容长度 |  |
+| tmplSetTmplCnt | integer| `int64` |  | | TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000 |  |
 
 
 
@@ -3461,5 +3541,42 @@ any
 | code | int32 (formatted integer)| `int32` |  | |  |  |
 | details | \[\][ProtobufAny](#protobuf-any)| `[]*ProtobufAny` |  | |  |  |
 | message | string| `string` |  | |  |  |
+
+
+
+### <span id="service-feature-flags"></span> service.FeatureFlags
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| BIZ_VIEW | boolean| `bool` |  | | BizView 是否开启业务体验 |  |
+| ENABLE_TENANT_MODE | boolean| `bool` |  | | EnableTenantMode 是否开启租户模式 |  |
+| PROCESS_CONFIG_VIEW | boolean| `bool` |  | | ProcessConfigView 进程与配置管理是否可见 |  |
+| RESOURCE_LIMIT | [ServiceFeatureFlags](#service-feature-flags)| `ServiceFeatureFlags` |  | | ResourceLimit 业务资源限制 |  |
+| TENANT_MODE | string| `string` |  | | TenantMode 租户模式 |  |
+| TRPC_GO_PLUGIN | [ServiceFeatureFlags](#service-feature-flags)| `ServiceFeatureFlags` |  | | TrpcGoPlugin trpc go plugin |  |
+
+
+
+### <span id="service-trpc-go-plugin"></span> service.TrpcGoPlugin
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bscp_module_domain | string| `string` |  | |  |  |
+| enable | boolean| `bool` |  | |  |  |
+| module_domain | string| `string` |  | |  |  |
 
 

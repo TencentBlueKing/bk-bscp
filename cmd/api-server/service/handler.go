@@ -93,6 +93,17 @@ type TrpcGoPlugin struct {
 }
 
 // FeatureFlagsHandler 特性开关接口
+// FeatureFlagsHandler godoc
+//
+//	@Summary		获取特性开关及资源限制配置
+//	@Description	根据业务ID（biz）获取该业务下的特性开关以及资源配额限制。
+//	@Tags			系统相关
+//	@Accept			json
+//	@Produce		json
+//	@Param			biz	query		string								false	"业务ID/业务标识"
+//	@Success		200	{object}	rest.OKResponse{data=FeatureFlags}	"成功获取特性开关列表"
+//	@Router			/api/v1/inner/feature_flags [get]
+//	@ID				get_feature_flags
 func (p *proxy) FeatureFlagsHandler(w http.ResponseWriter, r *http.Request) {
 	featureFlags := FeatureFlags{}
 

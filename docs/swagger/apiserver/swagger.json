@@ -1,233 +1,358 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "title": "API Gateway Resources",
-        "contact": {},
-        "version": "0.1"
-    },
-    "paths": {
-        "/api/v1/biz/{biz_id}/content/download": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "文件相关"
-                ],
-                "summary": "下载文件内容",
-                "operationId": "download_content",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "业务ID",
-                        "name": "biz_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "如果是应用配置项，则设置该应用ID",
-                        "name": "X-Bscp-App-Id",
-                        "in": "header"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "如果是模版配置项，则设置该模版空间ID",
-                        "name": "X-Bscp-Template-Space-Id",
-                        "in": "header"
-                    },
-                    {
-                        "type": "string",
-                        "description": "上传文件内容的SHA256值",
-                        "name": "X-Bkapi-File-Content-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "desc",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/rest.OKResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/repository.ObjectMetadata"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/biz/{biz_id}/content/metadata": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "文件相关"
-                ],
-                "summary": "获取文件内容元数据",
-                "operationId": "get_content_metadata",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "业务ID",
-                        "name": "biz_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "如果是应用配置项，则设置该应用ID",
-                        "name": "app-id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "上传文件内容的SHA256值",
-                        "name": "X-Bkapi-File-Content-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "desc",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/rest.OKResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/repository.ObjectMetadata"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/biz/{biz_id}/content/upload": {
-            "put": {
-                "consumes": [
-                    "text/plain"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "文件相关"
-                ],
-                "summary": "上传文件内容",
-                "operationId": "upload_content",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "业务ID",
-                        "name": "biz_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "如果是应用配置项，则设置该应用ID",
-                        "name": "X-Bscp-App-Id",
-                        "in": "header"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "如果是模版配置项，则设置该模版空间ID",
-                        "name": "X-Bscp-Template-Space-Id",
-                        "in": "header"
-                    },
-                    {
-                        "type": "string",
-                        "description": "上传文件内容的SHA256值",
-                        "name": "X-Bkapi-File-Content-Id",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "desc",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/rest.OKResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/repository.ObjectMetadata"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/healthz": {
-            "get": {
-                "tags": [
-                    "Healthz"
-                ],
-                "summary": "Healthz 接口",
-                "operationId": "Healthz",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "repository.ObjectMetadata": {
-            "type": "object",
-            "properties": {
-                "byte_size": {
-                    "type": "integer"
+  "swagger": "2.0",
+  "info": {
+    "title": "API Gateway Resources",
+    "contact": {},
+    "version": "0.1"
+  },
+  "paths": {
+    "/api/v1/biz/{biz_id}/content/download": {
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "下载文件内容",
+        "operationId": "download_content",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "X-Bscp-App-Id",
+            "in": "header"
+          },
+          {
+            "type": "integer",
+            "description": "如果是模版配置项，则设置该模版空间ID",
+            "name": "X-Bscp-Template-Space-Id",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
                 },
-                "md5": {
-                    "type": "string"
-                },
-                "sha256": {
-                    "type": "string"
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
                 }
+              ]
             }
-        },
-        "rest.OKResponse": {
-            "type": "object",
-            "properties": {
-                "data": {}
-            }
+          }
         }
+      }
+    },
+    "/api/v1/biz/{biz_id}/content/metadata": {
+      "get": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "获取文件内容元数据",
+        "operationId": "get_content_metadata",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "app-id",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/biz/{biz_id}/content/upload": {
+      "put": {
+        "consumes": [
+          "text/plain"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "文件相关"
+        ],
+        "summary": "上传文件内容",
+        "operationId": "upload_content",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "业务ID",
+            "name": "biz_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "如果是应用配置项，则设置该应用ID",
+            "name": "X-Bscp-App-Id",
+            "in": "header"
+          },
+          {
+            "type": "integer",
+            "description": "如果是模版配置项，则设置该模版空间ID",
+            "name": "X-Bscp-Template-Space-Id",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "上传文件内容的SHA256值",
+            "name": "X-Bkapi-File-Content-Id",
+            "in": "header",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "desc",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/repository.ObjectMetadata"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inner/feature_flags": {
+      "get": {
+        "description": "根据业务ID（biz）获取该业务下的特性开关以及资源配额限制。",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "系统相关"
+        ],
+        "summary": "获取特性开关及资源限制配置",
+        "operationId": "get_feature_flags",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "业务ID/业务标识",
+            "name": "biz",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取特性开关列表",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/rest.OKResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/service.FeatureFlags"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "Healthz"
+        ],
+        "summary": "Healthz 接口",
+        "operationId": "Healthz",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
+  },
+  "definitions": {
+    "cc.ResourceLimit": {
+      "type": "object",
+      "properties": {
+        "appConfigCnt": {
+          "description": "AppConfigCnt 单个app下允许创建的配置数（模版+非模版），默认为2000",
+          "type": "integer"
+        },
+        "maxFileSize": {
+          "description": "MaxFileSize 配置文件大小上限，单位 MB，默认为200MB",
+          "type": "integer"
+        },
+        "maxUploadContentLength": {
+          "description": "MaxUploadContentLength 最大内容长度",
+          "type": "integer"
+        },
+        "tmplSetTmplCnt": {
+          "description": "TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000",
+          "type": "integer"
+        }
+      }
+    },
+    "repository.ObjectMetadata": {
+      "type": "object",
+      "properties": {
+        "byte_size": {
+          "type": "integer"
+        },
+        "md5": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "rest.OKResponse": {
+      "type": "object",
+      "properties": {
+        "data": {}
+      }
+    },
+    "service.FeatureFlags": {
+      "type": "object",
+      "properties": {
+        "BIZ_VIEW": {
+          "description": "BizView 是否开启业务体验",
+          "type": "boolean"
+        },
+        "ENABLE_TENANT_MODE": {
+          "description": "EnableTenantMode 是否开启租户模式",
+          "type": "boolean"
+        },
+        "PROCESS_CONFIG_VIEW": {
+          "description": "ProcessConfigView 进程与配置管理是否可见",
+          "type": "boolean"
+        },
+        "RESOURCE_LIMIT": {
+          "description": "ResourceLimit 业务资源限制",
+          "allOf": [
+            {
+              "$ref": "#/definitions/cc.ResourceLimit"
+            }
+          ]
+        },
+        "TENANT_MODE": {
+          "description": "TenantMode 租户模式",
+          "type": "string"
+        },
+        "TRPC_GO_PLUGIN": {
+          "description": "TrpcGoPlugin trpc go plugin",
+          "allOf": [
+            {
+              "$ref": "#/definitions/service.TrpcGoPlugin"
+            }
+          ]
+        }
+      }
+    },
+    "service.TrpcGoPlugin": {
+      "type": "object",
+      "properties": {
+        "bscp_module_domain": {
+          "type": "string"
+        },
+        "enable": {
+          "type": "boolean"
+        },
+        "module_domain": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }

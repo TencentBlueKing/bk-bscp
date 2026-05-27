@@ -132,6 +132,7 @@ func (s *ApiServerSetting) trySetDefault() {
 	s.Repo.trySetDefault()
 	s.FeatureFlags.trySetDefault()
 	s.ComponentRateLimit.trySetDefault()
+	s.ApiGateway.trySetDefault()
 }
 
 // Validate ApiServerSetting option.
@@ -191,8 +192,28 @@ type ApiGateway struct {
 	Name        string   `yaml:"name"`
 	Env         string   `yaml:"env"`
 	Description string   `yaml:"description"`
-	IsPublic    bool     `yaml:"isPublic"`
 	Maintainers []string `yaml:"maintainers"`
+}
+
+const (
+	DefaultName        = "bk-bscp"
+	DefaultEnv         = "prod"
+	DefaultDescription = "服务配置中心（bk_bscp）API 网关，包含了服务、配置项/模板、版本、分组、发布等相关资源的查询和操作接口"
+)
+
+func (a *ApiGateway) trySetDefault() {
+	if a.Name == "" {
+		a.Name = DefaultName
+	}
+
+	if a.Env == "" {
+		a.Env = DefaultEnv
+	}
+
+	if a.Description == "" {
+		a.Description = DefaultDescription
+	}
+
 }
 
 // trySetFlagBindIP try set flag bind ip.
@@ -212,6 +233,7 @@ func (s *AuthServerSetting) trySetDefault() {
 	s.Log.trySetDefault()
 	s.FeatureFlags.trySetDefault()
 	s.ComponentRateLimit.trySetDefault()
+	s.ApiGateway.trySetDefault()
 }
 
 // Validate AuthServerSetting option.

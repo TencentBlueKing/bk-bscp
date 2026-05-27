@@ -34,7 +34,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 	syncApiResp, err := gw.SyncApi(apiGwOpt.Name, &SyncApiReq{
 		Description: apiGwOpt.Description,
 		Maintainers: apiGwOpt.Maintainers,
-		IsPublic:    apiGwOpt.IsPublic,
+		IsPublic:    true,
 	})
 	if err != nil {
 		return fmt.Errorf("create or update gateway failed, err: %s", err.Error())

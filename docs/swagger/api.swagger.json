@@ -7268,16 +7268,7 @@
         ],
         "tags": [
           "Config"
-        ],
-        "x-bk-apigateway-resource": {
-          "isPublic": false,
-          "allowApplyPermission": true,
-          "authConfig": {
-            "appVerifiedRequired": true,
-            "userVerifiedRequired": false,
-            "resourcePermissionRequired": true
-          }
-        }
+        ]
       }
     },
     "/api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approval_callback": {

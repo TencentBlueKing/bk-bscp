@@ -213,8 +213,6 @@ normalize_proto_docs:
 	@for f in ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json; do \
 		python3 -c "import json,sys;f=sys.argv[1];d=json.load(open(f));n=d.get('definitions',{}).get('pbctBizTopoNode',{}).get('properties',{}).get('child',{});n['items']={'type':'object','description':'recursive child node'};json.dump(d,open(f,'w'),ensure_ascii=False,indent=2);print(f+' fixed')" "$$f"; \
 	done
-	# 修正并注入 inner 接口的蓝鲸网关特殊参数
-	@python3 $(INJECT_SCRIPT) ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json
 
 .PHONY: markdown_docs
 markdown_docs: ${swag} ${swagger} normalize_proto_docs
@@ -223,6 +221,7 @@ markdown_docs: ${swag} ${swagger} normalize_proto_docs
 	${swagger} validate ./docs/swagger/bkapigw.swagger.json
 	# 合并bkapigw和apiserver的swagger.json
 	$(swagger) mixin ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json -o ./docs/swagger/bkapigw/swagger.json
+	@python3 $(INJECT_SCRIPT) ./docs/swagger/api.swagger.json ./docs/swagger/bkapigw.swagger.json ./docs/swagger/apiserver/swagger.json ./docs/swagger/bkapigw/swagger.json
 	${swagger} generate markdown  --output=bkapigw_swagger.md -T ./docs/swagger -f ./docs/swagger/bkapigw/swagger.json -t ./docs/swagger/bkapigw
 
 .PHONY: docs
