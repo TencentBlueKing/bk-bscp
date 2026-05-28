@@ -531,11 +531,6 @@
             "translation": "非灰度百分比标签在所有分组标签中必须一致"
         },
         {
-            "id": "undefined task action",
-            "message": "undefined task action",
-            "translation": "未定义的任务操作"
-        },
-        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "从模板集中删除模板失败"
@@ -1444,6 +1439,11 @@
             "translation": "任务中未找到配置负载"
         },
         {
+            "id": "biz_id or tenant_id mismatch",
+            "message": "biz_id or tenant_id mismatch",
+            "translation": "业务和租户ID不匹配"
+        },
+        {
             "id": "biz_id is required",
             "message": "biz_id is required",
             "translation": "biz_id不能为空"
@@ -1759,6 +1759,21 @@
             ]
         },
         {
+            "id": "base payload is nil for task {TaskID}",
+            "message": "base payload is nil for task {TaskID}",
+            "translation": "任务{TaskID}的基础负载为空",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ]
+        },
+        {
             "id": "config template id is not valid for task {TaskID}",
             "message": "config template id is not valid for task {TaskID}",
             "translation": "任务{TaskID}的配置模板ID无效",
@@ -2013,20 +2028,20 @@
             ]
         },
         {
-            "id": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "message": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "translation": "模板与模板版本不匹配, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "id": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "message": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "translation": "模板与模板版本不匹配, 模板id: {TemplateID}, 模板版本id: {TemplateID_1}",
             "placeholders": [
                 {
-                    "id": "ConfigTemplateId",
+                    "id": "TemplateID",
                     "string": "%[1]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
                     "argNum": 1,
-                    "expr": "req.GetConfigTemplateId()"
+                    "expr": "ct.Attachment.TemplateID"
                 },
                 {
-                    "id": "TemplateID",
+                    "id": "TemplateID_1",
                     "string": "%[2]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
@@ -3605,82 +3620,82 @@
         {
             "id": "Running",
             "message": "Running",
-            "translation": ""
+            "translation": "运行中"
         },
         {
             "id": "PartiallyRunning",
             "message": "PartiallyRunning",
-            "translation": ""
+            "translation": "部分运行中"
         },
         {
             "id": "Starting",
             "message": "Starting",
-            "translation": ""
+            "translation": "启动中"
         },
         {
             "id": "Restarting",
             "message": "Restarting",
-            "translation": ""
+            "translation": "重启中"
         },
         {
             "id": "Stopping",
             "message": "Stopping",
-            "translation": ""
+            "translation": "停止中"
         },
         {
             "id": "Reloading",
             "message": "Reloading",
-            "translation": ""
+            "translation": "重载中"
         },
         {
             "id": "NotRunning",
             "message": "NotRunning",
-            "translation": ""
+            "translation": "未运行"
         },
         {
             "id": "StartingManagement",
             "message": "StartingManagement",
-            "translation": ""
+            "translation": "启动托管"
         },
         {
             "id": "StoppingManagement",
             "message": "StoppingManagement",
-            "translation": ""
+            "translation": "停止托管"
         },
         {
             "id": "Managed",
             "message": "Managed",
-            "translation": ""
+            "translation": "已托管"
         },
         {
             "id": "Unmanaged",
             "message": "Unmanaged",
-            "translation": ""
+            "translation": "未托管"
         },
         {
             "id": "PartiallyManaged",
             "message": "PartiallyManaged",
-            "translation": ""
+            "translation": "部分托管"
         },
         {
             "id": "Normal",
             "message": "Normal",
-            "translation": ""
+            "translation": "正常"
         },
         {
             "id": "Deleted",
             "message": "Deleted",
-            "translation": ""
+            "translation": "已删除"
         },
         {
             "id": "Updated",
             "message": "Updated",
-            "translation": ""
+            "translation": "有更新"
         },
         {
             "id": "Abnormal",
             "message": "Abnormal",
-            "translation": ""
+            "translation": "异常"
         },
         {
             "id": "release {Name} is deprecated, can not be submited",
@@ -5401,82 +5416,82 @@
         {
             "id": "ConfigFile",
             "message": "ConfigFile",
-            "translation": ""
+            "translation": "配置文件"
         },
         {
             "id": "Process",
             "message": "Process",
-            "translation": ""
+            "translation": "进程"
         },
         {
             "id": "Start",
             "message": "Start",
-            "translation": ""
+            "translation": "启动"
         },
         {
             "id": "Stop",
             "message": "Stop",
-            "translation": ""
+            "translation": "停止"
         },
         {
             "id": "Restart",
             "message": "Restart",
-            "translation": ""
+            "translation": "重启"
         },
         {
             "id": "Reload",
             "message": "Reload",
-            "translation": ""
+            "translation": "重载"
         },
         {
             "id": "Kill",
             "message": "Kill",
-            "translation": ""
+            "translation": "强制停止"
         },
         {
             "id": "Register",
             "message": "Register",
-            "translation": ""
+            "translation": "托管"
         },
         {
             "id": "Unregister",
             "message": "Unregister",
-            "translation": ""
+            "translation": "取消托管"
         },
         {
             "id": "ConfigPublish",
             "message": "ConfigPublish",
-            "translation": ""
+            "translation": "配置下发"
         },
         {
             "id": "ConfigGenerate",
             "message": "ConfigGenerate",
-            "translation": ""
+            "translation": "配置生成"
         },
         {
             "id": "ConfigCheck",
             "message": "ConfigCheck",
-            "translation": ""
+            "translation": "配置检查"
         },
         {
             "id": "Executing",
             "message": "Executing",
-            "translation": ""
+            "translation": "正在执行"
         },
         {
             "id": "ExecutionSuccessful",
             "message": "ExecutionSuccessful",
-            "translation": ""
+            "translation": "执行成功"
         },
         {
             "id": "ExecutionFailed",
             "message": "ExecutionFailed",
-            "translation": ""
+            "translation": "执行失败"
         },
         {
             "id": "PartialFailure",
             "message": "PartialFailure",
-            "translation": ""
+            "translation": "部分失败"
         },
         {
             "id": "default_val {DefaultVal} is not a number type",

@@ -129,10 +129,18 @@ type Executor struct {
 
 // TaskPayload 公用的配置，作为任务快照，方便进行获取以及对比
 type TaskPayload struct {
+	// 基础信息
+	BasePayload *BasePayload
 	// 进程相关
 	ProcessPayload *ProcessPayload
 	// 配置相关
 	ConfigPayload *ConfigPayload
+}
+
+// BasePayload 基础信息
+type BasePayload struct {
+	BizID    uint32 // 业务ID
+	TenantID string // 租户ID
 }
 
 // ProcessPayload 进程相关
@@ -392,6 +400,10 @@ func BuildConfigTaskPayload(
 	)
 
 	return &TaskPayload{
+		BasePayload: &BasePayload{
+			BizID:    process.Attachment.BizID,
+			TenantID: process.Attachment.TenantID,
+		},
 		ProcessPayload: &ProcessPayload{
 			SetName:       process.Spec.SetName,
 			ModuleName:    process.Spec.ModuleName,
