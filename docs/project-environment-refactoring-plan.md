@@ -38,7 +38,7 @@ protected = true
 2. **原客户端无影响**：已经部署的客户端不需要升级、不需要修改配置、不需要重新注册，仍然可以继续拉取原有配置；新项目和非默认环境能力只对显式使用新协议或新配置的客户端生效。
 3. **用户无感发布**：改造上线过程不阻塞用户创建、编辑、发布和客户端拉取配置。表结构迁移、默认 scope 初始化、历史数据回填和新 UI 入口开启都分阶段灰度完成，默认路径继续可用。
 4. **业务边界不变**：`biz_id` 仍然是业务、CMDB、权限兼容和旧接口兼容的主边界，不能把所有能力强行迁移到项目或环境下。
-5. **作用域清晰**：服务、分组、模板、密钥等定义类资源走 ProjectScope；配置项、版本、发布策略、客户端状态等运行态资源走 EnvScope；进程与配置管理继续走 BizScope。
+5. **作用域清晰**：服务、分组、模板、密钥及授权规则等定义类资源走 ProjectScope；配置项、版本、发布策略、客户端状态等运行态资源走 EnvScope；进程与配置管理继续走 BizScope。
 6. **默认值唯一**：默认项目和默认环境的 `key` 都固定为 `default`，不引入 `default/prod` 两套默认值。
 7. **渐进迁移**：先新增可空字段和兼容读写，再后台回填、补索引、替换唯一约束，最后收紧为 `NOT NULL`。服务启动时不做大表 DDL、全量 UPDATE 或长事务。
 8. **隔离安全**：旧接口只能访问 default project/default environment；新接口必须显式校验 app、project、environment 的归属，避免跨项目或跨环境串读串写。
@@ -111,9 +111,9 @@ protected = true
 | 作用域 | 维度 | 资源 |
 | --- | --- | --- |
 | BizScope | `tenant_id + biz_id` | 进程、进程实例、CMDB 同步、业务主机、进程配置管理、`config_templates`、`config_instances`、进程任务执行类资源 |
-| ProjectScope | `tenant_id + biz_id + project_id` | app 定义、group 定义、group 与 app 绑定、模板空间、模板、模板套餐、模板版本、模板变量、credential、hook |
-| EnvScope | `tenant_id + biz_id + project_id + environment_id` | config item、kv、commit、release、strategy、released artifact、app template binding、app template variable、feed 拉取、事件订阅、客户端状态、客户端下载任务 |
-| MixedScope | `tenant_id + biz_id + nullable project_id/environment_id` | audit、operation record 等审计类资源，业务级操作为空，项目/环境级操作记录对应上下文 |
+| ProjectScope | `tenant_id + biz_id + project_id` | app 定义、group 定义、group 与 app 绑定、模板空间、模板、模板套餐、模板版本、模板变量、credential、credential_scope、hook |
+| EnvScope | `tenant_id + biz_id + project_id + environment_id` | config item、kv、commit、release、strategy、released artifact、app template binding、app template variable、feed 拉取、环境级事件订阅、客户端状态、客户端下载任务 |
+| MixedScope | `tenant_id + biz_id + nullable project_id/environment_id` | events、audit、operation record 等混合作用域资源，业务级操作为空，项目/环境级操作记录对应上下文 |
 
 分组定义和模板资产放在项目维度。模板资产可以被同一项目下的不同环境复用；环境只保存某个 app 在该环境中的模板绑定、变量覆盖和发布结果。
 
@@ -200,7 +200,7 @@ environment_id bigint unsigned null
 | `template_sets` | ProjectScope | 新增 `project_id` |
 | `template_revisions` | ProjectScope | 新增 `project_id` |
 | `template_variables` | ProjectScope | 新增 `project_id` |
-| `credentials` | ProjectScope | 新增 `project_id`，密钥授权范围跟随项目 |
+| `credentials` / `credential_scopes` | ProjectScope | 新增 `project_id`，密钥和授权规则范围跟随项目 |
 | `hooks` / `hook_revisions` | ProjectScope | 新增 `project_id`，发布快照仍进入环境 |
 | `config_items` | EnvScope | 新增 `project_id`、`environment_id` |
 | `contents` | EnvScope | 当前配置项内容新增 `project_id`、`environment_id` |
@@ -220,12 +220,24 @@ environment_id bigint unsigned null
 | `current_released_instances` | EnvScope | 新增 `project_id`、`environment_id` |
 | `clients` / `client_events` | EnvScope | 新增 `project_id`、`environment_id` |
 | `client_querys` | EnvScope | 新增 `project_id`、`environment_id` |
-| `events` | EnvScope | 新增 `project_id`、`environment_id`，事件订阅按环境隔离 |
+| `events` | MixedScope | 新增可空 `project_id`、`environment_id`，按 `resource` 决定具体作用域 |
 | `audits` | MixedScope | 新增可空 `project_id`、`environment_id`，用于筛选和审计回溯 |
 | `processes` / `process_instances` | BizScope | 不新增项目和环境 |
 | `biz_hosts` | BizScope | 不新增项目和环境 |
 | `config_templates` / `config_instances` | BizScope | 不新增项目和环境 |
 | `configs` | SystemScope | 不新增项目和环境 |
+
+`credential_scopes` 必须与 `credentials` 一起进入 ProjectScope。授权规则当前按 app name 匹配，允许不同项目存在同名 app 后，匹配、删除 app 后清理规则、缓存刷新和事件消费都必须带 `project_id` 过滤，不能继续只按 `biz_id + app_name` 判断。
+
+`events` 不能整体收紧为 EnvScope，需要按 `resource` 分流：
+
+| resource | 作用域 | 规则 |
+| --- | --- | --- |
+| `Application` | ProjectScope | 必须带 `project_id`，`environment_id` 为空 |
+| `CredentialEvent` | ProjectScope | 必须带 `project_id`，`environment_id` 为空 |
+| `Publish` | EnvScope | 必须带 `project_id + environment_id` |
+| `RetryApp` / `RetryInstance` | EnvScope | 必须带 `project_id + environment_id` |
+| `CursorReminder` | System/Internal | 不绑定项目和环境 |
 
 ## 迁移策略
 
@@ -240,6 +252,7 @@ environment_id bigint unsigned null
 每个默认项目创建一个默认环境：key = default, type = prod
 所有存量 ProjectScope 数据回填到默认项目
 所有存量 EnvScope 数据回填到默认项目和默认环境
+MixedScope 数据按资源类型回填，项目级事件只回填默认项目，环境级事件回填默认项目和默认环境
 ```
 
 默认 project/env 初始化采用懒创建加后台补齐：
