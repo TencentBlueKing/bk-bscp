@@ -704,13 +704,20 @@
       background: rgba(0, 0, 0, 0.15);
       border-radius: 2px;
     }
+    &::before {
+      content: '';
+      flex: 1 1 0;
+      order: 1;
+      min-width: 0;
+    }
     :deep(.op-content) {
       flex-shrink: 0;
       flex-wrap: nowrap;
+      order: 0;
     }
     .search-select {
-      flex: 1 1 0;
-      width: 0;
+      flex: 0 1 957px;
+      order: 2;
       min-width: 240px;
       max-width: 957px;
       background: #fff;

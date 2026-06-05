@@ -1464,6 +1464,7 @@ export default {
   已成功: 'Success',
   等待生成: 'Waiting for Generation',
   生成中: 'Generating',
+  生成: 'Generate',
   '版本 ID': 'Version ID',
   '确认删除模板版本?': 'Confirm Delete Template Version?',
   个: 'Item',

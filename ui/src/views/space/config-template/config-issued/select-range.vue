@@ -3,6 +3,7 @@
     <div class="process-range">
       <span class="label">{{ $t('进程范围') }}</span>
       <FilterProcess
+        class="process-filter"
         :bk-biz-id="bkBizId"
         :is-issued="true"
         @search="handleSelectProcessRange" />
@@ -87,9 +88,11 @@
   .config-template {
     display: flex;
     align-items: center;
+    min-width: 0;
     margin-bottom: 16px;
     .label {
       position: relative;
+      flex-shrink: 0;
       width: 74px;
       margin-right: 8px;
       &::after {
@@ -103,7 +106,17 @@
       }
     }
     .bk-select {
-      width: 962px;
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 962px;
+      width: auto;
+    }
+  }
+  .process-range {
+    .process-filter {
+      flex: 1 1 0;
+      min-width: 0;
+      margin-left: 0;
     }
   }
   .process-table-list {
