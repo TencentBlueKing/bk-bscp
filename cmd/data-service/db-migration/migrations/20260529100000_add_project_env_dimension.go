@@ -37,11 +37,11 @@ func init() {
 // Step1: 创建 projects / environments / scope_migration_tasks 表 + 注册 id_generators
 // Step2: 为每个 biz 创建默认项目和默认环境
 // Step3: 为所有需要改动的表添加新字段 (AutoMigrate)
-// Step4: 分批回填存量数据的 project_id / environment_id（幂等、可续跑）
+// Step4: 调整索引
+// Step5: 分批回填存量数据的 project_id / environment_id（幂等、可续跑）
 // ============================================
 func mig20260529100000Up(db *gorm.DB) error {
-	db = db.Session(&gorm.Session{SkipDefaultTransaction: true})
-
+	// 1-4 步：DDL 和基础数据插入，继续使用外层传入的 tx 句柄执行
 	if err := stepCreateProjectEnvTables(db); err != nil {
 		return fmt.Errorf("step create project/env tables failed: %w", err)
 	}
@@ -54,20 +54,50 @@ func mig20260529100000Up(db *gorm.DB) error {
 		return fmt.Errorf("step add columns failed: %w", err)
 	}
 
-	if err := stepBackfillDefaultValues(db); err != nil {
+	if err := stepAdjustIndexes(db); err != nil {
+		return fmt.Errorf("step adjust indexes failed: %w", err)
+	}
+
+	rawSQLDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	// 用底层的连接池重新初始化一个全新的 gorm.DB，彻底脱离外层的 tx 事务
+	// SkipDefaultTransaction: true 确保单次 Exec 不会产生不必要的额外 Begin/Commit
+	standaloneDB, err := gorm.Open(db.Dialector, &gorm.Config{
+		SkipDefaultTransaction: true,
+		Logger:                 db.Logger, // 保持相同的日志输出
+	})
+	if err != nil {
+		return fmt.Errorf("failed to open standalone gorm connection: %w", err)
+	}
+
+	// 将底层连接池赋给新实例
+	standaloneDB = standaloneDB.WithContext(db.Statement.Context)
+	standaloneDB.ConnPool = rawSQLDB
+
+	// 第 5 步：使用全新的、非事务的 standaloneDB 执行
+	if err := stepBackfillDefaultValues(standaloneDB); err != nil {
 		return fmt.Errorf("step backfill default values failed: %w", err)
 	}
 
 	return nil
 }
 
-// Down Migration: 删除新增字段 -> 删除默认数据 -> 删表
+// Down Migration: 恢复旧索引 -> 删除新增字段 -> 删除默认数据 -> 删表
 func mig20260529100000Down(tx *gorm.DB) error {
+	// 1. 先恢复旧唯一索引（在删列之前，因为新索引依赖 project_id/environment_id 列）
+	if err := stepRestoreIndexes(tx); err != nil {
+		return fmt.Errorf("step restore indexes failed: %w", err)
+	}
+
+	// 2. 再删除新增的 project_id/environment_id 列（如果有的话）
 	if err := stepDropColumns(tx); err != nil {
 		return fmt.Errorf("step drop columns failed: %w", err)
 	}
 
-	// 删除 environments, projects 表和 scope_migration_tasks 表
+	// 3. 删除 environments, projects 表和 scope_migration_tasks 表
 	for _, table := range []string{"environments", "projects", "scope_migration_tasks"} {
 		if tx.Migrator().HasTable(table) {
 			if err := tx.Migrator().DropTable(table); err != nil {
@@ -76,7 +106,7 @@ func mig20260529100000Down(tx *gorm.DB) error {
 		}
 	}
 
-	// 清理 id_generators
+	// 4. 清理 id_generators
 	if err := tx.Exec("DELETE FROM id_generators WHERE resource IN ('projects', 'environments')").Error; err != nil {
 		return fmt.Errorf("clean id_generators: %w", err)
 	}
@@ -197,8 +227,11 @@ type BizTenantRecord struct {
 }
 
 func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
+	if err := tx.Exec("SELECT id FROM id_generators WHERE resource IN ('projects', 'environments') FOR UPDATE").Error; err != nil {
+		return fmt.Errorf("lock id_generators failed: %w", err)
+	}
 	// 1. 将所有涉及项目和环境 scope 的表全部纳入统计池中
-	allTables := append([]string{"applications"}, projectScopeTables...)
+	allTables := []string{"applications", "hooks", "groups", "credentials", "template_spaces", "template_variables"}
 
 	// 动态构建多表 UNION 的 SQL 语句
 	var unionSQLs []string
@@ -244,66 +277,37 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 		bizID := uint32(bt.BizID)
 		tenantID := bt.TenantID
 
-		defaultProjectKey := fmt.Sprintf("default_%d", bizID)
+		// 分配 projID，key 格式: BK-BSCP-XXXXX（主键左侧补零到5位）
+		projID := nextProjID
+		nextProjID++
+		defaultProjectKey := fmt.Sprintf("BK-BSCP-%05d", projID)
 
-		// 检查 project 是否已存在
-		var existingProjID uint64
-		err := tx.Table("projects").
-			Where("tenant_id = ? AND biz_id = ? AND `key` = ?", tenantID, bizID, defaultProjectKey).
-			Pluck("id", &existingProjID).Error
-		if err != nil {
-			return fmt.Errorf("check existing project failed: %w", err)
+		if errI := tx.Exec(
+			"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected, creator, reviser, created_at, updated_at)\n"+
+				"VALUES (?, ?, ?, ?, '默认项目', '', true, ?, ?, ?, ?)",
+			projID, tenantID, bizID, defaultProjectKey, systemUser, systemUser, now, now,
+		).Error; errI != nil {
+			return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, errI)
 		}
 
-		var projID uint64
-		if existingProjID > 0 {
-			projID = existingProjID
-		} else {
-			projID = nextProjID
-			nextProjID++
+		envID := nextEnvID
+		nextEnvID++
 
-			if errI := tx.Exec(
-				"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected, creator, reviser, created_at, updated_at)\n"+
-					"VALUES (?, ?, ?, ?, '默认项目', '', true, ?, ?, ?, ?)",
-				projID, tenantID, bizID, defaultProjectKey, systemUser, systemUser, now, now,
-			).Error; errI != nil {
-				return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, errI)
-			}
-		}
-
-		// 检查 environment 是否已存在
-		var existingEnvID uint64
-		err = tx.Table("environments").
-			Where("tenant_id = ? AND biz_id = ? AND project_id = ? AND `name` = '默认环境'", tenantID, bizID, projID).
-			Pluck("id", &existingEnvID).Error
-		if err != nil {
-			return fmt.Errorf("check existing environment failed: %w", err)
-		}
-
-		if existingEnvID == 0 {
-			envID := nextEnvID
-			nextEnvID++
-
-			if err := tx.Exec(
-				`INSERT INTO environments (id, tenant_id, biz_id, project_id, name, `+"`type`"+`, memo, display_order, protected, creator, reviser, created_at, updated_at)
+		if err := tx.Exec(
+			`INSERT INTO environments (id, tenant_id, biz_id, project_id, name, `+"`type`"+`, memo, display_order, protected, creator, reviser, created_at, updated_at)
          VALUES (?, ?, ?, ?, '默认环境', 'prod', '', 0, true, ?, ?, ?, ?)`,
-				envID, tenantID, bizID, projID, systemUser, systemUser, now, now,
-			).Error; err != nil {
-				return fmt.Errorf("insert default environment for biz %d tenant %s: %w", bizID, tenantID, err)
-			}
+			envID, tenantID, bizID, projID, systemUser, systemUser, now, now,
+		).Error; err != nil {
+			return fmt.Errorf("insert default environment for biz %d tenant %s: %w", bizID, tenantID, err)
 		}
 	}
 
 	// 更新 id_generators
-	if nextProjID > projGen.MaxID+1 {
-		if err := tx.Exec("UPDATE id_generators SET max_id = ?, updated_at = ? WHERE resource = 'projects'", nextProjID-1, now).Error; err != nil {
-			return fmt.Errorf("update projects max_id: %w", err)
-		}
+	if err := tx.Exec("UPDATE id_generators SET max_id = ?, updated_at = ? WHERE resource = 'projects'", nextProjID-1, now).Error; err != nil {
+		return fmt.Errorf("update projects max_id: %w", err)
 	}
-	if nextEnvID > envGen.MaxID+1 {
-		if err := tx.Exec("UPDATE id_generators SET max_id = ?, updated_at = ? WHERE resource = 'environments'", nextEnvID-1, now).Error; err != nil {
-			return fmt.Errorf("update environments max_id: %w", err)
-		}
+	if err := tx.Exec("UPDATE id_generators SET max_id = ?, updated_at = ? WHERE resource = 'environments'", nextEnvID-1, now).Error; err != nil {
+		return fmt.Errorf("update environments max_id: %w", err)
 	}
 
 	return nil
@@ -410,7 +414,109 @@ func stepAddColumns(tx *gorm.DB) error {
 }
 
 // =============================================
-// Step4: 分批回填存量数据（幂等、可续跑）
+// Step4: 调整已有唯一索引（加入 project_id / environment_id）+ 新增二级索引
+//
+// 原有唯一索引只到 biz 维度（tenant_id + biz_id + name），新增项目/环境维度后：
+//   - 不同项目下应允许同名 group/hook/template_space 等 → 唯一键需包含 project_id
+//   - 不同环境下应允许同名 application → 唯一键需包含 project_id + environment_id
+//
+// 处置策略：先删旧唯一索引，再建新唯一索引；同时为 project_id/environment_id 建二级索引。
+// =============================================
+
+// indexAdjustment 定义需要调整的唯一索引映射。
+type indexAdjustment struct {
+	table      string // 目标表名
+	oldIdxName string // 旧唯一索引名
+	newIdxName string // 新唯一索引名
+	newColumns string // 新索引列定义（SQL）
+}
+
+// 需要调整唯一索引的表及其新旧索引定义
+var projectScopeIndexAdjustments = []indexAdjustment{
+	{"groups", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
+		"tenant_id, biz_id, project_id, name"},
+	{"hooks", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
+		"tenant_id, biz_id, project_id, name"},
+	{"credentials", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
+		"tenant_id, biz_id, project_id, name"},
+	{"template_spaces", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
+		"tenant_id, biz_id, project_id, name"},
+	{"template_variables", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
+		"tenant_id, biz_id, project_id, name"},
+	{"template_sets", "idx_tenantID_bizID_tempSpaID_name", "idx_tenantID_bizID_projectID_tempSpaID_name",
+		"tenant_id, biz_id, project_id, template_space_id, name"},
+	{"templates", "idx_tenantID_bizID_tempSpaID_name_path", "idx_tenantID_bizID_projectID_tempSpaID_name_path",
+		"tenant_id, biz_id, project_id, template_space_id, name(100), path(100)"},
+	{"template_revisions", "idx_tenantID_bizID_tempID_revName", "idx_tenantID_bizID_projectID_tempID_revName",
+		"tenant_id, biz_id, project_id, template_id, revision_name"},
+}
+
+var envScopeIndexAdjustments = []indexAdjustment{
+	{"applications", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_envID_name",
+		"tenant_id, biz_id, project_id, environment_id, name"},
+}
+
+func stepAdjustIndexes(tx *gorm.DB) error {
+	// 4a. ProjectScope 表：删旧唯一索引 → 建新唯一索引（含 project_id）
+	for _, adj := range projectScopeIndexAdjustments {
+		if err := replaceUniqueIndex(tx, adj); err != nil {
+			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
+		}
+	}
+
+	// 4b. EnvScope 表：删旧唯一索引 → 建新唯一索引（含 project_id + environment_id）
+	for _, adj := range envScopeIndexAdjustments {
+		if err := replaceUniqueIndex(tx, adj); err != nil {
+			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
+		}
+	}
+
+	// 4c. 为所有 ProjectScope 表添加 project_id 二级索引
+	for _, table := range projectScopeTables {
+		idxName := "idx_project_id"
+		if !tx.Migrator().HasIndex(table, idxName) {
+			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (project_id)", idxName, quoteTable(table))).Error; err != nil {
+				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
+			}
+		}
+	}
+
+	// 4d. 为 EnvScope 表添加 project_id + environment_id 二级索引
+	for _, table := range envScopeTables {
+		idxName := "idx_project_id"
+		if !tx.Migrator().HasIndex(table, idxName) {
+			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (project_id)", idxName, quoteTable(table))).Error; err != nil {
+				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
+			}
+		}
+		idxName = "idx_environment_id"
+		if !tx.Migrator().HasIndex(table, idxName) {
+			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (environment_id)", idxName, quoteTable(table))).Error; err != nil {
+				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// replaceUniqueIndex 删旧唯一索引，建新唯一索引（幂等）。
+func replaceUniqueIndex(tx *gorm.DB, adj indexAdjustment) error {
+	if tx.Migrator().HasIndex(adj.table, adj.oldIdxName) {
+		if err := tx.Migrator().DropIndex(adj.table, adj.oldIdxName); err != nil {
+			return fmt.Errorf("drop old index %s: %w", adj.oldIdxName, err)
+		}
+	}
+	if !tx.Migrator().HasIndex(adj.table, adj.newIdxName) {
+		if err := tx.Exec(
+			fmt.Sprintf("CREATE UNIQUE INDEX %s ON %s (%s)", adj.newIdxName, quoteTable(adj.table), adj.newColumns),
+		).Error; err != nil {
+			return fmt.Errorf("create new index %s: %w", adj.newIdxName, err)
+		}
+	}
+	return nil
+}
+
 //
 // 核心机制:
 //   - 使用 scope_migration_tasks 表记录每张表的回填进度 (last_id + status)
@@ -545,7 +651,7 @@ func backfillProjectScopeTable(db *gorm.DB, tableName string) error {
 			INNER JOIN projects p ON p.biz_id = t.biz_id 
 				AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
 				  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
-				AND p.key = CONCAT('default_', p.biz_id)
+				AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
 			SET t.project_id = p.id
 			WHERE t.id IN (?) AND (t.project_id = 0 OR t.project_id IS NULL)`, quoteTable(tableName))
 
@@ -608,11 +714,12 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 				INNER JOIN projects p ON p.biz_id = t.biz_id 
 					AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
 					  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
-					AND p.key = CONCAT('default_', p.biz_id)
+					AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
 				INNER JOIN environments e ON e.project_id = p.id
 					AND CASE WHEN e.tenant_id IS NULL OR e.tenant_id = '' THEN 'default' ELSE e.tenant_id END 
 					  = CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END
 					AND e.type = 'prod'
+					AND e.name = '默认环境'
 				SET t.project_id = p.id, t.environment_id = e.id, t.env_display = CONCAT(e.name, '-', e.type)
 				WHERE t.id IN (?) 
 				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
@@ -623,11 +730,12 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 				INNER JOIN projects p ON p.biz_id = t.biz_id 
 					AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
 					  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
-					AND p.key = CONCAT('default_', p.biz_id)
+					AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
 				INNER JOIN environments e ON e.project_id = p.id
 					AND CASE WHEN e.tenant_id IS NULL OR e.tenant_id = '' THEN 'default' ELSE e.tenant_id END 
 					  = CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END
 					AND e.type = 'prod'
+					AND e.name = '默认环境'
 				SET t.project_id = p.id, t.environment_id = e.id
 				WHERE t.id IN (?) 
 				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
@@ -648,6 +756,89 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 	}
 
 	return updateTaskStatus(db, tableName, task.LastID, scopeStatusCompleted, "")
+}
+
+// =============================================
+// Restore Indexes (Down): 恢复旧唯一索引 + 删除二级索引
+// =============================================
+
+// indexRestoreDef 定义需要恢复的旧唯一索引。
+type indexRestoreDef struct {
+	table      string
+	newIdxName string // 本迁移创建的新唯一索引（要删的）
+	oldIdxName string // 旧唯一索引名（要恢复的）
+	oldColumns string // 旧索引列定义
+}
+
+var projectScopeIndexRestores = []indexRestoreDef{
+	{"groups", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+	{"hooks", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+	{"credentials", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+	{"template_spaces", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+	{"template_variables", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+	{"template_sets", "idx_tenantID_bizID_projectID_tempSpaID_name", "idx_tenantID_bizID_tempSpaID_name",
+		"tenant_id, biz_id, template_space_id, name"},
+	{"templates", "idx_tenantID_bizID_projectID_tempSpaID_name_path", "idx_tenantID_bizID_tempSpaID_name_path",
+		"tenant_id, biz_id, template_space_id, name(100), path(100)"},
+	{"template_revisions", "idx_tenantID_bizID_projectID_tempID_revName", "idx_tenantID_bizID_tempID_revName",
+		"tenant_id, biz_id, template_id, revision_name"},
+}
+
+var envScopeIndexRestores = []indexRestoreDef{
+	{"applications", "idx_tenantID_bizID_projectID_envID_name", "idx_tenantID_bizID_name",
+		"tenant_id, biz_id, name"},
+}
+
+func stepRestoreIndexes(tx *gorm.DB) error {
+	for _, r := range projectScopeIndexRestores {
+		if err := restoreUniqueIndex(tx, r); err != nil {
+			return fmt.Errorf("restore index on %s: %w", r.table, err)
+		}
+	}
+	for _, r := range envScopeIndexRestores {
+		if err := restoreUniqueIndex(tx, r); err != nil {
+			return fmt.Errorf("restore index on %s: %w", r.table, err)
+		}
+	}
+
+	// 删除二级索引
+	for _, table := range projectScopeTables {
+		dropIndexIfExists(tx, table, "idx_project_id")
+	}
+	for _, table := range envScopeTables {
+		dropIndexIfExists(tx, table, "idx_project_id")
+		dropIndexIfExists(tx, table, "idx_environment_id")
+	}
+
+	return nil
+}
+
+// restoreUniqueIndex 删新索引，恢复旧唯一索引（幂等）。
+func restoreUniqueIndex(tx *gorm.DB, r indexRestoreDef) error {
+	if tx.Migrator().HasIndex(r.table, r.newIdxName) {
+		if err := tx.Migrator().DropIndex(r.table, r.newIdxName); err != nil {
+			return fmt.Errorf("drop new index %s: %w", r.newIdxName, err)
+		}
+	}
+	if !tx.Migrator().HasIndex(r.table, r.oldIdxName) {
+		if err := tx.Exec(
+			fmt.Sprintf("CREATE UNIQUE INDEX %s ON %s (%s)", r.oldIdxName, quoteTable(r.table), r.oldColumns),
+		).Error; err != nil {
+			return fmt.Errorf("restore old index %s: %w", r.oldIdxName, err)
+		}
+	}
+	return nil
+}
+
+func dropIndexIfExists(tx *gorm.DB, table, idxName string) {
+	if tx.Migrator().HasIndex(table, idxName) {
+		_ = tx.Migrator().DropIndex(table, idxName)
+	}
 }
 
 // =============================================
