@@ -95,6 +95,11 @@ func (c *ClientEvent) ResType() string {
 	return "client_event"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *ClientEvent) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate group is valid or not when create it.
 func (c *ClientEvent) ValidateCreate() error {
 

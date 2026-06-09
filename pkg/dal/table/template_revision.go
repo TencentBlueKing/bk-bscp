@@ -48,6 +48,11 @@ func (t *TemplateRevision) ResType() string {
 	return string(enumor.Template)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (t *TemplateRevision) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate template revision is valid or not when create it.
 func (t *TemplateRevision) ValidateCreate(kit *kit.Kit, validatePath bool) error {
 	if t.ID > 0 {

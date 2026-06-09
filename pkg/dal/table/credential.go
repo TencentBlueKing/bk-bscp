@@ -50,6 +50,11 @@ func (c *Credential) ResType() string {
 	return "credential"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *Credential) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate Credential is valid or not when create it.
 func (c *Credential) ValidateCreate(kit *kit.Kit) error {
 

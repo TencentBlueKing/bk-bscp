@@ -51,6 +51,11 @@ func (r *ReleasedKv) ResType() string {
 	return "released_kv"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (r *ReleasedKv) ProjectID() uint32 {
+	return 0
+}
+
 // RkvList is released kvs
 type RkvList []*ReleasedKv
 
@@ -73,6 +78,11 @@ func (rs RkvList) ResID() uint32 {
 // ResType AuditRes interface
 func (rs RkvList) ResType() string {
 	return "released_kv"
+}
+
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (rs RkvList) ProjectID() uint32 {
+	return 0
 }
 
 // ValidateCreate validate ReleasedKv is valid or not when create ir.

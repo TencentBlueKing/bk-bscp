@@ -62,6 +62,11 @@ func (g Group) ResType() string {
 	return string(enumor.Group)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (g Group) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate group is valid or not when create it.
 func (g Group) ValidateCreate(kit *kit.Kit) error {
 

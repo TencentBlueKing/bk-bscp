@@ -95,6 +95,8 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.ProjectVerified)
+		r.Use(p.authorizer.EnvVerified)
 		r.Use(p.HttpServerHandledTotal("", ""))
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)

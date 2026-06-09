@@ -34,6 +34,8 @@ import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "pkg/protocol/core/config-instance/config_instance.proto";
+import "pkg/protocol/core/project/project.proto";
+import "pkg/protocol/core/environment/environment.proto";
 
 package pbds;
 
@@ -369,6 +371,28 @@ service Data {
 
   // 查询指定业务是否开启进程与配置管理可见性
   rpc GetProcessConfigView(GetProcessConfigViewReq) returns (GetProcessConfigViewResp) {}
+
+  // 项目管理
+  rpc ListProjects(ListProjectsReq) returns (ListProjectsResp) {}
+  // 获取项目详情
+  rpc GetProject(GetProjectReq) returns (GetProjectResp) {}
+  // 创建项目
+  rpc CreateProject(CreateProjectReq) returns (CreateResp) {}
+  // 更新项目
+  rpc UpdateProject(UpdateProjectReq) returns (pbbase.EmptyResp) {}
+  // 删除项目
+  rpc DeleteProject(DeleteProjectReq) returns (pbbase.EmptyResp) {}
+
+  // 环境管理
+  rpc ListEnvironments(ListEnvironmentsReq) returns (ListEnvironmentsResp) {}
+  // 获取环境详情
+  rpc GetEnvironment(GetEnvironmentReq) returns (GetEnvironmentResp) {}
+  // 创建环境
+  rpc CreateEnvironment(CreateEnvironmentReq) returns (CreateResp) {}
+  // 更新环境
+  rpc UpdateEnvironment(UpdateEnvironmentReq) returns (pbbase.EmptyResp) {}
+  // 删除环境
+  rpc DeleteEnvironment(DeleteEnvironmentReq) returns (pbbase.EmptyResp) {}
 }
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
@@ -2772,4 +2796,101 @@ message GetProcessConfigViewReq {
 // GetProcessConfigViewResp 查询进程与配置管理可见性响应
 message GetProcessConfigViewResp {
   bool enabled = 1;
+}
+
+message ListProjectsReq {
+  uint32 biz_id = 1;
+  uint32 start = 2;
+  uint32 limit = 3;
+  bool all = 4;
+  google.protobuf.Struct search_condition = 5;
+}
+
+message ListProjectsResp {
+  uint32 count = 1;
+  repeated pbproject.Project projects = 2;
+}
+
+message GetProjectReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+}
+
+message GetProjectResp {
+  uint32 id = 1;
+  pbproject.ProjectSpec spec = 2;
+  pbproject.ProjectAttachment attachment = 3;
+}
+
+message CreateProjectReq {
+  uint32 biz_id = 1;
+  string name = 2;
+  string key = 3;
+  string memo = 4;
+  bool protected = 5;
+}
+
+message UpdateProjectReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  string memo = 3;
+  bool protected = 4;
+}
+
+message UpdateProjectResp {}
+
+message DeleteProjectReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+}
+
+message DeleteProjectResp {}
+
+message ListEnvironmentsReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  uint32 start = 3;
+  uint32 limit = 4;
+  bool all = 5;
+  google.protobuf.Struct search_condition = 6;
+}
+
+message ListEnvironmentsResp {
+  uint32 count = 1;
+  repeated pbenvironment.Environment environments = 2;
+}
+
+message GetEnvironmentReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  uint32 env_id = 3;
+}
+
+message GetEnvironmentResp {
+  uint32 id = 1;
+  pbenvironment.EnvironmentSpec spec = 2;
+  pbenvironment.EnvironmentAttachment attachment = 3;
+}
+
+message CreateEnvironmentReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  string name = 3;
+  string type = 4;
+  string memo = 5;
+  bool protected = 6;
+}
+
+message UpdateEnvironmentReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  uint32 env_id = 3;
+  string memo = 4;
+  bool protected = 5;
+}
+
+message DeleteEnvironmentReq {
+  uint32 biz_id = 1;
+  uint32 project_id = 2;
+  uint32 env_id = 3;
 }

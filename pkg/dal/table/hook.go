@@ -52,6 +52,11 @@ func (h *Hook) ResType() string {
 	return "hook"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (h *Hook) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate hook is valid or not when create it.
 func (h Hook) ValidateCreate(kit *kit.Kit) error {
 

@@ -59,6 +59,11 @@ func (e *Event) ResType() string {
 	return "event"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (e *Event) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate the event is valid or not when create it.
 func (e *Event) ValidateCreate() error {
 	if e.ID > 0 {

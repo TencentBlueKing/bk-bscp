@@ -50,6 +50,11 @@ func (t *AppTemplateVariable) ResType() string {
 	return string(enumor.Config)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (t *AppTemplateVariable) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateUpsert validate AppTemplateVariable is valid or not when create or update it.
 func (t *AppTemplateVariable) ValidateUpsert(kit *kit.Kit) error {
 	if t.Spec != nil {

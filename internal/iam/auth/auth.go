@@ -65,6 +65,10 @@ type Authorizer interface {
 	AppVerified(next http.Handler) http.Handler
 	// BizVerified 业务鉴权
 	BizVerified(next http.Handler) http.Handler
+	// ProjectVerified 项目鉴权
+	ProjectVerified(next http.Handler) http.Handler
+	// EnvVerified 环境鉴权
+	EnvVerified(next http.Handler) http.Handler
 	// ContentVerified 内容(上传下载)鉴权
 	ContentVerified(next http.Handler) http.Handler
 	// LogOut handler will build login url, client should make redirect

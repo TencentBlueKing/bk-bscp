@@ -67,6 +67,11 @@ func (r *HookRevision) ResType() string {
 	return string(enumor.Hook)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (r *HookRevision) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate hook is valid or not when create it.
 func (r *HookRevision) ValidateCreate(kit *kit.Kit) error {
 

@@ -87,6 +87,11 @@ func (c *Client) ResType() string {
 	return string(enumor.Instance)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *Client) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate app's info when created.
 func (c *Client) ValidateCreate() error {
 	if c.ID != 0 {

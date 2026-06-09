@@ -35,6 +35,8 @@ import "google/api/visibility.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "pkg/protocol/core/project/project.proto";
+import "pkg/protocol/core/environment/environment.proto";
 
 package pbcs;
 
@@ -1851,6 +1853,92 @@ option (google.api.method_visibility).restriction = "INTERNAL";
           }
         }
       }
+    };
+  }
+
+  // 项目管理
+  rpc ListProjects(ListProjectsReq) returns (ListProjectsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/projects/list"
+      body: "*"
+    };
+  }
+
+  // 获取项目详情
+  rpc GetProject(GetProjectReq) returns (GetProjectResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
+    };
+  }
+
+  // 创建项目
+  rpc CreateProject(CreateProjectReq) returns (CreateProjectResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/projects"
+      body: "*"
+    };
+  }
+
+  // 更新项目
+  rpc UpdateProject(UpdateProjectReq) returns (UpdateProjectResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
+      body: "*"
+    };
+  }
+
+  // 删除项目
+  rpc DeleteProject(DeleteProjectReq) returns (DeleteProjectResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
+    };
+  }
+
+  // 环境管理
+  rpc ListEnvironments(ListEnvironmentsReq) returns (ListEnvironmentsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/list"
+      body: "*"
+    };
+  }
+
+  // 获取环境详情
+  rpc GetEnvironment(GetEnvironmentReq) returns (GetEnvironmentResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
+    };
+  }
+
+  // 创建环境
+  rpc CreateEnvironment(CreateEnvironmentReq) returns (CreateEnvironmentResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs"
+      body: "*"
+    };
+  }
+
+  // 更新环境
+  rpc UpdateEnvironment(UpdateEnvironmentReq) returns (UpdateEnvironmentResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
+      body: "*"
+    };
+  }
+
+  // 删除环境
+  rpc DeleteEnvironment(DeleteEnvironmentReq) returns (DeleteEnvironmentResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
     };
   }
 }
@@ -5331,3 +5419,127 @@ message GetProcessConfigViewReq {
 message GetProcessConfigViewResp {
   bool enabled = 1;
 }
+
+message ListProjectsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 start = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  google.protobuf.Struct search_condition = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件: JSON 格式" }];
+}
+
+message ListProjectsResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbproject.Project projects = 2;
+}
+
+message GetProjectReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+}
+
+message GetProjectResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  pbproject.ProjectSpec spec = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目规格" }];
+  pbproject.ProjectAttachment attachment = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目附件" }];
+}
+
+message CreateProjectReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目名称" }];
+  string key = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目唯一标识" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目备注" }];
+  bool protected = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
+  ];
+}
+message CreateProjectResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+}
+
+message UpdateProjectReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目备注" }];
+  bool protected = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
+  ];
+}
+
+message UpdateProjectResp {}
+
+message DeleteProjectReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+}
+
+message DeleteProjectResp {}
+
+message ListEnvironmentsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 start = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  google.protobuf.Struct search_condition = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件: JSON 格式" }];
+}
+
+message ListEnvironmentsResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbenvironment.Environment environments = 2;
+}
+
+message GetEnvironmentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+}
+
+message GetEnvironmentResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+  pbenvironment.EnvironmentSpec spec = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境规格" }];
+  pbenvironment.EnvironmentAttachment attachment = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境附件" }];
+}
+
+message CreateEnvironmentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境名称" }];
+  string type = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境类型" }];
+  string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境备注" }];
+  bool protected = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
+  ];
+}
+
+message CreateEnvironmentResp {
+  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+}
+
+message UpdateEnvironmentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境备注" }];
+  bool protected = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
+  ];
+}
+
+message UpdateEnvironmentResp {}
+
+message DeleteEnvironmentReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+}
+
+message DeleteEnvironmentResp {}

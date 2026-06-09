@@ -28,6 +28,11 @@ type ConfigTemplate struct {
 	Revision   *Revision                 `json:"revision" gorm:"embedded"`
 }
 
+// ProjectID implements [dao.AuditRes].
+func (c *ConfigTemplate) ProjectID() uint32 {
+	return 0
+}
+
 // ConfigTemplateSpec defines all the specifics for config template set by user.
 type ConfigTemplateSpec struct {
 	// 配置模版名称, 需要区别于templates表的name字段。templates表的name用于和path共同组成文件的路径

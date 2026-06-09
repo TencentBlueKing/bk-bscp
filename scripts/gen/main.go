@@ -70,6 +70,8 @@ func main() {
 		table.BizHost{},
 		table.ConfigTemplate{},
 		table.ConfigInstance{},
+		table.Project{},
+		table.Environment{},
 	)
 
 	g.Execute()

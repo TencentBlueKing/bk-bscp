@@ -50,6 +50,11 @@ func (t *AppTemplateBinding) ResType() string {
 	return string(enumor.Config)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (t *AppTemplateBinding) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate AppTemplateBinding is valid or not when create it.
 func (t *AppTemplateBinding) ValidateCreate() error {
 	if t.ID > 0 {

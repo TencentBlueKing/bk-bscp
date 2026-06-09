@@ -77,6 +77,11 @@ func (k *Kv) ResType() string {
 	return string(enumor.Config)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (k *Kv) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate kv is valid or not when create it.
 func (k Kv) ValidateCreate(kit *kit.Kit) error {
 

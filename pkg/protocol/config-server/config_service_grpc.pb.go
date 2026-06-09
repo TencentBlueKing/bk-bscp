@@ -242,6 +242,16 @@ const (
 	Config_GetProcessInstanceTopo_FullMethodName             = "/pbcs.Config/GetProcessInstanceTopo"
 	Config_ManageConfigKV_FullMethodName                     = "/pbcs.Config/ManageConfigKV"
 	Config_GetProcessConfigView_FullMethodName               = "/pbcs.Config/GetProcessConfigView"
+	Config_ListProjects_FullMethodName                       = "/pbcs.Config/ListProjects"
+	Config_GetProject_FullMethodName                         = "/pbcs.Config/GetProject"
+	Config_CreateProject_FullMethodName                      = "/pbcs.Config/CreateProject"
+	Config_UpdateProject_FullMethodName                      = "/pbcs.Config/UpdateProject"
+	Config_DeleteProject_FullMethodName                      = "/pbcs.Config/DeleteProject"
+	Config_ListEnvironments_FullMethodName                   = "/pbcs.Config/ListEnvironments"
+	Config_GetEnvironment_FullMethodName                     = "/pbcs.Config/GetEnvironment"
+	Config_CreateEnvironment_FullMethodName                  = "/pbcs.Config/CreateEnvironment"
+	Config_UpdateEnvironment_FullMethodName                  = "/pbcs.Config/UpdateEnvironment"
+	Config_DeleteEnvironment_FullMethodName                  = "/pbcs.Config/DeleteEnvironment"
 )
 
 // ConfigClient is the client API for Config service.
@@ -673,6 +683,26 @@ type ConfigClient interface {
 	ManageConfigKV(ctx context.Context, in *ManageConfigKVReq, opts ...grpc.CallOption) (*ManageConfigKVResp, error)
 	// 查询指定业务是否开启进程与配置管理可见性
 	GetProcessConfigView(ctx context.Context, in *GetProcessConfigViewReq, opts ...grpc.CallOption) (*GetProcessConfigViewResp, error)
+	// 项目管理
+	ListProjects(ctx context.Context, in *ListProjectsReq, opts ...grpc.CallOption) (*ListProjectsResp, error)
+	// 获取项目详情
+	GetProject(ctx context.Context, in *GetProjectReq, opts ...grpc.CallOption) (*GetProjectResp, error)
+	// 创建项目
+	CreateProject(ctx context.Context, in *CreateProjectReq, opts ...grpc.CallOption) (*CreateProjectResp, error)
+	// 更新项目
+	UpdateProject(ctx context.Context, in *UpdateProjectReq, opts ...grpc.CallOption) (*UpdateProjectResp, error)
+	// 删除项目
+	DeleteProject(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*DeleteProjectResp, error)
+	// 环境管理
+	ListEnvironments(ctx context.Context, in *ListEnvironmentsReq, opts ...grpc.CallOption) (*ListEnvironmentsResp, error)
+	// 获取环境详情
+	GetEnvironment(ctx context.Context, in *GetEnvironmentReq, opts ...grpc.CallOption) (*GetEnvironmentResp, error)
+	// 创建环境
+	CreateEnvironment(ctx context.Context, in *CreateEnvironmentReq, opts ...grpc.CallOption) (*CreateEnvironmentResp, error)
+	// 更新环境
+	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentReq, opts ...grpc.CallOption) (*UpdateEnvironmentResp, error)
+	// 删除环境
+	DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentReq, opts ...grpc.CallOption) (*DeleteEnvironmentResp, error)
 }
 
 type configClient struct {
@@ -2618,6 +2648,96 @@ func (c *configClient) GetProcessConfigView(ctx context.Context, in *GetProcessC
 	return out, nil
 }
 
+func (c *configClient) ListProjects(ctx context.Context, in *ListProjectsReq, opts ...grpc.CallOption) (*ListProjectsResp, error) {
+	out := new(ListProjectsResp)
+	err := c.cc.Invoke(ctx, Config_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetProject(ctx context.Context, in *GetProjectReq, opts ...grpc.CallOption) (*GetProjectResp, error) {
+	out := new(GetProjectResp)
+	err := c.cc.Invoke(ctx, Config_GetProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CreateProject(ctx context.Context, in *CreateProjectReq, opts ...grpc.CallOption) (*CreateProjectResp, error) {
+	out := new(CreateProjectResp)
+	err := c.cc.Invoke(ctx, Config_CreateProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpdateProject(ctx context.Context, in *UpdateProjectReq, opts ...grpc.CallOption) (*UpdateProjectResp, error) {
+	out := new(UpdateProjectResp)
+	err := c.cc.Invoke(ctx, Config_UpdateProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) DeleteProject(ctx context.Context, in *DeleteProjectReq, opts ...grpc.CallOption) (*DeleteProjectResp, error) {
+	out := new(DeleteProjectResp)
+	err := c.cc.Invoke(ctx, Config_DeleteProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) ListEnvironments(ctx context.Context, in *ListEnvironmentsReq, opts ...grpc.CallOption) (*ListEnvironmentsResp, error) {
+	out := new(ListEnvironmentsResp)
+	err := c.cc.Invoke(ctx, Config_ListEnvironments_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetEnvironment(ctx context.Context, in *GetEnvironmentReq, opts ...grpc.CallOption) (*GetEnvironmentResp, error) {
+	out := new(GetEnvironmentResp)
+	err := c.cc.Invoke(ctx, Config_GetEnvironment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) CreateEnvironment(ctx context.Context, in *CreateEnvironmentReq, opts ...grpc.CallOption) (*CreateEnvironmentResp, error) {
+	out := new(CreateEnvironmentResp)
+	err := c.cc.Invoke(ctx, Config_CreateEnvironment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentReq, opts ...grpc.CallOption) (*UpdateEnvironmentResp, error) {
+	out := new(UpdateEnvironmentResp)
+	err := c.cc.Invoke(ctx, Config_UpdateEnvironment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentReq, opts ...grpc.CallOption) (*DeleteEnvironmentResp, error) {
+	out := new(DeleteEnvironmentResp)
+	err := c.cc.Invoke(ctx, Config_DeleteEnvironment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -3047,6 +3167,26 @@ type ConfigServer interface {
 	ManageConfigKV(context.Context, *ManageConfigKVReq) (*ManageConfigKVResp, error)
 	// 查询指定业务是否开启进程与配置管理可见性
 	GetProcessConfigView(context.Context, *GetProcessConfigViewReq) (*GetProcessConfigViewResp, error)
+	// 项目管理
+	ListProjects(context.Context, *ListProjectsReq) (*ListProjectsResp, error)
+	// 获取项目详情
+	GetProject(context.Context, *GetProjectReq) (*GetProjectResp, error)
+	// 创建项目
+	CreateProject(context.Context, *CreateProjectReq) (*CreateProjectResp, error)
+	// 更新项目
+	UpdateProject(context.Context, *UpdateProjectReq) (*UpdateProjectResp, error)
+	// 删除项目
+	DeleteProject(context.Context, *DeleteProjectReq) (*DeleteProjectResp, error)
+	// 环境管理
+	ListEnvironments(context.Context, *ListEnvironmentsReq) (*ListEnvironmentsResp, error)
+	// 获取环境详情
+	GetEnvironment(context.Context, *GetEnvironmentReq) (*GetEnvironmentResp, error)
+	// 创建环境
+	CreateEnvironment(context.Context, *CreateEnvironmentReq) (*CreateEnvironmentResp, error)
+	// 更新环境
+	UpdateEnvironment(context.Context, *UpdateEnvironmentReq) (*UpdateEnvironmentResp, error)
+	// 删除环境
+	DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*DeleteEnvironmentResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3697,6 +3837,36 @@ func (UnimplementedConfigServer) ManageConfigKV(context.Context, *ManageConfigKV
 }
 func (UnimplementedConfigServer) GetProcessConfigView(context.Context, *GetProcessConfigViewReq) (*GetProcessConfigViewResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProcessConfigView not implemented")
+}
+func (UnimplementedConfigServer) ListProjects(context.Context, *ListProjectsReq) (*ListProjectsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedConfigServer) GetProject(context.Context, *GetProjectReq) (*GetProjectResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedConfigServer) CreateProject(context.Context, *CreateProjectReq) (*CreateProjectResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
+}
+func (UnimplementedConfigServer) UpdateProject(context.Context, *UpdateProjectReq) (*UpdateProjectResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedConfigServer) DeleteProject(context.Context, *DeleteProjectReq) (*DeleteProjectResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteProject not implemented")
+}
+func (UnimplementedConfigServer) ListEnvironments(context.Context, *ListEnvironmentsReq) (*ListEnvironmentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListEnvironments not implemented")
+}
+func (UnimplementedConfigServer) GetEnvironment(context.Context, *GetEnvironmentReq) (*GetEnvironmentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEnvironment not implemented")
+}
+func (UnimplementedConfigServer) CreateEnvironment(context.Context, *CreateEnvironmentReq) (*CreateEnvironmentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateEnvironment not implemented")
+}
+func (UnimplementedConfigServer) UpdateEnvironment(context.Context, *UpdateEnvironmentReq) (*UpdateEnvironmentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateEnvironment not implemented")
+}
+func (UnimplementedConfigServer) DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*DeleteEnvironmentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteEnvironment not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -7580,6 +7750,186 @@ func _Config_GetProcessConfigView_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListProjects(ctx, req.(*ListProjectsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetProject(ctx, req.(*GetProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateProject(ctx, req.(*CreateProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpdateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpdateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateProject(ctx, req.(*UpdateProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_DeleteProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteProject(ctx, req.(*DeleteProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_ListEnvironments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEnvironmentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListEnvironments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListEnvironments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListEnvironments(ctx, req.(*ListEnvironmentsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEnvironmentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetEnvironment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetEnvironment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetEnvironment(ctx, req.(*GetEnvironmentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_CreateEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateEnvironmentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).CreateEnvironment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_CreateEnvironment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).CreateEnvironment(ctx, req.(*CreateEnvironmentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_UpdateEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateEnvironmentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).UpdateEnvironment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_UpdateEnvironment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).UpdateEnvironment(ctx, req.(*UpdateEnvironmentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_DeleteEnvironment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteEnvironmentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).DeleteEnvironment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_DeleteEnvironment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).DeleteEnvironment(ctx, req.(*DeleteEnvironmentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8446,6 +8796,46 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProcessConfigView",
 			Handler:    _Config_GetProcessConfigView_Handler,
+		},
+		{
+			MethodName: "ListProjects",
+			Handler:    _Config_ListProjects_Handler,
+		},
+		{
+			MethodName: "GetProject",
+			Handler:    _Config_GetProject_Handler,
+		},
+		{
+			MethodName: "CreateProject",
+			Handler:    _Config_CreateProject_Handler,
+		},
+		{
+			MethodName: "UpdateProject",
+			Handler:    _Config_UpdateProject_Handler,
+		},
+		{
+			MethodName: "DeleteProject",
+			Handler:    _Config_DeleteProject_Handler,
+		},
+		{
+			MethodName: "ListEnvironments",
+			Handler:    _Config_ListEnvironments_Handler,
+		},
+		{
+			MethodName: "GetEnvironment",
+			Handler:    _Config_GetEnvironment_Handler,
+		},
+		{
+			MethodName: "CreateEnvironment",
+			Handler:    _Config_CreateEnvironment_Handler,
+		},
+		{
+			MethodName: "UpdateEnvironment",
+			Handler:    _Config_UpdateEnvironment_Handler,
+		},
+		{
+			MethodName: "DeleteEnvironment",
+			Handler:    _Config_DeleteEnvironment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

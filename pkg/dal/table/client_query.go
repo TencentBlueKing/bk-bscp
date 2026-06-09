@@ -168,3 +168,8 @@ func (c *ClientQuery) ResID() uint32 {
 func (c *ClientQuery) ResType() string {
 	return "client_query"
 }
+
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *ClientQuery) ProjectID() uint32 {
+	return 0
+}

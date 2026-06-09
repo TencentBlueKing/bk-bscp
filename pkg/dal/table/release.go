@@ -62,6 +62,11 @@ func (r *Release) ResType() string {
 	return string(enumor.Release)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (r *Release) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate a release's information
 func (r Release) ValidateCreate(kit *kit.Kit) error {
 	if r.ID != 0 {

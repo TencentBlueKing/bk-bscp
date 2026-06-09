@@ -33,6 +33,8 @@ all:
 	@cd task_batch && make
 	@cd config-template && make
 	@cd config-instance && make
+	@cd project && make
+	@cd environment && make
 
 clean:
 	@cd base && make clean
@@ -69,3 +71,5 @@ clean:
 	@cd task_batch && make clean
 	@cd config-template && make clean
 	@cd config-instance && make clean
+	@cd project && make clean
+	@cd environment && make clean

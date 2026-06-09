@@ -49,6 +49,11 @@ func (c *CredentialScope) ResType() string {
 	return string(enumor.Credential)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *CredentialScope) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate Credential is valid or not when create it.
 func (c *CredentialScope) ValidateCreate() error {
 

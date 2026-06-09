@@ -193,7 +193,8 @@ type Kit struct {
 	SpaceID     string // 应用对应的SpaceID
 	SpaceTypeID string // 应用对应的SpaceTypeID
 	TmplSpaceID uint32 // 配置模版对应的TemplateSpaceID
-
+	ProjectID   uint32 // 项目ID
+	EnvID       uint32 // 环境ID
 }
 
 // Clone clones a Kit
@@ -211,6 +212,8 @@ func (c *Kit) Clone() *Kit {
 		SpaceID:     c.SpaceID,
 		SpaceTypeID: c.SpaceTypeID,
 		TmplSpaceID: c.TmplSpaceID,
+		ProjectID:   c.ProjectID,
+		EnvID:       c.EnvID,
 	}
 }
 

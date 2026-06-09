@@ -263,6 +263,10 @@ const (
 	ConfigTemplatesTable Name = "config_templates"
 	// ConfigInstancesTable is config_instances table's name
 	ConfigInstancesTable Name = "config_instances"
+	// ProjectTable is projects table's name
+	ProjectTable Name = "projects"
+	// EnvironmentTable is environments table's name
+	EnvironmentTable Name = "environments"
 )
 
 // RevisionColumns defines all the Revision table's columns.

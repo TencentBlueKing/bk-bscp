@@ -46,6 +46,11 @@ func (t *ReleasedAppTemplateVariable) ResType() string {
 	return "released_app_template_variable"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (t *ReleasedAppTemplateVariable) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate ReleasedAppTemplateVariable is valid or not when created.
 func (t *ReleasedAppTemplateVariable) ValidateCreate(kit *kit.Kit) error {
 	if t.Spec != nil {

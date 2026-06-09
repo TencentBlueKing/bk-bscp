@@ -58,6 +58,11 @@ func (c *Commit) ResType() string {
 	return "commit"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (c *Commit) ProjectID() uint32 {
+	return 0
+}
+
 // TableName is the commits' database table name.
 func (c Commit) TableName() Name {
 	return CommitsTable

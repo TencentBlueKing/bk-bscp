@@ -66,6 +66,11 @@ type Strategy struct {
 	Revision   *Revision           `db:"revision" json:"revision" gorm:"embedded"`
 }
 
+// ProjectID implements [dao.AuditRes].
+func (s *Strategy) ProjectID() uint32 {
+	return 0
+}
+
 // TableName is the strategy's database table name.
 func (s *Strategy) TableName() string {
 	return "strategies"

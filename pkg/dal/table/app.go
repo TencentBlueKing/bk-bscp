@@ -57,6 +57,11 @@ func (a *App) ResType() string {
 	return string(enumor.App)
 }
 
+// ProjectID AuditRes interface
+func (a *App) ProjectID() uint32 {
+	return a.Spec.ProjectID
+}
+
 // ValidateCreate validate app's info when created.
 func (a *App) ValidateCreate(kit *kit.Kit) error {
 	if a.ID != 0 {
@@ -143,6 +148,9 @@ type AppSpec struct {
 	IsApprove        bool        `json:"is_approve" gorm:"is_approve"`
 	Approver         string      `json:"approver" gorm:"approver"`
 	TenantID         string      `json:"tenant_id" gorm:"column:tenant_id"`
+	ProjectID        uint32      `json:"project_id" gorm:"column:project_id"`
+	EnvID            uint32      `json:"environment_id" gorm:"column:environment_id"`
+	EnvDisplay       string      `json:"env_display" gorm:"column:env_display"`
 }
 
 // ValidateCreate validate spec when created.

@@ -44,6 +44,11 @@ func (r *ReleasedAppTemplate) ResType() string {
 	return "released_app_template"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (r *ReleasedAppTemplate) ProjectID() uint32 {
+	return 0
+}
+
 // RatiList is released app templates
 type RatiList []*ReleasedAppTemplate
 

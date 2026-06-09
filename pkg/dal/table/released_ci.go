@@ -84,6 +84,11 @@ func (r *ReleasedConfigItem) ResType() string {
 	return "released_config_item"
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (r *ReleasedConfigItem) ProjectID() uint32 {
+	return 0
+}
+
 // RciList is released config items
 type RciList []*ReleasedConfigItem
 
@@ -106,6 +111,11 @@ func (rs RciList) ResID() uint32 {
 // ResType AuditRes interface
 func (rs RciList) ResType() string {
 	return "released_config_item"
+}
+
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (rs RciList) ProjectID() uint32 {
+	return 0
 }
 
 // Validate the released config item information.

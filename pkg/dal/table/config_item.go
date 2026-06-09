@@ -45,6 +45,11 @@ type ConfigItem struct {
 	Revision   *Revision             `db:"revision" json:"revision" gorm:"embedded"`
 }
 
+// ProjectID implements [dao.AuditRes].
+func (c *ConfigItem) ProjectID() uint32 {
+	return 0
+}
+
 // AppID AuditRes interface
 func (c *ConfigItem) AppID() uint32 {
 	return 0

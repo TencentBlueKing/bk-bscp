@@ -54,6 +54,7 @@ type Audit struct {
 	StrategyId   uint32                   `db:"strategy_id" json:"strategy_id" gorm:"column:strategy_id"`
 	IsCompare    bool                     `db:"is_compare" json:"is_compare" gorm:"column:is_compare"`
 	TenantID     string                   `json:"tenant_id" gorm:"column:tenant_id"`
+	ProjectID    uint32                   `db:"project_id" json:"project_id" gorm:"column:project_id"`
 }
 
 // TableName is the audit's database table name.

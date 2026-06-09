@@ -48,6 +48,11 @@ func (t *TemplateSpace) ResType() string {
 	return string(enumor.Template)
 }
 
+// ProjectID AuditRes interface, 后续通过上下文透传。
+func (t *TemplateSpace) ProjectID() uint32 {
+	return 0
+}
+
 // ValidateCreate validate template space is valid or not when create it.
 func (t *TemplateSpace) ValidateCreate(kit *kit.Kit) error {
 	if t.ID > 0 {

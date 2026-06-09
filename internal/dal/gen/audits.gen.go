@@ -44,6 +44,7 @@ func newAudit(db *gorm.DB, opts ...gen.DOOption) audit {
 	_audit.StrategyId = field.NewUint32(tableName, "strategy_id")
 	_audit.IsCompare = field.NewBool(tableName, "is_compare")
 	_audit.TenantID = field.NewString(tableName, "tenant_id")
+	_audit.ProjectID = field.NewUint32(tableName, "project_id")
 
 	_audit.fillFieldMap()
 
@@ -71,6 +72,7 @@ type audit struct {
 	StrategyId   field.Uint32
 	IsCompare    field.Bool
 	TenantID     field.String
+	ProjectID    field.Uint32
 
 	fieldMap map[string]field.Expr
 }
@@ -104,6 +106,7 @@ func (a *audit) updateTableName(table string) *audit {
 	a.StrategyId = field.NewUint32(table, "strategy_id")
 	a.IsCompare = field.NewBool(table, "is_compare")
 	a.TenantID = field.NewString(table, "tenant_id")
+	a.ProjectID = field.NewUint32(table, "project_id")
 
 	a.fillFieldMap()
 
@@ -128,7 +131,7 @@ func (a *audit) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (a *audit) fillFieldMap() {
-	a.fieldMap = make(map[string]field.Expr, 17)
+	a.fieldMap = make(map[string]field.Expr, 18)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["biz_id"] = a.BizID
 	a.fieldMap["app_id"] = a.AppID
@@ -146,6 +149,7 @@ func (a *audit) fillFieldMap() {
 	a.fieldMap["strategy_id"] = a.StrategyId
 	a.fieldMap["is_compare"] = a.IsCompare
 	a.fieldMap["tenant_id"] = a.TenantID
+	a.fieldMap["project_id"] = a.ProjectID
 }
 
 func (a audit) clone(db *gorm.DB) audit {
