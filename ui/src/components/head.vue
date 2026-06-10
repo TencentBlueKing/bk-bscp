@@ -454,15 +454,22 @@
   });
   const actionList = [
     {
+      text: t('权限中心'),
+      href: (window as any).BK_IAM_HOST,
+      icon: 'bk-bscp-icon icon-quanxianzhongxin',
+      target: '_blank',
+      theme: 'primary' as const,
+    },
+    {
       text: t('个人中心'),
       href: (window as any).USER_CENTER_URL,
-      icon: '',
+      icon: 'bk-bscp-icon icon-yonghu',
       target: '_blank',
       theme: 'primary' as const,
     },
     {
       text: t('退出登录'),
-      icon: '',
+      icon: 'bk-bscp-icon icon-tuichu',
       theme: 'danger' as const,
       handle: handleLoginOut,
     },

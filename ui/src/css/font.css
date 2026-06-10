@@ -170,3 +170,15 @@
 .icon-client:before {
 	content: "\e137";
 }
+.icon-quanxianzhongxin-2:before {
+	content: "\e13c";
+}
+.icon-yonghu:before {
+	content: "\e13a";
+}
+.icon-quanxianzhongxin:before {
+	content: "\e13b";
+}
+.icon-tuichu:before {
+	content: "\e13d";
+}

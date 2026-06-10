@@ -1496,4 +1496,5 @@ export default {
   清除: '清除',
   目标平台: 'Target platform',
   个人中心: 'Personal Center',
+  权限中心: 'BK IAM'
 };
