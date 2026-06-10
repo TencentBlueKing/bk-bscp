@@ -693,12 +693,12 @@
         });
       } else if (key === 'start_pull_time' || key === 'end_pull_time') {
         if (searchList.find((item) => item.key === 'pull_time')) return;
-        const content = `${t('配置拉取时间范围')} : ${datetimeFormat(query.start_pull_time)} - ${datetimeFormat(
-          query.end_pull_time,
+        const content = `${t('配置拉取时间范围')} : ${datetimeFormat(query.start_pull_time, false)} - ${datetimeFormat(
+          query.end_pull_time, false
         )}`;
         searchList.push({
           key: 'pull_time',
-          value: `${datetimeFormat(query.start_pull_time)} - ${datetimeFormat(query.end_pull_time)}`,
+          value: `${datetimeFormat(query.start_pull_time, false)} - ${datetimeFormat(query.end_pull_time, false)}`,
           content,
           isEdit: false,
         });

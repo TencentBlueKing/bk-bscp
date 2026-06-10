@@ -111,15 +111,12 @@
           </bk-dropdown-menu>
         </template>
       </bk-dropdown>
-      <bk-popover ext-cls="login-out-popover" trigger="click" placement="bottom-center" theme="light" :arrow="false">
-        <div class="username-wrapper">
-          <span class="text"><user-name :name="userInfo.username"></user-name></span>
-          <DownShape class="arrow-icon" />
-        </div>
-        <template #content>
-          <div class="login-out-btn" @click="handleLoginOut">{{ t('退出登录') }}</div>
-        </template>
-      </bk-popover>
+      <BkLoginUserinfo
+       :userinfo="loginUserInfo"
+       :action-list="actionList"
+       style="position: relative; z-index: 99">
+        <user-name :name="loginUserInfo.name"></user-name>
+      </BkLoginUserinfo>
     </div>
   </div>
   <version-log :log-list="logList" v-model:is-show="isShowVersionLog"></version-log>
@@ -131,7 +128,7 @@
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter, RouteRecordName } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import { AngleDown, HelpDocumentFill, DownShape, Plus } from 'bkui-vue/lib/icon';
+  import { AngleDown, HelpDocumentFill, Plus } from 'bkui-vue/lib/icon';
   import useGlobalStore from '../store/global';
   import useUserStore from '../store/user';
   import useTemplateStore from '../store/template';
@@ -144,6 +141,8 @@
   import MarkdownIt from 'markdown-it';
   import { setCookie } from '../utils';
   import UserName from './user-name.vue';
+  import BkLoginUserinfo from '@blueking/login-userinfo';
+  import '@blueking/login-userinfo/vue3/vue3.css';
 
   const route = useRoute();
   const router = useRouter();
@@ -445,6 +444,29 @@
     locale.value = language;
     location.reload();
   };
+
+  const loginUserInfo = computed(() => {
+    const { username, tenant_id, tenant_name } = userInfo.value;
+    return {
+      name: username,
+      organization: tenant_name || tenant_id,
+    };
+  });
+  const actionList = [
+    {
+      text: t('个人中心'),
+      href: (window as any).USER_CENTER_URL,
+      icon: '',
+      target: '_blank',
+      theme: 'primary' as const,
+    },
+    {
+      text: t('退出登录'),
+      icon: '',
+      theme: 'danger' as const,
+      handle: handleLoginOut,
+    },
+  ];
 </script>
 
 <style lang="scss" scoped>

@@ -154,7 +154,9 @@
           </bk-table-column>
           <bk-table-column :label="t('更新时间')" width="154">
             <template #default="{ row }">
-              <span v-if="row.revision">{{ datetimeFormat(row.revision.update_at) }}</span>
+              <bk-overflow-title v-if="row.revision" type="tips">
+                {{ datetimeFormat(row.revision.update_at) }}
+              </bk-overflow-title>
             </template>
           </bk-table-column>
           <!-- <bk-table-column label="最近使用时间" width="154">
