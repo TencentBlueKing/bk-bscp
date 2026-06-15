@@ -13,7 +13,9 @@
 package auth
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -153,6 +155,58 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 			render.Render(w, r, rest.NotLoggedInErr(multiErr, loginURL, loginPlainURL))
 			return
 		}
+
+		ctx := kit.WithKit(r.Context(), k)
+		r.Header.Set(constant.AppCodeKey, k.AppCode)
+		r.Header.Set(constant.RidKey, k.Rid)
+		r.Header.Set(constant.UserKey, k.User)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(fn)
+}
+
+// uploadAppKeyAuthHeader app 凭证认证请求头, 复用蓝鲸网关鉴权头格式
+const uploadAppKeyAuthHeader = "X-Bkapi-Authorization"
+
+// UploadAppKeyAuthentication 上传类接口的 app 凭证认证中间件。
+// 第三方携带 X-Bkapi-Authorization: {"bk_app_code":"..","bk_app_secret":".."} 绕开网关直连,
+// 与本服务 cc.G().BaseConf(配置 baseConf.app_code/app_secret)一致即放行。
+// 未携带凭证或本服务未配置 app 凭证时, 回退到 UnifiedAuthentication, 保证 Cookie/JWT 仍可用。
+func (a authorizer) UploadAppKeyAuthentication(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		rawAuth := r.Header.Get(uploadAppKeyAuthHeader)
+		expectCode := cc.G().BaseConf.AppCode
+		expectSecret := cc.G().BaseConf.AppSecret
+
+		// 未携带凭证 / 本服务未配置 app 凭证 → 回退统一认证(Cookie/JWT)
+		if rawAuth == "" || expectCode == "" || expectSecret == "" {
+			a.UnifiedAuthentication(next).ServeHTTP(w, r)
+			return
+		}
+
+		auth := new(components.BKAPIGWAuth)
+		if err := json.Unmarshal([]byte(rawAuth), auth); err != nil || auth.AppCode == "" || auth.AppSecret == "" {
+			// 头存在但不是 app 凭证格式 → 回退, 兼容其它鉴权来源
+			a.UnifiedAuthentication(next).ServeHTTP(w, r)
+			return
+		}
+
+		// 常量时间比较, 防时序攻击
+		codeMatch := subtle.ConstantTimeCompare([]byte(auth.AppCode), []byte(expectCode)) == 1
+		secretMatch := subtle.ConstantTimeCompare([]byte(auth.AppSecret), []byte(expectSecret)) == 1
+		if !codeMatch || !secretMatch {
+			render.Render(w, r, rest.Unauthorized(errors.New("invalid app code or app secret")))
+			return
+		}
+
+		k := &kit.Kit{
+			Ctx:      r.Context(),
+			Rid:      components.RequestIDValue(r.Context()),
+			AppCode:  auth.AppCode,
+			User:     "bk_app:" + auth.AppCode, // 无用户态, 给审计保留可识别来源
+			TenantID: r.Header.Get(constant.BkTenantID),
+		}
+		k.Lang = tools.GetLangFromReq(r)
 
 		ctx := kit.WithKit(r.Context(), k)
 		r.Header.Set(constant.AppCodeKey, k.AppCode)

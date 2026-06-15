@@ -14,6 +14,7 @@ package service
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,6 +23,15 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/handler"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+)
+
+const (
+	// uploadTimeout 整文件单次上传 PUT 的超时上限, 给宽松值避免误杀大文件慢网上传
+	uploadTimeout = 30 * time.Minute
+	// multipartTimeout 分块上传 init/upload/complete 单请求的超时上限
+	multipartTimeout = 10 * time.Minute
+	// downloadTimeout 整文件下载的超时上限, 大文件慢网下载给宽松值
+	downloadTimeout = 30 * time.Minute
 )
 
 // routers return router config handler
@@ -132,32 +142,56 @@ func (p *proxy) routers() http.Handler {
 	// 服务下的配置项内容需要进行服务鉴权，模版空间下的模版配置项内容需要进行模版空间鉴权
 	// app_id和template_space_id信息放在header中，用于鉴权，和sign保持一致
 	r.Route("/api/v1/biz/{biz_id}/content", func(r chi.Router) {
-		r.Use(p.authorizer.UnifiedAuthentication)
-		r.Use(p.authorizer.BizVerified)
-		r.Use(p.authorizer.ContentVerified)
-		// 内容上传API
-		r.Route("/upload", func(r chi.Router) {
-			r.Use(p.HttpServerHandledTotal("", "Upload"))
-			r.Put("/", p.repo.UploadFile)
+		// 上传类接口: 叠加 app 凭证认证(绕网关直连) + 请求超时。
+		// 超时中间件必须排在认证之前, 使 deadline 透传到 kt.Ctx 再传到 bkrepo 请求。
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(uploadTimeout))
+			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.BizVerified)
+			r.Use(p.authorizer.ContentVerified)
+			// 内容上传API
+			r.Route("/upload", func(r chi.Router) {
+				r.Use(p.HttpServerHandledTotal("", "Upload"))
+				r.Put("/", p.repo.UploadFile)
+			})
 		})
-		// 分块内容上传API
-		r.Route("/multipart", func(r chi.Router) {
-			// 初始化分块上传
-			r.With(p.HttpServerHandledTotal("", "InitMultipartUpload")).Post("/init", p.repo.InitMultipartUploadFile)
-			// 分块上传
-			r.With(p.HttpServerHandledTotal("", "MultipartUpload")).Put("/upload", p.repo.MultipartUploadFile)
-			// 完成分块上传
-			r.With(p.HttpServerHandledTotal("", "CompleteMultipartUpload")).Post("/complete", p.repo.CompleteMultipartUploadFile)
+		// 分块内容上传API: 同样叠加 app 凭证认证 + 超时
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(multipartTimeout))
+			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.BizVerified)
+			r.Use(p.authorizer.ContentVerified)
+			r.Route("/multipart", func(r chi.Router) {
+				// 初始化分块上传
+				r.With(p.HttpServerHandledTotal("", "InitMultipartUpload")).Post("/init", p.repo.InitMultipartUploadFile)
+				// 分块上传
+				r.With(p.HttpServerHandledTotal("", "MultipartUpload")).Put("/upload", p.repo.MultipartUploadFile)
+				// 完成分块上传
+				r.With(p.HttpServerHandledTotal("", "CompleteMultipartUpload")).Post("/complete", p.repo.CompleteMultipartUploadFile)
+			})
 		})
-		// 内容下载API
-		r.Route("/download", func(r chi.Router) {
-			r.Use(p.HttpServerHandledTotal("", "Download"))
-			r.Get("/", p.repo.DownloadFile)
+		// 下载接口: 同为大流量, 叠加 app 凭证认证 + 超时, 放开直连
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(downloadTimeout))
+			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.BizVerified)
+			r.Use(p.authorizer.ContentVerified)
+			// 内容下载API
+			r.Route("/download", func(r chi.Router) {
+				r.Use(p.HttpServerHandledTotal("", "Download"))
+				r.Get("/", p.repo.DownloadFile)
+			})
 		})
-		// 获取二进制内容元数据API
-		r.Route("/metadata", func(r chi.Router) {
-			r.Use(p.HttpServerHandledTotal("", "Metadata"))
-			r.Get("/", p.repo.FileMetadata)
+		// 元数据接口: 保持原有统一认证, 不放开直连
+		r.Group(func(r chi.Router) {
+			r.Use(p.authorizer.UnifiedAuthentication)
+			r.Use(p.authorizer.BizVerified)
+			r.Use(p.authorizer.ContentVerified)
+			// 获取二进制内容元数据API
+			r.Route("/metadata", func(r chi.Router) {
+				r.Use(p.HttpServerHandledTotal("", "Metadata"))
+				r.Get("/", p.repo.FileMetadata)
+			})
 		})
 	})
 
