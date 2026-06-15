@@ -30,8 +30,6 @@ const (
 	uploadTimeout = 30 * time.Minute
 	// multipartTimeout 分块上传 init/upload/complete 单请求的超时上限
 	multipartTimeout = 10 * time.Minute
-	// downloadTimeout 整文件下载的超时上限, 大文件慢网下载给宽松值
-	downloadTimeout = 30 * time.Minute
 )
 
 // routers return router config handler
@@ -170,10 +168,10 @@ func (p *proxy) routers() http.Handler {
 				r.With(p.HttpServerHandledTotal("", "CompleteMultipartUpload")).Post("/complete", p.repo.CompleteMultipartUploadFile)
 			})
 		})
-		// 下载接口: 同为大流量, 叠加 app 凭证认证 + 超时, 放开直连
+		// 下载、元数据接口: 保持原有统一认证, 不放开直连
+		// (download 走 DownloadFile 内的 IAM 用户级鉴权, 不适合 app 凭证路径)
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Timeout(downloadTimeout))
-			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.UnifiedAuthentication)
 			r.Use(p.authorizer.BizVerified)
 			r.Use(p.authorizer.ContentVerified)
 			// 内容下载API
@@ -181,12 +179,6 @@ func (p *proxy) routers() http.Handler {
 				r.Use(p.HttpServerHandledTotal("", "Download"))
 				r.Get("/", p.repo.DownloadFile)
 			})
-		})
-		// 元数据接口: 保持原有统一认证, 不放开直连
-		r.Group(func(r chi.Router) {
-			r.Use(p.authorizer.UnifiedAuthentication)
-			r.Use(p.authorizer.BizVerified)
-			r.Use(p.authorizer.ContentVerified)
 			// 获取二进制内容元数据API
 			r.Route("/metadata", func(r chi.Router) {
 				r.Use(p.HttpServerHandledTotal("", "Metadata"))

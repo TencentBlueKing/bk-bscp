@@ -23,10 +23,11 @@ network:
 #   - http://bscp.example.com
 
 # baseConf 为 bscp 自身在蓝鲸 PaaS 上的应用身份(对应 cc.G().BaseConf)。
-# 大流量接口(/content/upload、/content/multipart/*、/content/download)支持用 app 凭证绕开网关直连：
+# 上传类接口(/content/upload、/content/multipart/*)支持用 app 凭证绕开网关直连：
 # 第三方携带请求头 X-Bkapi-Authorization: {"bk_app_code":"..","bk_app_secret":".."}，
 # 与下面 app_code/app_secret 一致即放行(常量时间比较)。
-# 留空则该直连认证不启用，上传/下载接口仍走 Cookie/JWT。
+# 留空则该直连认证不启用，上传接口仍走 Cookie/JWT。
+# 注意：下载接口(/content/download)含 IAM 用户级鉴权，未放开 app 凭证直连，仍走 Cookie/JWT。
 # 安全须知：该凭证即 bscp 自身身份，外发给第三方存在泄露放大风险，需评估；仅经 HTTPS 暴露。
 # 多租户模式下第三方直连仍须带 X-Bk-Tenant-Id 请求头。
 # baseConf:
