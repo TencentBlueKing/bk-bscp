@@ -13,6 +13,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -35,6 +36,17 @@ type repoService struct {
 	// authorizer auth related operations.
 	authorizer auth.Authorizer
 	provider   repository.Provider
+}
+
+// renderRepoErr 根据 provider 调用错误选择响应:
+// 请求 context 已超时/取消(如命中上传超时中间件)→ 504; 其它 → 400。
+func renderRepoErr(w http.ResponseWriter, r *http.Request, kt *kit.Kit, err error) {
+	if errors.Is(kt.Ctx.Err(), context.DeadlineExceeded) ||
+		errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		_ = render.Render(w, r, rest.GatewayTimeout(err))
+		return
+	}
+	_ = render.Render(w, r, rest.BadRequest(err))
 }
 
 // UploadFile upload to repo provider
@@ -69,7 +81,7 @@ func (s *repoService) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	metadata, err := s.provider.Upload(kt, sign, r.Body)
 	if err != nil {
-		render.Render(w, r, rest.BadRequest(err))
+		renderRepoErr(w, r, kt, err)
 		return
 	}
 
@@ -88,7 +100,7 @@ func (s *repoService) InitMultipartUploadFile(w http.ResponseWriter, r *http.Req
 
 	uploadID, err := s.provider.InitMultipartUpload(kt, sign)
 	if err != nil {
-		render.Render(w, r, rest.BadRequest(err))
+		renderRepoErr(w, r, kt, err)
 		return
 	}
 
@@ -118,7 +130,7 @@ func (s *repoService) MultipartUploadFile(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := s.provider.MultipartUpload(kt, sign, uploadID, partNum, r.Body); err != nil {
-		render.Render(w, r, rest.BadRequest(err))
+		renderRepoErr(w, r, kt, err)
 		return
 	}
 
@@ -143,7 +155,7 @@ func (s *repoService) CompleteMultipartUploadFile(w http.ResponseWriter, r *http
 
 	metadata, err := s.provider.CompleteMultipartUpload(kt, sign, uploadID)
 	if err != nil {
-		render.Render(w, r, rest.BadRequest(err))
+		renderRepoErr(w, r, kt, err)
 		return
 	}
 

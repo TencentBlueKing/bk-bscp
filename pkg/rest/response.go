@@ -184,6 +184,12 @@ func NotFound(err error) render.Renderer {
 	return &ErrorResponse{Error: payload, HTTPStatusCode: http.StatusNotFound}
 }
 
+// GatewayTimeout rest 请求超时(如上传/下载超过 deadline)
+func GatewayTimeout(err error) render.Renderer {
+	payload := &ErrorPayload{Code: "DEADLINE_EXCEEDED", Message: err.Error()}
+	return &ErrorResponse{Error: payload, HTTPStatusCode: http.StatusGatewayTimeout}
+}
+
 // GRPCErr GRPC-Gateway 错误
 func GRPCErr(err error) *ErrorResponse {
 	s := status.Convert(err)
