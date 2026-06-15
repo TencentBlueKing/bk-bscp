@@ -353,7 +353,10 @@
     label: '启动',
     count: 0,
   });
-  const filterConditions = ref<Record<string, any>>({});
+  // 默认正式
+  const filterConditions = ref<Record<string, any>>({
+    environment: "3"
+  });
   const managedInfo = ref({
     old: '',
     new: '',
