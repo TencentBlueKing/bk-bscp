@@ -19,6 +19,10 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
+const (
+	DefaultEnvName = "default"
+)
+
 // Environment defines an environment's detail information
 type Environment struct {
 	// ID is an auto-increased value, which is a unique identity of a Environment.

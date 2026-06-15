@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/data-service/db-migration/migrator"
+	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
 func init() {
@@ -185,6 +186,12 @@ func stepCreateProjectEnvTables(tx *gorm.DB) error {
 			return fmt.Errorf("create unique index on projects: %w", err)
 		}
 	}
+	// 普通索引
+	if !tx.Migrator().HasIndex("projects", "idx_tenantID_bizID") {
+		if err := tx.Exec("CREATE INDEX idx_tenantID_bizID ON projects (tenant_id, biz_id)").Error; err != nil {
+			return fmt.Errorf("create index on projects: %w", err)
+		}
+	}
 
 	// --- environments ---
 	if err := tx.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").
@@ -271,7 +278,7 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 	nextProjID := projGen.MaxID + 1
 	nextEnvID := envGen.MaxID + 1
 	now := time.Now()
-	systemUser := "system"
+	systemUser := table.DefaultCreator
 
 	for _, bt := range bizTenantList {
 		bizID := uint32(bt.BizID)
@@ -280,12 +287,12 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 		// 分配 projID，key 格式: BK-BSCP-XXXXX（主键左侧补零到5位）
 		projID := nextProjID
 		nextProjID++
-		defaultProjectKey := fmt.Sprintf("BK-BSCP-%05d", projID)
+		defaultProjectKey := table.GenerateProjectKey(uint32(projID))
 
 		if errI := tx.Exec(
 			"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected, creator, reviser, created_at, updated_at)\n"+
-				"VALUES (?, ?, ?, ?, '默认项目', '', true, ?, ?, ?, ?)",
-			projID, tenantID, bizID, defaultProjectKey, systemUser, systemUser, now, now,
+				"VALUES (?, ?, ?, ?, ?, '', true, ?, ?, ?, ?)",
+			projID, tenantID, bizID, defaultProjectKey, table.DefaultProjectName, systemUser, systemUser, now, now,
 		).Error; errI != nil {
 			return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, errI)
 		}
@@ -295,8 +302,8 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 
 		if err := tx.Exec(
 			`INSERT INTO environments (id, tenant_id, biz_id, project_id, name, `+"`type`"+`, memo, display_order, protected, creator, reviser, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '默认环境', 'prod', '', 0, true, ?, ?, ?, ?)`,
-			envID, tenantID, bizID, projID, systemUser, systemUser, now, now,
+         VALUES (?, ?, ?, ?, ?, 'prod', '', 0, true, ?, ?, ?, ?)`,
+			envID, tenantID, bizID, projID, table.DefaultEnvName, systemUser, systemUser, now, now,
 		).Error; err != nil {
 			return fmt.Errorf("insert default environment for biz %d tenant %s: %w", bizID, tenantID, err)
 		}
@@ -365,9 +372,7 @@ var envScopeTables = []string{
 // ProjectScope: 仅添加/回填 project_id 的表
 var projectScopeTables = []string{
 	"audits", "client_events", "client_querys", "clients",
-	"credentials", "events", "groups", "hooks",
-	"template_revisions", "template_sets", "template_spaces",
-	"template_variables", "templates",
+	"credentials", "events", "groups", "hooks", "template_spaces", "template_variables",
 }
 
 func stepAddColumns(tx *gorm.DB) error {
@@ -443,12 +448,6 @@ var projectScopeIndexAdjustments = []indexAdjustment{
 		"tenant_id, biz_id, project_id, name"},
 	{"template_variables", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
 		"tenant_id, biz_id, project_id, name"},
-	{"template_sets", "idx_tenantID_bizID_tempSpaID_name", "idx_tenantID_bizID_projectID_tempSpaID_name",
-		"tenant_id, biz_id, project_id, template_space_id, name"},
-	{"templates", "idx_tenantID_bizID_tempSpaID_name_path", "idx_tenantID_bizID_projectID_tempSpaID_name_path",
-		"tenant_id, biz_id, project_id, template_space_id, name(100), path(100)"},
-	{"template_revisions", "idx_tenantID_bizID_tempID_revName", "idx_tenantID_bizID_projectID_tempID_revName",
-		"tenant_id, biz_id, project_id, template_id, revision_name"},
 }
 
 var envScopeIndexAdjustments = []indexAdjustment{
@@ -719,7 +718,7 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 					AND CASE WHEN e.tenant_id IS NULL OR e.tenant_id = '' THEN 'default' ELSE e.tenant_id END 
 					  = CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END
 					AND e.type = 'prod'
-					AND e.name = '默认环境'
+					AND e.name = 'default'
 				SET t.project_id = p.id, t.environment_id = e.id, t.env_display = CONCAT(e.name, '-', e.type)
 				WHERE t.id IN (?) 
 				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
@@ -735,7 +734,7 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 					AND CASE WHEN e.tenant_id IS NULL OR e.tenant_id = '' THEN 'default' ELSE e.tenant_id END 
 					  = CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END
 					AND e.type = 'prod'
-					AND e.name = '默认环境'
+					AND e.name = 'default'
 				SET t.project_id = p.id, t.environment_id = e.id
 				WHERE t.id IN (?) 
 				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
@@ -781,12 +780,6 @@ var projectScopeIndexRestores = []indexRestoreDef{
 		"tenant_id, biz_id, name"},
 	{"template_variables", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
 		"tenant_id, biz_id, name"},
-	{"template_sets", "idx_tenantID_bizID_projectID_tempSpaID_name", "idx_tenantID_bizID_tempSpaID_name",
-		"tenant_id, biz_id, template_space_id, name"},
-	{"templates", "idx_tenantID_bizID_projectID_tempSpaID_name_path", "idx_tenantID_bizID_tempSpaID_name_path",
-		"tenant_id, biz_id, template_space_id, name(100), path(100)"},
-	{"template_revisions", "idx_tenantID_bizID_projectID_tempID_revName", "idx_tenantID_bizID_tempID_revName",
-		"tenant_id, biz_id, template_id, revision_name"},
 }
 
 var envScopeIndexRestores = []indexRestoreDef{

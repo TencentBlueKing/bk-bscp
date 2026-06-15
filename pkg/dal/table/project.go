@@ -14,9 +14,16 @@ package table
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+)
+
+const (
+	DefaultProjectName = "默认项目"
+	DefaultCreator     = "system"
+	projectKeyPrefix   = "BK-BSCP-"
 )
 
 // Project defines a project's detail information
@@ -133,4 +140,9 @@ func (p *Project) ValidateDelete(kit *kit.Kit) error {
 	}
 
 	return nil
+}
+
+// GenerateProjectKey 生成项目 Key，格式为 BK-BSCP-XXXXX，主键 ID 左侧补零到 5 位。
+func GenerateProjectKey(id uint32) string {
+	return projectKeyPrefix + fmt.Sprintf("%05d", id)
 }

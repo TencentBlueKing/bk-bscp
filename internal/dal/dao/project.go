@@ -28,15 +28,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
-const (
-	projectKeyPrefix = "BK-BSCP-"
-)
-
-// generateProjectKey 生成项目 Key，格式为 BK-BSCP-XXXXX，主键 ID 左侧补零到 5 位。
-func generateProjectKey(id uint32) string {
-	return projectKeyPrefix + fmt.Sprintf("%05d", id)
-}
-
 // Project supplies all the project related operations.
 type Project interface {
 	// Create one project instance
@@ -176,7 +167,7 @@ func (dao *projectDao) Create(kit *kit.Kit, g *table.Project) (uint32, error) {
 	}
 	g.ID = id
 	if g.Spec.Key == "" {
-		g.Spec.Key = generateProjectKey(id)
+		g.Spec.Key = table.GenerateProjectKey(id)
 	}
 
 	if err = g.ValidateCreate(kit); err != nil {
