@@ -319,7 +319,7 @@
       }
       // 非定时上线，publishTime清空
       params.publish_time =
-        localVal.value.publish_type === 'scheduled' ? convertTime(params.publish_time as string, 'utc') : '';
+        localVal.value.publish_type === 'scheduled' ? convertTime(params.publish_time as string, 'utc', false) : '';
       const resp = await publishVerSubmit(props.bkBizId, props.appId, versionData.value.id, params);
       handleClose();
       // 目前组件库dialog关闭自带250ms的延迟，所以这里延时300ms
@@ -329,7 +329,7 @@
           resp.data.have_pull as boolean,
           isApprove.value,
           params.publish_type,
-          convertTime(params.publish_time as string, 'local'),
+          convertTime(params.publish_time as string, 'local', false),
         );
       }, 300);
     } catch (e) {

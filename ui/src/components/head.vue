@@ -446,10 +446,11 @@
   };
 
   const loginUserInfo = computed(() => {
-    const { username, tenant_id, tenant_name } = userInfo.value;
+    const { username, tenant_id, tenant_name, time_zone } = userInfo.value;
     return {
       name: username,
       organization: tenant_name || tenant_id,
+      timezone: time_zone
     };
   });
   const actionList = [

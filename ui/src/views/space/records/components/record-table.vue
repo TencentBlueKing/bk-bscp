@@ -438,8 +438,8 @@
         start: pagination.value.limit * (pagination.value.current - 1),
         limit: Number(route.query.limit) || pagination.value.limit,
         ...searchParams.value,
-        start_time: start_time ? convertTime(start_time!, 'utc') : '',
-        end_time: end_time ? convertTime(end_time!, 'utc') : '',
+        start_time: start_time ? convertTime(start_time!, 'utc', false) : '',
+        end_time: end_time ? convertTime(end_time!, 'utc', false) : '',
       };
       const res = await getRecordList(props.spaceId, params);
       tableDataSort(res.details);
@@ -526,7 +526,7 @@
   // 上线时间是否超时
   const isTimeout = (time: string) => {
     const currentTime = dayjs();
-    const publishTime = dayjs(convertTime(time, 'local'));
+    const publishTime = dayjs(convertTime(time, 'local', false));
     // 定时的上线时间是否在当前时间之前
     return publishTime.isBefore(currentTime);
   };

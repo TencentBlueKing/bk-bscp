@@ -57,12 +57,20 @@ export const datetimeFormat = (str: string, withTZ = true): string => {
   return dayjs.utc(str).tz(userTZ).format(format);
 };
 
-// 时间转换 time格式YYYY-MM-DD HH:mm:ss
-export const convertTime = (time: string, type?: 'local' | 'utc') => {
+// 时间转换 time格式YYYY-MM-DD HH:mm:ss (ZZ)
+export const convertTime = (time: string, type?: 'local' | 'utc', withTZ = true) => {
+  const { userInfo } = storeToRefs(useUserStore());
+  const userTZ = userInfo.value.time_zone;
+
   if (type === 'local') {
     // 把传入的UTC时间，转换成本地时间
-    return dayjs.utc(time, 'YYYY-MM-DD HH:mm:ss').local().format('YYYY-MM-DD HH:mm:ss');
+    const dateUtc = dayjs.utc(time);
+    if (withTZ) {
+      return dateUtc.tz(userTZ).format('YYYY-MM-DD HH:mm:ss ZZ');
+    }
+    return dateUtc.local().format('YYYY-MM-DD HH:mm:ss');
   }
+
   if (type === 'utc') {
     // 把传入的本地时间，转换成UTC时间
     return dayjs(time, 'YYYY-MM-DD HH:mm:ss').utc().format('YYYY-MM-DD HH:mm:ss');
