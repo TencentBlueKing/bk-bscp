@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -138,12 +139,9 @@ func (c *cmdbResourceWatcher) watchResourcesForTenant(kt *kit.Kit) {
 // watchCMDBResources 监听并处理指定资源类型
 func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.ResourceType) error {
 	fields := []string{}
-	// 生成带租户前缀的游标 key
-	cursorKey := fmt.Sprintf("resource:%s:cursor", resource.String())
-	if kt.TenantID != "" {
-		cursorKey = fmt.Sprintf("%s-%s", kt.TenantID, cursorKey)
-	}
+	cursorKey := getResourceCursorKey(kt.TenantID, resource.String())
 	var cursor string
+
 	switch resource {
 	case bkcmdb.ResourceSet:
 		fields = []string{"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"}
@@ -159,37 +157,68 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 		cursor = existing.Value
 		logs.Infof("[CMDB Watch] loaded cursor from db: resource=%s cursor=%s", resource, cursor)
 	}
-	done := false
+
+	// 复用 map 以减少内存分配开销
+	processEvents := make(map[bkcmdb.EventType][]bkcmdb.BkEventObj, 3)
+
 	for {
+		// 每次循环清空 map，避免残余数据
+		for k := range processEvents {
+			delete(processEvents, k)
+		}
+
+		var startFrom *int64
+		if cursor == "" {
+			// 如果没有有效游标，使用当前时间前 1 小时作为安全的初始时间，规避 CMDB 3小时限制
+			t := time.Now().Add(-1 * time.Hour).Unix()
+			startFrom = &t
+		} else {
+			// 有游标时，CMDB 内部以游标为准推进，此处传默认 0 值即可
+			t := int64(0)
+			startFrom = &t
+		}
+
 		resp, err := c.cmdb.ResourceWatch(kt.Ctx, &bkcmdb.WatchResourceRequest{
 			BkCursor:     cursor,
 			BkResource:   resource.String(),
 			BkEventTypes: []string{bkcmdb.EventCreate.String(), bkcmdb.EventUpdate.String(), bkcmdb.EventDelete.String()},
 			BkFields:     fields,
-			BkStartFrom:  new(int64),
+			BkStartFrom:  startFrom,
 		})
+
 		if err != nil {
+			if strings.Contains(err.Error(), "1103007") || strings.Contains(err.Error(), "事件节点不存在") {
+				logs.Warnf("[CMDB Watch] cursor expired (1103007), resetting cursor to empty. resource=%s, expired_cursor=%s", resource, cursor)
+				if err = c.dao.Config().UpsertConfig(kt, []*table.Config{{
+					Key:   cursorKey,
+					Value: "",
+				}}); err != nil {
+					logs.Errorf("[CMDB][Watch] reset expired cursor in db failed, resource=%v, err=%v", resource, err)
+				}
+				return nil
+			}
 			return fmt.Errorf("request CMDB watch for %s failed: %w", resource, err)
 		}
 
-		processEvents := map[bkcmdb.EventType][]bkcmdb.BkEventObj{}
+		// 如果没有返回任何事件，代表已经消费完毕，直接退出
+		if len(resp.BkEvents) == 0 {
+			break
+		}
 
-		// 处理事件
+		var latestCursor string
+		hasEmptyEvent := false
+
+		// 1. 遍历并分类事件，不再在循环内频繁写数据库
 		for _, event := range resp.BkEvents {
 			logs.Infof("[CMDB Watch] resource=%s event=%s cursor=%s", event.BkResource, event.BkEventType, event.BkCursor)
 
-			// 空事件: 仅更新游标并退出到下一个资源
+			latestCursor = event.BkCursor
+
+			// 空事件标记：代表 CMDB 数据到底了
 			if event.BkEventType == "" {
-				logs.Infof("[CMDB Watch] resource=%s: empty event detected, update cursor=%s and break", resource, event.BkCursor)
-				cursor = event.BkCursor
-				if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
-					Key:   cursorKey,
-					Value: cursor,
-				}}); err != nil {
-					logs.Errorf("[CMDB][Watch] update cursor failed, resource=%v, err=%v", resource, err)
-				}
-				done = true
-				break
+				logs.Infof("[CMDB Watch] resource=%s: empty event detected, final cursor=%s", resource, event.BkCursor)
+				hasEmptyEvent = true
+				break // 游标已经记录，跳出本页事件解析
 			}
 
 			switch resource {
@@ -199,8 +228,22 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 				// 非 process 资源即时处理
 				c.handleEvent(kt, event)
 			}
+		}
 
-			cursor = event.BkCursor
+		// 2. 批量处理 Process 事件
+		if events := processEvents[bkcmdb.EventCreate]; len(events) > 0 {
+			c.handleProcessCreateEventsBatch(kt, events)
+		}
+		if events := processEvents[bkcmdb.EventUpdate]; len(events) > 0 {
+			c.handleProcessUpdateEventsBatch(kt, events)
+		}
+		if events := processEvents[bkcmdb.EventDelete]; len(events) > 0 {
+			c.handleProcessDeleteEventsBatch(kt, events)
+		}
+
+		// 3. 整页事件成功处理完后，统一更新一次游标（保证原子性与性能）
+		if latestCursor != "" {
+			cursor = latestCursor
 			if err := c.dao.Config().UpsertConfig(kt, []*table.Config{{
 				Key:   cursorKey,
 				Value: cursor,
@@ -209,24 +252,10 @@ func (c *cmdbResourceWatcher) watchCMDBResources(kt *kit.Kit, resource bkcmdb.Re
 			}
 		}
 
-		if events := processEvents[bkcmdb.EventCreate]; len(events) > 0 {
-			c.handleProcessCreateEventsBatch(kt, events)
-		}
-
-		if events := processEvents[bkcmdb.EventDelete]; len(events) > 0 {
-			c.handleProcessDeleteEventsBatch(kt, events)
-		}
-
-		if events := processEvents[bkcmdb.EventUpdate]; len(events) > 0 {
-			c.handleProcessUpdateEventsBatch(kt, events)
-		}
-
-		// 如果刚才的循环被空事件 break，就退出到下一个资源
-		// 若检测到空事件，跳出外层循环
-		if done {
+		// 4. 如果遇到了空事件，说明没有更多新数据了，退出外层监听循环
+		if hasEmptyEvent {
 			break
 		}
-
 	}
 
 	return nil
@@ -507,4 +536,12 @@ func (c *cmdbResourceWatcher) handleProcessUpdateEventsBatch(kt *kit.Kit, events
 
 		c.dispatchProcessStateSyncTasks(res)
 	}
+}
+
+func getResourceCursorKey(tenantID, resource string) string {
+	cursorKey := fmt.Sprintf("resource:%s:cursor", resource)
+	if tenantID != "" {
+		cursorKey = fmt.Sprintf("%s-%s", tenantID, cursorKey)
+	}
+	return cursorKey
 }
