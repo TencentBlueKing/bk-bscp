@@ -453,28 +453,34 @@
       timezone: time_zone
     };
   });
-  const actionList = [
-    {
-      text: t('权限中心'),
-      href: (window as any).BK_IAM_HOST,
-      icon: 'bk-bscp-icon icon-quanxianzhongxin',
-      target: '_blank',
-      theme: 'primary' as const,
-    },
-    {
-      text: t('个人中心'),
-      href: (window as any).USER_CENTER_URL,
-      icon: 'bk-bscp-icon icon-yonghu',
-      target: '_blank',
-      theme: 'primary' as const,
-    },
-    {
-      text: t('退出登录'),
-      icon: 'bk-bscp-icon icon-tuichu',
-      theme: 'danger' as const,
-      handle: handleLoginOut,
-    },
-  ];
+  const actionList = computed(() => {
+    const actions = [
+      {
+        text: t('权限中心'),
+        href: (window as any).BK_IAM_HOST,
+        icon: 'bk-bscp-icon icon-quanxianzhongxin',
+        target: '_blank',
+        theme: 'primary' as const,
+      },
+      {
+        text: t('退出登录'),
+        icon: 'bk-bscp-icon icon-tuichu',
+        theme: 'danger' as const,
+        handle: handleLoginOut,
+      }
+    ];
+    // 租户模式下显示个人中心
+    if (spaceFeatureFlags.value.ENABLE_TENANT_MODE) {
+      actions.splice(1, 0, {
+        text: t('个人中心'),
+        href: (window as any).USER_CENTER_URL,
+        icon: 'bk-bscp-icon icon-yonghu',
+        target: '_blank',
+        theme: 'primary' as const,
+      });
+    }
+    return actions;
+  });
 </script>
 
 <style lang="scss" scoped>
