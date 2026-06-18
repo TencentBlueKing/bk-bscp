@@ -108,3 +108,25 @@ func extractBizAndAppID(r *http.Request) (bizID, appID string) {
 
 	return
 }
+
+// 检查（或创建）默认的项目（Project）与环境（Environment）
+func (p *proxy) checkOrCreateDefaultProjectEnv(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		// 1. 调用底层的 RPC 服务去校验或创建默认的项目与环境
+		in := &pbcs.EnsureDefaultProjectEnvReq{BizId: kt.BizID}
+		resp, err := p.cfgClient.EnsureDefaultProjectEnv(kt.RpcCtx(), in)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 2. 将获取到的默认 ProjectID 和 EnvID 赋值给当前请求的 kit 上下文
+		kt.ProjectID = resp.ProjectId
+		kt.EnvID = resp.EnvId
+
+		ctx := kit.WithKit(r.Context(), kt)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}

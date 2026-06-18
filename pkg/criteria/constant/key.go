@@ -46,6 +46,8 @@ const (
 	SpaceTypeIDKey = "X-Bkapi-Space-Type-Id"
 	BizIDKey       = "X-Bkapi-Biz-Id"
 	AppIDKey       = "X-Bkapi-App-Id"
+	ProjectIDKey   = "X-Bkapi-Project-Id"
+	EnvIDKey       = "X-Bkapi-Env-Id"
 
 	// LanguageKey the language key word.
 	LanguageKey = "HTTP_BLUEKING_LANGUAGE"

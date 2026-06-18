@@ -57,6 +57,8 @@ var (
 	lowSpaceIDKey     = strings.ToLower(constant.SpaceIDKey)
 	lowSpaceTypeIDKey = strings.ToLower(constant.SpaceTypeIDKey)
 	lowBizIDKey       = strings.ToLower(constant.BizIDKey)
+	lowProjectIDKey   = strings.ToLower(constant.ProjectIDKey)
+	lowEnvKey         = strings.ToLower(constant.EnvIDKey)
 	lowAppIDKey       = strings.ToLower(constant.AppIDKey)
 	lowOperateWayKey  = strings.ToLower(constant.OperateWayKey)
 )
@@ -139,6 +141,26 @@ func FromGrpcContext(ctx context.Context) *Kit {
 		}
 	}
 
+	projectIDs := md[lowProjectIDKey]
+	if len(projectIDs) != 0 {
+		projectID, err := strconv.ParseUint(projectIDs[0], 10, 64)
+		if err != nil {
+			klog.ErrorS(err, "parse lowProjectID %s", projectIDs[0])
+		} else {
+			kit.ProjectID = uint32(projectID)
+		}
+	}
+
+	envIDs := md[lowEnvKey]
+	if len(envIDs) != 0 {
+		envID, err := strconv.ParseUint(envIDs[0], 10, 64)
+		if err != nil {
+			klog.ErrorS(err, "parse lowEnvID %s", envIDs[0])
+		} else {
+			kit.EnvID = uint32(envID)
+		}
+	}
+
 	operateWay := md[lowOperateWayKey]
 	if len(operateWay) != 0 {
 		kit.OperateWay = operateWay[0]
@@ -197,7 +219,8 @@ type Kit struct {
 	SpaceID     string // 应用对应的SpaceID
 	SpaceTypeID string // 应用对应的SpaceTypeID
 	TmplSpaceID uint32 // 配置模版对应的TemplateSpaceID
-
+	ProjectID   uint32 // 项目ID
+	EnvID       uint32 // 环境ID
 }
 
 // Clone clones a Kit
@@ -216,6 +239,8 @@ func (c *Kit) Clone() *Kit {
 		SpaceID:     c.SpaceID,
 		SpaceTypeID: c.SpaceTypeID,
 		TmplSpaceID: c.TmplSpaceID,
+		ProjectID:   c.ProjectID,
+		EnvID:       c.EnvID,
 	}
 }
 
@@ -261,6 +286,8 @@ func (c *Kit) RPCMetaData() metadata.MD {
 		constant.SpaceTypeIDKey: c.SpaceTypeID,
 		constant.BizIDKey:       strconv.FormatUint(uint64(c.BizID), 10),
 		constant.AppIDKey:       strconv.FormatUint(uint64(c.AppID), 10),
+		constant.ProjectIDKey:   strconv.FormatUint(uint64(c.ProjectID), 10),
+		constant.EnvIDKey:       strconv.FormatUint(uint64(c.EnvID), 10),
 		constant.OperateWayKey:  c.OperateWay,
 	}
 

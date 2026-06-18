@@ -34,6 +34,7 @@ var (
 	Content                     *content
 	Credential                  *credential
 	CredentialScope             *credentialScope
+	Environment                 *environment
 	Event                       *event
 	Group                       *group
 	GroupAppBind                *groupAppBind
@@ -43,6 +44,7 @@ var (
 	Kv                          *kv
 	Process                     *process
 	ProcessInstance             *processInstance
+	Project                     *project
 	Release                     *release
 	ReleasedAppTemplate         *releasedAppTemplate
 	ReleasedAppTemplateVariable *releasedAppTemplateVariable
@@ -79,6 +81,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Content = &Q.Content
 	Credential = &Q.Credential
 	CredentialScope = &Q.CredentialScope
+	Environment = &Q.Environment
 	Event = &Q.Event
 	Group = &Q.Group
 	GroupAppBind = &Q.GroupAppBind
@@ -88,6 +91,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Kv = &Q.Kv
 	Process = &Q.Process
 	ProcessInstance = &Q.ProcessInstance
+	Project = &Q.Project
 	Release = &Q.Release
 	ReleasedAppTemplate = &Q.ReleasedAppTemplate
 	ReleasedAppTemplateVariable = &Q.ReleasedAppTemplateVariable
@@ -125,6 +129,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Content:                     newContent(db, opts...),
 		Credential:                  newCredential(db, opts...),
 		CredentialScope:             newCredentialScope(db, opts...),
+		Environment:                 newEnvironment(db, opts...),
 		Event:                       newEvent(db, opts...),
 		Group:                       newGroup(db, opts...),
 		GroupAppBind:                newGroupAppBind(db, opts...),
@@ -134,6 +139,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Kv:                          newKv(db, opts...),
 		Process:                     newProcess(db, opts...),
 		ProcessInstance:             newProcessInstance(db, opts...),
+		Project:                     newProject(db, opts...),
 		Release:                     newRelease(db, opts...),
 		ReleasedAppTemplate:         newReleasedAppTemplate(db, opts...),
 		ReleasedAppTemplateVariable: newReleasedAppTemplateVariable(db, opts...),
@@ -172,6 +178,7 @@ type Query struct {
 	Content                     content
 	Credential                  credential
 	CredentialScope             credentialScope
+	Environment                 environment
 	Event                       event
 	Group                       group
 	GroupAppBind                groupAppBind
@@ -181,6 +188,7 @@ type Query struct {
 	Kv                          kv
 	Process                     process
 	ProcessInstance             processInstance
+	Project                     project
 	Release                     release
 	ReleasedAppTemplate         releasedAppTemplate
 	ReleasedAppTemplateVariable releasedAppTemplateVariable
@@ -220,6 +228,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Content:                     q.Content.clone(db),
 		Credential:                  q.Credential.clone(db),
 		CredentialScope:             q.CredentialScope.clone(db),
+		Environment:                 q.Environment.clone(db),
 		Event:                       q.Event.clone(db),
 		Group:                       q.Group.clone(db),
 		GroupAppBind:                q.GroupAppBind.clone(db),
@@ -229,6 +238,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Kv:                          q.Kv.clone(db),
 		Process:                     q.Process.clone(db),
 		ProcessInstance:             q.ProcessInstance.clone(db),
+		Project:                     q.Project.clone(db),
 		Release:                     q.Release.clone(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.clone(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.clone(db),
@@ -275,6 +285,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Content:                     q.Content.replaceDB(db),
 		Credential:                  q.Credential.replaceDB(db),
 		CredentialScope:             q.CredentialScope.replaceDB(db),
+		Environment:                 q.Environment.replaceDB(db),
 		Event:                       q.Event.replaceDB(db),
 		Group:                       q.Group.replaceDB(db),
 		GroupAppBind:                q.GroupAppBind.replaceDB(db),
@@ -284,6 +295,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Kv:                          q.Kv.replaceDB(db),
 		Process:                     q.Process.replaceDB(db),
 		ProcessInstance:             q.ProcessInstance.replaceDB(db),
+		Project:                     q.Project.replaceDB(db),
 		Release:                     q.Release.replaceDB(db),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.replaceDB(db),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.replaceDB(db),
@@ -320,6 +332,7 @@ type queryCtx struct {
 	Content                     IContentDo
 	Credential                  ICredentialDo
 	CredentialScope             ICredentialScopeDo
+	Environment                 IEnvironmentDo
 	Event                       IEventDo
 	Group                       IGroupDo
 	GroupAppBind                IGroupAppBindDo
@@ -329,6 +342,7 @@ type queryCtx struct {
 	Kv                          IKvDo
 	Process                     IProcessDo
 	ProcessInstance             IProcessInstanceDo
+	Project                     IProjectDo
 	Release                     IReleaseDo
 	ReleasedAppTemplate         IReleasedAppTemplateDo
 	ReleasedAppTemplateVariable IReleasedAppTemplateVariableDo
@@ -365,6 +379,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Content:                     q.Content.WithContext(ctx),
 		Credential:                  q.Credential.WithContext(ctx),
 		CredentialScope:             q.CredentialScope.WithContext(ctx),
+		Environment:                 q.Environment.WithContext(ctx),
 		Event:                       q.Event.WithContext(ctx),
 		Group:                       q.Group.WithContext(ctx),
 		GroupAppBind:                q.GroupAppBind.WithContext(ctx),
@@ -374,6 +389,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Kv:                          q.Kv.WithContext(ctx),
 		Process:                     q.Process.WithContext(ctx),
 		ProcessInstance:             q.ProcessInstance.WithContext(ctx),
+		Project:                     q.Project.WithContext(ctx),
 		Release:                     q.Release.WithContext(ctx),
 		ReleasedAppTemplate:         q.ReleasedAppTemplate.WithContext(ctx),
 		ReleasedAppTemplateVariable: q.ReleasedAppTemplateVariable.WithContext(ctx),

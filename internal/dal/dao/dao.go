@@ -85,6 +85,8 @@ type Set interface {
 	BizHost() BizHost
 	ConfigTemplate() ConfigTemplate
 	ConfigInstance() ConfigInstance
+	Project() Project
+	Environment() Environment
 }
 
 // NewDaoSet create the DAO set instance.
@@ -596,5 +598,25 @@ func (s *set) ConfigTemplate() ConfigTemplate {
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,
+	}
+}
+
+// Project implements Set.
+func (s *set) Project() Project {
+	return &projectDao{
+		genQ:     s.genQ,
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		event:    s.event,
+	}
+}
+
+// Environment implements Set.
+func (s *set) Environment() Environment {
+	return &environmentDao{
+		genQ:     s.genQ,
+		idGen:    s.idGen,
+		auditDao: s.auditDao,
+		event:    s.event,
 	}
 }
