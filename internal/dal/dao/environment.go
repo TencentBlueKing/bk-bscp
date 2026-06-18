@@ -13,9 +13,11 @@
 package dao
 
 import (
+	"errors"
 	"fmt"
 
 	rawgen "gorm.io/gen"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -42,6 +44,10 @@ type Environment interface {
 	GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Environment, error)
 	// List environments with options.
 	List(kit *kit.Kit, bizID, projectID uint32, opt *types.BasePage) ([]*table.Environment, int64, error)
+	// CountByProjectID 统计单个项目下的环境数量
+	CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error)
+	// CountByProjectIDs 批量统计项目下的服务数量
+	CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uint32]uint32, error)
 }
 
 var _ Environment = new(environmentDao)
@@ -53,19 +59,66 @@ type environmentDao struct {
 	event    Event
 }
 
+// CountByProjectIDs 批量统计项目下的环境数量
+func (dao *environmentDao) CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uint32]uint32, error) {
+	resMap := make(map[uint32]uint32)
+	if len(projectIDs) == 0 {
+		return resMap, nil
+	}
+
+	m := dao.genQ.Environment
+	q := dao.genQ.Environment.WithContext(kit.Ctx)
+
+	type Result struct {
+		ProjectID uint32 `gorm:"column:project_id"`
+		Count     uint32 `gorm:"column:cnt"`
+	}
+	var results []Result
+
+	err := q.Select(m.ProjectID, m.ID.Count().As("cnt")).
+		Where(m.ProjectID.In(projectIDs...)).
+		Group(m.ProjectID).
+		Scan(&results)
+
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "environment count failed"), err)
+	}
+
+	for _, r := range results {
+		resMap[r.ProjectID] = r.Count
+	}
+	return resMap, nil
+}
+
+// CountByProjectID 统计单个项目下的环境数量
+func (dao *environmentDao) CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error) {
+	m := dao.genQ.Environment
+
+	count, err := dao.genQ.Environment.WithContext(kit.Ctx).Where(m.ProjectID.Eq(projectID)).Count()
+	if err != nil {
+		return 0, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "environment count failed"), err)
+	}
+
+	return count, nil
+}
+
 // Delete implements [Environment].
 func (dao *environmentDao) Delete(kit *kit.Kit, env *table.Environment) error {
-	// 参数校验
+	if env == nil {
+		return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "environment is nil"))
+	}
+
 	if err := env.ValidateDelete(kit); err != nil {
 		return err
 	}
 
-	// 删除操作, 获取当前记录做审计
+	msg := i18n.T(kit, "environment deletion failed")
+
 	m := dao.genQ.Environment
 	q := dao.genQ.Environment.WithContext(kit.Ctx)
 	oldOne, err := q.Where(m.ID.Eq(env.ID), m.BizID.Eq(env.Attachment.BizID), m.ProjectID.Eq(env.Attachment.ProjectID)).Take()
 	if err != nil {
-		return err
+		return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 	}
 	ad := dao.auditDao.Decorator(kit, env.Attachment.BizID, &table.AuditField{
 		ResourceInstance: fmt.Sprintf(constant.ConfigItemName, oldOne.Spec.Name),
@@ -77,16 +130,16 @@ func (dao *environmentDao) Delete(kit *kit.Kit, env *table.Environment) error {
 	deleteTx := func(tx *gen.Query) error {
 		q = tx.Environment.WithContext(kit.Ctx)
 		if _, e := q.Where(m.BizID.Eq(env.Attachment.BizID), m.ID.Eq(env.ID)).Delete(env); e != nil {
-			return e
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 
 		if e := ad.Do(tx); e != nil {
-			return e
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 		return nil
 	}
 	if e := dao.genQ.Transaction(deleteTx); e != nil {
-		return e
+		return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 	}
 
 	return nil
@@ -182,48 +235,29 @@ func (dao *environmentDao) Create(kit *kit.Kit, g *table.Environment) (uint32, e
 	g.ID = id
 
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		ResourceInstance: fmt.Sprintf(constant.EnvName, g.Spec.Name),
 		Status:           enumor.Success,
 		Detail:           g.Spec.Memo,
 	}).PrepareCreate(g)
-	eDecorator := dao.event.Eventf(kit)
 
-	// 多个使用事务处理
+	msg := i18n.T(kit, "environment creation failed")
+
 	createTx := func(tx *gen.Query) error {
 		q := tx.Environment.WithContext(kit.Ctx)
 		if err = q.Create(g); err != nil {
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create data failed, err: %v", err))
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 
 		if err = ad.Do(tx); err != nil {
 			logs.Errorf("execution of transactions failed, err: %v", err)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create environment failed, err: %v", err))
-		}
-
-		// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-		one := types.Event{
-			Spec: &table.EventSpec{
-				Resource:   table.Application,
-				ResourceID: g.ID,
-				OpType:     table.InsertOp,
-			},
-			Attachment: &table.EventAttachment{BizID: g.Attachment.BizID},
-			Revision:   &table.CreatedRevision{Creator: kit.User},
-		}
-		if err = eDecorator.Fire(one); err != nil {
-			logs.Errorf("fire create environment: %s event failed, err: %v, rid: %s", g.ID, err, kit.Rid)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create environment failed, err: %v", err))
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 
 		return nil
 	}
-	err = dao.genQ.Transaction(createTx)
 
-	eDecorator.Finalizer(err)
-
-	if err != nil {
-		logs.Errorf("transaction processing failed %s", err)
-		return 0, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create environment failed, err: %v", err))
+	if err = dao.genQ.Transaction(createTx); err != nil {
+		return 0, errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 	}
 
 	return id, nil
@@ -235,55 +269,35 @@ func (dao *environmentDao) Update(kit *kit.Kit, g *table.Environment) error {
 		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "environment is nil"))
 	}
 
-	_, err := dao.Get(kit, g.Attachment.BizID, g.Attachment.ProjectID, g.ID)
-	if err != nil {
-		return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "update environment failed, err: %s", err))
+	if err := g.ValidateUpdate(kit); err != nil {
+		return err
 	}
 
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.Environment
 	q := dao.genQ.Environment.WithContext(kit.Ctx)
+
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		ResourceInstance: fmt.Sprintf(constant.EnvName, g.Spec.Name),
 		Status:           enumor.Success,
 		Detail:           g.Spec.Memo,
 	}).PrepareUpdate(g)
-	eDecorator := dao.event.Eventf(kit)
 
-	// 多个使用事务处理
+	msg := i18n.T(kit, "environment update failed")
+
 	updateTx := func(tx *gen.Query) error {
 		q = tx.Environment.WithContext(kit.Ctx)
-		if _, err = q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID), m.ID.Eq(g.ID)).
-			Select(m.Name, m.Type, m.Memo, m.DisplayOrder, m.Protected, m.Reviser, m.UpdatedAt).Updates(g); err != nil {
-			return err
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Updates(g); err != nil {
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 
-		if err = ad.Do(tx); err != nil {
-			return err
-		}
-
-		// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-		one := types.Event{
-			Spec: &table.EventSpec{
-				Resource:   table.Application,
-				ResourceID: g.ID,
-				OpType:     table.UpdateOp,
-			},
-			Attachment: &table.EventAttachment{BizID: g.Attachment.BizID},
-			Revision:   &table.CreatedRevision{Creator: kit.User},
-		}
-		if err = eDecorator.Fire(one); err != nil {
-			logs.Errorf("fire update environment: %s event failed, err: %v, rid: %s", g.ID, err, kit.Rid)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "update environment failed, err: %s", err))
+		if err := ad.Do(tx); err != nil {
+			return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 		}
 		return nil
 	}
-	err = dao.genQ.Transaction(updateTx)
-
-	eDecorator.Finalizer(err)
-
-	if err != nil {
-		return err
+	if err := dao.genQ.Transaction(updateTx); err != nil {
+		return errf.Errorf(errf.DBOpFailed, "%s: %v", msg, err)
 	}
 
 	return nil
@@ -295,7 +309,10 @@ func (dao *environmentDao) Get(kit *kit.Kit, bizID, projectID, envID uint32) (*t
 	q := dao.genQ.Environment.WithContext(kit.Ctx)
 	detail, err := q.Where(m.ID.Eq(envID), m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Take()
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errf.Errorf(errf.RecordNotFound, "%s", i18n.T(kit, "environment does not exist"))
+		}
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "environment query failed"), err)
 	}
 	return detail, nil
 }
@@ -305,10 +322,5 @@ func (dao *environmentDao) GetByName(kit *kit.Kit, bizID, projectID uint32, name
 	m := dao.genQ.Environment
 	q := dao.genQ.Environment.WithContext(kit.Ctx)
 
-	env, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
-	if err != nil {
-		return nil, err
-	}
-
-	return env, nil
+	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
 }

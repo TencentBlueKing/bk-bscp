@@ -23,6 +23,8 @@ message ProjectSpec {
   bool protected = 4 [
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
   ];
+  uint32 env_count = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境数" }];
+  uint32 app_count = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务总数" }];
 }
 
 // ProjectAttachment source resource reference: pkg/dal/table/project.go

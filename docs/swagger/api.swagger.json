@@ -12469,10 +12469,6 @@
         "memo": {
           "type": "string",
           "description": "环境备注"
-        },
-        "protected": {
-          "type": "boolean",
-          "description": "是否保护: true-保护, false-不保护"
         }
       }
     },
@@ -12637,17 +12633,9 @@
           "type": "string",
           "description": "项目名称"
         },
-        "key": {
-          "type": "string",
-          "description": "项目唯一标识"
-        },
         "memo": {
           "type": "string",
           "description": "项目备注"
-        },
-        "protected": {
-          "type": "boolean",
-          "description": "是否保护: true-保护, false-不保护"
         }
       }
     },
@@ -14414,10 +14402,6 @@
         "memo": {
           "type": "string",
           "description": "环境备注"
-        },
-        "protected": {
-          "type": "boolean",
-          "description": "是否保护: true-保护, false-不保护"
         }
       }
     },
@@ -14537,9 +14521,9 @@
           "type": "string",
           "description": "项目备注"
         },
-        "protected": {
-          "type": "boolean",
-          "description": "是否保护: true-保护, false-不保护"
+        "name": {
+          "type": "string",
+          "description": "项目名称"
         }
       }
     },
@@ -18775,17 +18759,37 @@
     "pbcsListEnvironmentsResp": {
       "type": "object",
       "properties": {
-        "count": {
-          "type": "integer",
-          "format": "int64",
-          "description": "总数"
-        },
-        "environments": {
+        "prodEnvironments": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/pbenvironmentEnvironment"
-          }
+          },
+          "description": "生产环境列表"
+        },
+        "stagingEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbenvironmentEnvironment"
+          },
+          "description": "预发布环境列表"
+        },
+        "testEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbenvironmentEnvironment"
+          },
+          "description": "测试环境列表"
+        },
+        "devEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbenvironmentEnvironment"
+          },
+          "description": "开发环境列表"
         }
       }
     },
@@ -20401,6 +20405,11 @@
           "type": "integer",
           "format": "int64",
           "description": "环境排序"
+        },
+        "appCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务总数"
         }
       },
       "title": "EnvironmentSpec source resource reference: pkg/dal/table/environment.go"
@@ -21183,6 +21192,16 @@
         "protected": {
           "type": "boolean",
           "description": "是否保护: true-保护, false-不保护"
+        },
+        "envCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境数"
+        },
+        "appCount": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务总数"
         }
       },
       "title": "ProjectSpec source resource reference: pkg/dal/table/project.go"

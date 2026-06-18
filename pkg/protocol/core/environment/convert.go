@@ -33,7 +33,7 @@ func (e *EnvironmentSpec) EnvironmentSpec() *table.EnvironmentSpec {
 }
 
 // PbEnvironmentSpec convert table EnvironmentSpec to pb EnvironmentSpec
-func PbEnvironmentSpec(spec *table.EnvironmentSpec) *EnvironmentSpec {
+func PbEnvironmentSpec(spec *table.EnvironmentSpec, appCount uint32) *EnvironmentSpec {
 	if spec == nil {
 		return nil
 	}
@@ -43,6 +43,7 @@ func PbEnvironmentSpec(spec *table.EnvironmentSpec) *EnvironmentSpec {
 		Type:      spec.Type.String(),
 		Memo:      spec.Memo,
 		Protected: spec.Protected,
+		AppCount:  appCount,
 	}
 }
 
@@ -86,28 +87,29 @@ func (e *Environment) Environment() (*table.Environment, error) {
 }
 
 // PbEnvironment convert table Environment to pb Environment
-func PbEnvironment(p *table.Environment) *Environment {
+func PbEnvironment(p *table.Environment, appCount uint32) *Environment {
 	if p == nil {
 		return nil
 	}
 
 	return &Environment{
 		Id:         p.ID,
-		Spec:       PbEnvironmentSpec(p.Spec),
+		Spec:       PbEnvironmentSpec(p.Spec, appCount),
 		Attachment: PbEnvironmentAttachment(p.Attachment),
 		Revision:   pbbase.PbRevision(p.Revision),
 	}
 }
 
 // PbEnvironments convert table Environments to pb Environments
-func PbEnvironments(p []*table.Environment) []*Environment {
+func PbEnvironments(p []*table.Environment, appCounts map[uint32]uint32) []*Environment {
 	if p == nil {
 		return nil
 	}
 
 	environments := make([]*Environment, 0, len(p))
 	for _, env := range p {
-		environments = append(environments, PbEnvironment(env))
+		ac := appCounts[env.ID]
+		environments = append(environments, PbEnvironment(env, ac))
 	}
 	return environments
 }

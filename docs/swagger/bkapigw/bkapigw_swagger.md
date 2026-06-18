@@ -22,19 +22,27 @@
 | GET | /api/v1/config/biz_id/{bizId}/sync/sync_status | [Config_CmdbGseStatus](#config-cmdb-gse-status) | 获取同步的状态 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/variable | [Config_ConfigTemplateVariable](#config-config-template-variable) | 配置模板变量 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template | [Config_CreateConfigTemplate](#config-create-config-template) | 创建配置模板 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs | [Config_CreateEnvironment](#config-create-environment) | 创建环境 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
+| POST | /api/v1/config/biz/{bizId}/projects | [Config_CreateProject](#config-create-project) | 创建项目 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
 | DELETE | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_DeleteConfigTemplate](#config-delete-config-template) | 删除配置模板 |
+| DELETE | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_DeleteEnvironment](#config-delete-environment) | 删除环境 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
+| DELETE | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_DeleteProject](#config-delete-project) | 删除项目 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig](#config-generate-config) | 配置生成 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_GetConfigTemplate](#config-get-config-template) | 获取配置模板 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_GetEnvironment](#config-get-environment) | 获取环境详情 |
 | GET | /api/v1/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView](#config-get-process-config-view) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/inner/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView2](#config-get-process-config-view2) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_GetProject](#config-get-project) | 获取项目详情 |
 | POST | /api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail | [Config_GetTaskBatchDetail](#config-get-task-batch-detail) | 任务批次详情 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list | [Config_ListEnvironments](#config-list-environments) | 环境管理 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/list | [Config_ListProjects](#config-list-projects) | 项目管理 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
@@ -46,7 +54,9 @@
 | GET | /api/v1/config/biz_id/{bizId}/service_template | [Config_ServiceTemplate](#config-service-template) | 根据业务查询服务模板列表 |
 | POST | /api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status | [Config_SyncCmdbGseStatus](#config-sync-cmdb-gse-status) | 同步cc和gse状态 |
 | PUT | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_UpdateConfigTemplate](#config-update-config-template) | 编辑配置模板 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_UpdateEnvironment](#config-update-environment) | 更新环境 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key} | [Config_UpdateKv](#config-update-kv) | 更新键值配置项 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_UpdateProject](#config-update-project) | 更新项目 |
 
 ### healthz
 
@@ -551,6 +561,46 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-create-environment"></span> 创建环境 (*Config_CreateEnvironment*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| memo | string |  | 环境备注 |
+| name | string |  | 环境名称 |
+| type | string |  | 环境类型 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "name": "",
+  "type": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-create-kv"></span> 创建键值配置项 (*Config_CreateKv*)
 
 ```
@@ -590,6 +640,43 @@ Content-Type: application/json
   "secretHidden": false,
   "secretType": "",
   "value": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-create-project"></span> 创建项目 (*Config_CreateProject*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| memo | string |  | 项目备注 |
+| name | string |  | 项目名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "name": ""
 }
 ```
 
@@ -679,6 +766,40 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-delete-environment"></span> 删除环境 (*Config_DeleteEnvironment*)
+
+```
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-delete-kv"></span> 删除键值配置项 (*Config_DeleteKv*)
 
 ```
@@ -702,6 +823,39 @@ DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}
 
 ```bash
 DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-delete-project"></span> 删除项目 (*Config_DeleteProject*)
+
+```
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId} HTTP/1.1
 Content-Type: application/json
 
 
@@ -865,6 +1019,40 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-get-environment"></span> 获取环境详情 (*Config_GetEnvironment*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-get-process-config-view"></span> 查询指定业务是否开启进程与配置管理可见性 (*Config_GetProcessConfigView*)
 
 ```
@@ -950,6 +1138,39 @@ GET /api/v1/config/biz_id/{bizId}/process_instance_topo
 
 ```bash
 GET /api/v1/config/biz_id/{bizId}/process_instance_topo HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-project"></span> 获取项目详情 (*Config_GetProject*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId} HTTP/1.1
 Content-Type: application/json
 
 
@@ -1073,6 +1294,48 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-list-environments"></span> 环境管理 (*Config_ListEnvironments*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| searchCondition | [interface{}](#interface) |  | 搜索条件: JSON 格式 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "searchCondition": {},
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-list-kvs"></span> 获取键值配置项列表 (*Config_ListKvs*)
 
 ```
@@ -1128,6 +1391,47 @@ Content-Type: application/json
     {}
   ],
   "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-projects"></span> 项目管理 (*Config_ListProjects*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| searchCondition | [interface{}](#interface) |  | 搜索条件: JSON 格式 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "searchCondition": {},
+  "start": 0
 }
 ```
 
@@ -1588,6 +1892,43 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-update-environment"></span> 更新环境 (*Config_UpdateEnvironment*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| memo | string |  | 环境备注 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-update-kv"></span> 更新键值配置项 (*Config_UpdateKv*)
 
 ```
@@ -1622,6 +1963,44 @@ Content-Type: application/json
   "secretHidden": false,
   "secretType": "",
   "value": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-update-project"></span> 更新项目 (*Config_UpdateProject*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| memo | string |  | 项目备注 |
+| name | string |  | 项目名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId} HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "name": ""
 }
 ```
 
@@ -1961,6 +2340,23 @@ Content-Type: application/json
 
 
 
+### <span id="config-create-environment-body"></span> ConfigCreateEnvironmentBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| memo | string| `string` |  | | 环境备注 |  |
+| name | string| `string` |  | | 环境名称 |  |
+| type | string| `string` |  | | 环境类型 |  |
+
+
+
 ### <span id="config-create-kv-body"></span> ConfigCreateKvBody
 
 
@@ -1982,6 +2378,22 @@ Content-Type: application/json
 | secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
 | secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |  |
 | value | string| `string` | ✓ | | 配置项值 |  |
+
+
+
+### <span id="config-create-project-body"></span> ConfigCreateProjectBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| memo | string| `string` |  | | 项目备注 |  |
+| name | string| `string` |  | | 项目名称 |  |
 
 
 
@@ -2081,6 +2493,24 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-environments-body"></span> ConfigListEnvironmentsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| all | boolean| `bool` |  | | 是否获取所有 |  |
+| limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
+| searchCondition | [interface{}](#interface)| `interface{}` |  | | 搜索条件: JSON 格式 |  |
+| start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
+
+
+
 ### <span id="config-list-kvs-body"></span> ConfigListKvsBody
 
 
@@ -2103,6 +2533,24 @@ Content-Type: application/json
 | status | []string| `[]string` |  | | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |  |
 | topIds | []int64 (formatted integer)| `[]int64` |  | | 需要置顶ID |  |
 | withStatus | boolean| `bool` |  | | 暂时未用到 |  |
+
+
+
+### <span id="config-list-projects-body"></span> ConfigListProjectsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| all | boolean| `bool` |  | | 是否获取所有 |  |
+| limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
+| searchCondition | [interface{}](#interface)| `interface{}` |  | | 搜索条件: JSON 格式 |  |
+| start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
 
 
 
@@ -2228,6 +2676,21 @@ Content-Type: application/json
 
 
 
+### <span id="config-update-environment-body"></span> ConfigUpdateEnvironmentBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| memo | string| `string` |  | | 环境备注 |  |
+
+
+
 ### <span id="config-update-kv-body"></span> ConfigUpdateKvBody
 
 
@@ -2246,6 +2709,22 @@ Content-Type: application/json
 | secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
 | secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |  |
 | value | string| `string` | ✓ | | 配置项值 |  |
+
+
+
+### <span id="config-update-project-body"></span> ConfigUpdateProjectBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| memo | string| `string` |  | | 项目备注 |  |
+| name | string| `string` |  | | 项目名称 |  |
 
 
 
@@ -2550,6 +3029,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-create-environment-resp"></span> pbcsCreateEnvironmentResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| id | int64 (formatted integer)| `int64` |  | | 环境ID |  |
+
+
+
 ### <span id="pbcs-create-kv-resp"></span> pbcsCreateKvResp
 
 
@@ -2562,6 +3056,21 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | id | int64 (formatted integer)| `int64` |  | | 键值配置项ID |  |
+
+
+
+### <span id="pbcs-create-project-resp"></span> pbcsCreateProjectResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| id | int64 (formatted integer)| `int64` |  | | 项目ID |  |
 
 
 
@@ -2587,7 +3096,21 @@ Content-Type: application/json
 
 [interface{}](#interface)
 
+### <span id="pbcs-delete-environment-resp"></span> pbcsDeleteEnvironmentResp
+
+
+  
+
+[interface{}](#interface)
+
 ### <span id="pbcs-delete-kv-resp"></span> pbcsDeleteKvResp
+
+
+  
+
+[interface{}](#interface)
+
+### <span id="pbcs-delete-project-resp"></span> pbcsDeleteProjectResp
 
 
   
@@ -2624,6 +3147,23 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-get-environment-resp"></span> pbcsGetEnvironmentResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbenvironmentEnvironmentAttachment](#pbenvironment-environment-attachment)| `PbenvironmentEnvironmentAttachment` |  | | 环境附件 |  |
+| id | int64 (formatted integer)| `int64` |  | | 环境ID |  |
+| spec | [PbenvironmentEnvironmentSpec](#pbenvironment-environment-spec)| `PbenvironmentEnvironmentSpec` |  | | 环境规格 |  |
+
+
+
 ### <span id="pbcs-get-process-config-view-resp"></span> pbcsGetProcessConfigViewResp
 
 
@@ -2651,6 +3191,23 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | bizTopoNodes | \[\][PbctBizTopoNode](#pbct-biz-topo-node)| `[]*PbctBizTopoNode` |  | |  |  |
+
+
+
+### <span id="pbcs-get-project-resp"></span> pbcsGetProjectResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbprojectProjectAttachment](#pbproject-project-attachment)| `PbprojectProjectAttachment` |  | | 项目附件 |  |
+| id | int64 (formatted integer)| `int64` |  | | 项目ID |  |
+| spec | [PbprojectProjectSpec](#pbproject-project-spec)| `PbprojectProjectSpec` |  | | 项目规格 |  |
 
 
 
@@ -2707,6 +3264,22 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-list-environments-resp"></span> pbcsListEnvironmentsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 总数 |  |
+| environments | \[\][PbenvironmentEnvironment](#pbenvironment-environment)| `[]*PbenvironmentEnvironment` |  | |  |  |
+
+
+
 ### <span id="pbcs-list-kvs-resp"></span> pbcsListKvsResp
 
 
@@ -2722,6 +3295,22 @@ Content-Type: application/json
 | details | \[\][PbkvKv](#pbkv-kv)| `[]*PbkvKv` |  | |  |  |
 | exclusionCount | int64 (formatted integer)| `int64` |  | | 排除删除后的数量 |  |
 | isCertExpired | boolean| `bool` |  | | 是否有证书过期：是=true，否=false |  |
+
+
+
+### <span id="pbcs-list-projects-resp"></span> pbcsListProjectsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 总数 |  |
+| projects | \[\][PbprojectProject](#pbproject-project)| `[]*PbprojectProject` |  | |  |  |
 
 
 
@@ -2886,7 +3475,21 @@ Content-Type: application/json
 
 [interface{}](#interface)
 
+### <span id="pbcs-update-environment-resp"></span> pbcsUpdateEnvironmentResp
+
+
+  
+
+[interface{}](#interface)
+
 ### <span id="pbcs-update-kv-resp"></span> pbcsUpdateKvResp
+
+
+  
+
+[interface{}](#interface)
+
+### <span id="pbcs-update-project-resp"></span> pbcsUpdateProjectResp
 
 
   
@@ -3161,6 +3764,61 @@ Content-Type: application/json
 
 
 
+### <span id="pbenvironment-environment"></span> pbenvironmentEnvironment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbenvironmentEnvironmentAttachment](#pbenvironment-environment-attachment)| `PbenvironmentEnvironmentAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 环境ID |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spec | [PbenvironmentEnvironmentSpec](#pbenvironment-environment-spec)| `PbenvironmentEnvironmentSpec` |  | |  |  |
+
+
+
+### <span id="pbenvironment-environment-attachment"></span> pbenvironmentEnvironmentAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+| projectId | int64 (formatted integer)| `int64` |  | | 项目ID |  |
+| tenantId | string| `string` |  | | 租户ID |  |
+
+
+
+### <span id="pbenvironment-environment-spec"></span> pbenvironmentEnvironmentSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appCount | int64 (formatted integer)| `int64` |  | | 服务总数 |  |
+| displayOrder | int64 (formatted integer)| `int64` |  | | 环境排序 |  |
+| memo | string| `string` |  | | 环境描述 |  |
+| name | string| `string` |  | | 环境名称 |  |
+| protected | boolean| `bool` |  | | 是否保护: true-保护, false-不保护 |  |
+| type | string| `string` |  | | 环境类型 |  |
+
+
+
 ### <span id="pbkv-kv"></span> pbkvKv
 
 
@@ -3237,6 +3895,60 @@ Content-Type: application/json
 | processAlias | string| `string` |  | | 进程别名 |  |
 | serviceName | string| `string` |  | | 服务实例名称 |  |
 | setName | string| `string` |  | | 集群名称 |  |
+
+
+
+### <span id="pbproject-project"></span> pbprojectProject
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbprojectProjectAttachment](#pbproject-project-attachment)| `PbprojectProjectAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 服务ID |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spec | [PbprojectProjectSpec](#pbproject-project-spec)| `PbprojectProjectSpec` |  | |  |  |
+
+
+
+### <span id="pbproject-project-attachment"></span> pbprojectProjectAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+| tenantId | string| `string` |  | | 租户ID |  |
+
+
+
+### <span id="pbproject-project-spec"></span> pbprojectProjectSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appCount | int64 (formatted integer)| `int64` |  | | 服务总数 |  |
+| envCount | int64 (formatted integer)| `int64` |  | | 环境数 |  |
+| key | string| `string` |  | | 项目标识 |  |
+| memo | string| `string` |  | | 项目描述 |  |
+| name | string| `string` |  | | 项目名称 |  |
+| protected | boolean| `bool` |  | | 是否保护: true-保护, false-不保护 |  |
 
 
 

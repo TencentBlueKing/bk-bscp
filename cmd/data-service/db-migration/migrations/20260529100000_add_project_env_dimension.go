@@ -125,7 +125,8 @@ type Project struct {
 	Key       string    `gorm:"column:key;size:64;not null"`
 	Name      string    `gorm:"column:name;size:255;not null"`
 	Memo      string    `gorm:"column:memo;size:256"`
-	Protected bool      `gorm:"column:protected;not null;default:false"` // 保护标记: true=不允许删除/修改key
+	Protected bool      `gorm:"column:protected;not null;default:false"`        // 保护标记: true=不允许删除/修改key
+	IsDefault *bool     `gorm:"column:is_default;type:tinyint(1);default:null"` // 确保在迁移或未赋值时将其视作数据库的 DEFAULT NULL
 	Creator   string    `gorm:"column:creator;size:64;not null"`
 	Reviser   string    `gorm:"column:reviser;size:64;not null"`
 	CreatedAt time.Time `gorm:"column:created_at;not null"`
@@ -186,10 +187,11 @@ func stepCreateProjectEnvTables(tx *gorm.DB) error {
 			return fmt.Errorf("create unique index on projects: %w", err)
 		}
 	}
-	// 普通索引
-	if !tx.Migrator().HasIndex("projects", "idx_tenantID_bizID") {
-		if err := tx.Exec("CREATE INDEX idx_tenantID_bizID ON projects (tenant_id, biz_id)").Error; err != nil {
-			return fmt.Errorf("create index on projects: %w", err)
+	// 唯一索引：确保一个业务下 is_default = 1 的记录只能有一条
+	if !tx.Migrator().HasIndex("projects", "uk_tenantID_bizID_isDefault") {
+		sql := "CREATE UNIQUE INDEX uk_tenantID_bizID_isDefault ON projects (tenant_id, biz_id, is_default)"
+		if err := tx.Exec(sql).Error; err != nil {
+			return fmt.Errorf("create unique index uk_tenantID_bizID_isDefault on projects: %w", err)
 		}
 	}
 
@@ -278,7 +280,7 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 	nextProjID := projGen.MaxID + 1
 	nextEnvID := envGen.MaxID + 1
 	now := time.Now()
-	systemUser := table.DefaultCreator
+	systemUser := table.System
 
 	for _, bt := range bizTenantList {
 		bizID := uint32(bt.BizID)
@@ -290,8 +292,8 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 		defaultProjectKey := table.GenerateProjectKey(uint32(projID))
 
 		if errI := tx.Exec(
-			"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected, creator, reviser, created_at, updated_at)\n"+
-				"VALUES (?, ?, ?, ?, ?, '', true, ?, ?, ?, ?)",
+			"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected,is_default, creator, reviser, created_at, updated_at)\n"+
+				"VALUES (?, ?, ?, ?, ?, '', true, 1, ?, ?, ?, ?)",
 			projID, tenantID, bizID, defaultProjectKey, table.DefaultProjectName, systemUser, systemUser, now, now,
 		).Error; errI != nil {
 			return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, errI)

@@ -2825,16 +2825,14 @@ message GetProjectResp {
 message CreateProjectReq {
   uint32 biz_id = 1;
   string name = 2;
-  string key = 3;
-  string memo = 4;
-  bool protected = 5;
+  string memo = 3;
 }
 
 message UpdateProjectReq {
   uint32 biz_id = 1;
   uint32 project_id = 2;
   string memo = 3;
-  bool protected = 4;
+  string name = 4;
 }
 
 message UpdateProjectResp {}
@@ -2856,8 +2854,10 @@ message ListEnvironmentsReq {
 }
 
 message ListEnvironmentsResp {
-  uint32 count = 1;
-  repeated pbenvironment.Environment environments = 2;
+  repeated pbenvironment.Environment prod_environments = 1;
+  repeated pbenvironment.Environment staging_environments = 2;
+  repeated pbenvironment.Environment test_environments = 3;
+  repeated pbenvironment.Environment dev_environments = 4;
 }
 
 message GetEnvironmentReq {
@@ -2878,7 +2878,6 @@ message CreateEnvironmentReq {
   string name = 3;
   string type = 4;
   string memo = 5;
-  bool protected = 6;
 }
 
 message UpdateEnvironmentReq {
@@ -2886,7 +2885,6 @@ message UpdateEnvironmentReq {
   uint32 project_id = 2;
   uint32 env_id = 3;
   string memo = 4;
-  bool protected = 5;
 }
 
 message DeleteEnvironmentReq {

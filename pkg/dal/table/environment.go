@@ -15,6 +15,7 @@ package table
 import (
 	"errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/validator"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
@@ -111,6 +112,10 @@ func (e *EnvironmentSpec) Validate(kit *kit.Kit) error {
 		return errors.New(i18n.T(kit, "name should be set"))
 	}
 
+	if err := validator.ValidateEnvName(kit, e.Name); err != nil {
+		return err
+	}
+
 	if err := e.Type.Validate(kit); err != nil {
 		return err
 	}
@@ -171,6 +176,38 @@ func (e *Environment) ValidateDelete(kit *kit.Kit) error {
 	}
 
 	if err := e.Attachment.Validate(kit); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *Environment) ValidateUpdate(kit *kit.Kit) error {
+	if e.ID <= 0 {
+		return errors.New(i18n.T(kit, "id should be set"))
+	}
+
+	if e.Spec == nil {
+		return errors.New(i18n.T(kit, "spec not set"))
+	}
+
+	if err := e.Spec.Validate(kit); err != nil {
+		return err
+	}
+
+	if e.Attachment == nil {
+		return errors.New(i18n.T(kit, "attachment not set"))
+	}
+
+	if err := e.Attachment.Validate(kit); err != nil {
+		return err
+	}
+
+	if e.Revision == nil {
+		return errors.New(i18n.T(kit, "revision not set"))
+	}
+
+	if err := e.Revision.ValidateUpdate(); err != nil {
 		return err
 	}
 

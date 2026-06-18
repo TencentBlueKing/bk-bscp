@@ -33,7 +33,7 @@ func (p *ProjectSpec) ProjectSpec() *table.ProjectSpec {
 }
 
 // PbProjectSpec convert table ProjectSpec to pb ProjectSpec
-func PbProjectSpec(spec *table.ProjectSpec) *ProjectSpec {
+func PbProjectSpec(spec *table.ProjectSpec, envCount uint32, appCount uint32) *ProjectSpec {
 	if spec == nil {
 		return nil
 	}
@@ -43,6 +43,8 @@ func PbProjectSpec(spec *table.ProjectSpec) *ProjectSpec {
 		Key:       spec.Key,
 		Memo:      spec.Memo,
 		Protected: spec.Protected,
+		EnvCount:  envCount,
+		AppCount:  appCount,
 	}
 }
 
@@ -84,28 +86,32 @@ func (p *Project) Project() (*table.Project, error) {
 }
 
 // PbProject convert table Project to pb Project
-func PbProject(p *table.Project) *Project {
+func PbProject(p *table.Project, envCount uint32, appCount uint32) *Project {
 	if p == nil {
 		return nil
 	}
 
 	return &Project{
 		Id:         p.ID,
-		Spec:       PbProjectSpec(p.Spec),
+		Spec:       PbProjectSpec(p.Spec, envCount, appCount),
 		Attachment: PbProjectAttachment(p.Attachment),
 		Revision:   pbbase.PbRevision(p.Revision),
 	}
 }
 
 // PbProjects convert table Projects to pb Projects
-func PbProjects(p []*table.Project) []*Project {
+// envCounts 和 appCounts 两个 Map，键为 ProjectID
+func PbProjects(p []*table.Project, envCounts map[uint32]uint32, appCounts map[uint32]uint32) []*Project {
 	if p == nil {
 		return nil
 	}
 
 	projects := make([]*Project, 0, len(p))
 	for _, proj := range p {
-		projects = append(projects, PbProject(proj))
+		// 从 map 中获取对应项目的计数，不存在则默认为 0
+		ec := envCounts[proj.ID]
+		ac := appCounts[proj.ID]
+		projects = append(projects, PbProject(proj, ec, ac))
 	}
 	return projects
 }

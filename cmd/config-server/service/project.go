@@ -33,11 +33,9 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 	}
 
 	resp, err := s.client.DS.CreateProject(grpcKit.RpcCtx(), &pbds.CreateProjectReq{
-		BizId:     req.GetBizId(),
-		Name:      req.GetName(),
-		Key:       req.GetKey(),
-		Memo:      req.GetMemo(),
-		Protected: req.GetProtected(),
+		BizId: req.GetBizId(),
+		Name:  req.GetName(),
+		Memo:  req.GetMemo(),
 	})
 
 	if err != nil {
@@ -141,7 +139,7 @@ func (s *Service) UpdateProject(ctx context.Context, req *pbcs.UpdateProjectReq)
 		BizId:     req.GetBizId(),
 		ProjectId: req.GetProjectId(),
 		Memo:      req.GetMemo(),
-		Protected: req.GetProtected(),
+		Name:      req.GetName(),
 	})
 	if err != nil {
 		return nil, err

@@ -17,8 +17,6 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -33,22 +31,10 @@ import (
 func (s *Service) CreateProject(ctx context.Context, req *pbds.CreateProjectReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	if req.GetKey() != "" {
-		project, err := s.dao.Project().GetByKey(kt, req.GetBizId(), req.GetKey())
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-		if project != nil && project.Spec.Key == req.GetKey() {
-			return nil, errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "project key %s already exists", req.GetKey()))
-		}
-	}
-
 	id, err := s.dao.Project().Create(kt, &table.Project{
 		Spec: &table.ProjectSpec{
-			Name:      req.GetName(),
-			Key:       req.GetKey(),
-			Memo:      req.GetMemo(),
-			Protected: req.GetProtected(),
+			Name: req.GetName(),
+			Memo: req.GetMemo(),
 		},
 		Attachment: &table.ProjectAttachment{
 			TenantID: kt.TenantID,
@@ -75,12 +61,23 @@ func (s *Service) DeleteProject(ctx context.Context, req *pbds.DeleteProjectReq)
 		return nil, err
 	}
 
-	if project.Spec.Protected {
+	// 受保护的和系统内置的不允许删除
+	if project.Spec.Protected || project.Revision.Creator == table.System {
 		return nil, errors.New(i18n.T(kt, "project is protected, cannot be deleted"))
 	}
 
+	// 检查是否有关联的环境（属于“级联依赖”导致的无法删除）
+	envCount, err := s.dao.Environment().CountByProjectID(kt, req.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	if envCount > 0 {
+		return nil, errors.New(i18n.T(kt, "there are still environments under the project, please delete the environments first"))
+	}
+
 	if err = s.dao.Project().Delete(kt, project); err != nil {
-		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "project deletion failed: %v", err))
+		return nil, err
 	}
 
 	return &pbbase.EmptyResp{}, nil
@@ -90,14 +87,27 @@ func (s *Service) DeleteProject(ctx context.Context, req *pbds.DeleteProjectReq)
 func (s *Service) GetProject(ctx context.Context, req *pbds.GetProjectReq) (*pbds.GetProjectResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	// 1. 查询项目详情
 	project, err := s.dao.Project().Get(kt, req.GetBizId(), req.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 直接查环境数量
+	envCount, err := s.dao.Environment().CountByProjectID(kt, req.GetProjectId())
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 直接查服务数量
+	appCount, err := s.dao.App().CountByProjectID(kt, req.GetProjectId())
 	if err != nil {
 		return nil, err
 	}
 
 	return &pbds.GetProjectResp{
 		Id:         project.ID,
-		Spec:       pbproject.PbProjectSpec(project.Spec),
+		Spec:       pbproject.PbProjectSpec(project.Spec, uint32(envCount), uint32(appCount)),
 		Attachment: pbproject.PbProjectAttachment(project.Attachment),
 	}, nil
 }
@@ -106,6 +116,7 @@ func (s *Service) GetProject(ctx context.Context, req *pbds.GetProjectReq) (*pbd
 func (s *Service) ListProjects(ctx context.Context, req *pbds.ListProjectsReq) (*pbds.ListProjectsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	// 1. 分页查询项目列表
 	projects, count, err := s.dao.Project().List(kt, req.GetBizId(), &types.BasePage{
 		Start:  req.GetStart(),
 		Limit:  uint(req.GetLimit()),
@@ -113,12 +124,30 @@ func (s *Service) ListProjects(ctx context.Context, req *pbds.ListProjectsReq) (
 		Search: req.GetSearchCondition(),
 	})
 	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kt, "project list failed"), err)
+	}
+
+	// 收集当前页所有的 Project ID
+	projectIDs := make([]uint32, 0, len(projects))
+	for _, v := range projects {
+		projectIDs = append(projectIDs, v.ID)
+	}
+
+	// 2. 批量统计环境数量
+	envCounts, err := s.dao.Environment().CountByProjectIDs(kt, projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 批量统计服务数量
+	appCounts, err := s.dao.App().CountByProjectIDs(kt, projectIDs)
+	if err != nil {
 		return nil, err
 	}
 
 	return &pbds.ListProjectsResp{
 		Count:    uint32(count),
-		Projects: pbproject.PbProjects(projects),
+		Projects: pbproject.PbProjects(projects, envCounts, appCounts),
 	}, nil
 }
 
@@ -131,13 +160,18 @@ func (s *Service) UpdateProject(ctx context.Context, req *pbds.UpdateProjectReq)
 		return nil, err
 	}
 
-	project.Spec.Memo = req.GetMemo()
-	project.Spec.Protected = req.GetProtected()
+	if req.GetName() != "" {
+		project.Spec.Name = req.GetName()
+	}
+	if req.GetMemo() != "" {
+		project.Spec.Memo = req.GetMemo()
+	}
+
 	project.Revision.Reviser = kt.User
 	project.Revision.UpdatedAt = time.Now().UTC()
 
 	if err = s.dao.Project().Update(kt, project); err != nil {
-		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "project update failed: %v", err))
+		return nil, err
 	}
 
 	return &pbbase.EmptyResp{}, nil

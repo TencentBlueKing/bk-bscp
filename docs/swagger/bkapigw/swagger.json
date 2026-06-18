@@ -497,6 +497,464 @@
         }
       }
     },
+    "/api/v1/config/biz/{bizId}/projects": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "创建项目",
+        "operationId": "Config_CreateProject",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateProjectBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateProjectResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/list": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "项目管理",
+        "operationId": "Config_ListProjects",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProjectsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProjectsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取项目详情",
+        "operationId": "Config_GetProject",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetProjectResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新项目",
+        "operationId": "Config_UpdateProject",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateProjectBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateProjectResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除项目",
+        "operationId": "Config_DeleteProject",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteProjectResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "创建环境",
+        "operationId": "Config_CreateEnvironment",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateEnvironmentBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateEnvironmentResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/list": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "环境管理",
+        "operationId": "Config_ListEnvironments",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListEnvironmentsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListEnvironmentsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "获取环境详情",
+        "operationId": "Config_GetEnvironment",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "环境ID",
+            "name": "envId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetEnvironmentResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新环境",
+        "operationId": "Config_UpdateEnvironment",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "环境ID",
+            "name": "envId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateEnvironmentBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateEnvironmentResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除环境",
+        "operationId": "Config_DeleteEnvironment",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "环境ID",
+            "name": "envId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteEnvironmentResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound": {
       "post": {
         "tags": [
@@ -1971,6 +2429,23 @@
         }
       }
     },
+    "ConfigCreateEnvironmentBody": {
+      "type": "object",
+      "properties": {
+        "memo": {
+          "description": "环境备注",
+          "type": "string"
+        },
+        "name": {
+          "description": "环境名称",
+          "type": "string"
+        },
+        "type": {
+          "description": "环境类型",
+          "type": "string"
+        }
+      }
+    },
     "ConfigCreateKvBody": {
       "description": "请求参数",
       "type": "object",
@@ -2006,6 +2481,19 @@
         },
         "value": {
           "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "ConfigCreateProjectBody": {
+      "type": "object",
+      "properties": {
+        "memo": {
+          "description": "项目备注",
+          "type": "string"
+        },
+        "name": {
+          "description": "项目名称",
           "type": "string"
         }
       }
@@ -2178,6 +2666,30 @@
         }
       }
     },
+    "ConfigListEnvironmentsBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "searchCondition": {
+          "description": "搜索条件: JSON 格式",
+          "type": "object"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "ConfigListKvsBody": {
       "type": "object",
       "properties": {
@@ -2240,6 +2752,30 @@
         "withStatus": {
           "description": "暂时未用到",
           "type": "boolean"
+        }
+      }
+    },
+    "ConfigListProjectsBody": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "description": "是否获取所有",
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "description": "每页条数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "searchCondition": {
+          "description": "搜索条件: JSON 格式",
+          "type": "object"
+        },
+        "start": {
+          "description": "当前页码",
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -2422,6 +2958,15 @@
         }
       }
     },
+    "ConfigUpdateEnvironmentBody": {
+      "type": "object",
+      "properties": {
+        "memo": {
+          "description": "环境备注",
+          "type": "string"
+        }
+      }
+    },
     "ConfigUpdateKvBody": {
       "description": "请求参数",
       "type": "object",
@@ -2443,6 +2988,19 @@
         },
         "value": {
           "description": "配置项值",
+          "type": "string"
+        }
+      }
+    },
+    "ConfigUpdateProjectBody": {
+      "type": "object",
+      "properties": {
+        "memo": {
+          "description": "项目备注",
+          "type": "string"
+        },
+        "name": {
+          "description": "项目名称",
           "type": "string"
         }
       }
@@ -2774,11 +3332,31 @@
         }
       }
     },
+    "pbcsCreateEnvironmentResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "环境ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "pbcsCreateKvResp": {
       "type": "object",
       "properties": {
         "id": {
           "description": "键值配置项ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pbcsCreateProjectResp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "项目ID",
           "type": "integer",
           "format": "int64"
         }
@@ -2797,7 +3375,13 @@
     "pbcsDeleteConfigTemplateResp": {
       "type": "object"
     },
+    "pbcsDeleteEnvironmentResp": {
+      "type": "object"
+    },
     "pbcsDeleteKvResp": {
+      "type": "object"
+    },
+    "pbcsDeleteProjectResp": {
       "type": "object"
     },
     "pbcsGenerateConfigResp": {
@@ -2815,6 +3399,24 @@
       "properties": {
         "bindTemplate": {
           "$ref": "#/definitions/pbctBindTemplate"
+        }
+      }
+    },
+    "pbcsGetEnvironmentResp": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "description": "环境附件",
+          "$ref": "#/definitions/pbenvironmentEnvironmentAttachment"
+        },
+        "id": {
+          "description": "环境ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "spec": {
+          "description": "环境规格",
+          "$ref": "#/definitions/pbenvironmentEnvironmentSpec"
         }
       }
     },
@@ -2836,6 +3438,24 @@
             "type": "object",
             "$ref": "#/definitions/pbctBizTopoNode"
           }
+        }
+      }
+    },
+    "pbcsGetProjectResp": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "description": "项目附件",
+          "$ref": "#/definitions/pbprojectProjectAttachment"
+        },
+        "id": {
+          "description": "项目ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "spec": {
+          "description": "项目规格",
+          "$ref": "#/definitions/pbprojectProjectSpec"
         }
       }
     },
@@ -2908,6 +3528,23 @@
         }
       }
     },
+    "pbcsListEnvironmentsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "environments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbenvironmentEnvironment"
+          }
+        }
+      }
+    },
     "pbcsListKvsResp": {
       "type": "object",
       "properties": {
@@ -2931,6 +3568,23 @@
         "isCertExpired": {
           "description": "是否有证书过期：是=true，否=false",
           "type": "boolean"
+        }
+      }
+    },
+    "pbcsListProjectsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbprojectProject"
+          }
         }
       }
     },
@@ -3067,7 +3721,13 @@
     "pbcsUpdateConfigTemplateResp": {
       "type": "object"
     },
+    "pbcsUpdateEnvironmentResp": {
+      "type": "object"
+    },
     "pbcsUpdateKvResp": {
+      "type": "object"
+    },
+    "pbcsUpdateProjectResp": {
       "type": "object"
     },
     "pbctBindProcessInstance": {
@@ -3468,6 +4128,78 @@
         }
       }
     },
+    "pbenvironmentEnvironment": {
+      "type": "object",
+      "title": "Environment source resource reference: pkg/dal/table/environment.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbenvironmentEnvironmentAttachment"
+        },
+        "id": {
+          "description": "环境ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbenvironmentEnvironmentSpec"
+        }
+      }
+    },
+    "pbenvironmentEnvironmentAttachment": {
+      "type": "object",
+      "title": "EnvironmentAttachment source resource reference: pkg/dal/table/environment.go",
+      "properties": {
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "projectId": {
+          "description": "项目ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "tenantId": {
+          "description": "租户ID",
+          "type": "string"
+        }
+      }
+    },
+    "pbenvironmentEnvironmentSpec": {
+      "type": "object",
+      "title": "EnvironmentSpec source resource reference: pkg/dal/table/environment.go",
+      "properties": {
+        "appCount": {
+          "description": "服务总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "displayOrder": {
+          "description": "环境排序",
+          "type": "integer",
+          "format": "int64"
+        },
+        "memo": {
+          "description": "环境描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "环境名称",
+          "type": "string"
+        },
+        "protected": {
+          "description": "是否保护: true-保护, false-不保护",
+          "type": "boolean"
+        },
+        "type": {
+          "description": "环境类型",
+          "type": "string"
+        }
+      }
+    },
     "pbkvKv": {
       "type": "object",
       "title": "Kv source resource reference: pkg/dal/table/kvs.go",
@@ -3588,6 +4320,73 @@
         "setName": {
           "description": "集群名称",
           "type": "string"
+        }
+      }
+    },
+    "pbprojectProject": {
+      "type": "object",
+      "title": "Project source resource reference: pkg/dal/table/project.go",
+      "properties": {
+        "attachment": {
+          "$ref": "#/definitions/pbprojectProjectAttachment"
+        },
+        "id": {
+          "description": "服务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbprojectProjectSpec"
+        }
+      }
+    },
+    "pbprojectProjectAttachment": {
+      "type": "object",
+      "title": "ProjectAttachment source resource reference: pkg/dal/table/project.go",
+      "properties": {
+        "bizId": {
+          "description": "业务ID",
+          "type": "integer",
+          "format": "int64"
+        },
+        "tenantId": {
+          "description": "租户ID",
+          "type": "string"
+        }
+      }
+    },
+    "pbprojectProjectSpec": {
+      "type": "object",
+      "title": "ProjectSpec source resource reference: pkg/dal/table/project.go",
+      "properties": {
+        "appCount": {
+          "description": "服务总数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "envCount": {
+          "description": "环境数",
+          "type": "integer",
+          "format": "int64"
+        },
+        "key": {
+          "description": "项目标识",
+          "type": "string"
+        },
+        "memo": {
+          "description": "项目描述",
+          "type": "string"
+        },
+        "name": {
+          "description": "项目名称",
+          "type": "string"
+        },
+        "protected": {
+          "description": "是否保护: true-保护, false-不保护",
+          "type": "boolean"
         }
       }
     },

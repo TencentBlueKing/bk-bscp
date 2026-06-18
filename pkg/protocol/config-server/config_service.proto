@@ -1858,7 +1858,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 项目管理
   rpc ListProjects(ListProjectsReq) returns (ListProjectsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/projects/list"
       body: "*"
@@ -1867,7 +1867,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 获取项目详情
   rpc GetProject(GetProjectReq) returns (GetProjectResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
     };
@@ -1875,7 +1875,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 创建项目
   rpc CreateProject(CreateProjectReq) returns (CreateProjectResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/projects"
       body: "*"
@@ -1884,7 +1884,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 更新项目
   rpc UpdateProject(UpdateProjectReq) returns (UpdateProjectResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
       body: "*"
@@ -1893,7 +1893,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 删除项目
   rpc DeleteProject(DeleteProjectReq) returns (DeleteProjectResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}"
     };
@@ -1901,7 +1901,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 环境管理
   rpc ListEnvironments(ListEnvironmentsReq) returns (ListEnvironmentsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/list"
       body: "*"
@@ -1910,7 +1910,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 获取环境详情
   rpc GetEnvironment(GetEnvironmentReq) returns (GetEnvironmentResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
     };
@@ -1918,7 +1918,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 创建环境
   rpc CreateEnvironment(CreateEnvironmentReq) returns (CreateEnvironmentResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs"
       body: "*"
@@ -1927,7 +1927,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 更新环境
   rpc UpdateEnvironment(UpdateEnvironmentReq) returns (UpdateEnvironmentResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
       body: "*"
@@ -1936,7 +1936,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // 删除环境
   rpc DeleteEnvironment(DeleteEnvironmentReq) returns (DeleteEnvironmentResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
     };
@@ -5451,11 +5451,7 @@ message GetProjectResp {
 message CreateProjectReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目名称" }];
-  string key = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目唯一标识" }];
-  string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目备注" }];
-  bool protected = 5 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
-  ];
+  string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目备注" }];
 }
 message CreateProjectResp {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
@@ -5465,9 +5461,7 @@ message UpdateProjectReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
   string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目备注" }];
-  bool protected = 4 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
-  ];
+  string name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目名称" }];
 }
 
 message UpdateProjectResp {}
@@ -5491,8 +5485,14 @@ message ListEnvironmentsReq {
 }
 
 message ListEnvironmentsResp {
-  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
-  repeated pbenvironment.Environment environments = 2;
+  repeated pbenvironment.Environment prod_environments = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "生产环境列表" }];
+  repeated pbenvironment.Environment staging_environments = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "预发布环境列表" }];
+  repeated pbenvironment.Environment test_environments = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "测试环境列表" }];
+  repeated pbenvironment.Environment dev_environments = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开发环境列表" }];
 }
 
 message GetEnvironmentReq {
@@ -5515,9 +5515,6 @@ message CreateEnvironmentReq {
   string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境名称" }];
   string type = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境类型" }];
   string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境备注" }];
-  bool protected = 6 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
-  ];
 }
 
 message CreateEnvironmentResp {
@@ -5529,9 +5526,6 @@ message UpdateEnvironmentReq {
   uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
   uint32 env_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境备注" }];
-  bool protected = 5 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否保护: true-保护, false-不保护" }
-  ];
 }
 
 message UpdateEnvironmentResp {}

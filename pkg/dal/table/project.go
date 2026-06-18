@@ -22,7 +22,6 @@ import (
 
 const (
 	DefaultProjectName = "默认项目"
-	DefaultCreator     = "system"
 	projectKeyPrefix   = "BK-BSCP-"
 )
 
@@ -136,6 +135,38 @@ func (p *Project) ValidateDelete(kit *kit.Kit) error {
 	}
 
 	if err := p.Attachment.Validate(kit); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Project) ValidateUpdate(kit *kit.Kit) error {
+	if p.ID <= 0 {
+		return errors.New(i18n.T(kit, "id should be set"))
+	}
+
+	if p.Spec == nil {
+		return errors.New(i18n.T(kit, "spec not set"))
+	}
+
+	if err := p.Spec.Validate(kit); err != nil {
+		return err
+	}
+
+	if p.Attachment == nil {
+		return errors.New(i18n.T(kit, "attachment not set"))
+	}
+
+	if err := p.Attachment.Validate(kit); err != nil {
+		return err
+	}
+
+	if p.Revision == nil {
+		return errors.New(i18n.T(kit, "revision not set"))
+	}
+
+	if err := p.Revision.ValidateUpdate(); err != nil {
 		return err
 	}
 

@@ -73,6 +73,16 @@ type App interface {
 	QueryDistinctBizIDs(kit *kit.Kit) ([]uint32, error)
 	// CheckBizExists check if business exists in BSCP using lightweight query
 	CheckBizExists(kit *kit.Kit, bizID uint32) (bool, error)
+	// ListAppByEnvIDs 通过环境 ID 批量获取服务
+	ListAppByEnvIDs(kit *kit.Kit, envIDs []uint32) ([]*table.App, error)
+	// CountByProjectIDs 批量统计项目下的服务数量
+	CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uint32]uint32, error)
+	// CountByProjectID 统计单个项目下的服务数量
+	CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error)
+	// CountByEnvIDs 批量统计环境下的服务数量
+	CountByEnvIDs(kit *kit.Kit, envIDs []uint32) (map[uint32]uint32, error)
+	// CountByEnvID 统计单个环境下的服务数量
+	CountByEnvID(kit *kit.Kit, envID uint32) (int64, error)
 }
 
 var _ App = new(appDao)
@@ -82,6 +92,127 @@ type appDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// CountByEnvID 统计单个环境下的服务数量
+func (dao *appDao) CountByEnvID(kit *kit.Kit, envID uint32) (int64, error) {
+	m := dao.genQ.App
+
+	count, err := dao.genQ.App.WithContext(kit.Ctx).
+		Where(m.EnvID.Eq(envID)).
+		Count()
+	if err != nil {
+		return 0, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			i18n.T(kit, "environment application count failed"),
+			err,
+		)
+	}
+
+	return count, nil
+}
+
+// CountByEnvIDs 批量统计环境下的服务数量
+func (dao *appDao) CountByEnvIDs(kit *kit.Kit, envIDs []uint32) (map[uint32]uint32, error) {
+	resMap := make(map[uint32]uint32)
+	if len(envIDs) == 0 {
+		return resMap, nil
+	}
+
+	m := dao.genQ.App
+	q := dao.genQ.App.WithContext(kit.Ctx)
+
+	type Result struct {
+		EnvID uint32 `gorm:"column:environment_id"`
+		Count uint32 `gorm:"column:cnt"`
+	}
+	var results []Result
+
+	err := q.Select(m.EnvID, m.ID.Count().As("cnt")).
+		Where(m.EnvID.In(envIDs...)).
+		Group(m.EnvID).
+		Scan(&results)
+
+	if err != nil {
+		return nil, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			i18n.T(kit, "environment application count failed"),
+			err,
+		)
+	}
+
+	for _, r := range results {
+		resMap[r.EnvID] = r.Count
+	}
+	return resMap, nil
+}
+
+// CountByProjectID 统计单个项目下的服务数量
+func (dao *appDao) CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error) {
+	m := dao.genQ.App
+	count, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.ProjectID.Eq(projectID)).Count()
+	if err != nil {
+		return 0, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			i18n.T(kit, "count applications by environment failed"),
+			err,
+		)
+	}
+
+	return count, nil
+}
+
+// CountByProjectIDs 批量统计项目下的服务数量
+func (dao *appDao) CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uint32]uint32, error) {
+
+	if len(projectIDs) == 0 {
+		return map[uint32]uint32{}, nil
+	}
+
+	m := dao.genQ.App
+	q := dao.genQ.App.WithContext(kit.Ctx)
+
+	type Result struct {
+		ProjectID uint32 `gorm:"column:project_id"`
+		Count     uint32 `gorm:"column:cnt"`
+	}
+	var results []Result
+
+	err := q.Select(m.ProjectID, m.ID.Count().As("cnt")).
+		Where(m.ProjectID.In(projectIDs...)).
+		Group(m.ProjectID).
+		Scan(&results)
+
+	if err != nil {
+		return nil, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			i18n.T(kit, "count applications under projects failed"),
+			err,
+		)
+	}
+
+	resMap := make(map[uint32]uint32, len(results))
+	for _, r := range results {
+		resMap[r.ProjectID] = r.Count
+	}
+
+	return resMap, nil
+}
+
+// ListAppByEnvIDs implements [App].
+func (dao *appDao) ListAppByEnvIDs(kit *kit.Kit, envIDs []uint32) ([]*table.App, error) {
+	m := dao.genQ.App
+
+	apps, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.EnvID.In(envIDs...)).Find()
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "list applications by environment ids failed"), err)
+	}
+
+	return apps, nil
 }
 
 // GetDistinctTenantIDs 获取不同租户ID（跨租户查询，自动跳过租户过滤）.

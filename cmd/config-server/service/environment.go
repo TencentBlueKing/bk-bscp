@@ -38,7 +38,6 @@ func (s *Service) CreateEnvironment(ctx context.Context, req *pbcs.CreateEnviron
 		Name:      req.GetName(),
 		Type:      req.GetType(),
 		Memo:      req.GetMemo(),
-		Protected: req.GetProtected(),
 	})
 
 	if err != nil {
@@ -124,8 +123,10 @@ func (s *Service) ListEnvironments(ctx context.Context, req *pbcs.ListEnvironmen
 	}
 
 	return &pbcs.ListEnvironmentsResp{
-		Environments: resp.GetEnvironments(),
-		Count:        resp.GetCount(),
+		ProdEnvironments:    resp.GetProdEnvironments(),
+		StagingEnvironments: resp.GetStagingEnvironments(),
+		TestEnvironments:    resp.GetTestEnvironments(),
+		DevEnvironments:     resp.GetDevEnvironments(),
 	}, nil
 }
 
@@ -145,7 +146,6 @@ func (s *Service) UpdateEnvironment(ctx context.Context, req *pbcs.UpdateEnviron
 		ProjectId: req.GetProjectId(),
 		EnvId:     req.GetEnvId(),
 		Memo:      req.GetMemo(),
-		Protected: req.GetProtected(),
 	})
 	if err != nil {
 		return nil, err

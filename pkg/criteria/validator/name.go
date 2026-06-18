@@ -242,3 +242,33 @@ func ValidateUserName(kit *kit.Kit, username string) error {
 
 	return nil
 }
+
+// ValidateEnvName validate environment name
+func ValidateEnvName(kit *kit.Kit, envName string) error {
+	if len(envName) < 1 {
+		return errf.Errorf(
+			errf.InvalidArgument,
+			"%s",
+			i18n.T(kit, "invalid environment name, length should be greater than 0"),
+		)
+	}
+
+	if len(envName) > 255 {
+		return errf.Errorf(
+			errf.InvalidArgument,
+			"%s",
+			i18n.T(kit, "invalid environment name, length should be less than or equal to 255"),
+		)
+	}
+
+	if !qualifiedAppNameRegexp.MatchString(envName) {
+		return errf.Errorf(
+			errf.InvalidArgument,
+			"%s",
+			i18n.T(kit, "invalid environment name, only letters, numbers, underscores and hyphens are allowed,"+
+				"and it must start and end with a letter or number"),
+		)
+	}
+
+	return nil
+}

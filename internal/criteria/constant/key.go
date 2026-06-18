@@ -286,6 +286,10 @@ const (
 	OperateObject = "operate_objects: %d" // nolint
 	// ConfigTemplateName 配置模板名称
 	ConfigTemplateName = "config_template_name: %s"
+	// ProjectName 项目名称
+	ProjectName = "project_name: %s"
+	// EnvName 环境名称
+	EnvName = "env_name: %s"
 )
 
 const (

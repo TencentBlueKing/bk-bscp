@@ -13,9 +13,11 @@
 package dao
 
 import (
+	"errors"
 	"fmt"
 
 	rawgen "gorm.io/gen"
+	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -38,8 +40,6 @@ type Project interface {
 	Update(kit *kit.Kit, project *table.Project) error
 	// Get get project with id.
 	Get(kit *kit.Kit, bizID, projectID uint32) (*table.Project, error)
-	// GetByKey get project only with key.
-	GetByKey(kit *kit.Kit, bizID uint32, key string) (*table.Project, error)
 	// List projects with options.
 	List(kit *kit.Kit, bizID uint32, opt *types.BasePage) ([]*table.Project, int64, error)
 }
@@ -166,57 +166,52 @@ func (dao *projectDao) Create(kit *kit.Kit, g *table.Project) (uint32, error) {
 		return 0, err
 	}
 	g.ID = id
-	if g.Spec.Key == "" {
-		g.Spec.Key = table.GenerateProjectKey(id)
-	}
+	g.Spec.Key = table.GenerateProjectKey(id)
 
 	if err = g.ValidateCreate(kit); err != nil {
 		return 0, err
 	}
 
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		ResourceInstance: fmt.Sprintf(constant.ProjectName, g.Spec.Name),
 		Status:           enumor.Success,
 		Detail:           g.Spec.Memo,
 	}).PrepareCreate(g)
-	eDecorator := dao.event.Eventf(kit)
 
-	// 多个使用事务处理
+	msg := i18n.T(kit, "project creation failed")
+
 	createTx := func(tx *gen.Query) error {
 		q := tx.Project.WithContext(kit.Ctx)
 		if err = q.Create(g); err != nil {
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create data failed, err: %v", err))
+			return errf.Errorf(
+				errf.DBOpFailed,
+				"%s: %v",
+				msg,
+				err,
+			)
 		}
 
 		if err = ad.Do(tx); err != nil {
 			logs.Errorf("execution of transactions failed, err: %v", err)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create project failed, err: %v", err))
-		}
-
-		// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-		one := types.Event{
-			Spec: &table.EventSpec{
-				Resource:   table.Application,
-				ResourceID: g.ID,
-				OpType:     table.InsertOp,
-			},
-			Attachment: &table.EventAttachment{BizID: g.Attachment.BizID},
-			Revision:   &table.CreatedRevision{Creator: kit.User},
-		}
-		if err = eDecorator.Fire(one); err != nil {
-			logs.Errorf("fire create project: %s event failed, err: %v, rid: %s", g.ID, err, kit.Rid)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create project failed, err: %v", err))
+			return errf.Errorf(
+				errf.DBOpFailed,
+				"%s: %v",
+				msg,
+				err,
+			)
 		}
 
 		return nil
 	}
-	err = dao.genQ.Transaction(createTx)
 
-	eDecorator.Finalizer(err)
-
-	if err != nil {
+	if err = dao.genQ.Transaction(createTx); err != nil {
 		logs.Errorf("transaction processing failed %s", err)
-		return 0, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "create project failed, err: %v", err))
+		return 0, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			msg,
+			err,
+		)
 	}
 
 	return id, nil
@@ -228,55 +223,51 @@ func (dao *projectDao) Update(kit *kit.Kit, g *table.Project) error {
 		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "project is nil"))
 	}
 
-	_, err := dao.Get(kit, g.Attachment.BizID, g.ID)
-	if err != nil {
-		return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "update project failed, err: %s", err))
+	if err := g.ValidateUpdate(kit); err != nil {
+		return err
 	}
 
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.Project
 	q := dao.genQ.Project.WithContext(kit.Ctx)
 	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
-		ResourceInstance: fmt.Sprintf(constant.AppName, g.Spec.Name),
+		ResourceInstance: fmt.Sprintf(constant.ProjectName, g.Spec.Name),
 		Status:           enumor.Success,
 		Detail:           g.Spec.Memo,
 	}).PrepareUpdate(g)
-	eDecorator := dao.event.Eventf(kit)
 
-	// 多个使用事务处理
+	msg := i18n.T(kit, "project update failed")
+
 	updateTx := func(tx *gen.Query) error {
 		q = tx.Project.WithContext(kit.Ctx)
-		if _, err = q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
-			Select(m.Name, m.Key, m.Memo, m.Protected, m.Reviser, m.UpdatedAt).Updates(g); err != nil {
-			return err
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Updates(g); err != nil {
+			return errf.Errorf(
+				errf.DBOpFailed,
+				"%s: %v",
+				msg,
+				err,
+			)
 		}
 
-		if err = ad.Do(tx); err != nil {
-			return err
+		if err := ad.Do(tx); err != nil {
+			return errf.Errorf(
+				errf.DBOpFailed,
+				"%s: %v",
+				msg,
+				err,
+			)
 		}
 
-		// fire the event with txn to ensure the if save the event failed then the business logic is failed anyway.
-		one := types.Event{
-			Spec: &table.EventSpec{
-				Resource:   table.Application,
-				ResourceID: g.ID,
-				OpType:     table.UpdateOp,
-			},
-			Attachment: &table.EventAttachment{BizID: g.Attachment.BizID},
-			Revision:   &table.CreatedRevision{Creator: kit.User},
-		}
-		if err = eDecorator.Fire(one); err != nil {
-			logs.Errorf("fire update project: %s event failed, err: %v, rid: %s", g.ID, err, kit.Rid)
-			return errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kit, "update project failed, err: %s", err))
-		}
 		return nil
 	}
-	err = dao.genQ.Transaction(updateTx)
 
-	eDecorator.Finalizer(err)
-
-	if err != nil {
-		return err
+	if err := dao.genQ.Transaction(updateTx); err != nil {
+		return errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			msg,
+			err,
+		)
 	}
 
 	return nil
@@ -288,20 +279,10 @@ func (dao *projectDao) Get(kit *kit.Kit, bizID uint32, projectID uint32) (*table
 	q := dao.genQ.Project.WithContext(kit.Ctx)
 	detail, err := q.Where(m.ID.Eq(projectID), m.BizID.Eq(bizID)).Take()
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errf.Errorf(errf.RecordNotFound, "%s", i18n.T(kit, "project does not exist"))
+		}
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "project query failed"), err)
 	}
 	return detail, nil
-}
-
-// GetByKey 通过 key 查询
-func (dao *projectDao) GetByKey(kit *kit.Kit, bizID uint32, key string) (*table.Project, error) {
-	m := dao.genQ.Project
-	q := dao.genQ.Project.WithContext(kit.Ctx)
-
-	project, err := q.Where(m.BizID.Eq(bizID), m.Key.Eq(key)).Take()
-	if err != nil {
-		return nil, err
-	}
-
-	return project, nil
 }
