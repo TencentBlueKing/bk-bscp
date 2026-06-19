@@ -33,6 +33,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -865,6 +866,10 @@ func (s *Service) ConfigGenerateStatus(ctx context.Context, req *pbds.ConfigGene
 func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConfigGenerateResultReq) (*pbds.GetConfigGenerateResultResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	if kt.TenantID == "" {
+		kt.TenantID = constant.DefaultTenantID
+	}
+
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
@@ -896,10 +901,16 @@ func (s *Service) GetConfigGenerateResult(ctx context.Context, req *pbds.GetConf
 	}
 
 	// 检查 ConfigPayload 是否存在
-	if taskPayload.ConfigPayload == nil {
+	if taskPayload.BasePayload == nil || taskPayload.ConfigPayload == nil {
 		logs.Errorf("config payload is nil, taskID: %s, rid: %s", req.TaskId, kt.Rid)
 		return nil, errf.Errorf(errf.RecordNotFound, "%s",
 			i18n.T(kt, "config payload not found in task"))
+	}
+
+	if taskPayload.BasePayload.BizID != req.GetBizId() || taskPayload.BasePayload.TenantID != kt.TenantID {
+		logs.Errorf("biz_id or tenant_id mismatch, taskID: %s, rid: %s", req.TaskId, kt.Rid)
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "biz_id or tenant_id mismatch"))
 	}
 
 	// 返回配置内容
@@ -1817,7 +1828,9 @@ func (s *Service) buildOperateRange(processes []*table.Process, pluginMode bool)
 // GetConfigDiff implements [pbds.DataServer].
 func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq) (*pbds.GetConfigDiffResp, error) {
 	kt := kit.FromGrpcContext(ctx)
-
+	if kt.TenantID == "" {
+		kt.TenantID = constant.DefaultTenantID
+	}
 	// 获取 task storage
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
@@ -1841,10 +1854,16 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq)
 	}
 
 	// 检查 ConfigPayload 是否存在
-	if taskPayload.ConfigPayload == nil || taskPayload.ProcessPayload == nil {
+	if taskPayload.BasePayload == nil || taskPayload.ConfigPayload == nil || taskPayload.ProcessPayload == nil {
 		logs.Errorf("payload is nil, taskID: %s, rid: %s", req.TaskId, kt.Rid)
 		return nil, errf.Errorf(errf.RecordNotFound, "%s",
 			i18n.T(kt, "payload not found in task"))
+	}
+
+	if taskPayload.BasePayload.BizID != req.GetBizId() || taskPayload.BasePayload.TenantID != kt.TenantID {
+		logs.Errorf("biz_id or tenant_id mismatch, taskID: %s, rid: %s", req.TaskId, kt.Rid)
+		return nil, errf.Errorf(errf.InvalidParameter, "%s",
+			i18n.T(kt, "biz_id or tenant_id mismatch"))
 	}
 
 	currentOnline := &pbcin.ConfigVersion{

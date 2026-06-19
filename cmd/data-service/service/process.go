@@ -562,7 +562,7 @@ func dispatchProcessTasks(kt *kit.Kit, dao dao.Set, taskManager *task.TaskManage
 		// 构建任务（finalOpType 已确定，不再是 Delete）
 		taskObj, err := buildProcessTask(
 			dao,
-			kt.TenantID,
+			item.proc.Attachment.TenantID,
 			bizID,
 			batchID,
 			item.instance.Attachment.ProcessID,
@@ -575,6 +575,7 @@ func dispatchProcessTasks(kt *kit.Kit, dao dao.Set, taskManager *task.TaskManage
 			item.originalStatus,
 			enableProcessRestart,
 		)
+
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
 			return dispatchedCount, errf.Errorf(errf.Internal, "%s",

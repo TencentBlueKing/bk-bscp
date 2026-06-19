@@ -531,11 +531,6 @@
             "translation": "非灰度百分比标签在所有分组标签中必须一致"
         },
         {
-            "id": "undefined task action",
-            "message": "undefined task action",
-            "translation": "未定义的任务操作"
-        },
-        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "从模板集中删除模板失败"
@@ -1444,6 +1439,11 @@
             "translation": "任务中未找到配置负载"
         },
         {
+            "id": "biz_id or tenant_id mismatch",
+            "message": "biz_id or tenant_id mismatch",
+            "translation": "业务和租户ID不匹配"
+        },
+        {
             "id": "biz_id is required",
             "message": "biz_id is required",
             "translation": "biz_id不能为空"
@@ -1759,6 +1759,21 @@
             ]
         },
         {
+            "id": "base payload is nil for task {TaskID}",
+            "message": "base payload is nil for task {TaskID}",
+            "translation": "任务{TaskID}的基础负载为空",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ]
+        },
+        {
             "id": "config template id is not valid for task {TaskID}",
             "message": "config template id is not valid for task {TaskID}",
             "translation": "任务{TaskID}的配置模板ID无效",
@@ -2013,20 +2028,20 @@
             ]
         },
         {
-            "id": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "message": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "translation": "模板与模板版本不匹配, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "id": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "message": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "translation": "模板与模板版本不匹配, 模板id: {TemplateID}, 模板版本id: {TemplateID_1}",
             "placeholders": [
                 {
-                    "id": "ConfigTemplateId",
+                    "id": "TemplateID",
                     "string": "%[1]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
                     "argNum": 1,
-                    "expr": "req.GetConfigTemplateId()"
+                    "expr": "ct.Attachment.TemplateID"
                 },
                 {
-                    "id": "TemplateID",
+                    "id": "TemplateID_1",
                     "string": "%[2]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
