@@ -16,10 +16,139 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/config/biz/{bizId}/apps/query/name/{appName}": {
+      "get": {
+        "summary": "按服务名称获取",
+        "operationId": "Config_GetAppByName",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbappApp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appName",
+            "description": "服务名称",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/apps/query/name/{appName}": {
+      "get": {
+        "summary": "按服务名称获取",
+        "operationId": "Config_GetAppByName2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbappApp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appName",
+            "description": "服务名称",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/config_items": {
       "put": {
         "summary": "批量创建或更新文件配置项",
         "operationId": "Config_BatchUpsertConfigItems",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertConfigItemsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertConfigItemsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items": {
+      "put": {
+        "summary": "批量创建或更新文件配置项",
+        "operationId": "Config_BatchUpsertConfigItems2",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -114,6 +243,151 @@
         ]
       }
     },
+    "/api/v1/inner/config/create/release/release/app_id/{appId}/biz_id/{bizId}": {
+      "post": {
+        "summary": "生成版本",
+        "operationId": "Config_CreateRelease2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateReleaseResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateReleaseBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName}": {
+      "get": {
+        "summary": "按服务版本名",
+        "operationId": "Config_GetReleaseByName",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbreleaseRelease"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseName",
+            "description": "服务版本名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName}": {
+      "get": {
+        "summary": "按服务版本名",
+        "operationId": "Config_GetReleaseByName2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbreleaseRelease"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseName",
+            "description": "服务版本名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound": {
       "post": {
         "summary": "获取未绑定的模板列表",
@@ -156,6 +430,86 @@
             "schema": {
               "$ref": "#/definitions/ConfigListTemplatesNotBoundBody"
             }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/groups/query/name/{groupName}": {
+      "get": {
+        "summary": "按名称获取分组",
+        "operationId": "Config_GetGroupByName",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbgroupGroup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "groupName",
+            "description": "分组名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName}": {
+      "get": {
+        "summary": "按名称获取分组",
+        "operationId": "Config_GetGroupByName2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbgroupGroup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "groupName",
+            "description": "分组名",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -220,10 +574,116 @@
         ]
       }
     },
+    "/api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
+      "post": {
+        "summary": "发布指定版本",
+        "operationId": "Config_Publish2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigPublishBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/publish": {
       "post": {
         "summary": "生成版本并发布",
         "operationId": "Config_GenerateReleaseAndPublish",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigGenerateReleaseAndPublishBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/apps/{appId}/publish": {
+      "post": {
+        "summary": "生成版本并发布",
+        "operationId": "Config_GenerateReleaseAndPublish2",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -481,6 +941,53 @@
         "tags": [
           "Config"
         ]
+      },
+      "put": {
+        "summary": "批量创建或更新键值配置项",
+        "operationId": "Config_BatchUpsertKvs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertKvsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
       }
     },
     "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{key}": {
@@ -588,6 +1095,55 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs/list": {
+      "post": {
+        "summary": "获取键值配置项列表",
+        "operationId": "Config_ListKvs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListKvsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}": {
       "delete": {
         "summary": "删除键值配置项",
@@ -630,6 +1186,55 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs": {
+      "put": {
+        "summary": "批量创建或更新键值配置项",
+        "operationId": "Config_BatchUpsertKvs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertKvsBody"
+            }
           }
         ],
         "tags": [
@@ -1934,6 +2539,22 @@
         }
       }
     },
+    "ConfigBatchUpsertKvsBody": {
+      "type": "object",
+      "properties": {
+        "kvs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsBatchUpsertKvsReqKv"
+          }
+        },
+        "replaceAll": {
+          "type": "boolean",
+          "description": "是否清空：是=true，否=false"
+        }
+      }
+    },
     "ConfigCheckConfigBody": {
       "type": "object",
       "properties": {
@@ -2497,6 +3118,116 @@
         "value"
       ]
     },
+    "ReleaseStatusReleasedGroup": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "版本分组ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "服务版本分组名"
+        },
+        "mode": {
+          "type": "string",
+          "description": "分组类型（枚举值：custom、debug、default）"
+        },
+        "oldSelector": {
+          "type": "object",
+          "description": "当前线上分组选择器"
+        },
+        "newSelector": {
+          "type": "object",
+          "description": "修改后的分组选择器"
+        },
+        "uid": {
+          "type": "string",
+          "description": "调试分组的实例UID"
+        },
+        "edited": {
+          "type": "boolean",
+          "description": "是否为已编辑状态"
+        }
+      }
+    },
+    "pbappApp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务ID"
+        },
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID：Deprecated: use space instead"
+        },
+        "spaceId": {
+          "type": "string",
+          "description": "业务ID"
+        },
+        "spaceTypeId": {
+          "type": "string",
+          "description": "业务类型ID"
+        },
+        "spaceName": {
+          "type": "string",
+          "description": "业务名称"
+        },
+        "spaceTypeName": {
+          "type": "string",
+          "description": "业务类型"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbappAppSpec"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        }
+      },
+      "title": "App source resource reference: pkg/dal/table/app.go"
+    },
+    "pbappAppSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "服务名"
+        },
+        "configType": {
+          "type": "string",
+          "description": "服务类型：文件型=file, 键值型=kv"
+        },
+        "memo": {
+          "type": "string",
+          "description": "服务描述"
+        },
+        "alias": {
+          "type": "string",
+          "description": "服务别名"
+        },
+        "dataType": {
+          "type": "string",
+          "description": "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
+        },
+        "isApprove": {
+          "type": "boolean",
+          "description": "是否需要审批：是=true，否=false"
+        },
+        "approveType": {
+          "type": "string",
+          "description": "审批类型：会签=count_sign、或签=or_sign"
+        },
+        "approver": {
+          "type": "string",
+          "description": "审批人列表"
+        }
+      },
+      "title": "AppSpec source resource reference: pkg/dal/table/app.go"
+    },
     "pbatbTemplateBinding": {
       "type": "object",
       "properties": {
@@ -2533,6 +3264,20 @@
           "description": "是否是最新：模板文件版本ID在该模板文件中是最新的一个版本"
         }
       }
+    },
+    "pbbaseCreatedRevision": {
+      "type": "object",
+      "properties": {
+        "creator": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createAt": {
+          "type": "string",
+          "description": "创建时间"
+        }
+      },
+      "title": "CreatedRevision source resource reference: pkg/dal/table/table.go"
     },
     "pbbaseRevision": {
       "type": "object",
@@ -2711,6 +3456,52 @@
             "format": "int64"
           },
           "description": "文件配置项ID"
+        }
+      }
+    },
+    "pbcsBatchUpsertKvsReqKv": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "配置项名"
+        },
+        "kvType": {
+          "type": "string",
+          "description": "键值类型：(any、string、number、text、json、yaml、xml、secret)"
+        },
+        "value": {
+          "type": "string",
+          "description": "配置项值"
+        },
+        "memo": {
+          "type": "string",
+          "description": "描述"
+        },
+        "secretType": {
+          "type": "string",
+          "description": "密钥类型：(password、、certificate、secret_key、token、custom)"
+        },
+        "secretHidden": {
+          "type": "boolean",
+          "description": "是否隐藏值：是=true，否=false"
+        },
+        "certificateExpirationDate": {
+          "type": "string",
+          "description": "证书过期时间"
+        }
+      }
+    },
+    "pbcsBatchUpsertKvsResp": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "键值配置项ID"
         }
       }
     },
@@ -3497,6 +4288,69 @@
       },
       "title": "TemplateSearchCond 配置模板搜索条件"
     },
+    "pbgroupGroup": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "分组ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbgroupGroupSpec"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbgroupGroupAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseRevision"
+        }
+      },
+      "title": "Group source resource reference: pkg/dal/table/group.go"
+    },
+    "pbgroupGroupAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        }
+      },
+      "title": "GroupAttachment source resource reference: pkg/dal/table/group.go"
+    },
+    "pbgroupGroupSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "分组名"
+        },
+        "public": {
+          "type": "boolean",
+          "default": true,
+          "description": "服务可见范围，公开=true，指定服务=false"
+        },
+        "bindApps": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "绑定的服务"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "selector": {
+          "type": "object"
+        },
+        "uid": {
+          "type": "string"
+        }
+      },
+      "title": "GroupSpec source resource reference: pkg/dal/table/group.go"
+    },
     "pbkvKv": {
       "type": "object",
       "properties": {
@@ -3647,6 +4501,92 @@
         }
       },
       "title": "FormData 表单数据"
+    },
+    "pbreleaseRelease": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务版本ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbreleaseReleaseSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/pbreleaseReleaseStatus"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbreleaseReleaseAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseCreatedRevision"
+        }
+      },
+      "title": "Release source resource reference: pkg/dal/table/release.go"
+    },
+    "pbreleaseReleaseAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "appId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务ID"
+        }
+      },
+      "title": "ReleaseAttachment source resource reference: pkg/dal/table/release.go"
+    },
+    "pbreleaseReleaseSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "版本名称"
+        },
+        "memo": {
+          "type": "string",
+          "description": "版本描述"
+        },
+        "deprecated": {
+          "type": "boolean",
+          "description": "是否弃用：是=true，否=false"
+        },
+        "publishNum": {
+          "type": "integer",
+          "format": "int64",
+          "description": "发布数量"
+        }
+      },
+      "title": "ReleaseSpec source resource reference: pkg/dal/table/release.go"
+    },
+    "pbreleaseReleaseStatus": {
+      "type": "object",
+      "properties": {
+        "publishStatus": {
+          "type": "string",
+          "description": "版本状态（枚举值：not_released、partial_released、full_released）"
+        },
+        "releasedGroups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ReleaseStatusReleasedGroup"
+          }
+        },
+        "fullyReleased": {
+          "type": "boolean",
+          "title": "是否全量发布过,或者发布过默认分组"
+        },
+        "strategyStatus": {
+          "type": "string"
+        }
+      },
+      "title": "ReleaseStatus status that not in db"
     },
     "pbreleaseTicket": {
       "type": "object",

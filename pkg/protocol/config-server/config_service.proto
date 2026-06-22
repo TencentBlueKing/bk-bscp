@@ -73,9 +73,10 @@ service Config {
   }
   // 按服务名称获取
   rpc GetAppByName(GetAppByNameReq) returns (pbapp.App) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/query/name/{app_name}"
+      additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/query/name/{app_name}" }
     };
   }
   // 获取用户有权限的 spaces 所有的 apps
@@ -118,6 +119,7 @@ service Config {
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
+      additional_bindings { put: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/config_items" body: "*" }
     };
   }
   // 更新文件配置项
@@ -262,6 +264,10 @@ service Config {
       post: "/api/v1/config/create/release/release/app_id/{app_id}/biz_id/"
             "{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/inner/config/create/release/release/app_id/{app_id}/biz_id/{biz_id}"
+        body: "*"
+      }
     };
   }
   // 获取服务版本列表
@@ -273,10 +279,11 @@ service Config {
   }
   // 按服务版本名
   rpc GetReleaseByName(GetReleaseByNameReq) returns (pbrelease.Release) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/query/name/"
            "{release_name}"
+      additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/releases/query/name/{release_name}" }
     };
   }
   // 获取服务版本
@@ -1116,9 +1123,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   }
   // 按名称获取分组
   rpc GetGroupByName(GetGroupByNameReq) returns (pbgroup.Group) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/query/name/{group_name}"
+      additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/groups/query/name/{group_name}" }
     };
   }
   // 分组选择器
@@ -1135,6 +1143,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/update/strategy/publish/publish/release_id/"
             "{release_id}/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/inner/config/update/strategy/publish/publish/release_id/{release_id}/app_id/{app_id}/biz_id/{biz_id}"
+        body: "*"
+      }
     };
   }
   // 生成版本并发布
@@ -1143,6 +1155,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/publish"
       body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/publish" body: "*" }
     };
   }
   // 上线服务版本
@@ -1286,6 +1299,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/list"
       body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/kvs/list" body: "*" }
     };
   };
   // 删除键值配置项
@@ -1305,10 +1319,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   };
   // 批量创建或更新键值配置项
   rpc BatchUpsertKvs(BatchUpsertKvsReq) returns (BatchUpsertKvsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
+      additional_bindings { put: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/kvs" body: "*" }
     };
   };
   // 恢复键值配置项

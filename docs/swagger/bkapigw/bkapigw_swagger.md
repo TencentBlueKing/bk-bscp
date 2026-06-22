@@ -16,6 +16,9 @@
 | POST | /api/v1/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve](#config-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/app_id/{appId}/release_id/{releaseId}/approve | [Config_Approve2](#config-approve2) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems](#config-batch-upsert-config-items) | 批量创建或更新文件配置项 |
+| PUT | /api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items | [Config_BatchUpsertConfigItems2](#config-batch-upsert-config-items2) | 批量创建或更新文件配置项 |
+| PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_BatchUpsertKvs](#config-batch-upsert-kvs) | 批量创建或更新键值配置项 |
+| PUT | /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs | [Config_BatchUpsertKvs2](#config-batch-upsert-kvs2) | 批量创建或更新键值配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance | [Config_BindProcessInstance](#config-bind-process-instance) | 绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 根据业务查询拓扑 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/check | [Config_CheckConfig](#config-check-config) | 配置检查 |
@@ -26,20 +29,29 @@
 | POST | /api/v1/config/biz_id/{bizId}/config_template | [Config_CreateConfigTemplate](#config-create-config-template) | 创建配置模板 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_CreateKv](#config-create-kv) | 创建键值配置项 |
 | POST | /api/v1/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease](#config-create-release) | 生成版本 |
+| POST | /api/v1/inner/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_CreateRelease2](#config-create-release2) | 生成版本 |
 | DELETE | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_DeleteConfigTemplate](#config-delete-config-template) | 删除配置模板 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig](#config-generate-config) | 配置生成 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig2](#config-generate-config2) | 配置生成 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
+| POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish2](#config-generate-release-and-publish2) | 生成版本并发布 |
+| GET | /api/v1/config/biz/{bizId}/apps/query/name/{appName} | [Config_GetAppByName](#config-get-app-by-name) | 按服务名称获取 |
+| GET | /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName} | [Config_GetAppByName2](#config-get-app-by-name2) | 按服务名称获取 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_GetConfigTemplate](#config-get-config-template) | 获取配置模板 |
+| GET | /api/v1/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName](#config-get-group-by-name) | 按名称获取分组 |
+| GET | /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName2](#config-get-group-by-name2) | 按名称获取分组 |
 | GET | /api/v1/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView](#config-get-process-config-view) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/inner/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView2](#config-get-process-config-view2) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
+| GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName](#config-get-release-by-name) | 按服务版本名 |
+| GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName2](#config-get-release-by-name2) | 按服务版本名 |
 | POST | /api/v1/config/biz_id/{bizId}/task_batch/{batchId}/detail | [Config_GetTaskBatchDetail](#config-get-task-batch-detail) | 任务批次详情 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/task_batch/{batchId}/detail | [Config_GetTaskBatchDetail2](#config-get-task-batch-detail2) | 任务批次详情 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate2](#config-list-config-template2) | 配置模板列表 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
+| POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs2](#config-list-kvs2) | 获取键值配置项列表 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_OperateProcess2](#config-operate-process2) | 进程操作 |
@@ -47,6 +59,7 @@
 | GET | /api/v1/config/biz_id/{bizId}/process_instance/{serviceInstanceId} | [Config_ProcessInstance](#config-process-instance) | 根据服务实例查询实例进程列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
+| POST | /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish2](#config-publish2) | 发布指定版本 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig](#config-push-config) | 配置下发 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig2](#config-push-config2) | 配置下发 |
 | GET | /api/v1/config/biz_id/{bizId}/service_instance/{moduleId} | [Config_ServiceInstance](#config-service-instance) | 根据模块获取服务实例列表 |
@@ -293,6 +306,180 @@ Content-Type: application/json
       "type": ""
     }
   ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-batch-upsert-config-items2"></span> 批量创建或更新文件配置项 (*Config_BatchUpsertConfigItems2*)
+
+```
+PUT /api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| bindings | \[\][PbcsBatchUpsertConfigItemsReqTemplateBinding](#pbcs-batch-upsert-config-items-req-template-binding) |  |  |
+| items | \[\][PbcsBatchUpsertConfigItemsReqConfigItem](#pbcs-batch-upsert-config-items-req-config-item) |  |  |
+| replaceAll | boolean |  | 是否替换全部：如果为true会覆盖已有的文件，不存在的则删除 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items HTTP/1.1
+Content-Type: application/json
+
+{
+  "bindings": [
+    {
+      "templateBinding": {
+        "templateRevisions": [
+          {
+            "isLatest": false,
+            "templateId": 0,
+            "templateRevisionId": 0
+          }
+        ],
+        "templateSetId": 0
+      },
+      "templateSpaceId": 0
+    }
+  ],
+  "items": [
+    {
+      "byteSize": "",
+      "charset": "",
+      "fileMode": "",
+      "fileType": "",
+      "md5": "",
+      "memo": "",
+      "name": "",
+      "path": "",
+      "privilege": "",
+      "sign": "",
+      "user": "",
+      "userGroup": ""
+    }
+  ],
+  "replaceAll": false,
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-batch-upsert-kvs"></span> 批量创建或更新键值配置项 (*Config_BatchUpsertKvs*)
+
+```
+PUT /api/v1/config/biz/{bizId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
+| replaceAll | boolean |  | 是否清空：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "kvs": [
+    {
+      "certificateExpirationDate": "",
+      "key": "",
+      "kvType": "",
+      "memo": "",
+      "secretHidden": false,
+      "secretType": "",
+      "value": ""
+    }
+  ],
+  "replaceAll": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-batch-upsert-kvs2"></span> 批量创建或更新键值配置项 (*Config_BatchUpsertKvs2*)
+
+```
+PUT /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
+| replaceAll | boolean |  | 是否清空：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "kvs": [
+    {
+      "certificateExpirationDate": "",
+      "key": "",
+      "kvType": "",
+      "memo": "",
+      "secretHidden": false,
+      "secretType": "",
+      "value": ""
+    }
+  ],
+  "replaceAll": false
 }
 ```
 
@@ -744,6 +931,53 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-create-release2"></span> 生成版本 (*Config_CreateRelease2*)
+
+```
+POST /api/v1/inner/config/create/release/release/app_id/{appId}/biz_id/{bizId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| memo | string |  | 版本描述 |
+| name | string |  | 版本名称 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/create/release/release/app_id/{appId}/biz_id/{bizId} HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "name": "",
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-delete-config-template"></span> 删除配置模板 (*Config_DeleteConfigTemplate*)
 
 ```
@@ -988,6 +1222,133 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-generate-release-and-publish2"></span> 生成版本并发布 (*Config_GenerateReleaseAndPublish2*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| releaseMemo | string |  | 版本描述 |
+| releaseName | string |  | 服务版本名 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "releaseMemo": "",
+  "releaseName": "",
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-app-by-name"></span> 按服务名称获取 (*Config_GetAppByName*)
+
+```
+GET /api/v1/config/biz/{bizId}/apps/query/name/{appName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appName | string | ✓ | 服务名称 |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/apps/query/name/{appName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-app-by-name2"></span> 按服务名称获取 (*Config_GetAppByName2*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appName | string | ✓ | 服务名称 |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-get-config-template"></span> 获取配置模板 (*Config_GetConfigTemplate*)
 
 ```
@@ -1010,6 +1371,72 @@ GET /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}
 
 ```bash
 GET /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-group-by-name"></span> 按名称获取分组 (*Config_GetGroupByName*)
+
+```
+GET /api/v1/config/biz/{bizId}/groups/query/name/{groupName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| groupName | string | ✓ | 分组名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/groups/query/name/{groupName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-group-by-name2"></span> 按名称获取分组 (*Config_GetGroupByName2*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| groupName | string | ✓ | 分组名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName} HTTP/1.1
 Content-Type: application/json
 
 
@@ -1106,6 +1533,74 @@ GET /api/v1/config/biz_id/{bizId}/process_instance_topo
 
 ```bash
 GET /api/v1/config/biz_id/{bizId}/process_instance_topo HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-release-by-name"></span> 按服务版本名 (*Config_GetReleaseByName*)
+
+```
+GET /api/v1/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| releaseName | string | ✓ | 服务版本名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-release-by-name2"></span> 按服务版本名 (*Config_GetReleaseByName2*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| releaseName | string | ✓ | 服务版本名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
 Content-Type: application/json
 
 
@@ -1382,6 +1877,70 @@ POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list
 
 ```bash
 POST /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "key": [
+    {}
+  ],
+  "kvType": [
+    {}
+  ],
+  "limit": 0,
+  "order": "",
+  "search": {},
+  "sort": "",
+  "start": 0,
+  "status": [
+    {}
+  ],
+  "topIds": [
+    {}
+  ],
+  "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-kvs2"></span> 获取键值配置项列表 (*Config_ListKvs2*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| all | boolean |  | 是否获取所有 |
+| key | []string |  | 查询特定的配置项名 |
+| kvType | []string |  | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| order | string |  | 排序类型：desc |
+| search | [interface{}](#interface) |  | 搜索的值 |
+| sort | string |  | 排序的值，例如：key |
+| start | int64 (formatted integer) |  | 当前页码 |
+| status | []string |  | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
+| topIds | []int64 (formatted integer) |  | 需要置顶ID |
+| withStatus | boolean |  | 暂时未用到 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs/list HTTP/1.1
 Content-Type: application/json
 
 {
@@ -1709,6 +2268,59 @@ POST /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_i
 
 ```bash
 POST /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "default": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-publish2"></span> 发布指定版本 (*Config_Publish2*)
+
+```
+POST /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| default | boolean |  |  |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| memo | string |  | 上线说明 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} HTTP/1.1
 Content-Type: application/json
 
 {
@@ -2320,6 +2932,22 @@ Content-Type: application/json
 
 
 
+### <span id="config-batch-upsert-kvs-body"></span> ConfigBatchUpsertKvsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv)| `[]*PbcsBatchUpsertKvsReqKv` |  | |  |  |
+| replaceAll | boolean| `bool` |  | | 是否清空：是=true，否=false |  |
+
+
+
 ### <span id="config-check-config-body"></span> ConfigCheckConfigBody
 
 
@@ -2653,6 +3281,27 @@ Content-Type: application/json
 
 
 
+### <span id="release-status-released-group"></span> ReleaseStatusReleasedGroup
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| edited | boolean| `bool` |  | | 是否为已编辑状态 |  |
+| id | int64 (formatted integer)| `int64` |  | | 版本分组ID |  |
+| mode | string| `string` |  | | 分组类型（枚举值：custom、debug、default） |  |
+| name | string| `string` |  | | 服务版本分组名 |  |
+| newSelector | [interface{}](#interface)| `interface{}` |  | | 修改后的分组选择器 |  |
+| oldSelector | [interface{}](#interface)| `interface{}` |  | | 当前线上分组选择器 |  |
+| uid | string| `string` |  | | 调试分组的实例UID |  |
+
+
+
 ### <span id="cc-resource-limit"></span> cc.ResourceLimit
 
 
@@ -2668,6 +3317,50 @@ Content-Type: application/json
 | maxFileSize | integer| `int64` |  | | MaxFileSize 配置文件大小上限，单位 MB，默认为200MB |  |
 | maxUploadContentLength | integer| `int64` |  | | MaxUploadContentLength 最大内容长度 |  |
 | tmplSetTmplCnt | integer| `int64` |  | | TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000 |  |
+
+
+
+### <span id="pbapp-app"></span> pbappApp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID：Deprecated: use space instead |  |
+| id | int64 (formatted integer)| `int64` |  | | 服务ID |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spaceId | string| `string` |  | | 业务ID |  |
+| spaceName | string| `string` |  | | 业务名称 |  |
+| spaceTypeId | string| `string` |  | | 业务类型ID |  |
+| spaceTypeName | string| `string` |  | | 业务类型 |  |
+| spec | [PbappAppSpec](#pbapp-app-spec)| `PbappAppSpec` |  | |  |  |
+
+
+
+### <span id="pbapp-app-spec"></span> pbappAppSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| alias | string| `string` |  | | 服务别名 |  |
+| approveType | string| `string` |  | | 审批类型：会签=count_sign、或签=or_sign |  |
+| approver | string| `string` |  | | 审批人列表 |  |
+| configType | string| `string` |  | | 服务类型：文件型=file, 键值型=kv |  |
+| dataType | string| `string` |  | | 键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret) |  |
+| isApprove | boolean| `bool` |  | | 是否需要审批：是=true，否=false |  |
+| memo | string| `string` |  | | 服务描述 |  |
+| name | string| `string` |  | | 服务名 |  |
 
 
 
@@ -2701,6 +3394,22 @@ Content-Type: application/json
 | isLatest | boolean| `bool` |  | | 是否是最新：模板文件版本ID在该模板文件中是最新的一个版本 |  |
 | templateId | int64 (formatted integer)| `int64` |  | | 模板文件ID |  |
 | templateRevisionId | int64 (formatted integer)| `int64` |  | | 模板文件版本ID |  |
+
+
+
+### <span id="pbbase-created-revision"></span> pbbaseCreatedRevision
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| createAt | string| `string` |  | | 创建时间 |  |
+| creator | string| `string` |  | | 创建人 |  |
 
 
 
@@ -2844,6 +3553,42 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | ids | []int64 (formatted integer)| `[]int64` |  | | 文件配置项ID |  |
+
+
+
+### <span id="pbcs-batch-upsert-kvs-req-kv"></span> pbcsBatchUpsertKvsReqKv
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| certificateExpirationDate | string| `string` |  | | 证书过期时间 |  |
+| key | string| `string` |  | | 配置项名 |  |
+| kvType | string| `string` |  | | 键值类型：(any、string、number、text、json、yaml、xml、secret) |  |
+| memo | string| `string` |  | | 描述 |  |
+| secretHidden | boolean| `bool` |  | | 是否隐藏值：是=true，否=false |  |
+| secretType | string| `string` |  | | 密钥类型：(password、、certificate、secret_key、token、custom) |  |
+| value | string| `string` |  | | 配置项值 |  |
+
+
+
+### <span id="pbcs-batch-upsert-kvs-resp"></span> pbcsBatchUpsertKvsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ids | []int64 (formatted integer)| `[]int64` |  | | 键值配置项ID |  |
 
 
 
@@ -3565,6 +4310,59 @@ Content-Type: application/json
 
 
 
+### <span id="pbgroup-group"></span> pbgroupGroup
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbgroupGroupAttachment](#pbgroup-group-attachment)| `PbgroupGroupAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 分组ID |  |
+| revision | [PbbaseRevision](#pbbase-revision)| `PbbaseRevision` |  | |  |  |
+| spec | [PbgroupGroupSpec](#pbgroup-group-spec)| `PbgroupGroupSpec` |  | |  |  |
+
+
+
+### <span id="pbgroup-group-attachment"></span> pbgroupGroupAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+
+
+
+### <span id="pbgroup-group-spec"></span> pbgroupGroupSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bindApps | []int64 (formatted integer)| `[]int64` |  | | 绑定的服务 |  |
+| mode | string| `string` |  | |  |  |
+| name | string| `string` |  | | 分组名 |  |
+| public | boolean| `bool` |  | `true`| 服务可见范围，公开=true，指定服务=false |  |
+| selector | [interface{}](#interface)| `interface{}` |  | |  |  |
+| uid | string| `string` |  | |  |  |
+
+
+
 ### <span id="pbkv-kv"></span> pbkvKv
 
 
@@ -3680,6 +4478,77 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | ticketTitle | string| `string` |  | |  |  |
+
+
+
+### <span id="pbrelease-release"></span> pbreleaseRelease
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbreleaseReleaseAttachment](#pbrelease-release-attachment)| `PbreleaseReleaseAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 服务版本ID |  |
+| revision | [PbbaseCreatedRevision](#pbbase-created-revision)| `PbbaseCreatedRevision` |  | |  |  |
+| spec | [PbreleaseReleaseSpec](#pbrelease-release-spec)| `PbreleaseReleaseSpec` |  | |  |  |
+| status | [PbreleaseReleaseStatus](#pbrelease-release-status)| `PbreleaseReleaseStatus` |  | |  |  |
+
+
+
+### <span id="pbrelease-release-attachment"></span> pbreleaseReleaseAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| appId | int64 (formatted integer)| `int64` |  | | 服务ID |  |
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+
+
+
+### <span id="pbrelease-release-spec"></span> pbreleaseReleaseSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| deprecated | boolean| `bool` |  | | 是否弃用：是=true，否=false |  |
+| memo | string| `string` |  | | 版本描述 |  |
+| name | string| `string` |  | | 版本名称 |  |
+| publishNum | int64 (formatted integer)| `int64` |  | | 发布数量 |  |
+
+
+
+### <span id="pbrelease-release-status"></span> pbreleaseReleaseStatus
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| fullyReleased | boolean| `bool` |  | |  |  |
+| publishStatus | string| `string` |  | | 版本状态（枚举值：not_released、partial_released、full_released） |  |
+| releasedGroups | \[\][ReleaseStatusReleasedGroup](#release-status-released-group)| `[]*ReleaseStatusReleasedGroup` |  | |  |  |
+| strategyStatus | string| `string` |  | |  |  |
 
 
 
