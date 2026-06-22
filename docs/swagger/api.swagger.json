@@ -11455,6 +11455,46 @@
           "Config"
         ]
       }
+    },
+    "/api/v1/config/biz_id/{bizId}/ensure_default_project_env": {
+      "post": {
+        "summary": "确保业务下的默认项目和默认环境存在，不存在则自动创建",
+        "operationId": "Config_EnsureDefaultProjectEnv",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsEnsureDefaultProjectEnvResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigEnsureDefaultProjectEnvBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
     }
   },
   "definitions": {
@@ -12918,6 +12958,10 @@
           "description": "是否未指定套餐：是=true，否=false, 区分全部套餐和未指定套餐"
         }
       }
+    },
+    "ConfigEnsureDefaultProjectEnvBody": {
+      "type": "object",
+      "title": "确保默认项目和环境存在的请求参数"
     },
     "ConfigGenerateConfigBody": {
       "type": "object",
@@ -17733,6 +17777,20 @@
     },
     "pbcsDeprecateReleaseResp": {
       "type": "object"
+    },
+    "pbcsEnsureDefaultProjectEnvResp": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "返回默认项目和环境的 ID"
     },
     "pbcsExtractAppTmplVariablesResp": {
       "type": "object",

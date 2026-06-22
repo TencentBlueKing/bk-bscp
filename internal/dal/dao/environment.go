@@ -18,6 +18,7 @@ import (
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -48,6 +49,11 @@ type Environment interface {
 	CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error)
 	// CountByProjectIDs 批量统计项目下的服务数量
 	CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uint32]uint32, error)
+	// GetDefaultEnvironment 获取系统创建的默认环境
+	GetDefaultEnvironment(kit *kit.Kit, bizID, projectID uint32) (*table.Environment, error)
+	// CreateWithTx create one environments instance with transaction.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, environments *table.Environment) (uint32, error)
+	CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, environments *table.Environment) error
 }
 
 var _ Environment = new(environmentDao)
@@ -100,6 +106,81 @@ func (dao *environmentDao) CountByProjectID(kit *kit.Kit, projectID uint32) (int
 	}
 
 	return count, nil
+}
+
+// CreateIfNotExistWithTx implements [Environment].
+func (dao *environmentDao) CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, env *table.Environment) error {
+	if env == nil {
+		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "environment is nil"))
+	}
+
+	// 1. 先校验合法性
+	if err := env.ValidateCreate(kit); err != nil {
+		return err
+	}
+
+	// 2. 校验通过后再生成 ID
+	id, err := dao.idGen.One(kit, table.Name(env.TableName()))
+	if err != nil {
+		return err
+	}
+	env.ID = id
+
+	// 3. 执行带冲突处理的创建
+	q := tx.Environment.WithContext(kit.Ctx)
+	return q.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "tenant_id"},
+			{Name: "biz_id"},
+			{Name: "project_id"},
+			{Name: "name"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+	}).Create(env)
+}
+
+// CreateWithTx implements [Environment].
+func (dao *environmentDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Environment) (uint32, error) {
+	if g == nil {
+		return 0, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "environment is nil"))
+	}
+
+	if err := g.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+
+	// generate a project id and update to g.
+	id, err := dao.idGen.One(kit, table.Name(g.TableName()))
+	if err != nil {
+		return 0, err
+	}
+	g.ID = id
+
+	q := tx.Environment.WithContext(kit.Ctx)
+	if e := q.Create(g); e != nil {
+		return 0, e
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.EnvName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
+	if e := ad.Do(tx.Query); e != nil {
+		return 0, e
+	}
+
+	return g.ID, nil
+}
+
+// GetDefaultEnvironment implements [Environment].
+func (dao *environmentDao) GetDefaultEnvironment(kit *kit.Kit, bizID uint32, projectID uint32) (
+	*table.Environment, error) {
+
+	m := dao.genQ.Environment
+	q := dao.genQ.Environment.WithContext(kit.Ctx)
+
+	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Creator.Eq(table.System)).Take()
 }
 
 // Delete implements [Environment].

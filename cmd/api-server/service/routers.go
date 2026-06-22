@@ -64,6 +64,7 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/biz/{biz_id}/apps/query", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)
 	})
@@ -73,6 +74,7 @@ func (p *proxy) routers() http.Handler {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
 		r.Use(p.authorizer.AppVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)
 	})
@@ -81,6 +83,7 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/biz/{biz_id}/template_spaces", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(view.Generic(p.authorizer))
 		r.Use(p.CheckDefaultTmplSpace)
 		r.Mount("/", p.cfgSvrMux)
@@ -95,8 +98,7 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
-		r.Use(p.authorizer.ProjectVerified)
-		r.Use(p.authorizer.EnvVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(p.HttpServerHandledTotal("", ""))
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)

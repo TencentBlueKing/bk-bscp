@@ -147,3 +147,28 @@ func (s *Service) UpdateProject(ctx context.Context, req *pbcs.UpdateProjectReq)
 
 	return &pbcs.UpdateProjectResp{}, nil
 }
+
+// EnsureDefaultProjectEnv implements [pbcs.ConfigServer].
+func (s *Service) EnsureDefaultProjectEnv(ctx context.Context, req *pbcs.EnsureDefaultProjectEnvReq) (*pbcs.EnsureDefaultProjectEnvResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.EnsureDefaultProjectEnv(grpcKit.RpcCtx(), &pbds.EnsureDefaultProjectEnvReq{
+		BizId: req.GetBizId(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.EnsureDefaultProjectEnvResp{
+		ProjectId: resp.GetProjectId(),
+		EnvId:     resp.GetEnvId(),
+	}, nil
+}

@@ -393,7 +393,21 @@ service Data {
   rpc UpdateEnvironment(UpdateEnvironmentReq) returns (pbbase.EmptyResp) {}
   // 删除环境
   rpc DeleteEnvironment(DeleteEnvironmentReq) returns (pbbase.EmptyResp) {}
+  // 确保业务下的默认项目和默认环境存在，不存在则自动创建
+  rpc EnsureDefaultProjectEnv(EnsureDefaultProjectEnvReq) returns (EnsureDefaultProjectEnvResp) {}
 }
+
+// 确保默认项目和环境存在的请求参数
+message EnsureDefaultProjectEnvReq {
+  uint32 biz_id = 1;
+}
+
+// 返回默认项目和环境的 ID
+message EnsureDefaultProjectEnvResp {
+  uint32 project_id = 1;
+  uint32 env_id = 2;
+}
+
 message UpdateCredentialScopesReq {
   uint32 biz_id = 1;
   uint32 credential_id = 2;

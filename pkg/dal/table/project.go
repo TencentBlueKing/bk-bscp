@@ -13,6 +13,7 @@
 package table
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -36,10 +37,11 @@ type Project struct {
 
 // ProjectSpec defines the project spec information
 type ProjectSpec struct {
-	Name      string `json:"name" gorm:"column:name;"`
-	Key       string `json:"key" gorm:"column:key;"`
-	Memo      string `json:"memo" gorm:"column:memo;"`
-	Protected bool   `json:"protected" gorm:"column:protected;"`
+	Name      string       `json:"name" gorm:"column:name;"`
+	Key       string       `json:"key" gorm:"column:key;"`
+	Memo      string       `json:"memo" gorm:"column:memo;"`
+	Protected bool         `json:"protected" gorm:"column:protected;"`
+	IsDefault sql.NullBool `json:"is_default" gorm:"column:is_default;default:null;"`
 }
 
 // ProjectAttachment defines the project attachment information

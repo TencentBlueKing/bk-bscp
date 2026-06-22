@@ -32,6 +32,7 @@ func newProject(db *gorm.DB, opts ...gen.DOOption) project {
 	_project.Key = field.NewString(tableName, "key")
 	_project.Memo = field.NewString(tableName, "memo")
 	_project.Protected = field.NewBool(tableName, "protected")
+	_project.IsDefault = field.NewField(tableName, "is_default")
 	_project.TenantID = field.NewString(tableName, "tenant_id")
 	_project.BizID = field.NewUint32(tableName, "biz_id")
 	_project.Creator = field.NewString(tableName, "creator")
@@ -53,6 +54,7 @@ type project struct {
 	Key       field.String
 	Memo      field.String
 	Protected field.Bool
+	IsDefault field.Field
 	TenantID  field.String
 	BizID     field.Uint32
 	Creator   field.String
@@ -80,6 +82,7 @@ func (p *project) updateTableName(table string) *project {
 	p.Key = field.NewString(table, "key")
 	p.Memo = field.NewString(table, "memo")
 	p.Protected = field.NewBool(table, "protected")
+	p.IsDefault = field.NewField(table, "is_default")
 	p.TenantID = field.NewString(table, "tenant_id")
 	p.BizID = field.NewUint32(table, "biz_id")
 	p.Creator = field.NewString(table, "creator")
@@ -110,12 +113,13 @@ func (p *project) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *project) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 11)
+	p.fieldMap = make(map[string]field.Expr, 12)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["name"] = p.Name
 	p.fieldMap["key"] = p.Key
 	p.fieldMap["memo"] = p.Memo
 	p.fieldMap["protected"] = p.Protected
+	p.fieldMap["is_default"] = p.IsDefault
 	p.fieldMap["tenant_id"] = p.TenantID
 	p.fieldMap["biz_id"] = p.BizID
 	p.fieldMap["creator"] = p.Creator

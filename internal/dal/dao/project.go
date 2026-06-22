@@ -13,11 +13,13 @@
 package dao
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
 	rawgen "gorm.io/gen"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
@@ -42,6 +44,11 @@ type Project interface {
 	Get(kit *kit.Kit, bizID, projectID uint32) (*table.Project, error)
 	// List projects with options.
 	List(kit *kit.Kit, bizID uint32, opt *types.BasePage) ([]*table.Project, int64, error)
+	// GetDefaultProject 获取系统创建的默认项目
+	GetDefaultProject(kit *kit.Kit, bizID uint32) (*table.Project, error)
+	// CreateWithTx create one project instance with transaction.
+	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) (uint32, error)
+	CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) error
 }
 
 var _ Project = new(projectDao)
@@ -51,6 +58,86 @@ type projectDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// CreateIfNotExistWithTx implements [Project].
+func (dao *projectDao) CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) error {
+	if project == nil {
+		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "project is nil"))
+	}
+
+	// 1. 先进行基础的创建校验（避免校验失败却白白生成了 ID）
+	if err := project.ValidateCreate(kit); err != nil {
+		return err
+	}
+
+	// 2. 生成全局唯一 ID
+	id, err := dao.idGen.One(kit, table.Name(project.TableName()))
+	if err != nil {
+		return err
+	}
+
+	project.ID = id
+	project.Spec.Key = table.GenerateProjectKey(id)
+
+	// 3. 执行带冲突处理的创建
+	q := tx.Project.WithContext(kit.Ctx)
+	return q.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "tenant_id"},
+			{Name: "biz_id"},
+			{Name: "is_default"},
+		},
+		// 发生冲突时，只更新时间戳
+		DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+	}).Create(project)
+}
+
+// CreateWithTx implements [Project].
+func (dao *projectDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Project) (uint32, error) {
+	if g == nil {
+		return 0, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "project is nil"))
+	}
+
+	// generate a project id and update to g.
+	id, err := dao.idGen.One(kit, table.Name(g.TableName()))
+	if err != nil {
+		return 0, err
+	}
+	g.ID = id
+	if g.Spec.Key == "" {
+		g.Spec.Key = table.GenerateProjectKey(id)
+	}
+
+	if err := g.ValidateCreate(kit); err != nil {
+		return 0, err
+	}
+
+	q := tx.Project.WithContext(kit.Ctx)
+	if e := q.Create(g); e != nil {
+		return 0, e
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ProjectName, g.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           g.Spec.Memo,
+	}).PrepareCreate(g)
+	if e := ad.Do(tx.Query); e != nil {
+		return 0, e
+	}
+
+	return g.ID, nil
+}
+
+// GetDefaultProject 根据业务ID、创建人(system)获取系统创建的默认项目
+func (dao *projectDao) GetDefaultProject(kit *kit.Kit, bizID uint32) (*table.Project, error) {
+	m := dao.genQ.Project
+	q := dao.genQ.Project.WithContext(kit.Ctx)
+	target := sql.NullBool{Bool: true, Valid: true}
+
+	return q.Where(m.BizID.Eq(bizID), m.IsDefault.Eq(target)).Take()
+
 }
 
 // Delete implements [Project].

@@ -1941,6 +1941,26 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}"
     };
   }
+
+  // 确保业务下的默认项目和默认环境存在，不存在则自动创建
+  rpc EnsureDefaultProjectEnv(EnsureDefaultProjectEnvReq) returns (EnsureDefaultProjectEnvResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/ensure_default_project_env"
+      body: "*"
+    };
+  }
+}
+
+// 确保默认项目和环境存在的请求参数
+message EnsureDefaultProjectEnvReq {
+  uint32 biz_id = 1;
+}
+
+// 返回默认项目和环境的 ID
+message EnsureDefaultProjectEnvResp {
+  uint32 project_id = 1;
+  uint32 env_id = 2;
 }
 
 message UpdateCredentialScopeReq {

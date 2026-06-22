@@ -252,6 +252,7 @@ const (
 	Config_CreateEnvironment_FullMethodName                  = "/pbcs.Config/CreateEnvironment"
 	Config_UpdateEnvironment_FullMethodName                  = "/pbcs.Config/UpdateEnvironment"
 	Config_DeleteEnvironment_FullMethodName                  = "/pbcs.Config/DeleteEnvironment"
+	Config_EnsureDefaultProjectEnv_FullMethodName            = "/pbcs.Config/EnsureDefaultProjectEnv"
 )
 
 // ConfigClient is the client API for Config service.
@@ -703,6 +704,8 @@ type ConfigClient interface {
 	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentReq, opts ...grpc.CallOption) (*UpdateEnvironmentResp, error)
 	// 删除环境
 	DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentReq, opts ...grpc.CallOption) (*DeleteEnvironmentResp, error)
+	// 确保业务下的默认项目和默认环境存在，不存在则自动创建
+	EnsureDefaultProjectEnv(ctx context.Context, in *EnsureDefaultProjectEnvReq, opts ...grpc.CallOption) (*EnsureDefaultProjectEnvResp, error)
 }
 
 type configClient struct {
@@ -2738,6 +2741,15 @@ func (c *configClient) DeleteEnvironment(ctx context.Context, in *DeleteEnvironm
 	return out, nil
 }
 
+func (c *configClient) EnsureDefaultProjectEnv(ctx context.Context, in *EnsureDefaultProjectEnvReq, opts ...grpc.CallOption) (*EnsureDefaultProjectEnvResp, error) {
+	out := new(EnsureDefaultProjectEnvResp)
+	err := c.cc.Invoke(ctx, Config_EnsureDefaultProjectEnv_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations should embed UnimplementedConfigServer
 // for forward compatibility
@@ -3187,6 +3199,8 @@ type ConfigServer interface {
 	UpdateEnvironment(context.Context, *UpdateEnvironmentReq) (*UpdateEnvironmentResp, error)
 	// 删除环境
 	DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*DeleteEnvironmentResp, error)
+	// 确保业务下的默认项目和默认环境存在，不存在则自动创建
+	EnsureDefaultProjectEnv(context.Context, *EnsureDefaultProjectEnvReq) (*EnsureDefaultProjectEnvResp, error)
 }
 
 // UnimplementedConfigServer should be embedded to have forward compatible implementations.
@@ -3867,6 +3881,9 @@ func (UnimplementedConfigServer) UpdateEnvironment(context.Context, *UpdateEnvir
 }
 func (UnimplementedConfigServer) DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*DeleteEnvironmentResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteEnvironment not implemented")
+}
+func (UnimplementedConfigServer) EnsureDefaultProjectEnv(context.Context, *EnsureDefaultProjectEnvReq) (*EnsureDefaultProjectEnvResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnsureDefaultProjectEnv not implemented")
 }
 
 // UnsafeConfigServer may be embedded to opt out of forward compatibility for this service.
@@ -7930,6 +7947,24 @@ func _Config_DeleteEnvironment_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_EnsureDefaultProjectEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnsureDefaultProjectEnvReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).EnsureDefaultProjectEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_EnsureDefaultProjectEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).EnsureDefaultProjectEnv(ctx, req.(*EnsureDefaultProjectEnvReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8836,6 +8871,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteEnvironment",
 			Handler:    _Config_DeleteEnvironment_Handler,
+		},
+		{
+			MethodName: "EnsureDefaultProjectEnv",
+			Handler:    _Config_EnsureDefaultProjectEnv_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

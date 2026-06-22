@@ -264,6 +264,7 @@ const (
 	Data_CreateEnvironment_FullMethodName                 = "/pbds.Data/CreateEnvironment"
 	Data_UpdateEnvironment_FullMethodName                 = "/pbds.Data/UpdateEnvironment"
 	Data_DeleteEnvironment_FullMethodName                 = "/pbds.Data/DeleteEnvironment"
+	Data_EnsureDefaultProjectEnv_FullMethodName           = "/pbds.Data/EnsureDefaultProjectEnv"
 )
 
 // DataClient is the client API for Data service.
@@ -566,6 +567,8 @@ type DataClient interface {
 	UpdateEnvironment(ctx context.Context, in *UpdateEnvironmentReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	// 删除环境
 	DeleteEnvironment(ctx context.Context, in *DeleteEnvironmentReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
+	// 确保业务下的默认项目和默认环境存在，不存在则自动创建
+	EnsureDefaultProjectEnv(ctx context.Context, in *EnsureDefaultProjectEnvReq, opts ...grpc.CallOption) (*EnsureDefaultProjectEnvResp, error)
 }
 
 type dataClient struct {
@@ -2664,6 +2667,15 @@ func (c *dataClient) DeleteEnvironment(ctx context.Context, in *DeleteEnvironmen
 	return out, nil
 }
 
+func (c *dataClient) EnsureDefaultProjectEnv(ctx context.Context, in *EnsureDefaultProjectEnvReq, opts ...grpc.CallOption) (*EnsureDefaultProjectEnvResp, error) {
+	out := new(EnsureDefaultProjectEnvResp)
+	err := c.cc.Invoke(ctx, Data_EnsureDefaultProjectEnv_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataServer is the server API for Data service.
 // All implementations should embed UnimplementedDataServer
 // for forward compatibility
@@ -2964,6 +2976,8 @@ type DataServer interface {
 	UpdateEnvironment(context.Context, *UpdateEnvironmentReq) (*base.EmptyResp, error)
 	// 删除环境
 	DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*base.EmptyResp, error)
+	// 确保业务下的默认项目和默认环境存在，不存在则自动创建
+	EnsureDefaultProjectEnv(context.Context, *EnsureDefaultProjectEnvReq) (*EnsureDefaultProjectEnvResp, error)
 }
 
 // UnimplementedDataServer should be embedded to have forward compatible implementations.
@@ -3665,6 +3679,9 @@ func (UnimplementedDataServer) UpdateEnvironment(context.Context, *UpdateEnviron
 }
 func (UnimplementedDataServer) DeleteEnvironment(context.Context, *DeleteEnvironmentReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteEnvironment not implemented")
+}
+func (UnimplementedDataServer) EnsureDefaultProjectEnv(context.Context, *EnsureDefaultProjectEnvReq) (*EnsureDefaultProjectEnvResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnsureDefaultProjectEnv not implemented")
 }
 
 // UnsafeDataServer may be embedded to opt out of forward compatibility for this service.
@@ -7854,6 +7871,24 @@ func _Data_DeleteEnvironment_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_EnsureDefaultProjectEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnsureDefaultProjectEnvReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).EnsureDefaultProjectEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_EnsureDefaultProjectEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).EnsureDefaultProjectEnv(ctx, req.(*EnsureDefaultProjectEnvReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Data_ServiceDesc is the grpc.ServiceDesc for Data service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -8788,6 +8823,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteEnvironment",
 			Handler:    _Data_DeleteEnvironment_Handler,
+		},
+		{
+			MethodName: "EnsureDefaultProjectEnv",
+			Handler:    _Data_EnsureDefaultProjectEnv_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
