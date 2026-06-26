@@ -116,7 +116,9 @@
                             <td class="version">{{ item.is_latest ? 'latest' : item.versionName }}</td>
                             <td class="user"><user-name :name="item.creator" /></td>
                             <td class="user"><user-name :name="item.reviser" /></td>
-                            <td class="datetime">{{ item.update_at }}</td>
+                            <td class="datetime">
+                              <span v-overflow-title>{{ item.update_at }}</span>
+                            </td>
                             <td class="status" v-if="versionData.id === 0">
                               <StatusTag :status="item.file_state" />
                             </td>
@@ -1173,6 +1175,7 @@
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
+      user-select: none;
     }
     .file-name-btn {
       color: #3a84ff;
