@@ -128,7 +128,7 @@
   .sync-status-extra {
     flex: 1 1 0;
     min-width: 72px;
-    max-width: 280px;
+    width: 272px;
     font-size: 12px;
     line-height: 18px;
     .spinner-icon {
