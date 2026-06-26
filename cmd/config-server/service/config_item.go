@@ -375,7 +375,7 @@ func (s *Service) GetConfigItem(ctx context.Context, req *pbcs.GetConfigItemReq)
 		return nil, err
 	}
 
-	return s.getEditingConfigItem(grpcKit, req.ConfigItemId, grpcKit.BizID, req.AppId)
+	return s.getEditingConfigItem(grpcKit, req.Id, grpcKit.BizID, req.AppId)
 }
 
 // getEditingConfigItem get edit config item
@@ -441,7 +441,7 @@ func (s *Service) GetReleasedConfigItem(ctx context.Context, req *pbcs.GetReleas
 		BizId:        req.BizId,
 		AppId:        req.AppId,
 		ReleaseId:    req.ReleaseId,
-		ConfigItemId: req.ConfigItemId,
+		ConfigItemId: req.Id,
 	}
 	releasedCI, err := s.client.DS.GetReleasedConfigItem(grpcKit.RpcCtx(), grciReq)
 	if err != nil {

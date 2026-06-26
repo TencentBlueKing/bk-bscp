@@ -83,6 +83,7 @@ func (p *proxy) routers() http.Handler {
 		r.Use(p.authorizer.BizVerified)
 		r.Use(p.authorizer.AppVerified)
 		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.AppProjectEnvVerified) // 校验 App 归属于该项目+环境
 		r.Use(view.Generic(p.authorizer))
 		r.Mount("/", p.cfgSvrMux)
 	})
@@ -109,6 +110,31 @@ func (p *proxy) routers() http.Handler {
 		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(p.HttpServerHandledTotal("", ""))
 		r.Use(view.Generic(p.authorizer))
+		// 项目和环境相关路由
+		r.Route("/biz/{biz_id}/projects", func(r chi.Router) {
+			r.Mount("/list", p.cfgSvrMux)
+			r.Mount("/", p.cfgSvrMux)
+			r.Route("/{project_id}", func(r chi.Router) {
+				// 开始强制校验 URL 里的 project_id
+				r.Use(p.authorizer.VerifyProjectExists)
+				r.Mount("/", p.cfgSvrMux)
+				r.Route("/envs", func(r chi.Router) {
+					r.Mount("/list", p.cfgSvrMux)
+					r.Mount("/", p.cfgSvrMux)
+					r.Route("/{env_id}", func(r chi.Router) {
+						// 开始强制校验 URL 里的 env_id
+						r.Use(p.authorizer.VerifyEnvExists)
+						// 这里开始校验 app
+						r.Route("/apps/{app_id}", func(r chi.Router) {
+							r.Use(p.AppProjectEnvVerified)
+							r.Mount("/", p.cfgSvrMux)
+						})
+						r.Mount("/", p.cfgSvrMux)
+					})
+				})
+			})
+		})
+
 		r.Mount("/", p.cfgSvrMux)
 	})
 

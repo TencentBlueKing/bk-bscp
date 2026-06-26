@@ -404,47 +404,49 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 }
 
 // Project 校验中间件
-// TODO: 补充项目存在性及权限校验逻辑
-func (a authorizer) ProjectVerified(next http.Handler) http.Handler {
+// TODO: 补充项目存在性
+func (a authorizer) VerifyProjectExists(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		kt := kit.MustGetKit(r.Context())
-		// projectIDStr := chi.URLParam(r, "project_id")
-		// if projectIDStr == "" {
-		// 	render.Render(w, r, rest.BadRequest(errors.New("project_id is required")))
-		// 	return
-		// }
+		projectIDStr := chi.URLParam(r, "project_id")
 
-		// projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-		// if err != nil {
-		// 	render.Render(w, r, rest.BadRequest(err))
-		// 	return
-		// }
+		// 如果 URL 里没传 project_id
+		if projectIDStr == "" {
+			render.Render(w, r, rest.BadRequest(errors.New("project_id is required")))
+			return
+		}
 
-		// kt.ProjectID = uint32(projectID)
+		projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		kt.ProjectID = uint32(projectID)
 
 		next.ServeHTTP(w, r.WithContext(kit.WithKit(r.Context(), kt)))
 	})
 }
 
 // Env 校验中间件
-// TODO: 补充环境存在性及权限校验逻辑
-func (a authorizer) EnvVerified(next http.Handler) http.Handler {
+// TODO: 补充环境存在性
+func (a authorizer) VerifyEnvExists(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		kt := kit.MustGetKit(r.Context())
 
-		// envIDStr := chi.URLParam(r, "env_id")
-		// if envIDStr == "" {
-		// 	render.Render(w, r, rest.BadRequest(errors.New("env_id is required")))
-		// 	return
-		// }
+		envIDStr := chi.URLParam(r, "env_id")
+		if envIDStr == "" {
+			render.Render(w, r, rest.BadRequest(errors.New("env_id is required")))
+			return
+		}
 
-		// envID, err := strconv.ParseUint(envIDStr, 10, 32)
-		// if err != nil {
-		// 	render.Render(w, r, rest.BadRequest(err))
-		// 	return
-		// }
+		envID, err := strconv.ParseUint(envIDStr, 10, 32)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
 
-		// kt.EnvID = uint32(envID)
+		kt.EnvID = uint32(envID)
 
 		next.ServeHTTP(w, r.WithContext(kit.WithKit(r.Context(), kt)))
 	})

@@ -15,7 +15,6 @@ package service
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -67,6 +66,8 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 			ApproveType: req.ApproveType,
 			Approver:    req.Approver,
 		},
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.CreateApp(kt.RpcCtx(), r)
 	if err != nil {
@@ -94,7 +95,7 @@ func (s *Service) UpdateApp(ctx context.Context, req *pbcs.UpdateAppReq) (*pbapp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.Id}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.GetAppId()}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -102,7 +103,7 @@ func (s *Service) UpdateApp(ctx context.Context, req *pbcs.UpdateAppReq) (*pbapp
 	}
 
 	r := &pbds.UpdateAppReq{
-		Id:    req.Id,
+		AppId: req.GetAppId(),
 		BizId: req.BizId,
 		Spec: &pbapp.AppSpec{
 			Name:        req.Name,
@@ -113,6 +114,8 @@ func (s *Service) UpdateApp(ctx context.Context, req *pbcs.UpdateAppReq) (*pbapp
 			ApproveType: req.ApproveType,
 			Approver:    req.Approver,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     grpcKit.ResolvedEnvID(req.GetEnvId()),
 	}
 	app, err := s.client.DS.UpdateApp(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -130,7 +133,7 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbcs.DeleteAppReq) (*pbcs.
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Delete, ResourceID: req.Id}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.Delete, ResourceID: req.GetAppId()}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
@@ -138,8 +141,10 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbcs.DeleteAppReq) (*pbcs.
 	}
 
 	r := &pbds.DeleteAppReq{
-		Id:    req.Id,
-		BizId: req.BizId,
+		AppId:     req.GetAppId(),
+		BizId:     req.BizId,
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	_, err = s.client.DS.DeleteApp(kt.RpcCtx(), r)
 	if err != nil {
@@ -163,8 +168,10 @@ func (s *Service) GetApp(ctx context.Context, req *pbcs.GetAppReq) (*pbapp.App, 
 	}
 
 	r := &pbds.GetAppReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.GetApp(kt.RpcCtx(), r)
 	if err != nil {
@@ -180,8 +187,10 @@ func (s *Service) GetAppByName(ctx context.Context, req *pbcs.GetAppByNameReq) (
 	kt := kit.FromGrpcContext(ctx)
 
 	r := &pbds.GetAppByNameReq{
-		BizId:   req.BizId,
-		AppName: req.AppName,
+		BizId:     req.BizId,
+		AppName:   req.AppName,
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.GetAppByName(kt.RpcCtx(), r)
 	if err != nil {
@@ -222,14 +231,15 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 	}
 
 	spaceMap := map[string]*pbas.Space{}
-	spaceIdList := []string{}
+	// TODO: 该接口如果有用到后续单独加个方法
+	// spaceIdList := []string{}
 	for _, s := range userSpaceResp.GetItems() {
 		spaceMap[s.SpaceId] = s
-		spaceIdList = append(spaceIdList, s.SpaceId)
+		// spaceIdList = append(spaceIdList, s.SpaceId)
 	}
 
 	r := &pbds.ListAppsRestReq{
-		BizId:  strings.Join(spaceIdList, ","),
+		// BizId:  strings.Join(spaceIdList, ","),
 		Start:  req.Start,
 		Limit:  req.Limit,
 		Search: req.Search,
@@ -278,13 +288,15 @@ func (s *Service) ListAppsBySpaceRest(ctx context.Context,
 	}
 
 	r := &pbds.ListAppsRestReq{
-		BizId:      strconv.Itoa(int(req.BizId)),
+		BizId:      req.BizId,
 		Start:      req.Start,
 		Limit:      req.Limit,
 		All:        req.All,
 		TopIds:     req.TopIds,
 		ConfigType: req.ConfigType,
 		Search:     req.Search,
+		ProjectId:  kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:      kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -470,6 +482,8 @@ func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.Cr
 		PreHookId:   req.GetPreHookId(),
 		PostHookId:  req.GetPostHookId(),
 		DataType:    req.GetDataType(),
+		ProjectId:   kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:       kt.ResolvedEnvID(req.GetEnvId()),
 	})
 	if err != nil {
 		return nil, err

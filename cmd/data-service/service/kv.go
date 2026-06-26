@@ -63,7 +63,7 @@ func (s *Service) CreateKv(ctx context.Context, req *pbds.CreateKvReq) (*pbds.Cr
 			i18n.T(kt, "the config item %s under this service already exists and cannot be created again", req.Spec.Key))
 	}
 	// get app with id.
-	app, err := s.dao.App().Get(kt, req.Attachment.BizId, req.Attachment.AppId)
+	app, err := s.dao.App().Get(kt, req.Attachment.BizId, req.GetProjectId(), req.GetEnvId(), req.Attachment.AppId)
 	if err != nil {
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "get app fail, key: %s, err: %v", req.Spec.Key, err))
 	}
@@ -315,7 +315,7 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbds.BatchUpsertKvsRe
 	// FromGrpcContext used only to obtain Kit through grpc context.
 	kt := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().Get(kt, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(kt, req.BizId, req.GetProjectId(), req.GetEnvId(), req.AppId)
 	if err != nil {
 		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "get app failed, err: %v", err))
 	}

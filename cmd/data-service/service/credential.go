@@ -204,7 +204,8 @@ func (s *Service) CredentialScopePreview(ctx context.Context, req *pbds.Credenti
 	*pbds.CredentialScopePreviewResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().GetByName(kt, req.BizId, req.AppName)
+	// TODO: 处理客户端密钥模块时再项目
+	app, err := s.dao.App().GetByName(kt, req.BizId, 0, 0, req.AppName)
 	if err != nil {
 		return nil, err
 	}

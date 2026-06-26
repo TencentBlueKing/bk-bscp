@@ -49,21 +49,27 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/create/app/app/biz_id/{biz_id}"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps" body: "*" }
     };
   }
   // 更新服务
   rpc UpdateApp(UpdateAppReq) returns (pbapp.App) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      put: "/api/v1/config/update/app/app/app_id/{id}/biz_id/{biz_id}"
+      put: "/api/v1/config/update/app/app/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}"
+        body: "*"
+      }
     };
   }
   // 删除服务
   rpc DeleteApp(DeleteAppReq) returns (DeleteAppResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      delete: "/api/v1/config/delete/app/app/app_id/{id}/biz_id/{biz_id}"
+      delete: "/api/v1/config/delete/app/app/app_id/{app_id}/biz_id/{biz_id}"
+      additional_bindings { delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}" }
     };
   }
   // 获取服务
@@ -71,6 +77,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}" }
     };
   }
   // 按服务名称获取
@@ -78,10 +85,12 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/query/name/{app_name}"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps" }
       additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/query/name/{app_name}" }
     };
   }
   // 获取用户有权限的 spaces 所有的 apps
+  // TODO: 暂未用到
   rpc ListAppsRest(ListAppsRestReq) returns (ListAppsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
@@ -94,7 +103,10 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/list/app/app/biz_id/{biz_id}"
       body: "*"
-      additional_bindings { get: "/api/v1/config/list/app/app/biz_id/{biz_id}" }
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/list"
+        body: "*"
+      }
     };
   }
   // 克隆服务
@@ -103,6 +115,10 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/clone_app"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/clone"
+        body: "*"
+      }
     };
   }
 
@@ -110,9 +126,12 @@ service Config {
   rpc CreateConfigItem(CreateConfigItemReq) returns (CreateConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/create/config_item/config_item/app_id/{app_id}/"
-            "biz_id/{biz_id}"
+      post: "/api/v1/config/create/config_item/config_item/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items"
+        body: "*"
+      }
     };
   }
   // 批量创建或更新文件配置项
@@ -121,6 +140,10 @@ service Config {
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items"
+        body: "*"
+      }
       additional_bindings { put: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/config_items" body: "*" }
     };
   }
@@ -128,34 +151,46 @@ service Config {
   rpc UpdateConfigItem(UpdateConfigItemReq) returns (UpdateConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      put: "/api/v1/config/update/config_item/config_item/config_item_id/{id}/"
-           "app_id/{app_id}/biz_id/{biz_id}"
+      put: "/api/v1/config/update/config_item/config_item/config_item_id/{id}/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}"
+        body: "*"
+      }
     };
   }
   // 删除文件配置项
   rpc DeleteConfigItem(DeleteConfigItemReq) returns (DeleteConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      delete: "/api/v1/config/delete/config_item/config_item/config_item_id/"
-              "{id}/app_id/{app_id}/biz_id/{biz_id}"
+      delete: "/api/v1/config/delete/config_item/config_item/config_item_id/{id}/app_id/{app_id}/biz_id/{biz_id}"
+      additional_bindings {
+        delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}"
+      }
     };
   }
   // 批量删除文件配置项
   rpc BatchDeleteConfigItems(BatchDeleteAppResourcesReq) returns (BatchDeleteResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/"
-            "batch_delete"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/batch_delete"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/batch_delete"
+        body: "*"
+      }
     };
   }
   // 恢复文件配置项
   rpc UnDeleteConfigItem(UnDeleteConfigItemReq) returns (UnDeleteConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/undelete/config_item/config_item/config_item_id/"
-            "{id}/app_id/{app_id}/biz_id/{biz_id}"
+      post: "/api/v1/config/undelete/config_item/config_item/config_item_id/{id}/app_id/{app_id}/biz_id/{biz_id}"
+      body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}/undelete"
+        body: "*"
+      }
     };
   }
   // 批量恢复文件配置项
@@ -164,30 +199,42 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/config_items/batch_undelete"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/batch_undelete"
+        body: "*"
+      }
     };
   }
   // 撤销文件配置项
   rpc UndoConfigItem(UndoConfigItemReq) returns (UndoConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/undo/config_item/config_item/config_item_id/{id}/"
-            "app_id/{app_id}/biz_id/{biz_id}"
+      post: "/api/v1/config/undo/config_item/config_item/config_item_id/{id}/app_id/{app_id}/biz_id/{biz_id}"
+      body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}/undo"
+        body: "*"
+      }
     };
   }
   // 获取文件配置项
   rpc GetConfigItem(GetConfigItemReq) returns (GetConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/"
-           "{config_item_id}"
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/{id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}"
+      }
     };
   }
   // 获取已发布文件配置项
   rpc GetReleasedConfigItem(GetReleasedConfigItemReq) returns (GetReleasedConfigItemResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "config_items/{config_item_id}"
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items/{id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/config_items/{id}"
+      }
     };
   }
   // 获取文件配置项列表
@@ -196,15 +243,22 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/list"
+        body: "*"
+      }
     };
   }
   // 获取已发布文件配置项列表
   rpc ListReleasedConfigItems(ListReleasedConfigItemsReq) returns (ListReleasedConfigItemsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-            "config_items"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/config_items"
+        body: "*"
+      }
     };
   }
   // 获取文件型服务配置数量列表
@@ -213,6 +267,10 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/config_item_count/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/count"
+        body: "*"
+      }
     };
   }
   // 按绝对路径获取文件配置项列表
@@ -221,26 +279,31 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/tuple"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/tuple"
+        body: "*"
+      }
     };
   }
   // 获取已生成版本键值配置项
   rpc GetReleasedKv(GetReleasedKvReq) returns (GetReleasedKvResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "kvs/{key}"
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/kvs/{key}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/kvs/{key}"
+      }
     };
   }
   // 获取已生成版本键值配置项列表
   rpc ListReleasedKvs(ListReleasedKvsReq) returns (ListReleasedKvsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-            "kvs"
+      post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/kvs"
       body: "*"
       additional_bindings {
-        get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-             "kvs"
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/kvs"
+        body: "*"
       }
     };
   }
@@ -249,6 +312,9 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/published/all"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/published/all"
+      }
     };
   }
   // 引用前后置脚本
@@ -263,9 +329,12 @@ service Config {
   rpc CreateRelease(CreateReleaseReq) returns (CreateReleaseResp) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
-      post: "/api/v1/config/create/release/release/app_id/{app_id}/biz_id/"
-            "{biz_id}"
+      post: "/api/v1/config/create/release/release/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases"
+        body: "*"
+      }
       additional_bindings {
         post: "/api/v1/inner/config/create/release/release/app_id/{app_id}/biz_id/{biz_id}"
         body: "*"
@@ -277,14 +346,19 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases"
+      }
     };
   }
   // 按服务版本名
   rpc GetReleaseByName(GetReleaseByNameReq) returns (pbrelease.Release) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/query/name/"
-           "{release_name}"
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/query/name/{release_name}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/query/name/{release_name}"
+      }
       additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/releases/query/name/{release_name}" }
     };
   }
@@ -293,23 +367,33 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}"
+      }
     };
   }
   // 废弃服务版本
   rpc DeprecateRelease(DeprecateReleaseReq) returns (DeprecateReleaseResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "deprecate"
+      put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/deprecate"
+      body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/deprecate"
+        body: "*"
+      }
     };
   }
   // 撤回废弃服务版本
   rpc UnDeprecateRelease(UnDeprecateReleaseReq) returns (UnDeprecateReleaseResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "undeprecate"
+      put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/undeprecate"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/undeprecate"
+        body: "*"
+      }
     };
   }
   // 删除服务版本
@@ -317,6 +401,9 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}"
+      additional_bindings {
+        delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}"
+      }
     };
   }
   // 检测服务版本名
@@ -324,6 +411,9 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release/{name}/check"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/name/{name}/check"
+      }
     };
   }
   // 创建脚本
@@ -1142,9 +1232,12 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   rpc Publish(PublishReq) returns (PublishResp) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
-      post: "/api/v1/config/update/strategy/publish/publish/release_id/"
-            "{release_id}/app_id/{app_id}/biz_id/{biz_id}"
+      post: "/api/v1/config/update/strategy/publish/publish/release_id/{release_id}/app_id/{app_id}/biz_id/{biz_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/publish"
+        body: "*"
+      }
       additional_bindings {
         post: "/api/v1/inner/config/update/strategy/publish/publish/release_id/{release_id}/app_id/{app_id}/biz_id/{biz_id}"
         body: "*"
@@ -1157,6 +1250,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/publish"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/publish"
+        body: "*"
+      }
       additional_bindings { post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/publish" body: "*" }
     };
   }
@@ -1166,6 +1263,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/submit"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/submit"
+        body: "*"
+      }
     };
   }
 
@@ -1175,6 +1276,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/approve"
+        body: "*"
+      }
       additional_bindings {
         post: "/api/v1/inner/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approve"
         body: "*"
@@ -1188,6 +1293,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/approval_callback"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/approval_callback"
+        body: "*"
+      }
     };
   }
 
@@ -1195,6 +1304,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/last/select"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/last/select"
+      }
     };
   }
 
@@ -1202,6 +1314,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/last/publish"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/last/publish"
+      }
     };
   }
 
@@ -1209,6 +1324,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/app_id/{app_id}/release_id/{release_id}/status"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/status"
+      }
     };
   }
 
@@ -1285,6 +1403,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs"
+        body: "*"
+      }
     };
   };
   // 更新键值配置项
@@ -1293,6 +1415,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/{key}"
+        body: "*"
+      }
     };
   };
   // 获取键值配置项列表
@@ -1302,6 +1428,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/list"
       body: "*"
       additional_bindings { post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/kvs/list" body: "*" }
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/list"
+        body: "*"
+      }
     };
   };
   // 删除键值配置项
@@ -1326,6 +1456,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs"
       body: "*"
       additional_bindings { put: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/kvs" body: "*" }
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs"
+        body: "*"
+      }
     };
   };
   // 恢复键值配置项
@@ -1333,6 +1467,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}/undelete"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/{key}/undelete"
+        body: "*"
+      }
     };
   };
   // 批量恢复键值配置项
@@ -1341,6 +1479,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/batch_undelete"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/batch_undelete"
+        body: "*"
+      }
     };
   };
   // 撤销修改的键值配置项
@@ -1348,6 +1490,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{key}/undo"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/{key}/undo"
+        body: "*"
+      }
     };
   };
   // 批量导出文本格式键值配置项
@@ -1356,6 +1502,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/{format}/import"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/kvs/{format}/import"
+        body: "*"
+      }
     };
   };
   // 查找临近到期证书
@@ -2042,8 +2192,9 @@ message CreateAppReq {
     description: "审批类型：会签=count_sign、或签=or_sign"
   }];
   string approver = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
+  uint32 project_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
-
 message CreateAppResp {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
 }
@@ -2055,7 +2206,7 @@ message UpdateAppReq {
       required: [ "alias", "config_type", "data_type", "name" ]
     }
   };
-  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 app_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务别名" }];
   string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务描述" }];
@@ -2071,11 +2222,15 @@ message UpdateAppReq {
     description: "审批类型：会签=count_sign、或签=or_sign"
   }];
   string approver = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
+  uint32 project_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeleteAppReq {
-  uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 app_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeleteAppResp {}
@@ -2083,11 +2238,15 @@ message DeleteAppResp {}
 message GetAppReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetAppByNameReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string app_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务名称" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAppsRestReq {
@@ -2097,6 +2256,8 @@ message ListAppsRestReq {
   google.protobuf.Struct search = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
   string operator = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAppsBySpaceRestReq {
@@ -2111,6 +2272,8 @@ message ListAppsBySpaceRestReq {
   ];
   google.protobuf.Struct search = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAppsResp {
@@ -2146,6 +2309,8 @@ message CreateConfigItemReq {
   string sign = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
   uint64 byte_size = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
   string charset = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  uint32 project_id = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchUpsertConfigItemsReq {
@@ -2182,6 +2347,8 @@ message BatchUpsertConfigItemsReq {
     pbatb.TemplateBinding template_binding = 2;
   }
   repeated TemplateBinding bindings = 6;
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchUpsertConfigItemsResp {
@@ -2222,6 +2389,8 @@ message UpdateConfigItemReq {
   string sign = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件sha256" }];
   uint64 byte_size = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件大小" }];
   string charset = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件编码" }];
+  uint32 project_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UpdateConfigItemResp {}
@@ -2230,6 +2399,8 @@ message DeleteConfigItemReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeleteConfigItemResp {}
@@ -2238,6 +2409,8 @@ message UnDeleteConfigItemReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UnDeleteConfigItemResp {}
@@ -2247,6 +2420,8 @@ message BatchUnDeleteConfigItemReq {
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   repeated uint32 ids = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchUnDeleteConfigItemResp {
@@ -2260,6 +2435,8 @@ message UndoConfigItemReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UndoConfigItemResp {}
@@ -2267,8 +2444,9 @@ message UndoConfigItemResp {}
 message GetConfigItemReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
-  uint32 config_item_id = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetConfigItemResp {
@@ -2280,8 +2458,9 @@ message GetReleasedConfigItemReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
-  uint32 config_item_id = 4
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "文件配置项ID" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetReleasedConfigItemResp {
@@ -2302,6 +2481,8 @@ message ListConfigItemsReq {
   repeated string status = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
   }];
+  uint32 project_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListConfigItemsResp {
@@ -2321,6 +2502,8 @@ message ListReleasedConfigItemsReq {
   uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListReleasedConfigItemsResp {
@@ -2331,6 +2514,8 @@ message ListReleasedConfigItemsResp {
 message ListConfigItemCountReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListConfigItemCountResp {
@@ -2345,6 +2530,8 @@ message ListConfigItemByTupleReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   repeated Item items = 3;
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListConfigItemByTupleResp {
@@ -2356,6 +2543,8 @@ message GetReleasedKvReq {
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
   string key = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "键值配置项的键" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetReleasedKvResp {
@@ -2375,6 +2564,8 @@ message ListReleasedKvsReq {
   repeated string kv_type = 9;
   string sort = 10;
   string order = 11;
+  uint32 project_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListReleasedKvsResp {
@@ -2385,6 +2576,8 @@ message ListReleasedKvsResp {
 message ListAllReleasedConfigItemsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAllReleasedConfigItemsResp {
@@ -2402,6 +2595,8 @@ message UpdateConfigHookReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "前置脚本：脚本ID" }];
   uint32 post_hook_id = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "后置脚本：脚本ID" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UpdateConfigHookResp {}
@@ -2412,6 +2607,8 @@ message CreateReleaseReq {
   string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本名称" }];
   string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本描述" }];
   repeated pbtv.TemplateVariableSpec variables = 5;
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message CreateReleaseResp {
@@ -2422,6 +2619,8 @@ message CheckReleaseNameReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本名" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message CheckReleaseNameResp {
@@ -2439,6 +2638,8 @@ message ListReleasesReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   bool deprecated = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否弃用：是=true，否=false" }];
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListReleasesResp {
@@ -2450,18 +2651,24 @@ message GetReleaseByNameReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   string release_name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本名" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetReleaseReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeprecateReleaseReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeprecateReleaseResp {}
@@ -2470,6 +2677,8 @@ message UnDeprecateReleaseReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UnDeprecateReleaseResp {}
@@ -2478,6 +2687,8 @@ message DeleteReleaseReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeleteReleaseResp {}
@@ -3572,6 +3783,8 @@ message ImportFromTemplateSetToAppReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   repeated Binding bindings = 3;
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ImportFromTemplateSetToAppResp {}
@@ -4110,8 +4323,9 @@ message PublishReq {
   string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
   }];
+  uint32 project_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
-
 message ListGroupSelectorReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string label_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "标签名" }];
@@ -4142,6 +4356,8 @@ message GenerateReleaseAndPublishReq {
   string group_name = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
   }];
+  uint32 project_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GenerateReleaseAndPublishResp {
@@ -4186,6 +4402,8 @@ message SubmitPublishApproveReq {
     description: "是否比较差异：是=true，否=false",
     default: "false"
   }];
+  uint32 project_id = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ApproveReq {
@@ -4194,6 +4412,8 @@ message ApproveReq {
   uint32 release_id = 3;
   string publish_status = 4;
   string reason = 5;
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ApproveResp {
@@ -4206,6 +4426,8 @@ message ApproveResp {
 message GetLastSelectReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetLastSelectResp {
@@ -4216,6 +4438,8 @@ message GetLastSelectResp {
 message GetLastPublishReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetLastPublishResp {
@@ -4230,6 +4454,8 @@ message GetReleasesStatusReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAuditsReq {
@@ -4277,6 +4503,8 @@ message CreateKvReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
   string certificate_expiration_date = 9
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "证书过期时间" }];
+  uint32 project_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message CreateKvResp {
@@ -4300,6 +4528,8 @@ message UpdateKvReq {
   }];
   bool secret_hidden = 8
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否隐藏值：是=true，否=false" }];
+  uint32 project_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UpdateKvResp {}
@@ -4327,6 +4557,8 @@ message ListKvsReq {
   repeated string status = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE)"
   }];
+  uint32 project_id = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListKvsResp {
@@ -4366,6 +4598,8 @@ message BatchDeleteAppResourcesReq {
     description: "是否排除操作：是=true，否=false",
     default: "false",
   }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchDeleteResp {
@@ -4397,6 +4631,8 @@ message BatchUpsertKvsReq {
   repeated Kv kvs = 3;
   bool replace_all = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否清空：是=true，否=false" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchUpsertKvsResp {
@@ -4408,6 +4644,8 @@ message UnDeleteKvReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   string key = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项名" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UnDeleteKvResp {}
@@ -4420,6 +4658,8 @@ message BatchUnDeleteKvReq {
     description: "是否排除操作：是=true，否=false",
     default: "false",
   }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message BatchUnDeleteKvResp {
@@ -4433,6 +4673,8 @@ message UndoKvReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   string key = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置项名" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message UndoKvResp {}
@@ -4445,6 +4687,8 @@ message ImportKvsReq {
     example: "{\"配置项名称\":{\"kv_type\":\"数据类型，支持以下类型：string、number、text、json、xml、yaml、secret\",\"value\":\"配置项的具体值\",\"secret_type\":\"密钥类型，仅在kv_type为secret时有效，支持的类型包括：password、secret_key、certificate、token\",\"secret_hidden\":\"指示配置项值是否可见，仅在kv_type为secret时有效\",\"memo\":\"对配置项的描述\"}}"
   }];
   string data = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "导入的数据" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ImportKvsResp {
@@ -4487,6 +4731,8 @@ message FindNearExpiryCertKvsReq {
   uint32 days = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "单位天，获取在指定天数内即将过期的证书"
   }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message FindNearExpiryCertKvsResp {
@@ -4742,6 +4988,8 @@ message ApprovalCallbackReq {
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
   string callback_token = 4;
   pbrelease.Ticket ticket = 5;
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 // itsm v4回调请求 返回
@@ -4818,6 +5066,8 @@ message CloneAppReq {
   string data_type = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "键值型服务数据类型：(any、string、number、text、json、yaml、xml、secret)"
   }];
+  uint32 project_id = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListProcessReq {

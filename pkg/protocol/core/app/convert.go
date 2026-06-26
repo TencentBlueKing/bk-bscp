@@ -75,9 +75,11 @@ func PbApp(app *table.App) *App {
 	}
 
 	return &App{
-		Id:       app.ID,
-		BizId:    app.BizID,
-		Spec:     PbAppSpec(app.Spec),
-		Revision: pbbase.PbRevision(app.Revision),
+		Id:        app.ID,
+		BizId:     app.BizID,
+		Spec:      PbAppSpec(app.Spec),
+		Revision:  pbbase.PbRevision(app.Revision),
+		ProjectId: app.ProjID,
+		EnvId:     app.EnvID,
 	}
 }

@@ -36,7 +36,7 @@ func (s *Service) GetLastSelect(ctx context.Context, req *pbds.GetLastSelectReq)
 		IsApprove:   false,
 	}
 
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return resp, nil

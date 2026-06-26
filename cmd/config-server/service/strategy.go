@@ -39,8 +39,10 @@ func (s *Service) GetLastSelect(ctx context.Context, req *pbcs.GetLastSelectReq)
 	}
 
 	r := &pbds.GetLastSelectReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.GetLastSelect(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -71,8 +73,10 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbcs.GetLastPublishRe
 	}
 
 	r := &pbds.GetLastPublishReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.GetLastPublish(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -109,6 +113,8 @@ func (s *Service) GetReleasesStatus(ctx context.Context, req *pbcs.GetReleasesSt
 		BizId:     req.BizId,
 		AppId:     req.AppId,
 		ReleaseId: req.ReleaseId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.GetReleasesStatus(grpcKit.RpcCtx(), r)
 	if err != nil {

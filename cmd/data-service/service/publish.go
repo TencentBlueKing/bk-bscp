@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/enumor"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/uuid"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -47,7 +48,7 @@ func (s *Service) Publish(ctx context.Context, req *pbds.PublishReq) (*pbds.Publ
 	// 只给流水线插件做兼容，该接口暂时还不能去除
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +71,8 @@ func (s *Service) Publish(ctx context.Context, req *pbds.PublishReq) (*pbds.Publ
 		PublishType:     string(publishType),
 		PublishTime:     "",
 		IsCompare:       false,
+		ProjectId:       req.ProjectId,
+		EnvId:           req.EnvId,
 	})
 }
 
@@ -79,9 +82,22 @@ func (s *Service) SubmitPublishApprove(
 	ctx context.Context, req *pbds.SubmitPublishApproveReq) (*pbds.PublishResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errf.Errorf(
+				errf.RecordNotFound,
+				"%s",
+				i18n.T(grpcKit, "app does not exist"),
+			)
+		}
+
+		return nil, errf.Errorf(
+			errf.DBOpFailed,
+			"%s: %v",
+			i18n.T(grpcKit, "app query failed"),
+			err,
+		)
 	}
 
 	release, err := s.dao.Release().Get(grpcKit, req.BizId, req.AppId, req.ReleaseId)
@@ -198,7 +214,7 @@ func (s *Service) SubmitPublishApprove(
 		havePull = true
 	}
 
-	haveCredentials, err := s.checkAppHaveCredentials(grpcKit, req.BizId, req.AppId)
+	haveCredentials, err := s.checkAppHaveCredentials(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +410,7 @@ func (s *Service) Approve(ctx context.Context, req *pbds.ApproveReq) (*pbds.Appr
 		havePull = true
 	}
 
-	haveCredentials, err := s.checkAppHaveCredentials(grpcKit, req.BizId, req.AppId)
+	haveCredentials, err := s.checkAppHaveCredentials(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		return nil, err
 	}
@@ -818,8 +834,8 @@ func (s *Service) parsePublishOption(req *pbds.SubmitPublishApproveReq, app *tab
 // checkAppHaveCredentials check if there is available credential for app.
 // 1. credential scope can match app name.
 // 2. credential is enabled.
-func (s *Service) checkAppHaveCredentials(grpcKit *kit.Kit, bizID, appID uint32) (bool, error) {
-	app, err := s.dao.App().Get(grpcKit, bizID, appID)
+func (s *Service) checkAppHaveCredentials(grpcKit *kit.Kit, bizID, projectID, envID, appID uint32) (bool, error) {
+	app, err := s.dao.App().Get(grpcKit, bizID, projectID, envID, appID)
 	if err != nil {
 		return false, err
 	}

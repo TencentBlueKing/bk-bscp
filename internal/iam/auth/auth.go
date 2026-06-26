@@ -67,10 +67,10 @@ type Authorizer interface {
 	AppVerified(next http.Handler) http.Handler
 	// BizVerified 业务鉴权
 	BizVerified(next http.Handler) http.Handler
-	// ProjectVerified 项目鉴权
-	ProjectVerified(next http.Handler) http.Handler
-	// EnvVerified 环境鉴权
-	EnvVerified(next http.Handler) http.Handler
+	// VerifyProjectExists 项目鉴权
+	VerifyProjectExists(next http.Handler) http.Handler
+	// VerifyEnvExists 环境鉴权
+	VerifyEnvExists(next http.Handler) http.Handler
 	// ContentVerified 内容(上传下载)鉴权
 	ContentVerified(next http.Handler) http.Handler
 	// LogOut handler will build login url, client should make redirect
@@ -385,4 +385,9 @@ func (a authorizer) LogOut(r *http.Request) *rest.UnauthorizedData {
 // HasBiz 业务是否存在
 func (a authorizer) HasBiz(ctx context.Context, bizID uint32) bool {
 	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(bizID), 10))
+}
+
+// HasProject 项目是否存在
+func (a authorizer) HasProject(ctx context.Context, projectID uint32) bool {
+	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(projectID), 10))
 }

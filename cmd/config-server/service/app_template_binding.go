@@ -807,9 +807,11 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbcs.Impo
 	}
 
 	_, err := s.client.DS.ImportFromTemplateSetToApp(kit.RpcCtx(), &pbds.ImportFromTemplateSetToAppReq{
-		BizId:    req.BizId,
-		AppId:    req.AppId,
-		Bindings: bindings,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		Bindings:  bindings,
+		ProjectId: kit.ResolvedProjectID(req.ProjectId),
+		EnvId:     kit.ResolvedEnvID(req.EnvId),
 	})
 
 	if err != nil {

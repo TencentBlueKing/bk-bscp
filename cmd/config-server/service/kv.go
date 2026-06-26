@@ -73,6 +73,8 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 			SecretHidden:              req.SecretHidden,
 			CertificateExpirationDate: expirationTime,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     grpcKit.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.CreateKv(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -336,6 +338,8 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 		AppId:      req.AppId,
 		Kvs:        kvs,
 		ReplaceAll: req.GetReplaceAll(),
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	data, err := s.client.DS.BatchUpsertKvs(grpcKit.RpcCtx(), r)
 	if err != nil {

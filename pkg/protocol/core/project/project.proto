@@ -25,6 +25,8 @@ message ProjectSpec {
   ];
   uint32 env_count = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境数" }];
   uint32 app_count = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务总数" }];
+  bool is_default = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否默认：true-是，false-否" }];
 }
 
 // ProjectAttachment source resource reference: pkg/dal/table/project.go
