@@ -1329,6 +1329,7 @@ export default {
   服务实例: 'Service Instance',
   'CC 进程ID': 'CC Process ID',
   进程状态: 'Process Status',
+  agent状态: 'Agent Status',
   托管状态: 'Managed Status',
   状态获取时间: 'Status Retrieval Time',
   'CC 同步状态': 'CC Sync Status',

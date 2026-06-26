@@ -37,3 +37,9 @@ export const PROCESS_BUTTON_DISABLED_TIPS = {
   NO_REGISTER_UPDATE: localT('无需更新托管信息'),
   PROCESS_ABNORMAL: localT('进程异常'),
 };
+
+// agent状态
+export const PROCESS_AGENT_STATUS = {
+  normal: localT('正常'),
+  abnormal: localT('异常'),
+};

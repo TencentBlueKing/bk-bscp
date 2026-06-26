@@ -63,6 +63,14 @@
           <span v-else>--</span>
         </template>
       </TableColumn>
+      <TableColumn col-key="spec.agent_status" :title="t('agent状态')" resizable>
+        <template #default="{ row }: { row: IProcessItem }">
+          <div v-if="row.spec.agent_status" :class="`${row.spec.agent_status}-agent-status`">
+            {{ PROCESS_AGENT_STATUS[row.spec.agent_status] }}
+          </div>
+          <span v-else>--</span>
+        </template>
+      </TableColumn>
       <TableColumn col-key="spec.managed_status" :title="t('托管状态')" width="152" resizable>
         <template #default="{ row }: { row: IProcessItem }">
           <bk-tag v-if="row.spec.managed_status" :theme="getManagedStatusTheme(row.spec.managed_status)">
@@ -263,7 +271,7 @@
   import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
   import { getProcessList, processOperate } from '../../../../api/process';
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
-  import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP } from '../../../../constants/process';
+  import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP, PROCESS_AGENT_STATUS } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
   import { timeAgo } from '../../../../utils';
   import { useRouter } from 'vue-router';
@@ -826,6 +834,12 @@
     color: #e71818;
     cursor: pointer;
     font-weight: bold;
+  }
+  .normal-agent-status {
+    color:#3fc06d;
+  }
+  .abnormal-agent-status {
+    color:#e24343;
   }
   :deep(.t-table--column-resizable th) {
     border-top: none !important;

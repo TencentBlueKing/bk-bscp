@@ -24,6 +24,7 @@ export interface IProcessItem {
     bind_template_ids: number[];
     process_config_view_url: string;
     new_alias: string;
+    agent_status: 'normal' | 'abnormal';
   };
 }
 
