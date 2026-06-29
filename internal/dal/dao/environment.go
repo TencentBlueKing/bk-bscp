@@ -54,6 +54,8 @@ type Environment interface {
 	// CreateWithTx create one environments instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, environments *table.Environment) (uint32, error)
 	CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, environments *table.Environment) error
+	// DeleteByProjectIDWithTx  delete environments by project id with transaction.
+	DeleteByProjectIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, projectID uint32) error
 }
 
 var _ Environment = new(environmentDao)
@@ -63,6 +65,18 @@ type environmentDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// DeleteByProjectIDWithTx implements [Environment].
+func (dao *environmentDao) DeleteByProjectIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, projectID uint32) error {
+	m := tx.Environment
+	q := tx.Environment.WithContext(kit.Ctx)
+
+	if _, e := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Delete(); e != nil {
+		return e
+	}
+
+	return nil
 }
 
 // CountByProjectIDs 批量统计项目下的环境数量

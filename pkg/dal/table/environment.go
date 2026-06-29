@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	DefaultEnvName = "default"
+	DefaultEnvName = "Default"
 )
 
 // Environment defines an environment's detail information

@@ -162,7 +162,19 @@ func (s *Service) EnsureDefaultProjectEnv(ctx context.Context, req *pbds.EnsureD
 func (s *Service) CreateProject(ctx context.Context, req *pbds.CreateProjectReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	id, err := s.dao.Project().Create(kt, &table.Project{
+	// 1. 开启事物
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
+	// 2. 在事务中创建项目
+	projectID, err := s.dao.Project().CreateWithTx(kt, tx, &table.Project{
 		Spec: &table.ProjectSpec{
 			Name: req.GetName(),
 			Memo: req.GetMemo(),
@@ -180,7 +192,34 @@ func (s *Service) CreateProject(ctx context.Context, req *pbds.CreateProjectReq)
 		return nil, err
 	}
 
-	return &pbds.CreateResp{Id: id}, nil
+	// 3. 在同一事务中自动创建默认生产环境
+	_, err = s.dao.Environment().CreateWithTx(kt, tx, &table.Environment{
+		Spec: &table.EnvironmentSpec{
+			Name: table.DefaultEnvName,
+			Type: table.EnvironmentTypeProd,
+			Memo: "Default production environment automatically created.",
+		},
+		Attachment: &table.EnvironmentAttachment{
+			TenantID:  kt.TenantID,
+			BizID:     req.GetBizId(),
+			ProjectID: projectID,
+		},
+		Revision: &table.Revision{
+			Creator:   kt.User,
+			CreatedAt: time.Now().UTC(),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 提交事务
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	committed = true
+
+	return &pbds.CreateResp{Id: projectID}, nil
 }
 
 // DeleteProject implements [pbds.DataServer].
@@ -198,18 +237,48 @@ func (s *Service) DeleteProject(ctx context.Context, req *pbds.DeleteProjectReq)
 	}
 
 	// 检查是否有关联的环境（属于“级联依赖”导致的无法删除）
-	envCount, err := s.dao.Environment().CountByProjectID(kt, req.GetProjectId())
+	envs, _, err := s.dao.Environment().List(kt, req.GetBizId(), req.GetProjectId(), &types.BasePage{All: true})
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kt, "environment list failed"), err)
+	}
+	envIDs := []uint32{}
+	for _, env := range envs {
+		envIDs = append(envIDs, env.ID)
+	}
+
+	appCounts, err := s.dao.App().CountByEnvIDs(kt, envIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	if envCount > 0 {
-		return nil, errors.New(i18n.T(kt, "there are still environments under the project, please delete the environments first"))
+	if len(appCounts) > 0 {
+		return nil, errors.New(i18n.T(kt, "there are still active resources in the environments under this project, cannot be deleted"))
 	}
 
-	if err = s.dao.Project().Delete(kt, project); err != nil {
+	// 开启事物
+	tx := s.dao.GenQuery().Begin()
+	committed := false
+	defer func() {
+		if !committed {
+			if rErr := tx.Rollback(); rErr != nil {
+				logs.Errorf("transaction rollback failed, err: %v, rid: %s", rErr, kt.Rid)
+			}
+		}
+	}()
+
+	if err = s.dao.Project().DeleteWithTx(kt, tx, project); err != nil {
 		return nil, err
 	}
+
+	if err = s.dao.Environment().DeleteByProjectIDWithTx(kt, tx, req.GetBizId(), req.GetProjectId()); err != nil {
+		return nil, err
+	}
+
+	if e := tx.Commit(); e != nil {
+		logs.Errorf("commit transaction failed, err: %v, rid: %s", e, kt.Rid)
+		return nil, e
+	}
+	committed = true
 
 	return &pbbase.EmptyResp{}, nil
 }

@@ -79,6 +79,11 @@ func (s *Service) DeleteEnvironment(ctx context.Context, req *pbds.DeleteEnviron
 		return nil, errors.New(i18n.T(kt, "environment is protected, cannot be deleted"))
 	}
 
+	// 3. 如果是生产环境(Prod)下的默认环境(Default)，不允许删除
+	if environment.Spec.Type == table.EnvironmentTypeProd && environment.Spec.Name == table.DefaultEnvName {
+		return nil, errors.New(i18n.T(kt, "the default environment under the production space cannot be deleted"))
+	}
+
 	// 检查是否有关联的服务（属于“级联依赖”导致的无法删除）
 	appCount, err := s.dao.App().CountByEnvID(kt, req.GetEnvId())
 	if err != nil {
