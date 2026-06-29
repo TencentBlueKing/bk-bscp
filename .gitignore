@@ -26,3 +26,11 @@ render/python/dist/
 render/python/build/
 .ftp
 .codex
+
+### AI tooling (OpenSpec / Cursor / Claude / Copilot) ###
+.claude/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/
+openspec/
