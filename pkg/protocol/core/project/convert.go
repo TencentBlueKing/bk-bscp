@@ -14,6 +14,8 @@
 package pbproject
 
 import (
+	"database/sql"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
 )
@@ -29,6 +31,10 @@ func (p *ProjectSpec) ProjectSpec() *table.ProjectSpec {
 		Key:       p.Key,
 		Memo:      p.Memo,
 		Protected: p.Protected,
+		IsDefault: sql.NullBool{
+			Bool:  p.IsDefault,
+			Valid: p.IsDefault,
+		},
 	}
 }
 
@@ -45,6 +51,7 @@ func PbProjectSpec(spec *table.ProjectSpec, envCount uint32, appCount uint32) *P
 		Protected: spec.Protected,
 		EnvCount:  envCount,
 		AppCount:  appCount,
+		IsDefault: spec.IsDefault.Bool,
 	}
 }
 

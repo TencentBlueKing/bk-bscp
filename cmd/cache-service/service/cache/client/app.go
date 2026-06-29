@@ -183,7 +183,8 @@ func (c *client) refreshAppIDCache(kt *kit.Kit, bizID uint32, appName string) (u
 	cancel := kt.CtxWithTimeoutMS(200)
 	defer cancel()
 
-	app, err := c.op.App().GetByName(kt, bizID, appName)
+	// TODO: 待补充项目和环境
+	app, err := c.op.App().GetByName(kt, bizID, 0, 0, appName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, status.Errorf(codes.NotFound, err.Error())

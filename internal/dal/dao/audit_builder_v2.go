@@ -131,9 +131,14 @@ func (ab *AuditBuilderV2) PrepareCreate(obj AuditRes) AuditDo {
 
 // PrepareUpdate 更新资源, 会记录 spec 对比值
 func (ab *AuditBuilderV2) PrepareUpdate(obj AuditRes) AuditDo {
+	// 优先使用对象自带的 ProjectID
+	pID := obj.ProjectID()
+	if pID == 0 {
+		pID = ab.kit.ProjectID
+	}
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
-	ab.toAudit.ProjectID = obj.ProjectID()
+	ab.toAudit.ProjectID = pID
 	ab.toAudit.Action = enumor.Update
 
 	return ab
@@ -141,9 +146,14 @@ func (ab *AuditBuilderV2) PrepareUpdate(obj AuditRes) AuditDo {
 
 // PrepareDelete 删除资源
 func (ab *AuditBuilderV2) PrepareDelete(obj AuditRes) AuditDo {
+	// 优先使用对象自带的 ProjectID
+	pID := obj.ProjectID()
+	if pID == 0 {
+		pID = ab.kit.ProjectID
+	}
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
-	ab.toAudit.ProjectID = obj.ProjectID()
+	ab.toAudit.ProjectID = pID
 	ab.toAudit.Action = enumor.Delete
 
 	return ab
@@ -151,9 +161,14 @@ func (ab *AuditBuilderV2) PrepareDelete(obj AuditRes) AuditDo {
 
 // PreparePublish 发布配置
 func (ab *AuditBuilderV2) PreparePublish(obj AuditRes) AuditDo {
+	// 优先使用对象自带的 ProjectID
+	pID := obj.ProjectID()
+	if pID == 0 {
+		pID = ab.kit.ProjectID
+	}
 	ab.toAudit.ResourceType = enumor.AuditResourceType(obj.ResType())
 	ab.toAudit.ResourceID = obj.ResID()
-	ab.toAudit.ProjectID = obj.ProjectID()
+	ab.toAudit.ProjectID = pID
 	ab.toAudit.Action = enumor.Publish
 
 	return ab

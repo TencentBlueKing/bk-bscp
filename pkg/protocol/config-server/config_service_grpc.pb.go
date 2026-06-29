@@ -270,6 +270,7 @@ type ConfigClient interface {
 	// 按服务名称获取
 	GetAppByName(ctx context.Context, in *GetAppByNameReq, opts ...grpc.CallOption) (*app.App, error)
 	// 获取用户有权限的 spaces 所有的 apps
+	// TODO: 暂未用到
 	ListAppsRest(ctx context.Context, in *ListAppsRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(ctx context.Context, in *ListAppsBySpaceRestReq, opts ...grpc.CallOption) (*ListAppsResp, error)
@@ -2765,6 +2766,7 @@ type ConfigServer interface {
 	// 按服务名称获取
 	GetAppByName(context.Context, *GetAppByNameReq) (*app.App, error)
 	// 获取用户有权限的 spaces 所有的 apps
+	// TODO: 暂未用到
 	ListAppsRest(context.Context, *ListAppsRestReq) (*ListAppsResp, error)
 	// 按 space 查询 app 信息
 	ListAppsBySpaceRest(context.Context, *ListAppsBySpaceRestReq) (*ListAppsResp, error)

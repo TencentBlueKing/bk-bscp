@@ -44,20 +44,24 @@ import (
 func (s *Service) CreateApp(ctx context.Context, req *pbds.CreateAppReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+
 	// validate biz exist when user is not for test
 	if !strings.HasPrefix(kt.User, constant.BKUserForTestPrefix) {
-		if err := s.validateBizExist(kt, req.BizId); err != nil {
+		if err := s.validateBizExist(kt, bizID); err != nil {
 			logs.Errorf("validate biz exist failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
 		}
 	}
 
-	if _, err := s.dao.App().GetByName(kt, req.BizId, req.Spec.Name); err == nil {
-		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kt, "app name %s already exists", req.Spec.Name))
+	if _, err := s.dao.App().GetByName(kt, bizID, projectID, envID, req.Spec.Name); err == nil {
+		return nil, errf.Errorf(errf.InvalidRequest, "%s", i18n.T(kt, "app name %s already exists", req.Spec.Name))
 	}
 
-	if _, err := s.dao.App().GetByAlias(kt, req.BizId, req.Spec.Alias); err == nil {
-		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kt, "app alias %s already exists", req.Spec.Alias))
+	if _, err := s.dao.App().GetByAlias(kt, bizID, projectID, envID, req.Spec.Alias); err == nil {
+		return nil, errf.Errorf(errf.InvalidRequest, "%s", i18n.T(kt, "app alias %s already exists", req.Spec.Alias))
 	}
 
 	app := &table.App{
@@ -67,7 +71,15 @@ func (s *Service) CreateApp(ctx context.Context, req *pbds.CreateAppReq) (*pbds.
 			Creator: kt.User,
 			Reviser: kt.User,
 		},
+		ProjID: projectID,
+		EnvID:  envID,
 	}
+
+	env, err := s.dao.Environment().Get(kt, bizID, projectID, envID)
+	if err != nil {
+		return nil, err
+	}
+	app.Spec.EnvDisplay = fmt.Sprintf("%s-%s", env.Spec.Name, env.Spec.Type)
 
 	id, err := s.dao.App().Create(kt, app)
 	if err != nil {
@@ -83,20 +95,26 @@ func (s *Service) CreateApp(ctx context.Context, req *pbds.CreateAppReq) (*pbds.
 func (s *Service) UpdateApp(ctx context.Context, req *pbds.UpdateAppReq) (*pbapp.App, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	old, err := s.dao.App().GetByAlias(grpcKit, req.BizId, req.Spec.Alias)
+	bizID := req.GetBizId()
+	appID := req.GetAppId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+
+	app, err := s.dao.App().Get(grpcKit, bizID, projectID, envID, appID)
+	if err != nil {
+		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(grpcKit, "get app failed, err: %v", err))
+	}
+
+	old, err := s.dao.App().GetByAlias(grpcKit, bizID, projectID, envID, req.Spec.Alias)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(grpcKit, "get app failed, err: %v", err))
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(grpcKit, "get app failed, err: %v", err))
 	}
-	if !errors.Is(gorm.ErrRecordNotFound, err) && old.ID != req.Id {
+	if !errors.Is(gorm.ErrRecordNotFound, err) && old.ID != appID {
 		return nil, errf.Errorf(errf.InvalidRequest, "app alias %s already exists", req.Spec.Alias)
 	}
 
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.Id)
-	if err != nil {
-		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(grpcKit, "get app failed, err: %v", err))
-	}
 	if app.Spec.ConfigType == table.KV {
 		if e := s.checkUpdateAppDataType(grpcKit, req, app); e != nil {
 			return nil, e
@@ -104,19 +122,22 @@ func (s *Service) UpdateApp(ctx context.Context, req *pbds.UpdateAppReq) (*pbapp
 	}
 
 	app = &table.App{
-		ID:    req.Id,
+		ID:    appID,
 		BizID: req.BizId,
 		Spec:  req.Spec.AppSpec(),
 		Revision: &table.Revision{
 			Reviser: grpcKit.User,
 		},
+		ProjID: projectID,
+		EnvID:  envID,
 	}
+
 	if err = s.dao.App().Update(grpcKit, app); err != nil {
 		logs.Errorf("update app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
-	app, err = s.dao.App().Get(grpcKit, req.BizId, req.Id)
+	app, err = s.dao.App().Get(grpcKit, bizID, projectID, envID, appID)
 	if err != nil {
 		logs.Errorf("updating the app was successful, but retrieving the app failed, err: %v, rid: %s",
 			err, grpcKit.Rid)
@@ -169,9 +190,15 @@ func (s *Service) checkUpdateAppDataType(kt *kit.Kit, req *pbds.UpdateAppReq, ap
 func (s *Service) DeleteApp(ctx context.Context, req *pbds.DeleteAppReq) (*pbbase.EmptyResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	app := &table.App{
-		ID:    req.Id,
-		BizID: req.BizId,
+	bizID := req.GetBizId()
+	appID := req.GetAppId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+	// 验证该app是否属于该业务该项目该环境下的
+	app, err := s.dao.App().Get(grpcKit, bizID, projectID, envID, appID)
+	if err != nil {
+		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(grpcKit, "get app failed, err: %v", err))
 	}
 
 	tx := s.dao.GenQuery().Begin()
@@ -212,49 +239,49 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbds.DeleteAppReq) (*pbbas
 
 func (s *Service) deleteAppRelatedResources(grpcKit *kit.Kit, req *pbds.DeleteAppReq, tx *gen.QueryTx) error {
 	// delete app template binding
-	if err := s.dao.AppTemplateBinding().DeleteByAppIDWithTx(grpcKit, tx, req.GetBizId(), req.Id); err != nil {
+	if err := s.dao.AppTemplateBinding().DeleteByAppIDWithTx(grpcKit, tx, req.GetBizId(), req.GetAppId()); err != nil {
 		logs.Errorf("delete app template binding failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete group app binding
-	if err := s.dao.GroupAppBind().BatchDeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.GroupAppBind().BatchDeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete group app binding failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete released group
-	if err := s.dao.ReleasedGroup().BatchDeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.ReleasedGroup().BatchDeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete group app binding failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete app template binding
-	if err := s.dao.ReleasedAppTemplate().BatchDeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.ReleasedAppTemplate().BatchDeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete released app template failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete released app template binding
-	if err := s.dao.ReleasedAppTemplate().BatchDeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.ReleasedAppTemplate().BatchDeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete released app template failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete released app template variables
-	if err := s.dao.ReleasedAppTemplateVariable().BatchDeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.ReleasedAppTemplateVariable().BatchDeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete released app template variables failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete released hook
-	if err := s.dao.ReleasedHook().DeleteByAppIDWithTx(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.dao.ReleasedHook().DeleteByAppIDWithTx(grpcKit, tx, req.GetAppId(), req.BizId); err != nil {
 		logs.Errorf("delete released hooks failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
 	}
 
 	// delete related credential scopes and update credentials
-	if err := s.updateRelatedCredentials(grpcKit, tx, req.Id, req.BizId); err != nil {
+	if err := s.updateRelatedCredentials(grpcKit, tx, req.GetAppId(), req.GetBizId(), req.GetProjectId(), req.GetEnvId()); err != nil {
 		return err
 	}
 
@@ -262,8 +289,8 @@ func (s *Service) deleteAppRelatedResources(grpcKit *kit.Kit, req *pbds.DeleteAp
 }
 
 // updateRelatedCredentials delete related credential scopes and update credentials to emit event.
-func (s *Service) updateRelatedCredentials(grpcKit *kit.Kit, tx *gen.QueryTx, appID, bizID uint32) error {
-	app, err := s.dao.App().Get(grpcKit, bizID, appID)
+func (s *Service) updateRelatedCredentials(grpcKit *kit.Kit, tx *gen.QueryTx, appID, bizID, projectID, envID uint32) error {
+	app, err := s.dao.App().Get(grpcKit, bizID, projectID, envID, appID)
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return err
@@ -302,7 +329,7 @@ func (s *Service) updateRelatedCredentials(grpcKit *kit.Kit, tx *gen.QueryTx, ap
 func (s *Service) GetApp(ctx context.Context, req *pbds.GetAppReq) (*pbapp.App, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId())
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -331,7 +358,7 @@ func (s *Service) GetAppByID(ctx context.Context, req *pbds.GetAppByIDReq) (*pba
 func (s *Service) GetAppByName(ctx context.Context, req *pbds.GetAppByNameReq) (*pbapp.App, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	app, err := s.dao.App().GetByName(grpcKit, req.GetBizId(), req.GetAppName())
+	app, err := s.dao.App().GetByName(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppName())
 	if err != nil {
 		logs.Errorf("get app by name failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, errors.Wrapf(err, "query app by name %s failed", req.GetAppName())
@@ -350,6 +377,10 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		limit = 50
 	}
 
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+
 	// StrToUint32Slice the comma separated string goes to uint32 slice
 	topIds, _ := tools.StrToUint32Slice(req.TopIds)
 	opt := &types.BasePage{
@@ -363,21 +394,13 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbds.ListAppsRestReq) (
 		return nil, err
 	}
 
-	bizList, err := tools.GetUint32List(req.BizId)
-	if err != nil {
-		return nil, err
-	}
-	if len(bizList) == 0 {
-		return nil, fmt.Errorf("bizList is empty")
-	}
-
-	details, count, err := s.dao.App().List(kt, bizList, req.ConfigType, opt)
+	details, count, err := s.dao.App().List(kt, bizID, projectID, envID, req.ConfigType, opt)
 	if err != nil {
 		logs.Errorf("list apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
-	kvAppsCount, fileAppsCount, err := s.dao.App().CountApps(kt, bizList, req.GetSearch())
+	kvAppsCount, fileAppsCount, err := s.dao.App().CountApps(kt, bizID, projectID, envID, req.GetSearch())
 	if err != nil {
 		logs.Errorf("count apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -485,11 +508,11 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 		}
 	}
 
-	if _, err := s.dao.App().GetByName(kit, req.BizId, req.GetName()); err == nil {
+	if _, err := s.dao.App().GetByName(kit, req.BizId, req.GetProjectId(), req.GetEnvId(), req.GetName()); err == nil {
 		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app name %s already exists", req.GetName()))
 	}
 
-	if _, err := s.dao.App().GetByAlias(kit, req.BizId, req.GetAlias()); err == nil {
+	if _, err := s.dao.App().GetByAlias(kit, req.BizId, req.GetProjectId(), req.GetEnvId(), req.GetAlias()); err == nil {
 		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app alias %s already exists", req.GetAlias()))
 	}
 
@@ -508,6 +531,8 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 		Revision: &table.Revision{
 			Creator: kit.User,
 		},
+		ProjID: req.GetProjectId(),
+		EnvID:  req.GetEnvId(),
 	}
 
 	appID, err := s.dao.App().CreateWithTx(kit, tx, app)

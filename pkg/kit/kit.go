@@ -244,6 +244,23 @@ func (c *Kit) Clone() *Kit {
 	}
 }
 
+// ResolvedProjectID 返回有效的 ProjectID：优先使用请求传入的值，为 0 时 fallback 到 Kit 自身的值。
+// 用于 config-server 等场景：URL/metadata 中携带了 ProjectID 时优先使用，否则使用中间件已注入的默认值。
+func (k *Kit) ResolvedProjectID(fromReq uint32) uint32 {
+	if fromReq != 0 {
+		return fromReq
+	}
+	return k.ProjectID
+}
+
+// ResolvedEnvID 返回有效的 EnvID：优先使用请求传入的值，为 0 时 fallback 到 Kit 自身的值。
+func (k *Kit) ResolvedEnvID(fromReq uint32) uint32 {
+	if fromReq != 0 {
+		return fromReq
+	}
+	return k.EnvID
+}
+
 // WithSkipTenantFilter returns a cloned Kit whose context carries the skip-tenant-filter flag,
 // so that the GORM tenant_id callback will not inject any tenant_id condition.
 // Use this only for cross-tenant lookups (e.g. resolving tenant by biz ID).

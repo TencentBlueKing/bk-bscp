@@ -65,7 +65,7 @@ func (a *App) Create(ctx context.Context, header http.Header, req *pbcs.CreateAp
 func (a *App) Update(ctx context.Context, header http.Header, req *pbcs.UpdateAppReq) (*pbapp.App, error) {
 	resp := a.client.Put().
 		WithContext(ctx).
-		SubResourcef("/config/update/app/app/app_id/%d/biz_id/%d", req.Id, req.BizId).
+		SubResourcef("/config/update/app/app/app_id/%d/biz_id/%d", req.AppId, req.BizId).
 		WithHeaders(header).
 		Body(req).
 		Do()
@@ -92,7 +92,7 @@ func (a *App) Update(ctx context.Context, header http.Header, req *pbcs.UpdateAp
 func (a *App) Delete(ctx context.Context, header http.Header, req *pbcs.DeleteAppReq) (*pbcs.DeleteAppResp, error) {
 	resp := a.client.Delete().
 		WithContext(ctx).
-		SubResourcef("/config/delete/app/app/app_id/%d/biz_id/%d", req.Id, req.BizId).
+		SubResourcef("/config/delete/app/app/app_id/%d/biz_id/%d", req.AppId, req.BizId).
 		WithHeaders(header).
 		Body(req).
 		Do()

@@ -821,7 +821,7 @@ func (s *Service) DeleteRelease(ctx context.Context, req *pbds.DeleteReleaseReq)
 	}
 
 	// get app type
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -1150,7 +1150,7 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbds.List
 	*pbds.ListAllReleasedConfigItemsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 	// 获取服务信息
-	app, err := s.dao.App().Get(grpcKit, req.BizId, req.AppId)
+	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err

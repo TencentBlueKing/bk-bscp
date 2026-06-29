@@ -13,6 +13,8 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,6 +23,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/metrics"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	"github.com/TencentBlueKing/bk-bscp/pkg/rest"
@@ -128,5 +131,40 @@ func (p *proxy) checkOrCreateDefaultProjectEnv(next http.Handler) http.Handler {
 
 		ctx := kit.WithKit(r.Context(), kt)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// AppProjectEnvVerified 校验 App 是否属于指定的项目与环境。
+// 必须放在 checkOrCreateDefaultProjectEnv 之后，依赖 kt.ProjectID / kt.EnvID 已被赋值。
+func (p *proxy) AppProjectEnvVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		appIDStr := chi.URLParam(r, "app_id")
+		if appIDStr == "" {
+			err := errors.New("app_id is required in url params")
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		appID, err := strconv.Atoi(appIDStr)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 调用 config-server GetApp 校验 App 归属于该项目+环境
+		_, err = p.cfgClient.GetApp(kt.RpcCtx(), &pbcs.GetAppReq{
+			BizId: kt.BizID,
+			AppId: uint32(appID),
+		})
+		if err != nil {
+			logs.Errorf("verify app project/env failed, bizId=%d appId=%d projectId=%d envId=%d err=%v rid=%s",
+				kt.BizID, uint32(appID), kt.ProjectID, kt.EnvID, err, kt.Rid)
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("app does not belong to the specified project or environment")))
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }

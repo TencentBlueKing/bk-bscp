@@ -66,12 +66,7 @@ func (dao *projectDao) CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, pro
 		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "project is nil"))
 	}
 
-	// 1. 先进行基础的创建校验（避免校验失败却白白生成了 ID）
-	if err := project.ValidateCreate(kit); err != nil {
-		return err
-	}
-
-	// 2. 生成全局唯一 ID
+	// 1. 生成全局唯一 ID
 	id, err := dao.idGen.One(kit, table.Name(project.TableName()))
 	if err != nil {
 		return err
@@ -79,6 +74,11 @@ func (dao *projectDao) CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, pro
 
 	project.ID = id
 	project.Spec.Key = table.GenerateProjectKey(id)
+
+	// 2. 先进行基础的创建校验（避免校验失败却白白生成了 ID）
+	if err := project.ValidateCreate(kit); err != nil {
+		return err
+	}
 
 	// 3. 执行带冲突处理的创建
 	q := tx.Project.WithContext(kit.Ctx)

@@ -21,6 +21,8 @@ message App {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务类型" }];
   AppSpec spec = 7;
   pbbase.Revision revision = 8;
+  uint32 project_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 // AppSpec source resource reference: pkg/dal/table/app.go
@@ -41,6 +43,8 @@ message AppSpec {
     description: "审批类型：会签=count_sign、或签=or_sign"
   }];
   string approver = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "审批人列表" }];
+  string env_display = 9
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境显示名称" }];
 }
 
 // AuditApp audit and app

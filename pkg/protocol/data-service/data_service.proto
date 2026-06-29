@@ -513,6 +513,8 @@ message UpdateConfigHookReq {
   uint32 app_id = 2;
   uint32 pre_hook_id = 3;
   uint32 post_hook_id = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message GetConfigHookReq {
@@ -523,22 +525,29 @@ message GetConfigHookReq {
 message CreateAppReq {
   uint32 biz_id = 1;
   pbapp.AppSpec spec = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message UpdateAppReq {
-  uint32 id = 1;
+  uint32 app_id = 1;
   uint32 biz_id = 2;
   pbapp.AppSpec spec = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
-
 message DeleteAppReq {
-  uint32 id = 1;
+  uint32 app_id = 1;
   uint32 biz_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetAppReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetAppByIDReq {
@@ -548,16 +557,20 @@ message GetAppByIDReq {
 message GetAppByNameReq {
   uint32 biz_id = 1;
   string app_name = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppsRestReq {
-  string biz_id = 1;  // 多个以逗号分割
+  uint32 biz_id = 1;
   uint32 start = 2;
   uint32 limit = 3;
   bool all = 4;
   string top_ids = 5;
   string config_type = 6;
   google.protobuf.Struct search = 7;
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
 
 message ListAppsResp {
@@ -579,6 +592,8 @@ message CreateConfigItemReq {
   pbci.ConfigItemAttachment config_item_attachment = 1;
   pbci.ConfigItemSpec config_item_spec = 2;
   pbcontent.ContentSpec content_spec = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message BatchUpsertConfigItemsReq {
@@ -597,6 +612,8 @@ message BatchUpsertConfigItemsReq {
     pbatb.TemplateBinding template_binding = 2;
   }
   repeated TemplateBinding bindings = 6;
+  uint32 project_id = 7;
+  uint32 env_id = 8;
 }
 
 message BatchUpsertConfigItemsResp {
@@ -607,27 +624,37 @@ message UpdateConfigItemReq {
   uint32 id = 1;
   pbci.ConfigItemAttachment attachment = 2;
   pbci.ConfigItemSpec spec = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message DeleteConfigItemReq {
   uint32 id = 1;
   pbci.ConfigItemAttachment attachment = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message UnDeleteConfigItemReq {
   uint32 id = 1;
   pbci.ConfigItemAttachment attachment = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message UndoConfigItemReq {
   uint32 id = 1;
   pbci.ConfigItemAttachment attachment = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetConfigItemReq {
   uint32 id = 1;
   uint32 biz_id = 2;
   uint32 app_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message ListConfigItemsReq {
@@ -640,6 +667,8 @@ message ListConfigItemsReq {
   bool all = 7;
   bool with_status = 8;
   repeated string status = 9;
+  uint32 project_id = 10;
+  uint32 env_id = 11;
 }
 
 message ListConfigItemsResp {
@@ -657,6 +686,8 @@ message ListReleasedConfigItemsReq {
   uint32 start = 5;
   uint32 limit = 6;
   bool all = 7;
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
 
 message ListReleasedConfigItemsResp {
@@ -667,6 +698,8 @@ message ListReleasedConfigItemsResp {
 message ListConfigItemCountReq {
   uint32 biz_id = 1;
   repeated uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListConfigItemCountResp {
@@ -681,6 +714,8 @@ message ListConfigItemByTupleReq {
     string path = 4;
   }
   repeated Item items = 1;
+  uint32 project_id = 2;
+  uint32 env_id = 3;
 }
 
 message ListConfigItemByTupleResp {
@@ -714,6 +749,8 @@ message CreateReleaseReq {
   pbrelease.ReleaseAttachment attachment = 1;
   pbrelease.ReleaseSpec spec = 2;
   repeated pbtv.TemplateVariableSpec variables = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message ListReleasesReq {
@@ -724,6 +761,8 @@ message ListReleasesReq {
   uint32 limit = 5;
   bool all = 6;
   string searchKey = 7;
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
 
 message ListReleasesResp {
@@ -735,36 +774,48 @@ message GetReleaseByNameReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   string release_name = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message GetReleaseReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message DeprecateReleaseReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message UnDeprecateReleaseReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message DeleteReleaseReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message CheckReleaseNameReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   string name = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message CheckReleaseNameResp {
@@ -776,6 +827,8 @@ message GetReleasedCIReq {
   uint32 app_id = 2;
   uint32 release_id = 3;
   uint32 config_item_id = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message GetReleasedKvReq {
@@ -783,6 +836,8 @@ message GetReleasedKvReq {
   uint32 app_id = 2;
   uint32 release_id = 3;
   string key = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message ListReleasedKvReq {
@@ -797,6 +852,8 @@ message ListReleasedKvReq {
   repeated string kv_type = 9;
   string sort = 10;
   string order = 11;
+  uint32 project_id = 12;
+  uint32 env_id = 13;
 }
 
 message ListReleasedKvResp {
@@ -807,6 +864,8 @@ message ListReleasedKvResp {
 message ListAllReleasedConfigItemsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAllReleasedConfigItemsResp {
@@ -1349,6 +1408,8 @@ message DeleteTemplateSetReq {
 message ListAppTemplateSetsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppTemplateSetsResp {
@@ -1477,6 +1538,8 @@ message ImportFromTemplateSetToAppReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   repeated Binding bindings = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message ExtractAppTmplVariablesReq {
@@ -1900,6 +1963,8 @@ message PublishReq {
   repeated uint32 groups = 8;
   repeated google.protobuf.Struct labels = 9;
   string group_name = 10;
+  uint32 project_id = 11;
+  uint32 env_id = 12;
 }
 
 message SubmitPublishApproveReq {
@@ -1916,6 +1981,8 @@ message SubmitPublishApproveReq {
   string publish_type = 11;
   string publish_time = 12;
   bool is_compare = 13;
+  uint32 project_id = 14;
+  uint32 env_id = 15;
 }
 
 message ApproveReq {
@@ -1926,6 +1993,8 @@ message ApproveReq {
   string reason = 5;
   uint32 strategy_id = 6;           // 接口内部赋值使用
   repeated string approved_by = 7;  // 接口内部赋值使用
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
 
 message ApproveResp {
@@ -1937,6 +2006,8 @@ message ApproveResp {
 message GetLastSelectReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetLastSelectResp {
@@ -1947,6 +2018,8 @@ message GetLastSelectResp {
 message GetLastPublishReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetLastPublishResp {
@@ -1961,6 +2034,8 @@ message GetReleasesStatusReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message GenerateReleaseAndPublishReq {
@@ -1974,6 +2049,8 @@ message GenerateReleaseAndPublishReq {
   repeated string groups = 8;
   repeated google.protobuf.Struct labels = 9;
   string group_name = 10;
+  uint32 project_id = 11;
+  uint32 env_id = 12;
 }
 
 message PublishResp {
@@ -2045,12 +2122,16 @@ message PingMsg {
 message CreateKvReq {
   pbkv.KvAttachment attachment = 1;
   pbkv.KvSpec spec = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message UpdateKvReq {
   uint32 id = 1;
   pbkv.KvAttachment attachment = 2;
   pbkv.KvSpec spec = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message ListKvsReq {
@@ -2067,6 +2148,8 @@ message ListKvsReq {
   string order = 11;
   repeated uint32 top_ids = 12;
   repeated string status = 13;
+  uint32 project_id = 14;
+  uint32 env_id = 15;
 }
 
 message ListKvsResp {
@@ -2091,6 +2174,8 @@ message BatchUpsertKvsReq {
   uint32 app_id = 2;
   repeated Kv kvs = 3;
   bool replace_all = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message BatchUpsertKvsResp {
@@ -2101,18 +2186,24 @@ message UnDeleteKvReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   string key = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message UndoKvReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   string key = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message KvFetchIDsExcludingReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   repeated uint32 ids = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message KvFetchIDsExcludingResp {
@@ -2123,6 +2214,8 @@ message KvFetchKeysExcludingReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   repeated string keys = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message KvFetchKeysExcludingResp {
@@ -2136,6 +2229,8 @@ message FindNearExpiryCertKvsReq {
   uint32 start = 4;
   uint32 limit = 5;
   uint32 days = 6;
+  uint32 project_id = 7;
+  uint32 env_id = 8;
 }
 
 message FindNearExpiryCertKvsResp {
@@ -2339,6 +2434,8 @@ message ApprovalCallbackReq {
   uint32 release_id = 3;
   string callback_token = 4;
   pbrelease.Ticket ticket = 5;
+  uint32 project_id = 6;
+  uint32 env_id = 7;
 }
 
 message ApprovalCallbackResp {
@@ -2366,6 +2463,8 @@ message CloneAppReq {
   uint32 pre_hook_id = 13;
   uint32 post_hook_id = 14;
   string data_type = 15;
+  uint32 project_id = 16;
+  uint32 env_id = 17;
 }
 
 message ListProcessReq {

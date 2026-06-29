@@ -30,7 +30,9 @@ type App struct {
 	// unique identity.
 	ID uint32 `json:"id" gorm:"primaryKey"`
 	// BizID is the business is which this app belongs to
-	BizID uint32 `json:"biz_id" gorm:"column:biz_id"`
+	BizID  uint32 `json:"biz_id" gorm:"column:biz_id"`
+	ProjID uint32 `json:"project_id" gorm:"column:project_id"`
+	EnvID  uint32 `json:"environment_id" gorm:"column:environment_id"`
 	// Spec is a collection of app's specifics defined with user
 	Spec *AppSpec `json:"spec" gorm:"embedded"`
 	// Revision record this app's revision information
@@ -59,7 +61,7 @@ func (a *App) ResType() string {
 
 // ProjectID AuditRes interface
 func (a *App) ProjectID() uint32 {
-	return a.Spec.ProjectID
+	return a.ProjID
 }
 
 // ValidateCreate validate app's info when created.
@@ -148,8 +150,6 @@ type AppSpec struct {
 	IsApprove        bool        `json:"is_approve" gorm:"is_approve"`
 	Approver         string      `json:"approver" gorm:"approver"`
 	TenantID         string      `json:"tenant_id" gorm:"column:tenant_id"`
-	ProjectID        uint32      `json:"project_id" gorm:"column:project_id"`
-	EnvID            uint32      `json:"environment_id" gorm:"column:environment_id"`
 	EnvDisplay       string      `json:"env_display" gorm:"column:env_display"`
 }
 

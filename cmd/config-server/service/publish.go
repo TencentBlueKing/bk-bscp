@@ -101,6 +101,8 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 		PublishType:     req.PublishType,
 		PublishTime:     req.PublishTime,
 		IsCompare:       req.IsCompare,
+		ProjectId:       grpcKit.ResolvedProjectID(req.GetProjectId()),
+		EnvId:           grpcKit.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.SubmitPublishApprove(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -241,6 +243,8 @@ func (s *Service) Approve(ctx context.Context, req *pbcs.ApproveReq) (*pbcs.Appr
 		ReleaseId:     req.ReleaseId,
 		PublishStatus: req.PublishStatus,
 		Reason:        req.Reason,
+		ProjectId:     grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:         grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.Approve(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -298,6 +302,8 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbcs.Gener
 		Groups:          req.Groups,
 		Labels:          req.Labels,
 		GroupName:       req.GroupName,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:           grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.GenerateReleaseAndPublish(grpcKit.RpcCtx(), r)
 	if err != nil {

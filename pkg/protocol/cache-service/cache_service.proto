@@ -140,7 +140,7 @@ message GetAppMetaReq {
 }
 
 message ListAppsReq {
-  uint32 biz_id = 1;  // 多个以逗号分割
+  uint32 biz_id = 1;
 }
 
 message ListAppsResp {
