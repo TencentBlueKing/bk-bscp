@@ -49,6 +49,8 @@ type Project interface {
 	// CreateWithTx create one project instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) (uint32, error)
 	CreateIfNotExistWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) error
+	// DeleteWithTx delete one project instance with transaction.
+	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, project *table.Project) error
 }
 
 var _ Project = new(projectDao)
@@ -58,6 +60,38 @@ type projectDao struct {
 	idGen    IDGenInterface
 	auditDao AuditDao
 	event    Event
+}
+
+// DeleteWithTx implements [Project].
+func (dao *projectDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Project) error {
+	// 参数校验
+	if err := g.ValidateDelete(kit); err != nil {
+		return err
+	}
+
+	m := tx.Project
+	q := tx.Project.WithContext(kit.Ctx)
+
+	oldOne, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Take()
+	if err != nil {
+		return err
+	}
+	ad := dao.auditDao.Decorator(kit, oldOne.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.ProjectName, oldOne.Spec.Name),
+		Status:           enumor.Success,
+		Detail:           oldOne.Spec.Memo,
+	}).PrepareDelete(oldOne)
+
+	_, err = q.Where(m.BizID.Eq(g.Attachment.BizID)).Delete(g)
+	if err != nil {
+		return err
+	}
+
+	if e := ad.Do(tx.Query); e != nil {
+		return e
+	}
+
+	return nil
 }
 
 // CreateIfNotExistWithTx implements [Project].
