@@ -64,7 +64,7 @@
                           <i class="bk-bscp-icon icon-yonghu-2 meta-icon"></i>
                           {{ item.revision.creator }}
                           <i class="bk-bscp-icon icon-time-2 meta-icon"></i>
-                          {{ item.revision.create_at }}
+                          {{ datetimeFormat(item.revision.create_at) }}
                       </div>
                     </div>
                   </div>
@@ -105,6 +105,7 @@
   import { getEnvList, deleteEnv } from '../../../api/env';
   import { IEnvItem, EnvType } from '../../../../types/env';
   import { ENV_TYPE_OPTIONS } from '../../../constants/env';
+  import { datetimeFormat } from '../../../utils';
 
   const { t } = useI18n();
   const { spaceId, projectId } = storeToRefs(useGlobalStore());

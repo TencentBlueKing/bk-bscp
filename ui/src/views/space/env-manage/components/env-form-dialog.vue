@@ -10,7 +10,7 @@
           <div class="option-line-wapper" v-for="(item, index) in ENV_TYPE_OPTIONS" :key="item.type">
             <div
               class="type-option"
-              :class="{ active: formData.type === item.type }"
+              :class="{ active: formData.type === item.type, disabled: isEdit }"
               @click="formData.type = item.type">
               <i
                :class="`
@@ -21,11 +21,11 @@
               <span class="type-label">{{ item.name }}</span>
             </div>
             <div v-if="index !== ENV_TYPE_OPTIONS.length - 1 && formData.type !== item.type" class="item-divider"></div>
-        </div>
+          </div>
         </div>
       </bk-form-item>
       <bk-form-item :label="t('环境名称')" property="name" required>
-        <bk-input v-model="formData.name" :placeholder="t('请输入环境名称')"/>
+        <bk-input :disabled="isEdit" v-model="formData.name" :placeholder="t('请输入环境名称')"/>
       </bk-form-item>
       <bk-form-item :label="t('环境描述')" property="memo" required>
         <bk-input
@@ -98,8 +98,8 @@
         trigger: 'blur',
       },
       {
-        pattern: /^[A-Za-z]+$/,
-        message: () => t('环境名称只能包含英文字母'),
+        pattern: /^[a-zA-Z0-9][\w-]*[a-zA-Z0-9]$/,
+        message: () => t('环境名称只能包含英文字母、数字、下划线或连字符，且必须以英文字母或数字开头和结尾'),
         trigger: 'blur',
       },
     ],
@@ -200,6 +200,12 @@
         font-size: 12px;
         white-space: nowrap;
       }
+
+      &.disabled {
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
     }
     .item-divider {
         width: 1px;
