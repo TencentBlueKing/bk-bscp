@@ -23,8 +23,7 @@ import (
 )
 
 // UpdateConfigHook update a ConfigHook
-func (s *Service) UpdateConfigHook(ctx context.Context,
-	req *pbcs.UpdateConfigHookReq) (*pbcs.UpdateConfigHookResp, error) {
+func (s *Service) UpdateConfigHook(ctx context.Context, req *pbcs.UpdateConfigHookReq) (*pbcs.UpdateConfigHookResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.UpdateConfigHookResp)
@@ -42,6 +41,7 @@ func (s *Service) UpdateConfigHook(ctx context.Context,
 		AppId:      req.AppId,
 		PreHookId:  req.PreHookId,
 		PostHookId: req.PostHookId,
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	if _, e := s.client.DS.UpdateConfigHook(grpcKit.RpcCtx(), r); e != nil {
 		logs.Errorf("update ConfigHook failed, err: %v, rid: %s", e, grpcKit.Rid)

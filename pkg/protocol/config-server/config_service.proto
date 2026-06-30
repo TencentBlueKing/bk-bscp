@@ -422,6 +422,7 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks" body: "*" }
     };
   }
   // 删除脚本
@@ -429,6 +430,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
+      additional_bindings { delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}" }
     };
   }
   // 批量删除脚本
@@ -437,6 +439,7 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks/batch_delete"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/batch_delete" body: "*" }
     };
   }
   // 更新脚本
@@ -445,6 +448,7 @@ service Config {
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
       body: "*"
+      additional_bindings { put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}" body: "*" }
     };
   }
   // 获取脚本列表
@@ -452,6 +456,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks" }
     };
   }
   // 获取脚本标签列表
@@ -459,6 +464,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hook_tags"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hook_tags" }
     };
   }
   // 获取脚本
@@ -466,6 +472,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}" }
     };
   }
   // 创建脚本版本
@@ -474,6 +481,10 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions"
+        body: "*"
+      }
     };
   }
   // 获取脚本版本列表
@@ -482,6 +493,10 @@ service Config {
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/list"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/list"
+        body: "*"
+      }
     };
   }
   // 删除脚本版本
@@ -490,6 +505,9 @@ service Config {
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
               "{revision_id}"
+      additional_bindings {
+        delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/{revision_id}"
+      }
     };
   }
   // 上线脚本版本
@@ -498,6 +516,9 @@ service Config {
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}/publish"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/{revision_id}/publish"
+      }
     };
   }
   // 获取脚本版本
@@ -506,6 +527,9 @@ service Config {
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/{revision_id}"
+      }
     };
   }
   // 更新脚本版本
@@ -515,6 +539,10 @@ service Config {
       put: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/{revision_id}"
+        body: "*"
+      }
     };
   }
   // 获取被引用的脚本配置服务列表
@@ -522,6 +550,7 @@ service Config {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/references"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/references" }
     };
   }
   // 获取被引用的脚本版本配置服务列表
@@ -530,6 +559,9 @@ service Config {
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/hooks/{hook_id}/hook_revisions/"
            "{revision_id}/references"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/hooks/{hook_id}/hook_revisions/{revision_id}/references"
+      }
     };
   }
   // TODO
@@ -2707,6 +2739,7 @@ message CreateHookReq {
   string memo = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本描述" }];
   string content = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本内容" }];
   string revision_name = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本号" }];
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message CreateHookResp {
@@ -2720,6 +2753,7 @@ message DeleteHookReq {
     description: "是否强制删除",
     default: "false",
   }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message DeleteHookResp {}
@@ -2735,6 +2769,7 @@ message BatchDeleteHookReq {
     description: "是否排除操作：是=true，否=false",
     default: "false",
   }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateHookReq {
@@ -2742,6 +2777,7 @@ message UpdateHookReq {
   uint32 hook_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
   repeated string tags = 3;
   string memo = 4;
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateHookResp {}
@@ -2757,6 +2793,7 @@ message ListHooksReq {
   uint32 limit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   string searchKey = 8;
   string top_ids = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "需要置顶ID" }];
+  uint32 project_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListHooksResp {
@@ -2773,6 +2810,7 @@ message ListHooksResp {
 
 message ListHookTagsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListHookTagsResp {
@@ -2791,6 +2829,7 @@ message CreateHookRevisionReq {
   string memo = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本描述" }];
   string content = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本内容" }];
   string name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "版本号" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message CreateHookRevisionResp {
@@ -2807,6 +2846,7 @@ message ListHookRevisionsReq {
   bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   string state = 7;
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListHookRevisionsResp {
@@ -2825,6 +2865,7 @@ message DeleteHookRevisionReq {
   uint32 revision_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本版本ID" }];
   bool force = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否强制：是=true，否=false" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message DeleteHookRevisionResp {}
@@ -2833,6 +2874,7 @@ message PublishHookRevisionReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 hook_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
   uint32 revision_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message PublishHookRevisionResp {}
@@ -2840,6 +2882,7 @@ message PublishHookRevisionResp {}
 message GetHookReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 hook_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message GetHookResp {
@@ -2866,6 +2909,7 @@ message GetHookRevisionReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 hook_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本ID" }];
   uint32 revision_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateHookRevisionReq {
@@ -2881,6 +2925,7 @@ message UpdateHookRevisionReq {
   string name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "脚本版本号" }];
   string content = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "内容" }];
   string memo = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "描述" }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateHookRevisionResp {}
@@ -2892,6 +2937,7 @@ message ListHookRevisionReferencesReq {
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   string searchKey = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListHookRevisionReferencesResp {
@@ -2919,6 +2965,7 @@ message ListHookReferencesReq {
   uint32 start = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   string searchKey = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListHookReferencesResp {
@@ -2945,6 +2992,7 @@ message GetReleaseHookReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message GetReleaseHookResp {

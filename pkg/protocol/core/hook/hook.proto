@@ -31,6 +31,7 @@ message HookSpec {
 // HookAttachment source resource reference: pkg/dal/table/hook.go
 message HookAttachment {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 // ListConfigItemCounts source resource reference: pkg/dal/table/config_item.go

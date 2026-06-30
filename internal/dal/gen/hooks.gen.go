@@ -32,8 +32,9 @@ func newHook(db *gorm.DB, opts ...gen.DOOption) hook {
 	_hook.Type = field.NewString(tableName, "type")
 	_hook.Tags = field.NewField(tableName, "tags")
 	_hook.Memo = field.NewString(tableName, "memo")
-	_hook.BizID = field.NewUint32(tableName, "biz_id")
 	_hook.TenantID = field.NewString(tableName, "tenant_id")
+	_hook.BizID = field.NewUint32(tableName, "biz_id")
+	_hook.ProjectID = field.NewUint32(tableName, "project_id")
 	_hook.Creator = field.NewString(tableName, "creator")
 	_hook.Reviser = field.NewString(tableName, "reviser")
 	_hook.CreatedAt = field.NewTime(tableName, "created_at")
@@ -53,8 +54,9 @@ type hook struct {
 	Type      field.String
 	Tags      field.Field
 	Memo      field.String
-	BizID     field.Uint32
 	TenantID  field.String
+	BizID     field.Uint32
+	ProjectID field.Uint32
 	Creator   field.String
 	Reviser   field.String
 	CreatedAt field.Time
@@ -80,8 +82,9 @@ func (h *hook) updateTableName(table string) *hook {
 	h.Type = field.NewString(table, "type")
 	h.Tags = field.NewField(table, "tags")
 	h.Memo = field.NewString(table, "memo")
-	h.BizID = field.NewUint32(table, "biz_id")
 	h.TenantID = field.NewString(table, "tenant_id")
+	h.BizID = field.NewUint32(table, "biz_id")
+	h.ProjectID = field.NewUint32(table, "project_id")
 	h.Creator = field.NewString(table, "creator")
 	h.Reviser = field.NewString(table, "reviser")
 	h.CreatedAt = field.NewTime(table, "created_at")
@@ -110,14 +113,15 @@ func (h *hook) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (h *hook) fillFieldMap() {
-	h.fieldMap = make(map[string]field.Expr, 11)
+	h.fieldMap = make(map[string]field.Expr, 12)
 	h.fieldMap["id"] = h.ID
 	h.fieldMap["name"] = h.Name
 	h.fieldMap["type"] = h.Type
 	h.fieldMap["tags"] = h.Tags
 	h.fieldMap["memo"] = h.Memo
-	h.fieldMap["biz_id"] = h.BizID
 	h.fieldMap["tenant_id"] = h.TenantID
+	h.fieldMap["biz_id"] = h.BizID
+	h.fieldMap["project_id"] = h.ProjectID
 	h.fieldMap["creator"] = h.Creator
 	h.fieldMap["reviser"] = h.Reviser
 	h.fieldMap["created_at"] = h.CreatedAt

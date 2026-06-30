@@ -27,6 +27,7 @@ type ListHooksWithReferOption struct {
 	NotTag    bool      `json:"not_tag"`
 	Page      *BasePage `json:"page"`
 	SearchKey string    `json:"search_key"`
+	ProjectID uint32    `json:"project_id"`
 }
 
 // Validate the list group options

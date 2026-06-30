@@ -29,6 +29,8 @@ func newApp(db *gorm.DB, opts ...gen.DOOption) app {
 	_app.ALL = field.NewAsterisk(tableName)
 	_app.ID = field.NewUint32(tableName, "id")
 	_app.BizID = field.NewUint32(tableName, "biz_id")
+	_app.ProjID = field.NewUint32(tableName, "project_id")
+	_app.EnvID = field.NewUint32(tableName, "environment_id")
 	_app.Name = field.NewString(tableName, "name")
 	_app.ConfigType = field.NewString(tableName, "config_type")
 	_app.Memo = field.NewString(tableName, "memo")
@@ -39,8 +41,6 @@ func newApp(db *gorm.DB, opts ...gen.DOOption) app {
 	_app.IsApprove = field.NewBool(tableName, "is_approve")
 	_app.Approver = field.NewString(tableName, "approver")
 	_app.TenantID = field.NewString(tableName, "tenant_id")
-	_app.ProjectID = field.NewUint32(tableName, "project_id")
-	_app.EnvID = field.NewUint32(tableName, "environment_id")
 	_app.EnvDisplay = field.NewString(tableName, "env_display")
 	_app.Creator = field.NewString(tableName, "creator")
 	_app.Reviser = field.NewString(tableName, "reviser")
@@ -58,6 +58,8 @@ type app struct {
 	ALL              field.Asterisk
 	ID               field.Uint32
 	BizID            field.Uint32
+	ProjID           field.Uint32
+	EnvID            field.Uint32
 	Name             field.String
 	ConfigType       field.String
 	Memo             field.String
@@ -68,8 +70,6 @@ type app struct {
 	IsApprove        field.Bool
 	Approver         field.String
 	TenantID         field.String
-	ProjectID        field.Uint32
-	EnvID            field.Uint32
 	EnvDisplay       field.String
 	Creator          field.String
 	Reviser          field.String
@@ -93,6 +93,8 @@ func (a *app) updateTableName(table string) *app {
 	a.ALL = field.NewAsterisk(table)
 	a.ID = field.NewUint32(table, "id")
 	a.BizID = field.NewUint32(table, "biz_id")
+	a.ProjID = field.NewUint32(table, "project_id")
+	a.EnvID = field.NewUint32(table, "environment_id")
 	a.Name = field.NewString(table, "name")
 	a.ConfigType = field.NewString(table, "config_type")
 	a.Memo = field.NewString(table, "memo")
@@ -103,8 +105,6 @@ func (a *app) updateTableName(table string) *app {
 	a.IsApprove = field.NewBool(table, "is_approve")
 	a.Approver = field.NewString(table, "approver")
 	a.TenantID = field.NewString(table, "tenant_id")
-	a.ProjectID = field.NewUint32(table, "project_id")
-	a.EnvID = field.NewUint32(table, "environment_id")
 	a.EnvDisplay = field.NewString(table, "env_display")
 	a.Creator = field.NewString(table, "creator")
 	a.Reviser = field.NewString(table, "reviser")
@@ -137,6 +137,8 @@ func (a *app) fillFieldMap() {
 	a.fieldMap = make(map[string]field.Expr, 19)
 	a.fieldMap["id"] = a.ID
 	a.fieldMap["biz_id"] = a.BizID
+	a.fieldMap["project_id"] = a.ProjID
+	a.fieldMap["environment_id"] = a.EnvID
 	a.fieldMap["name"] = a.Name
 	a.fieldMap["config_type"] = a.ConfigType
 	a.fieldMap["memo"] = a.Memo
@@ -147,8 +149,6 @@ func (a *app) fillFieldMap() {
 	a.fieldMap["is_approve"] = a.IsApprove
 	a.fieldMap["approver"] = a.Approver
 	a.fieldMap["tenant_id"] = a.TenantID
-	a.fieldMap["project_id"] = a.ProjectID
-	a.fieldMap["environment_id"] = a.EnvID
 	a.fieldMap["env_display"] = a.EnvDisplay
 	a.fieldMap["creator"] = a.Creator
 	a.fieldMap["reviser"] = a.Reviser

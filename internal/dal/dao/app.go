@@ -152,7 +152,7 @@ func (dao *appDao) CountByEnvIDs(kit *kit.Kit, envIDs []uint32) (map[uint32]uint
 // CountByProjectID 统计单个项目下的服务数量
 func (dao *appDao) CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error) {
 	m := dao.genQ.App
-	count, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.ProjectID.Eq(projectID)).Count()
+	count, err := dao.genQ.App.WithContext(kit.Ctx).Where(m.ProjID.Eq(projectID)).Count()
 	if err != nil {
 		return 0, errf.Errorf(
 			errf.DBOpFailed,
@@ -181,9 +181,9 @@ func (dao *appDao) CountByProjectIDs(kit *kit.Kit, projectIDs []uint32) (map[uin
 	}
 	var results []Result
 
-	err := q.Select(m.ProjectID, m.ID.Count().As("cnt")).
-		Where(m.ProjectID.In(projectIDs...)).
-		Group(m.ProjectID).
+	err := q.Select(m.ProjID, m.ID.Count().As("cnt")).
+		Where(m.ProjID.In(projectIDs...)).
+		Group(m.ProjID).
 		Scan(&results)
 
 	if err != nil {
@@ -292,13 +292,13 @@ func (dao *appDao) CountApps(kit *kit.Kit, bizID, projectID, envID uint32, searc
 	conds1 = dao.handleSearch(conds1, search.AsMap())
 	conds2 = dao.handleSearch(conds2, search.AsMap())
 
-	kvAppsCount, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID)).
+	kvAppsCount, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID)).
 		Where(m.ConfigType.Eq(string(table.KV))).Where(conds1...).Count()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	fileAppsCount, err := q2.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID)).
+	fileAppsCount, err := q2.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID)).
 		Where(m.ConfigType.Eq(string(table.File))).Where(conds2...).Count()
 	if err != nil {
 		return 0, 0, err
@@ -339,7 +339,7 @@ func (dao *appDao) List(kit *kit.Kit, bizID, projectID, envID uint32, configType
 	}
 
 	conds = append(conds, m.BizID.Eq(bizID))
-	conds = append(conds, m.ProjectID.Eq(projectID))
+	conds = append(conds, m.ProjID.Eq(projectID))
 	conds = append(conds, m.EnvID.Eq(envID))
 
 	conds = dao.handleSearch(conds, opt.Search.AsMap())
@@ -588,7 +588,7 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 	// 删除操作, 获取当前记录做审计
 	m := tx.App
 	q := tx.App.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.BizID), m.ProjectID.Eq(g.ProjID),
+	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.BizID), m.ProjID.Eq(g.ProjID),
 		m.EnvID.Eq(g.EnvID)).Take()
 	if err != nil {
 		return err
@@ -635,7 +635,7 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 func (dao *appDao) Get(kit *kit.Kit, bizID, projectID, envID uint32, appID uint32) (*table.App, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-	detail, err := q.Where(m.ID.Eq(appID), m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID)).Take()
+	detail, err := q.Where(m.ID.Eq(appID), m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID)).Take()
 	if err != nil {
 		return nil, err
 	}
@@ -660,7 +660,7 @@ func (dao *appDao) GetByName(kit *kit.Kit, bizID, projectID, envID uint32, name 
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
-	app, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.Name.Eq(name)).Take()
+	app, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID), m.Name.Eq(name)).Take()
 	if err != nil {
 		return nil, err
 	}
@@ -673,7 +673,7 @@ func (dao *appDao) GetByAlias(kit *kit.Kit, bizID, projectID, envID uint32, alia
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
 
-	app, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.Alias_.Eq(alias)).Take()
+	app, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID), m.Alias_.Eq(alias)).Take()
 	if err != nil {
 		return nil, err
 	}

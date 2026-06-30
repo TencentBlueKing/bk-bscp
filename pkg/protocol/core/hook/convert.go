@@ -69,7 +69,8 @@ func (m *HookAttachment) HookAttachment() *table.HookAttachment {
 	}
 
 	return &table.HookAttachment{
-		BizID: m.BizId,
+		BizID:     m.BizId,
+		ProjectID: m.ProjectId,
 	}
 }
 
@@ -80,7 +81,8 @@ func PbHookAttachment(at *table.HookAttachment) *HookAttachment { //nolint:reviv
 	}
 
 	return &HookAttachment{
-		BizId: at.BizID,
+		BizId:     at.BizID,
+		ProjectId: at.ProjectID,
 	}
 }
 
