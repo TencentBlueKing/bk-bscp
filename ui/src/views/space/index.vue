@@ -14,7 +14,7 @@
   import whitelistApplyPage from './whitelist-apply-page.vue';
   import applyPermPage from './apply-perm-page.vue';
 
-  const { spaceId, spaceFeatureFlags, showPermApplyPage } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId, spaceFeatureFlags, showPermApplyPage } = storeToRefs(useGlobalStore());
 
   const route = useRoute();
 
@@ -32,12 +32,15 @@
   };
 
   watch(
-    () => route.params.spaceId,
-    (val) => {
-      if (val) {
-        spaceId.value = val as string;
-        setLastAccessedSpace(val as string);
+    () => route.params,
+    (params) => {
+      if (params.spaceId) {
+        spaceId.value = params.spaceId as string;
+        setLastAccessedSpace(params.spaceId as string);
         getFeatureFlagsData();
+      }
+      if (params.projectId) {
+        projectId.value = params.projectId as string;
       }
     },
     { immediate: true },

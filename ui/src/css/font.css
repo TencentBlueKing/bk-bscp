@@ -182,3 +182,27 @@
 .icon-tuichu:before {
 	content: "\e13d";
 }
+.icon-ceshihuanjing:before {
+	content: "\e141";
+}
+.icon-huanjingguanli:before {
+	content: "\e145";
+}
+.icon-kaifahuanjing:before {
+	content: "\e140";
+}
+.icon-miyao:before {
+	content: "\e144";
+}
+.icon-xiangmuguanli:before {
+	content: "\e13f";
+}
+.icon-yonghu-2:before {
+	content: "\e143";
+}
+.icon-yufabuhuanjing:before {
+	content: "\e13e";
+}
+.icon-shengchanhuanjing:before {
+	content: "\e142";
+}

@@ -41,47 +41,11 @@
       </div>
     </div>
     <div class="head-right">
-      <bk-select
-        class="space-selector"
-        id-key="space_id"
-        display-key="space_name"
-        enable-virtual-render
-        :model-value="spaceId"
-        :popover-options="{ theme: 'light bk-select-popover space-selector-popover' }"
-        :list="optionList"
-        :filterable="true"
-        :clearable="false"
-        :input-search="false"
-        :remote-method="handleSpaceSearch"
-        @change="handleSelectSpace">
-        <template #trigger>
-          <div class="space-name">
-            <input readonly :value="crtSpaceText" />
-            <AngleDown class="arrow-icon" />
-          </div>
-        </template>
-        <template #extension>
-          <div class="create-operation" @click="handleToCMDB">
-            <plus />
-            <div class="content">{{ t('新建业务') }}</div>
-          </div>
-        </template>
-        <template #virtualScrollRender="{ item }">
-          <div
-            v-cursor="{ active: !item.permission }"
-            :class="['biz-option-item', { 'no-perm': !item.permission }]"
-            v-bk-tooltips="{
-              content: `${t('业务名')}: ${item.space_name}\n${t('业务')}ID: ${item.space_id}`,
-              placement: 'left',
-            }">
-            <div class="name-wrapper">
-              <span class="text">{{ item.space_name }}</span>
-              <span class="id">({{ item.space_id }})</span>
-            </div>
-            <span class="tag">{{ locale === 'zh-cn' ? item.space_type_name : item.space_en_name }}</span>
-          </div>
-        </template>
-      </bk-select>
+      <BizProjectSelector
+        v-if="!isProjectManage"
+        :show-project="!isNoProjectConcept"
+        :nav-list="navList"
+        class="biz-project-selector" />
       <bk-popover ext-cls="login-out-popover" trigger="hover" placement="bottom-center" theme="light" :arrow="false">
         <div class="international">
           <span :class="['bk-bscp-icon', locale === 'zh-cn' ? 'icon-lang-cn' : 'icon-lang-en']"></span>
@@ -124,15 +88,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter, RouteRecordName } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import { AngleDown, HelpDocumentFill, Plus } from 'bkui-vue/lib/icon';
+  import { HelpDocumentFill } from 'bkui-vue/lib/icon';
   import useGlobalStore from '../store/global';
   import useUserStore from '../store/user';
-  import useTemplateStore from '../store/template';
-  import { ISpaceDetail } from '../../types/index';
   import { loginOut } from '../api/index';
   import logo from '../assets/logo.svg';
   import type { IVersionLogItem } from '../../types/version-log';
@@ -143,22 +105,27 @@
   import UserName from './user-name.vue';
   import BkLoginUserinfo from '@blueking/login-userinfo';
   import '@blueking/login-userinfo/vue3/vue3.css';
+  import BizProjectSelector from './biz-project-selector.vue';
+  import { hasProjectConcept, getDefaultProjectId, saveSpaceToProjectId, getSpaceToProjectId } from '../utils/project';
 
   const route = useRoute();
   const router = useRouter();
   const { t, locale } = useI18n();
+
+  // 判断是否在项目管理页面
+  const isProjectManage = computed(() => route.name === 'project-manage' || route.meta?.navModule === 'project-manage');
+
+  // 无项目概念
+  const isNoProjectConcept = computed(() => !hasProjectConcept(route.meta?.navModule as string));
+
   const {
     bscpVersion,
     spaceId,
-    spaceList,
     spaceFeatureFlags,
     showPermApplyPage,
-    showApplyPermDialog,
-    permissionQuery,
     appGlobalConfig,
   } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
-  const templateStore = useTemplateStore();
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -204,26 +171,6 @@
     },
     { id: 'records-all', module: 'records', name: t('操作记录'), view: true },
   ]);
-
-  const optionList = ref<ISpaceDetail[]>([]);
-
-  const crtSpaceText = computed(() => {
-    const space = spaceList.value.find((item) => item.space_id === spaceId.value);
-    if (space) {
-      return `${space.space_name}(${spaceId.value})`;
-    }
-    return '';
-  });
-
-  watch(
-    spaceList,
-    (val) => {
-      optionList.value = val.slice();
-    },
-    {
-      immediate: true,
-    },
-  );
 
   const isFirstNavActived = (name: string) => {
     const nav = navList.value.find((item) => item.module === name);
@@ -273,66 +220,62 @@
     }
   };
 
-  const handleNavClick = (navId: string) => {
+  const handleNavClick = async (navId: string) => {
+    // 判断目标路由是否有项目概念
+    const targetRoute = router.getRoutes().find((r) => r.name === navId);
+    const targetHasProjectConcept = targetRoute && hasProjectConcept(targetRoute.meta?.navModule as string | undefined);
+
+    // 准备路由参数
+    const params: any = { spaceId: spaceId.value || 0 };
+
+    // 如果目标路由有项目概念，需要添加 projectId
+    if (targetHasProjectConcept) {
+      let targetProjectId = getSpaceToProjectId(spaceId.value);
+
+      // 如果没有有效的 projectId，则获取默认的
+      if (!targetProjectId) {
+        try {
+          targetProjectId = await getDefaultProjectId(spaceId.value);
+          // 保存映射关系
+          if (targetProjectId) {
+            saveSpaceToProjectId(spaceId.value, targetProjectId);
+            // 更新全局状态
+            const globalStore = useGlobalStore();
+            globalStore.projectId = targetProjectId;
+          }
+        } catch (error) {
+          console.error('获取项目列表失败', error);
+        }
+      }
+
+      // 添加 projectId 到路由参数
+      if (targetProjectId) {
+        params.projectId = targetProjectId;
+      }
+    }
+
+    // 特殊处理：如果导航目标是 service-all 等，且 localStorage 中有上次访问的服务详情
     if (['service-all', 'client-statistics', 'client-search', 'configuration-example'].includes(navId)) {
       const lastAccessedServiceDetail = localStorage.getItem('lastAccessedServiceDetail');
       if (lastAccessedServiceDetail) {
         const detail = JSON.parse(lastAccessedServiceDetail);
         if (detail.spaceId === spaceId.value) {
+          const targetParams: any = { spaceId: detail.spaceId, appId: detail.appId };
+          // 如果目标路由有项目概念，添加 projectId
+          if (targetHasProjectConcept && params.projectId) {
+            targetParams.projectId = params.projectId;
+          }
           router.push({
             name: navId === 'service-all' && !showPermApplyPage.value ? 'service-config' : (navId as RouteRecordName),
-            params: { spaceId: detail.spaceId, appId: detail.appId },
+            params: targetParams,
           });
           return;
         }
       }
     }
-    router.push({ name: navId, params: { spaceId: spaceId.value || 0 } });
-  };
 
-  const handleSpaceSearch = (searchStr: string) => {
-    if (searchStr) {
-      optionList.value = spaceList.value.filter((item) => {
-        const spaceName = item.space_name.toLowerCase();
-        return spaceName.includes(searchStr.toLowerCase()) || String(item.space_id).includes(searchStr);
-      });
-    } else {
-      optionList.value = spaceList.value.slice();
-    }
-  };
-
-  const handleSelectSpace = async (id: string) => {
-    const space = spaceList.value.find((item: ISpaceDetail) => item.space_id === id);
-    if (space) {
-      if (!space.permission) {
-        permissionQuery.value = {
-          resources: [
-            {
-              biz_id: id,
-              basic: {
-                type: 'biz',
-                action: 'find_business_resource',
-                resource_id: id,
-              },
-            },
-          ],
-        };
-
-        showApplyPermDialog.value = true;
-        return;
-      }
-      templateStore.$patch((state) => {
-        state.templateSpaceList = [];
-        state.currentTemplateSpace = 0;
-        state.currentPkg = '';
-      });
-      const nav = navList.value.find((item) => item.module === route.meta.navModule);
-      if (nav) {
-        router.push({ name: nav.id, params: { spaceId: id } });
-      } else {
-        router.push({ name: 'service-all', params: { spaceId: id } });
-      }
-    }
+    // 正常跳转
+    router.push({ name: navId, params });
   };
 
   // 下拉菜单
@@ -432,11 +375,6 @@
   const handleLoginOut = () => {
     loginOut();
   };
-  const handleToCMDB = () => {
-    // @ts-ignore
-    window.open(`${BK_CC_HOST}/#/resource/business`); // eslint-disable-line no-undef
-  };
-
   // 切换语言
   const switchLanguage = (language: string) => {
     const domain = window.location.hostname.replace(/^[^.]+(.*)$/, '$1');
@@ -450,7 +388,7 @@
     return {
       name: username,
       organization: tenant_name || tenant_id,
-      timezone: time_zone
+      timezone: time_zone,
     };
   });
   const actionList = computed(() => {
@@ -467,7 +405,7 @@
         icon: 'bk-bscp-icon icon-tuichu',
         theme: 'danger' as const,
         handle: handleLoginOut,
-      }
+      },
     ];
     // 租户模式下显示个人中心
     if (spaceFeatureFlags.value.ENABLE_TENANT_MODE) {
@@ -623,7 +561,7 @@
       color: #979ba5;
     }
   }
-  .space-selector {
+  .biz-project-selector {
     margin-right: 24px;
     width: 240px;
     &.popover-show {
