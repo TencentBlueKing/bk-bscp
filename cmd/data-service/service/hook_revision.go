@@ -36,7 +36,7 @@ func (s *Service) CreateHookRevision(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	hook, err := s.dao.Hook().GetByID(kt, req.Attachment.BizId, req.Attachment.HookId)
+	hook, err := s.dao.Hook().GetByID(kt, req.Attachment.BizId, req.ProjectId, req.Attachment.HookId)
 	if err != nil {
 		logs.Errorf("get hook (%d) failed, err: %v, rid: %s", req.Attachment.HookId, err, kt.Rid)
 		return nil, err
@@ -254,7 +254,7 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbds.PublishHook
 
 	// 如果是未发布 => 发布, 需要更新脚本的更新时间和更新人
 	if hookRevision.Spec.State == table.HookRevisionStatusNotDeployed {
-		hook, err := s.dao.Hook().GetByID(kt, req.GetBizId(), req.GetHookId())
+		hook, err := s.dao.Hook().GetByID(kt, req.GetBizId(), req.GetProjectId(), req.GetHookId())
 		if err != nil {
 			logs.Errorf("get hook (%d) failed, err: %v, rid: %s", req.GetHookId(), err, kt.Rid)
 			return nil, err

@@ -168,3 +168,40 @@ func (p *proxy) AppProjectEnvVerified(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// HookProjectVerified 校验 Hook 是否属于指定的项目。
+// 必须放在 checkOrCreateDefaultProjectEnv 之后，依赖 kt.ProjectID 已被赋值。
+// 通过 hook_id 调用 GetHook 获取详情
+func (p *proxy) HookProjectVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		hookIDStr := chi.URLParam(r, "hook_id")
+		if hookIDStr == "" {
+			err := errors.New("hook_id is required in url params")
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		hookID, err := strconv.Atoi(hookIDStr)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 调用 config-server GetHook 校验 Hook 归属于该项目
+		_, err = p.cfgClient.GetHook(kt.RpcCtx(), &pbcs.GetHookReq{
+			BizId:     kt.BizID,
+			ProjectId: kt.ProjectID,
+			HookId:    uint32(hookID),
+		})
+		if err != nil {
+			logs.Errorf("verify hook project failed, bizId=%d hookId=%d projectId=%d err=%v rid=%s",
+				kt.BizID, uint32(hookID), kt.ProjectID, err, kt.Rid)
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("hook does not belong to the specified project")))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}

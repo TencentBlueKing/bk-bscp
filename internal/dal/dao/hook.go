@@ -42,7 +42,7 @@ type Hook interface {
 	ListHookReferences(kit *kit.Kit, opt *types.ListHookReferencesOption) (
 		[]*types.ListHookReferencesDetail, int64, error)
 	// CountHookTag count hook tag
-	CountHookTag(kit *kit.Kit, bizID uint32) ([]*types.HookTagCount, error)
+	CountHookTag(kit *kit.Kit, bizID, projectID uint32) ([]*types.HookTagCount, error)
 	// DeleteWithTx delete hook instance with transaction.
 	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) error
 	// Update one hook instance.
@@ -50,15 +50,15 @@ type Hook interface {
 	// UpdateWithTx update one hook instance with transaction.
 	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, hook *table.Hook) error
 	// GetByID get hook only with id.
-	GetByID(kit *kit.Kit, bizID, hookID uint32) (*table.Hook, error)
+	GetByID(kit *kit.Kit, bizID, projectID, hookID uint32) (*table.Hook, error)
 	// GetByName get hook by name
-	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Hook, error)
+	GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Hook, error)
 	// FetchIDsExcluding 获取指定ID后排除的ID
-	FetchIDsExcluding(kit *kit.Kit, bizID uint32, ids []uint32) ([]uint32, error)
+	FetchIDsExcluding(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]uint32, error)
 	// CountNumberUnReferences 统计未引用的数量
-	CountNumberUnReferences(kit *kit.Kit, bizID uint32, opt *types.ListHooksWithReferOption) (int64, error)
+	CountNumberUnReferences(kit *kit.Kit, bizID, projectID uint32, opt *types.ListHooksWithReferOption) (int64, error)
 	// GetReferencedIDs 获取被引用的IDs
-	GetReferencedIDs(kit *kit.Kit, bizID uint32) ([]uint32, error)
+	GetReferencedIDs(kit *kit.Kit, bizID, projectID uint32) ([]uint32, error)
 }
 
 var _ Hook = new(hookDao)
@@ -97,11 +97,11 @@ func (dao *hookDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Hook) e
 }
 
 // GetReferencedIDs 获取被引用的IDs
-func (dao *hookDao) GetReferencedIDs(kit *kit.Kit, bizID uint32) ([]uint32, error) {
+func (dao *hookDao) GetReferencedIDs(kit *kit.Kit, bizID, projectID uint32) ([]uint32, error) {
 
 	h := dao.genQ.Hook
 	rh := dao.genQ.ReleasedHook
-	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(bizID))
+	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(bizID), h.ProjectID.Eq(projectID))
 
 	var result []uint32
 	err := q.Distinct(h.ID).
@@ -116,12 +116,12 @@ func (dao *hookDao) GetReferencedIDs(kit *kit.Kit, bizID uint32) ([]uint32, erro
 }
 
 // CountNumberUnReferences 统计未引用的数量
-func (dao *hookDao) CountNumberUnReferences(kit *kit.Kit, bizID uint32,
+func (dao *hookDao) CountNumberUnReferences(kit *kit.Kit, bizID, projectID uint32,
 	opt *types.ListHooksWithReferOption) (int64, error) {
 
 	h := dao.genQ.Hook
 	rh := dao.genQ.ReleasedHook
-	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(bizID))
+	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(bizID), h.ProjectID.Eq(projectID))
 	if opt.Name != "" {
 		q = q.Where(h.Name.Like("%" + opt.Name + "%"))
 	}
@@ -137,13 +137,13 @@ func (dao *hookDao) CountNumberUnReferences(kit *kit.Kit, bizID uint32,
 }
 
 // FetchIDsExcluding 获取指定ID后排除的ID
-func (dao *hookDao) FetchIDsExcluding(kit *kit.Kit, bizID uint32, ids []uint32) ([]uint32, error) {
+func (dao *hookDao) FetchIDsExcluding(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]uint32, error) {
 	m := dao.genQ.Hook
 	q := dao.genQ.Hook.WithContext(kit.Ctx)
 
 	var result []uint32
 	if err := q.Select(m.ID).
-		Where(m.BizID.Eq(bizID), m.ID.NotIn(ids...)).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.NotIn(ids...)).
 		Pluck(m.ID, &result); err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (dao *hookDao) ListWithRefer(kit *kit.Kit, opt *types.ListHooksWithReferOpt
 	h := dao.genQ.Hook
 	hr := dao.genQ.HookRevision
 	rh := dao.genQ.ReleasedHook
-	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(opt.BizID))
+	q := dao.genQ.Hook.WithContext(kit.Ctx).Where(h.BizID.Eq(opt.BizID), h.ProjectID.Eq(opt.ProjectID))
 
 	if len(topIDs) != 0 {
 		q = q.Order(utils.NewCustomExpr(`CASE WHEN (?) IN (?) THEN 0 ELSE 1 END,(?) ASC`,
@@ -286,12 +286,12 @@ func (dao *hookDao) ListHookReferences(kit *kit.Kit, opt *types.ListHookReferenc
 }
 
 // CountHookTag count hook tag
-func (dao *hookDao) CountHookTag(kit *kit.Kit, bizID uint32) ([]*types.HookTagCount, error) {
+func (dao *hookDao) CountHookTag(kit *kit.Kit, bizID, projectID uint32) ([]*types.HookTagCount, error) {
 	m := dao.genQ.Hook
 	q := dao.genQ.Hook.WithContext(kit.Ctx)
 
 	var allTags []dtypes.StringSlice
-	if err := q.Select(m.Tags).Where(m.BizID.Eq(bizID)).
+	if err := q.Select(m.Tags).Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).
 		// when the length of tags greater than 2, it must not be empty which means not be '[]'
 		Where(m.Tags.Length().Gt(2)).
 		Scan(&allTags); err != nil {
@@ -388,12 +388,12 @@ func (dao *hookDao) Update(kit *kit.Kit, g *table.Hook) error {
 }
 
 // GetByID get hook only with id.
-func (dao *hookDao) GetByID(kit *kit.Kit, bizID, hookID uint32) (*table.Hook, error) {
+func (dao *hookDao) GetByID(kit *kit.Kit, bizID, projectID, hookID uint32) (*table.Hook, error) {
 
 	m := dao.genQ.Hook
 	q := dao.genQ.Hook.WithContext(kit.Ctx)
 
-	hook, err := q.Where(m.BizID.Eq(bizID), m.ID.Eq(hookID)).Take()
+	hook, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.Eq(hookID)).Take()
 	if err != nil {
 		return nil, err
 	}
@@ -402,11 +402,11 @@ func (dao *hookDao) GetByID(kit *kit.Kit, bizID, hookID uint32) (*table.Hook, er
 }
 
 // GetByName get a Hook by name
-func (dao *hookDao) GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Hook, error) {
+func (dao *hookDao) GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Hook, error) {
 	m := dao.genQ.Hook
 	q := dao.genQ.Hook.WithContext(kit.Ctx)
 
-	hook, err := q.Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
+	hook, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
 	if err != nil {
 		return nil, err
 	}

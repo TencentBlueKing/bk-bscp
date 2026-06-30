@@ -541,8 +541,8 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 	}
 
 	if len(req.GetConfigItems()) != 0 {
-		err := s.createConfigItems(kit, tx, req.GetBizId(), appID, req.GetPreHookId(), req.GetPostHookId(),
-			req.GetConfigItems(), req.GetVariables(), req.GetBindings(), now)
+		err := s.createConfigItems(kit, tx, req.GetBizId(), req.GetProjectId(), appID, req.GetPreHookId(),
+			req.GetPostHookId(), req.GetConfigItems(), req.GetVariables(), req.GetBindings(), now)
 		if err != nil {
 			return nil, err
 		}
@@ -567,10 +567,10 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 	}, nil
 }
 
-// createConfigItems creates file configuration items
+// createConfigItems 批量创建应用相关的配置资源，包含配置项、模板变量、模板绑定以及前后置脚本引用
 // nolint:funlen
-func (s *Service) createConfigItems(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, preHookId, postHookId uint32,
-	configItems []*pbci.ConfigItem, variables []*pbtv.TemplateVariableSpec,
+func (s *Service) createConfigItems(kit *kit.Kit, tx *gen.QueryTx, bizID, projectID, appID, preHookId,
+	postHookId uint32, configItems []*pbci.ConfigItem, variables []*pbtv.TemplateVariableSpec,
 	bindings []*pbds.CloneAppReq_TemplateBinding, now time.Time) error {
 
 	items := make([]*pbds.BatchUpsertConfigItemsReq_ConfigItem, 0)
@@ -667,7 +667,7 @@ func (s *Service) createConfigItems(kit *kit.Kit, tx *gen.QueryTx, bizID, appID,
 		}
 	}
 	// 4. 引用脚本
-	if err := s.referenceHook(kit, tx, bizID, appID, preHookId, postHookId); err != nil {
+	if err := s.referenceHook(kit, tx, bizID, projectID, appID, preHookId, postHookId); err != nil {
 		logs.Errorf("reference hook failed, err: %v, rid: %s", err, kit.Rid)
 		return err
 	}
@@ -734,7 +734,8 @@ func (s *Service) createKvItems(kit *kit.Kit, tx *gen.QueryTx, bizID, appID uint
 	return nil
 }
 
-func (s *Service) referenceHook(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, preHookId, postHookId uint32) error {
+func (s *Service) referenceHook(kit *kit.Kit, tx *gen.QueryTx, bizID, projectID, appID,
+	preHookId, postHookId uint32) error {
 	preHook := &table.ReleasedHook{
 		AppID: appID,
 		BizID: bizID,
@@ -753,7 +754,7 @@ func (s *Service) referenceHook(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, pre
 	}
 
 	if preHookId > 0 {
-		hook, err := s.getReleasedHook(kit, preHook)
+		hook, err := s.getReleasedHook(kit, projectID, preHook)
 		if err != nil {
 			logs.Errorf("no released releases of the pre-hook, err: %v, rid: %s", err, kit.Rid)
 			return errors.New("no released releases of the pre-hook")
@@ -766,7 +767,7 @@ func (s *Service) referenceHook(kit *kit.Kit, tx *gen.QueryTx, bizID, appID, pre
 	}
 
 	if postHookId > 0 {
-		hook, err := s.getReleasedHook(kit, postHook)
+		hook, err := s.getReleasedHook(kit, projectID, postHook)
 		if err != nil {
 			logs.Errorf("get post-hook failed, err: %v, rid: %s", err, kit.Rid)
 			return err

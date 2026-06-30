@@ -117,6 +117,17 @@ func (p *proxy) routers() http.Handler {
 			r.Route("/{project_id}", func(r chi.Router) {
 				// 开始强制校验 URL 里的 project_id
 				r.Use(p.authorizer.VerifyProjectExists)
+				r.Route("/hooks", func(r chi.Router) {
+					// 1. 先注册静态路由（不需要校验单个 hook_id 的接口）
+					r.Mount("/batch_delete", p.cfgSvrMux)
+					r.Mount("/", p.cfgSvrMux)
+					// 2. 再注册带有中间件和动态参数的路由
+					r.Route("/{hook_id}", func(r chi.Router) {
+						r.Use(p.HookProjectVerified)
+						r.Mount("/", p.cfgSvrMux)
+					})
+				})
+
 				r.Mount("/", p.cfgSvrMux)
 				r.Route("/envs", func(r chi.Router) {
 					r.Mount("/list", p.cfgSvrMux)
@@ -133,6 +144,12 @@ func (p *proxy) routers() http.Handler {
 					})
 				})
 			})
+		})
+
+		// 兼容旧版项目(校验 Hook 是否属于指定的项目)
+		r.Route("/biz/{biz_id}/hooks/{hook_id}", func(r chi.Router) {
+			r.Use(p.HookProjectVerified)
+			r.Mount("/", p.cfgSvrMux)
 		})
 
 		r.Mount("/", p.cfgSvrMux)

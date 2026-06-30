@@ -883,11 +883,13 @@ message CreateHookReq {
 
 message ListHookTagReq {
   uint32 biz_id = 1;
+  uint32 project_id = 2;
 }
 
 message GetHookReq {
   uint32 biz_id = 1;
   uint32 hook_id = 2;
+  uint32 project_id = 3;
 }
 
 message GetHookResp {
@@ -900,14 +902,15 @@ message GetHookResp {
 message HookFetchIDsExcludingReq {
   uint32 biz_id = 1;
   repeated uint32 ids = 2;
+  uint32 project_id = 3;
 }
-
 message HookFetchIDsExcludingResp {
   repeated uint32 ids = 1;
 }
 
 message GetHookReferencedIDsReq {
   uint32 biz_id = 1;
+  uint32 project_id = 2;
 }
 
 message GetHookReferencedIDsResp {
@@ -936,6 +939,7 @@ message ListHooksReq {
   uint32 limit = 8;
   string searchKey = 9;
   string top_ids = 10;
+  uint32 project_id = 11;
 }
 
 message ListHooksResp {
@@ -960,6 +964,7 @@ message ListHookReferencesReq {
   uint32 start = 3;
   uint32 limit = 4;
   string searchKey = 5;
+  uint32 project_id = 6;
 }
 
 message ListHookReferencesResp {
@@ -981,6 +986,7 @@ message DeleteHookReq {
   uint32 biz_id = 1;
   uint32 hook_id = 2;
   bool force = 3;
+  uint32 project_id = 4;
 }
 
 message UpdateHookReq {
@@ -992,6 +998,7 @@ message UpdateHookReq {
 message CreateHookRevisionReq {
   pbhr.HookRevisionAttachment attachment = 1;
   pbhr.HookRevisionSpec spec = 2;
+  uint32 project_id = 3;
 }
 
 message ListHookRevisionsReq {
@@ -1002,6 +1009,7 @@ message ListHookRevisionsReq {
   uint32 limit = 5;
   bool all = 6;
   string state = 7;
+  uint32 project_id = 8;
 }
 
 message ListHookRevisionsResp {
@@ -1031,6 +1039,7 @@ message PublishHookRevisionReq {
   uint32 biz_id = 1;
   uint32 hook_id = 2;
   uint32 id = 3;
+  uint32 project_id = 4;
 }
 
 message GetByPubStateReq {

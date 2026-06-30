@@ -25,8 +25,7 @@ import (
 )
 
 // CreateHookRevision create hook revision with option
-func (s *Service) CreateHookRevision(ctx context.Context,
-	req *pbcs.CreateHookRevisionReq) (*pbcs.CreateHookRevisionResp, error) {
+func (s *Service) CreateHookRevision(ctx context.Context, req *pbcs.CreateHookRevisionReq) (*pbcs.CreateHookRevisionResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
@@ -47,6 +46,7 @@ func (s *Service) CreateHookRevision(ctx context.Context,
 			Content: req.Content,
 			Memo:    req.Memo,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.CreateHookRevision(grpcKit.RpcCtx(), r)
@@ -143,8 +143,7 @@ func (s *Service) DeleteHookRevision(ctx context.Context,
 }
 
 // PublishHookRevision publish a revision
-func (s *Service) PublishHookRevision(ctx context.Context, req *pbcs.
-	PublishHookRevisionReq) (*pbcs.PublishHookRevisionResp, error) {
+func (s *Service) PublishHookRevision(ctx context.Context, req *pbcs.PublishHookRevisionReq) (*pbcs.PublishHookRevisionResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.PublishHookRevisionResp)
@@ -157,9 +156,10 @@ func (s *Service) PublishHookRevision(ctx context.Context, req *pbcs.
 	}
 
 	r := &pbds.PublishHookRevisionReq{
-		BizId:  req.BizId,
-		HookId: req.HookId,
-		Id:     req.RevisionId,
+		BizId:     req.BizId,
+		HookId:    req.HookId,
+		Id:        req.RevisionId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	if _, err := s.client.DS.PublishHookRevision(grpcKit.RpcCtx(), r); err != nil {

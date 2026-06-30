@@ -59,7 +59,7 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbds.UpdateConfigHo
 	}
 
 	if req.PreHookId > 0 {
-		hook, err := s.getReleasedHook(kt, preHook)
+		hook, err := s.getReleasedHook(kt, req.ProjectId, preHook)
 		if err != nil {
 			logs.Errorf("no released releases of the pre-hook, err: %v, rid: %s", err, kt.Rid)
 			return nil, errors.New("no released releases of the pre-hook")
@@ -77,7 +77,7 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbds.UpdateConfigHo
 	}
 
 	if req.PostHookId > 0 {
-		hook, err := s.getReleasedHook(kt, postHook)
+		hook, err := s.getReleasedHook(kt, req.ProjectId, postHook)
 		if err != nil {
 			logs.Errorf("get post-hook failed, err: %v, rid: %s", err, kt.Rid)
 			return nil, err
@@ -103,9 +103,9 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbds.UpdateConfigHo
 }
 
 // getReleasedHook ...
-func (s *Service) getReleasedHook(kt *kit.Kit, rh *table.ReleasedHook) (*table.ReleasedHook, error) {
+func (s *Service) getReleasedHook(kt *kit.Kit, projectID uint32, rh *table.ReleasedHook) (*table.ReleasedHook, error) {
 
-	h, err := s.dao.Hook().GetByID(kt, rh.BizID, rh.HookID)
+	h, err := s.dao.Hook().GetByID(kt, rh.BizID, projectID, rh.HookID)
 	if err != nil {
 		logs.Errorf("get %s failed, err: %v, rid: %s", rh.HookType.String(), err, kt.Rid)
 		return nil, err

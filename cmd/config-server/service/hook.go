@@ -51,7 +51,8 @@ func (s *Service) CreateHook(ctx context.Context, req *pbcs.CreateHookReq) (*pbc
 
 	r := &pbds.CreateHookReq{
 		Attachment: &pbhook.HookAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbhook.HookSpec{
 			Name:         req.Name,
@@ -89,9 +90,10 @@ func (s *Service) DeleteHook(ctx context.Context, req *pbcs.DeleteHookReq) (*pbc
 	}
 
 	r := &pbds.DeleteHookReq{
-		BizId:  req.BizId,
-		HookId: req.HookId,
-		Force:  req.Force,
+		BizId:     req.BizId,
+		HookId:    req.HookId,
+		Force:     req.Force,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	if _, err := s.client.DS.DeleteHook(grpcKit.RpcCtx(), r); err != nil {
 		logs.Errorf("delete hook failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -121,7 +123,8 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 		if !req.Force {
 			// 过滤出绑定的脚本
 			hookReferencedIDs, err := s.client.DS.GetHookReferencedIDs(grpcKit.RpcCtx(), &pbds.GetHookReferencedIDsReq{
-				BizId: req.GetBizId(),
+				BizId:     req.GetBizId(),
+				ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 			})
 			if err != nil {
 				return nil, err
@@ -129,8 +132,9 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 			referencedIDs = hookReferencedIDs.GetIds()
 		}
 		result, err := s.client.DS.HookFetchIDsExcluding(grpcKit.RpcCtx(), &pbds.HookFetchIDsExcludingReq{
-			BizId: req.BizId,
-			Ids:   tools.MergeAndDeduplicate(req.GetIds(), referencedIDs),
+			BizId:     req.BizId,
+			Ids:       tools.MergeAndDeduplicate(req.GetIds(), referencedIDs),
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		})
 		if err != nil {
 			return nil, err
@@ -139,7 +143,7 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 	} else {
 		idsLen := len(ids)
 		if idsLen == 0 || idsLen > constant.ArrayInputLenLimit {
-			return nil, errf.Errorf(errf.InvalidArgument, i18n.T(grpcKit,
+			return nil, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(grpcKit,
 				"the length of hook ids is %d, it must be within the range of [1,%d]",
 				idsLen, constant.ArrayInputLenLimit))
 		}
@@ -156,9 +160,10 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 		v := v
 		eg.Go(func() error {
 			r := &pbds.DeleteHookReq{
-				BizId:  req.BizId,
-				HookId: v,
-				Force:  req.Force,
+				BizId:     req.BizId,
+				HookId:    v,
+				Force:     req.Force,
+				ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 			}
 			if _, err := s.client.DS.DeleteHook(egCtx, r); err != nil {
 				logs.Errorf("delete hook failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -180,12 +185,12 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 
 	if err := eg.Wait(); err != nil {
 		logs.Errorf("batch delete failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, errf.Errorf(errf.Aborted, i18n.T(grpcKit, "batch delete failed"))
+		return nil, errf.Errorf(errf.Aborted, "%s", i18n.T(grpcKit, "batch delete failed"))
 	}
 
 	// 全部失败, 当前API视为失败
 	if len(failedIDs) == len(ids) {
-		return nil, errf.Errorf(errf.Aborted, i18n.T(grpcKit, "batch delete failed"))
+		return nil, errf.Errorf(errf.Aborted, "%s", i18n.T(grpcKit, "batch delete failed"))
 	}
 
 	return &pbcs.BatchDeleteResp{SuccessfulIds: successfulIDs, FailedIds: failedIDs}, nil
@@ -207,7 +212,8 @@ func (s *Service) UpdateHook(ctx context.Context, req *pbcs.UpdateHookReq) (*pbc
 	r := &pbds.UpdateHookReq{
 		Id: req.HookId,
 		Attachment: &pbhook.HookAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbhook.HookSpec{
 			Tags: req.Tags,
@@ -243,6 +249,7 @@ func (s *Service) ListHooks(ctx context.Context, req *pbcs.ListHooksReq) (*pbcs.
 		NotTag:    req.NotTag,
 		SearchKey: req.SearchKey,
 		TopIds:    req.TopIds,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	if !req.All {
@@ -291,7 +298,7 @@ func (s *Service) ListHookTags(ctx context.Context, req *pbcs.ListHookTagsReq) (
 		return nil, err
 	}
 
-	r := &pbds.ListHookTagReq{BizId: req.BizId}
+	r := &pbds.ListHookTagReq{BizId: req.BizId, ProjectId: grpcKit.ResolvedProjectID(req.ProjectId)}
 
 	ht, err := s.client.DS.ListHookTags(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -323,8 +330,9 @@ func (s *Service) GetHook(ctx context.Context, req *pbcs.GetHookReq) (*pbcs.GetH
 	}
 
 	r := &pbds.GetHookReq{
-		BizId:  req.BizId,
-		HookId: req.HookId,
+		BizId:     req.BizId,
+		HookId:    req.HookId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	hook, err := s.client.DS.GetHook(grpcKit.RpcCtx(), r)
@@ -374,6 +382,7 @@ func (s *Service) ListHookReferences(ctx context.Context,
 		Limit:     req.Limit,
 		Start:     req.Start,
 		SearchKey: req.SearchKey,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListHookReferences(grpcKit.RpcCtx(), r)
