@@ -469,10 +469,10 @@
         handle: handleLoginOut,
       }
     ];
-    // 租户模式下显示个人中心
+    // 租户模式下显示个人设置
     if (spaceFeatureFlags.value.ENABLE_TENANT_MODE) {
       actions.splice(1, 0, {
-        text: t('个人中心'),
+        text: t('个人设置'),
         href: (window as any).USER_CENTER_URL,
         icon: 'bk-bscp-icon icon-yonghu',
         target: '_blank',

@@ -1497,6 +1497,6 @@ export default {
   '清除操作将对进程执行停止或者取消托管操作。': 'The clear operation will perform stop or cancel managed operation on the process.',
   清除: '清除',
   目标平台: 'Target platform',
-  个人中心: 'Personal Center',
+  个人设置: 'Personal Setting',
   权限中心: 'BK IAM'
 };
