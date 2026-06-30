@@ -247,38 +247,21 @@
     return biz.space_name;
   });
 
-
-  // 依据全局 projectId 恢复选中的项目
-  watch(
-    () => projectId.value,
-    (val) => {
-      if (val) {
-        selectedProjectId.value = val;
-      } else {
-        selectedProjectId.value = '';
-      }
-    },
-    { immediate: true },
-  );
-
-  // 当 spaceId 和 projectId 都有值时，确保项目列表已加载
   watch(
     () => [spaceId.value, projectId.value],
     async ([currentSpaceId, currentProjectId]) => {
+      if (currentProjectId) {
+        selectedProjectId.value = currentProjectId;
+      };
+
+      if (currentSpaceId) {
+        selectedBizId.value = currentSpaceId;
+      };
+
+      // 当 spaceId 和 projectId 都有值时，确保项目列表已加载
       if (currentSpaceId && currentProjectId) {
         // 使用公共方法获取项目列表（已内含缓存检查）
         await fetchProjectList(currentSpaceId);
-      }
-    },
-    { immediate: true },
-  );
-
-  // 依据全局 spaceId 恢复选中的业务
-  watch(
-    () => spaceId.value,
-    (val) => {
-      if (val) {
-        selectedBizId.value = val;
       }
     },
     { immediate: true },
@@ -303,6 +286,11 @@
 
   // 跳转到当前模块
   const navigateToModule = (spaceId: string, projId?: string) => {
+    templateStore.$patch((state) => {
+      state.templateSpaceList = [];
+      state.currentTemplateSpace = 0;
+      state.currentPkg = '';
+    });
     const nav = props.navList.find((item) => item.module === route.meta.navModule);
     const params: any = { spaceId };
     // 只有当当前模块有项目概念时才传递 projectId
@@ -316,7 +304,7 @@
     }
   };
 
-  const handleSelectSpace = async (id: string, shouldClearState = true) => {
+  const handleSelectSpace = async (id: string) => {
     const space = spaceList.value.find((item: ISpaceDetail) => item.space_id === id);
     if (space) {
       if (!space.permission) {
@@ -334,19 +322,11 @@
         };
 
         showApplyPermDialog.value = true;
-        return;
+        return false;
       }
-      // 根据参数决定是否清除状态
-      if (shouldClearState) {
-        // 清除 projectId
-        projectId.value = '';
-        templateStore.$patch((state) => {
-          state.templateSpaceList = [];
-          state.currentTemplateSpace = 0;
-          state.currentPkg = '';
-        });
-      }
+      return true;
     }
+    return false;
   };
 
   const handleSelectBiz = async (event: MouseEvent, biz: ISpaceDetail) => {
@@ -355,21 +335,22 @@
     tempSelectedBizId.value = biz.space_id;
     // 如果不显示项目列（无项目概念），直接选中业务并跳转
     if (!props.showProject) {
-      // 无项目概念时，立即更新全局 spaceId
-      spaceId.value = biz.space_id;
-      await handleSelectSpace(biz.space_id);
-      navigateToModule(biz.space_id);
-      selectedProjectId.value = '';
-      closePanel();
+      const res = await handleSelectSpace(biz.space_id);
+      if (res) {
+        navigateToModule(biz.space_id);
+        selectedProjectId.value = '';
+        closePanel();
+      }
       return;
     }
     // 只更新本地状态，等待用户选择项目后才更新全局 spaceId 并跳转
-    await handleSelectSpace(biz.space_id, false);
+    const res = await handleSelectSpace(biz.space_id);
 
-    projectSearch.value = '';
-
-    // 使用公共方法获取项目列表
-    await fetchProjectList(biz.space_id);
+    if (res) {
+      projectSearch.value = '';
+      // 使用公共方法获取项目列表
+      await fetchProjectList(biz.space_id);
+    }
   };
 
   const handleSelectProject = (event: MouseEvent, proj: IProjectItem) => {
@@ -379,16 +360,12 @@
     selectedBizId.value = tempSelectedBizId.value;
     selectedProjectId.value = strProjectId;
     tempSelectedBizId.value = '';
-    // 更新全局 projectId
-    projectId.value = strProjectId;
 
     // 保存 spaceId 到 projectId 的映射
     saveSpaceToProjectId(selectedBizId.value, strProjectId);
 
     const bizItem = optionList.value.find((b) => String(b.space_id) === selectedBizId.value);
     if (bizItem) {
-      // 更新全局 spaceId（选择项目后才更新，避免提前触发子组件重新加载）
-      spaceId.value = bizItem.space_id;
       // 跳转到当前模块，并带上 projectId 参数
       navigateToModule(bizItem.space_id, strProjectId);
     }
