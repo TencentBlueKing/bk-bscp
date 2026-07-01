@@ -8,6 +8,7 @@ import { ISpaceDetail, IPermissionResource, IPermissionQueryResourceItem } from 
 export default defineStore('global', () => {
   const bscpVersion = ref(''); // 产品版本号
   const spaceId = ref(''); // 空间id
+  const projectId = ref(''); // 项目id
   const spaceFeatureFlags = ref<{ [key: string]: any }>({}); // 空间的配置开关
   const spaceList = ref<ISpaceDetail[]>([]);
   // @ts-ignore
@@ -66,6 +67,7 @@ export default defineStore('global', () => {
   return {
     bscpVersion,
     spaceId,
+    projectId,
     spaceFeatureFlags,
     spaceList,
     showNotice,

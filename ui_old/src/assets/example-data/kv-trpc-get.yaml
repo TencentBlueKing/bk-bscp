@@ -1,0 +1,53 @@
+package main
+
+import (
+	"context"
+	"sync/atomic"
+
+	"{{ .Bk_Bscp_Variable_module_domain }}/trpc-go/trpc-go"
+	"{{ .Bk_Bscp_Variable_module_domain }}/trpc-go/trpc-go/config"
+	"{{ .Bk_Bscp_Variable_module_domain }}/trpc-go/trpc-go/log"
+
+	_ "{{ .Bk_Bscp_Variable_bscp_module_domain }}/trpc-go/trpc-plugin/trpc-config-bscp"
+)
+
+const (
+	// configKVName 和配置中的 config.bscp.providers.name 保持一致
+	configKVName = "{{ .Bk_Bscp_Variable_ServiceName }}" 
+	configKey    = "{{ .Bk_Bscp_Variable_KeyName }}"
+)
+
+var value atomic.Value
+
+// setupConfig 自动初始化配置, trpc.NewServer启动时无需此代码
+func setupConfig() {
+	// Load and parse the config file.
+	cfg, err := trpc.LoadConfig("./trpc_go.yaml")
+	if err != nil {
+		panic("load config fail: " + err.Error())
+	}
+
+	// Set the global config for other plugins to access.
+	trpc.SetGlobalConfig(cfg)
+
+	// Use the config to set global variables.
+	trpc.SetGlobalVariables(cfg)
+
+	// Setup plugins.
+	_, err = trpc.SetupPlugins(cfg.Plugins)
+	if err != nil {
+		panic("setup plugin fail: " + err.Error())
+	}
+}
+
+func main() {
+	// 初始化配置信息
+	setupConfig()
+
+	c, err := config.Get(configKVName).Get(context.TODO(), configKey)
+	if err != nil {
+		log.Errorf("get kv config %s failed: %s", configKey, err.Error())
+		panic(err)
+	}
+	log.Infof("key: %s\nvalue: %s", configKey, c.Value())
+}

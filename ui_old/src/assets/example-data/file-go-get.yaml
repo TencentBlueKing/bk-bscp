@@ -1,0 +1,83 @@
+package main
+
+import (
+        "fmt"
+        "io"
+        "log"
+        "os"
+        "path/filepath"
+        "time"
+
+        "github.com/TencentBlueKing/bscp-go/client"
+)
+
+func main() {
+        // 给参数赋值
+        var feedAddr string = "{{ .Bk_Bscp_Variable_FEED_ADDR }}"
+        var biz uint32 = {{ .Bk_Bscp_Variable_BkBizId }}
+        var token string = {{ .Bk_Bscp_Variable_ClientKey }}
+        var app string = "{{ .Bk_Bscp_Variable_ServiceName }}"
+        var targetFileName string = {{ .Bk_Bscp_Variable_KeyName }}
+        labels := map[string]string{{ .Bk_Bscp_Variable_Leabels }}
+        start := time.Now()
+
+        err := func() error {
+                clientOpts := []client.Option{
+                        client.WithFeedAddr(feedAddr),
+                        client.WithBizID(biz),
+                        client.WithToken(token),
+                        client.WithLabels(labels),
+                }
+                // 初始化客户端
+                bscp, err := client.New(clientOpts...)
+                if err != nil {
+                        return fmt.Errorf("init client failed, err: %v", err)
+                }
+                opts := []client.AppOption{}
+                // 拉取单文件
+                reader, err := bscp.GetFile(app, targetFileName, opts...)
+                if err != nil {
+                        return fmt.Errorf("get app file failed, err: %v", err)
+                }
+                defer func() {
+                        _ = reader.Close()
+                }()
+
+                // 设置文件保存路径
+                savePath := "/tmp"
+                fullPath := filepath.Join(savePath, targetFileName)
+
+                // 确保目录存在
+                err = os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
+                if err != nil {
+                        return fmt.Errorf("create directory failed, err: %v", err)
+                }
+
+                // 创建输出文件
+                outFile, err := os.Create(fullPath)
+                if err != nil {
+                        return fmt.Errorf("create file failed, err: %v", err)
+                }
+                defer func() {
+                        _ = outFile.Close()
+                }()
+
+                // 将数据从 reader 复制到 outFile
+                _, err = io.Copy(outFile, reader)
+                if err != nil {
+                        return fmt.Errorf("copy data failed, err: %v", err)
+                }
+
+                log.Printf("get file content by downloading from repo success, file: %s", fullPath)
+
+                return nil
+        }()
+
+        costTime := time.Since(start).Seconds()
+        // 判断是否出错，决定是否退出
+        if err != nil {
+                log.Fatalf("download app files failed, err: %v", err)
+        }
+
+        log.Printf("download app files finished, cost_time_seconds: %.2f", costTime)
+}

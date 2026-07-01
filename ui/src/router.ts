@@ -3,6 +3,7 @@ import useGlobalStore from './store/global';
 import { ISpaceDetail } from '../types/index';
 import { getSpaceFeatureFlag } from './api';
 import { storeToRefs } from 'pinia';
+import { hasProjectConcept, getDefaultProjectId, saveSpaceToProjectId, getSpaceToProjectId } from './utils/project';
 
 const routes = [
   {
@@ -17,12 +18,20 @@ const routes = [
       const { spaceList } = useGlobalStore();
       const firstHasPermSpace = spaceList.find((item: ISpaceDetail) => item.permission);
       const hasPermSpace = spaceList.find((item: ISpaceDetail) => item.space_id === spaceId && item.permission);
-      spaceId = hasPermSpace ? spaceId : (firstHasPermSpace?.space_id ?? spaceList[0]?.space_id);
-      return { name: 'service-all', params: { spaceId } };
+      spaceId = hasPermSpace ? spaceId : (firstHasPermSpace?.space_id ?? spaceList[0]?.space_id) || '';
+
+      // 服务管理有项目概念
+      const params: any = { spaceId };
+      const lastProjectId = getSpaceToProjectId(spaceId as string);
+      if (lastProjectId) {
+        params.projectId = lastProjectId;
+      }
+
+      return { name: 'service-all', params };
     },
   },
   {
-    path: '/space/:spaceId',
+    path: '/space/:spaceId/:projectId?',
     name: 'space',
     component: () => import('./views/space/index.vue'),
     children: [
@@ -160,6 +169,42 @@ const routes = [
         component: () => import('./views/space/client/example/index.vue'),
       },
       {
+        path: 'records',
+        children: [
+          {
+            path: 'all',
+            name: 'records-all',
+            component: () => import('./views/space/records/index.vue'),
+            meta: {
+              navModule: 'records',
+            },
+          },
+          {
+            path: ':appId(\\d+)',
+            name: 'records-app',
+            component: () => import('./views/space/records/index.vue'),
+            meta: {
+              navModule: 'records',
+            },
+          },
+        ],
+      },
+      {
+        path: 'env-manage',
+        name: 'env-manage',
+        meta: {
+          navModule: 'env-manage',
+        },
+        component: () => import('./views/space/env-manage/index.vue'),
+      },
+    ],
+  },
+  {
+    path: '/space/:spaceId',
+    name: 'sapce',
+    component: () => import('./views/space/index.vue'),
+    children: [
+      {
         path: 'task',
         name: 'task-history',
         meta: {
@@ -236,25 +281,12 @@ const routes = [
         ],
       },
       {
-        path: 'records',
-        children: [
-          {
-            path: 'all',
-            name: 'records-all',
-            component: () => import('./views/space/records/index.vue'),
-            meta: {
-              navModule: 'records',
-            },
-          },
-          {
-            path: ':appId(\\d+)',
-            name: 'records-app',
-            component: () => import('./views/space/records/index.vue'),
-            meta: {
-              navModule: 'records',
-            },
-          },
-        ],
+        path: 'project-manage',
+        name: 'project-manage',
+        meta: {
+          navModule: 'project-manage',
+        },
+        component: () => import('./views/space/project-manage/index.vue'),
       },
     ],
   },
@@ -278,13 +310,46 @@ router.afterEach(() => {
   });
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const globalStore = storeToRefs(useGlobalStore());
-  const { spaceFeatureFlags } = globalStore;
+  const { spaceFeatureFlags, projectId } = globalStore;
+
   // 页面刷新后 spaceFeatureFlags会重置，重新获取权限信息
   if (!spaceFeatureFlags.value.BIZ_VIEW) {
     const res = await getSpaceFeatureFlag(to.params.spaceId as string);
     spaceFeatureFlags.value = res;
+  }
+
+  // 处理有项目概念路由的 projectId
+  if (to.params.spaceId && hasProjectConcept(to.meta?.navModule as string | undefined)) {
+    const currentSpaceId = to.params.spaceId as string;
+    const currentProjectId = to.params.projectId as string | undefined;
+
+    // 路由中缺少 projectId，需要补充
+    if (!currentProjectId) {
+      try {
+        // 获取默认 projectId：优先 localStorage，没有则取项目列表第一个
+        const targetProjectId = await getDefaultProjectId(currentSpaceId);
+        if (targetProjectId) {
+          projectId.value = targetProjectId;
+          saveSpaceToProjectId(currentSpaceId, targetProjectId);
+          // 重定向到带 projectId 的路由
+          const params: Record<string, string> = { ...to.params, projectId: targetProjectId };
+          next({
+            name: to.name as string,
+            params,
+            query: to.query,
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('获取项目列表失败', error);
+      }
+    } else {
+      // projectId 已存在，同步到全局状态并保存映射
+      projectId.value = currentProjectId;
+      saveSpaceToProjectId(currentSpaceId, currentProjectId);
+    }
   }
 
   const permissions = to.matched.map((record) => record.meta?.permission).filter(Boolean);
