@@ -94,7 +94,8 @@ func (m *GroupAttachment) GroupAttachment() *table.GroupAttachment {
 	}
 
 	return &table.GroupAttachment{
-		BizID: m.BizId,
+		BizID:     m.BizId,
+		ProjectID: m.ProjectId,
 	}
 }
 
@@ -105,7 +106,8 @@ func PbGroupAttachment(at *table.GroupAttachment) *GroupAttachment { //nolint:re
 	}
 
 	return &GroupAttachment{
-		BizId: at.BizID,
+		BizId:     at.BizID,
+		ProjectId: at.ProjectID,
 	}
 }
 

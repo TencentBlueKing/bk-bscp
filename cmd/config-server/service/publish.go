@@ -53,6 +53,8 @@ func (s *Service) Publish(ctx context.Context, req *pbcs.PublishReq) (
 		Groups:          req.Groups,
 		Labels:          req.Labels,
 		GroupName:       req.GroupName,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:           grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.Publish(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -82,7 +84,7 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 	if err != nil {
 		return nil, err
 	}
-	if err = s.validateGrayPercentGroups(grpcKit, req.Groups); err != nil {
+	if err = s.validateGrayPercentGroups(grpcKit, grpcKit.ResolvedProjectID(req.GetProjectId()), req.Groups); err != nil {
 		logs.Errorf("validate gray percent groups failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
@@ -120,7 +122,7 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 
 // validateGrayPercentGroups 校验灰度比例分组
 // nolint:funlen
-func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, groups []uint32) error {
+func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, projectId uint32, groups []uint32) error {
 	if len(groups) == 0 {
 		return nil
 	}
@@ -142,8 +144,9 @@ func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, groups []uint32) e
 	groupDetails := make([]*table.Group, 0)
 	for _, groupID := range validGroupIDs {
 		r := &pbds.GetGroupByIDReq{
-			BizId:   grpcKit.BizID,
-			GroupId: groupID,
+			BizId:     grpcKit.BizID,
+			GroupId:   groupID,
+			ProjectId: projectId,
 		}
 		group, err := s.client.DS.GetGroupByID(grpcKit.RpcCtx(), r)
 		if err != nil {

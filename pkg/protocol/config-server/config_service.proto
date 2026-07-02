@@ -1199,6 +1199,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/groups"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups" body: "*" }
     };
   }
   // 删除分组
@@ -1206,6 +1207,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/groups/{group_id}"
+      additional_bindings { delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/{group_id}" }
     };
   }
   // 批量删除分组
@@ -1214,6 +1216,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/groups/batch_delete"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/batch_delete" body: "*" }
     };
   }
   // 更新分组
@@ -1222,6 +1225,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/groups/{group_id}"
       body: "*"
+      additional_bindings { put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/{group_id}" body: "*" }
     };
   }
   // 获取所有分组列表
@@ -1229,6 +1233,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups" }
     };
   }
   // 按服务获取分组
@@ -1236,6 +1241,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/groups"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/groups"
+      }
     };
   }
   // 按分组获取服务
@@ -1243,6 +1251,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/{group_id}/released_apps"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/{group_id}/released_apps" }
     };
   }
   // 按名称获取分组
@@ -1251,6 +1260,15 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/query/name/{group_name}"
       additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/groups/query/name/{group_name}" }
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/query/name/{group_name}" }
+    };
+  }
+  // 获取分组
+  rpc GetGroup(GetGroupReq) returns (GetGroupResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/groups/{group_id}"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/{group_id}" }
     };
   }
   // 分组选择器
@@ -1258,6 +1276,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/groups/selector/{label_name}"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/groups/selector/{label_name}" }
     };
   }
   // 发布指定版本
@@ -4235,6 +4254,9 @@ message CreateGroupReq {
     example: "{\"labels_and\":[{\"key\":\"env\",\"op\":\"eq\",\"value\":\"test\"},{\"key\":\"version\",\"op\":\"gt\",\"value\":1}]}"
   }];
   string uid = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "debug UID " }];
+  uint32 project_id = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
 }
 
 message CreateGroupResp {
@@ -4258,6 +4280,9 @@ message UpdateGroupReq {
     example: "{\"labels_and\":[{\"key\":\"env\",\"op\":\"eq\",\"value\":\"test\"},{\"key\":\"version\",\"op\":\"gt\",\"value\":1}]}"
   }];
   string uid = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "debug UID " }];
+  uint32 project_id = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
 }
 
 message UpdateGroupResp {}
@@ -4265,6 +4290,9 @@ message UpdateGroupResp {}
 message DeleteGroupReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 group_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组ID" }];
+  uint32 project_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
 }
 
 message DeleteGroupResp {}
@@ -4272,6 +4300,9 @@ message DeleteGroupResp {}
 message ListAllGroupsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string top_ids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "需要置顶ID" }];
+  uint32 project_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
 }
 
 message ListAllGroupsResp {
@@ -4303,6 +4334,8 @@ message ListAllGroupsResp {
 message ListAppGroupsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAppGroupsResp {
@@ -4330,6 +4363,7 @@ message ListGroupReleasedAppsReq {
   string search_key = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListGroupReleasedAppsResp {
@@ -4348,6 +4382,21 @@ message ListGroupReleasedAppsResp {
 message GetGroupByNameReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string group_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组名" }];
+  uint32 project_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
+}
+
+message GetGroupReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 group_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "分组ID" }];
+  uint32 project_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
+}
+
+message GetGroupResp {
+  pbgroup.Group data = 1;
 }
 
 message PublishReq {
@@ -4377,6 +4426,9 @@ message PublishReq {
 message ListGroupSelectorReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string label_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "标签名" }];
+  uint32 project_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID（additional_bindings使用）" }
+  ];
 }
 
 message ListGroupSelectorResp {
@@ -4635,6 +4687,7 @@ message BatchDeleteBizResourcesReq {
     description: "是否排除操作：是=true，否=false",
     default: "false",
   }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message BatchDeleteAppResourcesReq {

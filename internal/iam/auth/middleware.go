@@ -404,7 +404,6 @@ func (a authorizer) BizVerified(next http.Handler) http.Handler {
 }
 
 // Project 校验中间件
-// TODO: 补充项目存在性
 func (a authorizer) VerifyProjectExists(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		kt := kit.MustGetKit(r.Context())
@@ -422,6 +421,21 @@ func (a authorizer) VerifyProjectExists(next http.Handler) http.Handler {
 			return
 		}
 
+		resp, err := a.authClient.VerifyProject(kt.RpcCtx(), &pbas.VerifyProjectReq{
+			BizId:     kt.BizID,
+			ProjectId: uint32(projectID),
+		})
+		if err != nil {
+			logs.Errorf("verify project failed, bizID: %d, projectID: %d, err: %v", kt.BizID, uint32(projectID), err)
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("verify project failed: %v", err)))
+			return
+		}
+
+		if !resp.Exists {
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("project_id %d does not exist", projectID)))
+			return
+		}
+
 		kt.ProjectID = uint32(projectID)
 
 		next.ServeHTTP(w, r.WithContext(kit.WithKit(r.Context(), kt)))
@@ -429,7 +443,6 @@ func (a authorizer) VerifyProjectExists(next http.Handler) http.Handler {
 }
 
 // Env 校验中间件
-// TODO: 补充环境存在性
 func (a authorizer) VerifyEnvExists(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		kt := kit.MustGetKit(r.Context())
@@ -443,6 +456,22 @@ func (a authorizer) VerifyEnvExists(next http.Handler) http.Handler {
 		envID, err := strconv.ParseUint(envIDStr, 10, 32)
 		if err != nil {
 			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		resp, err := a.authClient.VerifyEnv(kt.RpcCtx(), &pbas.VerifyEnvReq{
+			BizId:     kt.BizID,
+			ProjectId: kt.ProjectID,
+			EnvId:     uint32(envID),
+		})
+		if err != nil {
+			logs.Errorf("verify env failed, bizID: %d, projectID: %d, envID: %d, err: %v", kt.BizID, kt.ProjectID, uint32(envID), err)
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("verify env failed: %v", err)))
+			return
+		}
+
+		if !resp.Exists {
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("env_id %d does not exist", envID)))
 			return
 		}
 

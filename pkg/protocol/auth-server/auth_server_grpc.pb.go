@@ -33,6 +33,8 @@ const (
 	Auth_GetAuthConf_FullMethodName                = "/pbas.Auth/GetAuthConf"
 	Auth_GrantResourceCreatorAction_FullMethodName = "/pbas.Auth/GrantResourceCreatorAction"
 	Auth_IAMVerify_FullMethodName                  = "/pbas.Auth/IAMVerify"
+	Auth_VerifyProject_FullMethodName              = "/pbas.Auth/VerifyProject"
+	Auth_VerifyEnv_FullMethodName                  = "/pbas.Auth/VerifyEnv"
 )
 
 // AuthClient is the client API for Auth service.
@@ -60,6 +62,10 @@ type AuthClient interface {
 	GrantResourceCreatorAction(ctx context.Context, in *GrantResourceCreatorActionReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	// 验证iam
 	IAMVerify(ctx context.Context, in *IAMVerifyReq, opts ...grpc.CallOption) (*IAMVerifyResp, error)
+	// 验证业务下是否存在该项目
+	VerifyProject(ctx context.Context, in *VerifyProjectReq, opts ...grpc.CallOption) (*VerifyProjectResp, error)
+	// 验证业务和项目下是否存在该环境
+	VerifyEnv(ctx context.Context, in *VerifyEnvReq, opts ...grpc.CallOption) (*VerifyEnvResp, error)
 }
 
 type authClient struct {
@@ -178,6 +184,24 @@ func (c *authClient) IAMVerify(ctx context.Context, in *IAMVerifyReq, opts ...gr
 	return out, nil
 }
 
+func (c *authClient) VerifyProject(ctx context.Context, in *VerifyProjectReq, opts ...grpc.CallOption) (*VerifyProjectResp, error) {
+	out := new(VerifyProjectResp)
+	err := c.cc.Invoke(ctx, Auth_VerifyProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) VerifyEnv(ctx context.Context, in *VerifyEnvReq, opts ...grpc.CallOption) (*VerifyEnvResp, error) {
+	out := new(VerifyEnvResp)
+	err := c.cc.Invoke(ctx, Auth_VerifyEnv_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations should embed UnimplementedAuthServer
 // for forward compatibility
@@ -203,6 +227,10 @@ type AuthServer interface {
 	GrantResourceCreatorAction(context.Context, *GrantResourceCreatorActionReq) (*base.EmptyResp, error)
 	// 验证iam
 	IAMVerify(context.Context, *IAMVerifyReq) (*IAMVerifyResp, error)
+	// 验证业务下是否存在该项目
+	VerifyProject(context.Context, *VerifyProjectReq) (*VerifyProjectResp, error)
+	// 验证业务和项目下是否存在该环境
+	VerifyEnv(context.Context, *VerifyEnvReq) (*VerifyEnvResp, error)
 }
 
 // UnimplementedAuthServer should be embedded to have forward compatible implementations.
@@ -244,6 +272,12 @@ func (UnimplementedAuthServer) GrantResourceCreatorAction(context.Context, *Gran
 }
 func (UnimplementedAuthServer) IAMVerify(context.Context, *IAMVerifyReq) (*IAMVerifyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IAMVerify not implemented")
+}
+func (UnimplementedAuthServer) VerifyProject(context.Context, *VerifyProjectReq) (*VerifyProjectResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyProject not implemented")
+}
+func (UnimplementedAuthServer) VerifyEnv(context.Context, *VerifyEnvReq) (*VerifyEnvResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyEnv not implemented")
 }
 
 // UnsafeAuthServer may be embedded to opt out of forward compatibility for this service.
@@ -473,6 +507,42 @@ func _Auth_IAMVerify_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_VerifyProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyProjectReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).VerifyProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_VerifyProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).VerifyProject(ctx, req.(*VerifyProjectReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_VerifyEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyEnvReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).VerifyEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_VerifyEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).VerifyEnv(ctx, req.(*VerifyEnvReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -527,6 +597,14 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IAMVerify",
 			Handler:    _Auth_IAMVerify_Handler,
+		},
+		{
+			MethodName: "VerifyProject",
+			Handler:    _Auth_VerifyProject_Handler,
+		},
+		{
+			MethodName: "VerifyEnv",
+			Handler:    _Auth_VerifyEnv_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
