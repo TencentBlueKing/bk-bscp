@@ -179,6 +179,11 @@ func (p *proxy) routers() http.Handler {
 				r.Use(p.HttpServerHandledTotal("", "Download"))
 				r.Get("/", p.repo.DownloadFile)
 			})
+			// 内容下载URL API: 只返回临时预签名下载URL, 不透传文件字节
+			r.Route("/download_url", func(r chi.Router) {
+				r.Use(p.HttpServerHandledTotal("", "DownloadURL"))
+				r.Get("/", p.repo.DownloadFileURL)
+			})
 			// 获取二进制内容元数据API
 			r.Route("/metadata", func(r chi.Router) {
 				r.Use(p.HttpServerHandledTotal("", "Metadata"))
