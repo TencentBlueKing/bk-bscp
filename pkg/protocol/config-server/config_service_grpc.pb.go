@@ -159,6 +159,7 @@ const (
 	Config_ListAppGroups_FullMethodName                      = "/pbcs.Config/ListAppGroups"
 	Config_ListGroupReleasedApps_FullMethodName              = "/pbcs.Config/ListGroupReleasedApps"
 	Config_GetGroupByName_FullMethodName                     = "/pbcs.Config/GetGroupByName"
+	Config_GetGroup_FullMethodName                           = "/pbcs.Config/GetGroup"
 	Config_ListGroupSelector_FullMethodName                  = "/pbcs.Config/ListGroupSelector"
 	Config_Publish_FullMethodName                            = "/pbcs.Config/Publish"
 	Config_GenerateReleaseAndPublish_FullMethodName          = "/pbcs.Config/GenerateReleaseAndPublish"
@@ -522,6 +523,8 @@ type ConfigClient interface {
 	ListGroupReleasedApps(ctx context.Context, in *ListGroupReleasedAppsReq, opts ...grpc.CallOption) (*ListGroupReleasedAppsResp, error)
 	// 按名称获取分组
 	GetGroupByName(ctx context.Context, in *GetGroupByNameReq, opts ...grpc.CallOption) (*group.Group, error)
+	// 获取分组
+	GetGroup(ctx context.Context, in *GetGroupReq, opts ...grpc.CallOption) (*GetGroupResp, error)
 	// 分组选择器
 	ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error)
 	// 发布指定版本
@@ -1905,6 +1908,15 @@ func (c *configClient) GetGroupByName(ctx context.Context, in *GetGroupByNameReq
 	return out, nil
 }
 
+func (c *configClient) GetGroup(ctx context.Context, in *GetGroupReq, opts ...grpc.CallOption) (*GetGroupResp, error) {
+	out := new(GetGroupResp)
+	err := c.cc.Invoke(ctx, Config_GetGroup_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ListGroupSelector(ctx context.Context, in *ListGroupSelectorReq, opts ...grpc.CallOption) (*ListGroupSelectorResp, error) {
 	out := new(ListGroupSelectorResp)
 	err := c.cc.Invoke(ctx, Config_ListGroupSelector_FullMethodName, in, out, opts...)
@@ -3018,6 +3030,8 @@ type ConfigServer interface {
 	ListGroupReleasedApps(context.Context, *ListGroupReleasedAppsReq) (*ListGroupReleasedAppsResp, error)
 	// 按名称获取分组
 	GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error)
+	// 获取分组
+	GetGroup(context.Context, *GetGroupReq) (*GetGroupResp, error)
 	// 分组选择器
 	ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error)
 	// 发布指定版本
@@ -3604,6 +3618,9 @@ func (UnimplementedConfigServer) ListGroupReleasedApps(context.Context, *ListGro
 }
 func (UnimplementedConfigServer) GetGroupByName(context.Context, *GetGroupByNameReq) (*group.Group, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGroupByName not implemented")
+}
+func (UnimplementedConfigServer) GetGroup(context.Context, *GetGroupReq) (*GetGroupResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGroup not implemented")
 }
 func (UnimplementedConfigServer) ListGroupSelector(context.Context, *ListGroupSelectorReq) (*ListGroupSelectorResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGroupSelector not implemented")
@@ -6275,6 +6292,24 @@ func _Config_GetGroupByName_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_GetGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetGroup(ctx, req.(*GetGroupReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_ListGroupSelector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGroupSelectorReq)
 	if err := dec(in); err != nil {
@@ -8501,6 +8536,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGroupByName",
 			Handler:    _Config_GetGroupByName_Handler,
+		},
+		{
+			MethodName: "GetGroup",
+			Handler:    _Config_GetGroup_Handler,
 		},
 		{
 			MethodName: "ListGroupSelector",

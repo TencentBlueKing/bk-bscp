@@ -386,8 +386,3 @@ func (a authorizer) LogOut(r *http.Request) *rest.UnauthorizedData {
 func (a authorizer) HasBiz(ctx context.Context, bizID uint32) bool {
 	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(bizID), 10))
 }
-
-// HasProject 项目是否存在
-func (a authorizer) HasProject(ctx context.Context, projectID uint32) bool {
-	return a.spaceMgr.HasCMDBSpace(ctx, strconv.FormatUint(uint64(projectID), 10))
-}

@@ -155,8 +155,10 @@ func (p *proxy) AppProjectEnvVerified(next http.Handler) http.Handler {
 
 		// 调用 config-server GetApp 校验 App 归属于该项目+环境
 		_, err = p.cfgClient.GetApp(kt.RpcCtx(), &pbcs.GetAppReq{
-			BizId: kt.BizID,
-			AppId: uint32(appID),
+			BizId:     kt.BizID,
+			AppId:     uint32(appID),
+			ProjectId: kt.ProjectID,
+			EnvId:     kt.EnvID,
 		})
 		if err != nil {
 			logs.Errorf("verify app project/env failed, bizId=%d appId=%d projectId=%d envId=%d err=%v rid=%s",
@@ -199,6 +201,44 @@ func (p *proxy) HookProjectVerified(next http.Handler) http.Handler {
 			logs.Errorf("verify hook project failed, bizId=%d hookId=%d projectId=%d err=%v rid=%s",
 				kt.BizID, uint32(hookID), kt.ProjectID, err, kt.Rid)
 			render.Render(w, r, rest.BadRequest(fmt.Errorf("hook does not belong to the specified project")))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// GroupProjectVerified 校验 Group 是否属于指定的项目。
+// 必须放在 checkOrCreateDefaultProjectEnv 之后，依赖 kt.ProjectID 已被赋值。
+// 用于新路由（带 {project_id} 的 additional_bindings），依赖 URL 中的 project_id 参数已通过中间件注入 kt.ProjectID。
+// 通过 group_id 调用 GetGroup 获取详情并校验归属。
+func (p *proxy) GroupProjectVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		groupIDStr := chi.URLParam(r, "group_id")
+		if groupIDStr == "" {
+			err := errors.New("group_id is required in url params")
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		groupID, err := strconv.Atoi(groupIDStr)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 调用 config-server GetGroup 校验 Group 归属于该项目
+		_, err = p.cfgClient.GetGroup(kt.RpcCtx(), &pbcs.GetGroupReq{
+			BizId:     kt.BizID,
+			GroupId:   uint32(groupID),
+			ProjectId: kt.ProjectID,
+		})
+		if err != nil {
+			logs.Errorf("verify group project failed, bizId=%d groupId=%d projectId=%d err=%v rid=%s",
+				kt.BizID, uint32(groupID), kt.ProjectID, err, kt.Rid)
+			render.Render(w, r, rest.BadRequest(fmt.Errorf("group does not belong to the specified project")))
 			return
 		}
 

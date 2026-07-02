@@ -637,3 +637,59 @@ func (s *Service) IAMVerify(ctx context.Context, req *pbas.IAMVerifyReq) (*pbas.
 
 	return &pbas.IAMVerifyResp{IsAuthorized: true}, nil
 }
+
+// VerifyEnv implements [pbas.AuthServer].
+func (s *Service) VerifyEnv(ctx context.Context, req *pbas.VerifyEnvReq) (*pbas.VerifyEnvResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	bizID := req.GetBizId()
+	if bizID == 0 {
+		return nil, errors.New("biz id is required")
+	}
+
+	projectID := req.GetProjectId()
+	if projectID == 0 {
+		return nil, errors.New("project id is required")
+	}
+
+	envID := req.GetEnvId()
+	if envID == 0 {
+		return nil, errors.New("env id is required")
+	}
+
+	_, err := s.client.DS.GetEnvironment(kt.RpcCtx(), &pbds.GetEnvironmentReq{
+		BizId:     bizID,
+		ProjectId: projectID,
+		EnvId:     envID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbas.VerifyEnvResp{Exists: true}, nil
+}
+
+// VerifyProject implements [pbas.AuthServer].
+func (s *Service) VerifyProject(ctx context.Context, req *pbas.VerifyProjectReq) (*pbas.VerifyProjectResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	bizID := req.GetBizId()
+	if bizID == 0 {
+		return nil, errors.New("biz id is required")
+	}
+
+	projectID := req.GetProjectId()
+	if projectID == 0 {
+		return nil, errors.New("project id is required")
+	}
+
+	_, err := s.client.DS.GetProject(kt.RpcCtx(), &pbds.GetProjectReq{
+		BizId:     bizID,
+		ProjectId: projectID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbas.VerifyProjectResp{Exists: true}, nil
+}

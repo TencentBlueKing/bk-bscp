@@ -661,7 +661,7 @@ func (s *Service) ListReleases(ctx context.Context, req *pbds.ListReleasesReq) (
 		return nil, err
 	}
 
-	groups, err := s.dao.Group().ListAppGroups(grpcKit, req.BizId, req.AppId)
+	groups, err := s.dao.Group().ListAppGroups(grpcKit, req.BizId, req.ProjectId, req.AppId)
 	if err != nil {
 		logs.Errorf("list app groups failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -1053,7 +1053,7 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbds.CheckReleaseNa
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get release by name failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
-			i18n.T(grpcKit, fmt.Sprintf("get release by name failed, err: %s", err.Error())))
+			"%s", i18n.T(grpcKit, fmt.Sprintf("get release by name failed, err: %s", err.Error())))
 	}
 
 	var exist bool
