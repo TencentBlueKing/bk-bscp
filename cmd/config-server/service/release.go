@@ -81,6 +81,8 @@ func (s *Service) ListReleases(ctx context.Context, req *pbcs.ListReleasesReq) (
 		Limit:      req.Limit,
 		All:        req.All,
 		SearchKey:  req.SearchKey,
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.ListReleases(grpcKit.RpcCtx(), r)
 	if err != nil {

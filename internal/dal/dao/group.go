@@ -28,21 +28,21 @@ import (
 // Group supplies all the group related operations.
 type Group interface {
 	// ListAppValidGroups list app valid groups.
-	ListAppValidGroups(kit *kit.Kit, bizID, appID uint32) ([]*table.Group, error)
+	ListAppValidGroups(kit *kit.Kit, bizID, projectID, appID uint32) ([]*table.Group, error)
 	// CreateWithTx Create one group instance with transaction.
 	CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, group *table.Group) (uint32, error)
 	// UpdateWithTx Update one group instance with transaction.
 	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, group *table.Group) error
 	// Get group by id.
-	Get(kit *kit.Kit, id, bizID uint32) (*table.Group, error)
+	Get(kit *kit.Kit, id, bizID, projectID uint32) (*table.Group, error)
 	// GetByName get group by name.
-	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Group, error)
+	GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Group, error)
 	// ListAll list all the groups in biz.
-	ListAll(kit *kit.Kit, bizID uint32, topIds []uint32) ([]*table.Group, error)
+	ListAll(kit *kit.Kit, bizID, projectID uint32, topIds []uint32) ([]*table.Group, error)
 	// DeleteWithTx delete one group instance with transaction.
 	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, group *table.Group) error
 	// ListAppGroups list all the groups of the app.
-	ListAppGroups(kit *kit.Kit, bizID, appID uint32) ([]*table.Group, error)
+	ListAppGroups(kit *kit.Kit, bizID, projectID, appID uint32) ([]*table.Group, error)
 	// ListGroupReleasedApps list all the released apps of the group.
 	ListGroupReleasedApps(kit *kit.Kit, opts *types.ListGroupReleasedAppsOption) (
 		*types.ListGroupReleasedAppsDetails, error)
@@ -58,7 +58,7 @@ type groupDao struct {
 }
 
 // ListAppValidGroups list app valid groups.
-func (dao *groupDao) ListAppValidGroups(kit *kit.Kit, bizID, appID uint32) (
+func (dao *groupDao) ListAppValidGroups(kit *kit.Kit, bizID, projectID, appID uint32) (
 	[]*table.Group, error) {
 
 	if bizID == 0 || appID == 0 {
@@ -69,7 +69,8 @@ func (dao *groupDao) ListAppValidGroups(kit *kit.Kit, bizID, appID uint32) (
 	gq := dao.genQ.Group.WithContext(kit.Ctx)
 	gab := dao.genQ.GroupAppBind
 	subQuery := gab.WithContext(kit.Ctx).Select(gab.GroupID).Where(gab.BizID.Eq(bizID), gab.AppID.Eq(appID))
-	return gq.Where(g.BizID.Eq(bizID)).Where(gq.Where(g.Public.Is(true)).Or(gq.Columns(g.ID).In(subQuery))).Find()
+	return gq.Where(g.BizID.Eq(bizID), g.ProjectID.Eq(projectID)).
+		Where(gq.Where(g.Public.Is(true)).Or(gq.Columns(g.ID).In(subQuery))).Find()
 }
 
 // CreateWithTx Create one group instance with transaction.
@@ -138,7 +139,7 @@ func (dao *groupDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 }
 
 // Get group by id.
-func (dao *groupDao) Get(kit *kit.Kit, id, bizID uint32) (*table.Group, error) {
+func (dao *groupDao) Get(kit *kit.Kit, id, bizID, projectID uint32) (*table.Group, error) {
 
 	if bizID == 0 || id == 0 {
 		return nil, errf.New(errf.InvalidParameter, "bizID or id is 0")
@@ -148,22 +149,22 @@ func (dao *groupDao) Get(kit *kit.Kit, id, bizID uint32) (*table.Group, error) {
 		return nil, errf.New(errf.InvalidParameter, "group id can not be 0")
 	}
 	m := dao.genQ.Group
-	return m.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
+	return m.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Take()
 }
 
 // GetByName get group by name.
-func (dao *groupDao) GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Group, error) {
+func (dao *groupDao) GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Group, error) {
 
 	if bizID == 0 || name == "" {
 		return nil, errf.New(errf.InvalidParameter, "biz id or name is empty")
 	}
 
 	m := dao.genQ.Group
-	return m.WithContext(kit.Ctx).Where(m.Name.Eq(name), m.BizID.Eq(bizID)).Take()
+	return m.WithContext(kit.Ctx).Where(m.Name.Eq(name), m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Take()
 }
 
 // ListAll list all the groups in biz.
-func (dao *groupDao) ListAll(kit *kit.Kit, bizID uint32, topIds []uint32) ([]*table.Group, error) {
+func (dao *groupDao) ListAll(kit *kit.Kit, bizID, projectID uint32, topIds []uint32) ([]*table.Group, error) {
 
 	if bizID == 0 {
 		return nil, errf.New(errf.InvalidParameter, "biz id is 0")
@@ -177,7 +178,7 @@ func (dao *groupDao) ListAll(kit *kit.Kit, bizID uint32, topIds []uint32) ([]*ta
 		q = q.Order(m.Name)
 	}
 
-	return q.Where(m.BizID.Eq(bizID)).Find()
+	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Find()
 
 }
 
@@ -203,7 +204,8 @@ func (dao *groupDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 		Status:           enumor.Success,
 	}).PrepareDelete(oldOne)
 
-	if _, err = m.WithContext(kit.Ctx).Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Delete(); err != nil {
+	if _, err = m.WithContext(kit.Ctx).Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).
+		Delete(); err != nil {
 		return err
 	}
 	if err = ad.Do(tx.Query); err != nil {
@@ -213,11 +215,12 @@ func (dao *groupDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.Group)
 }
 
 // ListAppGroups list groups by app id.
-func (dao *groupDao) ListAppGroups(kit *kit.Kit, bizID, appID uint32) ([]*table.Group, error) {
+func (dao *groupDao) ListAppGroups(kit *kit.Kit, bizID, projectID, appID uint32) ([]*table.Group, error) {
 
-	if bizID == 0 || appID == 0 {
-		return nil, errf.New(errf.InvalidParameter, "bizID or appID is 0")
+	if bizID == 0 || appID == 0 || projectID == 0 {
+		return nil, errf.New(errf.InvalidParameter, "bizID or appID or projectID is 0")
 	}
+
 	gabM := dao.genQ.GroupAppBind
 	gabQ := dao.genQ.GroupAppBind.WithContext(kit.Ctx)
 
@@ -226,7 +229,7 @@ func (dao *groupDao) ListAppGroups(kit *kit.Kit, bizID, appID uint32) ([]*table.
 
 	subQuery := gabQ.Select(gabM.GroupID).Where(gabM.BizID.Eq(bizID), gabM.AppID.Eq(appID))
 	return groupQ.
-		Where(groupM.BizID.Eq(bizID)).Where(
+		Where(groupM.BizID.Eq(bizID), groupM.ProjectID.Eq(projectID)).Where(
 		groupQ.Where(groupQ.Columns(groupM.ID).In(subQuery)).Or(groupM.Public.Is(true))).
 		Find()
 }

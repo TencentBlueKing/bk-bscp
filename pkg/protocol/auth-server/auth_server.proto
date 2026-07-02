@@ -65,6 +65,12 @@ service Auth {
 
   // 验证iam
   rpc IAMVerify(IAMVerifyReq) returns (IAMVerifyResp);
+
+  // 验证业务下是否存在该项目
+  rpc VerifyProject(VerifyProjectReq) returns (VerifyProjectResp) {}
+
+  // 验证业务和项目下是否存在该环境
+  rpc VerifyEnv(VerifyEnvReq) returns (VerifyEnvResp) {}
 }
 
 message IAMVerifyReq {
@@ -308,4 +314,23 @@ message GrantResourceCreatorActionReq {
     string type = 2;
     string id = 3;
   }
+}
+
+message VerifyProjectReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+}
+
+message VerifyProjectResp {
+  bool exists = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目是否存在" }];
+}
+
+message VerifyEnvReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+}
+
+message VerifyEnvResp {
+  bool exists = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境是否存在" }];
 }

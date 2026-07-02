@@ -1827,6 +1827,14 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID（additional_bindings使用）",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -1856,6 +1864,62 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "groupName",
+            "description": "分组名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID（additional_bindings使用）",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName}": {
+      "get": {
+        "summary": "按名称获取分组",
+        "operationId": "Config_GetGroupByName3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbgroupGroup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID（additional_bindings使用）",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7494,6 +7558,11 @@
           "type": "integer",
           "format": "int64",
           "description": "业务ID"
+        },
+        "projectId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "项目ID"
         }
       },
       "title": "GroupAttachment source resource reference: pkg/dal/table/group.go"

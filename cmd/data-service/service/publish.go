@@ -78,8 +78,7 @@ func (s *Service) Publish(ctx context.Context, req *pbds.PublishReq) (*pbds.Publ
 
 // SubmitPublishApprove submit publish strategy.
 // nolint funlen
-func (s *Service) SubmitPublishApprove(
-	ctx context.Context, req *pbds.SubmitPublishApproveReq) (*pbds.PublishResp, error) {
+func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbds.SubmitPublishApproveReq) (*pbds.PublishResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	app, err := s.dao.App().Get(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId)
@@ -105,7 +104,7 @@ func (s *Service) SubmitPublishApprove(
 		return nil, err
 	}
 	if release.Spec.Deprecated {
-		return nil, fmt.Errorf(i18n.T(grpcKit, "release %s is deprecated, can not be submited", release.Spec.Name))
+		return nil, fmt.Errorf("%s", i18n.T(grpcKit, "release %s is deprecated, can not be submited", release.Spec.Name))
 	}
 
 	// 获取最近的上线版本
@@ -887,7 +886,7 @@ func (s *Service) genReleaseAndPublishGroupID(grpcKit *kit.Kit, tx *gen.QueryTx,
 		// validate and query group ids.
 		if publishMode == table.PublishByGroups {
 			for _, name := range req.Groups {
-				group, e := s.dao.Group().GetByName(grpcKit, req.BizId, name)
+				group, e := s.dao.Group().GetByName(grpcKit, req.BizId, req.ProjectId, name)
 				if e != nil {
 					return groupIDs, groupNames, fmt.Errorf("group %s not exist", name)
 				}
@@ -896,7 +895,7 @@ func (s *Service) genReleaseAndPublishGroupID(grpcKit *kit.Kit, tx *gen.QueryTx,
 			}
 		}
 		if publishMode == table.PublishByLabels {
-			groupID, e := s.getOrCreateGroupByLabels(grpcKit, tx, req.BizId, req.AppId, req.GroupName, req.Labels)
+			groupID, e := s.getOrCreateGroupByLabels(grpcKit, tx, req.BizId, req.ProjectId, req.AppId, req.GroupName, req.Labels)
 			if e != nil {
 				logs.Errorf("create group by labels failed, err: %v, rid: %s", e, grpcKit.Rid)
 				return groupIDs, groupNames, e
@@ -909,7 +908,7 @@ func (s *Service) genReleaseAndPublishGroupID(grpcKit *kit.Kit, tx *gen.QueryTx,
 	return groupIDs, groupNames, nil
 }
 
-func (s *Service) getOrCreateGroupByLabels(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, appID uint32, groupName string,
+func (s *Service) getOrCreateGroupByLabels(grpcKit *kit.Kit, tx *gen.QueryTx, bizID, projectID, appID uint32, groupName string,
 	labels []*structpb.Struct) (uint32, error) {
 	elements := make([]selector.Element, 0)
 	for _, label := range labels {
@@ -922,7 +921,7 @@ func (s *Service) getOrCreateGroupByLabels(grpcKit *kit.Kit, tx *gen.QueryTx, bi
 	sel := &selector.Selector{
 		LabelsAnd: elements,
 	}
-	groups, err := s.dao.Group().ListAppValidGroups(grpcKit, bizID, appID)
+	groups, err := s.dao.Group().ListAppValidGroups(grpcKit, bizID, projectID, appID)
 	if err != nil {
 		return 0, err
 	}
@@ -939,7 +938,7 @@ func (s *Service) getOrCreateGroupByLabels(grpcKit *kit.Kit, tx *gen.QueryTx, bi
 	// else create new one.
 	if groupName != "" {
 		// if group name is not empty, use it as group name.
-		_, err = s.dao.Group().GetByName(grpcKit, bizID, groupName)
+		_, err = s.dao.Group().GetByName(grpcKit, bizID, projectID, groupName)
 		// if group name already exists, return error.
 		if err == nil {
 			return 0, fmt.Errorf("group %s already exists", groupName)
@@ -1135,8 +1134,7 @@ func (s *Service) setPublishTime(kt *kit.Kit, pshID uint32, req *pbds.SubmitPubl
 }
 
 // group 解析处理, 通过label创建
-func (s *Service) parseGroup(
-	grpcKit *kit.Kit, req *pbds.SubmitPublishApproveReq, tx *gen.QueryTx) ([]uint32, []string, error) {
+func (s *Service) parseGroup(grpcKit *kit.Kit, req *pbds.SubmitPublishApproveReq, tx *gen.QueryTx) ([]uint32, []string, error) {
 	// group name
 	groupIDs := make([]uint32, 0)
 	groupName := []string{}
@@ -1156,7 +1154,7 @@ func (s *Service) parseGroup(
 					groupIDs = append(groupIDs, groupID)
 					continue
 				}
-				group, e := s.dao.Group().Get(grpcKit, groupID, req.BizId)
+				group, e := s.dao.Group().Get(grpcKit, groupID, req.BizId, req.ProjectId)
 				if e != nil {
 					return groupIDs, groupName, fmt.Errorf("group %d not exist", groupID)
 				}
@@ -1165,7 +1163,7 @@ func (s *Service) parseGroup(
 			}
 		}
 		if publishMode == table.PublishByLabels {
-			groupID, gErr := s.getOrCreateGroupByLabels(grpcKit, tx, req.BizId, req.AppId, req.GroupName, req.Labels)
+			groupID, gErr := s.getOrCreateGroupByLabels(grpcKit, tx, req.BizId, req.ProjectId, req.AppId, req.GroupName, req.Labels)
 			if gErr != nil {
 				logs.Errorf("create group by labels failed, err: %v, rid: %s", gErr, grpcKit.Rid)
 				return groupIDs, groupName, fmt.Errorf("get group by labels failed: %s", gErr)

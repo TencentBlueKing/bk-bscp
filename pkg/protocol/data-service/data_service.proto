@@ -1873,6 +1873,7 @@ message CreateGroupReq {
 message ListAllGroupsReq {
   uint32 biz_id = 1;
   string top_ids = 2;
+  uint32 project_id = 3;
 }
 
 message ListAllGroupsResp {
@@ -1882,6 +1883,8 @@ message ListAllGroupsResp {
 message ListAppGroupsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppGroupsResp {
@@ -1900,11 +1903,13 @@ message ListAppGroupsResp {
 message GetGroupByNameReq {
   uint32 biz_id = 1;
   string group_name = 2;
+  uint32 project_id = 3;
 }
 
 message GetGroupByIDReq {
   uint32 biz_id = 1;
   uint32 group_id = 2;
+  uint32 project_id = 3;
 }
 
 message UpdateGroupReq {
@@ -1921,6 +1926,7 @@ message DeleteGroupReq {
 message ListGroupSelectorReq {
   uint32 biz_id = 1;
   string label_name = 2;
+  uint32 project_id = 3;
 }
 
 message ListGroupSelectorResp {
@@ -1947,6 +1953,7 @@ message ListGroupReleasedAppsReq {
   string search_key = 3;
   uint32 start = 4;
   uint32 limit = 5;
+  uint32 project_id = 6;
 }
 
 message ListGroupReleasedAppsResp {
