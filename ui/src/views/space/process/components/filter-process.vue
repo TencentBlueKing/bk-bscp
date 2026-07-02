@@ -19,7 +19,7 @@
           :key="filter.value"
           :placeholder="filter.label"
           multiple
-          @change="emits('search', { ...filterValues, environment: activeEnv })">
+          @change="triggerSearch">
           <bk-option
             v-for="item in filter.list"
             :key="item.id"
@@ -31,20 +31,31 @@
             </div>
           </bk-option>
         </bk-select>
-        <bk-button class="op-btn" text theme="primary" @click="filterType = 'expression'">
+        <bk-button class="op-btn" text theme="primary" @click="handleSwitchType('expression')">
           <transfer class="icon" />{{ t('表达式') }}
         </bk-button>
       </template>
       <template v-else>
         <bk-input
-          :model-value="filterValues[filter.value as keyof typeof filterValues]"
+          :model-value="expressionValues[filter.value]"
           v-for="filter in filterList"
           :key="filter.value"
           :class="['bk-input', { issued: isIssued }]"
           placeholder="*"
           show-overflow-tooltips
           @change="handleInputChange(filter.value, $event)" />
-        <bk-button class="op-btn" text theme="primary" @click="filterType = 'filter'">
+        <bk-popover theme="light" placement="bottom-end" trigger="hover" :width="300">
+          <span class="expr-help">
+            <HelpDocumentFill class="icon" />
+          </span>
+          <template #content>
+            <div class="expr-tip">
+              <div class="expr-tip-title">{{ t('支持 gsekit 表达式语法') }}</div>
+              <div v-for="tip in expressionTips" :key="tip" class="expr-tip-item">{{ tip }}</div>
+            </div>
+          </template>
+        </bk-popover>
+        <bk-button class="op-btn" text theme="primary" @click="handleSwitchType('filter')">
           <transfer class="icon" />{{ t('筛选') }}
         </bk-button>
       </template>
@@ -59,7 +70,7 @@
 
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
-  import { Transfer, Del } from 'bkui-vue/lib/icon';
+  import { Transfer, Del, HelpDocumentFill } from 'bkui-vue/lib/icon';
   import { getProcessFilter } from '../../../../api/process';
   import type { IProcessFilterItem } from '../../../../../types/process';
   import { useI18n } from 'vue-i18n';
@@ -155,12 +166,64 @@
     cc_process_ids: [],
   });
   const filterType = ref('filter');
+  // 表达式模式各字段的输入值，key 与 filterList 的 value 保持一致，缺省匹配任意（*）。
+  const expressionValues = ref<Record<string, string>>({
+    sets: '',
+    modules: '',
+    service_instances: '',
+    process_aliases: '',
+    cc_process_ids: '',
+  });
+  // 前端字段 → 后端 ExpressionScope 五段字段的映射。
+  const EXPRESSION_FIELD_MAP: Record<string, string> = {
+    sets: 'set_name',
+    modules: 'module_name',
+    service_instances: 'service_name',
+    process_aliases: 'process_alias',
+    cc_process_ids: 'process_id',
+  };
+  const expressionTips = computed(() => [
+    t('通配符：proc* / proc?'),
+    t('枚举：[a, b]'),
+    t('数字范围：[1-100]'),
+    t('字母范围：[a-f]'),
+    t('排除：[!ab]'),
+    t('前缀组合：4[6, 8, 9]'),
+    t('切片（仅 CC 进程ID）：[0:10]、[-5:]'),
+    t('留空默认匹配任意（*）'),
+  ]);
+
+  // 按当前模式构造并抛出搜索条件：
+  // - 筛选模式沿用等值多选（sets/modules/... 数组）；
+  // - 表达式模式发送 expression_scope 五段，语义与 gsekit 对齐；全为空时不带该字段（等价不过滤）。
+  const triggerSearch = () => {
+    if (filterType.value === 'expression') {
+      const scope: Record<string, string> = {};
+      let hasExpression = false;
+      Object.keys(EXPRESSION_FIELD_MAP).forEach((key) => {
+        const val = (expressionValues.value[key] || '').trim();
+        scope[EXPRESSION_FIELD_MAP[key]] = val || '*';
+        if (val && val !== '*') hasExpression = true;
+      });
+      emits('search', {
+        environment: activeEnv.value,
+        ...(hasExpression ? { expression_scope: scope } : {}),
+      });
+      return;
+    }
+    emits('search', { ...filterValues.value, environment: activeEnv.value });
+  };
+
+  const handleSwitchType = (type: 'filter' | 'expression') => {
+    filterType.value = type;
+    triggerSearch();
+  };
 
   onMounted(() => {
     if (route.query.processIds) {
       const processIds = Array.isArray(route.query.processIds) ? route.query.processIds : [route.query.processIds];
       filterValues.value.cc_process_ids = processIds.map(Number);
-      emits('search', { ...filterValues.value, environment: activeEnv.value });
+      triggerSearch();
     }
     if (filterFlag.value) {
       const {operate_range} = taskDetail.value;
@@ -172,7 +235,7 @@
         cc_process_ids: operate_range.cc_process_ids,
       };
       taskStore.$patch({ filterFlag: false });
-      emits('search', { ...filterValues.value, environment: activeEnv.value });
+      triggerSearch();
     }
     loadPerocessFilterList();
   });
@@ -191,7 +254,7 @@
 
   const handleChangeEnv = (environment: string) => {
     activeEnv.value = environment;
-    emits('search', { ...filterValues.value, environment });
+    triggerSearch();
   };
 
   const handleClearFilter = () => {
@@ -202,13 +265,19 @@
       process_aliases: [],
       cc_process_ids: [],
     };
-    emits('search', { ...filterValues.value, environment: activeEnv.value });
+    expressionValues.value = {
+      sets: '',
+      modules: '',
+      service_instances: '',
+      process_aliases: '',
+      cc_process_ids: '',
+    };
+    triggerSearch();
   };
 
   const handleInputChange = (key: string, value: string) => {
-    // @ts-ignore
-    filterValues.value[key as keyof typeof filterValues.value] = value.length > 0 ? value.split(',') : [];
-    emits('search', { ...filterValues.value, environment: activeEnv.value });
+    expressionValues.value[key] = value;
+    triggerSearch();
   };
 
   defineExpose({
@@ -288,6 +357,29 @@
       .icon {
         margin-right: 8px;
       }
+    }
+    .expr-help {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      color: #979ba5;
+      cursor: pointer;
+      .icon {
+        font-size: 16px;
+      }
+      &:hover {
+        color: #3a84ff;
+      }
+    }
+  }
+
+  .expr-tip {
+    font-size: 12px;
+    line-height: 20px;
+    color: #63656e;
+    .expr-tip-title {
+      margin-bottom: 4px;
+      font-weight: 700;
     }
   }
 

@@ -155,3 +155,34 @@ func TestFilterProcessesByExpressionScopeSlice(t *testing.T) {
 		t.Fatalf("slice [0:2] want [11 12], got %v", got)
 	}
 }
+
+// TestFilterProcessesByExpressionScopeSliceOrdering 锁定切片顺序对齐 gsekit：
+// 候选进程无论传入顺序如何，都按 CC 进程 ID 升序参与匹配，切片取升序列表的子序列。
+// 这保证从 gsekit 迁移的数据（bscp 自增 ID 序与 CC 进程 ID 序不一致）下，
+// 同一切片表达式在 bscp 与 gsekit 命中相同进程。
+func TestFilterProcessesByExpressionScopeSliceOrdering(t *testing.T) {
+	// 故意打乱传入顺序（CC 进程 ID 非升序），模拟 bscp 自增 ID 序与 CC 进程 ID 序不一致。
+	procs := []*table.Process{
+		newProc(13, "set", "module", "svc", "c"),
+		newProc(11, "set", "module", "svc", "a"),
+		newProc(12, "set", "module", "svc", "b"),
+	}
+
+	cases := []struct {
+		name string
+		expr string
+		want []uint32
+	}{
+		{name: "切片 [0:2] 取升序前两个", expr: "[0:2]", want: []uint32{11, 12}},
+		{name: "切片 [-1:] 取升序最后一个", expr: "[-1:]", want: []uint32{13}},
+		{name: "切片 [1:] 从升序第二个到末尾", expr: "[1:]", want: []uint32{12, 13}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := matchedIDs(t, procs, &pbproc.ExpressionScope{ProcessId: tc.expr})
+			if !equalIDs(got, tc.want) {
+				t.Fatalf("slice %s want %v, got %v", tc.expr, tc.want, got)
+			}
+		})
+	}
+}

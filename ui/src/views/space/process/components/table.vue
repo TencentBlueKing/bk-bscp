@@ -552,7 +552,12 @@
 
   const handleFilter = (filters: Record<string, any>) => {
     isSearchEmpty.value = Object.keys(filters).some((filter) => {
-      return filter !== 'environment' && filters[filter].length > 0;
+      if (filter === 'environment') return false;
+      // 表达式范围为对象，任一段非空且非 `*` 即视为存在过滤条件。
+      if (filter === 'expression_scope') {
+        return Object.values(filters.expression_scope).some((val) => val && val !== '*');
+      }
+      return filters[filter].length > 0;
     });
     filterConditions.value = filters;
     loadProcessList();

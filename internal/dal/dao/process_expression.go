@@ -13,6 +13,7 @@
 package dao
 
 import (
+	"sort"
 	"strconv"
 
 	rawgen "gorm.io/gen"
@@ -60,12 +61,23 @@ func (dao *processDao) matchedCcIDsByExpressionScope(kit *kit.Kit, bizID uint32,
 // filterProcessesByExpressionScope 在内存中按表达式范围过滤候选进程，语义对齐 gsekit
 // expression_scope_to_scope：将进程五段字段拼成 expression 后做表达式匹配，返回命中的进程。
 // 结果顺序与切片语义保持匹配后的顺序（切片 `[a:b]` 取的是匹配列表的子序列）。
+//
+// 候选进程先按 CC 进程 ID 升序排序再匹配：gsekit 的 Process 主键即 bk_process_id（CC 进程 ID），
+// 其候选查询未显式排序时按主键序返回，切片 `[a:b]` 依赖列表顺序。bscp 主键是自增 ID（与
+// CC 进程 ID 无关），若不排序则同一切片在两侧可能命中不同进程，故此处显式对齐 gsekit 的主键序。
 func filterProcessesByExpressionScope(processes []*table.Process,
 	es *pbproc.ExpressionScope) ([]*table.Process, error) {
 
-	candidates := make([]expression.Candidate, 0, len(processes))
-	idToProc := make(map[uint32]*table.Process, len(processes))
-	for _, p := range processes {
+	sorted := make([]*table.Process, len(processes))
+	copy(sorted, processes)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return sorted[i].Attachment.CcProcessID < sorted[j].Attachment.CcProcessID
+	})
+
+	// 根据 环境字段 筛选出来的进程，然后构建他们的表达式，后面再按表达式匹配
+	candidates := make([]expression.Candidate, 0, len(sorted))
+	idToProc := make(map[uint32]*table.Process, len(sorted))
+	for _, p := range sorted {
 		ccID := p.Attachment.CcProcessID
 		candidates = append(candidates, expression.Candidate{
 			Expression: expression.JoinProcessExpression(
