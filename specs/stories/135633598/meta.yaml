@@ -1,0 +1,119 @@
+# specs/stories/135633598/meta.yaml
+# 字段说明详见 skills/tapd-story-pipeline/references/state-mutation-guide.md
+
+# ===== 需求标识 =====
+id: "1020451610135633598"
+workspace_id: "20451610"
+agent_tool: agent
+owner: "juncogeng"
+
+# ===== 状态游标 =====
+phase: validated
+attempts: 1
+round: 1
+context_revision: 6
+
+# ===== 基线 =====
+implement_baseline_commit: "796d07bb65e0a4855b6ab70cb0d9b58695e28e4a"
+
+# ===== 卡点信号 =====
+last_failure: null
+pending_review: null
+
+# ===== 代码统计（commit 阶段写入）=====
+stats:
+  total: 752
+  add_code: 749
+  delete_code: 3
+  logic_code: 85
+  test_code: 228
+  docs: 439
+  files: 8
+  cost:
+    # 本环境未接入 PostToolUse hook，cost-events.jsonl 未采集，成本明细不可用
+    total_duration_sec: 0.0
+    total_cost_usd: 0.0
+    total_credit: 0.0
+    total_input_tokens: 0
+    total_output_tokens: 0
+    total_cache_tokens: 0
+    total_cached_write_tokens: 0
+    total_cached_miss_tokens: 0
+    subagent_calls: 10
+    per_call: []
+
+# ===== specify 阶段 round 轨迹 =====
+specify_attempts:
+  - attempt: 1
+    rounds:
+      - round: 1
+        stage: clarify
+        at: "2026-07-02T14:22:29+08:00"
+        status: ok
+      - round: 1
+        stage: specify
+        at: "2026-07-02T14:27:31+08:00"
+        status: ok
+
+implement_attempts:
+  - attempt: 1
+    rounds:
+      - round: 1
+        at: "2026-07-02T14:47:19+08:00"
+        status: ok
+        tests: { unit: passed, integration: skipped, e2e: skipped }
+
+validate_attempts:
+  - attempt: 1
+    rounds:
+      - round: 1
+        at: "2026-07-02T15:02:00+08:00"
+        arch: { verdict: LGTM, findings_count: 1 }
+        security: { verdict: LGTM, findings_count: 2 }
+        codereview: { verdict: LGTM, findings_count: 1 }
+        fix_status: skipped
+
+# ===== 累计历史 =====
+history:
+  - at: "2026-07-02T14:30:00+08:00"
+    kind: phase_advance
+    phase: tech-clarified
+    attempt: 1
+    round: 1
+    note: "技术澄清 4 问全自答 + spec.md 生成，覆盖 F-001~F-008 与全部验收标准"
+  - at: "2026-07-02T14:35:00+08:00"
+    kind: phase_advance
+    phase: researched
+    attempt: 1
+    round: 1
+    note: "plan.md/research.md/data-model.md 生成，plan-report verdict=pass（4 条 LOW/MEDIUM finding 均 plan-self 已处置）"
+  - at: "2026-07-02T14:45:00+08:00"
+    kind: phase_advance
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "tasks.md T001~T011 生成，tasks-report verdict=pass（1 条 LOW/tasks-self）；tasks-analyze 因 API 限额由主编排内联核验；进入 confirm 卡点"
+  - at: "2026-07-02T14:47:19+08:00"
+    kind: phase_advance
+    phase: confirmed
+    attempt: 1
+    round: 1
+    note: "用户审查通过（approve），baseline=796d07bb"
+  - at: "2026-07-02T15:00:00+08:00"
+    kind: phase_advance
+    phase: implemented
+    attempt: 1
+    round: 1
+    note: "TDD 实现 T001~T011：下载 URL handler + DTO + 路由 + 常量导出 + swag/网关文档 + 文件型 skill；8 个新单测全绿，gofmt clean，golangci 0 issues；老接口未改（FR-010）"
+  - at: "2026-07-02T15:05:00+08:00"
+    kind: phase_advance
+    phase: validated
+    attempt: 1
+    round: 1
+    note: "架构/安全/CodeReview 三段并行校验全 LGTM，无 CRITICAL/HIGH；4 条 MEDIUM/LOW 非阻断（多为继承既有代码模式），跳过修复"
+  - at: "2026-07-02T15:10:00+08:00"
+    kind: commit_blocked
+    phase: validated
+    attempt: 1
+    round: 1
+    note: "commit 阶段：8 个交付文件已 git add 暂存，但 git commit 因 gpg 签名失败（缓存空/过期）受阻；待用户暖 gpg 缓存后重试"

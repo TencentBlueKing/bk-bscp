@@ -208,6 +208,80 @@ func (s *repoService) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DownloadURLResponse 下载 URL 接口响应体, 只含临时预签名下载 URL 与有效期, 不含文件字节。
+type DownloadURLResponse struct {
+	DownloadURL   string `json:"download_url"`
+	ExpireSeconds int    `json:"expire_seconds"`
+}
+
+// DownloadFileURL 获取文件内容的临时预签名下载 URL, 只返回 URL 与有效期, 不透传文件字节。
+// DownloadFileURL godoc
+//
+//	@Summary	获取文件内容下载URL
+//	@Tags		文件相关
+//	@Accept		json
+//	@Produce	json
+//	@Param		biz_id						path		int											true	"业务ID"
+//	@Param		X-Bscp-App-Id				header		int											false	"如果是应用配置项，则设置该应用ID"
+//	@Param		X-Bscp-Template-Space-Id	header		int											false	"如果是模版配置项，则设置该模版空间ID"
+//	@Param		X-Bkapi-File-Content-Id		header		string										true	"上传文件内容的SHA256值"
+//	@Success	200							{object}	rest.OKResponse{data=DownloadURLResponse}	"desc"
+//	@Router		/api/v1/biz/{biz_id}/content/download_url [get]
+//	@ID			get_content_download_url
+func (s *repoService) DownloadFileURL(w http.ResponseWriter, r *http.Request) {
+	kt := kit.MustGetKit(r.Context())
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
+		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID},
+	}
+	if err := s.authorizer.Authorize(kt, res...); err != nil {
+		_ = render.Render(w, r, rest.GRPCErr(err))
+		return
+	}
+
+	sign, err := repository.GetFileSign(r)
+	if err != nil {
+		render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
+	// 生成预签名 URL 前先预检内容存在性: bkrepo/cos 的 DownloadLink 只拼接 URL 不校验对象是否存在,
+	// 未预检会对未上传的 sign 返回指向空对象的 URL
+	if _, err = s.provider.Metadata(kt, sign); err != nil {
+		if errors.Is(err, errf.ErrFileContentNotFound) {
+			render.Render(w, r, rest.BadRequest(
+				errors.New("file content not uploaded, please upload via UI/SDK first")))
+			return
+		}
+		render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
+	links, err := s.provider.DownloadLink(kt, sign, 1)
+	if err != nil {
+		render.Render(w, r, rest.BadRequest(err))
+		return
+	}
+
+	// 多副本(ha)可能返回多条, 取首个非空 URL; 空切片/全空则报错防越界。
+	downloadURL := ""
+	for _, link := range links {
+		if link != "" {
+			downloadURL = link
+			break
+		}
+	}
+	if downloadURL == "" {
+		render.Render(w, r, rest.BadRequest(errors.New("no available download url")))
+		return
+	}
+
+	render.Render(w, r, rest.OKRender(&DownloadURLResponse{
+		DownloadURL:   downloadURL,
+		ExpireSeconds: repository.TempDownloadURLExpireSeconds,
+	}))
+}
+
 // FileMetadata get repo head data
 // FileMetadata godoc
 //

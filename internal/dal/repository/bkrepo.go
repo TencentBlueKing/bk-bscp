@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	// tempDownloadURLExpireSeconds is the expire seconds for the temp download url.
-	tempDownloadURLExpireSeconds = 3600
+	// TempDownloadURLExpireSeconds is the expire seconds for the temp download url.
+	TempDownloadURLExpireSeconds = 3600
 )
 
 // bkrepoAuthTransport 给请求增加 Authorization header
@@ -498,7 +498,7 @@ func (c *bkrepoClient) DownloadLink(kt *kit.Kit, sign string, fetchLimit uint32)
 		ProjectID:     project,
 		RepoName:      repoName,
 		FullPathSet:   []string{objPath},
-		ExpireSeconds: uint32(tempDownloadURLExpireSeconds),
+		ExpireSeconds: uint32(TempDownloadURLExpireSeconds),
 		Permits:       fetchLimit,
 		Type:          "DOWNLOAD",
 	})
