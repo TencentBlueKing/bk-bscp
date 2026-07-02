@@ -221,6 +221,10 @@ func (s *Service) buildConfigTemplateGroups(kt *kit.Kit, bizID uint32, operateRa
 	processes, err := s.dao.Process().GetByOperateRange(kt, bizID, operateRange)
 	if err != nil {
 		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
+		// 表达式非法 / env 缺失等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, ef
+		}
 		return nil, errf.Errorf(errf.DBOpFailed, "%s",
 			i18n.T(kt, "get processes by operate range failed, err: %v", err))
 	}

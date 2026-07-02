@@ -21,6 +21,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
@@ -397,7 +398,7 @@ func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessS
 	var err error
 	var conds []rawgen.Condition
 	if search.String() != "" {
-		conds, err = dao.handleSearch(kit, search)
+		conds, err = dao.handleSearch(kit, bizID, search)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -426,7 +427,8 @@ func (dao *processDao) List(kit *kit.Kit, bizID uint32, search *process.ProcessS
 	return d.FindByPage(opt.Offset(), opt.LimitInt())
 }
 
-func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchCondition) ([]rawgen.Condition, error) {
+func (dao *processDao) handleSearch(kit *kit.Kit, bizID uint32,
+	search *process.ProcessSearchCondition) ([]rawgen.Condition, error) {
 	var conds []rawgen.Condition
 	m := dao.genQ.Process
 	q := dao.genQ.Process.WithContext(kit.Ctx)
@@ -483,6 +485,16 @@ func (dao *processDao) handleSearch(kit *kit.Kit, search *process.ProcessSearchC
 		conds = append(conds, m.ProcessTemplateID.In(search.GetProcessTemplateIds()...))
 	}
 
+	// 表达式范围作为附加过滤条件：归一为命中的 CC 进程 ID 后以 IN 参与查询；
+	// 命中为空则 IN 空集匹配不到任何进程（空结果集，不降级为全选）。
+	if es := search.GetExpressionScope(); es != nil {
+		ids, err := dao.matchedCcIDsByExpressionScope(kit, bizID, search.GetEnvironment(), es)
+		if err != nil {
+			return nil, err
+		}
+		conds = append(conds, m.CcProcessID.In(ids...))
+	}
+
 	return conds, nil
 }
 
@@ -529,6 +541,11 @@ func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRang
 	m := dao.genQ.Process
 	q := dao.genQ.Process.WithContext(kit.Ctx)
 
+	// 表达式范围与单值等值字段互斥分流：非空时走 gsekit 等价的表达式匹配路径。
+	if es := operateRange.GetExpressionScope(); es != nil {
+		return dao.getByExpressionScope(kit, bizID, operateRange.GetEnvironment(), es)
+	}
+
 	// 构建查询条件
 	var conds []rawgen.Condition
 	conds = append(conds, m.BizID.Eq(bizID))
@@ -561,6 +578,21 @@ func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRang
 	conds = append(conds, m.CcSyncStatus.Neq(table.Deleted.String()))
 
 	return q.Where(conds...).Find()
+}
+
+// getByExpressionScope 表达式范围路径：先按业务+环境（不含已删除）加载候选进程，
+// 再在内存中按 gsekit 等价的表达式匹配过滤。环境字段作为候选集过滤条件，不参与表达式匹配。
+func (dao *processDao) getByExpressionScope(kit *kit.Kit, bizID uint32, environment string,
+	es *pbproc.ExpressionScope) ([]*table.Process, error) {
+	// 对齐 gsekit：表达式范围要求 bk_set_env 必填，否则跨环境匹配会与 gsekit 结果不一致。
+	if environment == "" {
+		return nil, errf.Errorf(errf.InvalidParameter, "%s", "environment is required for expression scope")
+	}
+	candidates, err := dao.loadExpressionCandidates(kit, bizID, environment)
+	if err != nil {
+		return nil, err
+	}
+	return filterProcessesByExpressionScope(candidates, es)
 }
 
 // ListByModuleIDAndAliasWithTx 按模块ID和别名查询进程ID列表

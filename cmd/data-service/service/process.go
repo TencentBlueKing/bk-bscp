@@ -50,6 +50,10 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		All:   req.GetAll(),
 	})
 	if err != nil {
+		// 表达式非法等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, ef
+		}
 		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list processes failed, err: %v", err))
 	}
 
@@ -259,6 +263,10 @@ func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pb
 	)
 	if err != nil {
 		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
+		// 表达式非法 / env 缺失等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, nil, ef
+		}
 		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
 			i18n.T(kt, "get processes by operate range failed, err: %v", err))
 	}
