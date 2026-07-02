@@ -246,7 +246,7 @@ func (s *repoService) DownloadFileURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 生成预签名 URL 前先预检内容存在性: bkrepo/cos 的 DownloadLink 只拼接 URL 不校验对象是否存在,
-	// 未预检会对未上传的 sign 返回指向空对象的 URL, 违反 AC-T01。
+	// 未预检会对未上传的 sign 返回指向空对象的 URL
 	if _, err = s.provider.Metadata(kt, sign); err != nil {
 		if errors.Is(err, errf.ErrFileContentNotFound) {
 			render.Render(w, r, rest.BadRequest(
