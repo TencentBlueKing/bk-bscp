@@ -31,7 +31,7 @@
             </div>
           </bk-option>
         </bk-select>
-        <bk-button class="op-btn" text theme="primary" @click="handleSwitchType('expression')">
+        <bk-button v-if="!isIssued" class="op-btn" text theme="primary" @click="handleSwitchType('expression')">
           <transfer class="icon" />{{ t('表达式') }}
         </bk-button>
       </template>

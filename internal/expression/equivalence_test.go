@@ -76,13 +76,13 @@ func TestEquivEmptyResult(t *testing.T) {
 	candidates := []Candidate{
 		{Expression: JoinProcessExpression("setA", "m", "svc", "p", "1"), CcProcessID: 1},
 	}
-	s := ExpressionScope{Environment: "3", SetName: "notExist"}
-	got, err := ExpressionScopeToCcIDs(s, candidates)
+	s := Scope{Environment: "3", SetName: "notExist"}
+	got, err := ScopeToCcIDs(s, candidates)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if len(got) != 0 {
-		t.Errorf("ExpressionScopeToCcIDs no-match = %v, want empty", got)
+		t.Errorf("ScopeToCcIDs no-match = %v, want empty", got)
 	}
 }
 
@@ -94,12 +94,12 @@ func TestEquivDocCanonicalExample(t *testing.T) {
 		{Expression: JoinProcessExpression("管控平台", "m", "svc", "p", "49"), CcProcessID: 49},
 		{Expression: JoinProcessExpression("其它", "m", "svc", "p", "47"), CcProcessID: 47},
 	}
-	s := ExpressionScope{
+	s := Scope{
 		Environment: "3",
 		SetName:     "[管控平台, PaaS平台]",
 		ProcessID:   "4[6, 8, 9]",
 	}
-	got, err := ExpressionScopeToCcIDs(s, candidates)
+	got, err := ScopeToCcIDs(s, candidates)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}

@@ -5543,6 +5543,32 @@
         }
       }
     },
+    "pbprocExpressionScope": {
+      "type": "object",
+      "properties": {
+        "setName": {
+          "type": "string",
+          "description": "集群名称表达式"
+        },
+        "moduleName": {
+          "type": "string",
+          "description": "模块名称表达式"
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "服务实例名称表达式"
+        },
+        "processAlias": {
+          "type": "string",
+          "description": "进程别名表达式"
+        },
+        "processId": {
+          "type": "string",
+          "description": "CC进程ID表达式(支持切片)"
+        }
+      },
+      "title": "ExpressionScope 表达式范围，五段与进程 expression 一一对应，缺省均为 `*`（匹配任意）。\n语义与 gsekit expression_scope 对齐：支持通配符、枚举、数字/字母范围、排除、切片。"
+    },
     "pbprocFilterOptions": {
       "type": "object",
       "properties": {
@@ -5623,6 +5649,11 @@
             "type": "string"
           },
           "description": "配置模版名称列表"
+        },
+        "expressionScope": {
+          "$ref": "#/definitions/pbprocExpressionScope",
+          "description": "表达式范围(与单值字段互斥)",
+          "title": "表达式范围，与上面的单值等值字段互斥分流；非空时按 gsekit 等价的表达式匹配进程。\n环境类型复用本消息的 environment 字段。"
         }
       },
       "title": "操作范围，适配进程配置管理插件"
@@ -5786,6 +5817,11 @@
             "format": "int64"
           },
           "description": "进程模板ID"
+        },
+        "expressionScope": {
+          "$ref": "#/definitions/pbprocExpressionScope",
+          "description": "表达式范围(附加过滤)",
+          "title": "表达式范围，作为附加过滤条件与上面的多选列表 AND 叠加；命中为空即空结果集。"
         }
       },
       "title": "ProcessSearchCondition 进程搜索条件"

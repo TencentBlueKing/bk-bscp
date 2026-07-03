@@ -14,9 +14,9 @@ package expression
 
 import "strings"
 
-// ExpressionScope 对齐 gsekit ExpresssionScopeSerializer 的五段表达式 + 环境类型。
+// Scope 对齐 gsekit ExpresssionScopeSerializer 的五段表达式 + 环境类型。
 // 五段与进程 expression 一一对应：集群名 / 模块名 / 服务实例名 / 进程别名 / CC 进程 ID。
-type ExpressionScope struct {
+type Scope struct {
 	Environment  string // bk_set_env，必填
 	SetName      string // 集群名称表达式，缺省 "*"
 	ModuleName   string // 模块名称表达式，缺省 "*"
@@ -42,7 +42,7 @@ func orDefault(seg string) string {
 }
 
 // GenExpression 将五段拼接为一条完整表达式（对齐 gsekit serializers.gen_expression）。
-func GenExpression(s ExpressionScope) string {
+func GenExpression(s Scope) string {
 	return strings.Join([]string{
 		orDefault(s.SetName),
 		orDefault(s.ModuleName),
@@ -57,9 +57,9 @@ func JoinProcessExpression(setName, moduleName, serviceName, alias, ccProcessID 
 	return strings.Join([]string{setName, moduleName, serviceName, alias, ccProcessID}, ExpressionSplitter)
 }
 
-// ExpressionScopeToCcIDs 将表达式范围解析为命中的 CC 进程 ID 列表
+// ScopeToCcIDs 将表达式范围解析为命中的 CC 进程 ID 列表
 // （对齐 gsekit ProcessHandler.expression_scope_to_scope 的 6 步流程）。
-func ExpressionScopeToCcIDs(s ExpressionScope, candidates []Candidate) ([]uint32, error) {
+func ScopeToCcIDs(s Scope, candidates []Candidate) ([]uint32, error) {
 	// 1. 建立 expression -> cc_process_id 映射，并保持候选顺序
 	exprToID := make(map[string]uint32, len(candidates))
 	orderedExprs := make([]string, 0, len(candidates))

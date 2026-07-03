@@ -91,7 +91,7 @@ func filterProcessesByExpressionScope(processes []*table.Process,
 		}
 	}
 
-	scope := expression.ExpressionScope{
+	scope := expression.Scope{
 		SetName:      es.GetSetName(),
 		ModuleName:   es.GetModuleName(),
 		ServiceName:  es.GetServiceName(),
@@ -99,7 +99,7 @@ func filterProcessesByExpressionScope(processes []*table.Process,
 		ProcessID:    es.GetProcessId(),
 	}
 
-	matchedIDs, err := expression.ExpressionScopeToCcIDs(scope, candidates)
+	matchedIDs, err := expression.ScopeToCcIDs(scope, candidates)
 	if err != nil {
 		// 非法表达式属于用户入参错误，归类为 InvalidParameter，避免被上层误报为 DB 操作失败。
 		return nil, errf.Errorf(errf.InvalidParameter, "invalid expression scope: %v", err)

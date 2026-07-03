@@ -19,7 +19,7 @@ import (
 
 // 黄金语料取自 gsekit tests.py TestSerializers.test_gen_expression。
 func TestGenExpression(t *testing.T) {
-	s := ExpressionScope{
+	s := Scope{
 		Environment:  "3",
 		SetName:      "set",
 		ModuleName:   "*",
@@ -36,7 +36,7 @@ func TestGenExpression(t *testing.T) {
 
 // 缺省字段应回退为 `*`。
 func TestGenExpressionDefaults(t *testing.T) {
-	s := ExpressionScope{Environment: "3", SetName: "set"}
+	s := Scope{Environment: "3", SetName: "set"}
 	want := "set" + ExpressionSplitter + "*" + ExpressionSplitter + "*" +
 		ExpressionSplitter + "*" + ExpressionSplitter + "*"
 	if got := GenExpression(s); got != want {
@@ -45,14 +45,14 @@ func TestGenExpressionDefaults(t *testing.T) {
 }
 
 // 端到端：表达式范围 → 命中 CC 进程 ID（对齐 expression_scope_to_scope 6 步）。
-func TestExpressionScopeToCcIDs(t *testing.T) {
+func TestScopeToCcIDs(t *testing.T) {
 	candidates := []Candidate{
 		{Expression: JoinProcessExpression("管控平台", "m1", "svc1", "procA", "46"), CcProcessID: 46},
 		{Expression: JoinProcessExpression("PaaS平台", "m2", "svc2", "procB", "48"), CcProcessID: 48},
 		{Expression: JoinProcessExpression("其它集群", "m3", "svc3", "procC", "49"), CcProcessID: 49},
 	}
 	// 集群名为管控平台或 PaaS平台，进程 ID 为 46/48/49
-	s := ExpressionScope{
+	s := Scope{
 		Environment:  "3",
 		SetName:      "[管控平台, PaaS平台]",
 		ModuleName:   "*",
@@ -60,34 +60,34 @@ func TestExpressionScopeToCcIDs(t *testing.T) {
 		ProcessAlias: "*",
 		ProcessID:    "4[6, 8, 9]",
 	}
-	got, err := ExpressionScopeToCcIDs(s, candidates)
+	got, err := ScopeToCcIDs(s, candidates)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	want := []uint32{46, 48}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("ExpressionScopeToCcIDs = %v, want %v", got, want)
+		t.Errorf("ScopeToCcIDs = %v, want %v", got, want)
 	}
 }
 
 // 切片：先匹配得到 ID 列表，再对结果列表切片。
-func TestExpressionScopeToCcIDsWithSlice(t *testing.T) {
+func TestScopeToCcIDsWithSlice(t *testing.T) {
 	candidates := []Candidate{
 		{Expression: JoinProcessExpression("set", "m", "svc", "p", "10"), CcProcessID: 10},
 		{Expression: JoinProcessExpression("set", "m", "svc", "p", "20"), CcProcessID: 20},
 		{Expression: JoinProcessExpression("set", "m", "svc", "p", "30"), CcProcessID: 30},
 	}
-	s := ExpressionScope{
+	s := Scope{
 		Environment: "3",
 		SetName:     "*",
 		ProcessID:   "[0:2]", // 匹配全部后取前两个
 	}
-	got, err := ExpressionScopeToCcIDs(s, candidates)
+	got, err := ScopeToCcIDs(s, candidates)
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	want := []uint32{10, 20}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("ExpressionScopeToCcIDs slice = %v, want %v", got, want)
+		t.Errorf("ScopeToCcIDs slice = %v, want %v", got, want)
 	}
 }
