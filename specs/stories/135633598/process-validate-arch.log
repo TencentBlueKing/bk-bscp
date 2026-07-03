@@ -1,0 +1,2 @@
+===== [stage=validate-arch attempt=1 round=1 ts=2026-07-02T15:02:00+08:00] =====
+[validate-arch] report written: validate-arch-report.md verdict=LGTM; 4 dims pass, 1 LOW code-self (DTO placement, no fix needed)

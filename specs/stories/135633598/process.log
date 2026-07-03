@@ -1,0 +1,23 @@
+===== [stage=clarify attempt=1 round=1 ts=2026-07-02T14:22:29+08:00] =====
+clarify done: questions.md 5 entries (Q1 dropped, Q2/Q3/Q4 resolved_by_doc, 0 open); req.md 技术澄清章节已写入
+===== [stage=specify attempt=1 round=1 ts=2026-07-02T14:27:31+08:00] =====
+[snapshot] no existing spec.md
+[specify] spec.md generated, markers=0, F-001~F-008 + AC + R covered
+===== [stage=plan attempt=1 round=1 ts=2026-07-02T14:31:24+08:00] =====
+[plan] plan.md/research.md/data-model.md 生成; 自检 verdict=pass (findings: 2 MEDIUM/2 LOW, 全 plan-self)
+===== [stage=tasks-generate attempt=1 round=1 ts=2026-07-02T14:39:13+08:00] =====
+tasks.md generated ok
+===== [stage=tasks-analyze attempt=1 round=1 ts=2026-07-02T14:39:13+08:00] =====
+[warn] speckit-analyze subagent 连续两次因宿主 API 限额无法启动；由 pipeline 主编排内联完成 analyze 核验
+[tasks-analyze] tasks-report.md 生成; verdict=pass (findings: 1 LOW/tasks-self)
+===== [confirm 卡点 ts=2026-07-02T14:45:00+08:00] =====
+[confirm] pending_review 写入 spec.md/plan.md/tasks.md; pipeline 退出等待审查
+===== [stage=implement attempt=1 round=1 ts=2026-07-02T14:47:19+08:00] =====
+[T002] red confirmed: DownloadURLResponse/DownloadFileURL undefined (build failed as expected)
+[T006] service 包 DownloadFileURL 8 用例全绿; gofmt clean; go vet clean; golangci-lint(docker v2.8.0) 0 issues
+[T007] 路由 /content/download_url 注册于下载组(UnifiedAuthentication+BizVerified+ContentVerified); go build api-server 通过
+[T008] 单测覆盖鉴权失败不泄露URL(AC-S01); 外部鉴权依赖不可用, 以单测+构建为可跑范围证据
+[T009] make markdown_docs 通过; swagger 新增路径 /api/v1/biz/{biz_id}/content/download_url + x-bk-apigateway-resource(isPublic/authConfig 全 true); docs diff 纯新增 223 行
+[T010] .claude/skills/bscp-file-config/SKILL.md 落盘, 对标 KV skill 全章节
+[T011] gofmt clean; go build 通过; DownloadFileURL 8 用例全绿; repo.go/routers.go 纯新增(老 /download /metadata 未改, FR-010)
+[note] 文件配置项 CRUD/查询多为 INTERNAL 可见性(仅 BatchUpsertConfigItems/CreateRelease/Publish 为 BKAPIGW), 完整 F-001~F-006 的 MCP 工具覆盖依赖网关侧注册, 属 AC-006 环境E2E, 非本 Code scope

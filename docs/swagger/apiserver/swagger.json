@@ -69,6 +69,69 @@
                 }
             }
         },
+        "/api/v1/biz/{biz_id}/content/download_url": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件相关"
+                ],
+                "summary": "获取文件内容下载URL",
+                "operationId": "get_content_download_url",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "业务ID",
+                        "name": "biz_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "如果是应用配置项，则设置该应用ID",
+                        "name": "X-Bscp-App-Id",
+                        "in": "header"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "如果是模版配置项，则设置该模版空间ID",
+                        "name": "X-Bscp-Template-Space-Id",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "上传文件内容的SHA256值",
+                        "name": "X-Bkapi-File-Content-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "desc",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/rest.OKResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.DownloadURLResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/biz/{biz_id}/content/metadata": {
             "get": {
                 "consumes": [
@@ -292,6 +355,17 @@
             "type": "object",
             "properties": {
                 "data": {}
+            }
+        },
+        "service.DownloadURLResponse": {
+            "type": "object",
+            "properties": {
+                "download_url": {
+                    "type": "string"
+                },
+                "expire_seconds": {
+                    "type": "integer"
+                }
             }
         },
         "service.FeatureFlags": {

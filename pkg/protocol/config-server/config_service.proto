@@ -219,27 +219,31 @@ service Config {
   }
   // 获取文件配置项
   rpc GetConfigItem(GetConfigItemReq) returns (GetConfigItemResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items/{id}"
       additional_bindings {
         get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/{id}"
       }
+      additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/config_items/{id}" }
     };
   }
   // 获取已发布文件配置项
   rpc GetReleasedConfigItem(GetReleasedConfigItemReq) returns (GetReleasedConfigItemResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items/{id}"
       additional_bindings {
         get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/config_items/{id}"
       }
+      additional_bindings {
+        get: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items/{id}"
+      }
     };
   }
   // 获取文件配置项列表
   rpc ListConfigItems(ListConfigItemsReq) returns (ListConfigItemsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/config_items"
       body: "*"
@@ -247,16 +251,21 @@ service Config {
         post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_items/list"
         body: "*"
       }
+      additional_bindings { post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/config_items" body: "*" }
     };
   }
   // 获取已发布文件配置项列表
   rpc ListReleasedConfigItems(ListReleasedConfigItemsReq) returns (ListReleasedConfigItemsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items"
       body: "*"
       additional_bindings {
         post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/config_items"
+        body: "*"
+      }
+      additional_bindings {
+        post: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_items"
         body: "*"
       }
     };
@@ -343,12 +352,13 @@ service Config {
   }
   // 获取服务版本列表
   rpc ListReleases(ListReleasesReq) returns (ListReleasesResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases"
       additional_bindings {
         get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases"
       }
+      additional_bindings { get: "/api/v1/inner/config/biz/{biz_id}/apps/{app_id}/releases" }
     };
   }
   // 按服务版本名
@@ -1708,10 +1718,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   // 进程管理
   // 进程列表
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/process/list"
       body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/list" body: "*" }
     };
   }
   // 进程操作

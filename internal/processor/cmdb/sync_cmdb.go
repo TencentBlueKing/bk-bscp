@@ -223,6 +223,14 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 		statusMap[s.BkAgentID] = s.StatusCode
 	}
 
+	// 通过 list_hosts 补全主机 os_type（按 bk_cloud_id + bk_host_innerip 关联）。
+	// os_type 获取操作系统类型失败，不阻断主流程
+	osTypeIndex, err := s.fetchHostOsTypeMap(kt.Ctx, collectHostInnerIPs(data))
+	if err != nil {
+		logs.Errorf("[buildProcessEntities] fetch host os_type failed, bizID=%d: %v", s.bizID, err)
+		osTypeIndex = map[hostOsTypeKey]string{}
+	}
+
 	for _, item := range data {
 		agentState := table.AgentStatusAbnormal
 		if code, ok := statusMap[item.Host.BkAgentID]; ok && code == 2 {
@@ -234,6 +242,8 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 			logs.Errorf("[buildProcessEntities] source data failed: %v", err)
 			continue
 		}
+
+		osType := osTypeIndex[hostOsTypeKey{cloudID: item.Host.BkCloudID, innerIP: item.Host.BkHostInnerIP}]
 
 		proc := &table.Process{
 			Attachment: &table.ProcessAttachment{
@@ -260,6 +270,7 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 				PrevData:     "{}",
 				ProcNum:      uint(item.Process.ProcNum),
 				FuncName:     item.Process.BkFuncName,
+				OsType:       osType,
 				CcSyncStatus: table.Synced,
 				AgentStatus:  agentState,
 			},
@@ -291,6 +302,103 @@ func (s *syncCMDBService) buildSourceData(item *bkcmdb.ProcessRelatedInfoItem) (
 	}
 
 	return info.Value()
+}
+
+// osTypeMapping CC bk_os_type 数字编码到业务语义字符串的映射（需求 R-001）。
+// 未覆盖的编码与空值统一映射为空字符串。
+var osTypeMapping = map[string]string{
+	"1": "linux",
+	"2": "win",
+	"3": "aix",
+}
+
+// mapOsType 将 CC bk_os_type 原始编码转换为业务语义字符串，未覆盖编码返回空字符串
+func mapOsType(raw string) string {
+	return osTypeMapping[raw]
+}
+
+// resolveOsType 决定进程最终 os_type：新值非空时采用新值，否则沿用旧值。
+// 用于进程重建场景，避免同步取不到 os_type（如 list_hosts 异常）时把已有类型覆盖为空（R-002）。
+func resolveOsType(newOsType, oldOsType string) string {
+	if newOsType != "" {
+		return newOsType
+	}
+	return oldOsType
+}
+
+// hostOsTypeKey 主机唯一标识：管控区域 + 内网 IP（CC 通过该组合唯一确定一台主机）
+type hostOsTypeKey struct {
+	cloudID int
+	innerIP string
+}
+
+// buildHostOsTypeIndex 以 (bk_cloud_id, bk_host_innerip) 为键建立映射后的 os_type 索引；
+// 映射结果为空（空值或未覆盖编码）的主机不入索引，避免空值覆盖已有非空值（R-002）。
+func buildHostOsTypeIndex(hosts []bkcmdb.HostInfo) map[hostOsTypeKey]string {
+	index := make(map[hostOsTypeKey]string, len(hosts))
+	for _, h := range hosts {
+		osType := mapOsType(h.BkOSType)
+		if osType == "" {
+			continue
+		}
+		index[hostOsTypeKey{cloudID: h.BkCloudID, innerIP: h.BkHostInnerIP}] = osType
+	}
+	return index
+}
+
+// collectHostInnerIPs 提取进程关联信息中去重后的非空内网 IP，用于过滤 list_hosts 查询范围
+func collectHostInnerIPs(data []*bkcmdb.ProcessRelatedInfoItem) []string {
+	seen := make(map[string]struct{}, len(data))
+	ips := make([]string, 0, len(data))
+	for _, item := range data {
+		if item.Host == nil || item.Host.BkHostInnerIP == "" {
+			continue
+		}
+		if _, ok := seen[item.Host.BkHostInnerIP]; ok {
+			continue
+		}
+		seen[item.Host.BkHostInnerIP] = struct{}{}
+		ips = append(ips, item.Host.BkHostInnerIP)
+	}
+	return ips
+}
+
+// fetchHostOsTypeMap 通过 list_hosts 拉取指定内网 IP 的主机 os_type，
+// 以 (bk_cloud_id, bk_host_innerip) 为键返回映射后的 os_type 索引
+func (s *syncCMDBService) fetchHostOsTypeMap(ctx context.Context, innerIPs []string) (
+	map[hostOsTypeKey]string, error) {
+	index := make(map[hostOsTypeKey]string)
+	if len(innerIPs) == 0 {
+		return index, nil
+	}
+
+	for _, chunk := range chunkStrings(innerIPs, 500) {
+		hosts, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
+			resp, err := s.svc.ListBizHosts(ctx, &bkcmdb.ListBizHostsRequest{
+				BkBizID: s.bizID,
+				Page:    *page,
+				Fields:  []string{"bk_host_id", "bk_cloud_id", "bk_host_innerip", "bk_os_type"},
+				HostPropertyFilter: &bkcmdb.HostPropertyFilter{
+					Condition: bkcmdb.HostPropertyConditionAnd,
+					Rules: []bkcmdb.HostPropertyRule{
+						{Field: "bk_host_innerip", Operator: bkcmdb.HostPropertyOperatorIn, Value: chunk},
+					},
+				},
+			})
+			if err != nil {
+				return nil, 0, err
+			}
+			return resp.Info, resp.Count, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range buildHostOsTypeIndex(hosts) {
+			index[k] = v
+		}
+	}
+
+	return index, nil
 }
 
 // fillServiceTemplateID 根据 module_id 批量查询并填充 service_template_id（避免单条查询）
@@ -399,7 +507,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			IPV6:       h.BkHostInnerIPV6,
 			CloudId:    h.BkCloudID,
 			AgentID:    h.BkAgentID,
-			OsType:     h.BkOSType,
+			OsType:     mapOsType(h.BkOSType),
 			AgentState: table.AgentStatusAbnormal.String(),
 		})
 	}
@@ -725,7 +833,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 				IPV6:    h.BkHostInnerIPV6,
 				CloudId: h.BkCloudID,
 				AgentID: h.BkAgentID,
-				OsType:  h.BkOSType,
+				OsType:  mapOsType(h.BkOSType),
 			})
 		}
 	}
@@ -1127,6 +1235,18 @@ func buildModuleHosts(allSvcInsts []bkcmdb.ServiceInstanceInfo, hosts []Host) ma
 
 func chunkInts(src []int64, size int) [][]int64 {
 	var res [][]int64
+	for i := 0; i < len(src); i += size {
+		end := i + size
+		if end > len(src) {
+			end = len(src)
+		}
+		res = append(res, src[i:end])
+	}
+	return res
+}
+
+func chunkStrings(src []string, size int) [][]string {
+	var res [][]string
 	for i := 0; i < len(src); i += size {
 		end := i + size
 		if end > len(src) {
@@ -1549,6 +1669,9 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			reusableProc.Spec.SourceData = newP.Spec.SourceData
 			reusableProc.Spec.CcSyncStatus = table.Synced
 			reusableProc.Spec.ProcNum = newP.Spec.ProcNum
+			// 新值非空时采用 CMDB 最新 os_type，否则沿用旧进程值，
+			// 避免恢复 deleted 记录时保留其陈旧/空的 os_type
+			reusableProc.Spec.OsType = resolveOsType(newP.Spec.OsType, oldP.Spec.OsType)
 			reusableProc.Attachment = newP.Attachment
 			reusableProc.Revision = &table.Revision{UpdatedAt: ctx.Now}
 
@@ -1593,6 +1716,8 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 		if !safe {
 			newP.Spec.PrevData = oldP.Spec.SourceData
 			newP.Spec.CcSyncStatus = table.Synced
+			// 新值为空时沿用旧进程的 os_type，避免重建时把已有类型覆盖为空
+			newP.Spec.OsType = resolveOsType(newP.Spec.OsType, oldP.Spec.OsType)
 
 			toAdd := &table.Process{
 				Attachment: newP.Attachment,
