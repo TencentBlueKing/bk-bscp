@@ -174,6 +174,16 @@ build_frontend:
 	@echo "tips: ensure you have installed node and npm"
 	cd ui; npm install --legacy-peer-deps; npm run build
 
+# 旧 UI（ui_old）接入构建链，产出 ui_old/dist，供 embed.go 编译期嵌入
+.PHONY: build_frontend_old
+build_frontend_old:
+	@echo "tips: ensure you have installed node and npm"
+	cd ui_old; npm install --legacy-peer-deps; npm run build
+
+# 同时构建新旧两套前端，产出双前端静态资源
+.PHONY: build_frontend_all
+build_frontend_all: build_frontend build_frontend_old
+
 .PHONY: build_ui
 build_ui: 
 	@echo -e "\e[34;1mTips: ensure you have execute 'make build_frontend' first\033[0m"
@@ -230,8 +240,8 @@ docs: api_docs bkapigw_docs markdown_docs
 .PHONY: push-image
 push-image: 
 	@if [ "${SKIP_FRONTEND_BUILD}" != "true" ]; then \
-		echo -e "\e[34;1mBuilding frontend...\033[0m"; \
-		$(MAKE) build_frontend; \
+		echo -e "\e[34;1mBuilding frontend (new + old)...\033[0m"; \
+		$(MAKE) build_frontend_all; \
 	else \
 		echo -e "\e[33;1mSkipping frontend build as SKIP_FRONTEND_BUILD=true\033[0m"; \
 	fi

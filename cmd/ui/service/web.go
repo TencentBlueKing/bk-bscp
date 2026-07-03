@@ -53,7 +53,8 @@ type WebServer struct {
 }
 
 // NewWebServer :
-func NewWebServer(ctx context.Context, addr string, addrs []string) (*WebServer, error) {
+func NewWebServer(ctx context.Context, addr string, addrs []string,
+	variant bscp.FrontendVariant) (*WebServer, error) {
 	etcdOpt, err := config.G.EtcdConf()
 	if err != nil {
 		return nil, fmt.Errorf("get etcd config failed, err: %v", err)
@@ -85,7 +86,7 @@ func NewWebServer(ctx context.Context, addr string, addrs []string) (*WebServer,
 		addrs:             addrs,
 		discover:          dis,
 		state:             state,
-		embedWebServer:    bscp.NewEmbedWeb(),
+		embedWebServer:    bscp.NewEmbedWebWithVariant(variant),
 		authorizer:        authorizer,
 		webAuthentication: webAuthentication,
 	}
