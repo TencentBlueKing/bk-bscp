@@ -38,6 +38,7 @@
           <ResetDefaultValue
             class="reset-default-btn"
             :bk-biz-id="bkBizId"
+            :project-id="projectId"
             :list="initialVariables"
             @reset="handleResetDefault" />
           <VariablesTable ref="tableRef" :list="variableList" :editable="true" @change="handleVariablesChange" />

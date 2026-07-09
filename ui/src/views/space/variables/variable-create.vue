@@ -25,7 +25,7 @@
   import { IVariableEditParams } from '../../../../types/variable';
   import EditingForm from './editing-form.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -73,7 +73,7 @@
     try {
       pending.value = true;
       const params = { ...variableConfig.value, name: `${prefix.value}${variableConfig.value.name}` };
-      const res = await createVariable(spaceId.value, params);
+      const res = await createVariable(spaceId.value, projectId.value, params);
       close();
       emits('created', res.data.id);
       Message({

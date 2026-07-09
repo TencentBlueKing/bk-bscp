@@ -22,6 +22,7 @@
         <ResetDefaultValue
           class="reset-default"
           :bk-biz-id="bkBizId"
+          :project-id="projectId"
           :list="initialVariables"
           @reset="handleResetDefault" />
       </div>
@@ -65,6 +66,7 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
     appId: number;
   }>();
 

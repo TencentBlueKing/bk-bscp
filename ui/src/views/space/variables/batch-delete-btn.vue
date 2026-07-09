@@ -30,6 +30,7 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
     selectedIds: number[];
     isAcrossChecked: boolean;
     dataCount: number;
@@ -42,7 +43,7 @@
 
   const handleBatchDeleteConfirm = async () => {
     batchDeletePending.value = true;
-    await batchDeleteVariable(props.bkBizId, props.selectedIds, props.isAcrossChecked);
+    await batchDeleteVariable(props.bkBizId, props.projectId, props.selectedIds, props.isAcrossChecked);
     Message({
       theme: 'success',
       message: t('批量删除变量成功'),

@@ -22,6 +22,7 @@
   const props = defineProps<{
     list: IVariableEditParams[];
     bkBizId: string;
+    projectId: string;
   }>();
 
   const emits = defineEmits(['reset']);
@@ -45,7 +46,7 @@
       start: 0,
       all: true,
     };
-    const res = await getVariableList(props.bkBizId, params);
+    const res = await getVariableList(props.bkBizId, props.projectId, params);
     variableList.value = res.details;
   };
 

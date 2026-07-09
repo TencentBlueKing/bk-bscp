@@ -27,7 +27,7 @@
             :current="allExistConfigCount"
             :is-temp="false"
             :is-file-type="isFileType" />
-          <EditVariables v-if="isFileType" ref="editVariablesRef" :bk-biz-id="props.bkBizId" :app-id="props.appId" />
+          <EditVariables v-if="isFileType" ref="editVariablesRef" :bk-biz-id="props.bkBizId" :project-id="projectId" :app-id="props.appId" />
         </template>
         <ViewVariables
           v-else-if="isFileType"
