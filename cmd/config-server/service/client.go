@@ -21,6 +21,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbclient "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/client"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -44,6 +45,8 @@ func (s *Service) ListClients(ctx context.Context, req *pbcs.ListClientsReq) (
 	items, err := s.client.DS.ListClients(kt.RpcCtx(), &pbds.ListClientsReq{
 		BizId:             req.GetBizId(),
 		AppId:             req.GetAppId(),
+		ProjectId:         kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:             kt.ResolvedEnvID(req.GetEnvId()),
 		LastHeartbeatTime: req.GetLastHeartbeatTime(),
 		Search: &pbclient.ClientQueryCondition{
 			Uid:                 req.GetSearch().GetUid(),
@@ -110,8 +113,10 @@ func (s *Service) ClientConfigVersionStatistics(ctx context.Context, req *pbclie
 	}
 
 	return s.client.DS.ClientConfigVersionStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -143,8 +148,10 @@ func (s *Service) ClientPullTrendStatistics(ctx context.Context, req *pbclient.C
 	}
 
 	return s.client.DS.ClientPullTrendStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -178,8 +185,10 @@ func (s *Service) ClientPullStatistics(ctx context.Context, req *pbclient.Client
 	}
 
 	return s.client.DS.ClientPullStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -211,8 +220,10 @@ func (s *Service) ClientLabelStatistics(ctx context.Context, req *pbclient.Clien
 	}
 
 	return s.client.DS.ClientLabelStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -246,8 +257,10 @@ func (s *Service) ClientAnnotationStatistics(ctx context.Context, req *pbclient.
 	}
 
 	return s.client.DS.ClientAnnotationStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -279,8 +292,10 @@ func (s *Service) ClientVersionStatistics(ctx context.Context, req *pbclient.Cli
 	}
 
 	return s.client.DS.ClientVersionStatistics(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -314,6 +329,8 @@ func (s *Service) ListClientLabelAndAnnotation(ctx context.Context, req *pbcs.Li
 	return s.client.DS.ListClientLabelAndAnnotation(kt.RpcCtx(), &pbds.ListClientLabelAndAnnotationReq{
 		BizId:             req.GetBizId(),
 		AppId:             req.GetAppId(),
+		ProjectId:         kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:             kt.ResolvedEnvID(req.GetEnvId()),
 		LastHeartbeatTime: req.GetLastHeartbeatTime(),
 	})
 }
@@ -335,8 +352,10 @@ func (s *Service) ClientSpecificFailedReason(ctx context.Context, req *pbclient.
 	}
 
 	return s.client.DS.ClientSpecificFailedReason(kt.RpcCtx(), &pbclient.ClientCommonReq{
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 		Search: &pbclient.ClientQueryCondition{
 			Label:               req.GetSearch().GetLabel(),
 			CurrentReleaseName:  req.GetSearch().GetCurrentReleaseName(),
@@ -368,13 +387,15 @@ func (s *Service) RetryClients(ctx context.Context, req *pbcs.RetryClientsReq) (
 
 	if !req.ExclusionOperation {
 		if !req.All && len(req.ClientIds) == 0 {
-			return nil, errf.Errorf(errf.InvalidArgument, i18n.T(kt, "client ids is empty"))
+			return nil, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kt, "client ids is empty"))
 		}
 	}
 
 	_, err := s.client.DS.RetryClients(kt.RpcCtx(), &pbds.RetryClientsReq{
 		BizId:              req.BizId,
 		AppId:              req.AppId,
+		ProjectId:          kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:              kt.ResolvedEnvID(req.GetEnvId()),
 		All:                req.All,
 		ClientIds:          req.ClientIds,
 		ExclusionOperation: req.ExclusionOperation,
@@ -386,4 +407,34 @@ func (s *Service) RetryClients(ctx context.Context, req *pbcs.RetryClientsReq) (
 
 	return &pbcs.RetryClientsResp{}, nil
 
+}
+
+// GetClient 获取客户端详情（供中间件 ClientProjectVerified 调用）
+func (s *Service) GetClient(ctx context.Context, req *pbcs.GetClientReq) (*pbcs.GetClientResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kt, res...); err != nil {
+		return nil, err
+	}
+
+	rp, err := s.client.DS.GetClientByID(kt.RpcCtx(), &pbds.GetClientByIDReq{
+		BizId:     kt.BizID,
+		AppId:     kt.AppID,
+		ClientId:  req.ClientId,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
+		EnvId:     kt.ResolvedEnvID(req.EnvId),
+	})
+	if err != nil {
+		logs.Errorf("get client failed, bizId=%d clientId=%d projectId=%d err=%v rid=%s",
+			kt.BizID, req.ClientId, req.ProjectId, err, kt.Rid)
+		return nil, err
+	}
+
+	resp := &pbcs.GetClientResp{
+		Data: rp.Data,
+	}
+	return resp, nil
 }

@@ -34,13 +34,18 @@ func (s *Service) CreateClientQuery(ctx context.Context, req *pbds.CreateClientQ
 	*pbds.CreateClientQueryResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+	appID := req.GetAppId()
+
 	searchCondition, err := req.GetSearchCondition().MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
 
 	if req.SearchName != "" {
-		query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, req.GetBizId(), req.GetAppId(),
+		query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, bizID, projectID, envID, appID,
 			grpcKit.User, req.SearchName)
 		if errQ != nil && !errors.Is(errQ, gorm.ErrRecordNotFound) {
 			return nil, errQ
@@ -50,7 +55,7 @@ func (s *Service) CreateClientQuery(ctx context.Context, req *pbds.CreateClientQ
 		}
 	}
 
-	data, err := s.dao.ClientQuery().ListBySearchCondition(grpcKit, req.GetBizId(), req.GetAppId(),
+	data, err := s.dao.ClientQuery().ListBySearchCondition(grpcKit, bizID, projectID, envID, appID,
 		grpcKit.User, req.SearchType, string(searchCondition))
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -99,8 +104,10 @@ func (s *Service) CreateClientQuery(ctx context.Context, req *pbds.CreateClientQ
 				UpdatedAt:       time.Now().UTC(),
 			},
 			Attachment: &table.ClientQueryAttachment{
-				BizID: req.BizId,
-				AppID: req.AppId,
+				BizID:     bizID,
+				AppID:     appID,
+				ProjectID: projectID,
+				EnvID:     envID,
 			},
 		})
 		if err != nil {
@@ -118,7 +125,7 @@ func (s *Service) ListClientQuerys(ctx context.Context, req *pbds.ListClientQuer
 	*pbds.ListClientQuerysResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	items, count, err := s.dao.ClientQuery().List(grpcKit, req.BizId, req.AppId, grpcKit.User, req.SearchType,
+	items, count, err := s.dao.ClientQuery().List(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId, grpcKit.User, req.SearchType,
 		&types.BasePage{Start: req.Start, Limit: uint(req.Limit), All: req.All})
 	if err != nil {
 		return nil, err
@@ -136,13 +143,18 @@ func (s *Service) UpdateClientQuery(ctx context.Context, req *pbds.UpdateClientQ
 	*pbbase.EmptyResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+	appID := req.GetAppId()
+
 	searchCondition, err := req.GetSearchCondition().MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
 
 	if req.SearchName != "" {
-		query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, req.GetBizId(), req.GetAppId(),
+		query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, bizID, projectID, envID, appID,
 			grpcKit.User, req.SearchName)
 		if errQ != nil && !errors.Is(errQ, gorm.ErrRecordNotFound) {
 			return nil, errQ
@@ -161,8 +173,10 @@ func (s *Service) UpdateClientQuery(ctx context.Context, req *pbds.UpdateClientQ
 			UpdatedAt:       time.Now().UTC(),
 		},
 		Attachment: &table.ClientQueryAttachment{
-			BizID: req.BizId,
-			AppID: req.AppId,
+			BizID:     bizID,
+			AppID:     appID,
+			ProjectID: projectID,
+			EnvID:     envID,
 		},
 	})
 	if err != nil {
@@ -179,8 +193,10 @@ func (s *Service) DeleteClientQuery(ctx context.Context, req *pbds.DeleteClientQ
 	err := s.dao.ClientQuery().Delete(grpcKit, &table.ClientQuery{
 		ID: req.Id,
 		Attachment: &table.ClientQueryAttachment{
-			BizID: req.BizId,
-			AppID: req.AppId,
+			BizID:     req.BizId,
+			AppID:     req.AppId,
+			ProjectID: req.ProjectId,
+			EnvID:     req.EnvId,
 		},
 	})
 	if err != nil {
@@ -198,7 +214,7 @@ func (s *Service) CheckClientQueryName(ctx context.Context, req *pbds.CheckClien
 		return nil, errors.New("search name cannot be empty")
 	}
 
-	query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, req.GetBizId(), req.GetAppId(),
+	query, errQ := s.dao.ClientQuery().GetBySearchName(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(),
 		grpcKit.User, req.GetName())
 	if errQ != nil && !errors.Is(errQ, gorm.ErrRecordNotFound) {
 		return nil, errQ

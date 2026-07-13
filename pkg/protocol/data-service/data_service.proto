@@ -268,6 +268,7 @@ service Data {
 
   // client related interface
   rpc ListClients(ListClientsReq) returns (ListClientsResp) {};
+  rpc GetClientByID(GetClientByIDReq) returns (GetClientByIDResp) {};
   rpc RetryClients(RetryClientsReq) returns (pbbase.EmptyResp) {};
 
   // client event related interface
@@ -2358,6 +2359,8 @@ message ListClientsReq {
   }
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 9;
+  uint32 env_id = 10;
   bool all = 3;
   uint32 start = 4;
   uint32 limit = 5;
@@ -2369,6 +2372,8 @@ message ListClientsReq {
 message RetryClientsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 6;
+  uint32 env_id = 7;
   repeated uint32 client_ids = 3;
   bool all = 4;
   bool exclusion_operation = 5;
@@ -2387,6 +2392,18 @@ message ListClientsResp {
   uint32 exclusion_count = 9;  // 排除离线的数量
 }
 
+message GetClientByIDReq {
+  uint32 biz_id = 1;
+  uint32 app_id = 2;
+  uint32 client_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
+}
+
+message GetClientByIDResp {
+  pbclient.Client data = 1;
+}
+
 message ListClientEventsReq {
   message Order {
     string desc = 1;
@@ -2394,6 +2411,8 @@ message ListClientEventsReq {
   }
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 11;
+  uint32 env_id = 12;
   uint32 client_id = 3;
   bool all = 4;
   uint32 start = 5;
@@ -2412,6 +2431,8 @@ message ListClientEventsResp {
 message ListClientQuerysReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 7;
+  uint32 env_id = 8;
   string search_type = 3;  // 搜索类型：recent、common
   uint32 start = 4;
   uint32 limit = 5;
@@ -2426,6 +2447,8 @@ message ListClientQuerysResp {
 message CreateClientQueryReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 6;
+  uint32 env_id = 7;
   string search_type = 3;
   string search_name = 4;
   google.protobuf.Struct search_condition = 5;
@@ -2439,6 +2462,8 @@ message UpdateClientQueryReq {
   uint32 id = 1;
   uint32 biz_id = 2;
   uint32 app_id = 3;
+  uint32 project_id = 6;
+  uint32 env_id = 7;
   string search_name = 4;
   google.protobuf.Struct search_condition = 5;
 }
@@ -2447,12 +2472,16 @@ message DeleteClientQueryReq {
   uint32 id = 1;
   uint32 biz_id = 2;
   uint32 app_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message CheckClientQueryNameReq {
   string name = 1;
   uint32 biz_id = 2;
   uint32 app_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message CheckClientQueryNameResp {
@@ -2462,6 +2491,8 @@ message CheckClientQueryNameResp {
 message ListClientLabelAndAnnotationReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
   int64 last_heartbeat_time = 3;
 }
 

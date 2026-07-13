@@ -67,8 +67,10 @@ func (c *ClientQueryAttachment) ClientQueryAttachment() *table.ClientQueryAttach
 	}
 
 	return &table.ClientQueryAttachment{
-		BizID: c.BizId,
-		AppID: c.AppId,
+		BizID:     c.BizId,
+		AppID:     c.AppId,
+		ProjectID: c.ProjectId,
+		EnvID:     c.EnvId,
 	}
 }
 
@@ -78,8 +80,10 @@ func PbClientQueryAttachment(attachment *table.ClientQueryAttachment) *ClientQue
 		return nil
 	}
 	return &ClientQueryAttachment{
-		BizId: attachment.BizID,
-		AppId: attachment.AppID,
+		BizId:     attachment.BizID,
+		AppId:     attachment.AppID,
+		ProjectId: attachment.ProjectID,
+		EnvId:     attachment.EnvID,
 	}
 }
 

@@ -174,7 +174,12 @@ func (s *Service) handleBatchCreateClients(kt *kit.Kit, clients []*pbclient.Clie
 func (s *Service) ListClients(ctx context.Context, req *pbds.ListClientsReq) (*pbds.ListClientsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	items, count, err := s.dao.Client().List(grpcKit, req.BizId, req.AppId,
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+	appID := req.GetAppId()
+
+	items, count, err := s.dao.Client().List(grpcKit, bizID, projectID, envID, appID,
 		req.GetLastHeartbeatTime(),
 		req.GetSearch(),
 		req.GetOrder(),
@@ -187,7 +192,7 @@ func (s *Service) ListClients(ctx context.Context, req *pbds.ListClientsReq) (*p
 		return nil, err
 	}
 
-	uncitedCount, err := s.dao.Client().CountNumberOlineClients(grpcKit, req.BizId, req.AppId,
+	uncitedCount, err := s.dao.Client().CountNumberOlineClients(grpcKit, bizID, projectID, envID, appID,
 		req.GetLastHeartbeatTime(), req.GetSearch())
 	if err != nil {
 		return nil, err
@@ -242,12 +247,43 @@ func (s *Service) ListClients(ctx context.Context, req *pbds.ListClientsReq) (*p
 
 }
 
+// GetClientByID 根据 client_id 获取客户端详情
+func (s *Service) GetClientByID(ctx context.Context, req *pbds.GetClientByIDReq) (*pbds.GetClientByIDResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	clients, err := s.dao.Client().ListClientByIDs(grpcKit, req.BizId, req.ProjectId, req.EnvId, req.AppId, []uint32{req.ClientId})
+	if err != nil {
+		logs.Errorf("get client by id failed, bizId=%d appId=%d clientId=%d err=%v rid=%s",
+			req.BizId, req.AppId, req.ClientId, err, grpcKit.Rid)
+		return nil, err
+	}
+
+	if len(clients) == 0 {
+		return nil, fmt.Errorf("client not found, clientId: %d", req.ClientId)
+	}
+
+	client := clients[0]
+
+	// 如果请求中指定了 project_id，校验客户端是否属于该项目
+	if req.ProjectId != 0 && client.Attachment.ProjectID != req.ProjectId {
+		return nil, fmt.Errorf("client does not belong to the specified project, "+
+			"clientId: %d, clientProjectId: %d, requestProjectId: %d",
+			req.ClientId, client.Attachment.ProjectID, req.ProjectId)
+	}
+
+	resp := &pbds.GetClientByIDResp{
+		Data: pbclient.PbClient(client),
+	}
+
+	return resp, nil
+}
+
 // ClientConfigVersionStatistics 客户端配置版本统计
 func (s *Service) ClientConfigVersionStatistics(ctx context.Context, req *pbclient.ClientCommonReq) (
 	*structpb.Struct, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	configVersion, err := s.clientConfigVersionChart(grpcKit, req.GetBizId(),
+	configVersion, err := s.clientConfigVersionChart(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(),
 		req.GetAppId(), req.GetLastHeartbeatTime(), req.GetSearch())
 	if err != nil {
 		return nil, err
@@ -263,10 +299,14 @@ func (s *Service) ClientConfigVersionStatistics(ctx context.Context, req *pbclie
 func (s *Service) ClientPullTrendStatistics(ctx context.Context, req *pbclient.ClientCommonReq) ( // nolint
 	*structpb.Struct, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+	envID := req.GetEnvId()
+	appID := req.GetAppId()
 
 	var ClientIDs []uint32
 	if req.GetSearch().String() != "" || req.GetLastHeartbeatTime() > 0 {
-		items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetAppId(), req.GetLastHeartbeatTime(),
+		items, _, err := s.dao.Client().List(grpcKit, bizID, projectID, envID, appID, req.GetLastHeartbeatTime(),
 			req.GetSearch(), &pbds.ListClientsReq_Order{}, &types.BasePage{All: true})
 		if err != nil {
 			return nil, err
@@ -278,7 +318,7 @@ func (s *Service) ClientPullTrendStatistics(ctx context.Context, req *pbclient.C
 
 	resp := make(map[string]interface{})
 	if req.GetSearch().String() == "" || len(ClientIDs) > 0 {
-		data, err := s.dao.ClientEvent().GetPullTrend(grpcKit, req.GetBizId(), req.GetAppId(), ClientIDs,
+		data, err := s.dao.ClientEvent().GetPullTrend(grpcKit, bizID, appID, ClientIDs,
 			req.GetPullTime(), req.GetIsDuplicates())
 		if err != nil {
 			return nil, err
@@ -289,7 +329,7 @@ func (s *Service) ClientPullTrendStatistics(ctx context.Context, req *pbclient.C
 		}
 
 		// 反查客户端类型
-		clients, err := s.dao.Client().ListClientByIDs(grpcKit, req.GetBizId(), req.GetAppId(), ids)
+		clients, err := s.dao.Client().ListClientByIDs(grpcKit, bizID, projectID, envID, grpcKit.AppID, ids)
 		if err != nil {
 			return nil, err
 		}
@@ -370,7 +410,7 @@ func (s *Service) ClientPullStatistics(ctx context.Context, req *pbclient.Client
 	*structpb.Struct, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
-	resp, err := s.clientPullInfo(grpcKit, req.GetBizId(), req.GetAppId(),
+	resp, err := s.clientPullInfo(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(),
 		req.GetLastHeartbeatTime(), req.GetSearch())
 	if err != nil {
 		return nil, err
@@ -415,7 +455,7 @@ func (s *Service) ClientLabelStatistics(ctx context.Context, req *pbclient.Clien
 		searchLables.Label = append(searchLables.Label, label...)
 	}
 
-	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetAppId(), req.GetLastHeartbeatTime(),
+	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(), req.GetLastHeartbeatTime(),
 		searchLables, &pbds.ListClientsReq_Order{}, &types.BasePage{All: true})
 	if err != nil {
 		return nil, err
@@ -586,7 +626,7 @@ func (s *Service) ClientVersionStatistics(ctx context.Context, req *pbclient.Cli
 	*structpb.Struct, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
-	distribution, err := s.clientVersionDistribution(grpcKit, req.GetBizId(), req.GetAppId(),
+	distribution, err := s.clientVersionDistribution(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(),
 		req.GetLastHeartbeatTime(), req.GetSearch())
 	if err != nil {
 		return nil, err
@@ -596,11 +636,11 @@ func (s *Service) ClientVersionStatistics(ctx context.Context, req *pbclient.Cli
 }
 
 // clientConfigVersionChart 客户端配置版本图表
-func (s *Service) clientConfigVersionChart(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+func (s *Service) clientConfigVersionChart(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) ([]interface{}, error) {
 
 	// 获取客户端当前的配置数据
-	items, err := s.dao.Client().ListClientGroupByTargetReleaseID(kit, bizID, appID, heartbeatTime, search)
+	items, err := s.dao.Client().ListClientGroupByTargetReleaseID(kit, bizID, projectID, envID, appID, heartbeatTime, search)
 	if err != nil {
 		return nil, err
 	}
@@ -641,10 +681,10 @@ func (s *Service) clientConfigVersionChart(kit *kit.Kit, bizID, appID uint32, he
 }
 
 // clientVersionDistribution 客户端组件版本分布
-func (s *Service) clientVersionDistribution(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+func (s *Service) clientVersionDistribution(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) (map[string]interface{}, error) {
 
-	items, _, err := s.dao.Client().List(kit, bizID, appID,
+	items, _, err := s.dao.Client().List(kit, bizID, projectID, envID, appID,
 		heartbeatTime,
 		search,
 		&pbds.ListClientsReq_Order{},
@@ -693,7 +733,7 @@ func (s *Service) clientVersionDistribution(kit *kit.Kit, bizID, appID uint32, h
 	resp["version_distribution"] = charts
 
 	// 获取资源使用率
-	resourceUsage, err := s.getResourceUsage(kit, bizID, appID, heartbeatTime, search)
+	resourceUsage, err := s.getResourceUsage(kit, bizID, projectID, envID, appID, heartbeatTime, search)
 	if err != nil {
 		return nil, err
 	}
@@ -703,10 +743,10 @@ func (s *Service) clientVersionDistribution(kit *kit.Kit, bizID, appID uint32, h
 }
 
 // clientPullInfo 客户端拉取信息
-func (s *Service) clientPullInfo(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+func (s *Service) clientPullInfo(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) (map[string]interface{}, error) {
 
-	changeStatus, err := s.dao.Client().ListClientGroupByChangeStatus(kit, bizID, appID, heartbeatTime, search)
+	changeStatus, err := s.dao.Client().ListClientGroupByChangeStatus(kit, bizID, projectID, envID, appID, heartbeatTime, search)
 	if err != nil {
 		return nil, err
 	}
@@ -728,7 +768,7 @@ func (s *Service) clientPullInfo(kit *kit.Kit, bizID, appID uint32, heartbeatTim
 	}
 
 	// 获取具体失败的比例
-	failedReasons, err := s.dao.Client().ListClientGroupByFailedReason(kit, bizID, appID, heartbeatTime, search)
+	failedReasons, err := s.dao.Client().ListClientGroupByFailedReason(kit, bizID, projectID, envID, appID, heartbeatTime, search)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +793,7 @@ func (s *Service) clientPullInfo(kit *kit.Kit, bizID, appID uint32, heartbeatTim
 	// 通过查询条件获取clientID
 	var ClientID []uint32
 	if search.String() != "" || heartbeatTime > 0 {
-		items, _, err := s.dao.Client().List(kit, bizID, appID, heartbeatTime, search,
+		items, _, err := s.dao.Client().List(kit, bizID, projectID, envID, appID, heartbeatTime, search,
 			&pbds.ListClientsReq_Order{}, &types.BasePage{All: true})
 		if err != nil {
 			return nil, err
@@ -782,10 +822,10 @@ func (s *Service) clientPullInfo(kit *kit.Kit, bizID, appID uint32, heartbeatTim
 }
 
 // getResourceUsage 获取资源使用率cpu、mem
-func (s *Service) getResourceUsage(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+func (s *Service) getResourceUsage(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) (map[string]interface{}, error) {
 
-	item, err := s.dao.Client().GetResourceUsage(kit, bizID, appID, heartbeatTime, search)
+	item, err := s.dao.Client().GetResourceUsage(kit, bizID, projectID, envID, appID, heartbeatTime, search)
 	if err != nil {
 		return nil, err
 	}
@@ -828,7 +868,7 @@ func (s *Service) ListClientLabelAndAnnotation(ctx context.Context, req *pbds.Li
 	*structpb.Struct, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetAppId(), req.GetLastHeartbeatTime(),
+	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(), req.GetLastHeartbeatTime(),
 		nil, &pbds.ListClientsReq_Order{}, &types.BasePage{All: true})
 	if err != nil {
 		return nil, err
@@ -876,7 +916,7 @@ func (s *Service) ClientSpecificFailedReason(ctx context.Context, req *pbclient.
 	*structpb.Struct, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetAppId(), req.GetLastHeartbeatTime(),
+	items, _, err := s.dao.Client().List(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetEnvId(), req.GetAppId(), req.GetLastHeartbeatTime(),
 		req.GetSearch(), &pbds.ListClientsReq_Order{}, &types.BasePage{All: true})
 	if err != nil {
 		return nil, err
@@ -959,7 +999,7 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 
 	events := make([]types.Event, 0, len(req.ClientIds))
 	clientUIDMap := make(map[uint32]string)
-	clients, err := s.dao.Client().ListClientByIDs(kit, req.BizId, req.AppId, req.ClientIds)
+	clients, err := s.dao.Client().ListClientByIDs(kit, req.BizId, req.ProjectId, req.EnvId, req.AppId, req.ClientIds)
 	if err != nil {
 		logs.Errorf("list clients by IDs failed, err: %v, rid: %s", err, kit.Rid)
 		return nil, err

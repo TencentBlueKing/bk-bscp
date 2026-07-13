@@ -117,10 +117,12 @@ func (p *proxy) routers() http.Handler {
 			r.Route("/{project_id}", func(r chi.Router) {
 				r.Use(p.authorizer.VerifyProjectExists) // 校验 Project 是否存在
 				r.Mount("/", p.cfgSvrMux)
+
 				// 环境相关
 				r.Route("/envs/{env_id}", func(r chi.Router) {
 					r.Use(p.authorizer.VerifyEnvExists) // 校验 Env 归属于该项目
 					r.Mount("/", p.cfgSvrMux)
+					// 服务相关
 					r.Route("/apps/{app_id}", func(r chi.Router) {
 						r.Use(p.AppProjectEnvVerified) // 校验 App 归属于该项目+环境
 						r.Mount("/", p.cfgSvrMux)

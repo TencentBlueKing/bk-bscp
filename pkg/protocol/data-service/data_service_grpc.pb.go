@@ -200,6 +200,7 @@ const (
 	Data_KvFetchKeysExcluding_FullMethodName              = "/pbds.Data/KvFetchKeysExcluding"
 	Data_FindNearExpiryCertKvs_FullMethodName             = "/pbds.Data/FindNearExpiryCertKvs"
 	Data_ListClients_FullMethodName                       = "/pbds.Data/ListClients"
+	Data_GetClientByID_FullMethodName                     = "/pbds.Data/GetClientByID"
 	Data_RetryClients_FullMethodName                      = "/pbds.Data/RetryClients"
 	Data_ListClientEvents_FullMethodName                  = "/pbds.Data/ListClientEvents"
 	Data_ListClientQuerys_FullMethodName                  = "/pbds.Data/ListClientQuerys"
@@ -467,6 +468,7 @@ type DataClient interface {
 	FindNearExpiryCertKvs(ctx context.Context, in *FindNearExpiryCertKvsReq, opts ...grpc.CallOption) (*FindNearExpiryCertKvsResp, error)
 	// client related interface
 	ListClients(ctx context.Context, in *ListClientsReq, opts ...grpc.CallOption) (*ListClientsResp, error)
+	GetClientByID(ctx context.Context, in *GetClientByIDReq, opts ...grpc.CallOption) (*GetClientByIDResp, error)
 	RetryClients(ctx context.Context, in *RetryClientsReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	// client event related interface
 	ListClientEvents(ctx context.Context, in *ListClientEventsReq, opts ...grpc.CallOption) (*ListClientEventsResp, error)
@@ -2095,6 +2097,15 @@ func (c *dataClient) ListClients(ctx context.Context, in *ListClientsReq, opts .
 	return out, nil
 }
 
+func (c *dataClient) GetClientByID(ctx context.Context, in *GetClientByIDReq, opts ...grpc.CallOption) (*GetClientByIDResp, error) {
+	out := new(GetClientByIDResp)
+	err := c.cc.Invoke(ctx, Data_GetClientByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) RetryClients(ctx context.Context, in *RetryClientsReq, opts ...grpc.CallOption) (*base.EmptyResp, error) {
 	out := new(base.EmptyResp)
 	err := c.cc.Invoke(ctx, Data_RetryClients_FullMethodName, in, out, opts...)
@@ -2896,6 +2907,7 @@ type DataServer interface {
 	FindNearExpiryCertKvs(context.Context, *FindNearExpiryCertKvsReq) (*FindNearExpiryCertKvsResp, error)
 	// client related interface
 	ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error)
+	GetClientByID(context.Context, *GetClientByIDReq) (*GetClientByIDResp, error)
 	RetryClients(context.Context, *RetryClientsReq) (*base.EmptyResp, error)
 	// client event related interface
 	ListClientEvents(context.Context, *ListClientEventsReq) (*ListClientEventsResp, error)
@@ -3511,6 +3523,9 @@ func (UnimplementedDataServer) FindNearExpiryCertKvs(context.Context, *FindNearE
 }
 func (UnimplementedDataServer) ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListClients not implemented")
+}
+func (UnimplementedDataServer) GetClientByID(context.Context, *GetClientByIDReq) (*GetClientByIDResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClientByID not implemented")
 }
 func (UnimplementedDataServer) RetryClients(context.Context, *RetryClientsReq) (*base.EmptyResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RetryClients not implemented")
@@ -6749,6 +6764,24 @@ func _Data_ListClients_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_GetClientByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClientByIDReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetClientByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetClientByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetClientByID(ctx, req.(*GetClientByIDReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_RetryClients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RetryClientsReq)
 	if err := dec(in); err != nil {
@@ -8633,6 +8666,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListClients",
 			Handler:    _Data_ListClients_Handler,
+		},
+		{
+			MethodName: "GetClientByID",
+			Handler:    _Data_GetClientByID_Handler,
 		},
 		{
 			MethodName: "RetryClients",

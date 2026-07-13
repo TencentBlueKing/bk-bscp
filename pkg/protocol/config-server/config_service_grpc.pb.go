@@ -192,6 +192,7 @@ const (
 	Config_ImportKvs_FullMethodName                          = "/pbcs.Config/ImportKvs"
 	Config_FindNearExpiryCertKvs_FullMethodName              = "/pbcs.Config/FindNearExpiryCertKvs"
 	Config_ListClients_FullMethodName                        = "/pbcs.Config/ListClients"
+	Config_GetClient_FullMethodName                          = "/pbcs.Config/GetClient"
 	Config_ListClientEvents_FullMethodName                   = "/pbcs.Config/ListClientEvents"
 	Config_RetryClients_FullMethodName                       = "/pbcs.Config/RetryClients"
 	Config_ListClientQuerys_FullMethodName                   = "/pbcs.Config/ListClientQuerys"
@@ -585,6 +586,8 @@ type ConfigClient interface {
 	FindNearExpiryCertKvs(ctx context.Context, in *FindNearExpiryCertKvsReq, opts ...grpc.CallOption) (*FindNearExpiryCertKvsResp, error)
 	// 获取客户端列表
 	ListClients(ctx context.Context, in *ListClientsReq, opts ...grpc.CallOption) (*ListClientsResp, error)
+	// 获取客户端详情
+	GetClient(ctx context.Context, in *GetClientReq, opts ...grpc.CallOption) (*GetClientResp, error)
 	// 获取客户端拉取记录列表
 	ListClientEvents(ctx context.Context, in *ListClientEventsReq, opts ...grpc.CallOption) (*ListClientEventsResp, error)
 	// 重试客户端拉取
@@ -2209,6 +2212,15 @@ func (c *configClient) ListClients(ctx context.Context, in *ListClientsReq, opts
 	return out, nil
 }
 
+func (c *configClient) GetClient(ctx context.Context, in *GetClientReq, opts ...grpc.CallOption) (*GetClientResp, error) {
+	out := new(GetClientResp)
+	err := c.cc.Invoke(ctx, Config_GetClient_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ListClientEvents(ctx context.Context, in *ListClientEventsReq, opts ...grpc.CallOption) (*ListClientEventsResp, error) {
 	out := new(ListClientEventsResp)
 	err := c.cc.Invoke(ctx, Config_ListClientEvents_FullMethodName, in, out, opts...)
@@ -3112,6 +3124,8 @@ type ConfigServer interface {
 	FindNearExpiryCertKvs(context.Context, *FindNearExpiryCertKvsReq) (*FindNearExpiryCertKvsResp, error)
 	// 获取客户端列表
 	ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error)
+	// 获取客户端详情
+	GetClient(context.Context, *GetClientReq) (*GetClientResp, error)
 	// 获取客户端拉取记录列表
 	ListClientEvents(context.Context, *ListClientEventsReq) (*ListClientEventsResp, error)
 	// 重试客户端拉取
@@ -3741,6 +3755,9 @@ func (UnimplementedConfigServer) FindNearExpiryCertKvs(context.Context, *FindNea
 }
 func (UnimplementedConfigServer) ListClients(context.Context, *ListClientsReq) (*ListClientsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListClients not implemented")
+}
+func (UnimplementedConfigServer) GetClient(context.Context, *GetClientReq) (*GetClientResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClient not implemented")
 }
 func (UnimplementedConfigServer) ListClientEvents(context.Context, *ListClientEventsReq) (*ListClientEventsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListClientEvents not implemented")
@@ -6916,6 +6933,24 @@ func _Config_ListClients_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_GetClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClientReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetClient(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetClient_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetClient(ctx, req.(*GetClientReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_ListClientEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListClientEventsReq)
 	if err := dec(in); err != nil {
@@ -8734,6 +8769,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListClients",
 			Handler:    _Config_ListClients_Handler,
+		},
+		{
+			MethodName: "GetClient",
+			Handler:    _Config_GetClient_Handler,
 		},
 		{
 			MethodName: "ListClientEvents",

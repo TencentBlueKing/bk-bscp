@@ -31,6 +31,8 @@ func newClient(db *gorm.DB, opts ...gen.DOOption) client {
 	_client.UID = field.NewString(tableName, "uid")
 	_client.BizID = field.NewUint32(tableName, "biz_id")
 	_client.AppID = field.NewUint32(tableName, "app_id")
+	_client.ProjectID = field.NewUint32(tableName, "project_id")
+	_client.EnvID = field.NewUint32(tableName, "environment_id")
 	_client.TenantID = field.NewString(tableName, "tenant_id")
 	_client.ClientVersion = field.NewString(tableName, "client_version")
 	_client.ClientType = field.NewString(tableName, "client_type")
@@ -69,6 +71,8 @@ type client struct {
 	UID                       field.String
 	BizID                     field.Uint32
 	AppID                     field.Uint32
+	ProjectID                 field.Uint32
+	EnvID                     field.Uint32
 	TenantID                  field.String
 	ClientVersion             field.String
 	ClientType                field.String
@@ -113,6 +117,8 @@ func (c *client) updateTableName(table string) *client {
 	c.UID = field.NewString(table, "uid")
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.AppID = field.NewUint32(table, "app_id")
+	c.ProjectID = field.NewUint32(table, "project_id")
+	c.EnvID = field.NewUint32(table, "environment_id")
 	c.TenantID = field.NewString(table, "tenant_id")
 	c.ClientVersion = field.NewString(table, "client_version")
 	c.ClientType = field.NewString(table, "client_type")
@@ -161,11 +167,13 @@ func (c *client) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *client) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 28)
+	c.fieldMap = make(map[string]field.Expr, 30)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["uid"] = c.UID
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["app_id"] = c.AppID
+	c.fieldMap["project_id"] = c.ProjectID
+	c.fieldMap["environment_id"] = c.EnvID
 	c.fieldMap["tenant_id"] = c.TenantID
 	c.fieldMap["client_version"] = c.ClientVersion
 	c.fieldMap["client_type"] = c.ClientType

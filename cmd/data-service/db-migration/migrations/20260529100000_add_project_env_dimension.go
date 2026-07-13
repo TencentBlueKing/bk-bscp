@@ -368,13 +368,12 @@ func newEnvScopeModel() *envScopeModel {
 
 // EnvScope: 添加 project_id + environment_id（applications 额外加 env_display）的表
 var envScopeTables = []string{
-	"applications",
+	"applications", "client_querys", "clients",
 }
 
 // ProjectScope: 仅添加/回填 project_id 的表
 var projectScopeTables = []string{
-	"audits", "client_events", "client_querys", "clients",
-	"credentials", "events", "groups", "hooks", "template_spaces", "template_variables",
+	"audits", "credentials", "events", "groups", "hooks", "template_spaces", "template_variables",
 }
 
 func stepAddColumns(tx *gorm.DB) error {
@@ -433,41 +432,46 @@ func stepAddColumns(tx *gorm.DB) error {
 // indexAdjustment 定义需要调整的唯一索引映射。
 type indexAdjustment struct {
 	table      string // 目标表名
-	oldIdxName string // 旧唯一索引名
-	newIdxName string // 新唯一索引名
+	oldIdxName string // 旧索引名
+	newIdxName string // 新索引名
 	newColumns string // 新索引列定义（SQL）
+	unique     bool   // 是否唯一索引
 }
 
-// 需要调整唯一索引的表及其新旧索引定义
+// 需要调整的索引
 var projectScopeIndexAdjustments = []indexAdjustment{
 	{"groups", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
-		"tenant_id, biz_id, project_id, name"},
+		"tenant_id, biz_id, project_id, name", true},
 	{"hooks", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
-		"tenant_id, biz_id, project_id, name"},
+		"tenant_id, biz_id, project_id, name", true},
 	{"credentials", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
-		"tenant_id, biz_id, project_id, name"},
+		"tenant_id, biz_id, project_id, name", true},
 	{"template_spaces", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
-		"tenant_id, biz_id, project_id, name"},
+		"tenant_id, biz_id, project_id, name", true},
 	{"template_variables", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_name",
-		"tenant_id, biz_id, project_id, name"},
+		"tenant_id, biz_id, project_id, name", true},
+	{"clients", "idx_bizID_appID_uid", "idx_bizID_projectID_envID_appID_uid",
+		"biz_id, project_id, environment_id, app_id, uid", true},
+	{"client_querys", "idx_tenantID_bizID_appID_creator", "idx_tenantID_bizID_projectID_envID_appID_creator",
+		"tenant_id, biz_id, project_id, environment_id, app_id, creator", false},
 }
 
 var envScopeIndexAdjustments = []indexAdjustment{
 	{"applications", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_envID_name",
-		"tenant_id, biz_id, project_id, environment_id, name"},
+		"tenant_id, biz_id, project_id, environment_id, name", true},
 }
 
 func stepAdjustIndexes(tx *gorm.DB) error {
-	// 4a. ProjectScope 表：删旧唯一索引 → 建新唯一索引（含 project_id）
+	// 4a. ProjectScope 表：删旧索引 → 新建索引（含 project_id）
 	for _, adj := range projectScopeIndexAdjustments {
-		if err := replaceUniqueIndex(tx, adj); err != nil {
+		if err := replaceIndex(tx, adj); err != nil {
 			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
 		}
 	}
 
-	// 4b. EnvScope 表：删旧唯一索引 → 建新唯一索引（含 project_id + environment_id）
+	// 4b. EnvScope 表：删旧索引 → 新建索引（含 project_id + environment_id）
 	for _, adj := range envScopeIndexAdjustments {
-		if err := replaceUniqueIndex(tx, adj); err != nil {
+		if err := replaceIndex(tx, adj); err != nil {
 			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
 		}
 	}
@@ -501,20 +505,32 @@ func stepAdjustIndexes(tx *gorm.DB) error {
 	return nil
 }
 
-// replaceUniqueIndex 删旧唯一索引，建新唯一索引（幂等）。
-func replaceUniqueIndex(tx *gorm.DB, adj indexAdjustment) error {
+// replaceIndex 替换索引
+func replaceIndex(tx *gorm.DB, adj indexAdjustment) error {
 	if tx.Migrator().HasIndex(adj.table, adj.oldIdxName) {
 		if err := tx.Migrator().DropIndex(adj.table, adj.oldIdxName); err != nil {
 			return fmt.Errorf("drop old index %s: %w", adj.oldIdxName, err)
 		}
 	}
 	if !tx.Migrator().HasIndex(adj.table, adj.newIdxName) {
-		if err := tx.Exec(
-			fmt.Sprintf("CREATE UNIQUE INDEX %s ON %s (%s)", adj.newIdxName, quoteTable(adj.table), adj.newColumns),
-		).Error; err != nil {
+		indexType := ""
+		if adj.unique {
+			indexType = "UNIQUE "
+		}
+
+		sql := fmt.Sprintf(
+			"CREATE %sINDEX %s ON %s (%s)",
+			indexType,
+			adj.newIdxName,
+			quoteTable(adj.table),
+			adj.newColumns,
+		)
+
+		if err := tx.Exec(sql).Error; err != nil {
 			return fmt.Errorf("create new index %s: %w", adj.newIdxName, err)
 		}
 	}
+
 	return nil
 }
 
@@ -766,37 +782,42 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 // indexRestoreDef 定义需要恢复的旧唯一索引。
 type indexRestoreDef struct {
 	table      string
-	newIdxName string // 本迁移创建的新唯一索引（要删的）
-	oldIdxName string // 旧唯一索引名（要恢复的）
+	newIdxName string // 本迁移创建的索引（要删的）
+	oldIdxName string // 索引名（要恢复的）
 	oldColumns string // 旧索引列定义
+	unique     bool   // 是否唯一索引
 }
 
 var projectScopeIndexRestores = []indexRestoreDef{
 	{"groups", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
 	{"hooks", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
 	{"credentials", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
 	{"template_spaces", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
 	{"template_variables", "idx_tenantID_bizID_projectID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
+	{"clients", "idx_bizID_projectID_envID_appID_uid", "idx_bizID_appID_uid",
+		"biz_id, app_id, uid", true},
+	{"client_querys", "idx_tenantID_bizID_projectID_envID_appID_creator", "idx_tenantID_bizID_appID_creator",
+		"tenant_id, biz_id, app_id, creator", false},
 }
 
 var envScopeIndexRestores = []indexRestoreDef{
 	{"applications", "idx_tenantID_bizID_projectID_envID_name", "idx_tenantID_bizID_name",
-		"tenant_id, biz_id, name"},
+		"tenant_id, biz_id, name", true},
 }
 
 func stepRestoreIndexes(tx *gorm.DB) error {
 	for _, r := range projectScopeIndexRestores {
-		if err := restoreUniqueIndex(tx, r); err != nil {
+		if err := restoreIndex(tx, r); err != nil {
 			return fmt.Errorf("restore index on %s: %w", r.table, err)
 		}
 	}
 	for _, r := range envScopeIndexRestores {
-		if err := restoreUniqueIndex(tx, r); err != nil {
+		if err := restoreIndex(tx, r); err != nil {
 			return fmt.Errorf("restore index on %s: %w", r.table, err)
 		}
 	}
@@ -813,17 +834,28 @@ func stepRestoreIndexes(tx *gorm.DB) error {
 	return nil
 }
 
-// restoreUniqueIndex 删新索引，恢复旧唯一索引（幂等）。
-func restoreUniqueIndex(tx *gorm.DB, r indexRestoreDef) error {
+// restoreIndex 删新索引，恢复旧索引（幂等）。
+func restoreIndex(tx *gorm.DB, r indexRestoreDef) error {
 	if tx.Migrator().HasIndex(r.table, r.newIdxName) {
 		if err := tx.Migrator().DropIndex(r.table, r.newIdxName); err != nil {
 			return fmt.Errorf("drop new index %s: %w", r.newIdxName, err)
 		}
 	}
 	if !tx.Migrator().HasIndex(r.table, r.oldIdxName) {
-		if err := tx.Exec(
-			fmt.Sprintf("CREATE UNIQUE INDEX %s ON %s (%s)", r.oldIdxName, quoteTable(r.table), r.oldColumns),
-		).Error; err != nil {
+		indexType := ""
+		if r.unique {
+			indexType = "UNIQUE "
+		}
+
+		sql := fmt.Sprintf(
+			"CREATE %sINDEX %s ON %s (%s)",
+			indexType,
+			r.oldIdxName,
+			quoteTable(r.table),
+			r.oldColumns,
+		)
+
+		if err := tx.Exec(sql).Error; err != nil {
 			return fmt.Errorf("restore old index %s: %w", r.oldIdxName, err)
 		}
 	}
