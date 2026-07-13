@@ -27,6 +27,7 @@
   const props = defineProps<{
     bkBizId: string;
     selectedIds: number[];
+    projectId?: string;
   }>();
 
   const emits = defineEmits(['deleted']);
@@ -36,7 +37,7 @@
 
   const handleBatchDeleteConfirm = async () => {
     batchDeletePending.value = true;
-    await batchDeleteGroup(props.bkBizId, props.selectedIds);
+    await batchDeleteGroup(props.bkBizId, props.projectId, props.selectedIds);
     Message({
       theme: 'success',
       message: t('批量删除分组成功'),

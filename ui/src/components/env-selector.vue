@@ -8,7 +8,7 @@
     :input-search="false"
     :disabled="props.disabled"
     :popover-min-width="240"
-    @change="handleChange"
+    @change="(value: string) => handleChange(value)"
     @toggle="handleToggle">
     <!-- 自定义触发器：useDefaultTrigger 为 true 或传入了 #trigger 插槽时使用 -->
     <template v-if="useDefaultTrigger || hasTriggerSlot" #trigger>
@@ -111,7 +111,7 @@
   // eslint-disable-next-line func-call-spacing
   const emits = defineEmits<{
     (e: 'update:modelValue', value: string): void;
-    (e: 'change', env: IEnvItem): void;
+    (e: 'change', env: IEnvItem, isManual?: boolean): void;
   }>();
 
   const selectedEnvId = ref<string>(props.modelValue);
@@ -182,7 +182,7 @@
       if (firstGroup && !selectedEnvId.value) {
         selectedEnvId.value = String(firstGroup.envs[0].id);
       }
-      handleChange(selectedEnvId.value);
+      handleChange(selectedEnvId.value, false);
     } catch (e) {
       console.error('获取环境列表失败', e);
       envGroups.value = [];
@@ -223,11 +223,11 @@
     }
   );
 
-  const handleChange = (value: string) => {
+  const handleChange = (value: string, isManual = true) => {
     emits('update:modelValue', value);
     const info = selectedEnvInfo.value;
     if (info) {
-      emits('change', info.env);
+      emits('change', info.env, isManual);
     }
   };
 
