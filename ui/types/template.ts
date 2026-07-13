@@ -24,6 +24,7 @@ export interface ITemplatePackageItem {
     memo: string;
     template_ids: number[];
     public: boolean;
+    env_id: string;
     bound_apps: number[];
   };
   attachment: {
@@ -52,6 +53,7 @@ export interface ITemplatePackageEditParams {
   memo: string;
   template_ids?: number[];
   public: boolean;
+  env_id: string;
   bound_apps: number[];
   force?: boolean;
 }

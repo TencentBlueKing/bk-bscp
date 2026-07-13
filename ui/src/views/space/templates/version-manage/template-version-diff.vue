@@ -55,6 +55,7 @@
   const props = defineProps<{
     show: boolean;
     spaceId: string;
+    projectId: string;
     templateSpaceId: number;
     crtVersion: DiffSliderDataType;
     createMode?: boolean; // 新建版本对比没有版本id
@@ -111,7 +112,12 @@
       start: 0,
       all: true,
     };
-    const res = await getTemplateVersionList(props.spaceId, props.templateSpaceId, props.crtVersion.id, params);
+    const res = await getTemplateVersionList(
+      props.spaceId,
+      props.projectId,
+      props.templateSpaceId,
+      props.crtVersion.id,
+      params);
     // 新建版本时可以选中载入版本进行diff
     versionList.value = props.createMode
       ? res.details
@@ -120,7 +126,8 @@
   };
 
   const getTemplateVersionDetail = async (versionId: number) => {
-    const res = getTemplateVersionsDetailByIds(props.spaceId, [versionId]).then((res) => res.details[0]);
+    const res = getTemplateVersionsDetailByIds(
+      props.spaceId, props.projectId, [versionId]).then((res) => res.details[0]);
     return res;
   };
 

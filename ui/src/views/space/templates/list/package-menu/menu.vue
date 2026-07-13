@@ -84,7 +84,7 @@
   import TableEmpty from '../../../../../components/table/table-empty.vue';
 
   const router = useRouter();
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t, locale } = useI18n();
   const templateStore = useTemplateStore();
   const {
@@ -175,7 +175,7 @@
       start: 0,
       limit: 1,
     };
-    const res = await getTemplatesBySpaceId(spaceId.value, currentTemplateSpace.value, params);
+    const res = await getTemplatesBySpaceId(spaceId.value, projectId.value, currentTemplateSpace.value, params);
     templateStore.$patch((state) => {
       state.CountOfAllTemplatesInSpace = res.count;
     });
@@ -187,7 +187,8 @@
       start: 0,
       limit: 1,
     };
-    const res = await getTemplatesWithNoSpecifiedPackage(spaceId.value, currentTemplateSpace.value, params);
+    const res = await getTemplatesWithNoSpecifiedPackage(
+      spaceId.value, projectId.value, currentTemplateSpace.value, params);
     templateStore.$patch((state) => {
       state.countOfTemplatesForNoSpecifiedPackage = res.count;
     });
@@ -200,7 +201,7 @@
       start: 0,
       all: true,
     };
-    const res = await getTemplatePackageList(spaceId.value, currentTemplateSpace.value, params);
+    const res = await getTemplatePackageList(spaceId.value, projectId.value, currentTemplateSpace.value, params);
     packages.value = res.details;
     menuList.value = res.details.map((item: ITemplatePackageItem) => {
       const { id, spec } = item;

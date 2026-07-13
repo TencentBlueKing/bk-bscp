@@ -77,7 +77,7 @@
     configs: ITemplateConfigItem[];
   }
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace, currentPkg } = storeToRefs(useTemplateStore());
   const { t } = useI18n();
 
@@ -168,6 +168,7 @@
       const configIds = selectedConfigs.value.map((item) => item.id);
       await addTemplateToPackage(
         spaceId.value,
+        projectId.value,
         currentTemplateSpace.value,
         configIds,
         [currentPkg.value as number],

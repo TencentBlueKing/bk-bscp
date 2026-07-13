@@ -18,6 +18,7 @@
       <AddConfigs @refresh="refreshConfigList" />
       <BatchOperationButton
         :space-id="spaceId"
+        :project-id="projectId"
         :configs="selectedConfigs"
         :current-template-space="currentTemplateSpace"
         pkg-type="all"
@@ -39,7 +40,7 @@
   import AddConfigs from '../operations/add-configs/add-button.vue';
   import BatchOperationButton from '../operations/batch-operations/batch-operation-btn.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
   const { currentTemplateSpace } = storeToRefs(templateStore);
 
@@ -52,7 +53,7 @@
 
   const getConfigList = (params: ICommonQuery) => {
     console.log('All Config List Loading');
-    return getTemplatesBySpaceId(spaceId.value, currentTemplateSpace.value, params);
+    return getTemplatesBySpaceId(spaceId.value, projectId.value, currentTemplateSpace.value, params);
   };
 
   const refreshConfigList = (createConfig = false) => {

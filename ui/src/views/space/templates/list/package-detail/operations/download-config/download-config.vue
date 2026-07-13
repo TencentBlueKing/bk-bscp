@@ -16,6 +16,7 @@
   const props = withDefaults(
     defineProps<{
       spaceId: string;
+      projectId: string;
       templateSpaceId: number;
       templateId: number;
       theme: string;
@@ -32,7 +33,7 @@
     if (pending.value) return;
     try {
       pending.value = true;
-      const res = await getTemplateVersionsNameByIds(props.spaceId, [props.templateId]);
+      const res = await getTemplateVersionsNameByIds(props.spaceId, props.projectId, [props.templateId]);
       const { template_name, latest_signature, latest_revision_name } = res.details[0];
       const content = await downloadTemplateContent(props.spaceId, props.templateSpaceId, latest_signature, true);
       fileDownload(content, `${template_name}_${latest_revision_name}`);

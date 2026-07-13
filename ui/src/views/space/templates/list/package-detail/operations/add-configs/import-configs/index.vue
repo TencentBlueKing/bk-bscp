@@ -126,7 +126,7 @@
   const templateStore = useTemplateStore();
 
   const emits = defineEmits(['update:show', 'added']);
-  const { spaceId, spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { spaceId, spaceFeatureFlags, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace } = storeToRefs(useTemplateStore());
   const isShow = ref(false);
   const isFormChange = ref(false);
@@ -207,6 +207,7 @@
     try {
       const res = await importTemplateBatchAdd(
         spaceId.value,
+        projectId.value,
         currentTemplateSpace.value,
         [...existConfigList.value, ...nonExistConfigList.value],
         pkgIds[0] === 0 ? [] : pkgIds,

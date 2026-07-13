@@ -73,7 +73,7 @@
     appNames: string;
   }
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace } = storeToRefs(useTemplateStore());
   const { t } = useI18n();
 
@@ -112,7 +112,11 @@
 
   const getCitedData = async () => {
     loading.value = true;
-    const citedPkgsRes = await getPackagesByTemplateIds(spaceId.value, currentTemplateSpace.value, [props.id]);
+    const citedPkgsRes = await getPackagesByTemplateIds(
+      spaceId.value,
+      projectId.value,
+      currentTemplateSpace.value,
+      [props.id]);
     if (citedPkgsRes.details.length === 1) {
       const pkgs = citedPkgsRes.details[0].map((item) => item.template_set_id);
       const params = {
@@ -122,6 +126,7 @@
       let list: ICitedItem[] = [];
       const citedAppsRes = await getUnNamedVersionAppsBoundByPackages(
         spaceId.value,
+        projectId.value,
         currentTemplateSpace.value,
         pkgs,
         params,
@@ -189,6 +194,7 @@
       pending.value = true;
       await moveOutTemplateFromPackage(
         spaceId.value,
+        projectId.value,
         currentTemplateSpace.value,
         [props.id],
         selectedPkgs.value,
