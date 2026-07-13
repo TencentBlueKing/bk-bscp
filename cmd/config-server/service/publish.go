@@ -282,9 +282,11 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbcs.Gener
 
 	// 创建版本前验证非模板配置和模板配置是否存在冲突
 	ci, err := s.ListConfigItems(grpcKit.RpcCtx(), &pbcs.ListConfigItemsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
-		All:   true,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		All:       true,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedProjectID(req.EnvId),
 	})
 	if err != nil {
 		return nil, err

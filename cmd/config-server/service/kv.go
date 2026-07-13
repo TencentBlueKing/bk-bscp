@@ -208,6 +208,8 @@ func (s *Service) DeleteKv(ctx context.Context, req *pbcs.DeleteKvReq) (*pbcs.De
 			BizId: req.BizId,
 			AppId: req.AppId,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	if _, err := s.client.DS.DeleteKv(grpcKit.RpcCtx(), r); err != nil {
 		logs.Errorf("delete kv failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -235,9 +237,11 @@ func (s *Service) BatchDeleteKv(ctx context.Context, req *pbcs.BatchDeleteAppRes
 	ids = req.GetIds()
 	if req.ExclusionOperation {
 		result, err := s.client.DS.KvFetchIDsExcluding(grpcKit.RpcCtx(), &pbds.KvFetchIDsExcludingReq{
-			BizId: req.BizId,
-			AppId: req.AppId,
-			Ids:   req.GetIds(),
+			BizId:     req.BizId,
+			AppId:     req.AppId,
+			Ids:       req.GetIds(),
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+			EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 		})
 		if err != nil {
 			return nil, err
@@ -265,6 +269,8 @@ func (s *Service) BatchDeleteKv(ctx context.Context, req *pbcs.BatchDeleteAppRes
 					BizId: req.BizId,
 					AppId: req.AppId,
 				},
+				ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+				EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 			}
 			if _, err := s.client.DS.DeleteKv(egCtx, r); err != nil {
 				logs.Errorf("delete kv failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -445,6 +451,8 @@ func (s *Service) CompareKvConflicts(ctx context.Context, req *pbcs.CompareKvCon
 		All:        true,
 		WithStatus: true,
 		Status:     []string{constant.FileStateAdd, constant.FileStateRevise, constant.FileStateUnchange},
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		logs.Errorf("list kv failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -457,6 +465,8 @@ func (s *Service) CompareKvConflicts(ctx context.Context, req *pbcs.CompareKvCon
 		AppId:     req.OtherAppId,
 		ReleaseId: req.ReleaseId,
 		All:       true,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		logs.Errorf("list released kv failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -890,12 +900,14 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearE
 	}
 
 	resp, err := s.client.DS.FindNearExpiryCertKvs(kit.RpcCtx(), &pbds.FindNearExpiryCertKvsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
-		All:   req.All,
-		Start: req.Start,
-		Limit: req.Limit,
-		Days:  req.Days,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		All:       req.All,
+		Start:     req.Start,
+		Limit:     req.Limit,
+		Days:      req.Days,
+		ProjectId: kit.ResolvedProjectID(req.ProjectId),
+		EnvId:     kit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		return nil, err

@@ -507,14 +507,14 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 
 		// Note: need to change batch operator to query config item and it's commit.
 		// query app's all config items.
-		cfgItems, e := s.getAppConfigItems(grpcKit)
+		cfgItems, e := s.getAppConfigItems(grpcKit, req.ProjectId, req.EnvId, req.AppId)
 		if e != nil {
 			logs.Errorf("query app config item list failed, err: %v, rid: %s", e, grpcKit.Rid)
 			return nil, e
 		}
 
 		// get app template revisions which are template config items
-		tmplRevisions, e := s.getAppTmplRevisions(grpcKit)
+		tmplRevisions, e := s.getAppTmplRevisions(grpcKit, req.AppId)
 		if e != nil {
 			logs.Errorf("get app template revisions failed, err: %v, rid: %s", e, grpcKit.Rid)
 			return nil, e

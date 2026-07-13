@@ -36,8 +36,7 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbds.Extract
 	*pbds.ExtractAppTmplVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	// TODO: 待处理
-	tmplRevisions, cis, err := s.getAllAppCIs(kt)
+	tmplRevisions, cis, err := s.getAllAppCIs(kt, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		logs.Errorf("get all app config items failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -60,8 +59,7 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbds.Extract
 func (s *Service) GetAppTmplVariableRefs(ctx context.Context, req *pbds.GetAppTmplVariableRefsReq) (
 	*pbds.GetAppTmplVariableRefsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
-	// TODO: 待处理
-	tmplRevisions, cis, err := s.getAllAppCIs(kt)
+	tmplRevisions, cis, err := s.getAllAppCIs(kt, req.ProjectId, req.EnvId, req.AppId)
 	if err != nil {
 		logs.Errorf("get all app config items failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -80,8 +78,7 @@ func (s *Service) GetAppTmplVariableRefs(ctx context.Context, req *pbds.GetAppTm
 
 // GetReleasedAppTmplVariableRefs get released app template variable references.
 // the variables come from template and non-template config items
-func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context,
-	req *pbds.GetReleasedAppTmplVariableRefsReq) (
+func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context, req *pbds.GetReleasedAppTmplVariableRefsReq) (
 	*pbds.GetReleasedAppTmplVariableRefsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -259,10 +256,15 @@ func (s *Service) ListAppTmplVariables(ctx context.Context, req *pbds.ListAppTmp
 	*pbds.ListAppTmplVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	projectID := kt.ResolvedProjectID(req.ProjectId)
+	envId := kt.ResolvedEnvID(req.EnvId)
+
 	// extract all variables for current app
 	extractRep, err := s.ExtractAppTmplVariables(ctx, &pbds.ExtractAppTmplVariablesReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: projectID,
+		EnvId:     envId,
 	})
 	if err != nil {
 		logs.Errorf("extract app template variables failed, err: %v, rid: %s", err, kt.Rid)
@@ -287,7 +289,7 @@ func (s *Service) ListAppTmplVariables(ctx context.Context, req *pbds.ListAppTmp
 	}
 
 	// get biz template variables
-	bizVars, _, err := s.dao.TemplateVariable().List(kt, req.BizId, nil, &types.BasePage{All: true})
+	bizVars, _, err := s.dao.TemplateVariable().List(kt, req.BizId, projectID, nil, &types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list template variables failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

@@ -45,15 +45,18 @@ import (
 func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq) (*pbds.CreateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
+	bizID := req.Attachment.BizId
 	projectID := grpcKit.ResolvedProjectID(req.ProjectId)
+	envID := grpcKit.ResolvedEnvID(req.EnvId)
+	appID := req.Attachment.AppId
 
-	app, err := s.dao.App().GetByID(grpcKit, req.Attachment.AppId)
+	app, err := s.dao.App().GetByID(grpcKit, appID)
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
 
-	if _, e := s.dao.Release().GetByName(grpcKit, req.Attachment.BizId, req.Attachment.AppId, req.Spec.Name); e == nil {
+	if _, e := s.dao.Release().GetByName(grpcKit, bizID, appID, req.Spec.Name); e == nil {
 		return nil, fmt.Errorf("release name %s already exists", req.Spec.Name)
 	}
 	// begin transaction to create release and released config item.
@@ -84,7 +87,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 	}
 
 	// 2. create released hook.
-	pre, err := s.dao.ReleasedHook().Get(grpcKit, req.Attachment.BizId, req.Attachment.AppId, 0, table.PreHook)
+	pre, err := s.dao.ReleasedHook().Get(grpcKit, bizID, appID, 0, table.PreHook)
 	if err == nil {
 		pre.ID = 0
 		pre.ReleaseID = release.ID
@@ -97,7 +100,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		return nil, err
 	}
 
-	post, err := s.dao.ReleasedHook().Get(grpcKit, req.Attachment.BizId, req.Attachment.AppId, 0, table.PostHook)
+	post, err := s.dao.ReleasedHook().Get(grpcKit, bizID, appID, 0, table.PostHook)
 	if err == nil {
 		post.ID = 0
 		post.ReleaseID = release.ID
@@ -112,7 +115,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 
 	switch app.Spec.ConfigType {
 	case table.File:
-		_, conflictNums, _, errC := s.checkNonTmpAndTmpConflicts(grpcKit, req.Attachment.BizId,
+		_, conflictNums, _, errC := s.checkNonTmpAndTmpConflicts(grpcKit, bizID,
 			req.Attachment.AppId, []string{}, 0)
 		if errC != nil {
 			return nil, errC
@@ -123,14 +126,14 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		}
 		// Note: need to change batch operator to query config item and its commit.
 		// get app's all config items.
-		cis, fErr := s.getAppConfigItems(grpcKit)
+		cis, fErr := s.getAppConfigItems(grpcKit, projectID, envID, appID)
 		if fErr != nil {
 			logs.Errorf("get app's all config items failed, err: %v, rid: %s", fErr, grpcKit.Rid)
 			return nil, fErr
 		}
 
 		// get app template revisions which are template config items
-		tmplRevisions, fErr := s.getAppTmplRevisions(grpcKit)
+		tmplRevisions, fErr := s.getAppTmplRevisions(grpcKit, appID)
 		if fErr != nil {
 			logs.Errorf("get app template revisions failed, err: %v, rid: %s", fErr, grpcKit.Rid)
 			return nil, fErr
@@ -148,7 +151,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 			return nil, err
 		}
 	case table.KV:
-		expirationNumber, errC := s.checkForExpiredCertificates(grpcKit, req.Attachment.BizId, req.Attachment.AppId)
+		expirationNumber, errC := s.checkForExpiredCertificates(grpcKit, bizID, appID)
 		if errC != nil {
 			logs.Errorf("check for expired certificates failed, err: %v, rid: %s", errC, grpcKit.Rid)
 			return nil, errC
@@ -158,7 +161,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 			return nil, errors.New(i18n.T(grpcKit, "create release failed there is a certificate expiration exists"))
 		}
 
-		if err = s.doKvOperations(grpcKit, tx, req.Attachment.AppId, req.Attachment.BizId, release.ID); err != nil {
+		if err = s.doKvOperations(grpcKit, tx, appID, bizID, release.ID); err != nil {
 			logs.Errorf("do kv action for create release failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
@@ -221,7 +224,7 @@ func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.Template
 		return err
 	}
 
-	usedVars, renderKV, err := s.getRenderedVars(kt, allVars, inputVarMap)
+	usedVars, renderKV, err := s.getRenderedVars(kt, projectID, allVars, inputVarMap)
 	if err != nil {
 		logs.Errorf("get rendered variables failed, err: %v, rid: %s", err, kt.Rid)
 		return err
@@ -319,10 +322,10 @@ func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.Template
 	return nil
 }
 
-func (s *Service) getRenderedVars(kt *kit.Kit, allVars []string, inputVarMap map[string]*table.TemplateVariableSpec) (
+func (s *Service) getRenderedVars(kt *kit.Kit, projectID uint32, allVars []string, inputVarMap map[string]*table.TemplateVariableSpec) (
 	[]*table.TemplateVariableSpec, map[string]interface{}, error) {
 	// get biz template variables
-	bizVars, _, err := s.dao.TemplateVariable().List(kt, kt.BizID, nil, &types.BasePage{All: true})
+	bizVars, _, err := s.dao.TemplateVariable().List(kt, kt.BizID, projectID, nil, &types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list template variables failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err

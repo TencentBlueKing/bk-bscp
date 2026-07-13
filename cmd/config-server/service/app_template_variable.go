@@ -38,8 +38,10 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbcs.Extract
 	}
 
 	r := &pbds.ExtractAppTmplVariablesReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.ExtractAppTmplVariables(grpcKit.RpcCtx(), r)
@@ -68,8 +70,10 @@ func (s *Service) GetAppTmplVariableRefs(ctx context.Context, req *pbcs.GetAppTm
 	}
 
 	r := &pbds.GetAppTmplVariableRefsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.GetAppTmplVariableRefs(grpcKit.RpcCtx(), r)
@@ -105,6 +109,8 @@ func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context, req *pbcs.
 		BizId:     req.BizId,
 		AppId:     req.AppId,
 		ReleaseId: req.ReleaseId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.GetReleasedAppTmplVariableRefs(grpcKit.RpcCtx(), r)
@@ -133,8 +139,10 @@ func (s *Service) ListAppTmplVariables(ctx context.Context, req *pbcs.ListAppTmp
 	}
 
 	r := &pbds.ListAppTmplVariablesReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListAppTmplVariables(grpcKit.RpcCtx(), r)
@@ -170,6 +178,8 @@ func (s *Service) ListReleasedAppTmplVariables(ctx context.Context, req *pbcs.Li
 		BizId:     req.BizId,
 		AppId:     req.AppId,
 		ReleaseId: req.ReleaseId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.ListReleasedAppTmplVariables(grpcKit.RpcCtx(), r)
@@ -205,6 +215,8 @@ func (s *Service) UpdateAppTmplVariables(ctx context.Context, req *pbcs.UpdateAp
 		Spec: &pbatv.AppTemplateVariableSpec{
 			Variables: req.Variables,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	_, err := s.client.DS.UpdateAppTmplVariables(grpcKit.RpcCtx(), r)

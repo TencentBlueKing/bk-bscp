@@ -213,6 +213,7 @@ service Data {
   rpc TemplateVariableFetchIDsExcluding(TemplateVariableFetchIDsExcludingReq)
       returns (TemplateVariableFetchIDsExcludingResp) {}
   rpc ImportTemplateVariables(ImportTemplateVariablesReq) returns (ImportTemplateVariablesResp) {}
+  rpc GetTemplateVariableByID(GetTemplateVariableByIDReq) returns (GetTemplateVariableByIDResp) {}
 
   // group related interface.
   rpc CreateGroup(CreateGroupReq) returns (CreateResp) {}
@@ -1396,8 +1397,8 @@ message ListTemplateRevisionsByIDsResp {
 message ListTmplRevisionNamesByTmplIDsReq {
   uint32 biz_id = 1;
   repeated uint32 template_ids = 2;
+  uint32 project_id = 3;
 }
-
 message ListTmplRevisionNamesByTmplIDsResp {
   repeated pbtr.TemplateRevisionNamesDetail details = 1;
 }
@@ -1468,6 +1469,7 @@ message ListTmplSetsOfBizReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListTmplSetsOfBizResp {
@@ -1477,6 +1479,8 @@ message ListTmplSetsOfBizResp {
 message CreateAppTemplateBindingReq {
   pbatb.AppTemplateBindingAttachment attachment = 1;
   pbatb.AppTemplateBindingSpec spec = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppTemplateBindingsReq {
@@ -1497,11 +1501,15 @@ message UpdateAppTemplateBindingReq {
   uint32 id = 1;
   pbatb.AppTemplateBindingAttachment attachment = 2;
   pbatb.AppTemplateBindingSpec spec = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message DeleteAppTemplateBindingReq {
   uint32 id = 1;
   pbatb.AppTemplateBindingAttachment attachment = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppBoundTmplRevisionsReq {
@@ -1551,6 +1559,8 @@ message GetReleasedAppBoundTmplRevisionResp {
 message CheckAppTemplateBindingReq {
   pbatb.AppTemplateBindingAttachment attachment = 1;
   pbatb.AppTemplateBindingSpec spec = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message CheckAppTemplateBindingResp {
@@ -1582,6 +1592,8 @@ message ImportFromTemplateSetToAppReq {
 message ExtractAppTmplVariablesReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ExtractAppTmplVariablesResp {
@@ -1591,6 +1603,8 @@ message ExtractAppTmplVariablesResp {
 message GetAppTmplVariableRefsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetAppTmplVariableRefsResp {
@@ -1601,6 +1615,8 @@ message GetReleasedAppTmplVariableRefsReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message GetReleasedAppTmplVariableRefsResp {
@@ -1610,11 +1626,15 @@ message GetReleasedAppTmplVariableRefsResp {
 message UpdateAppTmplVariablesReq {
   pbatv.AppTemplateVariableAttachment attachment = 1;
   pbatv.AppTemplateVariableSpec spec = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppTmplVariablesReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message ListAppTmplVariablesResp {
@@ -1625,6 +1645,8 @@ message ListReleasedAppTmplVariablesReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message ListReleasedAppTmplVariablesResp {
@@ -1635,6 +1657,7 @@ message ListTmplBoundCountsReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
   repeated uint32 template_ids = 3;
+  uint32 project_id = 4;
 }
 
 message ListTmplBoundCountsResp {
@@ -1646,6 +1669,7 @@ message ListTmplRevisionBoundCountsReq {
   uint32 template_space_id = 2;
   uint32 template_id = 3;
   repeated uint32 template_revision_ids = 4;
+  uint32 project_id = 5;
 }
 
 message ListTmplRevisionBoundCountsResp {
@@ -1656,6 +1680,7 @@ message ListTmplSetBoundCountsReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
   repeated uint32 template_set_ids = 3;
+  uint32 project_id = 4;
 }
 
 message ListTmplSetBoundCountsResp {
@@ -1703,8 +1728,8 @@ message ListTmplBoundTmplSetsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
-
 message ListTmplBoundTmplSetsResp {
   uint32 count = 1;
   repeated pbtbr.TemplateBoundTemplateSetDetail details = 2;
@@ -1717,6 +1742,7 @@ message ListMultiTmplBoundTmplSetsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
 
 message ListMultiTmplBoundTmplSetsResp {
@@ -1824,8 +1850,9 @@ message RemoveAppBoundTmplSetReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 template_set_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
-
 message CheckTemplateSetReferencesAppsReq {
   message Item {
     uint32 id = 1;
@@ -1860,6 +1887,7 @@ message CreateTemplateVariableReq {
 message ImportTemplateVariablesReq {
   uint32 biz_id = 1;
   repeated pbtv.TemplateVariableSpec specs = 2;
+  uint32 project_id = 3;
 }
 
 message ImportTemplateVariablesResp {
@@ -1875,6 +1903,7 @@ message ListTemplateVariablesReq {
   uint32 limit = 5;
   bool all = 6;
   repeated uint32 top_ids = 7;
+  uint32 project_id = 8;
 }
 
 message ListTemplateVariablesResp {
@@ -1896,10 +1925,23 @@ message DeleteTemplateVariableReq {
 message TemplateVariableFetchIDsExcludingReq {
   uint32 biz_id = 1;
   repeated uint32 ids = 2;
+  uint32 project_id = 3;
 }
 
 message TemplateVariableFetchIDsExcludingResp {
   repeated uint32 ids = 1;
+}
+
+message GetTemplateVariableByIDReq {
+  uint32 biz_id = 1;
+  uint32 id = 2;
+  uint32 project_id = 3;
+}
+
+message GetTemplateVariableByIDResp {
+  uint32 code = 1;
+  string message = 2;
+  pbtv.TemplateVariable data = 3;
 }
 
 message CreateGroupReq {
@@ -2219,6 +2261,8 @@ message DeleteKvReq {
   uint32 id = 1;
   pbkv.KvSpec spec = 2;
   pbkv.KvAttachment attachment = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message BatchUpsertKvsReq {
@@ -2458,6 +2502,8 @@ message CompareConfigItemConflictsResp {
 message GetTemplateAndNonTemplateCICountReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
+  uint32 env_id = 4;
 }
 
 message GetTemplateAndNonTemplateCICountResp {

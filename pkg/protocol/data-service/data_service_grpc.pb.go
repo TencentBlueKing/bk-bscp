@@ -161,6 +161,7 @@ const (
 	Data_DeleteTemplateVariable_FullMethodName            = "/pbds.Data/DeleteTemplateVariable"
 	Data_TemplateVariableFetchIDsExcluding_FullMethodName = "/pbds.Data/TemplateVariableFetchIDsExcluding"
 	Data_ImportTemplateVariables_FullMethodName           = "/pbds.Data/ImportTemplateVariables"
+	Data_GetTemplateVariableByID_FullMethodName           = "/pbds.Data/GetTemplateVariableByID"
 	Data_CreateGroup_FullMethodName                       = "/pbds.Data/CreateGroup"
 	Data_ListAllGroups_FullMethodName                     = "/pbds.Data/ListAllGroups"
 	Data_ListAppGroups_FullMethodName                     = "/pbds.Data/ListAppGroups"
@@ -419,6 +420,7 @@ type DataClient interface {
 	DeleteTemplateVariable(ctx context.Context, in *DeleteTemplateVariableReq, opts ...grpc.CallOption) (*base.EmptyResp, error)
 	TemplateVariableFetchIDsExcluding(ctx context.Context, in *TemplateVariableFetchIDsExcludingReq, opts ...grpc.CallOption) (*TemplateVariableFetchIDsExcludingResp, error)
 	ImportTemplateVariables(ctx context.Context, in *ImportTemplateVariablesReq, opts ...grpc.CallOption) (*ImportTemplateVariablesResp, error)
+	GetTemplateVariableByID(ctx context.Context, in *GetTemplateVariableByIDReq, opts ...grpc.CallOption) (*GetTemplateVariableByIDResp, error)
 	// group related interface.
 	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...grpc.CallOption) (*CreateResp, error)
 	ListAllGroups(ctx context.Context, in *ListAllGroupsReq, opts ...grpc.CallOption) (*ListAllGroupsResp, error)
@@ -1742,6 +1744,15 @@ func (c *dataClient) ImportTemplateVariables(ctx context.Context, in *ImportTemp
 	return out, nil
 }
 
+func (c *dataClient) GetTemplateVariableByID(ctx context.Context, in *GetTemplateVariableByIDReq, opts ...grpc.CallOption) (*GetTemplateVariableByIDResp, error) {
+	out := new(GetTemplateVariableByIDResp)
+	err := c.cc.Invoke(ctx, Data_GetTemplateVariableByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...grpc.CallOption) (*CreateResp, error) {
 	out := new(CreateResp)
 	err := c.cc.Invoke(ctx, Data_CreateGroup_FullMethodName, in, out, opts...)
@@ -2838,6 +2849,7 @@ type DataServer interface {
 	DeleteTemplateVariable(context.Context, *DeleteTemplateVariableReq) (*base.EmptyResp, error)
 	TemplateVariableFetchIDsExcluding(context.Context, *TemplateVariableFetchIDsExcludingReq) (*TemplateVariableFetchIDsExcludingResp, error)
 	ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error)
+	GetTemplateVariableByID(context.Context, *GetTemplateVariableByIDReq) (*GetTemplateVariableByIDResp, error)
 	// group related interface.
 	CreateGroup(context.Context, *CreateGroupReq) (*CreateResp, error)
 	ListAllGroups(context.Context, *ListAllGroupsReq) (*ListAllGroupsResp, error)
@@ -3382,6 +3394,9 @@ func (UnimplementedDataServer) TemplateVariableFetchIDsExcluding(context.Context
 }
 func (UnimplementedDataServer) ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportTemplateVariables not implemented")
+}
+func (UnimplementedDataServer) GetTemplateVariableByID(context.Context, *GetTemplateVariableByIDReq) (*GetTemplateVariableByIDResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateVariableByID not implemented")
 }
 func (UnimplementedDataServer) CreateGroup(context.Context, *CreateGroupReq) (*CreateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateGroup not implemented")
@@ -6032,6 +6047,24 @@ func _Data_ImportTemplateVariables_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_GetTemplateVariableByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTemplateVariableByIDReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetTemplateVariableByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetTemplateVariableByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetTemplateVariableByID(ctx, req.(*GetTemplateVariableByIDReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateGroupReq)
 	if err := dec(in); err != nil {
@@ -8444,6 +8477,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ImportTemplateVariables",
 			Handler:    _Data_ImportTemplateVariables_Handler,
+		},
+		{
+			MethodName: "GetTemplateVariableByID",
+			Handler:    _Data_GetTemplateVariableByID_Handler,
 		},
 		{
 			MethodName: "CreateGroup",

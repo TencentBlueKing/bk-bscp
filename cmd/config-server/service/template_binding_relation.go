@@ -52,6 +52,7 @@ func (s *Service) ListTmplBoundCounts(ctx context.Context, req *pbcs.ListTmplBou
 		BizId:           req.BizId,
 		TemplateSpaceId: req.TemplateSpaceId,
 		TemplateIds:     req.TemplateIds,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplBoundCounts(grpcKit.RpcCtx(), r)
@@ -94,6 +95,7 @@ func (s *Service) ListTmplRevisionBoundCounts(ctx context.Context, req *pbcs.Lis
 		TemplateSpaceId:     req.TemplateSpaceId,
 		TemplateId:          req.TemplateId,
 		TemplateRevisionIds: req.TemplateRevisionIds,
+		ProjectId:           grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplRevisionBoundCounts(grpcKit.RpcCtx(), r)
@@ -135,6 +137,7 @@ func (s *Service) ListTmplSetBoundCounts(ctx context.Context, req *pbcs.ListTmpl
 		BizId:           req.BizId,
 		TemplateSpaceId: req.TemplateSpaceId,
 		TemplateSetIds:  req.TemplateSetIds,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplSetBoundCounts(grpcKit.RpcCtx(), r)
@@ -246,6 +249,7 @@ func (s *Service) ListTmplBoundTmplSets(ctx context.Context, req *pbcs.ListTmplB
 		Start:           req.Start,
 		Limit:           req.Limit,
 		All:             req.All,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplBoundTmplSets(grpcKit.RpcCtx(), r)
@@ -286,6 +290,7 @@ func (s *Service) ListMultiTmplBoundTmplSets(ctx context.Context, req *pbcs.List
 		Start:           req.Start,
 		Limit:           req.Limit,
 		All:             req.All,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListMultiTmplBoundTmplSets(grpcKit.RpcCtx(), r)

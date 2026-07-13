@@ -188,8 +188,7 @@ func (s *Service) ListTemplateRevisionsByIDs(ctx context.Context, req *pbds.List
 }
 
 // ListTmplRevisionNamesByTmplIDs list template revision by ids.
-func (s *Service) ListTmplRevisionNamesByTmplIDs(ctx context.Context,
-	req *pbds.ListTmplRevisionNamesByTmplIDsReq) (
+func (s *Service) ListTmplRevisionNamesByTmplIDs(ctx context.Context, req *pbds.ListTmplRevisionNamesByTmplIDsReq) (
 	*pbds.ListTmplRevisionNamesByTmplIDsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 

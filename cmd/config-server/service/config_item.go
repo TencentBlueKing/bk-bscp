@@ -53,6 +53,8 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbcs.CreateConfigIt
 	}
 	// 2. insert config item, content and commit to db.
 	cciReq := &pbds.CreateConfigItemReq{
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 		ConfigItemAttachment: &pbci.ConfigItemAttachment{
 			BizId: req.BizId,
 			AppId: req.AppId,
@@ -622,6 +624,8 @@ func (s *Service) UnDeleteConfigItem(ctx context.Context, req *pbcs.UnDeleteConf
 			BizId: req.BizId,
 			AppId: req.AppId,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		return nil, err
@@ -744,8 +748,10 @@ func (s *Service) GetTemplateAndNonTemplateCICount(ctx context.Context, req *pbc
 
 	result, err := s.client.DS.GetTemplateAndNonTemplateCICount(grpcKit.RpcCtx(),
 		&pbds.GetTemplateAndNonTemplateCICountReq{
-			BizId: req.GetBizId(),
-			AppId: req.GetAppId(),
+			BizId:     req.GetBizId(),
+			AppId:     req.GetAppId(),
+			ProjectId: grpcKit.ResolvedProjectID(req.GetProjectId()),
+			EnvId:     grpcKit.ResolvedEnvID(req.GetEnvId()),
 		})
 	if err != nil {
 		return nil, err
@@ -775,6 +781,8 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbcs.RemoveApp
 		BizId:         req.BizId,
 		AppId:         req.AppId,
 		TemplateSetId: req.TemplateSetId,
+		ProjectId:     kit.ResolvedProjectID(req.ProjectId),
+		EnvId:         kit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		return nil, err

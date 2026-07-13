@@ -33,6 +33,7 @@ func newTemplateVariable(db *gorm.DB, opts ...gen.DOOption) templateVariable {
 	_templateVariable.DefaultVal = field.NewString(tableName, "default_val")
 	_templateVariable.Memo = field.NewString(tableName, "memo")
 	_templateVariable.BizID = field.NewUint32(tableName, "biz_id")
+	_templateVariable.ProjectID = field.NewUint32(tableName, "project_id")
 	_templateVariable.TenantID = field.NewString(tableName, "tenant_id")
 	_templateVariable.Creator = field.NewString(tableName, "creator")
 	_templateVariable.Reviser = field.NewString(tableName, "reviser")
@@ -54,6 +55,7 @@ type templateVariable struct {
 	DefaultVal field.String
 	Memo       field.String
 	BizID      field.Uint32
+	ProjectID  field.Uint32
 	TenantID   field.String
 	Creator    field.String
 	Reviser    field.String
@@ -81,6 +83,7 @@ func (t *templateVariable) updateTableName(table string) *templateVariable {
 	t.DefaultVal = field.NewString(table, "default_val")
 	t.Memo = field.NewString(table, "memo")
 	t.BizID = field.NewUint32(table, "biz_id")
+	t.ProjectID = field.NewUint32(table, "project_id")
 	t.TenantID = field.NewString(table, "tenant_id")
 	t.Creator = field.NewString(table, "creator")
 	t.Reviser = field.NewString(table, "reviser")
@@ -114,13 +117,14 @@ func (t *templateVariable) GetFieldByName(fieldName string) (field.OrderExpr, bo
 }
 
 func (t *templateVariable) fillFieldMap() {
-	t.fieldMap = make(map[string]field.Expr, 11)
+	t.fieldMap = make(map[string]field.Expr, 12)
 	t.fieldMap["id"] = t.ID
 	t.fieldMap["name"] = t.Name
 	t.fieldMap["type"] = t.Type
 	t.fieldMap["default_val"] = t.DefaultVal
 	t.fieldMap["memo"] = t.Memo
 	t.fieldMap["biz_id"] = t.BizID
+	t.fieldMap["project_id"] = t.ProjectID
 	t.fieldMap["tenant_id"] = t.TenantID
 	t.fieldMap["creator"] = t.Creator
 	t.fieldMap["reviser"] = t.Reviser

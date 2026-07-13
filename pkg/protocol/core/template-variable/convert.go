@@ -85,7 +85,8 @@ func (m *TemplateVariableAttachment) TemplateVariableAttachment() *table.Templat
 	}
 
 	return &table.TemplateVariableAttachment{
-		BizID: m.BizId,
+		BizID:     m.BizId,
+		ProjectID: m.ProjectId,
 	}
 }
 
@@ -96,7 +97,8 @@ func PbTemplateVariableAttachment(at *table.TemplateVariableAttachment) *Templat
 	}
 
 	return &TemplateVariableAttachment{
-		BizId: at.BizID,
+		BizId:     at.BizID,
+		ProjectId: at.ProjectID,
 	}
 }
 

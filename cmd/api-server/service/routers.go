@@ -144,6 +144,14 @@ func (p *proxy) routers() http.Handler {
 						r.Mount("/", p.cfgSvrMux)
 					})
 				})
+				// 模板变量相关
+				r.Route("/template_variables", func(r chi.Router) {
+					r.Mount("/", p.cfgSvrMux)
+					r.Route("/{template_variable_id}", func(r chi.Router) {
+						r.Use(p.TemplateVariableProjectVerified) // 校验 TemplateVariable 归属于该项目
+						r.Mount("/", p.cfgSvrMux)
+					})
+				})
 			})
 		})
 		r.Mount("/", p.cfgSvrMux)
@@ -318,12 +326,30 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/biz/{biz_id}/variables/export", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Get("/", p.varService.ExportGlobalVariables)
+	})
+	// 导出全局变量v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/variables/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
 		r.Get("/", p.varService.ExportGlobalVariables)
 	})
 	// 导出未命名版本服务变量
 	r.Route("/api/v1/config/biz/{biz_id}/apps/{app_id}/variables/export", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.authorizer.AppVerified)
+		r.Get("/", p.varService.ExportAppVariables)
+	})
+	// 导出未命名版本服务变量v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/variables/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.authorizer.VerifyEnvExists)
 		r.Use(p.authorizer.AppVerified)
 		r.Get("/", p.varService.ExportAppVariables)
 	})
@@ -331,6 +357,17 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/variables/export", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.authorizer.AppVerified)
+		r.Get("/", p.varService.ExportReleasedAppVariables)
+	})
+
+	// 导出已命名版本服务变量v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/variables/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.authorizer.VerifyEnvExists)
 		r.Use(p.authorizer.AppVerified)
 		r.Get("/", p.varService.ExportReleasedAppVariables)
 	})
