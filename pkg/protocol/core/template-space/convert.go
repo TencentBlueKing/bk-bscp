@@ -62,7 +62,8 @@ func (m *TemplateSpaceAttachment) TemplateSpaceAttachment() *table.TemplateSpace
 	}
 
 	return &table.TemplateSpaceAttachment{
-		BizID: m.BizId,
+		BizID:     m.BizId,
+		ProjectID: m.ProjectId,
 	}
 }
 
@@ -73,7 +74,8 @@ func PbTemplateSpaceAttachment(at *table.TemplateSpaceAttachment) *TemplateSpace
 	}
 
 	return &TemplateSpaceAttachment{
-		BizId: at.BizID,
+		BizId:     at.BizID,
+		ProjectId: at.ProjectID,
 	}
 }
 

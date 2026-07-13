@@ -84,6 +84,7 @@ const (
 	Config_GetAllBizsOfTmplSpaces_FullMethodName             = "/pbcs.Config/GetAllBizsOfTmplSpaces"
 	Config_CreateDefaultTmplSpace_FullMethodName             = "/pbcs.Config/CreateDefaultTmplSpace"
 	Config_ListTmplSpacesByIDs_FullMethodName                = "/pbcs.Config/ListTmplSpacesByIDs"
+	Config_GetTemplateSpace_FullMethodName                   = "/pbcs.Config/GetTemplateSpace"
 	Config_CreateTemplate_FullMethodName                     = "/pbcs.Config/CreateTemplate"
 	Config_DeleteTemplate_FullMethodName                     = "/pbcs.Config/DeleteTemplate"
 	Config_BatchDeleteTemplate_FullMethodName                = "/pbcs.Config/BatchDeleteTemplate"
@@ -359,7 +360,6 @@ type ConfigClient interface {
 	ListHookReferences(ctx context.Context, in *ListHookReferencesReq, opts ...grpc.CallOption) (*ListHookReferencesResp, error)
 	// 获取被引用的脚本版本配置服务列表
 	ListHookRevisionReferences(ctx context.Context, in *ListHookRevisionReferencesReq, opts ...grpc.CallOption) (*ListHookRevisionReferencesResp, error)
-	// TODO
 	GetReleaseHook(ctx context.Context, in *GetReleaseHookReq, opts ...grpc.CallOption) (*GetReleaseHookResp, error)
 	// 创建模板空间
 	CreateTemplateSpace(ctx context.Context, in *CreateTemplateSpaceReq, opts ...grpc.CallOption) (*CreateTemplateSpaceResp, error)
@@ -374,6 +374,7 @@ type ConfigClient interface {
 	// 创建模板默认空间(仅由系统本身调用)
 	CreateDefaultTmplSpace(ctx context.Context, in *CreateDefaultTmplSpaceReq, opts ...grpc.CallOption) (*CreateDefaultTmplSpaceResp, error)
 	ListTmplSpacesByIDs(ctx context.Context, in *ListTmplSpacesByIDsReq, opts ...grpc.CallOption) (*ListTmplSpacesByIDsResp, error)
+	GetTemplateSpace(ctx context.Context, in *GetTemplateSpaceReq, opts ...grpc.CallOption) (*GetTemplateSpaceResp, error)
 	// 创建模板
 	CreateTemplate(ctx context.Context, in *CreateTemplateReq, opts ...grpc.CallOption) (*CreateTemplateResp, error)
 	// 删除模板
@@ -1227,6 +1228,15 @@ func (c *configClient) CreateDefaultTmplSpace(ctx context.Context, in *CreateDef
 func (c *configClient) ListTmplSpacesByIDs(ctx context.Context, in *ListTmplSpacesByIDsReq, opts ...grpc.CallOption) (*ListTmplSpacesByIDsResp, error) {
 	out := new(ListTmplSpacesByIDsResp)
 	err := c.cc.Invoke(ctx, Config_ListTmplSpacesByIDs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetTemplateSpace(ctx context.Context, in *GetTemplateSpaceReq, opts ...grpc.CallOption) (*GetTemplateSpaceResp, error) {
+	out := new(GetTemplateSpaceResp)
+	err := c.cc.Invoke(ctx, Config_GetTemplateSpace_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2866,7 +2876,6 @@ type ConfigServer interface {
 	ListHookReferences(context.Context, *ListHookReferencesReq) (*ListHookReferencesResp, error)
 	// 获取被引用的脚本版本配置服务列表
 	ListHookRevisionReferences(context.Context, *ListHookRevisionReferencesReq) (*ListHookRevisionReferencesResp, error)
-	// TODO
 	GetReleaseHook(context.Context, *GetReleaseHookReq) (*GetReleaseHookResp, error)
 	// 创建模板空间
 	CreateTemplateSpace(context.Context, *CreateTemplateSpaceReq) (*CreateTemplateSpaceResp, error)
@@ -2881,6 +2890,7 @@ type ConfigServer interface {
 	// 创建模板默认空间(仅由系统本身调用)
 	CreateDefaultTmplSpace(context.Context, *CreateDefaultTmplSpaceReq) (*CreateDefaultTmplSpaceResp, error)
 	ListTmplSpacesByIDs(context.Context, *ListTmplSpacesByIDsReq) (*ListTmplSpacesByIDsResp, error)
+	GetTemplateSpace(context.Context, *GetTemplateSpaceReq) (*GetTemplateSpaceResp, error)
 	// 创建模板
 	CreateTemplate(context.Context, *CreateTemplateReq) (*CreateTemplateResp, error)
 	// 删除模板
@@ -3393,6 +3403,9 @@ func (UnimplementedConfigServer) CreateDefaultTmplSpace(context.Context, *Create
 }
 func (UnimplementedConfigServer) ListTmplSpacesByIDs(context.Context, *ListTmplSpacesByIDsReq) (*ListTmplSpacesByIDsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTmplSpacesByIDs not implemented")
+}
+func (UnimplementedConfigServer) GetTemplateSpace(context.Context, *GetTemplateSpaceReq) (*GetTemplateSpaceResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateSpace not implemented")
 }
 func (UnimplementedConfigServer) CreateTemplate(context.Context, *CreateTemplateReq) (*CreateTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTemplate not implemented")
@@ -4938,6 +4951,24 @@ func _Config_ListTmplSpacesByIDs_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServer).ListTmplSpacesByIDs(ctx, req.(*ListTmplSpacesByIDsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetTemplateSpace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTemplateSpaceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetTemplateSpace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetTemplateSpace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetTemplateSpace(ctx, req.(*GetTemplateSpaceReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8236,6 +8267,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTmplSpacesByIDs",
 			Handler:    _Config_ListTmplSpacesByIDs_Handler,
+		},
+		{
+			MethodName: "GetTemplateSpace",
+			Handler:    _Config_GetTemplateSpace_Handler,
 		},
 		{
 			MethodName: "CreateTemplate",

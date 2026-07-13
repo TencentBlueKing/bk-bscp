@@ -50,7 +50,7 @@ type App interface {
 	// ListAppsByGroupID list apps by group id.
 	ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*table.App, error)
 	// ListAppsByIDs list apps by app ids.
-	ListAppsByIDs(kit *kit.Kit, ids []uint32) ([]*table.App, error)
+	ListAppsByIDs(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]*table.App, error)
 	// DeleteWithTx delete one app instance with transaction.
 	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, app *table.App) error
 	// ListAppMetaForCache list app's basic meta info.
@@ -432,10 +432,10 @@ func (dao *appDao) ListAppsByGroupID(kit *kit.Kit, groupID, bizID uint32) ([]*ta
 }
 
 // ListAppsByIDs list apps by app ids.
-func (dao *appDao) ListAppsByIDs(kit *kit.Kit, ids []uint32) ([]*table.App, error) {
+func (dao *appDao) ListAppsByIDs(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]*table.App, error) {
 	m := dao.genQ.App
 	q := dao.genQ.App.WithContext(kit.Ctx)
-	result, err := q.Where(m.ID.In(ids...)).Find()
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.ID.In(ids...)).Find()
 	if err != nil {
 		return nil, err
 	}

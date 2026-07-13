@@ -372,7 +372,7 @@ func (s *Service) ListTemplateSetBriefInfoByIDs(ctx context.Context, req *pbds.L
 	tmplSpaceIDs = tools.RemoveDuplicates(tmplSpaceIDs)
 
 	// template space details
-	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(kt, tmplSpaceIDs)
+	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(kt, req.BizId, req.ProjectId, tmplSpaceIDs)
 	if err != nil {
 		logs.Errorf("list template spaces failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -427,7 +427,7 @@ func (s *Service) ListTmplSetsOfBiz(ctx context.Context, req *pbds.ListTmplSetsO
 		tmplSpaceIDs = append(tmplSpaceIDs, tmplSpaceID)
 	}
 
-	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(kt, tmplSpaceIDs)
+	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(kt, req.BizId, req.ProjectId, tmplSpaceIDs)
 	if err != nil {
 		logs.Errorf("list template sets of biz failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err

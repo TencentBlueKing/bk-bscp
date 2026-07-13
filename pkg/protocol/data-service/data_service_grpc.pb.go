@@ -94,6 +94,7 @@ const (
 	Data_GetAllBizsOfTmplSpaces_FullMethodName            = "/pbds.Data/GetAllBizsOfTmplSpaces"
 	Data_CreateDefaultTmplSpace_FullMethodName            = "/pbds.Data/CreateDefaultTmplSpace"
 	Data_ListTmplSpacesByIDs_FullMethodName               = "/pbds.Data/ListTmplSpacesByIDs"
+	Data_GetTemplateSpaceByID_FullMethodName              = "/pbds.Data/GetTemplateSpaceByID"
 	Data_CreateTemplate_FullMethodName                    = "/pbds.Data/CreateTemplate"
 	Data_ListTemplates_FullMethodName                     = "/pbds.Data/ListTemplates"
 	Data_UpdateTemplate_FullMethodName                    = "/pbds.Data/UpdateTemplate"
@@ -344,6 +345,7 @@ type DataClient interface {
 	GetAllBizsOfTmplSpaces(ctx context.Context, in *base.EmptyReq, opts ...grpc.CallOption) (*GetAllBizsOfTmplSpacesResp, error)
 	CreateDefaultTmplSpace(ctx context.Context, in *CreateDefaultTmplSpaceReq, opts ...grpc.CallOption) (*CreateResp, error)
 	ListTmplSpacesByIDs(ctx context.Context, in *ListTmplSpacesByIDsReq, opts ...grpc.CallOption) (*ListTmplSpacesByIDsResp, error)
+	GetTemplateSpaceByID(ctx context.Context, in *GetTemplateSpaceByIDReq, opts ...grpc.CallOption) (*GetTemplateSpaceByIDResp, error)
 	// template related interface.
 	CreateTemplate(ctx context.Context, in *CreateTemplateReq, opts ...grpc.CallOption) (*CreateResp, error)
 	ListTemplates(ctx context.Context, in *ListTemplatesReq, opts ...grpc.CallOption) (*ListTemplatesResp, error)
@@ -1131,6 +1133,15 @@ func (c *dataClient) CreateDefaultTmplSpace(ctx context.Context, in *CreateDefau
 func (c *dataClient) ListTmplSpacesByIDs(ctx context.Context, in *ListTmplSpacesByIDsReq, opts ...grpc.CallOption) (*ListTmplSpacesByIDsResp, error) {
 	out := new(ListTmplSpacesByIDsResp)
 	err := c.cc.Invoke(ctx, Data_ListTmplSpacesByIDs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) GetTemplateSpaceByID(ctx context.Context, in *GetTemplateSpaceByIDReq, opts ...grpc.CallOption) (*GetTemplateSpaceByIDResp, error) {
+	out := new(GetTemplateSpaceByIDResp)
+	err := c.cc.Invoke(ctx, Data_GetTemplateSpaceByID_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2753,6 +2764,7 @@ type DataServer interface {
 	GetAllBizsOfTmplSpaces(context.Context, *base.EmptyReq) (*GetAllBizsOfTmplSpacesResp, error)
 	CreateDefaultTmplSpace(context.Context, *CreateDefaultTmplSpaceReq) (*CreateResp, error)
 	ListTmplSpacesByIDs(context.Context, *ListTmplSpacesByIDsReq) (*ListTmplSpacesByIDsResp, error)
+	GetTemplateSpaceByID(context.Context, *GetTemplateSpaceByIDReq) (*GetTemplateSpaceByIDResp, error)
 	// template related interface.
 	CreateTemplate(context.Context, *CreateTemplateReq) (*CreateResp, error)
 	ListTemplates(context.Context, *ListTemplatesReq) (*ListTemplatesResp, error)
@@ -3169,6 +3181,9 @@ func (UnimplementedDataServer) CreateDefaultTmplSpace(context.Context, *CreateDe
 }
 func (UnimplementedDataServer) ListTmplSpacesByIDs(context.Context, *ListTmplSpacesByIDsReq) (*ListTmplSpacesByIDsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTmplSpacesByIDs not implemented")
+}
+func (UnimplementedDataServer) GetTemplateSpaceByID(context.Context, *GetTemplateSpaceByIDReq) (*GetTemplateSpaceByIDResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateSpaceByID not implemented")
 }
 func (UnimplementedDataServer) CreateTemplate(context.Context, *CreateTemplateReq) (*CreateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTemplate not implemented")
@@ -4807,6 +4822,24 @@ func _Data_ListTmplSpacesByIDs_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DataServer).ListTmplSpacesByIDs(ctx, req.(*ListTmplSpacesByIDsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_GetTemplateSpaceByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTemplateSpaceByIDReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).GetTemplateSpaceByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_GetTemplateSpaceByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).GetTemplateSpaceByID(ctx, req.(*GetTemplateSpaceByIDReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8143,6 +8176,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTmplSpacesByIDs",
 			Handler:    _Data_ListTmplSpacesByIDs_Handler,
+		},
+		{
+			MethodName: "GetTemplateSpaceByID",
+			Handler:    _Data_GetTemplateSpaceByID_Handler,
 		},
 		{
 			MethodName: "CreateTemplate",

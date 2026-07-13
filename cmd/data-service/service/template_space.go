@@ -32,7 +32,7 @@ import (
 func (s *Service) CreateTemplateSpace(ctx context.Context, req *pbds.CreateTemplateSpaceReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	if _, err := s.dao.TemplateSpace().GetByUniqueKey(kt, req.Attachment.BizId, req.Spec.Name); err == nil {
+	if _, err := s.dao.TemplateSpace().GetByUniqueKey(kt, req.Attachment.BizId, req.Attachment.ProjectId, req.Spec.Name); err == nil {
 		return nil, fmt.Errorf("template space's same name %s already exists", req.Spec.Name)
 	}
 
@@ -55,8 +55,7 @@ func (s *Service) CreateTemplateSpace(ctx context.Context, req *pbds.CreateTempl
 }
 
 // ListTemplateSpaces list template space.
-func (s *Service) ListTemplateSpaces(ctx context.Context,
-	req *pbds.ListTemplateSpacesReq) (*pbds.ListTemplateSpacesResp, error) {
+func (s *Service) ListTemplateSpaces(ctx context.Context, req *pbds.ListTemplateSpacesReq) (*pbds.ListTemplateSpacesResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
 
@@ -70,7 +69,7 @@ func (s *Service) ListTemplateSpaces(ctx context.Context,
 		return nil, err
 	}
 
-	details, count, err := s.dao.TemplateSpace().List(kt, req.BizId, searcher, opt)
+	details, count, err := s.dao.TemplateSpace().List(kt, req.BizId, req.ProjectId, searcher, opt)
 	if err != nil {
 		logs.Errorf("list template spaces failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -84,8 +83,7 @@ func (s *Service) ListTemplateSpaces(ctx context.Context,
 }
 
 // UpdateTemplateSpace update template space.
-func (s *Service) UpdateTemplateSpace(ctx context.Context,
-	req *pbds.UpdateTemplateSpaceReq) (*pbbase.EmptyResp, error) {
+func (s *Service) UpdateTemplateSpace(ctx context.Context, req *pbds.UpdateTemplateSpaceReq) (*pbbase.EmptyResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
 
@@ -147,7 +145,7 @@ func (s *Service) CreateDefaultTmplSpace(ctx context.Context, req *pbds.CreateDe
 	*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	id, err := s.dao.TemplateSpace().CreateDefault(kt, req.BizId)
+	id, err := s.dao.TemplateSpace().CreateDefault(kt, req.BizId, req.ProjectId)
 	if err != nil {
 		logs.Errorf("create default template space failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -166,7 +164,7 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbds.ListTmplSpa
 		return nil, err
 	}
 
-	details, err := s.dao.TemplateSpace().ListByIDs(kt, req.Ids)
+	details, err := s.dao.TemplateSpace().ListByIDs(kt, req.BizId, req.ProjectId, req.Ids)
 	if err != nil {
 		logs.Errorf("list template spaces failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -178,13 +176,30 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbds.ListTmplSpa
 	return resp, nil
 }
 
+// GetTemplateSpaceByID get template space by id.
+func (s *Service) GetTemplateSpaceByID(ctx context.Context, req *pbds.GetTemplateSpaceByIDReq) (
+	*pbds.GetTemplateSpaceByIDResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	detail, err := s.dao.TemplateSpace().Get(kt, req.BizId, req.ProjectId, req.Id)
+	if err != nil {
+		logs.Errorf("get template space by id %d failed, err: %v, rid: %s", req.Id, err, kt.Rid)
+		return nil, err
+	}
+
+	resp := &pbds.GetTemplateSpaceByIDResp{
+		Data: pbts.PbTemplateSpace(detail),
+	}
+	return resp, nil
+}
+
 // GetLatestTemplateVersionsInSpace implements pbds.DataServer.
 func (s *Service) GetLatestTemplateVersionsInSpace(ctx context.Context, req *pbds.GetLatestTemplateVersionsInSpaceReq) (
 	*pbds.GetLatestTemplateVersionsInSpaceResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
 	// 1. 获取空间名
-	templateSpace, err := s.dao.TemplateSpace().Get(kit, req.BizId, req.TemplateSpaceId)
+	templateSpace, err := s.dao.TemplateSpace().Get(kit, req.BizId, req.ProjectId, req.TemplateSpaceId)
 	if err != nil {
 		return nil, err
 	}

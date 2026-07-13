@@ -738,7 +738,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps:list": {
       "post": {
         "summary": "按 space 查询 app 信息",
         "operationId": "Config_ListAppsBySpaceRest2",
@@ -836,7 +836,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/clone": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps:clone": {
       "post": {
         "summary": "克隆服务",
         "operationId": "Config_CloneApp2",
@@ -2713,7 +2713,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/count": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/config_items/count": {
       "post": {
         "summary": "获取文件型服务配置数量列表",
         "operationId": "Config_ListConfigItemCount2",
@@ -2755,19 +2755,6 @@
             "required": true,
             "type": "integer",
             "format": "int64"
-          },
-          {
-            "name": "appId",
-            "description": "服务ID",
-            "in": "path",
-            "required": true,
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "collectionFormat": "csv",
-            "minItems": 1
           },
           {
             "name": "body",
@@ -5245,7 +5232,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/hooks/batch_delete": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/hooks:batch_delete": {
       "post": {
         "summary": "批量删除脚本",
         "operationId": "Config_BatchDeleteHook2",
@@ -5335,7 +5322,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/hook_tags": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/hooks:tags": {
       "get": {
         "summary": "获取脚本标签列表",
         "operationId": "Config_ListHookTags2",
@@ -6364,7 +6351,6 @@
     },
     "/api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/hooks": {
       "get": {
-        "summary": "TODO",
         "operationId": "Config_GetReleaseHook",
         "responses": {
           "200": {
@@ -6410,6 +6396,78 @@
             "description": "项目ID",
             "in": "query",
             "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks": {
+      "get": {
+        "operationId": "Config_GetReleaseHook2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetReleaseHookResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
             "type": "integer",
             "format": "int64"
           }
@@ -6482,6 +6540,14 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -6528,7 +6594,178 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces": {
+      "get": {
+        "summary": "获取模板空间列表",
+        "operationId": "Config_ListTemplateSpaces2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateSpacesResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "post": {
+        "summary": "创建模板空间",
+        "operationId": "Config_CreateTemplateSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateTemplateSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateTemplateSpaceBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}": {
+      "get": {
+        "operationId": "Config_GetTemplateSpace",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetTemplateSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
       "delete": {
         "summary": "删除模板空间",
         "operationId": "Config_DeleteTemplateSpace",
@@ -6562,6 +6799,14 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -6589,6 +6834,156 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateTemplateSpaceBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}": {
+      "get": {
+        "operationId": "Config_GetTemplateSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetTemplateSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "delete": {
+        "summary": "删除模板空间",
+        "operationId": "Config_DeleteTemplateSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteTemplateSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "summary": "更新模板空间",
+        "operationId": "Config_UpdateTemplateSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateTemplateSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -6672,6 +7067,55 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces:createDefault": {
+      "post": {
+        "summary": "创建模板默认空间(仅由系统本身调用)",
+        "operationId": "Config_CreateDefaultTmplSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateDefaultTmplSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateDefaultTmplSpaceBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/list_by_ids": {
       "post": {
         "operationId": "Config_ListTmplSpacesByIDs",
@@ -6693,6 +7137,54 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTmplSpacesByIDsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/list_by_ids": {
+      "post": {
+        "operationId": "Config_ListTmplSpacesByIDs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplSpacesByIDsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -6769,6 +7261,14 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -6796,6 +7296,133 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateTemplateBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates": {
+      "delete": {
+        "summary": "批量删除模板",
+        "operationId": "Config_BatchDeleteTemplate2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchDeleteTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateIds",
+            "description": "模板文件ID",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "force",
+            "description": "是否强制删除：是=true，否=false",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "exclusionOperation",
+            "description": "是否排除操作：是=true，否=false",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "post": {
+        "summary": "创建模板",
+        "operationId": "Config_CreateTemplate2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -6872,6 +7499,14 @@
             "in": "query",
             "required": false,
             "type": "boolean"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -6899,6 +7534,133 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateTemplateBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}": {
+      "delete": {
+        "summary": "删除模板",
+        "operationId": "Config_DeleteTemplate2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "force",
+            "description": "是否强制：是=true，否=false",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "summary": "更新模板",
+        "operationId": "Config_UpdateTemplate2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateTemplateResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -6983,6 +7745,63 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list": {
+      "post": {
+        "summary": "获取模板列表(全部配置文件)",
+        "operationId": "Config_ListTemplates2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplatesResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplatesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/batch_upsert_templates": {
       "post": {
         "summary": "批量创建或更新模板",
@@ -7005,6 +7824,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertTemplatesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/batch_upsert_templates": {
+      "post": {
+        "summary": "批量创建或更新模板",
+        "operationId": "Config_BatchUpsertTemplates2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertTemplatesResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7089,6 +7965,71 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_set/{templateSetId}/templates/batch_update_templates_permissions": {
+      "post": {
+        "summary": "批量更新模板权限",
+        "operationId": "Config_BatchUpdateTemplatePermissions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpdateTemplatePermissionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpdateTemplatePermissionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/template_set/{templateSetId}/templates/add_to_template_sets": {
       "post": {
         "summary": "添加至模板套餐中",
@@ -7111,6 +8052,71 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigAddTmplsToTmplSetsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_set/{templateSetId}/templates/add_to_template_sets": {
+      "post": {
+        "summary": "添加至模板套餐中",
+        "operationId": "Config_AddTmplsToTmplSets2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsAddTmplsToTmplSetsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7236,6 +8242,55 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/templates/list_by_ids": {
+      "post": {
+        "summary": "按模板ID获取模板列表",
+        "operationId": "Config_ListTemplatesByIDs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplatesByIDsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplatesByIDsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound": {
       "post": {
         "summary": "获取未绑定的模板列表",
@@ -7285,6 +8340,63 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound": {
+      "post": {
+        "summary": "获取未绑定的模板列表",
+        "operationId": "Config_ListTemplatesNotBound2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplatesNotBoundResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplatesNotBoundBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/tuple": {
       "post": {
         "summary": "按模板绝对路径获取模板列表",
@@ -7307,6 +8419,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateByTupleBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/tuple": {
+      "post": {
+        "summary": "按模板绝对路径获取模板列表",
+        "operationId": "Config_ListTemplateByTuple2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateByTupleResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7391,6 +8560,71 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/{templateSetId}/templates": {
+      "post": {
+        "summary": "按模板套餐获取模板列表",
+        "operationId": "Config_ListTmplsOfTmplSet2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplsOfTmplSetResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTmplsOfTmplSetBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_sets/{templateSetId}/template_revisions": {
       "get": {
         "summary": "获取模板套餐下的所有版本列表",
@@ -7413,6 +8647,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_sets/{templateSetId}/template_revisions": {
+      "get": {
+        "summary": "获取模板套餐下的所有版本列表",
+        "operationId": "Config_ListTemplateSetsAndRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateSetsAndRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7544,6 +8835,134 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions": {
+      "post": {
+        "summary": "创建模板版本",
+        "operationId": "Config_CreateTemplateRevision2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateTemplateRevisionResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateTemplateRevisionBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "summary": "更新模板版本",
+        "operationId": "Config_UpdateTemplateRevision2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateTemplateRevisionResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateTemplateRevisionBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list": {
       "post": {
         "summary": "获取模板版本列表",
@@ -7566,6 +8985,71 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list": {
+      "post": {
+        "summary": "获取模板版本列表",
+        "operationId": "Config_ListTemplateRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7642,6 +9126,70 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/templates/{templateId}/template_revisions": {
+      "get": {
+        "summary": "获取模板版本",
+        "operationId": "Config_GetTemplateRevision2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetTemplateRevisionResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "revisionName",
+            "description": "模板文件版本号",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -7671,6 +9219,55 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateRevisionsByIDsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_revisions/list_by_ids": {
+      "post": {
+        "summary": "按模板版本ID获取模板版本列表",
+        "operationId": "Config_ListTemplateRevisionsByIDs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateRevisionsByIDsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7802,6 +9399,14 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -7829,6 +9434,147 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateTemplateSetBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets": {
+      "get": {
+        "summary": "获取模板套餐列表",
+        "operationId": "Config_ListTemplateSets2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateSetsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "post": {
+        "summary": "创建模板套餐",
+        "operationId": "Config_CreateTemplateSet2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateTemplateSetResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -7905,6 +9651,14 @@
             "in": "query",
             "required": false,
             "type": "boolean"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -7932,6 +9686,133 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateTemplateSetBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/{templateSetId}": {
+      "delete": {
+        "summary": "删除模板套餐",
+        "operationId": "Config_DeleteTemplateSet2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteTemplateSetResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "force",
+            "description": "是否强制：是=true，否=false",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "summary": "更新模板套餐",
+        "operationId": "Config_UpdateTemplateSet2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateTemplateSetResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -8006,6 +9887,68 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/latest_template_versions": {
+      "get": {
+        "summary": "获取模板空间下最新的模板版本列表",
+        "operationId": "Config_GetLatestTemplateVersionsInSpace2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetLatestTemplateVersionsInSpaceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -8035,6 +9978,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/apps/{appId}/template_sets": {
+      "get": {
+        "summary": "获取模板套餐列表",
+        "operationId": "Config_ListAppTemplateSets2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppTemplateSetsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -8095,6 +10095,55 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_sets/list_by_ids": {
+      "post": {
+        "summary": "按模板套餐ID获取模板套餐列表",
+        "operationId": "Config_ListTemplateSetsByIDs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateSetsByIDsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateSetsByIDsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_sets/list_all_of_biz": {
       "get": {
         "summary": "按服务ID获取模板套餐列表",
@@ -8117,6 +10166,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_sets/list_all_of_biz": {
+      "get": {
+        "summary": "按服务ID获取模板套餐列表",
+        "operationId": "Config_ListTmplSetsOfBiz2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplSetsOfBizResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -8170,6 +10276,22 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -8197,6 +10319,63 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCreateAppTemplateBindingBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/apps/{appId}/template_bindings": {
+      "post": {
+        "summary": "创建绑定服务的模板(暂无用到)",
+        "operationId": "Config_CreateAppTemplateBinding2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCreateAppTemplateBindingResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -8266,6 +10445,14 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -8328,6 +10515,183 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/apps/{appId}/template_bindings/{bindingId}": {
+      "delete": {
+        "summary": "删除绑定服务的模板",
+        "operationId": "Config_DeleteAppTemplateBinding2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteAppTemplateBindingResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "bindingId",
+            "description": "服务绑定模板套餐后的ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "summary": "更新绑定服务的模板",
+        "operationId": "Config_UpdateAppTemplateBinding2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsUpdateAppTemplateBindingResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "bindingId",
+            "description": "服务绑定模板套餐后的ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigUpdateAppTemplateBindingBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_bindings": {
+      "get": {
+        "summary": "按服务获取绑定的模板列表",
+        "operationId": "Config_ListAppTemplateBindings2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppTemplateBindingsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/template_revisions": {
       "post": {
         "summary": "按未命名版本服务获取绑定的模板版本列表",
@@ -8377,6 +10741,71 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions": {
+      "post": {
+        "summary": "按未命名版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListAppBoundTmplRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/template_revisions": {
       "post": {
         "summary": "按已发布版本服务获取绑定的模板版本列表",
@@ -8399,6 +10828,79 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListReleasedAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions": {
+      "post": {
+        "summary": "按已发布版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListReleasedAppBoundTmplRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListReleasedAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -8984,6 +11486,108 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/bound_unnamed_app_details": {
+      "get": {
+        "summary": "获取模板绑定的服务列表",
+        "operationId": "Config_ListTmplBoundUnnamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplBoundUnnamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
           }
         ],
         "tags": [
@@ -9013,6 +11617,108 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/bound_named_app_details": {
+      "get": {
+        "summary": "获取模板绑定的服务以及模板版本列表",
+        "operationId": "Config_ListTmplBoundNamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplBoundNamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -9308,6 +12014,116 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/{templateRevisionId}/bound_unnamed_app_details": {
+      "get": {
+        "summary": "按模板版本获取绑定的未命名版本服务列表",
+        "operationId": "Config_ListTmplRevisionBoundUnnamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplRevisionBoundUnnamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateRevisionId",
+            "description": "模板文件版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
           }
         ],
         "tags": [
@@ -9337,6 +12153,116 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateRevisionId",
+            "description": "模板文件版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "searchFields",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "searchValue",
+            "description": "搜索的值",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/{templateRevisionId}/bound_named_app_details": {
+      "get": {
+        "summary": "按模板版本获取绑定的已命名版本服务列表",
+        "operationId": "Config_ListTmplRevisionBoundNamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplRevisionBoundNamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -9475,6 +12401,95 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/{templateSetId}/bound_unnamed_app_details": {
+      "get": {
+        "summary": "按模板套餐获取绑定的未命名版本服务列表",
+        "operationId": "Config_ListTmplSetBoundUnnamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplSetBoundUnnamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
           }
         ],
         "tags": [
@@ -9504,6 +12519,93 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetIds",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/bound_unnamed_app_details": {
+      "get": {
+        "summary": "按多模板套餐获取绑定的未命名版本服务列表",
+        "operationId": "Config_ListMultiTmplSetBoundUnnamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListMultiTmplSetBoundUnnamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -9602,6 +12704,63 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/check_template_set_references_apps": {
+      "post": {
+        "summary": "检测模板套餐引用的服务",
+        "operationId": "Config_CheckTemplateSetReferencesApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCheckTemplateSetReferencesAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigCheckTemplateSetReferencesAppsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/template_sets/{templateSetId}/bound_named_app_details": {
       "get": {
         "summary": "按模板套餐获取绑定的已命名版本服务列表",
@@ -9624,6 +12783,95 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSetId",
+            "description": "模板套餐ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/template_sets/{templateSetId}/bound_named_app_details": {
+      "get": {
+        "summary": "按模板套餐获取绑定的已命名版本服务列表",
+        "operationId": "Config_ListTmplSetBoundNamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTmplSetBoundNamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -9697,6 +12945,95 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/latest/bound_unnamed_app_details": {
+      "get": {
+        "summary": "按最新的模板版本获取未命名版本服务列表",
+        "operationId": "Config_ListLatestTmplBoundUnnamedApps2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListLatestTmplBoundUnnamedAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10349,7 +13686,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -10429,7 +13766,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10475,7 +13812,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10532,7 +13869,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -10579,7 +13916,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -10667,7 +14004,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10714,7 +14051,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10761,7 +14098,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -10830,7 +14167,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups/batch_delete": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups:batch_delete": {
       "post": {
         "summary": "批量删除分组",
         "operationId": "Config_BatchDeleteGroups2",
@@ -11173,7 +14510,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -11221,7 +14558,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -11233,7 +14570,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName}": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups:search": {
       "get": {
         "summary": "按名称获取分组",
         "operationId": "Config_GetGroupByName3",
@@ -11262,7 +14599,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -11271,8 +14608,8 @@
           {
             "name": "groupName",
             "description": "分组名",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "required": false,
             "type": "string"
           }
         ],
@@ -11317,7 +14654,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -11329,7 +14666,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups/selector/{labelName}": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/groups:selector/{labelName}": {
       "get": {
         "summary": "分组选择器",
         "operationId": "Config_ListGroupSelector2",
@@ -11358,7 +14695,7 @@
           },
           {
             "name": "projectId",
-            "description": "项目ID（additional_bindings使用）",
+            "description": "项目ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -15152,6 +18489,95 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/compare_conflicts": {
+      "get": {
+        "summary": "文件服务以及和其他服务版本之间对比",
+        "operationId": "Config_CompareConfigItemConflicts2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsCompareConfigItemConflictsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "otherAppId",
+            "description": "需对比其他的服务ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -17086,7 +20512,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/list": {
+    "/api/v1/config/biz/{bizId}/projects:list": {
       "post": {
         "summary": "项目管理",
         "operationId": "Config_ListProjects",
@@ -17295,7 +20721,7 @@
         ]
       }
     },
-    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/list": {
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs:list": {
       "post": {
         "summary": "环境管理",
         "operationId": "Config_ListEnvironments",
@@ -18618,6 +22044,9 @@
         "name"
       ]
     },
+    "ConfigCreateDefaultTmplSpaceBody": {
+      "type": "object"
+    },
     "ConfigCreateEnvironmentBody": {
       "type": "object",
       "properties": {
@@ -19476,7 +22905,17 @@
       }
     },
     "ConfigListConfigItemCountBody": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "服务ID"
+        }
+      }
     },
     "ConfigListConfigItemsBody": {
       "type": "object",
@@ -21049,6 +24488,11 @@
         "edited": {
           "type": "boolean",
           "description": "分组是否编辑过（old_selector和new_selector不一致"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       }
     },
@@ -21109,6 +24553,15 @@
         "edited": {
           "type": "boolean",
           "description": "是否为已编辑状态"
+        },
+        "envDisplay": {
+          "type": "string",
+          "description": "环境名称"
+        },
+        "releaseTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务版本上线时间"
         }
       }
     },
@@ -23780,6 +27233,11 @@
           "type": "integer",
           "format": "int64",
           "description": "业务ID"
+        },
+        "projectId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "项目ID"
         }
       }
     },
@@ -24584,6 +28042,14 @@
         "charset": {
           "type": "string",
           "description": "文件编码"
+        }
+      }
+    },
+    "pbcsGetTemplateSpaceResp": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/pbtsTemplateSpace"
         }
       }
     },
@@ -28480,6 +31946,10 @@
         "appName": {
           "type": "string",
           "description": "服务名"
+        },
+        "envDisplay": {
+          "type": "string",
+          "description": "环境"
         }
       },
       "description": "TemplateBoundUnnamedAppDetail is template bound unnamed app detail."
@@ -28525,6 +31995,10 @@
         "releaseName": {
           "type": "string",
           "description": "服务版本名"
+        },
+        "envDisplay": {
+          "type": "string",
+          "description": "环境"
         }
       },
       "description": "TemplateRevisionBoundNamedAppDetail is template release bound named app detail."
@@ -28540,6 +32014,10 @@
         "appName": {
           "type": "string",
           "description": "服务名"
+        },
+        "envDisplay": {
+          "type": "string",
+          "description": "环境"
         }
       },
       "description": "TemplateRevisionBoundUnnamedAppDetail is template release bound unnamed app detail."
@@ -28600,6 +32078,10 @@
         "appName": {
           "type": "string",
           "description": "服务名"
+        },
+        "envDisplay": {
+          "type": "string",
+          "description": "环境"
         }
       },
       "description": "TemplateSetBoundUnnamedAppDetail is template set bound unnamed app detail."
@@ -28812,6 +32294,11 @@
           "type": "integer",
           "format": "int64",
           "description": "业务ID"
+        },
+        "projectId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "项目ID"
         }
       },
       "title": "TemplateSpaceAttachment source resource reference: pkg/dal/table/template_space.go"

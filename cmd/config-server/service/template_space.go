@@ -46,7 +46,8 @@ func (s *Service) CreateTemplateSpace(ctx context.Context, req *pbcs.CreateTempl
 
 	r := &pbds.CreateTemplateSpaceReq{
 		Attachment: &pbts.TemplateSpaceAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbts.TemplateSpaceSpec{
 			Name: req.Name,
@@ -80,7 +81,8 @@ func (s *Service) DeleteTemplateSpace(ctx context.Context, req *pbcs.DeleteTempl
 	r := &pbds.DeleteTemplateSpaceReq{
 		Id: req.TemplateSpaceId,
 		Attachment: &pbts.TemplateSpaceAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 	}
 	if _, err := s.client.DS.DeleteTemplateSpace(grpcKit.RpcCtx(), r); err != nil {
@@ -106,7 +108,8 @@ func (s *Service) UpdateTemplateSpace(ctx context.Context, req *pbcs.UpdateTempl
 	r := &pbds.UpdateTemplateSpaceReq{
 		Id: req.TemplateSpaceId,
 		Attachment: &pbts.TemplateSpaceAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbts.TemplateSpaceSpec{
 			Memo: req.Memo,
@@ -139,6 +142,7 @@ func (s *Service) ListTemplateSpaces(ctx context.Context, req *pbcs.ListTemplate
 		Start:        req.Start,
 		Limit:        req.Limit,
 		All:          req.All,
+		ProjectId:    grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTemplateSpaces(grpcKit.RpcCtx(), r)
@@ -177,7 +181,8 @@ func (s *Service) CreateDefaultTmplSpace(ctx context.Context, req *pbcs.CreateDe
 	grpcKit := kit.FromGrpcContext(ctx)
 
 	r := &pbds.CreateDefaultTmplSpaceReq{
-		BizId: req.BizId,
+		BizId:     req.BizId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.CreateDefaultTmplSpace(grpcKit.RpcCtx(), r)
@@ -216,7 +221,9 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbcs.ListTmplSpa
 	}
 
 	r := &pbds.ListTmplSpacesByIDsReq{
-		Ids: req.Ids,
+		Ids:       req.Ids,
+		BizId:     req.BizId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplSpacesByIDs(grpcKit.RpcCtx(), r)
@@ -229,6 +236,33 @@ func (s *Service) ListTmplSpacesByIDs(ctx context.Context, req *pbcs.ListTmplSpa
 		Details: rp.Details,
 	}
 	return resp, nil
+}
+
+// GetTemplateSpace get template space by id for middleware validation
+func (s *Service) GetTemplateSpace(ctx context.Context, req *pbcs.GetTemplateSpaceReq) (
+	*pbcs.GetTemplateSpaceResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kt, res...); err != nil {
+		return nil, err
+	}
+
+	rp, err := s.client.DS.GetTemplateSpaceByID(kt.RpcCtx(), &pbds.GetTemplateSpaceByIDReq{
+		BizId:     req.BizId,
+		Id:        req.TemplateSpaceId,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
+	})
+	if err != nil {
+		logs.Errorf("get template space by id %d failed, err: %v, rid: %s", req.TemplateSpaceId, err, kt.Rid)
+		return nil, err
+	}
+
+	return &pbcs.GetTemplateSpaceResp{
+		Data: rp.Data,
+	}, nil
 }
 
 // GetLatestTemplateVersionsInSpace implements pbcs.ConfigServer.
@@ -247,6 +281,7 @@ func (s *Service) GetLatestTemplateVersionsInSpace(ctx context.Context, req *pbc
 		BizId:           req.BizId,
 		TemplateSpaceId: req.TemplateSpaceId,
 		TemplateId:      req.TemplateId,
+		ProjectId:       kit.ResolvedProjectID(req.ProjectId),
 	})
 	if err != nil {
 		return nil, err

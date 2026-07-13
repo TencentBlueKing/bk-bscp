@@ -427,7 +427,12 @@ func (a authorizer) VerifyProjectExists(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			logs.Errorf("verify project failed, bizID: %d, projectID: %d, err: %v", kt.BizID, uint32(projectID), err)
-			render.Render(w, r, rest.BadRequest(fmt.Errorf("verify project failed: %v", err)))
+			msg := err.Error()
+			if st, ok := status.FromError(err); ok {
+				msg = st.Message()
+			}
+
+			render.Render(w, r, rest.BadRequest(errors.New(msg)))
 			return
 		}
 
@@ -466,7 +471,12 @@ func (a authorizer) VerifyEnvExists(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			logs.Errorf("verify env failed, bizID: %d, projectID: %d, envID: %d, err: %v", kt.BizID, kt.ProjectID, uint32(envID), err)
-			render.Render(w, r, rest.BadRequest(fmt.Errorf("verify env failed: %v", err)))
+			msg := err.Error()
+			if st, ok := status.FromError(err); ok {
+				msg = st.Message()
+			}
+
+			render.Render(w, r, rest.BadRequest(errors.New(msg)))
 			return
 		}
 

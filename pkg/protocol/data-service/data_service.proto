@@ -126,6 +126,7 @@ service Data {
   rpc GetAllBizsOfTmplSpaces(pbbase.EmptyReq) returns (GetAllBizsOfTmplSpacesResp) {}
   rpc CreateDefaultTmplSpace(CreateDefaultTmplSpaceReq) returns (CreateResp) {}
   rpc ListTmplSpacesByIDs(ListTmplSpacesByIDsReq) returns (ListTmplSpacesByIDsResp) {}
+  rpc GetTemplateSpaceByID(GetTemplateSpaceByIDReq) returns (GetTemplateSpaceByIDResp) {}
 
   // template related interface.
   rpc CreateTemplate(CreateTemplateReq) returns (CreateResp) {}
@@ -582,6 +583,8 @@ message ListAppsResp {
 
 message ListAppsByIDsReq {
   repeated uint32 ids = 1;
+  uint32 biz_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListAppsByIDsResp {
@@ -1082,6 +1085,8 @@ message GetReleaseHookReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 release_id = 3;
+  uint32 project_id = 4;
+  uint32 env_id = 5;
 }
 
 message GetReleaseHookResp {
@@ -1110,8 +1115,8 @@ message ListTemplateSpacesReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
-
 message ListTemplateSpacesResp {
   uint32 count = 1;
   repeated pbts.TemplateSpace details = 2;
@@ -1134,14 +1139,27 @@ message GetAllBizsOfTmplSpacesResp {
 
 message CreateDefaultTmplSpaceReq {
   uint32 biz_id = 1;
+  uint32 project_id = 2;
 }
 
 message ListTmplSpacesByIDsReq {
   repeated uint32 ids = 1;
+  uint32 biz_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListTmplSpacesByIDsResp {
   repeated pbts.TemplateSpace details = 1;
+}
+
+message GetTemplateSpaceByIDReq {
+  uint32 biz_id = 1;
+  uint32 id = 2;
+  uint32 project_id = 3;
+}
+
+message GetTemplateSpaceByIDResp {
+  pbts.TemplateSpace data = 1;
 }
 
 message CreateTemplateReq {
@@ -1149,6 +1167,7 @@ message CreateTemplateReq {
   pbtemplate.TemplateSpec spec = 2;
   pbtr.TemplateRevisionSpec tr_spec = 3;
   repeated uint32 template_set_ids = 4;
+  uint32 project_id = 5;
 }
 
 message ListTemplatesReq {
@@ -1192,6 +1211,7 @@ message AddTmplsToTmplSetsReq {
   bool exclusion_operation = 5;
   uint32 template_set_id = 6;  // 套餐ID, 具体操作的哪个套餐
   bool no_set_specified = 7;   // 是否未指定套餐, 区分全部套餐和未指定套餐
+  uint32 project_id = 8;
 }
 
 message DeleteTmplsFromTmplSetsReq {
@@ -1280,6 +1300,7 @@ message BatchUpsertTemplatesReq {
   }
   repeated Item items = 2;
   repeated uint32 template_set_ids = 3;
+  uint32 project_id = 4;
 }
 
 message BatchUpsertTemplatesReqResp {
@@ -1435,6 +1456,8 @@ message ListTemplateSetsByIDsResp {
 
 message ListTemplateSetBriefInfoByIDsReq {
   repeated uint32 ids = 1;
+  uint32 biz_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListTemplateSetBriefInfoByIDsResp {
@@ -1444,6 +1467,7 @@ message ListTemplateSetBriefInfoByIDsResp {
 message ListTmplSetsOfBizReq {
   uint32 biz_id = 1;
   uint32 app_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListTmplSetsOfBizResp {
@@ -1461,8 +1485,9 @@ message ListAppTemplateBindingsReq {
   uint32 start = 3;
   uint32 limit = 4;
   bool all = 5;
+  uint32 project_id = 6;
+  uint32 env_id = 7;
 }
-
 message ListAppTemplateBindingsResp {
   uint32 count = 1;
   repeated pbatb.AppTemplateBinding details = 2;
@@ -1487,8 +1512,9 @@ message ListAppBoundTmplRevisionsReq {
   uint32 limit = 5;
   bool all = 6;
   bool with_status = 7;
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
-
 message ListAppBoundTmplRevisionsResp {
   uint32 count = 1;
   repeated pbatb.AppBoundTmplRevision details = 2;
@@ -1502,6 +1528,8 @@ message ListReleasedAppBoundTmplRevisionsReq {
   uint32 start = 5;
   uint32 limit = 6;
   bool all = 7;
+  uint32 project_id = 8;
+  uint32 env_id = 9;
 }
 
 message ListReleasedAppBoundTmplRevisionsResp {
@@ -1643,6 +1671,7 @@ message ListTmplBoundUnnamedAppsReq {
   uint32 start = 6;
   uint32 limit = 7;
   bool all = 8;
+  uint32 project_id = 9;
 }
 
 message ListTmplBoundUnnamedAppsResp {
@@ -1659,6 +1688,7 @@ message ListTmplBoundNamedAppsReq {
   uint32 start = 6;
   uint32 limit = 7;
   bool all = 8;
+  uint32 project_id = 9;
 }
 
 message ListTmplBoundNamedAppsResp {
@@ -1704,6 +1734,7 @@ message ListTmplRevisionBoundUnnamedAppsReq {
   uint32 start = 7;
   uint32 limit = 8;
   bool all = 9;
+  uint32 project_id = 10;
 }
 
 message ListTmplRevisionBoundUnnamedAppsResp {
@@ -1721,6 +1752,7 @@ message ListTmplRevisionBoundNamedAppsReq {
   uint32 start = 7;
   uint32 limit = 8;
   bool all = 9;
+  uint32 project_id = 10;
 }
 
 message ListTmplRevisionBoundNamedAppsResp {
@@ -1735,6 +1767,7 @@ message ListTmplSetBoundUnnamedAppsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
 
 message ListTmplSetBoundUnnamedAppsResp {
@@ -1749,6 +1782,7 @@ message ListMultiTmplSetBoundUnnamedAppsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
 
 message ListMultiTmplSetBoundUnnamedAppsResp {
@@ -1763,6 +1797,7 @@ message ListTmplSetBoundNamedAppsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
 
 message ListTmplSetBoundNamedAppsResp {
@@ -1777,6 +1812,7 @@ message ListLatestTmplBoundUnnamedAppsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  uint32 project_id = 7;
 }
 
 message ListLatestTmplBoundUnnamedAppsResp {
@@ -1799,6 +1835,7 @@ message CheckTemplateSetReferencesAppsReq {
   uint32 template_space_id = 2;
   repeated uint32 template_set_ids = 3;
   repeated Item items = 4;
+  uint32 project_id = 5;
 }
 
 message CheckTemplateSetReferencesAppsResp {
@@ -1878,6 +1915,7 @@ message ListAllGroupsReq {
 
 message ListAllGroupsResp {
   repeated pbgroup.Group details = 1;
+  uint32 env_id = 2;
 }
 
 message ListAppGroupsReq {
@@ -1963,6 +2001,8 @@ message ListGroupReleasedAppsResp {
     uint32 release_id = 3;
     string release_name = 4;
     bool edited = 5;
+    string env_display = 6;
+    google.protobuf.Timestamp release_time = 7;
   }
   uint32 count = 1;
   repeated ListGroupReleasedAppsData details = 2;
@@ -2380,6 +2420,8 @@ message CompareConfigItemConflictsReq {
   uint32 app_id = 2;
   uint32 release_id = 3;
   uint32 other_app_id = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message CompareConfigItemConflictsResp {
@@ -2433,6 +2475,7 @@ message GetLatestTemplateVersionsInSpaceReq {
   uint32 biz_id = 1;
   uint32 template_space_id = 2;
   uint32 template_id = 3;
+  uint32 project_id = 4;
 }
 
 message GetLatestTemplateVersionsInSpaceResp {

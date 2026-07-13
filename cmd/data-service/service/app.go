@@ -423,7 +423,7 @@ func (s *Service) ListAppsByIDs(ctx context.Context, req *pbds.ListAppsByIDsReq)
 		return nil, fmt.Errorf("app ids is empty")
 	}
 
-	details, err := s.dao.App().ListAppsByIDs(kt, req.Ids)
+	details, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, req.Ids)
 	if err != nil {
 		logs.Errorf("list apps failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -509,11 +509,11 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 	}
 
 	if _, err := s.dao.App().GetByName(kit, req.BizId, req.GetProjectId(), req.GetEnvId(), req.GetName()); err == nil {
-		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app name %s already exists", req.GetName()))
+		return nil, errf.Errorf(errf.InvalidRequest, "%s", i18n.T(kit, "app name %s already exists", req.GetName()))
 	}
 
 	if _, err := s.dao.App().GetByAlias(kit, req.BizId, req.GetProjectId(), req.GetEnvId(), req.GetAlias()); err == nil {
-		return nil, errf.Errorf(errf.InvalidRequest, i18n.T(kit, "app alias %s already exists", req.GetAlias()))
+		return nil, errf.Errorf(errf.InvalidRequest, "%s", i18n.T(kit, "app alias %s already exists", req.GetAlias()))
 	}
 
 	app := &table.App{
@@ -534,6 +534,12 @@ func (s *Service) CloneApp(ctx context.Context, req *pbds.CloneAppReq) (*pbds.Cr
 		ProjID: req.GetProjectId(),
 		EnvID:  req.GetEnvId(),
 	}
+
+	env, err := s.dao.Environment().Get(kit, req.GetBizId(), req.GetProjectId(), req.GetEnvId())
+	if err != nil {
+		return nil, err
+	}
+	app.Spec.EnvDisplay = fmt.Sprintf("%s-%s", env.Spec.Name, env.Spec.Type)
 
 	appID, err := s.dao.App().CreateWithTx(kit, tx, app)
 	if err != nil {

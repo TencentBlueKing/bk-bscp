@@ -245,3 +245,43 @@ func (p *proxy) GroupProjectVerified(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// TemplateSpaceProjectVerified 校验 TemplateSpace 是否属于指定的项目。
+// 必须放在 checkOrCreateDefaultProjectEnv 之后，依赖 kt.ProjectID 已被赋值。
+// 用于含 template_space_id 参数的路由，校验模板空间归属于该项目。
+// template_sets/templates/template_revisions 都通过 template_space_id 关联到 template_spaces，
+// 因此只需这一个中间件即可完成整个模板链路的归属校验。
+func (p *proxy) TemplateSpaceProjectVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		templateSpaceIDStr := chi.URLParam(r, "template_space_id")
+		if templateSpaceIDStr == "" {
+			err := errors.New("template_space_id is required in url params")
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		templateSpaceID, err := strconv.Atoi(templateSpaceIDStr)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 调用 config-server GetTemplateSpace 校验 TemplateSpace 归属于该项目
+		_, err = p.cfgClient.GetTemplateSpace(kt.RpcCtx(), &pbcs.GetTemplateSpaceReq{
+			BizId:           kt.BizID,
+			TemplateSpaceId: uint32(templateSpaceID),
+			ProjectId:       kt.ProjectID,
+		})
+		if err != nil {
+			logs.Errorf("verify template space project failed, bizId=%d templateSpaceId=%d projectId=%d err=%v rid=%s",
+				kt.BizID, uint32(templateSpaceID), kt.ProjectID, err, kt.Rid)
+			render.Render(w, r, rest.BadRequest(
+				fmt.Errorf("template_space does not belong to the specified project")))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}

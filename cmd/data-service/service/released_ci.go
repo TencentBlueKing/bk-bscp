@@ -40,8 +40,7 @@ func (s *Service) GetReleasedConfigItem(ctx context.Context, req *pbds.GetReleas
 }
 
 // ListReleasedConfigItems list app bound template revisions.
-func (s *Service) ListReleasedConfigItems(ctx context.Context,
-	req *pbds.ListReleasedConfigItemsReq) (
+func (s *Service) ListReleasedConfigItems(ctx context.Context, req *pbds.ListReleasedConfigItemsReq) (
 	*pbds.ListReleasedConfigItemsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 

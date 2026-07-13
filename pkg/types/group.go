@@ -13,6 +13,8 @@
 package types
 
 import (
+	"time"
+
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/filter"
@@ -87,11 +89,13 @@ func (opt *ListGroupReleasedAppsOption) Validate() error {
 
 // ListGroupReleasedAppsData defines the response detail data of requested ListGroupReleasedAppsOption.
 type ListGroupReleasedAppsData struct {
-	AppID       uint32 `gorm:"column:app_id" json:"app_id"`
-	AppName     string `gorm:"column:app_name" json:"app_name"`
-	ReleaseID   uint32 `gorm:"column:release_id" json:"release_id"`
-	ReleaseName string `gorm:"column:release_name" json:"release_name"`
-	Edited      bool   `gorm:"column:edited" json:"edited"`
+	AppID       uint32    `gorm:"column:app_id" json:"app_id"`
+	AppName     string    `gorm:"column:app_name" json:"app_name"`
+	ReleaseID   uint32    `gorm:"column:release_id" json:"release_id"`
+	ReleaseName string    `gorm:"column:release_name" json:"release_name"`
+	Edited      bool      `gorm:"column:edited" json:"edited"`
+	EnvDisplay  string    `gorm:"column:env_display" json:"env_display"`
+	ReleaseTime time.Time `gorm:"column:release_time" json:"release_time"`
 }
 
 // ListGroupReleasedAppsDetails defines the response details of requested ListGroupReleasedAppsOption.

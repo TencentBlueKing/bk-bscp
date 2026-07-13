@@ -213,7 +213,7 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context,
 	)
 
 	// get template space details
-	if tmplSpaces, err = s.dao.TemplateSpace().ListByIDs(kt, atb[0].Spec.TemplateSpaceIDs); err != nil {
+	if tmplSpaces, err = s.dao.TemplateSpace().ListByIDs(kt, req.BizId, req.ProjectId, atb[0].Spec.TemplateSpaceIDs); err != nil {
 		logs.Errorf("list app bound template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -474,8 +474,7 @@ func (s *Service) setFileState(kt *kit.Kit, unreleased []*pbatb.AppBoundTmplRevi
 }
 
 // ListReleasedAppBoundTmplRevisions list app bound template revisions.
-func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context,
-	req *pbds.ListReleasedAppBoundTmplRevisionsReq) (
+func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context, req *pbds.ListReleasedAppBoundTmplRevisionsReq) (
 	*pbds.ListReleasedAppBoundTmplRevisionsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -1088,7 +1087,7 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbds.Impo
 	}
 
 	// 1. 验证模板空间
-	if err := s.verifyTemplateSpaces(kit, templateSpaceIds, validatedTemplateSpaceNames); err != nil {
+	if err := s.verifyTemplateSpaces(kit, req.BizId, req.ProjectId, templateSpaceIds, validatedTemplateSpaceNames); err != nil {
 		return nil, err
 	}
 
@@ -1152,10 +1151,10 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbds.Impo
 }
 
 // 验证模板空间
-func (s *Service) verifyTemplateSpaces(kit *kit.Kit, templateSpaceIds []uint32,
+func (s *Service) verifyTemplateSpaces(kit *kit.Kit, bizID, projectID uint32, templateSpaceIds []uint32,
 	templateSpaceNames map[uint32]string) error {
 
-	templateSpaces, err := s.dao.TemplateSpace().ListByIDs(kit, templateSpaceIds)
+	templateSpaces, err := s.dao.TemplateSpace().ListByIDs(kit, bizID, projectID, templateSpaceIds)
 	if err != nil {
 		return errf.Errorf(errf.DBOpFailed, i18n.T(kit, "list template spaces failed, err: %v", err))
 	}

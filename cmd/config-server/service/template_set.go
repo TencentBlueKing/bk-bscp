@@ -252,8 +252,9 @@ func (s *Service) ListTmplSetsOfBiz(ctx context.Context, req *pbcs.ListTmplSetsO
 	}
 
 	r := &pbds.ListTmplSetsOfBizReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplSetsOfBiz(grpcKit.RpcCtx(), r)

@@ -223,10 +223,8 @@ func (s *Service) ListTmplSetBoundCounts(ctx context.Context, req *pbds.ListTmpl
 }
 
 // ListTmplBoundUnnamedApps list template bound unnamed app details.
-//
-//nolint:funlen
-func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
-	req *pbds.ListTmplBoundUnnamedAppsReq) (
+// nolint:funlen
+func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context, req *pbds.ListTmplBoundUnnamedAppsReq) (
 	*pbds.ListTmplBoundUnnamedAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -234,8 +232,7 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
 		return nil, err
 	}
 
-	relations, err := s.dao.TemplateBindingRelation().
-		ListTmplBoundUnnamedApps(kt, req.BizId, req.TemplateId)
+	relations, err := s.dao.TemplateBindingRelation().ListTmplBoundUnnamedApps(kt, req.BizId, req.TemplateId)
 	if err != nil {
 		logs.Errorf("list template bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -258,7 +255,7 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
 	for i, r := range relations {
 		appIDs[i] = r.AppID
 	}
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -285,6 +282,7 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
 				TemplateRevisionName: tmplRevisionMap[id].Spec.RevisionName,
 				AppId:                r.AppID,
 				AppName:              appMap[r.AppID].Spec.Name,
+				EnvDisplay:           appMap[r.AppID].Spec.EnvDisplay,
 			})
 
 		}
@@ -344,10 +342,9 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context,
 // Deprecated: not in use currently
 //
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted.
-//
-//nolint:funlen
-func (s *Service) ListTmplBoundNamedApps(ctx context.Context,
-	req *pbds.ListTmplBoundNamedAppsReq) (*pbds.ListTmplBoundNamedAppsResp, error) {
+// nolint:funlen
+func (s *Service) ListTmplBoundNamedApps(ctx context.Context, req *pbds.ListTmplBoundNamedAppsReq) (
+	*pbds.ListTmplBoundNamedAppsResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
 
@@ -381,7 +378,7 @@ func (s *Service) ListTmplBoundNamedApps(ctx context.Context,
 		appIDs[i] = r.AppID
 		releaseIDs[i] = r.ReleaseID
 	}
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template bound named app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -538,8 +535,7 @@ func (s *Service) ListTmplBoundTmplSets(ctx context.Context,
 }
 
 // ListMultiTmplBoundTmplSets list template bound template set details.
-//
-//nolint:funlen
+// nolint:funlen
 func (s *Service) ListMultiTmplBoundTmplSets(ctx context.Context,
 	req *pbds.ListMultiTmplBoundTmplSetsReq) (
 	*pbds.ListMultiTmplBoundTmplSetsResp, error) {
@@ -567,8 +563,7 @@ func (s *Service) ListMultiTmplBoundTmplSets(ctx context.Context,
 				<-pipe
 			}()
 
-			tmplSetIDs, err := s.dao.TemplateBindingRelation().
-				ListTmplBoundTmplSets(kt, req.BizId, tmplID)
+			tmplSetIDs, err := s.dao.TemplateBindingRelation().ListTmplBoundTmplSets(kt, req.BizId, tmplID)
 			if err != nil {
 				hitError = err
 				return
@@ -651,8 +646,7 @@ func (s *Service) ListMultiTmplBoundTmplSets(ctx context.Context,
 }
 
 // ListTmplRevisionBoundUnnamedApps list template revision bound unnamed app details.
-func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context,
-	req *pbds.ListTmplRevisionBoundUnnamedAppsReq) (
+func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context, req *pbds.ListTmplRevisionBoundUnnamedAppsReq) (
 	*pbds.ListTmplRevisionBoundUnnamedAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -668,7 +662,7 @@ func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context,
 	}
 
 	// get app details
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template revision bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -686,8 +680,9 @@ func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context,
 			continue
 		}
 		details = append(details, &pbtbr.TemplateRevisionBoundUnnamedAppDetail{
-			AppId:   id,
-			AppName: appMap[id].Spec.Name,
+			AppId:      id,
+			AppName:    appMap[id].Spec.Name,
+			EnvDisplay: appMap[id].Spec.EnvDisplay,
 		})
 	}
 
@@ -743,8 +738,7 @@ func (s *Service) ListTmplRevisionBoundUnnamedApps(ctx context.Context,
 // Deprecated: not in use currently
 //
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted.
-//
-//nolint:funlen
+// nolint:funlen
 func (s *Service) ListTmplRevisionBoundNamedApps(ctx context.Context,
 	req *pbds.ListTmplRevisionBoundNamedAppsReq) (
 	*pbds.ListTmplRevisionBoundNamedAppsResp, error) {
@@ -771,7 +765,7 @@ func (s *Service) ListTmplRevisionBoundNamedApps(ctx context.Context,
 	appIDs = tools.RemoveDuplicates(appIDs)
 	releaseIDs = tools.RemoveDuplicates(releaseIDs)
 
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template revision bound named app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -802,6 +796,7 @@ func (s *Service) ListTmplRevisionBoundNamedApps(ctx context.Context,
 			AppName:     appName,
 			ReleaseId:   r.ReleaseID,
 			ReleaseName: releaseMap[r.ReleaseID].Spec.Name,
+			EnvDisplay:  appMap[r.AppID].Spec.EnvDisplay,
 		})
 	}
 
@@ -854,8 +849,7 @@ func (s *Service) ListTmplRevisionBoundNamedApps(ctx context.Context,
 }
 
 // ListTmplSetBoundUnnamedApps list template set bound unnamed app details.
-func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context,
-	req *pbds.ListTmplSetBoundUnnamedAppsReq) (
+func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context, req *pbds.ListTmplSetBoundUnnamedAppsReq) (
 	*pbds.ListTmplSetBoundUnnamedAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -863,15 +857,14 @@ func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context,
 		return nil, err
 	}
 
-	appIDs, err := s.dao.TemplateBindingRelation().
-		ListTmplSetBoundUnnamedApps(kt, req.BizId, req.TemplateSetId)
+	appIDs, err := s.dao.TemplateBindingRelation().ListTmplSetBoundUnnamedApps(kt, req.BizId, req.TemplateSetId)
 	if err != nil {
 		logs.Errorf("list template set bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
 
 	// get app details
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template set bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -889,8 +882,9 @@ func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context,
 			continue
 		}
 		details = append(details, &pbtbr.TemplateSetBoundUnnamedAppDetail{
-			AppId:   id,
-			AppName: appMap[id].Spec.Name,
+			AppId:      id,
+			AppName:    appMap[id].Spec.Name,
+			EnvDisplay: appMap[id].Spec.EnvDisplay,
 		})
 	}
 
@@ -923,9 +917,8 @@ func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context,
 
 // ListMultiTmplSetBoundUnnamedApps list template set bound unnamed app details.
 //
-//nolint:funlen
-func (s *Service) ListMultiTmplSetBoundUnnamedApps(ctx context.Context,
-	req *pbds.ListMultiTmplSetBoundUnnamedAppsReq) (
+// nolint:funlen
+func (s *Service) ListMultiTmplSetBoundUnnamedApps(ctx context.Context, req *pbds.ListMultiTmplSetBoundUnnamedAppsReq) (
 
 	*pbds.ListMultiTmplSetBoundUnnamedAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -973,7 +966,7 @@ func (s *Service) ListMultiTmplSetBoundUnnamedApps(ctx context.Context,
 	allAppIDs = tools.RemoveDuplicates(allAppIDs)
 
 	// get app details
-	apps, err := s.dao.App().ListAppsByIDs(kt, allAppIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, allAppIDs)
 	if err != nil {
 		logs.Errorf("list multiple template set bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -1045,7 +1038,7 @@ func (s *Service) ListMultiTmplSetBoundUnnamedApps(ctx context.Context,
 //
 // if use it, consider to add column app_name, release_name on table released_app_templates in case of app is deleted
 //
-//nolint:funlen
+// nolint:funlen
 func (s *Service) ListTmplSetBoundNamedApps(ctx context.Context,
 	req *pbds.ListTmplSetBoundNamedAppsReq) (
 	*pbds.ListTmplSetBoundNamedAppsResp, error) {
@@ -1079,7 +1072,7 @@ func (s *Service) ListTmplSetBoundNamedApps(ctx context.Context,
 	appIDs = tools.RemoveDuplicates(appIDs)
 	releaseIDs = tools.RemoveDuplicates(releaseIDs)
 
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list template set bound named app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -1189,7 +1182,7 @@ func (s *Service) ListLatestTmplBoundUnnamedApps(ctx context.Context,
 	tmplSetIDs = tools.RemoveDuplicates(tmplSetIDs)
 
 	// get app details
-	apps, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
 	if err != nil {
 		logs.Errorf("list the latest template bound unnamed app details failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -1299,7 +1292,7 @@ func (s *Service) CheckTemplateSetReferencesApps(ctx context.Context, req *pbds.
 	}
 
 	// 获取app信息
-	apps, err := s.dao.App().ListAppsByIDs(kit, appIds)
+	apps, err := s.dao.App().ListAppsByIDs(kit, req.BizId, req.ProjectId, appIds)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}

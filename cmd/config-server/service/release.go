@@ -48,6 +48,8 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbcs.CreateReleaseReq)
 			Memo: req.Memo,
 		},
 		Variables: req.Variables,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.CreateRelease(grpcKit.RpcCtx(), r)
 	if err != nil {

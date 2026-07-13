@@ -36,6 +36,7 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbds.Extract
 	*pbds.ExtractAppTmplVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
+	// TODO: 待处理
 	tmplRevisions, cis, err := s.getAllAppCIs(kt)
 	if err != nil {
 		logs.Errorf("get all app config items failed, err: %v, rid: %s", err, kt.Rid)
@@ -59,7 +60,7 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbds.Extract
 func (s *Service) GetAppTmplVariableRefs(ctx context.Context, req *pbds.GetAppTmplVariableRefsReq) (
 	*pbds.GetAppTmplVariableRefsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
-
+	// TODO: 待处理
 	tmplRevisions, cis, err := s.getAllAppCIs(kt)
 	if err != nil {
 		logs.Errorf("get all app config items failed, err: %v, rid: %s", err, kt.Rid)

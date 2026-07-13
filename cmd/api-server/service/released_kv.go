@@ -150,6 +150,8 @@ func (m *kvService) Export(w http.ResponseWriter, r *http.Request) {
 			WithStatus: true,
 			Status: []string{constant.FileStateAdd, constant.FileStateRevise,
 				constant.FileStateUnchange},
+			ProjectId: kt.ProjectID,
+			EnvId:     kt.EnvID,
 		}
 		kvs, err := m.cfgClient.ListKvs(kt.RpcCtx(), req)
 		if err != nil {
@@ -163,6 +165,8 @@ func (m *kvService) Export(w http.ResponseWriter, r *http.Request) {
 			AppId:     uint32(appId),
 			ReleaseId: uint32(releaseID),
 			All:       true,
+			ProjectId: kt.ProjectID,
+			EnvId:     kt.EnvID,
 		}
 		rkvs, err := m.cfgClient.ListReleasedKvs(kt.RpcCtx(), req)
 		if err != nil {
