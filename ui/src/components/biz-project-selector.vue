@@ -117,9 +117,8 @@
   import useTemplateStore from '../store/template';
   import useGlobalStore from '../store/global';
   import { ISpaceDetail } from '../../types/index';
-  import { getProjectList } from '../api/project';
   import type { IProjectItem } from '../../types/project';
-  import { hasProjectConcept, saveSpaceToProjectId } from '../utils/project';
+  import { hasProjectConcept, getCachedProjectList } from '../utils/project';
 
   const { t } = useI18n();
   const route = useRoute();
@@ -159,17 +158,11 @@
   // 当前正在加载项目列表的业务ID
   const projectLoading = ref(false);
 
-  // 获取指定业务的项目列表（公共方法，消除重复逻辑）
+  // 获取指定业务的项目列表（走模块级共享缓存，避免重复请求）
   const fetchProjectList = async (bizId: string) => {
-    // 如果已缓存且不为空，直接返回缓存数据
-    if (bizProjectsMap.value[bizId]?.length > 0) {
-      return bizProjectsMap.value[bizId];
-    }
-
     projectLoading.value = true;
     try {
-      const res = await getProjectList(bizId, { all: true });
-      const projects = res.data?.projects || [];
+      const projects = await getCachedProjectList(bizId);
       // 使用 Vue 3 的响应式 API 正确更新
       bizProjectsMap.value = {
         ...bizProjectsMap.value,
@@ -360,9 +353,6 @@
     selectedBizId.value = tempSelectedBizId.value;
     selectedProjectId.value = strProjectId;
     tempSelectedBizId.value = '';
-
-    // 保存 spaceId 到 projectId 的映射
-    saveSpaceToProjectId(selectedBizId.value, strProjectId);
 
     const bizItem = optionList.value.find((b) => String(b.space_id) === selectedBizId.value);
     if (bizItem) {

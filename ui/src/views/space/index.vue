@@ -13,6 +13,7 @@
   import { getSpaceFeatureFlag } from '../../api';
   import whitelistApplyPage from './whitelist-apply-page.vue';
   import applyPermPage from './apply-perm-page.vue';
+  import { saveSpaceToProjectId } from '../../utils/project';
 
   const { spaceId, projectId, spaceFeatureFlags, showPermApplyPage } = storeToRefs(useGlobalStore());
 
@@ -34,13 +35,16 @@
   watch(
     () => route.params,
     (params) => {
-      if (params.spaceId) {
-        spaceId.value = params.spaceId as string;
-        setLastAccessedSpace(params.spaceId as string);
+      const pSpaceId = params.spaceId as string;
+      const pProjectId = params.projectId as string;
+      if (pSpaceId) {
+        spaceId.value = pSpaceId;
+        setLastAccessedSpace(pSpaceId);
         getFeatureFlagsData();
       }
-      if (params.projectId) {
-        projectId.value = params.projectId as string;
+      if (pProjectId) {
+        projectId.value = pProjectId;
+        saveSpaceToProjectId(pSpaceId, pProjectId);
       }
     },
     { immediate: true },

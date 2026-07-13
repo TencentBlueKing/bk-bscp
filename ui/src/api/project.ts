@@ -8,7 +8,7 @@ import { IProjectQuery, IProjectEditArg } from '../../types/project';
  * @returns
  */
 export const getProjectList = (biz_id: string, params: IProjectQuery) =>
-  http.post(`/config/biz/${biz_id}/projects/list`, params);
+  http.post(`/config/biz/${biz_id}/projects:list`, params);
 
 /**
  * 创建项目

@@ -77,7 +77,7 @@
   const isFormChange = ref(false);
   const pending = ref(false);
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const serviceEditForm = ref<IServiceEditForm>({
     name: '',
     alias: '',
@@ -87,6 +87,8 @@
     is_approve: true,
     approver: '',
     approve_type: 'or_sign',
+    projectId: '',
+    envId: '',
   });
   const scriptIds = ref({ pre_hook_id: 0, post_hook_id: 0 });
   const serviceFormRef = ref();
@@ -115,7 +117,7 @@
         stepsStatus.value.objectSteps = isFileType.value
           ? [{ title: t('填写服务信息') }, { title: t('导入配置项') }, { title: t('导入脚本') }]
           : [{ title: t('填写服务信息') }, { title: t('导入配置项') }];
-        const { spec } = props.service;
+        const { spec, env_id } = props.service;
         const { name, memo, config_type, data_type, alias, is_approve, approver, approve_type } = spec;
         serviceEditForm.value = {
           name: `${name}_copy`,
@@ -126,6 +128,8 @@
           is_approve,
           approver,
           approve_type,
+          projectId: projectId.value,
+          envId: String(env_id),
         };
         configList.value = [];
         templateConfigList.value = [];
@@ -210,22 +214,24 @@
             ...rest,
           });
         });
+        const { projectId, envId, ...other } = serviceEditForm.value;
         const query = {
-          ...serviceEditForm.value,
+          ...other,
           bindings: allTemplateConfigList,
           config_items: allConfigList,
           variables: allVariables,
           ...scriptIds.value,
         };
-        const res = await cloneApp(spaceId.value, query);
+        const res = await cloneApp(spaceId.value, projectId, envId, query);
         appId.value = res.id;
       } else {
         await configRef.value.validate();
+        const { projectId, envId, ...other } = serviceEditForm.value;
         const query = {
-          ...serviceEditForm.value,
+          ...other,
           kv_items: kvConfigList.value,
         };
-        const res = await cloneApp(spaceId.value, query);
+        const res = await cloneApp(spaceId.value, projectId, envId, query);
         appId.value = res.id;
       }
       emits('reload');
