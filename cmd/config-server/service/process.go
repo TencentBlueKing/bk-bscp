@@ -81,6 +81,33 @@ func (s *Service) ListProcess(ctx context.Context, req *pbcs.ListProcessReq) (*p
 	}, nil
 }
 
+// ListProcessInnerIPs implements pbcs.ConfigServer.
+// 按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
+func (s *Service) ListProcessInnerIPs(ctx context.Context, req *pbcs.ListProcessInnerIPsReq) (
+	*pbcs.ListProcessInnerIPsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.View}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ListProcessInnerIPs(grpcKit.RpcCtx(), &pbds.ListProcessInnerIPsReq{
+		BizId:  req.GetBizId(),
+		Search: req.GetSearch(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ListProcessInnerIPsResp{
+		Ips: resp.GetIps(),
+	}, nil
+}
+
 // ProcessFilterOptions implements pbcs.ConfigServer.
 func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbcs.ProcessFilterOptionsReq) (
 	*pbcs.ProcessFilterOptionsResp, error) {

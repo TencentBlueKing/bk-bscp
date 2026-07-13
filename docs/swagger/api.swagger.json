@@ -10312,6 +10312,88 @@
         ]
       }
     },
+    "/api/v1/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/process/operate": {
       "post": {
         "summary": "进程操作",
@@ -14037,6 +14119,14 @@
           "type": "integer",
           "format": "int64",
           "description": "每页条数"
+        }
+      }
+    },
+    "ConfigListProcessInnerIPsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "$ref": "#/definitions/pbprocProcessSearchCondition"
         }
       }
     },
@@ -19487,6 +19577,18 @@
             "type": "object",
             "$ref": "#/definitions/pbtbrMultiTemplateSetBoundUnnamedAppDetail"
           }
+        }
+      }
+    },
+    "pbcsListProcessInnerIPsResp": {
+      "type": "object",
+      "properties": {
+        "ips": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "去重后的内网IP列表"
         }
       }
     },
