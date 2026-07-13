@@ -622,6 +622,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -680,6 +687,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -1104,6 +1118,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -1162,6 +1183,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -2267,6 +2295,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "innerIps": [
       {}
     ],
@@ -2340,6 +2375,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "innerIps": [
       {}
     ],
@@ -2618,6 +2660,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -2678,6 +2727,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -5392,6 +5448,25 @@ Content-Type: application/json
 
 
 
+### <span id="pbproc-expression-scope"></span> pbprocExpressionScope
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| moduleName | string| `string` |  | | 模块名称表达式 |  |
+| processAlias | string| `string` |  | | 进程别名表达式 |  |
+| processId | string| `string` |  | | CC进程ID表达式(支持切片) |  |
+| serviceName | string| `string` |  | | 服务实例名称表达式 |  |
+| setName | string| `string` |  | | 集群名称表达式 |  |
+
+
+
 ### <span id="pbproc-filter-options"></span> pbprocFilterOptions
 
 
@@ -5425,6 +5500,7 @@ Content-Type: application/json
 | configTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 配置模版ID列表 |  |
 | configTemplateNames | []string| `[]string` |  | | 配置模版名称列表 |  |
 | environment | string| `string` |  | | 环境类型(1:测试 2: 体验 3: 正式) |  |
+| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围(与单值字段互斥) |  |
 | moduleName | string| `string` |  | | 模块名称 |  |
 | processAlias | string| `string` |  | | 进程别名 |  |
 | serviceName | string| `string` |  | | 服务实例名称 |  |
@@ -5489,6 +5565,7 @@ Content-Type: application/json
 | ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | 进程ID |  |
 | ccSyncStatuses | []string| `[]string` |  | | cc同步状态 |  |
 | environment | string| `string` |  | | 环境 |  |
+| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围(附加过滤) |  |
 | innerIps | []string| `[]string` |  | | 内网IP |  |
 | managedStatuses | []string| `[]string` |  | | 托管状态 |  |
 | modules | []string| `[]string` |  | | 模块名称 |  |
