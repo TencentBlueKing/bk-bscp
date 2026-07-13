@@ -256,7 +256,9 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 
 	if len(appIDs) != 0 {
 		laReq := &pbds.ListAppsByIDsReq{
-			Ids: appIDs,
+			Ids:       appIDs,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		}
 		laResp, e := s.client.DS.ListAppsByIDs(grpcKit.RpcCtx(), laReq)
 		if e != nil {
@@ -285,12 +287,14 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 	respData := make([]*pbcs.ListAllGroupsResp_ListAllGroupsData, 0, len(lgResp.Details))
 	for _, group := range lgResp.Details {
 		apps := make([]*pbcs.ListAllGroupsResp_ListAllGroupsData_BindApp, 0, len(group.Spec.BindApps))
+		var envID uint32
 		for _, appID := range group.Spec.BindApps {
 			if app, ok := appMap[appID]; ok && app != nil {
 				apps = append(apps, &pbcs.ListAllGroupsResp_ListAllGroupsData_BindApp{
 					Id:   app.Id,
 					Name: app.Spec.Name,
 				})
+				envID = app.EnvId
 			}
 		}
 		data := &pbcs.ListAllGroupsResp_ListAllGroupsData{
@@ -299,6 +303,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 			Public:   group.Spec.Public,
 			BindApps: apps,
 			Selector: group.Spec.Selector,
+			EnvId:    envID,
 		}
 		for _, d := range countResp.Data {
 			if d.GroupId == group.Id {
@@ -391,6 +396,8 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbcs.ListGroup
 			ReleaseId:   detail.ReleaseId,
 			ReleaseName: detail.ReleaseName,
 			Edited:      detail.Edited,
+			EnvDisplay:  detail.EnvDisplay,
+			ReleaseTime: detail.ReleaseTime,
 		}
 	}
 	resp.Details = data

@@ -1472,7 +1472,7 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbds.Comp
 		return nil, err
 	}
 
-	templateConfig, err := s.handleTemplateConfig(grpcKit, req.GetBizId(), req.GetAppId(),
+	templateConfig, err := s.handleTemplateConfig(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetAppId(),
 		req.GetOtherAppId(), req.GetReleaseId())
 	if err != nil {
 		return nil, err
@@ -1553,7 +1553,7 @@ func (s *Service) handleNonTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherA
 }
 
 // 处理模板套餐配置
-func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherAppId, releaseId uint32) (
+func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, projectID, appID, otherAppId, releaseId uint32) (
 	[]*pbds.CompareConfigItemConflictsResp_TemplateConfig, error) {
 	templateConfigs := make([]*pbds.CompareConfigItemConflictsResp_TemplateConfig, 0)
 
@@ -1569,7 +1569,7 @@ func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherAppI
 		return templateConfigs, nil
 	}
 
-	noNamespacePackage, err := s.getConfigTemplateSet(grpcKit, bizID, appID)
+	noNamespacePackage, err := s.getConfigTemplateSet(grpcKit, bizID, projectID, appID)
 	if err != nil {
 		return nil, err
 	}
@@ -1591,7 +1591,7 @@ func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherAppI
 	}
 
 	templateSpaceExist, templateSetExist, currentSpaceSetTemplateExist, templateExist, templateSetTemplateExist, err :=
-		s.getTemplateSpaceSetfile(grpcKit, releaseTemplateSpaceIds, releaseTemplateSetIds, releaseTemplateIds)
+		s.getTemplateSpaceSetfile(grpcKit, bizID, projectID, releaseTemplateSpaceIds, releaseTemplateSetIds, releaseTemplateIds)
 	if err != nil {
 		return nil, err
 	}
@@ -1644,10 +1644,10 @@ func (s *Service) handleTemplateConfig(grpcKit *kit.Kit, bizID, appID, otherAppI
 }
 
 // 返回空间、套餐、模板配置数据
-func (s *Service) getTemplateSpaceSetfile(grpcKit *kit.Kit, templateSpaceIds, templateSetIds, templateIds []uint32) (
-	map[uint32]bool, map[uint32]bool, map[string]bool, map[uint32]bool, map[uint32]bool, error) {
+func (s *Service) getTemplateSpaceSetfile(grpcKit *kit.Kit, bizID, projectID uint32, templateSpaceIds, templateSetIds,
+	templateIds []uint32) (map[uint32]bool, map[uint32]bool, map[string]bool, map[uint32]bool, map[uint32]bool, error) {
 	// 获取空间
-	templateSpace, err := s.dao.TemplateSpace().ListByIDs(grpcKit, templateSpaceIds)
+	templateSpace, err := s.dao.TemplateSpace().ListByIDs(grpcKit, bizID, projectID, templateSpaceIds)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -1689,7 +1689,7 @@ func (s *Service) getTemplateSpaceSetfile(grpcKit *kit.Kit, templateSpaceIds, te
 }
 
 // 获取未命名版本的模板套餐
-func (s *Service) getConfigTemplateSet(grpcKit *kit.Kit, bizID, appID uint32) (
+func (s *Service) getConfigTemplateSet(grpcKit *kit.Kit, bizID, projectID, appID uint32) (
 	map[string]bool, error) {
 
 	noNamespacePackage := make(map[string]bool)
@@ -1718,7 +1718,7 @@ func (s *Service) getConfigTemplateSet(grpcKit *kit.Kit, bizID, appID uint32) (
 	tmplSpaceIDs = tools.RemoveDuplicates(tmplSpaceIDs)
 
 	// template space details
-	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(grpcKit, tmplSpaceIDs)
+	tmplSpaces, err := s.dao.TemplateSpace().ListByIDs(grpcKit, bizID, projectID, tmplSpaceIDs)
 	if err != nil {
 		logs.Errorf("list template spaces failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err

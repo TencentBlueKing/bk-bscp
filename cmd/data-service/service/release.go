@@ -45,6 +45,8 @@ import (
 func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq) (*pbds.CreateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
+	projectID := grpcKit.ResolvedProjectID(req.ProjectId)
+
 	app, err := s.dao.App().GetByID(grpcKit, req.Attachment.AppId)
 	if err != nil {
 		logs.Errorf("get app failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -141,7 +143,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 		}
 
 		// 3: do template and non-template config item related operations for create release.
-		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, release.ID, tmplRevisions, cis); err != nil {
+		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, projectID, release.ID, tmplRevisions, cis); err != nil {
 			logs.Errorf("do template action for create release failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}
@@ -181,9 +183,9 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbds.CreateReleaseReq)
 6.创建已生成版本服务的模版变量
 7.将当前使用变量更新到未命名版本的服务模版变量
 */
-//nolint:funlen
+// nolint:funlen
 func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.TemplateVariableSpec,
-	tx *gen.QueryTx, releaseID uint32, tmplRevisions []*table.TemplateRevision, cis []*pbci.ConfigItem) error {
+	tx *gen.QueryTx, projectID, releaseID uint32, tmplRevisions []*table.TemplateRevision, cis []*pbci.ConfigItem) error {
 	// validate input variables and get the map
 	inputVarMap := make(map[string]*table.TemplateVariableSpec)
 	for _, v := range variables {
@@ -298,7 +300,7 @@ func (s *Service) doConfigItemOperations(kt *kit.Kit, variables []*pbtv.Template
 		return err
 	}
 
-	if e := s.createReleasedAppTemplates(kt, tx, releaseID, renderedContentMap, byteSizeMap, signatureMap,
+	if e := s.createReleasedAppTemplates(kt, tx, projectID, releaseID, renderedContentMap, byteSizeMap, signatureMap,
 		md5Map); e != nil {
 		logs.Errorf("create released rendered template config items failed, err: %v, rid: %s", e, kt.Rid)
 		return e
@@ -503,18 +505,21 @@ func (s *Service) createReleasedRenderedCIs(kt *kit.Kit, tx *gen.QueryTx, releas
 }
 
 // createReleasedAppTemplates create released app templates.
-func (s *Service) createReleasedAppTemplates(kt *kit.Kit, tx *gen.QueryTx, releaseID uint32,
+func (s *Service) createReleasedAppTemplates(kt *kit.Kit, tx *gen.QueryTx, projectID, releaseID uint32,
 	renderedContentMap map[uint32][]byte, byteSizeMap map[uint32]uint64, signatureMap map[uint32]string,
 	md5Map map[uint32]string) error {
 	revisionsResp, err := s.ListAppBoundTmplRevisions(kt.Ctx, &pbds.ListAppBoundTmplRevisionsReq{
-		BizId: kt.BizID,
-		AppId: kt.AppID,
-		All:   true,
+		BizId:     kt.BizID,
+		AppId:     kt.AppID,
+		All:       true,
+		ProjectId: projectID,
 	})
+	fmt.Println("revisionsResp:", revisionsResp)
 	if err != nil {
 		logs.Errorf("list app bound template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return err
 	}
+
 	revisions := revisionsResp.Details
 
 	releasedATs := make([]*table.ReleasedAppTemplate, len(revisions))

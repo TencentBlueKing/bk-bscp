@@ -34,19 +34,19 @@ type TemplateSpace interface {
 	// Update one template space's info.
 	Update(kit *kit.Kit, templateSpace *table.TemplateSpace) error
 	// List template spaces with options.
-	List(kit *kit.Kit, bizID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateSpace, int64, error)
+	List(kit *kit.Kit, bizID, projectID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateSpace, int64, error)
 	// Delete one template space instance.
 	Delete(kit *kit.Kit, templateSpace *table.TemplateSpace) error
 	// GetByUniqueKey get template space by unique key.
-	GetByUniqueKey(kit *kit.Kit, bizID uint32, name string) (*table.TemplateSpace, error)
+	GetByUniqueKey(kit *kit.Kit, bizID, projectID uint32, name string) (*table.TemplateSpace, error)
 	// GetAllBizs get all biz ids of template spaces.
 	GetAllBizs(kit *kit.Kit) ([]uint32, error)
 	// CreateDefault create default template space instance together with its default template set instance
-	CreateDefault(kit *kit.Kit, bizID uint32) (uint32, error)
+	CreateDefault(kit *kit.Kit, bizID, projectID uint32) (uint32, error)
 	// ListByIDs list template spaces by template space ids.
-	ListByIDs(kit *kit.Kit, ids []uint32) ([]*table.TemplateSpace, error)
+	ListByIDs(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]*table.TemplateSpace, error)
 	// Get one template spaces by template space id.
-	Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error)
+	Get(kit *kit.Kit, bizID, projectID, id uint32) (*table.TemplateSpace, error)
 	// GetBizTemplateSpaceByName Get template space by name.
 	GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint32, name string) (*table.TemplateSpace, error)
 	// CreateWithTx one template space instance with transaction.
@@ -119,6 +119,7 @@ func (dao *templateSpaceDao) CreateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *tabl
 }
 
 // GetBizTemplateSpaceByName Get template space by name.
+// 该查询只给进程和配置管理使用，所以不需要传入 projectID 参数
 func (dao *templateSpaceDao) GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint32, name string) (
 	*table.TemplateSpace, error) {
 	m := dao.genQ.TemplateSpace
@@ -127,10 +128,10 @@ func (dao *templateSpaceDao) GetBizTemplateSpaceByName(kit *kit.Kit, bizID uint3
 }
 
 // Get implements TemplateSpace.
-func (dao *templateSpaceDao) Get(kit *kit.Kit, bizID, id uint32) (*table.TemplateSpace, error) {
+func (dao *templateSpaceDao) Get(kit *kit.Kit, bizID, projectID, id uint32) (*table.TemplateSpace, error) {
 	m := dao.genQ.TemplateSpace
 
-	return dao.genQ.TemplateSpace.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
+	return dao.genQ.TemplateSpace.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Take()
 }
 
 // Create one template space instance.
@@ -207,7 +208,7 @@ func (dao *templateSpaceDao) Update(kit *kit.Kit, g *table.TemplateSpace) error 
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.TemplateSpace
 	q := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Take()
 	if err != nil {
 		return err
 	}
@@ -223,7 +224,8 @@ func (dao *templateSpaceDao) Update(kit *kit.Kit, g *table.TemplateSpace) error 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
 		q = tx.TemplateSpace.WithContext(kit.Ctx)
-		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Select(m.Memo, m.Reviser).Updates(g); err != nil {
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID), m.ID.Eq(g.ID)).
+			Select(m.Memo, m.Reviser).Updates(g); err != nil {
 			return err
 		}
 
@@ -240,8 +242,8 @@ func (dao *templateSpaceDao) Update(kit *kit.Kit, g *table.TemplateSpace) error 
 }
 
 // List template spaces with options.
-func (dao *templateSpaceDao) List(
-	kit *kit.Kit, bizID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateSpace, int64, error) {
+func (dao *templateSpaceDao) List(kit *kit.Kit, bizID, projectID uint32, s search.Searcher,
+	opt *types.BasePage) ([]*table.TemplateSpace, int64, error) {
 	m := dao.genQ.TemplateSpace
 	q := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
 
@@ -263,7 +265,7 @@ func (dao *templateSpaceDao) List(
 
 	conds = append(conds, m.Name.Neq(cs.CONFIG_DELIVERY))
 
-	d := q.Where(m.BizID.Eq(bizID)).Where(conds...).Order(m.Name)
+	d := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID)).Where(conds...).Order(m.Name)
 	if opt.All {
 		result, err := d.Find()
 		if err != nil {
@@ -279,14 +281,14 @@ func (dao *templateSpaceDao) List(
 // Delete one template space instance.
 func (dao *templateSpaceDao) Delete(kit *kit.Kit, g *table.TemplateSpace) error {
 	// 参数校验
-	if err := g.ValidateDelete(); err != nil {
+	if err := g.ValidateDelete(kit); err != nil {
 		return err
 	}
 
 	// 删除操作, 获取当前记录做审计
 	m := dao.genQ.TemplateSpace
 	q := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Take()
 	if err != nil {
 		return err
 	}
@@ -302,7 +304,7 @@ func (dao *templateSpaceDao) Delete(kit *kit.Kit, g *table.TemplateSpace) error 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
 		q = tx.TemplateSpace.WithContext(kit.Ctx)
-		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID)).Delete(g); err != nil {
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Delete(g); err != nil {
 			return err
 		}
 
@@ -332,9 +334,9 @@ func (dao *templateSpaceDao) GetAllBizs(kit *kit.Kit) ([]uint32, error) {
 }
 
 // CreateDefault create default template space instance together with its default template set instance
-func (dao *templateSpaceDao) CreateDefault(kit *kit.Kit, bizID uint32) (uint32, error) {
+func (dao *templateSpaceDao) CreateDefault(kit *kit.Kit, bizID, projectID uint32) (uint32, error) {
 	// if the default template space already exists, return directly
-	if tmplSpace, err := dao.GetByUniqueKey(kit, bizID, constant.DefaultTmplSpaceCNName); err == nil {
+	if tmplSpace, err := dao.GetByUniqueKey(kit, bizID, projectID, constant.DefaultTmplSpaceCNName); err == nil {
 		return tmplSpace.ID, nil
 	}
 
@@ -347,7 +349,8 @@ func (dao *templateSpaceDao) CreateDefault(kit *kit.Kit, bizID uint32) (uint32, 
 			Memo: constant.DefaultTmplSpaceMemo,
 		},
 		Attachment: &table.TemplateSpaceAttachment{
-			BizID: kit.BizID,
+			BizID:     kit.BizID,
+			ProjectID: projectID,
 		},
 		Revision: &table.Revision{
 			Creator: kit.User,
@@ -421,11 +424,11 @@ func (dao *templateSpaceDao) CreateDefault(kit *kit.Kit, bizID uint32) (uint32, 
 }
 
 // GetByUniqueKey get template space by unique key
-func (dao *templateSpaceDao) GetByUniqueKey(kit *kit.Kit, bizID uint32, name string) (*table.TemplateSpace, error) {
+func (dao *templateSpaceDao) GetByUniqueKey(kit *kit.Kit, bizID, projectID uint32, name string) (*table.TemplateSpace, error) {
 	m := dao.genQ.TemplateSpace
 	q := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
 
-	templateSpace, err := q.Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
+	templateSpace, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
 	if err != nil {
 		return nil, fmt.Errorf("get template space failed, err: %v", err)
 	}
@@ -434,10 +437,10 @@ func (dao *templateSpaceDao) GetByUniqueKey(kit *kit.Kit, bizID uint32, name str
 }
 
 // ListByIDs list template spaces by template space ids.
-func (dao *templateSpaceDao) ListByIDs(kit *kit.Kit, ids []uint32) ([]*table.TemplateSpace, error) {
+func (dao *templateSpaceDao) ListByIDs(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]*table.TemplateSpace, error) {
 	m := dao.genQ.TemplateSpace
 	q := dao.genQ.TemplateSpace.WithContext(kit.Ctx)
-	result, err := q.Where(m.ID.In(ids...)).Find()
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.In(ids...)).Find()
 	if err != nil {
 		return nil, err
 	}

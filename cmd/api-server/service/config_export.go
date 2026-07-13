@@ -89,9 +89,11 @@ func (c *configExport) ConfigFileExport(w http.ResponseWriter, r *http.Request) 
 
 	// 验证非模板配置和模板配置是否存在冲突
 	ci, err := c.cfgClient.ListConfigItems(kt.RpcCtx(), &pbcs.ListConfigItemsReq{
-		BizId: kt.BizID,
-		AppId: kt.AppID,
-		All:   true,
+		BizId:     kt.BizID,
+		AppId:     kt.AppID,
+		All:       true,
+		ProjectId: kt.ProjectID,
+		EnvId:     kt.EnvID,
 	})
 	if err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -104,8 +106,10 @@ func (c *configExport) ConfigFileExport(w http.ResponseWriter, r *http.Request) 
 
 	// 获取服务信息
 	app, err := c.cfgClient.GetApp(kt.RpcCtx(), &pbcs.GetAppReq{
-		BizId: kt.BizID,
-		AppId: kt.AppID,
+		BizId:     kt.BizID,
+		AppId:     kt.AppID,
+		ProjectId: kt.ProjectID,
+		EnvId:     kt.EnvID,
 	})
 	if err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))
@@ -120,6 +124,8 @@ func (c *configExport) ConfigFileExport(w http.ResponseWriter, r *http.Request) 
 			BizId:     kt.BizID,
 			AppId:     kt.AppID,
 			ReleaseId: uint32(releaseID),
+			ProjectId: kt.ProjectID,
+			EnvId:     kt.EnvID,
 		})
 		if errR != nil {
 			_ = render.Render(w, r, rest.BadRequest(errR))
@@ -323,6 +329,7 @@ func (c *configExport) TemplateExport(w http.ResponseWriter, r *http.Request) {
 		BizId:           kt.BizID,
 		TemplateSpaceId: uint32(tsId),
 		TemplateId:      uint32(tId),
+		ProjectId:       kt.ResolvedProjectID(0),
 	})
 	if err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))

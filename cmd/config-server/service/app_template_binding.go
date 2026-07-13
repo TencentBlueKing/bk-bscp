@@ -225,7 +225,9 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context, req *pbcs.ListA
 		return nil, err
 	}
 
-	tmplSetInfo, err := s.getAllAppTmplSets(grpcKit, req.BizId, req.AppId)
+	projectID := grpcKit.ResolvedProjectID(req.ProjectId)
+
+	tmplSetInfo, err := s.getAllAppTmplSets(grpcKit, req.BizId, projectID, req.AppId)
 	if err != nil {
 		logs.Errorf("get all app template sets failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -237,6 +239,7 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context, req *pbcs.ListA
 		Search:     req.GetSearch(),
 		All:        true,
 		WithStatus: req.WithStatus,
+		ProjectId:  projectID,
 	}
 
 	var rp *pbds.ListAppBoundTmplRevisionsResp
@@ -312,11 +315,12 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context, req *pbcs.ListA
 }
 
 // getAllAppTmplSets get all the template sets for the app, including empty template set which has not templates
-func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, appID uint32) ([]*pbtset.TemplateSetBriefInfo, error) {
+func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, projectID, appID uint32) ([]*pbtset.TemplateSetBriefInfo, error) {
 	atbReq := &pbds.ListAppTemplateBindingsReq{
-		BizId: bizID,
-		AppId: appID,
-		All:   true,
+		BizId:     bizID,
+		AppId:     appID,
+		All:       true,
+		ProjectId: projectID,
 	}
 
 	atbRsp, err := s.client.DS.ListAppTemplateBindings(grpcKit.RpcCtx(), atbReq)
@@ -334,7 +338,9 @@ func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, appID uint32) ([]*p
 
 	var tsbRsp *pbds.ListTemplateSetBriefInfoByIDsResp
 	tsbRsp, err = s.client.DS.ListTemplateSetBriefInfoByIDs(grpcKit.RpcCtx(), &pbds.ListTemplateSetBriefInfoByIDsReq{
-		Ids: tmplSetIDs,
+		Ids:       tmplSetIDs,
+		BizId:     bizID,
+		ProjectId: projectID,
 	})
 	if err != nil {
 		logs.Errorf("list template set brief info by ids failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -413,6 +419,8 @@ func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context,
 		ReleaseId: req.ReleaseId,
 		Search:    req.GetSearch(),
 		All:       true,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedProjectID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.ListReleasedAppBoundTmplRevisions(grpcKit.RpcCtx(), r)

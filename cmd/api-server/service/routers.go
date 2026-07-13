@@ -110,84 +110,42 @@ func (p *proxy) routers() http.Handler {
 		r.Use(p.checkOrCreateDefaultProjectEnv)
 		r.Use(p.HttpServerHandledTotal("", ""))
 		r.Use(view.Generic(p.authorizer))
+
 		// 项目和环境相关路由
 		r.Route("/biz/{biz_id}/projects", func(r chi.Router) {
-			r.Mount("/list", p.cfgSvrMux)
 			r.Mount("/", p.cfgSvrMux)
 			r.Route("/{project_id}", func(r chi.Router) {
-				// 开始强制校验 URL 里的 project_id
-				r.Use(p.authorizer.VerifyProjectExists)
-
-				// 脚本相关
-				r.Route("/hooks", func(r chi.Router) {
-					// 1. 先注册静态路由（不需要校验单个 hook_id 的接口）
-					r.Mount("/batch_delete", p.cfgSvrMux)
-					r.Mount("/", p.cfgSvrMux)
-					// 2. 再注册带有中间件和动态参数的路由
-					r.Route("/{hook_id}", func(r chi.Router) {
-						r.Use(p.HookProjectVerified)
-						r.Mount("/", p.cfgSvrMux)
-					})
-				})
-
-				// 分组相关
-				r.Route("/groups", func(r chi.Router) {
-					r.Mount("/batch_delete", p.cfgSvrMux)
-					r.Mount("/query/name", p.cfgSvrMux)
-					r.Mount("/selector", p.cfgSvrMux)
-					r.Mount("/", p.cfgSvrMux)
-					r.Route("/{group_id}", func(r chi.Router) {
-						r.Use(p.GroupProjectVerified)
-						r.Mount("/", p.cfgSvrMux)
-					})
-				})
-
+				r.Use(p.authorizer.VerifyProjectExists) // 校验 Project 是否存在
+				r.Mount("/", p.cfgSvrMux)
 				// 环境相关
-				r.Route("/envs", func(r chi.Router) {
-					r.Mount("/list", p.cfgSvrMux)
+				r.Route("/envs/{env_id}", func(r chi.Router) {
+					r.Use(p.authorizer.VerifyEnvExists) // 校验 Env 归属于该项目
 					r.Mount("/", p.cfgSvrMux)
-					r.Route("/{env_id}", func(r chi.Router) {
-						// 开始强制校验 URL 里的 env_id
-						r.Use(p.authorizer.VerifyEnvExists)
-						r.Route("/apps", func(r chi.Router) {
-							r.Mount("/list", p.cfgSvrMux)
-							r.Mount("/", p.cfgSvrMux)
-							r.Route("/{app_id}", func(r chi.Router) {
-								r.Use(p.AppProjectEnvVerified)
-								r.Mount("/", p.cfgSvrMux)
-							})
-						})
+					r.Route("/apps/{app_id}", func(r chi.Router) {
+						r.Use(p.AppProjectEnvVerified) // 校验 App 归属于该项目+环境
 						r.Mount("/", p.cfgSvrMux)
 					})
 				})
-
-				r.Mount("/", p.cfgSvrMux)
+				// 脚本相关
+				r.Route("/hooks/{hook_id}", func(r chi.Router) {
+					r.Use(p.HookProjectVerified) // 校验 Hook 归属于该项目
+					r.Mount("/", p.cfgSvrMux)
+				})
+				// 分组相关
+				r.Route("/groups/{group_id}", func(r chi.Router) {
+					r.Use(p.GroupProjectVerified) // 校验 Group 归属于该项目
+					r.Mount("/", p.cfgSvrMux)
+				})
+				// 模版空间相关
+				r.Route("/template_spaces", func(r chi.Router) {
+					r.Mount("/", p.cfgSvrMux)
+					r.Route("/{template_space_id}", func(r chi.Router) {
+						r.Use(p.TemplateSpaceProjectVerified) // 校验 TemplateSpace 归属于该项目
+						r.Mount("/", p.cfgSvrMux)
+					})
+				})
 			})
 		})
-
-		// 兼容旧版项目(校验 Hook 是否属于指定的项目)
-		r.Route("/biz/{biz_id}/hooks/{hook_id}", func(r chi.Router) {
-			r.Mount("/batch_delete", p.cfgSvrMux)
-			r.Route("/{hook_id}", func(r chi.Router) {
-				r.Use(p.HookProjectVerified)
-				r.Mount("/", p.cfgSvrMux)
-			})
-			r.Mount("/", p.cfgSvrMux)
-		})
-
-		// 兼容旧版分组(校验 Group 是否属于指定的项目)
-		// 旧路由使用 checkOrCreateDefaultProjectEnv 注入 ProjectID
-		r.Route("/biz/{biz_id}/groups", func(r chi.Router) {
-			r.Mount("/batch_delete", p.cfgSvrMux)
-			r.Mount("/query/name", p.cfgSvrMux)
-			r.Mount("/selector", p.cfgSvrMux)
-			r.Mount("/", p.cfgSvrMux)
-			r.Route("/{group_id}", func(r chi.Router) {
-				r.Use(p.GroupProjectVerified)
-				r.Mount("/", p.cfgSvrMux)
-			})
-		})
-
 		r.Mount("/", p.cfgSvrMux)
 	})
 
@@ -276,18 +234,39 @@ func (p *proxy) routers() http.Handler {
 	})
 
 	// 导入模板压缩包
-	r.Route("/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/import/{filename}",
-		func(r chi.Router) {
-			r.Use(p.authorizer.UnifiedAuthentication)
-			r.Use(p.authorizer.BizVerified)
-			r.Use(p.HttpServerHandledTotal("", "TemplateConfigFileImport"))
-			r.Post("/", p.configImportService.TemplateConfigFileImport)
-		})
+	r.Route("/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/import/{filename}", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.HttpServerHandledTotal("", "TemplateConfigFileImport"))
+		r.Post("/", p.configImportService.TemplateConfigFileImport)
+	})
+
+	// 导入模板压缩包v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/template_spaces/{template_space_id}/templates/import/{filename}", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.HttpServerHandledTotal("", "TemplateConfigFileImport"))
+		r.Post("/", p.configImportService.TemplateConfigFileImport)
+	})
 
 	// 导入配置压缩包
 	r.Route("/api/v1/config/biz/{biz_id}/apps/{app_id}/config_item/import/{filename}", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.HttpServerHandledTotal("", "ConfigFileImport"))
+		r.Post("/", p.configImportService.ConfigFileImport)
+	})
+
+	// 导入配置压缩包v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/config_item/import/{filename}", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.authorizer.VerifyEnvExists)
+		r.Use(p.AppProjectEnvVerified)
 		r.Use(p.HttpServerHandledTotal("", "ConfigFileImport"))
 		r.Post("/", p.configImportService.ConfigFileImport)
 	})
@@ -296,6 +275,18 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/config_item/export", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.HttpServerHandledTotal("", "ConfigFileExport"))
+		r.Get("/", p.configExportService.ConfigFileExport)
+	})
+
+	// 导出配置压缩包v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/config_item/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.authorizer.VerifyEnvExists)
+		r.Use(p.AppProjectEnvVerified)
 		r.Use(p.HttpServerHandledTotal("", "ConfigFileExport"))
 		r.Get("/", p.configExportService.ConfigFileExport)
 	})
@@ -309,6 +300,17 @@ func (p *proxy) routers() http.Handler {
 	r.Route("/api/v1/biz/{biz_id}/apps/{app_id}/releases/{release_id}/kvs/export", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Get("/", p.kvService.Export)
+	})
+
+	// 导出版本kv v2
+	r.Route("/api/v1/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/kvs/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.authorizer.VerifyEnvExists)
+		r.Use(p.authorizer.AppVerified)
 		r.Get("/", p.kvService.Export)
 	})
 
@@ -334,13 +336,22 @@ func (p *proxy) routers() http.Handler {
 	})
 
 	// 导出模板压缩包
-	r.Route("/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/export",
-		func(r chi.Router) {
-			r.Use(p.authorizer.UnifiedAuthentication)
-			r.Use(p.authorizer.BizVerified)
-			r.Use(p.HttpServerHandledTotal("", "TemplateExport"))
-			r.Get("/", p.configExportService.TemplateExport)
-		})
+	r.Route("/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/templates/{template_id}/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.checkOrCreateDefaultProjectEnv)
+		r.Use(p.HttpServerHandledTotal("", "TemplateExport"))
+		r.Get("/", p.configExportService.TemplateExport)
+	})
+
+	// 导出模板压缩包v2
+	r.Route("/api/v1/config/biz/{biz_id}/projects/{project_id}/template_spaces/{template_space_id}/templates/{template_id}/export", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.BizVerified)
+		r.Use(p.authorizer.VerifyProjectExists)
+		r.Use(p.HttpServerHandledTotal("", "TemplateExport"))
+		r.Get("/", p.configExportService.TemplateExport)
+	})
 
 	return r
 }

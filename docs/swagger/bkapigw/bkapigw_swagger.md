@@ -57,6 +57,7 @@
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_GetEnvironment](#config-get-environment) | 获取环境详情 |
 | GET | /api/v1/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName](#config-get-group-by-name) | 按名称获取分组 |
 | GET | /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName2](#config-get-group-by-name2) | 按名称获取分组 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/groups:search | [Config_GetGroupByName3](#config-get-group-by-name3) | 按名称获取分组 |
 | GET | /api/v1/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView](#config-get-process-config-view) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/inner/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView2](#config-get-process-config-view2) | 查询指定业务是否开启进程与配置管理可见性 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
@@ -74,7 +75,7 @@
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items | [Config_ListConfigItems3](#config-list-config-items3) | 获取文件配置项列表 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate](#config-list-config-template) | 配置模板列表 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_template/list | [Config_ListConfigTemplate2](#config-list-config-template2) | 配置模板列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list | [Config_ListEnvironments](#config-list-environments) | 环境管理 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs:list | [Config_ListEnvironments](#config-list-environments) | 环境管理 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs](#config-list-kvs) | 获取键值配置项列表 |
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs/list | [Config_ListKvs2](#config-list-kvs2) | 获取键值配置项列表 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list | [Config_ListKvs3](#config-list-kvs3) | 获取键值配置项列表 |
@@ -82,7 +83,7 @@
 进程列表 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/list | [Config_ListProcess2](#config-list-process2) | 进程管理
 进程列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/list | [Config_ListProjects](#config-list-projects) | 项目管理 |
+| POST | /api/v1/config/biz/{bizId}/projects:list | [Config_ListProjects](#config-list-projects) | 项目管理 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems](#config-list-released-config-items) | 获取已发布文件配置项列表 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems2](#config-list-released-config-items2) | 获取已发布文件配置项列表 |
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems3](#config-list-released-config-items3) | 获取已发布文件配置项列表 |
@@ -90,6 +91,7 @@
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_ListReleases2](#config-list-releases2) | 获取服务版本列表 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases3](#config-list-releases3) | 获取服务版本列表 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound2](#config-list-templates-not-bound2) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_OperateProcess2](#config-operate-process2) | 进程操作 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
@@ -2212,6 +2214,7 @@ GET /api/v1/config/biz/{bizId}/groups/query/name/{groupName}
 |------|--------|------|---------|
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | groupName | string | ✓ | 分组名 |
+| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -2245,6 +2248,7 @@ GET /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName}
 |------|--------|------|---------|
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | groupName | string | ✓ | 分组名 |
+| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -2255,6 +2259,40 @@ GET /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName}
 
 ```bash
 GET /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-group-by-name3"></span> 按名称获取分组 (*Config_GetGroupByName3*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/groups:search
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| groupName | string |  | 分组名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/groups:search HTTP/1.1
 Content-Type: application/json
 
 
@@ -3019,7 +3057,7 @@ Content-Type: application/json
 ### <span id="config-list-environments"></span> 环境管理 (*Config_ListEnvironments*)
 
 ```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs:list
 ```
 
 #### 输入参数
@@ -3041,7 +3079,7 @@ POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list
 #### 输入示例
 
 ```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/list HTTP/1.1
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs:list HTTP/1.1
 Content-Type: application/json
 
 {
@@ -3401,7 +3439,7 @@ Content-Type: application/json
 ### <span id="config-list-projects"></span> 项目管理 (*Config_ListProjects*)
 
 ```
-POST /api/v1/config/biz/{bizId}/projects/list
+POST /api/v1/config/biz/{bizId}/projects:list
 ```
 
 #### 输入参数
@@ -3422,7 +3460,7 @@ POST /api/v1/config/biz/{bizId}/projects/list
 #### 输入示例
 
 ```bash
-POST /api/v1/config/biz/{bizId}/projects/list HTTP/1.1
+POST /api/v1/config/biz/{bizId}/projects:list HTTP/1.1
 Content-Type: application/json
 
 {
@@ -3728,6 +3766,49 @@ POST /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list
 
 ```bash
 POST /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "search": {},
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-templates-not-bound2"></span> 获取未绑定的模板列表 (*Config_ListTemplatesNotBound2*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| templateSpaceId | int64 (formatted integer) | ✓ | 模板空间ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| search | [interface{}](#interface) |  | 搜索 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound HTTP/1.1
 Content-Type: application/json
 
 {
@@ -6889,6 +6970,7 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+| projectId | int64 (formatted integer)| `int64` |  | | 项目ID |  |
 
 
 

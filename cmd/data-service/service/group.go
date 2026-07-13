@@ -19,6 +19,7 @@ import (
 	"reflect"
 
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
@@ -137,6 +138,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbds.ListAllGroupsReq)
 	for _, group := range groups {
 		for _, app := range list {
 			if group.Id == app.GroupID {
+				fmt.Println("app.AppID", app.AppID)
 				group.Spec.BindApps = append(group.Spec.BindApps, app.AppID)
 			}
 		}
@@ -456,6 +458,8 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbds.ListGroup
 			ReleaseId:   detail.ReleaseID,
 			ReleaseName: detail.ReleaseName,
 			Edited:      detail.Edited,
+			EnvDisplay:  detail.EnvDisplay,
+			ReleaseTime: timestamppb.New(detail.ReleaseTime.UTC()),
 		}
 	}
 

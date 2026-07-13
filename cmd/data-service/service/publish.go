@@ -526,7 +526,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbds.Gener
 		}
 
 		// do template and non-template config item related operations for create release.
-		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, release.ID, tmplRevisions, cfgItems); err != nil {
+		if err = s.doConfigItemOperations(grpcKit, req.Variables, tx, req.ProjectId, release.ID, tmplRevisions, cfgItems); err != nil {
 			logs.Errorf("do template action for create release failed, err: %v, rid: %s", err, grpcKit.Rid)
 			return nil, err
 		}

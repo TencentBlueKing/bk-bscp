@@ -39,8 +39,7 @@ import (
 )
 
 // CreateTemplate create template.
-//
-//nolint:funlen
+// nolint:funlen
 func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
@@ -96,7 +95,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 	}
 
 	// 4. 验证服务套餐下是否超出限制
-	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetAttachment().BizId, bindings, req.GetTemplateSetIds(),
+	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetAttachment().BizId, req.ProjectId, bindings, req.GetTemplateSetIds(),
 		[]uint32{}, 1); err != nil {
 		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -144,7 +143,7 @@ func (s *Service) CreateTemplate(ctx context.Context, req *pbds.CreateTemplateRe
 
 	// 7. 处理和服务之前的绑定关系
 	appTemplateBindings, errH := s.handleAppTemplateBindings(kt, tx, req.GetAttachment().BizId, bindings,
-		req.GetTemplateSetIds(), []uint32{templateID})
+		req.GetTemplateSetIds(), []uint32{templateID}, time.Now().UTC())
 	if errH != nil {
 		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", errH, kt.Rid)
 		return nil, errH
@@ -428,8 +427,7 @@ func (s *Service) BatchDeleteTemplate(ctx context.Context, req *pbds.BatchDelete
 }
 
 // AddTmplsToTmplSets add templates to template sets.
-func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTmplSetsReq) (
-	*pbbase.EmptyResp, error) {
+func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTmplSetsReq) (*pbbase.EmptyResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
 	var err error
@@ -476,7 +474,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 	}
 
 	// 4. 验证需要编辑和新增的模板是否超出服务限制
-	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), bindings,
+	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), req.GetProjectId(), bindings,
 		req.GetTemplateSetIds(), templateIds, 0); err != nil {
 		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -484,7 +482,7 @@ func (s *Service) AddTmplsToTmplSets(ctx context.Context, req *pbds.AddTmplsToTm
 
 	// 5. 处理模板绑定的数据
 	appTemplateBindings, err := s.handleAppTemplateBindings(kt, tx, req.GetBizId(), bindings,
-		req.GetTemplateSetIds(), templateIds)
+		req.GetTemplateSetIds(), templateIds, time.Now().UTC())
 	if err != nil {
 		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -933,11 +931,11 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get app template bindings by template set ids failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed,
-			i18n.T(kt, "get app template bindings by template set ids, err: %s", err))
+			"%s", i18n.T(kt, "get app template bindings by template set ids, err: %s", err))
 	}
 
 	// 5. 验证需要编辑和新增的模板是否超出服务限制
-	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), bindings, req.GetTemplateSetIds(),
+	if err = s.verifyAppReferenceTmplSetExceedsLimit(kt, req.GetBizId(), req.GetProjectId(), bindings, req.GetTemplateSetIds(),
 		updateIds, len(createData)); err != nil {
 		logs.Errorf("verify app reference template set exceeds limit failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -968,7 +966,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 
 	// 8. 处理和服务之前的绑定关系
 	appTemplateBindings, errH := s.handleAppTemplateBindings(kt, tx, req.GetBizId(), bindings,
-		req.GetTemplateSetIds(), templateIDs)
+		req.GetTemplateSetIds(), templateIDs, now)
 	if errH != nil {
 		logs.Errorf("handle app template bindings failed, err: %v, rid: %s", errH, kt.Rid)
 		return nil, errH
@@ -978,7 +976,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	if len(appTemplateBindings) > 0 {
 		if err = s.dao.AppTemplateBinding().BatchUpdateWithTx(kt, tx, appTemplateBindings); err != nil {
 			logs.Errorf("batch update app template binding's failed, err: %v, rid: %s", err, kt.Rid)
-			return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch update app template binding's failed, err: %s", err))
+			return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "batch update app template binding's failed, err: %s", err))
 		}
 	}
 
@@ -989,7 +987,7 @@ func (s *Service) BatchUpsertTemplates(ctx context.Context, req *pbds.BatchUpser
 	// 10. 添加至模板套餐中
 	if err := s.dao.TemplateSet().BatchAddTmplsToTmplSetsWithTx(kt, tx, templateSets, false); err != nil {
 		logs.Errorf("batch add templates to template sets failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, errf.Errorf(errf.DBOpFailed, i18n.T(kt, "batch add templates to template sets failed, err: %s", err))
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "batch add templates to template sets failed, err: %s", err))
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -1289,7 +1287,7 @@ func (s *Service) verifyTemplateSetAndReturnData(kt *kit.Kit, tx *gen.QueryTx, b
 }
 
 // 验证服务下引用的套餐
-func (s *Service) verifyAppReferenceTmplSetExceedsLimit(kt *kit.Kit, bizID uint32, bindings []*table.AppTemplateBinding,
+func (s *Service) verifyAppReferenceTmplSetExceedsLimit(kt *kit.Kit, bizID, projectID uint32, bindings []*table.AppTemplateBinding,
 	templateSetIDs, templateIDs []uint32, additionalQuantity int) error {
 
 	if bindings == nil {
@@ -1316,7 +1314,7 @@ func (s *Service) verifyAppReferenceTmplSetExceedsLimit(kt *kit.Kit, bizID uint3
 		appIDs = append(appIDs, v.Attachment.AppID)
 	}
 
-	app, err := s.dao.App().ListAppsByIDs(kt, appIDs)
+	app, err := s.dao.App().ListAppsByIDs(kt, bizID, projectID, appIDs)
 	if err != nil {
 		return errf.Errorf(errf.DBOpFailed, i18n.T(kt, "list apps by app ids failed, err: %s", err))
 	}
@@ -1397,7 +1395,7 @@ func (s *Service) countNumberAppTemplateBindings(kt *kit.Kit, bizID uint32, bind
 
 // 获取需要更新的模板绑定数据
 func (s *Service) handleAppTemplateBindings(kt *kit.Kit, tx *gen.QueryTx, bizID uint32,
-	bindings []*table.AppTemplateBinding, templateSetIDs, templateIDs []uint32) (
+	bindings []*table.AppTemplateBinding, templateSetIDs, templateIDs []uint32, now time.Time) (
 	[]*table.AppTemplateBinding, error) {
 	if bindings == nil {
 		return nil, nil
@@ -1482,7 +1480,12 @@ func (s *Service) handleAppTemplateBindings(kt *kit.Kit, tx *gen.QueryTx, bizID 
 				Bindings:            specBindings,
 			},
 			Attachment: templateBinding.Attachment,
-			Revision:   templateBinding.Revision,
+			Revision: &table.Revision{
+				Creator:   templateBinding.Revision.Creator,
+				Reviser:   kt.User,
+				CreatedAt: templateBinding.Revision.CreatedAt,
+				UpdatedAt: now,
+			},
 		})
 	}
 

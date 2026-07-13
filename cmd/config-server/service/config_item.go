@@ -442,6 +442,8 @@ func (s *Service) GetReleasedConfigItem(ctx context.Context, req *pbcs.GetReleas
 		AppId:        req.AppId,
 		ReleaseId:    req.ReleaseId,
 		ConfigItemId: req.Id,
+		ProjectId:    grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:        grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	releasedCI, err := s.client.DS.GetReleasedConfigItem(grpcKit.RpcCtx(), grciReq)
 	if err != nil {
@@ -497,8 +499,7 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbcs.ListConfigItems
 }
 
 // ListReleasedConfigItems list released config items
-func (s *Service) ListReleasedConfigItems(ctx context.Context,
-	req *pbcs.ListReleasedConfigItemsReq) (
+func (s *Service) ListReleasedConfigItems(ctx context.Context, req *pbcs.ListReleasedConfigItemsReq) (
 	*pbcs.ListReleasedConfigItemsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
@@ -522,6 +523,8 @@ func (s *Service) ListReleasedConfigItems(ctx context.Context,
 		Start:     req.Start,
 		Limit:     req.Limit,
 		All:       true,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.ListReleasedConfigItems(grpcKit.RpcCtx(), r)
@@ -673,6 +676,8 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 		AppId:      req.GetAppId(),
 		ReleaseId:  req.GetReleaseId(),
 		OtherAppId: req.GetOtherAppId(),
+		ProjectId:  grpcKit.ResolvedProjectID(req.GetProjectId()),
+		EnvId:      grpcKit.ResolvedEnvID(req.GetEnvId()),
 	})
 	if err != nil {
 		return nil, err

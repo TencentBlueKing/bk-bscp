@@ -141,11 +141,11 @@ type ReleasedContentSpec struct {
 func (cs ContentSpec) Validate(kit *kit.Kit) error {
 	// a file's sha256 signature value's length is 64.
 	if len(cs.Signature) != 64 {
-		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "invalid content signature, should be config's sha256 value"))
+		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "invalid content signature, should be config's sha256 value"))
 	}
 
 	if cs.Signature != strings.ToLower(cs.Signature) {
-		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "content signature should be lowercase"))
+		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "content signature should be lowercase"))
 	}
 	return nil
 }
