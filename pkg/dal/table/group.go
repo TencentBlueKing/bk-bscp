@@ -266,12 +266,14 @@ var GroupAttachmentColumns = mergeColumns(GroupAttachmentColumnDescriptor)
 
 // GroupAttachmentColumnDescriptor is GroupAttachment's column descriptors.
 var GroupAttachmentColumnDescriptor = ColumnDescriptors{
-	{Column: "biz_id", NamedC: "biz_id", Type: enumor.Numeric}}
+	{Column: "biz_id", NamedC: "biz_id", Type: enumor.Numeric},
+	{Column: "project_id", NamedC: "project_id", Type: enumor.Numeric}}
 
 // GroupAttachment defines the group attachments.
 type GroupAttachment struct {
-	BizID    uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
-	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
+	BizID     uint32 `db:"biz_id" json:"biz_id" gorm:"column:biz_id"`
+	ProjectID uint32 `db:"project_id" json:"project_id" gorm:"column:project_id"`
+	TenantID  string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // IsEmpty test whether group attachment is empty or not.

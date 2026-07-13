@@ -108,7 +108,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbds.ListAllGroupsReq)
 
 	// StrToUint32Slice the comma separated string goes to uint32 slice
 	topIds, _ := tools.StrToUint32Slice(req.TopIds)
-	details, err := s.dao.Group().ListAll(kt, req.BizId, topIds)
+	details, err := s.dao.Group().ListAll(kt, req.BizId, req.ProjectId, topIds)
 	if err != nil {
 		logs.Errorf("list group failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -149,7 +149,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbds.ListAllGroupsReq)
 // ListAppGroups list groups in app.
 func (s *Service) ListAppGroups(ctx context.Context, req *pbds.ListAppGroupsReq) (*pbds.ListAppGroupsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
-	groups, err := s.dao.Group().ListAppGroups(kt, req.BizId, req.AppId)
+	groups, err := s.dao.Group().ListAppGroups(kt, req.BizId, req.ProjectId, req.AppId)
 	if err != nil {
 		logs.Errorf("list app groups failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -238,7 +238,7 @@ func (s *Service) ListAppGroups(ctx context.Context, req *pbds.ListAppGroupsReq)
 func (s *Service) GetGroupByName(ctx context.Context, req *pbds.GetGroupByNameReq) (*pbgroup.Group, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	group, err := s.dao.Group().GetByName(grpcKit, req.GetBizId(), req.GetGroupName())
+	group, err := s.dao.Group().GetByName(grpcKit, req.GetBizId(), req.GetProjectId(), req.GetGroupName())
 	if err != nil {
 		logs.Errorf("get group by name failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, fmt.Errorf("query group by name %s failed", req.GetGroupName())
@@ -251,7 +251,7 @@ func (s *Service) GetGroupByName(ctx context.Context, req *pbds.GetGroupByNameRe
 func (s *Service) GetGroupByID(ctx context.Context, req *pbds.GetGroupByIDReq) (*pbgroup.Group, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	group, err := s.dao.Group().Get(grpcKit, req.GetGroupId(), req.GetBizId())
+	group, err := s.dao.Group().Get(grpcKit, req.GetGroupId(), req.GetBizId(), req.GetProjectId())
 	if err != nil {
 		logs.Errorf("get group by id failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, fmt.Errorf("query group by id %d failed", req.GetGroupId())
@@ -289,7 +289,7 @@ func (s *Service) UpdateGroup(ctx context.Context, req *pbds.UpdateGroupReq) (*p
 		},
 	}
 
-	old, err := s.dao.Group().Get(kt, req.Id, req.Attachment.BizId)
+	old, err := s.dao.Group().Get(kt, req.Id, req.Attachment.BizId, req.Attachment.ProjectId)
 	if err != nil {
 		return nil, err
 	}

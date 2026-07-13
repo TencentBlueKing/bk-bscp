@@ -53,7 +53,8 @@ func (s *Service) CreateGroup(ctx context.Context, req *pbcs.CreateGroupReq) (*p
 
 	r := &pbds.CreateGroupReq{
 		Attachment: &pbgroup.GroupAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbgroup.GroupSpec{
 			Name:     req.Name,
@@ -92,7 +93,8 @@ func (s *Service) DeleteGroup(ctx context.Context, req *pbcs.DeleteGroupReq) (*p
 	r := &pbds.DeleteGroupReq{
 		Id: req.GroupId,
 		Attachment: &pbgroup.GroupAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 	}
 	_, err = s.client.DS.DeleteGroup(grpcKit.RpcCtx(), r)
@@ -117,7 +119,7 @@ func (s *Service) BatchDeleteGroups(ctx context.Context, req *pbcs.BatchDeleteBi
 	}
 
 	if len(req.GetIds()) == 0 {
-		return nil, errf.Errorf(errf.InvalidArgument, i18n.T(grpcKit, "id is required"))
+		return nil, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(grpcKit, "id is required"))
 	}
 
 	eg, egCtx := errgroup.WithContext(grpcKit.RpcCtx())
@@ -134,7 +136,8 @@ func (s *Service) BatchDeleteGroups(ctx context.Context, req *pbcs.BatchDeleteBi
 			r := &pbds.DeleteGroupReq{
 				Id: v,
 				Attachment: &pbgroup.GroupAttachment{
-					BizId: req.BizId,
+					BizId:     req.BizId,
+					ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 				},
 			}
 			if _, err := s.client.DS.DeleteGroup(egCtx, r); err != nil {
@@ -157,7 +160,7 @@ func (s *Service) BatchDeleteGroups(ctx context.Context, req *pbcs.BatchDeleteBi
 
 	if err := eg.Wait(); err != nil {
 		logs.Errorf("batch delete groups failed, err: %v, rid: %s", err, grpcKit.Rid)
-		return nil, errf.Errorf(errf.Aborted, i18n.T(grpcKit, "batch delete groups failed"))
+		return nil, errf.Errorf(errf.Aborted, "%s", i18n.T(grpcKit, "batch delete groups failed"))
 	}
 
 	// 全部失败, 当前API视为失败
@@ -190,7 +193,8 @@ func (s *Service) UpdateGroup(ctx context.Context, req *pbcs.UpdateGroupReq) (*p
 	r := &pbds.UpdateGroupReq{
 		Id: req.GroupId,
 		Attachment: &pbgroup.GroupAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbgroup.GroupSpec{
 			Name:     req.Name,
@@ -225,8 +229,9 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 
 	// 1. list all groups
 	lgResp, err := s.client.DS.ListAllGroups(grpcKit.RpcCtx(), &pbds.ListAllGroupsReq{
-		BizId:  req.BizId,
-		TopIds: req.TopIds,
+		BizId:     req.BizId,
+		TopIds:    req.TopIds,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	})
 	if err != nil {
 		logs.Errorf("list groups failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -323,8 +328,10 @@ func (s *Service) ListAppGroups(ctx context.Context, req *pbcs.ListAppGroupsReq)
 	}
 
 	lReq := &pbds.ListAppGroupsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	lResp, err := s.client.DS.ListAppGroups(grpcKit.RpcCtx(), lReq)
 	if err != nil {
@@ -369,6 +376,7 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbcs.ListGroup
 		SearchKey: req.SearchKey,
 		Start:     req.Start,
 		Limit:     req.Limit,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	lResp, err := s.client.DS.ListGroupReleasedApps(grpcKit.RpcCtx(), lReq)
 	if err != nil {
@@ -404,6 +412,7 @@ func (s *Service) GetGroupByName(ctx context.Context, req *pbcs.GetGroupByNameRe
 	r := &pbds.GetGroupByNameReq{
 		BizId:     req.BizId,
 		GroupName: req.GroupName,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
 	}
 	rp, err := s.client.DS.GetGroupByName(kt.RpcCtx(), r)
 	if err != nil {
@@ -429,6 +438,7 @@ func (s *Service) ListGroupSelector(ctx context.Context, req *pbcs.ListGroupSele
 	resp, err := s.client.DS.ListGroupSelector(kit.RpcCtx(), &pbds.ListGroupSelectorReq{
 		BizId:     req.BizId,
 		LabelName: req.GetLabelName(),
+		ProjectId: kit.ResolvedProjectID(req.ProjectId),
 	})
 	if err != nil {
 		return nil, err
@@ -436,6 +446,32 @@ func (s *Service) ListGroupSelector(ctx context.Context, req *pbcs.ListGroupSele
 
 	return &pbcs.ListGroupSelectorResp{
 		Values: resp.GetValues(),
+	}, nil
+}
+
+// GetGroup get group by group id.
+func (s *Service) GetGroup(ctx context.Context, req *pbcs.GetGroupReq) (*pbcs.GetGroupResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(kt, res...); err != nil {
+		return nil, err
+	}
+
+	rp, err := s.client.DS.GetGroupByID(kt.RpcCtx(), &pbds.GetGroupByIDReq{
+		BizId:     req.BizId,
+		GroupId:   req.GroupId,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
+	})
+	if err != nil {
+		logs.Errorf("get group by id %d failed, err: %v, rid: %s", req.GroupId, err, kt.Rid)
+		return nil, err
+	}
+
+	return &pbcs.GetGroupResp{
+		Data: rp,
 	}, nil
 }
 

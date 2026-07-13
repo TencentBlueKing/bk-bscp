@@ -117,6 +117,8 @@ func (p *proxy) routers() http.Handler {
 			r.Route("/{project_id}", func(r chi.Router) {
 				// 开始强制校验 URL 里的 project_id
 				r.Use(p.authorizer.VerifyProjectExists)
+
+				// 脚本相关
 				r.Route("/hooks", func(r chi.Router) {
 					// 1. 先注册静态路由（不需要校验单个 hook_id 的接口）
 					r.Mount("/batch_delete", p.cfgSvrMux)
@@ -128,7 +130,19 @@ func (p *proxy) routers() http.Handler {
 					})
 				})
 
-				r.Mount("/", p.cfgSvrMux)
+				// 分组相关
+				r.Route("/groups", func(r chi.Router) {
+					r.Mount("/batch_delete", p.cfgSvrMux)
+					r.Mount("/query/name", p.cfgSvrMux)
+					r.Mount("/selector", p.cfgSvrMux)
+					r.Mount("/", p.cfgSvrMux)
+					r.Route("/{group_id}", func(r chi.Router) {
+						r.Use(p.GroupProjectVerified)
+						r.Mount("/", p.cfgSvrMux)
+					})
+				})
+
+				// 环境相关
 				r.Route("/envs", func(r chi.Router) {
 					r.Mount("/list", p.cfgSvrMux)
 					r.Mount("/", p.cfgSvrMux)
@@ -146,13 +160,32 @@ func (p *proxy) routers() http.Handler {
 						r.Mount("/", p.cfgSvrMux)
 					})
 				})
+
+				r.Mount("/", p.cfgSvrMux)
 			})
 		})
 
 		// 兼容旧版项目(校验 Hook 是否属于指定的项目)
 		r.Route("/biz/{biz_id}/hooks/{hook_id}", func(r chi.Router) {
-			r.Use(p.HookProjectVerified)
+			r.Mount("/batch_delete", p.cfgSvrMux)
+			r.Route("/{hook_id}", func(r chi.Router) {
+				r.Use(p.HookProjectVerified)
+				r.Mount("/", p.cfgSvrMux)
+			})
 			r.Mount("/", p.cfgSvrMux)
+		})
+
+		// 兼容旧版分组(校验 Group 是否属于指定的项目)
+		// 旧路由使用 checkOrCreateDefaultProjectEnv 注入 ProjectID
+		r.Route("/biz/{biz_id}/groups", func(r chi.Router) {
+			r.Mount("/batch_delete", p.cfgSvrMux)
+			r.Mount("/query/name", p.cfgSvrMux)
+			r.Mount("/selector", p.cfgSvrMux)
+			r.Mount("/", p.cfgSvrMux)
+			r.Route("/{group_id}", func(r chi.Router) {
+				r.Use(p.GroupProjectVerified)
+				r.Mount("/", p.cfgSvrMux)
+			})
 		})
 
 		r.Mount("/", p.cfgSvrMux)
