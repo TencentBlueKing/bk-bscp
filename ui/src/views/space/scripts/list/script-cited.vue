@@ -56,7 +56,7 @@
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import SearchInput from '../../../../components/search-input.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
   const router = useRouter();
 
@@ -94,9 +94,9 @@
       params.searchKey = searchStr.value;
     }
     if (props.versionId) {
-      res = await getScriptVersionCiteList(spaceId.value, props.id, props.versionId, params);
+      res = await getScriptVersionCiteList(spaceId.value, projectId.value, props.id, props.versionId, params);
     } else {
-      res = await getScriptCiteList(spaceId.value, props.id, params);
+      res = await getScriptCiteList(spaceId.value, projectId.value, props.id, params);
     }
     list.value = res.details;
     pagination.value.count = res.count;

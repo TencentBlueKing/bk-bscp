@@ -30,6 +30,7 @@
           </bk-button>
           <BatchDeleteBtn
             :bk-biz-id="spaceId"
+            :project-id="projectId"
             :selected-ids="selectedIds"
             :is-across-checked="isAcrossChecked"
             :data-count="selecTableDataCount"
@@ -243,7 +244,7 @@
   import UserName from '../../../../components/user-name.vue';
   import { debounce } from 'lodash';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const scriptStore = useScriptStore();
   const { versionListPageShouldOpenEdit, versionListPageShouldOpenView } = storeToRefs(scriptStore);
   const router = useRouter();
@@ -351,7 +352,7 @@
       topIds.value = undefined;
     }
 
-    const res = await getScriptList(spaceId.value, params);
+    const res = await getScriptList(spaceId.value, projectId.value, params);
     scriptsData.value = res.details;
     scriptsData.value.forEach((item) => {
       item.hook.spec.type = item.hook.spec.type.charAt(0).toUpperCase() + item.hook.spec.type.slice(1);
@@ -364,14 +365,14 @@
   // 获取标签列表
   const getTags = async () => {
     tagsLoading.value = true;
-    const res = await getScriptTagList(spaceId.value);
+    const res = await getScriptTagList(spaceId.value, projectId.value);
     tagsData.value = res.details;
     tagsLoading.value = false;
   };
 
   // 编辑脚本标签、描述
   const editScript = async (id: number, params: { memo: string; tags: string[] }) => {
-    await updateScript(spaceId.value, id, params);
+    await updateScript(spaceId.value, projectId.value, id, params);
     Message({
       theme: 'success',
       message: t('脚本更新成功'),
@@ -462,7 +463,7 @@
       start: (pagination.value.current - 1) * pagination.value.limit,
       limit: pagination.value.limit,
     };
-    const res = await getScriptCiteList(spaceId.value, script.hook.id, params);
+    const res = await getScriptCiteList(spaceId.value, projectId.value, script.hook.id, params);
     const allAppInfo = res.details.map((item: any) => {
       const { app_id, app_name } = item;
       return {
@@ -483,7 +484,7 @@
   };
 
   const handleDeleteScriptConfirm = async () => {
-    await deleteScript(spaceId.value, deleteScriptItem.value!.hook.id);
+    await deleteScript(spaceId.value, projectId.value, deleteScriptItem.value!.hook.id);
     if (scriptsData.value.length === 1 && pagination.value.current > 1) {
       pagination.value.current = pagination.value.current - 1;
     }

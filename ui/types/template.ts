@@ -84,12 +84,15 @@ export interface ITemplateCitedByPkgs {
 }
 
 // 单个模板套餐被多个服务引用数据
+import { EnvType } from './env';
 
 export interface IPackageCitedByApps {
   template_revision_id: number;
   template_revision_name: string;
   app_id: number;
   app_name: string;
+  env_type?: EnvType; // 环境类型
+  env_name?: string;   // 环境名称
 }
 
 // 多个模板套餐被多个服务引用数据
