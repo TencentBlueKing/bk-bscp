@@ -75,6 +75,10 @@ func (builder *Builder) CommonProcessFinalize(task *types.Task, tenantID string,
 		return fmt.Errorf("no process instance found for id %d", processInstanceID)
 	}
 	return task.SetCommonPayload(&common.TaskPayload{
+		BasePayload: &common.BasePayload{
+			BizID:    bizID,
+			TenantID: tenantID,
+		},
 		ProcessPayload: &common.ProcessPayload{
 			SetName:       process.Spec.SetName,
 			ModuleName:    process.Spec.ModuleName,
