@@ -1,0 +1,10 @@
+===== [stage=clarify attempt=1 round=1 ts=2026-07-13T20:24:00+08:00] =====
+clarify done: 需求文档已完成 3 轮业务澄清（docs/reqs/进程IP查询接口.md）；4 个技术问题（TC-1~TC-4）全部由文档+源码自答，0 open
+===== [stage=specify attempt=1 round=1 ts=2026-07-13T20:25:00+08:00] =====
+[specify] spec.md 生成；决策：新增独立 inner RPC ListProcessInnerIPs（不复用 ListProcess）；复用 dao List + ExpressionScope 过滤；AC-005 环境必填校验缺口已识别
+===== [stage=plan attempt=1 round=1 ts=2026-07-13T20:25:30+08:00] =====
+[plan] plan.md/research.md/data-model.md 生成；proto 工具链已验证可用（protoc/protoc-gen-go/make）；bk-sops/bscp-proc-cfg 确认为独立嵌套 git 仓库，划出提交范围
+===== [stage=tasks-generate attempt=1 round=1 ts=2026-07-13T20:26:00+08:00] =====
+tasks.md T001~T010 生成（Phase 0 proto → 1/2 TDD 核心 → 3 config-server → 4 网关文档 → 5 质量门禁）
+===== [confirm 卡点 ts=2026-07-13T20:26:10+08:00] =====
+[confirm] pending_review 写入 spec.md/plan.md/tasks.md；等待用户审查

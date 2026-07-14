@@ -221,6 +221,7 @@ const (
 	Data_GetTemplateAndNonTemplateCICount_FullMethodName  = "/pbds.Data/GetTemplateAndNonTemplateCICount"
 	Data_BatchUpdateLastConsumedTime_FullMethodName       = "/pbds.Data/BatchUpdateLastConsumedTime"
 	Data_ListProcess_FullMethodName                       = "/pbds.Data/ListProcess"
+	Data_ListProcessInnerIPs_FullMethodName               = "/pbds.Data/ListProcessInnerIPs"
 	Data_OperateProcess_FullMethodName                    = "/pbds.Data/OperateProcess"
 	Data_ProcessFilterOptions_FullMethodName              = "/pbds.Data/ProcessFilterOptions"
 	Data_SyncCmdbGseStatus_FullMethodName                 = "/pbds.Data/SyncCmdbGseStatus"
@@ -484,6 +485,8 @@ type DataClient interface {
 	BatchUpdateLastConsumedTime(ctx context.Context, in *BatchUpdateLastConsumedTimeReq, opts ...grpc.CallOption) (*BatchUpdateLastConsumedTimeResp, error)
 	// 进程管理列表
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
+	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
+	ListProcessInnerIPs(ctx context.Context, in *ListProcessInnerIPsReq, opts ...grpc.CallOption) (*ListProcessInnerIPsResp, error)
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
 	// 进程过滤条件
@@ -2247,6 +2250,15 @@ func (c *dataClient) ListProcess(ctx context.Context, in *ListProcessReq, opts .
 	return out, nil
 }
 
+func (c *dataClient) ListProcessInnerIPs(ctx context.Context, in *ListProcessInnerIPsReq, opts ...grpc.CallOption) (*ListProcessInnerIPsResp, error) {
+	out := new(ListProcessInnerIPsResp)
+	err := c.cc.Invoke(ctx, Data_ListProcessInnerIPs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error) {
 	out := new(OperateProcessResp)
 	err := c.cc.Invoke(ctx, Data_OperateProcess_FullMethodName, in, out, opts...)
@@ -2772,6 +2784,8 @@ type DataServer interface {
 	BatchUpdateLastConsumedTime(context.Context, *BatchUpdateLastConsumedTimeReq) (*BatchUpdateLastConsumedTimeResp, error)
 	// 进程管理列表
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
+	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
+	ListProcessInnerIPs(context.Context, *ListProcessInnerIPsReq) (*ListProcessInnerIPsResp, error)
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
 	// 进程过滤条件
@@ -3396,6 +3410,9 @@ func (UnimplementedDataServer) BatchUpdateLastConsumedTime(context.Context, *Bat
 }
 func (UnimplementedDataServer) ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProcess not implemented")
+}
+func (UnimplementedDataServer) ListProcessInnerIPs(context.Context, *ListProcessInnerIPsReq) (*ListProcessInnerIPsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessInnerIPs not implemented")
 }
 func (UnimplementedDataServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
@@ -6910,6 +6927,24 @@ func _Data_ListProcess_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListProcessInnerIPs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessInnerIPsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListProcessInnerIPs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListProcessInnerIPs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListProcessInnerIPs(ctx, req.(*ListProcessInnerIPsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OperateProcessReq)
 	if err := dec(in); err != nil {
@@ -8266,6 +8301,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProcess",
 			Handler:    _Data_ListProcess_Handler,
+		},
+		{
+			MethodName: "ListProcessInnerIPs",
+			Handler:    _Data_ListProcessInnerIPs_Handler,
 		},
 		{
 			MethodName: "OperateProcess",

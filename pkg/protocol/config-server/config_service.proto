@@ -1541,6 +1541,15 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/list" body: "*" }
     };
   }
+  // 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）
+  rpc ListProcessInnerIPs(ListProcessInnerIPsReq) returns (ListProcessInnerIPsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/process/inner_ips"
+      body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/inner_ips" body: "*" }
+    };
+  }
   // 进程操作
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
@@ -4738,6 +4747,16 @@ message ListProcessResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程列表" }];
   pbproc.FilterOptions filter_options = 3;
   string cmdb_process_config_url = 4;
+}
+
+message ListProcessInnerIPsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  pbproc.ProcessSearchCondition search = 2;
+}
+
+message ListProcessInnerIPsResp {
+  repeated string ips = 1
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "去重后的内网IP列表" }];
 }
 
 message OperateProcessReq {

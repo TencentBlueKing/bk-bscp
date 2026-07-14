@@ -1931,6 +1931,56 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": true,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/process/list": {
       "post": {
         "tags": [
@@ -3762,6 +3812,65 @@
         }
       }
     },
+    "/api/v1/inner/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "backend": {
+            "type": "HTTP",
+            "method": "post",
+            "path": "/api/v1/config/biz_id/{bizId}/process/inner_ips",
+            "matchSubpath": false,
+            "timeout": 0,
+            "upstreams": {},
+            "transformHeaders": {}
+          },
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/inner/config/biz_id/{bizId}/process/list": {
       "post": {
         "tags": [
@@ -4829,6 +4938,14 @@
           "description": "当前页码",
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "ConfigListProcessInnerIPsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "$ref": "#/definitions/pbprocProcessSearchCondition"
         }
       }
     },
@@ -5926,6 +6043,18 @@
         "isCertExpired": {
           "description": "是否有证书过期：是=true，否=false",
           "type": "boolean"
+        }
+      }
+    },
+    "pbcsListProcessInnerIPsResp": {
+      "type": "object",
+      "properties": {
+        "ips": {
+          "description": "去重后的内网IP列表",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

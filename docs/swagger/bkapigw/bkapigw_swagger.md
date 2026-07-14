@@ -62,6 +62,8 @@
 进程列表 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/list | [Config_ListProcess2](#config-list-process2) | 进程管理
 进程列表 |
+| POST | /api/v1/config/biz_id/{bizId}/process/inner_ips | [Config_ListProcessInnerIPs](#config-list-process-inner-i-ps) | 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） |
+| POST | /api/v1/inner/config/biz_id/{bizId}/process/inner_ips | [Config_ListProcessInnerIPs2](#config-list-process-inner-i-ps2) | 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems](#config-list-released-config-items) | 获取已发布文件配置项列表 |
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems2](#config-list-released-config-items2) | 获取已发布文件配置项列表 |
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases](#config-list-releases) | 获取服务版本列表 |
@@ -2417,6 +2419,154 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-list-process-inner-i-ps"></span> 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） (*Config_ListProcessInnerIPs*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/process/inner_ips
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/process/inner_ips HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {
+    "ccProcessIds": [
+      {}
+    ],
+    "ccSyncStatuses": [
+      {}
+    ],
+    "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
+    "innerIps": [
+      {}
+    ],
+    "managedStatuses": [
+      {}
+    ],
+    "modules": [
+      {}
+    ],
+    "processAliases": [
+      {}
+    ],
+    "processStatuses": [
+      {}
+    ],
+    "processTemplateIds": [
+      {}
+    ],
+    "serviceInstances": [
+      {}
+    ],
+    "sets": [
+      {}
+    ]
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-process-inner-i-ps2"></span> 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） (*Config_ListProcessInnerIPs2*)
+
+```
+POST /api/v1/inner/config/biz_id/{bizId}/process/inner_ips
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz_id/{bizId}/process/inner_ips HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {
+    "ccProcessIds": [
+      {}
+    ],
+    "ccSyncStatuses": [
+      {}
+    ],
+    "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
+    "innerIps": [
+      {}
+    ],
+    "managedStatuses": [
+      {}
+    ],
+    "modules": [
+      {}
+    ],
+    "processAliases": [
+      {}
+    ],
+    "processStatuses": [
+      {}
+    ],
+    "processTemplateIds": [
+      {}
+    ],
+    "serviceInstances": [
+      {}
+    ],
+    "sets": [
+      {}
+    ]
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-list-released-config-items"></span> 获取已发布文件配置项列表 (*Config_ListReleasedConfigItems*)
 
 ```
@@ -3847,6 +3997,21 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-process-inner-i-ps-body"></span> ConfigListProcessInnerIPsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition)| `PbprocProcessSearchCondition` |  | |  |  |
+
+
+
 ### <span id="config-list-released-config-items-body"></span> ConfigListReleasedConfigItemsBody
 
 
@@ -4776,6 +4941,21 @@ Content-Type: application/json
 | details | \[\][PbkvKv](#pbkv-kv)| `[]*PbkvKv` |  | |  |  |
 | exclusionCount | int64 (formatted integer)| `int64` |  | | 排除删除后的数量 |  |
 | isCertExpired | boolean| `bool` |  | | 是否有证书过期：是=true，否=false |  |
+
+
+
+### <span id="pbcs-list-process-inner-i-ps-resp"></span> pbcsListProcessInnerIPsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ips | []string| `[]string` |  | | 去重后的内网IP列表 |  |
 
 
 

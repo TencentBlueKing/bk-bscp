@@ -1,0 +1,60 @@
+# specs/stories/135756883/meta.yaml
+# 字段说明详见 .claude/skills/tapd-story-pipeline/references/state-mutation-guide.md
+
+# ===== 需求标识 =====
+id: "1020451610135756883"
+workspace_id: "20451610"
+agent_tool: agent
+owner: "xiaolnwang"
+
+# ===== 状态游标 =====
+phase: tasks-generated
+attempts: 1
+round: 1
+context_revision: 1
+
+# ===== 基线 =====
+implement_baseline_commit: ""
+
+# ===== 卡点信号 =====
+last_failure: null
+pending_review:
+  artifacts: ["spec.md", "plan.md", "tasks.md"]
+  ready_at: "2026-07-13T20:25:00+08:00"
+
+# ===== 代码统计（commit 阶段写入）=====
+stats: null
+
+# ===== specify 阶段 round 轨迹 =====
+specify_attempts:
+  - attempt: 1
+    rounds:
+      - round: 1
+        stage: clarify
+        at: "2026-07-13T20:24:00+08:00"
+        status: ok
+      - round: 1
+        stage: specify
+        at: "2026-07-13T20:25:00+08:00"
+        status: ok
+
+# ===== 累计历史 =====
+history:
+  - at: "2026-07-13T20:24:30+08:00"
+    kind: phase_advance
+    phase: tech-clarified
+    attempt: 1
+    round: 1
+    note: "需求文档已完成 3 轮澄清（源自 docs/reqs/进程IP查询接口.md），技术澄清 4 问全部由文档/源码自答；spec.md 生成"
+  - at: "2026-07-13T20:24:45+08:00"
+    kind: phase_advance
+    phase: researched
+    attempt: 1
+    round: 1
+    note: "plan.md/research.md/data-model.md 生成；确认新增独立 inner RPC ListProcessInnerIPs，复用 dao List + ExpressionScope 过滤"
+  - at: "2026-07-13T20:25:00+08:00"
+    kind: phase_advance
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "tasks.md T001~T010 生成；进入 confirm 卡点等待用户审查"
