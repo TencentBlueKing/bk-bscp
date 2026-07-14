@@ -42,6 +42,7 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbcs.UpdateConfigHo
 		PreHookId:  req.PreHookId,
 		PostHookId: req.PostHookId,
 		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	if _, e := s.client.DS.UpdateConfigHook(grpcKit.RpcCtx(), r); e != nil {
 		logs.Errorf("update ConfigHook failed, err: %v, rid: %s", e, grpcKit.Rid)

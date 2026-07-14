@@ -40,13 +40,13 @@ func (s *Service) CreateTemplateVariable(ctx context.Context, req *pbds.CreateTe
 	error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	_, err := s.dao.TemplateVariable().GetByUniqueKey(kt, req.Attachment.BizId, req.Spec.Name)
+	_, err := s.dao.TemplateVariable().GetByUniqueKey(kt, req.Attachment.BizId, req.Attachment.ProjectId, req.Spec.Name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errf.ErrDBOpsFailedF(kt).WithCause(err)
 	}
 	if err == nil {
 		return nil, errf.Errorf(errf.AlreadyExists,
-			i18n.T(kt, "same template variable name %s already exists", req.Spec.Name))
+			"%s", i18n.T(kt, "same template variable name %s already exists", req.Spec.Name))
 	}
 
 	templateVariable := &table.TemplateVariable{
@@ -82,7 +82,7 @@ func (s *Service) ListTemplateVariables(ctx context.Context, req *pbds.ListTempl
 		return nil, err
 	}
 
-	details, count, err := s.dao.TemplateVariable().List(kt, req.BizId, searcher, opt)
+	details, count, err := s.dao.TemplateVariable().List(kt, req.BizId, req.ProjectId, searcher, opt)
 
 	if err != nil {
 		logs.Errorf("list template variables failed, err: %v, rid: %s", err, kt.Rid)
@@ -140,7 +140,7 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 	*pbds.ImportTemplateVariablesResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	oldVars, _, err := s.dao.TemplateVariable().List(kt, req.BizId, nil, &types.BasePage{All: true})
+	oldVars, _, err := s.dao.TemplateVariable().List(kt, req.BizId, req.ProjectId, nil, &types.BasePage{All: true})
 	if err != nil {
 		logs.Errorf("list all existent template variables failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -160,7 +160,8 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 					ID:   oldVarMap[spec.Name].ID,
 					Spec: spec.TemplateVariableSpec(),
 					Attachment: &table.TemplateVariableAttachment{
-						BizID: req.BizId,
+						BizID:     req.BizId,
+						ProjectID: req.ProjectId,
 					},
 					Revision: &table.Revision{
 						Creator: oldVarMap[spec.Name].Revision.Creator,
@@ -174,7 +175,8 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbds.ImportT
 			toCreate = append(toCreate, &table.TemplateVariable{
 				Spec: spec.TemplateVariableSpec(),
 				Attachment: &table.TemplateVariableAttachment{
-					BizID: req.BizId,
+					BizID:     req.BizId,
+					ProjectID: req.ProjectId,
 				},
 				Revision: &table.Revision{
 					Creator: kt.User,
@@ -264,7 +266,7 @@ func (s *Service) TemplateVariableFetchIDsExcluding(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	ids, err := s.dao.TemplateVariable().FetchIDsExcluding(kt, req.GetBizId(), req.GetIds())
+	ids, err := s.dao.TemplateVariable().FetchIDsExcluding(kt, req.GetBizId(), req.GetProjectId(), req.GetIds())
 	if err != nil {
 		return nil, err
 	}
@@ -272,4 +274,21 @@ func (s *Service) TemplateVariableFetchIDsExcluding(ctx context.Context,
 	return &pbds.TemplateVariableFetchIDsExcludingResp{
 		Ids: ids,
 	}, nil
+}
+
+// GetTemplateVariableByID get a TemplateVariable by ID.
+func (s *Service) GetTemplateVariableByID(ctx context.Context, req *pbds.GetTemplateVariableByIDReq) (
+	*pbds.GetTemplateVariableByIDResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	detail, err := s.dao.TemplateVariable().GetByID(kt, req.BizId, req.ProjectId, req.Id)
+	if err != nil {
+		logs.Errorf("get template variable by id %d failed, err: %v, rid: %s", req.Id, err, kt.Rid)
+		return nil, err
+	}
+
+	resp := &pbds.GetTemplateVariableByIDResp{
+		Data: pbtv.PbTemplateVariable(detail),
+	}
+	return resp, nil
 }

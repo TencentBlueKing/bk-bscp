@@ -53,8 +53,9 @@ func (s *variableService) ExportGlobalVariables(w http.ResponseWriter, r *http.R
 	format := r.URL.Query().Get("format")
 
 	vars, err := s.cfgClient.ListTemplateVariables(kt.RpcCtx(), &pbcs.ListTemplateVariablesReq{
-		BizId: kt.BizID,
-		All:   true,
+		BizId:     kt.BizID,
+		All:       true,
+		ProjectId: kt.ProjectID,
 	})
 	if err != nil {
 		logs.Errorf("list template variables failed, err: %s", err)
@@ -163,6 +164,8 @@ func (s *variableService) ExportReleasedAppVariables(w http.ResponseWriter, r *h
 		BizId:     kt.BizID,
 		AppId:     kt.AppID,
 		ReleaseId: uint32(releaseID),
+		ProjectId: kt.ProjectID,
+		EnvId:     kt.EnvID,
 	})
 	if err != nil {
 		_ = render.Render(w, r, rest.BadRequest(err))

@@ -55,7 +55,8 @@ func (s *Service) CreateTemplateVariable(ctx context.Context, req *pbcs.CreateTe
 
 	r := &pbds.CreateTemplateVariableReq{
 		Attachment: &pbtv.TemplateVariableAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbtv.TemplateVariableSpec{
 			Name:       req.Name,
@@ -91,7 +92,8 @@ func (s *Service) DeleteTemplateVariable(ctx context.Context, req *pbcs.DeleteTe
 	r := &pbds.DeleteTemplateVariableReq{
 		Id: req.TemplateVariableId,
 		Attachment: &pbtv.TemplateVariableAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 	}
 	if _, err := s.client.DS.DeleteTemplateVariable(grpcKit.RpcCtx(), r); err != nil {
@@ -119,8 +121,9 @@ func (s *Service) BatchDeleteTemplateVariable(ctx context.Context, req *pbcs.Bat
 	if req.ExclusionOperation {
 		result, err := s.client.DS.TemplateVariableFetchIDsExcluding(grpcKit.RpcCtx(),
 			&pbds.TemplateVariableFetchIDsExcludingReq{
-				BizId: req.GetBizId(),
-				Ids:   req.GetIds(),
+				BizId:     req.GetBizId(),
+				Ids:       req.GetIds(),
+				ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 			})
 		if err != nil {
 			return nil, err
@@ -130,7 +133,7 @@ func (s *Service) BatchDeleteTemplateVariable(ctx context.Context, req *pbcs.Bat
 
 	idsLen := len(ids)
 	if idsLen == 0 || idsLen > constant.ArrayInputLenLimit {
-		return nil, errf.Errorf(errf.InvalidArgument, i18n.T(grpcKit,
+		return nil, errf.Errorf(errf.InvalidArgument, "%s", i18n.T(grpcKit,
 			"the length of template variable ids is %d, it must be within the range of [1,%d]",
 			idsLen, constant.ArrayInputLenLimit))
 	}
@@ -148,7 +151,8 @@ func (s *Service) BatchDeleteTemplateVariable(ctx context.Context, req *pbcs.Bat
 			r := &pbds.DeleteTemplateVariableReq{
 				Id: v,
 				Attachment: &pbtv.TemplateVariableAttachment{
-					BizId: req.BizId,
+					BizId:     req.BizId,
+					ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 				},
 			}
 			if _, err := s.client.DS.DeleteTemplateVariable(egCtx, r); err != nil {
@@ -197,7 +201,8 @@ func (s *Service) UpdateTemplateVariable(ctx context.Context, req *pbcs.UpdateTe
 	r := &pbds.UpdateTemplateVariableReq{
 		Id: req.TemplateVariableId,
 		Attachment: &pbtv.TemplateVariableAttachment{
-			BizId: grpcKit.BizID,
+			BizId:     grpcKit.BizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbtv.TemplateVariableSpec{
 			DefaultVal: req.DefaultVal,
@@ -232,6 +237,7 @@ func (s *Service) ListTemplateVariables(ctx context.Context, req *pbcs.ListTempl
 		Limit:        req.Limit,
 		All:          req.All,
 		TopIds:       req.TopIds,
+		ProjectId:    grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTemplateVariables(grpcKit.RpcCtx(), r)
@@ -307,8 +313,9 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbcs.ImportT
 	}
 
 	r := &pbds.ImportTemplateVariablesReq{
-		BizId: req.BizId,
-		Specs: vars,
+		BizId:     req.BizId,
+		Specs:     vars,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	rp, err := s.client.DS.ImportTemplateVariables(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -359,14 +366,45 @@ func (s *Service) ImportOtherFormatTemplateVariables(ctx context.Context,
 	}
 
 	resp, err := s.client.DS.ImportTemplateVariables(kit.RpcCtx(), &pbds.ImportTemplateVariablesReq{
-		BizId: req.BizId,
-		Specs: variables,
+		BizId:     req.BizId,
+		Specs:     variables,
+		ProjectId: kit.ResolvedProjectID(req.ProjectId),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &pbcs.ImportOtherFormatTemplateVariablesResp{Ids: resp.Ids}, nil
+}
+
+// GetTemplateVariable get a TemplateVariable by ID and verify project_id.
+func (s *Service) GetTemplateVariable(ctx context.Context, req *pbcs.GetTemplateVariableReq) (
+	*pbcs.GetTemplateVariableResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	r := &pbds.GetTemplateVariableByIDReq{
+		BizId:     grpcKit.BizID,
+		Id:        req.TemplateVariableId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+	}
+
+	rp, err := s.client.DS.GetTemplateVariableByID(grpcKit.RpcCtx(), r)
+	if err != nil {
+		logs.Errorf("get template variable failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
+	}
+
+	resp := &pbcs.GetTemplateVariableResp{
+		Data: rp.Data,
+	}
+	return resp, nil
 }
 
 func handleVariables(kit *kit.Kit, variables map[string]interface{}) ([]*pbtv.TemplateVariableSpec, error) {
@@ -421,7 +459,7 @@ func validateVariableType(kit *kit.Kit, variableType string) error {
 	case string(table.NumberVar):
 	case string(table.TextVar):
 	default:
-		return errf.Errorf(errf.InvalidArgument, i18n.T(kit, "unsupported variable type: %s", variableType))
+		return errf.Errorf(errf.InvalidArgument, "%s", i18n.T(kit, "unsupported variable type: %s", variableType))
 	}
 
 	return nil

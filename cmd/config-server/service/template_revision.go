@@ -206,6 +206,7 @@ func (s *Service) ListTmplRevisionNamesByTmplIDs(ctx context.Context, req *pbcs.
 	r := &pbds.ListTmplRevisionNamesByTmplIDsReq{
 		BizId:       req.BizId,
 		TemplateIds: req.TemplateIds,
+		ProjectId:   grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTmplRevisionNamesByTmplIDs(grpcKit.RpcCtx(), r)

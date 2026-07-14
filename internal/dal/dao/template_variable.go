@@ -35,7 +35,7 @@ type TemplateVariable interface {
 	// Update one template variable's info.
 	Update(kit *kit.Kit, templateVariable *table.TemplateVariable) error
 	// List template variables with options.
-	List(kit *kit.Kit, bizID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateVariable, int64, error)
+	List(kit *kit.Kit, bizID, projectID uint32, s search.Searcher, opt *types.BasePage) ([]*table.TemplateVariable, int64, error)
 	// Delete one template variable instance.
 	Delete(kit *kit.Kit, templateVariable *table.TemplateVariable) error
 	// BatchCreateWithTx batch create variable instances with transaction.
@@ -43,9 +43,11 @@ type TemplateVariable interface {
 	// BatchUpdateWithTx batch update variable instances with transaction.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, tmplVars []*table.TemplateVariable) error
 	// GetByUniqueKey get template variable by unique key.
-	GetByUniqueKey(kit *kit.Kit, bizID uint32, name string) (*table.TemplateVariable, error)
+	GetByUniqueKey(kit *kit.Kit, bizID, projectID uint32, name string) (*table.TemplateVariable, error)
+	// GetByID get a TemplateVariable by ID
+	GetByID(kit *kit.Kit, bizID, projectID, id uint32) (*table.TemplateVariable, error)
 	// FetchIDsExcluding 获取指定ID后排除的ID
-	FetchIDsExcluding(kit *kit.Kit, bizID uint32, ids []uint32) ([]uint32, error)
+	FetchIDsExcluding(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]uint32, error)
 }
 
 var _ TemplateVariable = new(templateVariableDao)
@@ -57,14 +59,14 @@ type templateVariableDao struct {
 }
 
 // ListIdsExcluded 获取指定ID后排除的ID
-func (dao *templateVariableDao) FetchIDsExcluding(kit *kit.Kit, bizID uint32, ids []uint32) ([]uint32, error) {
+func (dao *templateVariableDao) FetchIDsExcluding(kit *kit.Kit, bizID, projectID uint32, ids []uint32) ([]uint32, error) {
 
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
 
 	var result []uint32
 	if err := q.Select(m.ID).
-		Where(m.BizID.Eq(bizID), m.ID.NotIn(ids...)).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.NotIn(ids...)).
 		Pluck(m.ID, &result); err != nil {
 		return nil, err
 	}
@@ -131,7 +133,7 @@ func (dao *templateVariableDao) Update(kit *kit.Kit, g *table.TemplateVariable) 
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
 		q = tx.TemplateVariable.WithContext(kit.Ctx)
-		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID), m.ID.Eq(g.ID)).
 			Select(m.DefaultVal, m.Memo, m.Reviser).
 			Updates(g); err != nil {
 			return err
@@ -150,7 +152,7 @@ func (dao *templateVariableDao) Update(kit *kit.Kit, g *table.TemplateVariable) 
 }
 
 // List template variables with options.
-func (dao *templateVariableDao) List(kit *kit.Kit, bizID uint32, s search.Searcher,
+func (dao *templateVariableDao) List(kit *kit.Kit, bizID, projectID uint32, s search.Searcher,
 	opt *types.BasePage) ([]*table.TemplateVariable, int64, error) {
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
@@ -177,7 +179,7 @@ func (dao *templateVariableDao) List(kit *kit.Kit, bizID uint32, s search.Search
 		q = q.Order(m.Name)
 	}
 
-	d := q.Where(m.BizID.Eq(bizID)).Where(conds...)
+	d := q.Where(m.BizID.Eq(bizID)).Where(m.ProjectID.Eq(projectID)).Where(conds...)
 	if opt.All {
 		result, err := d.Find()
 		if err != nil {
@@ -199,7 +201,7 @@ func (dao *templateVariableDao) Delete(kit *kit.Kit, g *table.TemplateVariable) 
 	// 删除操作, 获取当前记录做审计
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Take()
 	if err != nil {
 		return err
 	}
@@ -212,7 +214,7 @@ func (dao *templateVariableDao) Delete(kit *kit.Kit, g *table.TemplateVariable) 
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
 		q = tx.TemplateVariable.WithContext(kit.Ctx)
-		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID)).Delete(g); err != nil {
+		if _, err := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Delete(g); err != nil {
 			return err
 		}
 
@@ -267,9 +269,22 @@ func (dao *templateVariableDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 }
 
 // GetByUniqueKey get template variable by unique key
-func (dao *templateVariableDao) GetByUniqueKey(kit *kit.Kit, bizID uint32, name string) (*table.TemplateVariable,
+func (dao *templateVariableDao) GetByUniqueKey(kit *kit.Kit, bizID, projectID uint32, name string) (*table.TemplateVariable,
 	error) {
 	m := dao.genQ.TemplateVariable
 	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
-	return q.Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
+	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
+}
+
+// GetByID get a TemplateVariable by ID
+func (dao *templateVariableDao) GetByID(kit *kit.Kit, bizID, projectID, id uint32) (*table.TemplateVariable, error) {
+	m := dao.genQ.TemplateVariable
+	q := dao.genQ.TemplateVariable.WithContext(kit.Ctx)
+
+	tv, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.Eq(id)).Take()
+	if err != nil {
+		return nil, err
+	}
+
+	return tv, nil
 }

@@ -29,15 +29,15 @@ import (
 )
 
 // getAllAppCIs get all template and non-template config items for the app which can be rendered
-func (s *Service) getAllAppCIs(kt *kit.Kit) ([]*table.TemplateRevision, []*pbci.ConfigItem, error) {
-	tmplRevisions, err := s.getAppTmplRevisions(kt)
+func (s *Service) getAllAppCIs(kt *kit.Kit, projectID, envID, appID uint32) ([]*table.TemplateRevision, []*pbci.ConfigItem, error) {
+	tmplRevisions, err := s.getAppTmplRevisions(kt, appID)
 	if err != nil {
 		logs.Errorf("extract app template variables failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err
 	}
 	tmplRevisions = filterSizeForTmplRevisions(tmplRevisions)
 
-	cis, err := s.getAppConfigItems(kt)
+	cis, err := s.getAppConfigItems(kt, projectID, envID, appID)
 	if err != nil {
 		logs.Errorf("get app's all config items failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, nil, err
@@ -48,9 +48,9 @@ func (s *Service) getAllAppCIs(kt *kit.Kit) ([]*table.TemplateRevision, []*pbci.
 }
 
 // getAppTmplRevisions get app template revision details
-func (s *Service) getAppTmplRevisions(kt *kit.Kit) ([]*table.TemplateRevision, error) {
+func (s *Service) getAppTmplRevisions(kt *kit.Kit, appID uint32) ([]*table.TemplateRevision, error) {
 	opt := &types.BasePage{All: true}
-	details, _, err := s.dao.AppTemplateBinding().List(kt, kt.BizID, kt.AppID, opt)
+	details, _, err := s.dao.AppTemplateBinding().List(kt, kt.BizID, appID, opt)
 	if err != nil {
 		logs.Errorf("get app template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -61,8 +61,7 @@ func (s *Service) getAppTmplRevisions(kt *kit.Kit) ([]*table.TemplateRevision, e
 	}
 
 	// get template revision details
-	tmplRevisions, err := s.dao.TemplateRevision().
-		ListByIDs(kt, details[0].Spec.TemplateRevisionIDs)
+	tmplRevisions, err := s.dao.TemplateRevision().ListByIDs(kt, details[0].Spec.TemplateRevisionIDs)
 	if err != nil {
 		logs.Errorf("get app template revisions failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -72,12 +71,14 @@ func (s *Service) getAppTmplRevisions(kt *kit.Kit) ([]*table.TemplateRevision, e
 }
 
 // getAppConfigItems get app config item details
-func (s *Service) getAppConfigItems(kt *kit.Kit) ([]*pbci.ConfigItem, error) {
+func (s *Service) getAppConfigItems(kt *kit.Kit, projectID, envID, appID uint32) ([]*pbci.ConfigItem, error) {
 	req := &pbds.ListConfigItemsReq{
 		BizId:      kt.BizID,
-		AppId:      kt.AppID,
+		AppId:      appID,
 		All:        true,
 		WithStatus: false,
+		ProjectId:  projectID,
+		EnvId:      envID,
 	}
 	resp, err := s.ListConfigItems(kt.RpcCtx(), req)
 	if err != nil {

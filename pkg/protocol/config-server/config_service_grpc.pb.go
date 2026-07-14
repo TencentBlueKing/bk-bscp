@@ -146,6 +146,7 @@ const (
 	Config_ListTemplateVariables_FullMethodName              = "/pbcs.Config/ListTemplateVariables"
 	Config_ImportTemplateVariables_FullMethodName            = "/pbcs.Config/ImportTemplateVariables"
 	Config_ImportOtherFormatTemplateVariables_FullMethodName = "/pbcs.Config/ImportOtherFormatTemplateVariables"
+	Config_GetTemplateVariable_FullMethodName                = "/pbcs.Config/GetTemplateVariable"
 	Config_ExtractAppTmplVariables_FullMethodName            = "/pbcs.Config/ExtractAppTmplVariables"
 	Config_GetAppTmplVariableRefs_FullMethodName             = "/pbcs.Config/GetAppTmplVariableRefs"
 	Config_GetReleasedAppTmplVariableRefs_FullMethodName     = "/pbcs.Config/GetReleasedAppTmplVariableRefs"
@@ -496,6 +497,8 @@ type ConfigClient interface {
 	// 批量导入简单文件模板变量
 	ImportTemplateVariables(ctx context.Context, in *ImportTemplateVariablesReq, opts ...grpc.CallOption) (*ImportTemplateVariablesResp, error)
 	ImportOtherFormatTemplateVariables(ctx context.Context, in *ImportOtherFormatTemplateVariablesReq, opts ...grpc.CallOption) (*ImportOtherFormatTemplateVariablesResp, error)
+	// 获取模板变量
+	GetTemplateVariable(ctx context.Context, in *GetTemplateVariableReq, opts ...grpc.CallOption) (*GetTemplateVariableResp, error)
 	// 提取模板变量
 	ExtractAppTmplVariables(ctx context.Context, in *ExtractAppTmplVariablesReq, opts ...grpc.CallOption) (*ExtractAppTmplVariablesResp, error)
 	// 获取未命名服务版本被引用的变量
@@ -1792,6 +1795,15 @@ func (c *configClient) ImportOtherFormatTemplateVariables(ctx context.Context, i
 	return out, nil
 }
 
+func (c *configClient) GetTemplateVariable(ctx context.Context, in *GetTemplateVariableReq, opts ...grpc.CallOption) (*GetTemplateVariableResp, error) {
+	out := new(GetTemplateVariableResp)
+	err := c.cc.Invoke(ctx, Config_GetTemplateVariable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) ExtractAppTmplVariables(ctx context.Context, in *ExtractAppTmplVariablesReq, opts ...grpc.CallOption) (*ExtractAppTmplVariablesResp, error) {
 	out := new(ExtractAppTmplVariablesResp)
 	err := c.cc.Invoke(ctx, Config_ExtractAppTmplVariables_FullMethodName, in, out, opts...)
@@ -3012,6 +3024,8 @@ type ConfigServer interface {
 	// 批量导入简单文件模板变量
 	ImportTemplateVariables(context.Context, *ImportTemplateVariablesReq) (*ImportTemplateVariablesResp, error)
 	ImportOtherFormatTemplateVariables(context.Context, *ImportOtherFormatTemplateVariablesReq) (*ImportOtherFormatTemplateVariablesResp, error)
+	// 获取模板变量
+	GetTemplateVariable(context.Context, *GetTemplateVariableReq) (*GetTemplateVariableResp, error)
 	// 提取模板变量
 	ExtractAppTmplVariables(context.Context, *ExtractAppTmplVariablesReq) (*ExtractAppTmplVariablesResp, error)
 	// 获取未命名服务版本被引用的变量
@@ -3589,6 +3603,9 @@ func (UnimplementedConfigServer) ImportTemplateVariables(context.Context, *Impor
 }
 func (UnimplementedConfigServer) ImportOtherFormatTemplateVariables(context.Context, *ImportOtherFormatTemplateVariablesReq) (*ImportOtherFormatTemplateVariablesResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ImportOtherFormatTemplateVariables not implemented")
+}
+func (UnimplementedConfigServer) GetTemplateVariable(context.Context, *GetTemplateVariableReq) (*GetTemplateVariableResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTemplateVariable not implemented")
 }
 func (UnimplementedConfigServer) ExtractAppTmplVariables(context.Context, *ExtractAppTmplVariablesReq) (*ExtractAppTmplVariablesResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExtractAppTmplVariables not implemented")
@@ -6071,6 +6088,24 @@ func _Config_ImportOtherFormatTemplateVariables_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_GetTemplateVariable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTemplateVariableReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetTemplateVariable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_GetTemplateVariable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetTemplateVariable(ctx, req.(*GetTemplateVariableReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_ExtractAppTmplVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExtractAppTmplVariablesReq)
 	if err := dec(in); err != nil {
@@ -8515,6 +8550,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ImportOtherFormatTemplateVariables",
 			Handler:    _Config_ImportOtherFormatTemplateVariables_Handler,
+		},
+		{
+			MethodName: "GetTemplateVariable",
+			Handler:    _Config_GetTemplateVariable_Handler,
 		},
 		{
 			MethodName: "ExtractAppTmplVariables",

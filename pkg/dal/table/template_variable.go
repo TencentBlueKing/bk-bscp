@@ -187,14 +187,19 @@ func (t *TemplateVariableSpec) ValidateDefaultVal(kit *kit.Kit) error {
 
 // TemplateVariableAttachment defines the template variable attachments.
 type TemplateVariableAttachment struct {
-	BizID    uint32 `json:"biz_id" gorm:"column:biz_id"`
-	TenantID string `json:"tenant_id" gorm:"column:tenant_id"`
+	BizID     uint32 `json:"biz_id" gorm:"column:biz_id"`
+	ProjectID uint32 `json:"project_id" gorm:"column:project_id"`
+	TenantID  string `json:"tenant_id" gorm:"column:tenant_id"`
 }
 
 // Validate whether template variable attachment is valid or not.
 func (t *TemplateVariableAttachment) Validate() error {
 	if t.BizID <= 0 {
 		return errors.New("invalid attachment biz id")
+	}
+
+	if t.ProjectID <= 0 {
+		return errors.New("invalid attachment project id")
 	}
 
 	return nil

@@ -167,6 +167,8 @@ func (p *proxy) AppProjectEnvVerified(next http.Handler) http.Handler {
 			return
 		}
 
+		kt.AppID = uint32(appID)
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -279,6 +281,44 @@ func (p *proxy) TemplateSpaceProjectVerified(next http.Handler) http.Handler {
 				kt.BizID, uint32(templateSpaceID), kt.ProjectID, err, kt.Rid)
 			render.Render(w, r, rest.BadRequest(
 				fmt.Errorf("template_space does not belong to the specified project")))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// TemplateVariableProjectVerified 校验 TemplateVariable 是否属于指定的项目。
+// 必须放在 checkOrCreateDefaultProjectEnv 之后，依赖 kt.ProjectID 已被赋值。
+// 用于含 template_variable_id 参数的路由，校验模板变量归属于该项目。
+func (p *proxy) TemplateVariableProjectVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kt := kit.MustGetKit(r.Context())
+
+		templateVarIDStr := chi.URLParam(r, "template_variable_id")
+		if templateVarIDStr == "" {
+			err := errors.New("template_variable_id is required in url params")
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		templateVarID, err := strconv.Atoi(templateVarIDStr)
+		if err != nil {
+			render.Render(w, r, rest.BadRequest(err))
+			return
+		}
+
+		// 调用 config-server GetTemplateVariable 校验 TemplateVariable 归属于该项目
+		_, err = p.cfgClient.GetTemplateVariable(kt.RpcCtx(), &pbcs.GetTemplateVariableReq{
+			BizId:              kt.BizID,
+			TemplateVariableId: uint32(templateVarID),
+			ProjectId:          kt.ProjectID,
+		})
+		if err != nil {
+			logs.Errorf("verify template variable project failed, bizId=%d templateVarId=%d projectId=%d err=%v rid=%s",
+				kt.BizID, uint32(templateVarID), kt.ProjectID, err, kt.Rid)
+			render.Render(w, r, rest.BadRequest(
+				fmt.Errorf("template_variable does not belong to the specified project")))
 			return
 		}
 

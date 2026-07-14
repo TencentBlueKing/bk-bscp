@@ -63,7 +63,7 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbds.CreateConfigIt
 	}
 
 	// 检测配置项路径冲突以及是否超出服务限制
-	if err := s.checkRestorePrerequisites(grpcKit, req.ConfigItemAttachment.BizId, req.ConfigItemAttachment.AppId,
+	if err := s.checkRestorePrerequisites(grpcKit, req.ConfigItemAttachment.BizId, req.ProjectId, req.EnvId, req.ConfigItemAttachment.AppId,
 		newFiles, nil); err != nil {
 		return nil, err
 	}
@@ -1023,7 +1023,7 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 		}
 	}
 
-	if err = s.setCommitSpecForCIs(grpcKit, configItems); err != nil {
+	if err = s.setCommitSpecForCIs(grpcKit, req.BizId, req.AppId, configItems); err != nil {
 		logs.Errorf("set commit spec for config items failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
 	}
@@ -1126,13 +1126,13 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbds.ListConfigItems
 }
 
 // setCommitSpecForCIs set commit spec for config items
-func (s *Service) setCommitSpecForCIs(kt *kit.Kit, cis []*pbci.ConfigItem) error {
+func (s *Service) setCommitSpecForCIs(kt *kit.Kit, bizID, appID uint32, cis []*pbci.ConfigItem) error {
 	ids := make([]uint32, len(cis))
 	for i, ci := range cis {
 		ids[i] = ci.Id
 	}
 
-	commits, err := s.dao.Commit().BatchListLatestCommits(kt, kt.BizID, kt.AppID, ids)
+	commits, err := s.dao.Commit().BatchListLatestCommits(kt, bizID, appID, ids)
 	if err != nil {
 		logs.Errorf("batch list latest commits failed, err: %v, rid: %s", err, kt.Rid)
 		return err
@@ -1252,7 +1252,7 @@ func (s *Service) UnDeleteConfigItem(ctx context.Context, req *pbds.UnDeleteConf
 	}}
 
 	// 检测配置项路径冲突以及是否超出服务限制
-	if err = s.checkRestorePrerequisites(grpcKit, req.Attachment.BizId, req.Attachment.AppId,
+	if err = s.checkRestorePrerequisites(grpcKit, req.Attachment.BizId, req.ProjectId, req.EnvId, req.Attachment.AppId,
 		newFiles, ci); err != nil {
 		return nil, err
 	}
@@ -1334,7 +1334,7 @@ func (s *Service) UnDeleteConfigItem(ctx context.Context, req *pbds.UnDeleteConf
 }
 
 // 检测恢复配置文件的前置条件
-func (s *Service) checkRestorePrerequisites(kit *kit.Kit, bizID, appID uint32, newFiles []tools.CIUniqueKey,
+func (s *Service) checkRestorePrerequisites(kit *kit.Kit, bizID, projectID, envID, appID uint32, newFiles []tools.CIUniqueKey,
 	ci *table.ConfigItem) error {
 
 	// 获取指定服务下的配置项
@@ -1359,8 +1359,10 @@ func (s *Service) checkRestorePrerequisites(kit *kit.Kit, bizID, appID uint32, n
 	// 获取当前服务配置项数+模板数量
 	configItemCount, err := s.GetTemplateAndNonTemplateCICount(kit.RpcCtx(),
 		&pbds.GetTemplateAndNonTemplateCICountReq{
-			BizId: bizID,
-			AppId: appID,
+			BizId:     bizID,
+			AppId:     appID,
+			ProjectId: projectID,
+			EnvId:     envID,
 		})
 	if err != nil {
 		return err
@@ -1894,7 +1896,7 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbds.RemoveApp
 	binding, err := s.dao.AppTemplateBinding().GetAppTemplateBindingByAppID(kit, req.BizId, req.AppId)
 	if err != nil {
 		return nil, errf.Errorf(errf.DBOpFailed,
-			i18n.T(kit, "get reference template set under this app failed, err: %s", err))
+			"%s", i18n.T(kit, "get reference template set under this app failed, err: %s", err))
 	}
 
 	specBindings := make([]*table.TemplateBinding, 0, len(binding.Spec.Bindings))
@@ -1929,7 +1931,7 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbds.RemoveApp
 	templateSets, err := s.dao.TemplateSet().ListByIDs(kit, templateSetIDs)
 	if err != nil {
 		return nil, errf.Errorf(errf.DBOpFailed,
-			i18n.T(kit, "list template sets by template set ids failed, err: %s", err))
+			"%s", i18n.T(kit, "list template sets by template set ids failed, err: %s", err))
 	}
 
 	templateSpaceIDs := []uint32{}
@@ -1958,7 +1960,7 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbds.RemoveApp
 
 	if err = s.dao.AppTemplateBinding().Update(kit, appTemplateBinding, req.TemplateSetId); err != nil {
 		return nil, errf.Errorf(errf.DBOpFailed,
-			i18n.T(kit, "remove the template set bound to the app failed, err: %s", err))
+			"%s", i18n.T(kit, "remove the template set bound to the app failed, err: %s", err))
 	}
 
 	return &pbbase.EmptyResp{}, nil

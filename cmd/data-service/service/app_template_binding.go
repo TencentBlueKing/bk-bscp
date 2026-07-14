@@ -49,7 +49,7 @@ func (s *Service) CreateAppTemplateBinding(ctx context.Context, req *pbds.Create
 		},
 	}
 
-	if err := s.genFinalATB(kt, appTemplateBinding); err != nil {
+	if err := s.genFinalATB(kt, req.ProjectId, appTemplateBinding); err != nil {
 		logs.Errorf("create app template binding failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbds.Update
 		},
 	}
 
-	if err := s.genFinalATB(kt, appTemplateBinding); err != nil {
+	if err := s.genFinalATB(kt, req.ProjectId, appTemplateBinding); err != nil {
 		logs.Errorf("update app template binding failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -530,7 +530,7 @@ func (s *Service) CheckAppTemplateBinding(ctx context.Context, req *pbds.CheckAp
 		},
 	}
 
-	conflicts, err := s.getConflictsOfATB(kt, atb)
+	conflicts, err := s.getConflictsOfATB(kt, req.ProjectId, atb)
 	if err != nil {
 		logs.Errorf("check app template binding failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -542,10 +542,10 @@ func (s *Service) CheckAppTemplateBinding(ctx context.Context, req *pbds.CheckAp
 }
 
 // getConflictsOfATB get conflicts of app template binding.
-func (s *Service) getConflictsOfATB(kt *kit.Kit, atb *table.AppTemplateBinding) ([]*pbatb.Conflict, error) {
+func (s *Service) getConflictsOfATB(kt *kit.Kit, projectID uint32, atb *table.AppTemplateBinding) ([]*pbatb.Conflict, error) {
 	pbs := parseBindings(atb.Spec.Bindings)
 
-	if err := s.fillUnspecifiedTemplates(kt, pbs); err != nil {
+	if err := s.fillUnspecifiedTemplates(kt, projectID, pbs); err != nil {
 		return nil, err
 	}
 
@@ -754,14 +754,14 @@ func (s *Service) getPBSForCascade(kt *kit.Kit, tx *gen.QueryTx, bindings []*tab
 }
 
 // genFinalATB generate the final app template binding.
-func (s *Service) genFinalATB(kt *kit.Kit, atb *table.AppTemplateBinding) error {
+func (s *Service) genFinalATB(kt *kit.Kit, projectID uint32, atb *table.AppTemplateBinding) error {
 	pbs := parseBindings(atb.Spec.Bindings)
 
 	if err := s.validateATBUpsert(kt, pbs); err != nil {
 		return err
 	}
 
-	if err := s.fillUnspecifiedTemplates(kt, pbs); err != nil {
+	if err := s.fillUnspecifiedTemplates(kt, projectID, pbs); err != nil {
 		return err
 	}
 
@@ -881,7 +881,7 @@ func parseBindings(bindings []*table.TemplateBinding) *parsedBindings {
 }
 
 // fillUnspecifiedTemplates update the pbs's unspecified templates and revisions
-func (s *Service) fillUnspecifiedTemplates(kt *kit.Kit, pbs *parsedBindings) error {
+func (s *Service) fillUnspecifiedTemplates(kt *kit.Kit, projectID uint32, pbs *parsedBindings) error {
 	for i := range pbs.TemplateBindings {
 		b := pbs.TemplateBindings[i]
 		var templateIDs []uint32
@@ -910,6 +910,7 @@ func (s *Service) fillUnspecifiedTemplates(kt *kit.Kit, pbs *parsedBindings) err
 				&pbds.ListTmplRevisionNamesByTmplIDsReq{
 					BizId:       kt.BizID,
 					TemplateIds: unspecified,
+					ProjectId:   projectID,
 				})
 			if err != nil {
 				logs.Errorf("fill unspecified templates failed, err: %v, rid: %s", err, kt.Rid)

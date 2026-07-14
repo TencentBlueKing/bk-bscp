@@ -68,6 +68,8 @@ func (s *Service) CreateAppTemplateBinding(ctx context.Context, req *pbcs.Create
 		Spec: &pbatb.AppTemplateBindingSpec{
 			Bindings: req.Bindings,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	var rp *pbds.CreateResp
 	rp, err = s.client.DS.CreateAppTemplateBinding(grpcKit.RpcCtx(), r)
@@ -146,6 +148,8 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbcs.Update
 		Spec: &pbatb.AppTemplateBindingSpec{
 			Bindings: req.Bindings,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	if _, err = s.client.DS.UpdateAppTemplateBinding(grpcKit.RpcCtx(), r); err != nil {
 		logs.Errorf("update app template binding failed, err: %v, rid: %s", err, grpcKit.Rid)
@@ -555,8 +559,10 @@ func (s *Service) UpdateAppBoundTmplRevisions(ctx context.Context, req *pbcs.Upd
 	)
 
 	if bResp, err = s.ListAppTemplateBindings(ctx, &pbcs.ListAppTemplateBindingsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}); err != nil {
 		logs.Errorf("update app bound template revisions failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, err
@@ -764,6 +770,8 @@ func (s *Service) CheckAppTemplateBinding(ctx context.Context, req *pbcs.CheckAp
 		Spec: &pbatb.AppTemplateBindingSpec{
 			Bindings: req.Bindings,
 		},
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:     grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	var rp *pbds.CheckAppTemplateBindingResp
 	rp, err = s.client.DS.CheckAppTemplateBinding(grpcKit.RpcCtx(), r)
