@@ -315,6 +315,7 @@ func (s *Service) DeleteTmplsFromTmplSets(ctx context.Context, req *pbcs.DeleteT
 				TemplateIds:        req.TemplateIds,
 				ExclusionOperation: req.ExclusionOperation,
 				NoSetSpecified:     req.NoSetSpecified,
+				ProjectId:          grpcKit.ResolvedProjectID(req.ProjectId),
 			}
 
 			if _, err := s.client.DS.DeleteTmplsFromTmplSets(egCtx, r); err != nil {

@@ -292,13 +292,18 @@ func (dao *appDao) CountApps(kit *kit.Kit, bizID, projectID, envID uint32, searc
 	conds1 = dao.handleSearch(conds1, search.AsMap())
 	conds2 = dao.handleSearch(conds2, search.AsMap())
 
-	kvAppsCount, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID)).
+	if envID != 0 {
+		q = q.Where(m.EnvID.Eq(envID))
+		q2 = q2.Where(m.EnvID.Eq(envID))
+	}
+
+	kvAppsCount, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID)).
 		Where(m.ConfigType.Eq(string(table.KV))).Where(conds1...).Count()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	fileAppsCount, err := q2.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID), m.EnvID.Eq(envID)).
+	fileAppsCount, err := q2.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID)).
 		Where(m.ConfigType.Eq(string(table.File))).Where(conds2...).Count()
 	if err != nil {
 		return 0, 0, err
@@ -340,7 +345,9 @@ func (dao *appDao) List(kit *kit.Kit, bizID, projectID, envID uint32, configType
 
 	conds = append(conds, m.BizID.Eq(bizID))
 	conds = append(conds, m.ProjID.Eq(projectID))
-	conds = append(conds, m.EnvID.Eq(envID))
+	if envID != 0 {
+		conds = append(conds, m.EnvID.Eq(envID))
+	}
 
 	conds = dao.handleSearch(conds, opt.Search.AsMap())
 

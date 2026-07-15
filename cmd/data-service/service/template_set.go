@@ -85,9 +85,31 @@ func (s *Service) ListTemplateSets(ctx context.Context, req *pbds.ListTemplateSe
 		return nil, err
 	}
 
+	appIDs := make([]uint32, 0)
+	appIDMap := make(map[uint32]struct{})
+
+	for _, ts := range details {
+		for _, appID := range ts.Spec.BoundApps {
+			if _, ok := appIDMap[appID]; !ok {
+				appIDMap[appID] = struct{}{}
+				appIDs = append(appIDs, appID)
+			}
+		}
+	}
+
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	appEnvMap := make(map[uint32]uint32)
+	for _, app := range apps {
+		appEnvMap[app.ID] = app.EnvID
+	}
+
 	resp := &pbds.ListTemplateSetsResp{
 		Count:   uint32(count),
-		Details: pbtset.PbTemplateSets(details),
+		Details: pbtset.PbTemplateSets(details, appEnvMap),
 	}
 	return resp, nil
 }
@@ -321,8 +343,30 @@ func (s *Service) ListAppTemplateSets(ctx context.Context, req *pbds.ListAppTemp
 		return nil, err
 	}
 
+	appIDs := make([]uint32, 0)
+	appIDMap := make(map[uint32]struct{})
+
+	for _, ts := range details {
+		for _, appID := range ts.Spec.BoundApps {
+			if _, ok := appIDMap[appID]; !ok {
+				appIDMap[appID] = struct{}{}
+				appIDs = append(appIDs, appID)
+			}
+		}
+	}
+
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	appEnvMap := make(map[uint32]uint32)
+	for _, app := range apps {
+		appEnvMap[app.ID] = app.EnvID
+	}
+
 	resp := &pbds.ListAppTemplateSetsResp{
-		Details: pbtset.PbTemplateSets(details),
+		Details: pbtset.PbTemplateSets(details, appEnvMap),
 	}
 	return resp, nil
 }
@@ -342,8 +386,30 @@ func (s *Service) ListTemplateSetsByIDs(ctx context.Context, req *pbds.ListTempl
 		return nil, err
 	}
 
+	appIDs := make([]uint32, 0)
+	appIDMap := make(map[uint32]struct{})
+
+	for _, ts := range details {
+		for _, appID := range ts.Spec.BoundApps {
+			if _, ok := appIDMap[appID]; !ok {
+				appIDMap[appID] = struct{}{}
+				appIDs = append(appIDs, appID)
+			}
+		}
+	}
+
+	apps, err := s.dao.App().ListAppsByIDs(kt, req.BizId, req.ProjectId, appIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	appEnvMap := make(map[uint32]uint32)
+	for _, app := range apps {
+		appEnvMap[app.ID] = app.EnvID
+	}
+
 	resp := &pbds.ListTemplateSetsByIDsResp{
-		Details: pbtset.PbTemplateSets(details),
+		Details: pbtset.PbTemplateSets(details, appEnvMap),
 	}
 	return resp, nil
 }

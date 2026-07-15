@@ -13,6 +13,8 @@ message TemplateSet {
   TemplateSetSpec spec = 2;
   TemplateSetAttachment attachment = 3;
   pbbase.Revision revision = 4;
+  repeated EnvApps env_apps = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "按环境分组的绑定服务" }];
 }
 
 // TemplateSetSpec source resource reference: pkg/dal/table/template_set.go
@@ -62,4 +64,10 @@ message TemplateSetBriefInfo {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐ID" }];
   string template_set_name = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板套餐名" }];
+}
+
+message EnvApps {
+  uint32 env_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+  repeated uint32 app_ids = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID列表" }];
 }
