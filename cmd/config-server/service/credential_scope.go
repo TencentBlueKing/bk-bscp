@@ -40,6 +40,7 @@ func (s *Service) ListCredentialScopes(ctx context.Context,
 	r := &pbds.ListCredentialScopesReq{
 		BizId:        req.BizId,
 		CredentialId: req.CredentialId,
+		ProjectId:    grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	rp, err := s.client.DS.ListCredentialScopes(grpcKit.RpcCtx(), r)
 	if err != nil {
@@ -56,8 +57,7 @@ func (s *Service) ListCredentialScopes(ctx context.Context,
 }
 
 // UpdateCredentialScope  update credential scope
-func (s *Service) UpdateCredentialScope(ctx context.Context,
-	req *pbcs.UpdateCredentialScopeReq) (*pbcs.UpdateCredentialScopeResp, error) {
+func (s *Service) UpdateCredentialScope(ctx context.Context, req *pbcs.UpdateCredentialScopeReq) (*pbcs.UpdateCredentialScopeResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
@@ -75,6 +75,7 @@ func (s *Service) UpdateCredentialScope(ctx context.Context,
 	r := &pbds.UpdateCredentialScopesReq{
 		BizId:        req.BizId,
 		CredentialId: req.CredentialId,
+		ProjectId:    grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	r.Created = append(r.Created, req.AddScope...)

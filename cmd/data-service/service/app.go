@@ -316,7 +316,7 @@ func (s *Service) updateRelatedCredentials(grpcKit *kit.Kit, tx *gen.QueryTx, ap
 	// update credentials
 	matchedCredentialIDs = tools.RemoveDuplicates(matchedCredentialIDs)
 	for _, credentialID := range matchedCredentialIDs {
-		if e := s.dao.Credential().UpdateRevisionWithTx(grpcKit, tx, bizID, credentialID); e != nil {
+		if e := s.dao.Credential().UpdateRevisionWithTx(grpcKit, tx, bizID, projectID, credentialID); e != nil {
 			logs.Errorf("update credential revision failed, err: %v, rid: %s", e, grpcKit.Rid)
 			return e
 		}

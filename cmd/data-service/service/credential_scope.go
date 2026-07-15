@@ -28,10 +28,14 @@ import (
 )
 
 // ListCredentialScopes  get credential scopes
-func (s *Service) ListCredentialScopes(ctx context.Context,
-	req *pbds.ListCredentialScopesReq) (*pbds.ListCredentialScopesResp, error) {
+func (s *Service) ListCredentialScopes(ctx context.Context, req *pbds.ListCredentialScopesReq) (*pbds.ListCredentialScopesResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
+
+	_, err := s.dao.Credential().Get(kt, req.BizId, req.ProjectId, req.CredentialId)
+	if err != nil {
+		return nil, err
+	}
 
 	details, count, err := s.dao.CredentialScope().Get(kt, req.CredentialId, req.BizId)
 	if err != nil {
@@ -53,12 +57,11 @@ func (s *Service) ListCredentialScopes(ctx context.Context,
 
 // UpdateCredentialScopes update credential scopes
 // nolint:funlen
-func (s *Service) UpdateCredentialScopes(ctx context.Context,
-	req *pbds.UpdateCredentialScopesReq) (*pbds.UpdateCredentialScopesResp, error) {
+func (s *Service) UpdateCredentialScopes(ctx context.Context, req *pbds.UpdateCredentialScopesReq) (*pbds.UpdateCredentialScopesResp, error) {
 
 	kt := kit.FromGrpcContext(ctx)
 
-	credentialRecord, err := s.dao.Credential().Get(kt, req.BizId, req.CredentialId)
+	credentialRecord, err := s.dao.Credential().Get(kt, req.BizId, req.ProjectId, req.CredentialId)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +134,7 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context,
 		}
 	}
 
-	if err := s.dao.Credential().UpdateRevisionWithTx(kt, tx, req.BizId, req.CredentialId); err != nil {
+	if err := s.dao.Credential().UpdateRevisionWithTx(kt, tx, req.BizId, req.ProjectId, req.CredentialId); err != nil {
 		logs.Errorf("update credential revision failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}

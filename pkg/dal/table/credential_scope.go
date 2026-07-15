@@ -49,7 +49,7 @@ func (c *CredentialScope) ResType() string {
 	return string(enumor.Credential)
 }
 
-// ProjectID AuditRes interface, 后续通过上下文透传。
+// ProjectID AuditRes interface, 返回查询条件所属的项目 ID。
 func (c *CredentialScope) ProjectID() uint32 {
 	return 0
 }

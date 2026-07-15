@@ -34,26 +34,26 @@ import (
 // Credential supplies all the Credential related operations.
 type Credential interface {
 	// Get get credential
-	Get(kit *kit.Kit, bizID, id uint32) (*table.Credential, error)
+	Get(kit *kit.Kit, bizID, projectId, id uint32) (*table.Credential, error)
 	// GetByCredentialString get credential by credential string
-	GetByCredentialString(kit *kit.Kit, bizID uint32, credential string) (*table.Credential, error)
+	GetByCredentialString(kit *kit.Kit, bizID, projectId uint32, credential string) (*table.Credential, error)
 	// ListByCredentialString list credential by credential string array
-	ListByCredentialString(kit *kit.Kit, bizID uint32, credentials []string) ([]*table.Credential, error)
+	ListByCredentialString(kit *kit.Kit, bizID, projectId uint32, credentials []string) ([]*table.Credential, error)
 	// BatchListByIDs batch list credential by ids
-	BatchListByIDs(kit *kit.Kit, bizID uint32, ids []uint32) ([]*table.Credential, error)
+	BatchListByIDs(kit *kit.Kit, bizID, projectId uint32, ids []uint32) ([]*table.Credential, error)
 	// Create one credential instance.
 	Create(kit *kit.Kit, credential *table.Credential) (uint32, error)
 	// List get credentials
-	List(kit *kit.Kit, bizID uint32, searchKey string, opt *types.BasePage,
+	List(kit *kit.Kit, bizID, projectId uint32, searchKey string, opt *types.BasePage,
 		topIds []uint32, encCredential string, enable *bool) ([]*table.Credential, int64, error)
 	// DeleteWithTx delete credential with transaction
-	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) error
+	DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, projectId, id uint32) error
 	// Update update credential
 	Update(kit *kit.Kit, credential *table.Credential) error
 	// UpdateRevisionWithTx update credential revision with transaction
-	UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) error
+	UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, projectId, id uint32) error
 	// GetByName get Credential by name.
-	GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Credential, error)
+	GetByName(kit *kit.Kit, bizID, projectId uint32, name string) (*table.Credential, error)
 }
 
 var _ Credential = new(credentialDao)
@@ -67,7 +67,7 @@ type credentialDao struct {
 }
 
 // Get ..
-func (dao *credentialDao) Get(kit *kit.Kit, bizID, id uint32) (*table.Credential, error) {
+func (dao *credentialDao) Get(kit *kit.Kit, bizID, projectId, id uint32) (*table.Credential, error) {
 	if bizID == 0 {
 		return nil, errors.New("bizID is empty")
 	}
@@ -78,7 +78,7 @@ func (dao *credentialDao) Get(kit *kit.Kit, bizID, id uint32) (*table.Credential
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
 
-	credential, err := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Take()
+	credential, err := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id), m.ProjectID.Eq(projectId)).Take()
 	if err != nil {
 		return nil, fmt.Errorf("get credential failed, err: %v", err)
 	}
@@ -87,7 +87,7 @@ func (dao *credentialDao) Get(kit *kit.Kit, bizID, id uint32) (*table.Credential
 }
 
 // GetByCredentialString get credential by encoded credential string.
-func (dao *credentialDao) GetByCredentialString(kit *kit.Kit, bizID uint32, str string) (*table.Credential, error) {
+func (dao *credentialDao) GetByCredentialString(kit *kit.Kit, bizID, projectId uint32, str string) (*table.Credential, error) {
 	if bizID == 0 {
 		return nil, errors.New("bizID is empty")
 	}
@@ -106,7 +106,7 @@ func (dao *credentialDao) GetByCredentialString(kit *kit.Kit, bizID uint32, str 
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
 
-	credential, err := q.Where(m.BizID.Eq(bizID), m.EncCredential.Eq(encrypted)).Take()
+	credential, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.EncCredential.Eq(encrypted)).Take()
 	if err != nil {
 		return nil, fmt.Errorf("get credential failed, err: %w", err)
 	}
@@ -115,7 +115,7 @@ func (dao *credentialDao) GetByCredentialString(kit *kit.Kit, bizID uint32, str 
 }
 
 // ListByCredentialString list credential by encoded credential string array.
-func (dao *credentialDao) ListByCredentialString(kit *kit.Kit, bizID uint32, strArr []string) (
+func (dao *credentialDao) ListByCredentialString(kit *kit.Kit, bizID, projectId uint32, strArr []string) (
 	[]*table.Credential, error) {
 	if bizID == 0 {
 		return nil, errors.New("bizID is empty")
@@ -140,11 +140,11 @@ func (dao *credentialDao) ListByCredentialString(kit *kit.Kit, bizID uint32, str
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
 
-	return q.Where(m.BizID.Eq(bizID), m.EncCredential.In(encryptedArr...)).Find()
+	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.EncCredential.In(encryptedArr...)).Find()
 }
 
 // BatchListByIDs batch list credential by ids
-func (dao *credentialDao) BatchListByIDs(kit *kit.Kit, bizID uint32, ids []uint32) ([]*table.Credential, error) {
+func (dao *credentialDao) BatchListByIDs(kit *kit.Kit, bizID, projectId uint32, ids []uint32) ([]*table.Credential, error) {
 	if bizID == 0 {
 		return nil, errors.New("bizID is empty")
 	}
@@ -154,7 +154,7 @@ func (dao *credentialDao) BatchListByIDs(kit *kit.Kit, bizID uint32, ids []uint3
 
 	m := dao.genQ.Credential
 
-	return dao.genQ.Credential.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ID.In(ids...)).Find()
+	return dao.genQ.Credential.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.ID.In(ids...)).Find()
 }
 
 // Create create credential
@@ -197,7 +197,7 @@ func (dao *credentialDao) Create(kit *kit.Kit, g *table.Credential) (uint32, err
 }
 
 // List get credentials
-func (dao *credentialDao) List(kit *kit.Kit, bizID uint32, searchKey string, opt *types.BasePage,
+func (dao *credentialDao) List(kit *kit.Kit, bizID, projectId uint32, searchKey string, opt *types.BasePage,
 	topIds []uint32, encCredential string, enable *bool) ([]*table.Credential, int64, error) {
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
@@ -239,7 +239,7 @@ func (dao *credentialDao) List(kit *kit.Kit, bizID uint32, searchKey string, opt
 		q = q.Where(m.Enable.Is(*enable))
 	}
 
-	q = q.Where(m.BizID.Eq(bizID)).Where(conds...)
+	q = q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId)).Where(conds...)
 	if opt.All {
 		result, err := q.Find()
 		if err != nil {
@@ -253,7 +253,7 @@ func (dao *credentialDao) List(kit *kit.Kit, bizID uint32, searchKey string, opt
 
 // Delete delete credential
 // !Note: delete credential should emit a delete event.
-func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id uint32) error {
+func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, projectId, id uint32) error {
 	// 参数校验
 	if bizID == 0 {
 		return errf.New(errf.InvalidParameter, "bizID is 0")
@@ -265,7 +265,7 @@ func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id 
 	// 删除操作, 获取当前记录做审计
 	m := tx.Credential
 	q := tx.Credential.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
+	oldOne, err := q.Where(m.ID.Eq(id), m.BizID.Eq(bizID), m.ProjectID.Eq(projectId)).Take()
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, id 
 		Detail:           oldOne.Spec.Memo,
 	}).PrepareDelete(oldOne)
 
-	if _, e := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Delete(); e != nil {
+	if _, e := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.ID.Eq(id)).Delete(); e != nil {
 		return e
 	}
 
@@ -315,7 +315,7 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 	// 更新操作, 获取当前记录做审计
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
-	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID)).Take()
+	oldOne, err := q.Where(m.ID.Eq(g.ID), m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID)).Take()
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 	// 多个使用事务处理
 	updateTx := func(tx *gen.Query) error {
 		q = tx.Credential.WithContext(kit.Ctx)
-		if _, e := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).
+		if _, e := q.Where(m.BizID.Eq(g.Attachment.BizID), m.ProjectID.Eq(g.Attachment.ProjectID), m.ID.Eq(g.ID)).
 			Select(m.Memo, m.Name, m.Enable, m.Reviser).Updates(g); e != nil {
 			return e
 		}
@@ -377,13 +377,13 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 
 // UpdateRevisionWithTx update credential revision with transaction
 // !Note: update credential should emit a update event.
-func (dao *credentialDao) UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, id uint32) error {
+func (dao *credentialDao) UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, projectId uint32, id uint32) error {
 	if bizID == 0 || id == 0 {
 		return errors.New("credential bizID or id is zero")
 	}
 
 	m := tx.Credential
-	oldOne, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID)).Take()
+	oldOne, err := m.WithContext(kit.Ctx).Where(m.ID.Eq(id), m.BizID.Eq(bizID), m.ProjectID.Eq(projectId)).Take()
 	if err != nil {
 		return err
 	}
@@ -396,7 +396,7 @@ func (dao *credentialDao) UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bi
 	}
 
 	q := tx.Credential.WithContext(kit.Ctx)
-	if _, e := q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).
+	if _, e := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.ID.Eq(id)).
 		Select(m.Reviser).Update(m.Reviser, kit.User); e != nil {
 		return e
 	}
@@ -422,12 +422,12 @@ func (dao *credentialDao) UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bi
 }
 
 // GetByName get Credential by name.
-func (dao *credentialDao) GetByName(kit *kit.Kit, bizID uint32, name string) (*table.Credential, error) {
+func (dao *credentialDao) GetByName(kit *kit.Kit, bizID, projectId uint32, name string) (*table.Credential, error) {
 
 	m := dao.genQ.Credential
 	q := dao.genQ.Credential.WithContext(kit.Ctx)
 
-	credential, err := q.Where(m.BizID.Eq(bizID), m.Name.Eq(name)).Take()
+	credential, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectId), m.Name.Eq(name)).Take()
 	if err != nil {
 		return nil, err
 	}

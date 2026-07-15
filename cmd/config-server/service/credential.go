@@ -54,7 +54,8 @@ func (s *Service) CreateCredentials(ctx context.Context,
 	// create Credential
 	r := &pbds.CreateCredentialReq{
 		Attachment: &pbcredential.CredentialAttachment{
-			BizId: bizID,
+			BizId:     bizID,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbcredential.CredentialSpec{
 			Memo:           req.Memo,
@@ -105,6 +106,7 @@ func (s *Service) ListCredentials(ctx context.Context,
 		All:           req.All,
 		EncCredential: encCredential,
 		Enable:        req.Enable,
+		ProjectId:     grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListCredentials(grpcKit.RpcCtx(), r)
@@ -149,7 +151,8 @@ func (s *Service) DeleteCredential(ctx context.Context,
 	r := &pbds.DeleteCredentialReq{
 		Id: req.Id,
 		Attachment: &pbcredential.CredentialAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 	}
 	_, err = s.client.DS.DeleteCredential(grpcKit.RpcCtx(), r)
@@ -179,7 +182,8 @@ func (s *Service) UpdateCredential(ctx context.Context,
 	r := &pbds.UpdateCredentialReq{
 		Id: req.Id,
 		Attachment: &pbcredential.CredentialAttachment{
-			BizId: req.BizId,
+			BizId:     req.BizId,
+			ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 		},
 		Spec: &pbcredential.CredentialSpec{
 			Enable: req.Enable,
@@ -214,6 +218,7 @@ func (s *Service) CheckCredentialName(ctx context.Context, req *pbcs.CheckCreden
 	credential, err := s.client.DS.CheckCredentialName(grpcKit.RpcCtx(), &pbds.CheckCredentialNameReq{
 		BizId:          req.BizId,
 		CredentialName: req.CredentialName,
+		ProjectId:      grpcKit.ResolvedProjectID(req.ProjectId),
 	})
 	if err != nil {
 		return nil, err
@@ -245,6 +250,8 @@ func (s *Service) CredentialScopePreview(ctx context.Context, req *pbcs.Credenti
 		Limit:       req.Limit,
 		Start:       req.Start,
 		SearchValue: req.SearchValue,
+		ProjectId:   grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:       grpcKit.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		return resp, err

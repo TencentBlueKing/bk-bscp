@@ -94,7 +94,8 @@ func (c *client) refreshCredentialFromCache(kt *kit.Kit, bizID uint32, credentia
 }
 
 func (c *client) queryCredentialFromCahce(kt *kit.Kit, bizID uint32, credential string) (string, int, error) {
-	cred, err := c.op.Credential().GetByCredentialString(kt, bizID, credential)
+	// TODO: 待处理
+	cred, err := c.op.Credential().GetByCredentialString(kt, bizID, 0, credential)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", 0, status.Errorf(codes.NotFound, err.Error())
