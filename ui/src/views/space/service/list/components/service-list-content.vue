@@ -59,6 +59,7 @@
                 v-for="service in serviceList"
                 :key="service.id"
                 :service="service"
+                :env-id="envId"
                 @edit="handleEditService"
                 @delete="handleDeleteService"
                 @update="handleDeletedUpdate" />
@@ -79,6 +80,7 @@
       <ServiceTable
         v-else
         :space-id="props.spaceId"
+        :env-id="envId"
         :data="serviceList"
         :pagination="pagination"
         :loading="isLoading"

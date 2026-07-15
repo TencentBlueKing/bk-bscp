@@ -59,7 +59,7 @@
           <bk-table-column label="">
             <template #default="{ row }">
               <div v-if="row.app_id" class="app-info">
-                <div class="app-info-left" @click="goToConfigPageImport(row.app_id)">
+                <div class="app-info-left" @click="goToConfigPageImport(row.app_id, row.env_id)">
                   <div v-overflow-title class="name-text">{{ row.app_name }}</div>
                   <LinkToApp class="link-icon" :id="row.app_id" />
                 </div>
@@ -197,11 +197,11 @@
     boundAppsLoading.value = false;
   };
 
-  const goToConfigPageImport = (id: number) => {
+  const goToConfigPageImport = (id: number, envId: number | string, isOpenDialog = '0') => {
     const { href } = router.resolve({
       name: 'service-config',
-      params: { appId: id },
-      query: { pkg_id: currentPkg.value },
+      params: { appId: id, envId },
+      query: { pkg_id: currentPkg.value, isOpenDialog },
     });
     window.open(href, '_blank');
   };
@@ -222,8 +222,9 @@
   const handleConfirm = async () => {
     const result = await formRef.value?.validate();
     if (!result) return;
+    const { envId, appId } = formData.value;
     // 跳转至服务配置页面
-    goToConfigPageImport(formData.value.appId as number);
+    goToConfigPageImport(appId as number, envId, '1');
     handleCancel();
   };
 
@@ -333,6 +334,7 @@
   // 环境标签样式
   .env-tag {
     padding: 2px 6px;
+    margin-left: 6px;
     border-radius: 4px;
     font-size: 12px;
     line-height: 20px;

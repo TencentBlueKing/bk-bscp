@@ -149,6 +149,7 @@
         :editable="true"
         :variables="props.variables"
         :size-limit="props.fileSizeLimit"
+        :env-id="envId"
         @change="handleStringContentChange" />
     </bk-form-item>
   </bk-form>
@@ -207,6 +208,7 @@
       content?: string | IFileConfigContentSummary;
       variables?: IVariableEditParams[];
       bkBizId: string;
+      envId: string;
       id: number; // 服务ID或者模板空间ID
       fileUploading?: boolean;
       fileSizeLimit?: number;

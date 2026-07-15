@@ -118,6 +118,7 @@
 
   const props = defineProps<{
     spaceId: string;
+    envId: string;
     data: IAppItem[];
     pagination: IPagination;
     loading: boolean;
@@ -150,7 +151,7 @@
 
   const handleJump = (id: number, name: string) => {
     if (name === 'service-config') {
-      router.push({ name, params: { spaceId: props.spaceId, appId: id } });
+      router.push({ name, params: { spaceId: props.spaceId, appId: id, envId: props.envId, } });
     } else {
       const routeData = router.resolve({
         name,

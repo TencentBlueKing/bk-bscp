@@ -101,7 +101,8 @@
   import ScriptEditor from '../../../scripts/components/script-editor.vue';
   import ScriptSelector from './script-selector.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  // @typescript-eslint/no-unused-vars
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const configStore = useConfigStore();
   const serviceStore = useServiceStore();
   const { versionData } = storeToRefs(configStore);
@@ -111,6 +112,7 @@
 
   const props = defineProps<{
     appId: number;
+    envId: string;
     cloneMode?: boolean;
   }>();
 
@@ -171,7 +173,7 @@
       start: 0,
       all: true,
     };
-    const res = await getScriptList(spaceId.value, params);
+    const res = await getScriptList(spaceId.value, projectId.value, params);
     const list = (res.details as IScriptItem[])
       .map((item) => ({
         id: item.hook.id,
@@ -187,7 +189,12 @@
   // 获取初始化脚本配置
   const getScriptSetting = async () => {
     scriptCiteDataLoading.value = true;
-    scriptCiteData.value = await getConfigScript(spaceId.value, props.appId, versionData.value.id);
+    scriptCiteData.value = await getConfigScript(
+      spaceId.value,
+      props.appId,
+      projectId.value,
+      props.envId,
+      versionData.value.id);
     scriptCiteDataLoading.value = false;
     formData.value = {
       pre: {
@@ -205,7 +212,7 @@
   // 获取脚本预览内容
   const getPreviewContent = async (scriptId: number, versionId: number) => {
     contentLoading.value = true;
-    const res = await getScriptVersionDetail(spaceId.value, scriptId, versionId);
+    const res = await getScriptVersionDetail(spaceId.value, projectId.value, scriptId, versionId);
     previewConfig.value.content = res.spec.content;
     contentLoading.value = false;
   };
@@ -227,7 +234,7 @@
       start: 0,
       all: true,
     };
-    const res = await getConfigList(spaceId.value, props.appId, params);
+    const res = await getConfigList(spaceId.value, props.appId, projectId.value, props.envId, params);
     return res.details.filter((item: any) => item.file_state !== 'DELETE').length;
   };
 
@@ -237,7 +244,7 @@
       start: 0,
       all: true,
     };
-    const res = await getBoundTemplates(spaceId.value, props.appId, params);
+    const res = await getBoundTemplates(spaceId.value, props.appId, projectId.value, props.envId, params);
     return res.details.reduce((acc: number, crt: IBoundTemplateGroup) => acc + crt.template_revisions.length, 0);
   };
 
@@ -288,7 +295,7 @@
         pre_hook_id: pre.id,
         post_hook_id: post.id,
       };
-      await updateConfigInitScript(spaceId.value, props.appId, params);
+      await updateConfigInitScript(spaceId.value, props.appId, projectId.value, props.envId, params);
       BkMessage({
         theme: 'success',
         message: t('初始化脚本设置成功'),

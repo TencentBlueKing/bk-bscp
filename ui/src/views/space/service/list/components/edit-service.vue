@@ -189,7 +189,12 @@
     const dataType = serviceEditForm.value.data_type;
     const configType = serviceEditForm.value.config_type;
     if (configType === 'kv' && dataType !== 'any') {
-      const configList = await getKvList(String(biz_id), id as number, { all: true, start: 0 });
+      const configList = await getKvList(
+        String(biz_id),
+        id as number,
+        String(project_id),
+        String(env_id),
+        { all: true, start: 0 });
       const res = configList.details.some((config: IConfigKvType) => config.spec.kv_type !== dataType);
       if (res) {
         InfoBox({

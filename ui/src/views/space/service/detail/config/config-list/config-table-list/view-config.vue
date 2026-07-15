@@ -42,7 +42,8 @@
                 :editable="false"
                 :show-tips="false"
                 :height="editorHeight"
-                :variables="variables" />
+                :variables="variables"
+                :env-id="envId" />
             </bk-form-item>
           </bk-form>
         </bk-tab-panel>
@@ -51,7 +52,8 @@
             language="json"
             :content="JSON.stringify(configDetail, null, 2)"
             :editable="false"
-            :show-tips="false" />
+            :show-tips="false"
+            :env-id="envId" />
         </bk-tab-panel>
       </bk-tab>
     </bk-loading>
@@ -125,6 +127,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     id: number;
     versionId: number;
@@ -200,8 +204,16 @@
   // 获取非模板套餐下配置文件详情配置，非文件类型配置文件内容下载内容，文件类型手动点击时再下载
   const getConfigDetail = async () => {
     try {
+      const { bkBizId, appId, projectId, envId, id } = props;
       if (versionData.value.id) {
-        const res = await getReleasedConfigItemDetail(props.bkBizId, props.appId, versionData.value.id, props.id);
+        const res = await getReleasedConfigItemDetail(
+          bkBizId,
+          appId,
+          projectId,
+          envId,
+          versionData.value.id,
+          id,
+        );
         const { content, memo } = res.config_item.commit_spec;
         const { byte_size, origin_byte_size, signature, origin_signature, md5 } = content;
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
@@ -228,7 +240,7 @@
           // charset,
         });
       } else {
-        const res = await getConfigItemDetail(props.bkBizId, props.id, props.appId);
+        const res = await getConfigItemDetail(bkBizId, id, appId, projectId, envId);
         const { create_at, creator, update_at, reviser } = res.config_item.revision;
         const { name, memo, path, file_type, file_mode, permission } = res.config_item.spec;
         const { user, user_group, privilege } = permission;
@@ -258,7 +270,7 @@
       if (configDetail.value.file_type === 'binary') {
         content.value = { name: configDetail.value.name, size: configDetail.value.byte_size, signature };
       } else {
-        const configContent = await downloadConfigContent(props.bkBizId, props.appId, signature);
+        const configContent = await downloadConfigContent(bkBizId, appId, signature);
         content.value = String(configContent);
       }
     } catch (e) {
@@ -273,8 +285,14 @@
     try {
       detailLoading.value = true;
       let template_space_id;
+      const { bkBizId, appId, projectId, id } = props;
       if (versionData.value.id) {
-        const res = await getTemplateVersionDetail(props.bkBizId, props.appId, versionData.value.id, props.id);
+        const res = await getTemplateVersionDetail(
+          bkBizId,
+          projectId,
+          appId,
+          versionData.value.id,
+          id);
         delete res.detail.update_at;
         delete res.detail.reviser;
         configDetail.value = sortObjectKeysByAscii({
@@ -286,9 +304,9 @@
         let res;
         if (props.isLatest) {
           // 版本为latest拉取最新版本 不传递版本名
-          res = await getTemplateConfigMeta(props.bkBizId, props.id);
+          res = await getTemplateConfigMeta(bkBizId, projectId, id);
         } else {
-          res = await getTemplateConfigMeta(props.bkBizId, props.id, props.versionName);
+          res = await getTemplateConfigMeta(bkBizId, projectId, id, props.versionName);
         }
         configDetail.value = sortObjectKeysByAscii({
           ...props.templateMeta,
@@ -309,7 +327,7 @@
           size: String(configDetail.value.byte_size),
         };
       } else {
-        const configContent = await downloadTemplateContent(props.bkBizId, template_space_id, signature);
+        const configContent = await downloadTemplateContent(bkBizId, template_space_id, signature);
         content.value = String(configContent);
       }
     } catch (e) {
@@ -321,7 +339,8 @@
 
   const getVariableList = async () => {
     variablesLoading.value = true;
-    const res = await getReleasedAppVariables(props.bkBizId, props.appId, props.versionId);
+    const { bkBizId, appId, projectId, envId, versionId } = props;
+    const res = await getReleasedAppVariables(bkBizId, projectId, envId, appId, versionId);
     variables.value = res.details;
     variablesLoading.value = false;
   };

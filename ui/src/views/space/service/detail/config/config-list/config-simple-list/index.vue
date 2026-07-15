@@ -1,6 +1,16 @@
 <template>
-  <ConfigTableWithTemplate v-if="isFileType" :bk-biz-id="bkBizId" :app-id="appId" />
-  <ConfigTableKvWithTemplate v-else :bk-biz-id="bkBizId" :app-id="appId" />
+  <ConfigTableWithTemplate
+    v-if="isFileType"
+    :bk-biz-id="bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
+    :app-id="appId" />
+  <ConfigTableKvWithTemplate
+    v-else
+    :bk-biz-id="bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
+    :app-id="appId" />
 </template>
 
 <script lang="ts" setup>
@@ -12,6 +22,8 @@
   const { isFileType } = serviceStore;
   defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 </script>

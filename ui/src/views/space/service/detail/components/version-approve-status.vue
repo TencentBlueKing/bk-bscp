@@ -122,9 +122,14 @@
       clearInterval(interval);
     }
     if (route.params.versionId) {
-      const { spaceId, appId, versionId } = route.params;
+      const { spaceId, projectId, appId, envId, versionId } = route.params;
       try {
-        const resp = await versionStatusQuery(String(spaceId), Number(appId), Number(versionId));
+        const resp = await versionStatusQuery(
+          String(spaceId),
+          Number(appId),
+          String(projectId),
+          String(envId),
+          Number(versionId));
         const {
           app,
           spec,

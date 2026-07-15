@@ -260,9 +260,11 @@
       if (lastAccessedServiceDetail) {
         const detail = JSON.parse(lastAccessedServiceDetail);
         if (detail.spaceId === spaceId.value) {
+          const routeName = navId === 'service-all' && !showPermApplyPage.value ? 'service-config' : (navId as RouteRecordName);
+          const { envId, ...other } = detail;
           router.push({
-            name: navId === 'service-all' && !showPermApplyPage.value ? 'service-config' : (navId as RouteRecordName),
-            params: { spaceId: detail.spaceId, projectId: detail.projectId, appId: detail.appId },
+            name: routeName,
+            params: routeName === 'service-config' ? { envId, ...other} : other,
           });
           return;
         }

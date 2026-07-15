@@ -15,11 +15,16 @@
     <EditConfig
       v-model:show="isShowEdit"
       :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="props.appId"
       :config="selectedConfig.spec"
       :editable="true"
       @confirm="getListData" />
-    <ViewConfig v-model:show="isShowView" :config="selectedConfig" />
+    <ViewConfig
+      v-model:show="isShowView"
+      :env-id="envId"
+      :config="selectedConfig" />
   </section>
 </template>
 <script setup lang="ts">
@@ -42,6 +47,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -91,10 +98,17 @@
         params.search_key = searchStr.value;
       }
       let res;
+      const { bkBizId, projectId, envId, appId} = props;
       if (isUnNamedVersion.value) {
-        res = await getKvList(props.bkBizId, props.appId, params);
+        res = await getKvList(bkBizId, appId, projectId, envId, params);
       } else {
-        res = await getReleaseKvList(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getReleaseKvList(
+          bkBizId,
+          appId,
+          projectId,
+          envId,
+          versionData.value.id,
+          params);
       }
       configList.value = res.details;
     } catch (e) {

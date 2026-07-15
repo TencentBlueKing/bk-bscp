@@ -53,10 +53,12 @@
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
   import { RightShape, Close } from 'bkui-vue/lib/icon';
   import { IAllPkgsGroupBySpaceInBiz, ITemplateConfigItem } from '../../../../../../../../../../types/template';
   import { ITemplateRevision } from '../../../../../../../../../../types/config';
   import { getTemplateRevisionsFromPkgId } from '../../../../../../../../../api/template';
+  import useGlobalStore from '../../../../../../../../../store/global';
 
   interface ITemplateVersions {
     id: number;
@@ -71,6 +73,7 @@
     versions: ITemplateVersions[];
   }
   const { t } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     bkBizId: string;
@@ -116,7 +119,7 @@
   const getTemplateList = async () => {
     listLoading.value = true;
     try {
-      const res = await getTemplateRevisionsFromPkgId(props.bkBizId, props.pkgId);
+      const res = await getTemplateRevisionsFromPkgId(props.bkBizId, projectId.value, props.pkgId);
       configTemplateList.value = res.details.map((item: any) => {
         const { template, template_revision } = item;
         const versions = template_revision.map((version: any) => {

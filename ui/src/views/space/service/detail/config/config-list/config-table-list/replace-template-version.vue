@@ -39,10 +39,12 @@
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
   import { getTemplateVersionsNameByIds } from '../../../../../../../api/template';
   import { updateBoundTemplateVersion } from '../../../../../../../api/config';
   import { ITemplateVersionsName } from '../../../../../../../../types/template';
   import Message from 'bkui-vue/lib/message';
+  import useGlobalStore from '../../../../../../../store/global';
 
   interface ITplVersionItem {
     id: number;
@@ -54,6 +56,7 @@
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
+    envId: string;
     appId: number;
     pkgId: number;
     bindingId: number;
@@ -63,6 +66,7 @@
   }>();
 
   const { t, locale } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
   const emits = defineEmits(['update:show', 'updated']);
 
   const loading = ref(false);
@@ -83,7 +87,7 @@
 
   const getTemplateVersions = async () => {
     loading.value = true;
-    const res = await getTemplateVersionsNameByIds(props.bkBizId, [props.templateId]);
+    const res = await getTemplateVersionsNameByIds(props.bkBizId, projectId.value, [props.templateId]);
     const templateVersion: ITemplateVersionsName = res.details[0];
     const list: ITplVersionItem[] = [];
     templateVersion.template_revisions.forEach((item) => {
@@ -138,7 +142,13 @@
         },
       ],
     };
-    await updateBoundTemplateVersion(props.bkBizId, props.appId, props.bindingId, params);
+    await updateBoundTemplateVersion(
+      props.bkBizId,
+      props.appId,
+      projectId.value,
+      props.envId,
+      props.bindingId,
+      params);
     emits('updated');
     close();
     Message({

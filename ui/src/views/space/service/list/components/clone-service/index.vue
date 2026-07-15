@@ -22,7 +22,12 @@
         :bk-biz-id="spaceId"
         :service="service"
         @select="handleSelectConfig" />
-      <ImportScript v-show="stepsStatus.curStep === 3" :app-id="service.id!" clone-mode @select="handleSelectScript" />
+      <ImportScript
+        v-show="stepsStatus.curStep === 3"
+        :env-id="serviceEditForm.envId"
+        :app-id="service.id!"
+        clone-mode
+        @select="handleSelectScript" />
     </div>
     <div class="clone-app-footer">
       <bk-button v-if="stepsStatus.curStep > 1" @click="stepsStatus.curStep--">
@@ -45,6 +50,7 @@
   <CreateSuccessDialog
     v-model:is-show="isShowConfirmDialog"
     :bk-biz-id="spaceId"
+    :env-id="serviceEditForm.envId"
     :app-id="appId"
     :service-data="serviceEditForm"
     :is-create="false" />

@@ -60,52 +60,82 @@ export const batchDeleteVariable = (biz_id: string, project_id: string, ids: num
 /**
  * 获取未命名版本服务变量列表
  * @param biz_id 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param app_id 应用ID
  * @returns
  */
-export const getUnReleasedAppVariables = (biz_id: string, app_id: number) =>
-  http.get(`/config/biz/${biz_id}/apps/${app_id}/template_variables`).then((res) => res.data);
+export const getUnReleasedAppVariables = (biz_id: string, project_id: string, env_id: string, app_id: number) =>
+  http.get(`/config/biz/${biz_id}/projects/${project_id}/envs/${env_id}/apps/${app_id}/template_variables`).then((res) => res.data);
 
 /**
  * 更新未命名版本服务变量列表
  * @param biz_id 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param app_id 应用ID
  * @returns
  */
-export const updateUnReleasedAppVariables = (biz_id: string, app_id: number, variables: IVariableEditParams[]) =>
-  http.put(`/config/biz/${biz_id}/apps/${app_id}/template_variables`, { variables }).then((res) => res.data);
+export const updateUnReleasedAppVariables = (
+  biz_id: string,
+  project_id: string,
+  env_id: string,
+  app_id: number,
+  variables: IVariableEditParams[]
+) =>
+  http.put(`/config/biz/${biz_id}/projects/${project_id}/envs/${env_id}/apps/${app_id}/template_variables`, { variables }).then((res) => res.data);
 
 /**
  * 获取服务某个版本的变量列表
  * @param biz_id 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param app_id 应用ID
  * @param release_id 服务版本ID
  * @returns
  */
-export const getReleasedAppVariables = (biz_id: string, app_id: number, release_id: number) =>
+export const getReleasedAppVariables = (
+  biz_id: string,
+  project_id: string,
+  env_id: string,
+  app_id: number,
+  release_id: number) =>
   http
-    .get(`/config/biz/${biz_id}/apps/${app_id}/releases/${release_id}/template_variables`, { params: {} })
+    .get(`/config/biz/${biz_id}/projects/${project_id}/envs/${env_id}/apps/${app_id}/releases/${release_id}/template_variables`, { params: {} })
     .then((res) => res.data);
 
 /**
  * 查询未命名版本服务中变量被配置文件引用详情
  * @param biz_id 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param app_id 应用ID
  * @returns
  */
-export const getUnReleasedAppVariablesCitedDetail = (biz_id: string, app_id: number) =>
-  http.get(`/config/biz/${biz_id}/apps/${app_id}/template_variables_references`).then((res) => res.data);
+export const getUnReleasedAppVariablesCitedDetail = (
+  biz_id: string,
+  project_id: string,
+  env_id: string,
+  app_id: number) =>
+  http.get(`/config/biz/${biz_id}/projects/${project_id}/envs/${env_id}/apps/${app_id}/template_variables_references`).then((res) => res.data);
 
 /**
  * 查询服务某个版本的变量被配置文件引用详情
  * @param biz_id 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param app_id 应用ID
  * @param release_id 服务版本ID
  * @returns
  */
-export const getReleasedAppVariablesCitedDetail = (biz_id: string, app_id: number, release_id: number) =>
+export const getReleasedAppVariablesCitedDetail = (
+  biz_id: string,
+  project_id: string,
+  env_id: string,
+  app_id: number,
+  release_id: number) =>
   http
-    .get(`/config/biz/${biz_id}/apps/${app_id}/releases/${release_id}/template_variables_references`)
+    .get(`/config/biz/${biz_id}/projects/${project_id}/envs/${env_id}/apps/${app_id}/releases/${release_id}/template_variables_references`)
     .then((res) => res.data);
 
 /**
@@ -151,20 +181,36 @@ export const exportVariables = (biz_id: string, project_id: string, type: string
 /**
  * 导出未命名版本变量
  * @param bizId 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param appId 应用ID
  * @param format 导出格式
  * @returns
  */
-export const exportUnReleasedVariables = (bizId: string, appId: number, format: string) =>
-  http.get(`config/biz/${bizId}/apps/${appId}/variables/export`, { params: { format } });
+export const exportUnReleasedVariables = (
+  bizId: string,
+  project_id: string,
+  env_id: string,
+  appId: number,
+  format: string) =>
+  http.get(`config/biz/${bizId}/projects/${project_id}/envs/${env_id}/apps/${appId}/variables/export`, { params: { format } });
 
 /**
  * 导出已发布版本变量
  * @param bizId 业务ID
+ * @param project_id 项目ID
+ * @param env_id 环境ID
  * @param appId 应用ID
  * @param release_id 服务版本ID
  * @param format 导出格式
  * @returns
  */
-export const exportReleasedVaribles = (bizId: string, appId: number, release_id: number, format: string) =>
-  http.get(`config/biz/${bizId}/apps/${appId}/releases/${release_id}/variables/export`, { params: { format } });
+export const exportReleasedVaribles = (
+  bizId: string,
+  project_id: string,
+  env_id: string,
+  appId: number,
+  release_id: number,
+  format: string
+) =>
+  http.get(`config/biz/${bizId}/projects/${project_id}/envs/${env_id}/apps/${appId}/releases/${release_id}/variables/export`, { params: { format } });

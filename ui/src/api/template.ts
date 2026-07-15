@@ -650,7 +650,6 @@ export const getTemplateVersionDetail = (
 /**
  * 删除模板版本
  * @param biz_id 业务ID
- * @param projectId 项目ID
  * @param template_space_id 空间ID
  * @param template_id 模板ID
  * @param template_revision_id 版本ID
@@ -658,13 +657,12 @@ export const getTemplateVersionDetail = (
  */
 export const deleteTemplateVersion = (
   biz_id: string,
-  projectId: string,
   template_space_id: number,
   template_id: number,
   template_revision_id: number,
 ) =>
   http.delete(
-    `/config/biz/${biz_id}/projects/${projectId}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/${template_revision_id}`,
+    `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/${template_revision_id}`,
   );
 
 /**
@@ -764,11 +762,12 @@ export const getAppsVersionBoundByTemplateVersion = (
  * 查询模板套餐和服务的绑定关系
  * @param biz_id 业务ID
  * @param projectId 项目ID
+ * @param envId 环境ID
  * @param app_id 应用ID
  * @returns
  */
-export const getAppPkgBindingRelations = (biz_id: string, projectId: string, app_id: number) =>
-  http.get(`/config/biz/${biz_id}/projects/${projectId}/apps/${app_id}/template_bindings`).then((res) => res.data);
+export const getAppPkgBindingRelations = (biz_id: string, projectId: string, envId: string, app_id: number) =>
+  http.get(`/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/template_bindings`).then((res) => res.data);
 
 /**
  * 批量查询模板的版本名称

@@ -71,6 +71,7 @@
           :error-line="errorLine"
           :language="format"
           :file-editor="false"
+          :env-id="envId"
           @enter="separatorShow = true"
           @paste="handlePaste"
           @update:model-value="handleContentChange" />
@@ -85,6 +86,7 @@
 <script setup lang="ts">
   import { ref, onBeforeUnmount, watch, computed, nextTick } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
   import BkMessage from 'bkui-vue/lib/message';
   import { InfoLine, FilliscreenLine, UnfullScreen, Search, Upload } from 'bkui-vue/lib/icon';
   import CodeEditor from '../../../../../../components/code-editor/index.vue';
@@ -92,6 +94,7 @@
   import { IConfigKvItem } from '../../../../../../../types/config';
   import { importKvFormText, importKvFormJson, importKvFormYaml } from '../../../../../../api/config';
   import useServiceStore from '../../../../../../store/service';
+  import useGlobalStore from '../../../../../../store/global';
   import yaml from 'js-yaml';
 
   interface errorLineItem {
@@ -103,6 +106,7 @@
   const emits = defineEmits(['hasError', 'update:modelValue']);
 
   const serviceStore = useServiceStore();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const isOpenFullScreen = ref(false);
   const codeEditorRef = ref();
@@ -117,6 +121,7 @@
 
   const props = defineProps<{
     bkBizId: string;
+    envId: string;
     appId: number;
     modelValue: boolean;
     format: string;
@@ -309,12 +314,13 @@
   // 导入kv
   const handleImport = async () => {
     let res;
-    if (props.format === 'text') {
-      res = await importKvFormText(props.bkBizId, props.appId, kvs.value, false);
-    } else if (props.format === 'json') {
-      res = await importKvFormJson(props.bkBizId, props.appId, jsonContent.value);
+    const {format, bkBizId, appId, envId} = props;
+    if (format === 'text') {
+      res = await importKvFormText(bkBizId, appId, projectId.value, envId, kvs.value, false);
+    } else if (format === 'json') {
+      res = await importKvFormJson(bkBizId, appId, projectId.value, envId, jsonContent.value);
     } else {
-      res = await importKvFormYaml(props.bkBizId, props.appId, yamlContent.value);
+      res = await importKvFormYaml(bkBizId, appId, projectId.value, envId, yamlContent.value);
     }
     serviceStore.$patch((state) => {
       state.topIds = res.data.ids;

@@ -1,7 +1,7 @@
 <template>
   <section class="version-container">
     <div class="service-selector-wrapper">
-      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" @change="handleAppChange">
+      <ServiceSelector ref="serviceSelectorRef" :value="props.appId" :env-id="envId" @change="handleAppChange">
         <template #trigger>
           <div class="selector-trigger">
             <input readonly :value="editingService.spec.name" />
@@ -61,7 +61,11 @@
         <TableEmpty v-if="searchStr && versionsInView.length === 0" :is-search-empty="true" @clear="searchStr = ''" />
       </section>
     </bk-loading>
-    <VersionDiff v-model:show="showDiffPanel" :current-version="currentOperatingVersion" />
+    <VersionDiff
+      v-model:show="showDiffPanel"
+      :project-id="projectId"
+      :env-id="envId"
+      :current-version="currentOperatingVersion" />
     <VersionOperateConfirmDialog
       v-model:show="showOperateConfirmDialog"
       :title="t('确认废弃该版本')"
@@ -120,6 +124,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -140,6 +146,8 @@
   const editingService = ref<IAppItem>({
     id: 0,
     biz_id: 0,
+    project_id: 0,
+    env_id: 0,
     space_id: '',
     spec: {
       name: '',
@@ -203,7 +211,7 @@
         versionData.value = versionDetail;
         refreshVersionListFlag.value = false;
         // 默认选中新增的版本时，路由参数versionId需要更新
-        router.push({ name: route.name as string, params: { versionId: versionDetail.id } });
+        router.push({ name: route.name as string, params: { ...route.params, versionId: versionDetail.id } });
       }
     }
   });
@@ -223,7 +231,7 @@
     await getVersionList();
     if (pendingApprovalVersion.value) {
       versionData.value = pendingApprovalVersion.value;
-      router.push({ name: route.name as string, params: { versionId: versionData.value.id } });
+      router.push({ name: route.name as string, params: { ...route.params, versionId: versionData.value.id } });
     }
     if (route.params.versionId) {
       const version = versionList.value.find((item) => item.id === Number(route.params.versionId));
@@ -241,7 +249,7 @@
         start: 0,
         all: true,
       };
-      const res = await getConfigVersionList(props.bkBizId, props.appId, params);
+      const res = await getConfigVersionList(props.bkBizId, props.appId, props.projectId, props.envId, params);
       versionList.value = [unNamedVersion, ...res.data.details];
       const index = versionList.value.findIndex((version: IConfigVersion) =>
         version.status.released_groups.some((group) => group.id === 0),
@@ -261,7 +269,7 @@
         start: 0,
         all: true,
       };
-      const res = await getConfigVersionList(props.bkBizId, props.appId, params);
+      const res = await getConfigVersionList(props.bkBizId, props.appId, props.projectId, props.envId, params);
       versionList.value.forEach((version: IConfigVersion) => {
         const newVersion = res.data.details.find((item: IConfigVersion) => item.id === version.id);
         if (newVersion) {
@@ -278,9 +286,11 @@
       state.conflictFileCount = 0;
     });
     versionData.value = version;
-    const params: { spaceId: string; appId: number; versionId?: number } = {
+    const params: { spaceId: string; projectId: string; appId: number; envId: string; versionId?: number } = {
       spaceId: props.bkBizId,
+      projectId: props.projectId,
       appId: props.appId,
+      envId: props.envId,
     };
     if (version.id !== 0) {
       params.versionId = version.id;
@@ -306,7 +316,7 @@
   const handleDeprecateVersion = () =>
     new Promise(() => {
       const id = currentOperatingVersion.value.id;
-      deprecateVersion(props.bkBizId, props.appId, id).then(() => {
+      deprecateVersion(props.bkBizId, props.appId, props.projectId, props.envId, id).then(() => {
         showOperateConfirmDialog.value = false;
         Message({
           theme: 'success',
@@ -378,7 +388,7 @@
     }
     router.push({
       name,
-      params: { spaceId: service.space_id, appId: service.id },
+      params: { spaceId: service.space_id, appId: service.id, envId: props.envId },
     });
   };
 </script>

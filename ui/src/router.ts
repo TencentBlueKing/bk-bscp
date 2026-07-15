@@ -3,7 +3,7 @@ import useGlobalStore from './store/global';
 import { ISpaceDetail } from '../types/index';
 import { getSpaceFeatureFlag } from './api';
 import { storeToRefs } from 'pinia';
-import { hasProjectConcept, getDefaultProjectId, saveSpaceToProjectId, getSpaceToProjectId } from './utils/project';
+import { hasProjectConcept, getDefaultProjectId, getSpaceToProjectId } from './utils/project';
 
 const routes = [
   {
@@ -47,7 +47,7 @@ const routes = [
             component: () => import('./views/space/service/list/index.vue'),
           },
           {
-            path: ':appId(\\d+)',
+            path: ':appId(\\d+)/:envId',
             component: () => import('./views/space/service/detail/index.vue'),
             children: [
               {
@@ -312,7 +312,7 @@ router.afterEach(() => {
 
 router.beforeEach(async (to, _from, next) => {
   const globalStore = storeToRefs(useGlobalStore());
-  const { spaceFeatureFlags, projectId } = globalStore;
+  const { spaceFeatureFlags } = globalStore;
 
   // 页面刷新后 spaceFeatureFlags会重置，重新获取权限信息
   if (!spaceFeatureFlags.value.BIZ_VIEW) {
@@ -331,8 +331,6 @@ router.beforeEach(async (to, _from, next) => {
         // 获取默认 projectId：优先 localStorage，没有则取项目列表第一个
         const targetProjectId = await getDefaultProjectId(currentSpaceId);
         if (targetProjectId) {
-          projectId.value = targetProjectId;
-          saveSpaceToProjectId(currentSpaceId, targetProjectId);
           // 重定向到带 projectId 的路由
           const params: Record<string, string> = { ...to.params, projectId: targetProjectId };
           next({
@@ -345,10 +343,6 @@ router.beforeEach(async (to, _from, next) => {
       } catch (error) {
         console.error('获取项目列表失败', error);
       }
-    } else {
-      // projectId 已存在，同步到全局状态并保存映射
-      projectId.value = currentProjectId;
-      saveSpaceToProjectId(currentSpaceId, currentProjectId);
     }
   }
 

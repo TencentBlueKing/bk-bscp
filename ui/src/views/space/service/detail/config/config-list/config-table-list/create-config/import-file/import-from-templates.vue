@@ -72,6 +72,8 @@
   import { ref, onMounted, computed, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Share } from 'bkui-vue/lib/icon';
+  import { storeToRefs } from 'pinia';
+  import useGlobalStore from '../../../../../../../../../store/global';
   import { ITemplatePkgs, ITemplateRevision } from '../../../../../../../../../../types/config';
   import { IAllPkgsGroupBySpaceInBiz } from '../../../../../../../../../../types/template';
   import { importConfigFromTemplate } from '../../../../../../../../../api/config';
@@ -81,9 +83,11 @@
 
   const route = useRoute();
   const router = useRouter();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     bkBizId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -134,14 +138,14 @@
 
   const getPkgList = async () => {
     pkgListLoading.value = true;
-    const res = await getAllPackagesGroupBySpace(props.bkBizId, { app_id: props.appId });
+    const res = await getAllPackagesGroupBySpace(props.bkBizId, projectId.value, { app_id: props.appId });
     pkgList.value = res.details;
     pkgListLoading.value = false;
   };
 
   const getImportedPkgsData = async () => {
     importedPkgsLoading.value = true;
-    const res = await getAppPkgBindingRelations(props.bkBizId, props.appId);
+    const res = await getAppPkgBindingRelations(props.bkBizId, projectId.value, props.envId, props.appId);
     if (res.details.length === 1) {
       bindingId.value = res.details[0].id;
       importedPkgs.value = res.details[0].spec.bindings;
@@ -205,7 +209,7 @@
   };
 
   const handleImportConfirm = async () => {
-    await importConfigFromTemplate(props.bkBizId, props.appId, {
+    await importConfigFromTemplate(props.bkBizId, props.appId, projectId.value, props.envId, {
       bindings: [...selectedPkgs.value, ...importedPkgs.value],
     });
     close();

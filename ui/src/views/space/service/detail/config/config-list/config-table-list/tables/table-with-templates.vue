@@ -157,6 +157,7 @@
                                       <DownloadConfigBtn
                                         type="config"
                                         :bk-biz-id="props.bkBizId"
+                                        :env-id="envId"
                                         :app-id="props.appId"
                                         :id="item.id"
                                         :disabled="item.file_state === 'DELETE'" />
@@ -195,6 +196,7 @@
                                     <DownloadConfigBtn
                                       type="config"
                                       :bk-biz-id="props.bkBizId"
+                                      :env-id="envId"
                                       :app-id="props.appId"
                                       :id="item.id" />
                                   </template>
@@ -225,6 +227,7 @@
                                   <DownloadConfigBtn
                                     type="template"
                                     :bk-biz-id="props.bkBizId"
+                                    :env-id="envId"
                                     :app-id="props.appId"
                                     :id="item.versionId"
                                     :disabled="item.file_state === 'DELETE'" />
@@ -253,21 +256,31 @@
     v-model:show="editPanelShow"
     :config-id="activeConfig"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     @confirm="handleEditConfigConfirm" />
   <ViewConfig
     v-model:show="viewConfigSliderData.open"
     v-bind="viewConfigSliderData.data"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :version-id="versionData.id"
     @open-edit="handleSwitchToEdit" />
-  <VersionDiff v-model:show="isDiffPanelShow" :current-version="versionData" :selected-config="diffConfig" />
+  <VersionDiff
+    v-model:show="isDiffPanelShow"
+    :project-id="projectId"
+    :env-id="envId"
+    :current-version="versionData"
+    :selected-config="diffConfig" />
   <ReplaceTemplateVersion
     v-model:show="replaceDialogData.open"
     v-bind="replaceDialogData.data"
     :binding-id="bindingId"
     :bk-biz-id="props.bkBizId"
+    :env-id="envId"
     :app-id="props.appId"
     @updated="getAllConfigList" />
   <DeleteConfirmDialog
@@ -384,6 +397,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     searchQuery: { [key: string]: string };
   }>();
@@ -555,7 +570,8 @@
   });
 
   const getBindingId = async () => {
-    const res = await getAppPkgBindingRelations(props.bkBizId, props.appId);
+    const { bkBizId, appId, projectId, envId } = props;
+    const res = await getAppPkgBindingRelations(bkBizId, projectId, envId, appId);
     bindingId.value = res.details.length === 1 ? res.details[0].id : 0;
   };
 
@@ -593,10 +609,17 @@
       let res;
       if (isUnNamedVersion.value) {
         if (statusFilterChecked.value.length > 0) params.status = statusFilterChecked.value;
-        res = await getConfigList(props.bkBizId, props.appId, params);
+        res = await getConfigList(props.bkBizId, props.appId, props.projectId, props.envId, params);
         allExistConfigCount.value = res.total_quantity;
       } else {
-        res = await getReleasedConfigList(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getReleasedConfigList(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          versionData.value.id,
+          params,
+        );
       }
       configList.value = res.details.sort((a: IConfigItem, b: IConfigItem) => {
         if (a.file_state === 'DELETE' && b.file_state !== 'DELETE') {
@@ -633,9 +656,16 @@
       let res;
       if (isUnNamedVersion.value) {
         if (statusFilterChecked.value.length > 0) params.status = statusFilterChecked.value;
-        res = await getBoundTemplates(props.bkBizId, props.appId, params);
+        res = await getBoundTemplates(props.bkBizId, props.appId, props.projectId, props.envId, params);
       } else {
-        res = await getBoundTemplatesByAppVersion(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getBoundTemplatesByAppVersion(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          versionData.value.id,
+          params,
+        );
       }
       templateGroupList.value = res.details;
       templatesCount.value = res.details.reduce(
@@ -826,7 +856,7 @@
   const handleDeletePkgConfirm = async () => {
     try {
       removePkgLoading.value = true;
-      await deleteCurrBoundPkg(props.bkBizId, props.appId, templateSetId.value);
+      await deleteCurrBoundPkg(props.bkBizId, props.appId, props.projectId, props.envId, templateSetId.value);
       await getBoundTemplateList();
       tableGroupsData.value = transListToTableData();
       emits('deleteConfig');
@@ -903,7 +933,7 @@
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
-    await unModifyConfigItem(props.bkBizId, props.appId, config.id);
+    await unModifyConfigItem(props.bkBizId, props.appId, props.projectId, props.envId, config.id);
     Message({ theme: 'success', message: t('撤销修改配置文件成功') });
     operationConfig.value = {
       config,
@@ -934,7 +964,13 @@
   };
 
   const handleRecoverConfigConfirm = async () => {
-    await unDeleteConfigItem(props.bkBizId, props.appId, operationConfig.value!.config.id);
+    await unDeleteConfigItem(
+      props.bkBizId,
+      props.appId,
+      props.projectId,
+      props.envId,
+      operationConfig.value!.config.id,
+    );
     isRecoverConfigDialogShow.value = false;
     Message({ theme: 'success', message: t('恢复配置文件成功') });
     handleUpdateConfig();

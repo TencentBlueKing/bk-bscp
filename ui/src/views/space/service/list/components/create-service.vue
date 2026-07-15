@@ -21,6 +21,7 @@
   <CreateSuccessDialog
     v-model:is-show="isShowConfirmDialog"
     :bk-biz-id="spaceId"
+    :env-id="envId"
     :app-id="appId"
     :service-data="serviceData" />
 </template>

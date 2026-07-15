@@ -1,7 +1,7 @@
 <template>
   <section class="version-detail-table">
     <div class="service-selector-wrapper">
-      <ServiceSelector :value="props.appId" />
+      <ServiceSelector :value="props.appId" :env-id="envId" />
     </div>
     <div class="content-container">
       <div class="head-operate-wrapper">
@@ -46,6 +46,8 @@
                   v-else
                   placement="bottom-start"
                   :bk-biz-id="props.bkBizId"
+                  :project-id="projectId"
+                  :env-id="envId"
                   :app-id="props.appId"
                   :groups="row.status.released_groups">
                   <div>{{ getGroupNames(row) }}</div>
@@ -121,7 +123,11 @@
         </bk-table>
       </bk-loading>
     </div>
-    <VersionDiff v-model:show="showDiffPanel" :current-version="diffVersion" />
+    <VersionDiff
+      v-model:show="showDiffPanel"
+      :project-id="projectId"
+      :env-id="envId"
+      :current-version="diffVersion" />
     <VersionOperateConfirmDialog
       v-model:show="operateConfirmDialog.open"
       :title="operateConfirmDialog.title"
@@ -164,6 +170,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -210,7 +218,7 @@
     if (searchStr.value) {
       params.searchKey = searchStr.value;
     }
-    const res = await getConfigVersionList(props.bkBizId, props.appId, params);
+    const res = await getConfigVersionList(props.bkBizId, props.appId, props.projectId, props.envId, params);
     const count = isAvaliableView.value ? res.data.count + 1 : res.data.count;
     if (isAvaliableView.value && current === 1) {
       versionList.value = [UN_NAMED_VERSION, ...res.data.details];
@@ -250,9 +258,11 @@
     configStore.$patch((state) => {
       state.versionData = data;
     });
-    const params: { spaceId: string; appId: number; versionId?: number } = {
+    const params: { spaceId: string; projectId: string; appId: number; envId: string; versionId?: number } = {
       spaceId: props.bkBizId,
+      projectId: props.projectId,
       appId: props.appId,
+      envId: props.envId,
     };
     if (data.id !== 0) {
       params.versionId = data.id;
@@ -274,7 +284,7 @@
     operateConfirmDialog.value.version = version;
     operateConfirmDialog.value.confirmFn = () =>
       new Promise(() => {
-        deprecateVersion(props.bkBizId, props.appId, version.id).then(() => {
+        deprecateVersion(props.bkBizId, props.appId, props.projectId, props.envId, version.id).then(() => {
           operateConfirmDialog.value.open = false;
           Message({
             theme: 'success',
@@ -293,7 +303,7 @@
     operateConfirmDialog.value.version = version;
     operateConfirmDialog.value.confirmFn = () =>
       new Promise(() => {
-        undeprecateVersion(props.bkBizId, props.appId, version.id).then(() => {
+        undeprecateVersion(props.bkBizId, props.appId, props.projectId, props.envId, version.id).then(() => {
           operateConfirmDialog.value.open = false;
           Message({
             theme: 'success',
@@ -312,7 +322,7 @@
     operateConfirmDialog.value.version = version;
     operateConfirmDialog.value.confirmFn = () =>
       new Promise(() => {
-        deleteVersion(props.bkBizId, props.appId, version.id).then(() => {
+        deleteVersion(props.bkBizId, props.appId, props.projectId, props.envId, version.id).then(() => {
           operateConfirmDialog.value.open = false;
           Message({
             theme: 'success',

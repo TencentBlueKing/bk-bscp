@@ -24,6 +24,8 @@
         <ReleasedGroupViewer
           v-if="isShowReleasedGroups"
           :bk-biz-id="props.bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="props.appId"
           :groups="versionData.status.released_groups"
           :disabled="publishStatus === 'full_released'">
@@ -50,6 +52,8 @@
           @send-data="getVerApproveStatus" />
         <CreateVersion
           :bk-biz-id="props.bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.create"
@@ -57,6 +61,8 @@
         <PublishVersion
           ref="publishVersionRef"
           :bk-biz-id="props.bkBizId"
+          :project-id="props.projectId"
+          :env-id="props.envId"
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
@@ -65,6 +71,8 @@
           @confirm="handleRefresh" />
         <ModifyGroupPublish
           :bk-biz-id="props.bkBizId"
+          :project-id="props.projectId"
+          :env-id="props.envId"
           :app-id="props.appId"
           :perm-check-loading="permCheckLoading"
           :has-perm="perms.publish"
@@ -115,6 +123,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     versionDetailView: Boolean;
   }>();
@@ -262,7 +272,7 @@
     const tab = tabs.value.find((item) => item.name === val);
     if (tab) {
       const params = route.params.versionId ? { versionId: route.params.versionId } : {};
-      router.push({ name: tab.routeName, params });
+      router.push({ name: tab.routeName, params: { ...route.params, ...params}});
     }
   };
 

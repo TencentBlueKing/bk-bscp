@@ -56,6 +56,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     configId: number;
     show: Boolean;
@@ -89,12 +91,19 @@
       let signature;
       let byte_size;
       if (versionData.value.id) {
-        detail = await getReleasedConfigItemDetail(props.bkBizId, props.appId, versionData.value.id, props.configId);
+        detail = await getReleasedConfigItemDetail(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          versionData.value.id,
+          props.configId,
+        );
         const { origin_byte_size, origin_signature } = detail.config_item.commit_spec.content;
         byte_size = origin_byte_size;
         signature = origin_signature;
       } else {
-        detail = await getConfigItemDetail(props.bkBizId, props.configId, props.appId);
+        detail = await getConfigItemDetail(props.bkBizId, props.configId, props.appId, props.projectId, props.envId);
         byte_size = detail.content.byte_size;
         signature = detail.content.signature;
       }

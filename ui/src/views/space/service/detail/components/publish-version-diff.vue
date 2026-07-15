@@ -3,6 +3,9 @@
     ref="diffRef"
     :btn-loading="props.btnLoading"
     :show="props.show"
+    :bk-biz-id="props.bkBizId"
+    :project-id="props.projectId"
+    :env-id="props.envId"
     :current-version="props.currentVersion"
     :base-version-id="baseVersionId"
     :show-publish-btn="true"
@@ -23,6 +26,8 @@
                   <ReleasedGroupViewer
                     placement="bottom-start"
                     :bk-biz-id="props.bkBizId"
+                    :project-id="props.projectId"
+                    :env-id="props.envId"
                     :app-id="props.appId"
                     :groups="version.status.released_groups">
                     <i class="bk-bscp-icon icon-resources-fill view-detail-icon" />
@@ -42,6 +47,8 @@
           <ReleasedGroupViewer
             placement="bottom-start"
             :bk-biz-id="props.bkBizId"
+            :project-id="props.projectId"
+            :env-id="props.envId"
             :app-id="props.appId"
             :groups="props.currentVersionGroups"
             :is-pending="true">
@@ -60,6 +67,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     show: boolean;
     currentVersion: IConfigVersion; // 当前版本详情信息

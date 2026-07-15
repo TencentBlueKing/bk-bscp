@@ -1,7 +1,17 @@
 <template>
   <div class="version-list-aside">
-    <VersionTableList v-if="versionDetailView" :bk-biz-id="props.bkBizId" :app-id="props.appId" />
-    <VersionSimpleList v-else :bk-biz-id="props.bkBizId" :app-id="props.appId" />
+    <VersionTableList
+      v-if="versionDetailView"
+      :bk-biz-id="props.bkBizId"
+      :project-id="props.projectId"
+      :env-id="props.envId"
+      :app-id="props.appId" />
+    <VersionSimpleList
+      v-else
+      :bk-biz-id="props.bkBizId"
+      :project-id="props.projectId"
+      :env-id="props.envId"
+      :app-id="props.appId" />
   </div>
 </template>
 <script setup lang="ts">
@@ -11,6 +21,8 @@
   const props = defineProps<{
     versionDetailView: Boolean;
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 </script>

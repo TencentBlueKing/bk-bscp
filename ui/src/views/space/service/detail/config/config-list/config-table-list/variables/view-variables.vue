@@ -33,6 +33,8 @@
   const { t } = useI18n();
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     verisionId: number;
   }>();
@@ -44,9 +46,10 @@
 
   const getVariableList = async () => {
     loading.value = true;
+    const { bkBizId, projectId, envId, appId, verisionId} = props;
     const [variableListRes, citedListRes] = await Promise.all([
-      getReleasedAppVariables(props.bkBizId, props.appId, props.verisionId),
-      getReleasedAppVariablesCitedDetail(props.bkBizId, props.appId, props.verisionId),
+      getReleasedAppVariables(bkBizId, projectId, envId, appId, verisionId),
+      getReleasedAppVariablesCitedDetail(bkBizId, projectId, envId, appId, verisionId),
     ]);
     variableList.value = variableListRes.details;
     citedList.value = citedListRes.details;
@@ -55,7 +58,13 @@
 
   // 导出变量
   const handleExport = async (type: string) => {
-    const res = await exportReleasedVaribles(props.bkBizId, props.appId, props.verisionId, type);
+    const res = await exportReleasedVaribles(
+      props.bkBizId,
+      props.projectId,
+      props.envId,
+      props.appId,
+      props.verisionId,
+      type);
     let content: any;
     let mimeType: string;
     let extension: string;

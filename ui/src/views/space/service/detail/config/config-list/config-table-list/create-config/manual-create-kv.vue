@@ -22,22 +22,26 @@
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
   import Message from 'bkui-vue/lib/message';
   import { IConfigKvEditParams } from '../../../../../../../../../types/config';
   import { createKv } from '../../../../../../../../api/config';
   import useModalCloseConfirmation from '../../../../../../../../utils/hooks/use-modal-close-confirmation';
   import ConfigForm from '../config-form-kv/index.vue';
   import useServiceStore from '../../../../../../../../store/service';
+  import useGlobalStore from '../../../../../../../../store/global';
 
   const serviceStore = useServiceStore();
 
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
+    envId: string;
     appId: number;
   }>();
 
   const { t } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const emits = defineEmits(['update:show', 'confirm']);
   const content = ref('');
@@ -91,7 +95,7 @@
       configForm.value.value = configForm.value.value.replace(/^0+(?=\d|$)/, '');
     }
     try {
-      const res = await createKv(props.bkBizId, props.appId, { ...configForm.value });
+      const res = await createKv(props.bkBizId, props.appId, projectId.value, props.envId, { ...configForm.value });
       serviceStore.$patch((state) => {
         state.topIds = [res.data.id];
       });

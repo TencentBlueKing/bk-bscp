@@ -38,7 +38,7 @@ export const delCategory = (app_id: number, group_category_id: number) =>
  * @param envId 环境ID
  * @returns
  */
-export const getServiceGroupList = (biz_id: string, app_id: number, projectId?: string, envId?: string) =>
+export const getServiceGroupList = (biz_id: string, app_id: number, projectId: string, envId: string) =>
   http.get(`/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/groups`).then((res) => {
     const defaultGroup = res.data.details.find((item: IGroupItemInService) => item.group_id === 0);
     if (defaultGroup) {

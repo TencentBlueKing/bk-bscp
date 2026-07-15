@@ -51,15 +51,15 @@
 
   // eslint-disable-next-line func-call-spacing
   const emit = defineEmits<{
-    (e: 'change', env: IEnvItem): void;
+    (e: 'change', env: IEnvItem, isManual?: boolean): void;
   }>();
 
   const envType = ref(EnvType.PRODUCTION);
   const envName = ref('');
-  const handleChange = (env: IEnvItem) => {
+  const handleChange = (env: IEnvItem, isManual?: boolean) => {
     envType.value = env.spec.type;
     envName.value = env.spec.name || '';
-    emit('change', env);
+    emit('change', env, isManual);
   };
 </script>
 
