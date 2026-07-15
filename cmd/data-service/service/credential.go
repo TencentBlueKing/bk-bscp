@@ -41,7 +41,7 @@ import (
 func (s *Service) CreateCredential(ctx context.Context, req *pbds.CreateCredentialReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	if _, err := s.dao.Credential().GetByName(kt, req.Attachment.BizId, req.Spec.Name); err == nil {
+	if _, err := s.dao.Credential().GetByName(kt, req.Attachment.BizId, req.Attachment.ProjectId, req.Spec.Name); err == nil {
 		return nil, fmt.Errorf("credential name %s already exists", req.Spec.Name)
 	}
 
@@ -77,7 +77,7 @@ func (s *Service) ListCredentials(ctx context.Context, req *pbds.ListCredentialR
 	// StrToUint32Slice the comma separated string goes to uint32 slice
 	topIds, _ := tools.StrToUint32Slice(req.TopIds)
 
-	details, count, err := s.dao.Credential().List(kt, req.BizId, req.SearchKey, opt, topIds,
+	details, count, err := s.dao.Credential().List(kt, req.BizId, req.ProjectId, req.SearchKey, opt, topIds,
 		req.EncCredential, req.Enable)
 	if err != nil {
 		logs.Errorf("list credential failed, err: %v, rid: %s", err, kt.Rid)
@@ -137,7 +137,7 @@ func (s *Service) DeleteCredential(ctx context.Context, req *pbds.DeleteCredenti
 		return nil, err
 	}
 
-	if err := s.dao.Credential().DeleteWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
+	if err := s.dao.Credential().DeleteWithTx(kt, tx, req.Attachment.BizId, req.Attachment.ProjectId, req.Id); err != nil {
 		logs.Errorf("delete credential failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (s *Service) DeleteCredential(ctx context.Context, req *pbds.DeleteCredenti
 func (s *Service) UpdateCredential(ctx context.Context, req *pbds.UpdateCredentialReq) (*pbbase.EmptyResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	old, err := s.dao.Credential().GetByName(kt, req.Attachment.BizId, req.Spec.Name)
+	old, err := s.dao.Credential().GetByName(kt, req.Attachment.BizId, req.Attachment.ProjectId, req.Spec.Name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logs.Errorf("get credential failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -185,7 +185,7 @@ func (s *Service) CheckCredentialName(ctx context.Context, req *pbds.CheckCreden
 	*pbds.CheckCredentialNameResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	credential, err := s.dao.Credential().GetByName(kt, req.BizId, req.CredentialName)
+	credential, err := s.dao.Credential().GetByName(kt, req.BizId, req.ProjectId, req.CredentialName)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
@@ -204,15 +204,23 @@ func (s *Service) CredentialScopePreview(ctx context.Context, req *pbds.Credenti
 	*pbds.CredentialScopePreviewResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	// TODO: 处理客户端密钥模块时再项目
-	app, err := s.dao.App().GetByName(kt, req.BizId, 0, 0, req.AppName)
+	envID := req.GetEnvId()
+	if envID == 0 {
+		env, err := s.dao.Environment().GetDefaultEnvironment(kt, req.BizId, req.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		envID = env.ID
+	}
+
+	app, err := s.dao.App().GetByName(kt, req.BizId, req.ProjectId, envID, req.AppName)
 	if err != nil {
 		return nil, err
 	}
 
 	var preview []*pbds.CredentialScopePreviewResp_Detail
 	if app.Spec.ConfigType == table.File {
-		preview, err = s.getFileConfileItems(kt, app.ID, req.BizId, req.Scope, req.SearchValue)
+		preview, err = s.getFileConfileItems(kt, req.BizId, req.ProjectId, envID, app.ID, req.Scope, req.SearchValue)
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +249,7 @@ func (s *Service) CredentialScopePreview(ctx context.Context, req *pbds.Credenti
 }
 
 // 获取文件配置项
-func (s *Service) getFileConfileItems(kt *kit.Kit, appID, bizID uint32, scope, searchValue string) (
+func (s *Service) getFileConfileItems(kt *kit.Kit, bizID, projectID, envID, appID uint32, scope, searchValue string) (
 	[]*pbds.CredentialScopePreviewResp_Detail, error) {
 
 	status := []string{constant.FileStateAdd, constant.FileStateRevise, constant.FileStateUnchange}
@@ -251,12 +259,14 @@ func (s *Service) getFileConfileItems(kt *kit.Kit, appID, bizID uint32, scope, s
 		All:        true,
 		WithStatus: true,
 		Status:     status,
+		ProjectId:  projectID,
+		EnvId:      envID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	tci, err := s.getAllUnPublishedTmpConfig(kt, appID, bizID, status)
+	tci, err := s.getAllUnPublishedTmpConfig(kt, bizID, projectID, envID, appID, status)
 	if err != nil {
 		return nil, err
 	}
@@ -319,10 +329,10 @@ func (s *Service) getKVConfigItems(kt *kit.Kit, appID, bizID uint32, scope, sear
 }
 
 // 获取未发布下的所有模板配置
-func (s *Service) getAllUnPublishedTmpConfig(kt *kit.Kit, appID, bizID uint32,
+func (s *Service) getAllUnPublishedTmpConfig(kt *kit.Kit, bizID, projectID, envID, appID uint32,
 	status []string) ([]*pbci.ConfigItem, error) {
 
-	tmplSetInfo, err := s.getAllAppTmplSets(kt, bizID, appID)
+	tmplSetInfo, err := s.getAllAppTmplSets(kt, bizID, projectID, envID, appID)
 	if err != nil {
 		logs.Errorf("get all app template sets failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -334,6 +344,8 @@ func (s *Service) getAllUnPublishedTmpConfig(kt *kit.Kit, appID, bizID uint32,
 		AppId:      appID,
 		All:        true,
 		WithStatus: true,
+		ProjectId:  projectID,
+		EnvId:      envID,
 	})
 	if err != nil {
 		logs.Errorf("list app template revisions failed, err: %v, rid: %s", err, kt.Rid)
@@ -379,11 +391,13 @@ func (s *Service) getAllUnPublishedTmpConfig(kt *kit.Kit, appID, bizID uint32,
 	return tci, nil
 }
 
-func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, appID uint32) ([]*pbtset.TemplateSetBriefInfo, error) {
+func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, projectID, envID, appID uint32) ([]*pbtset.TemplateSetBriefInfo, error) {
 	atbReq := &pbds.ListAppTemplateBindingsReq{
-		BizId: bizID,
-		AppId: appID,
-		All:   true,
+		BizId:     bizID,
+		AppId:     appID,
+		All:       true,
+		ProjectId: projectID,
+		EnvId:     envID,
 	}
 
 	atbRsp, err := s.ListAppTemplateBindings(grpcKit.RpcCtx(), atbReq)
@@ -401,7 +415,9 @@ func (s *Service) getAllAppTmplSets(grpcKit *kit.Kit, bizID, appID uint32) ([]*p
 
 	var tsbRsp *pbds.ListTemplateSetBriefInfoByIDsResp
 	tsbRsp, err = s.ListTemplateSetBriefInfoByIDs(grpcKit.RpcCtx(), &pbds.ListTemplateSetBriefInfoByIDsReq{
-		Ids: tmplSetIDs,
+		Ids:       tmplSetIDs,
+		BizId:     bizID,
+		ProjectId: projectID,
 	})
 	if err != nil {
 		logs.Errorf("list template set brief info by ids failed, err: %v, rid: %s", err, grpcKit.Rid)

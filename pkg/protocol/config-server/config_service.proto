@@ -1658,6 +1658,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/credentials"
       body: "*"
+      additional_bindings { post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credentials" body: "*" }
     };
   }
   // 获取客户端密钥
@@ -1665,6 +1666,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credentials"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credentials" }
     };
   }
   // 删除客户端密钥
@@ -1672,6 +1674,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz_id/{biz_id}/credential"
+      additional_bindings { delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/{id}" }
     };
   }
   // 更新客户端密钥
@@ -1680,6 +1683,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz_id/{biz_id}/credential"
       body: "*"
+      additional_bindings { put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/{id}" body: "*" }
     };
   }
   // 检测客户端密钥名称
@@ -1687,6 +1691,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/{credential_name}/check"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/{credential_name}/check"
+      }
     };
   }
   // 获取客户端密钥关联服务的列表
@@ -1694,6 +1701,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/{credential_id}/scopes"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/{credential_id}/scopes" }
     };
   }
   // 更新客户端密钥关联服务规则
@@ -1702,6 +1710,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz_id/{biz_id}/credential/{credential_id}/scope"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/{credential_id}/scope"
+        body: "*"
+      }
     };
   }
   // 预览客户端密钥关联配置项
@@ -1709,6 +1721,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz_id/{biz_id}/credential/scope/preview"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/credential/scope/preview" }
     };
   }
 
@@ -2402,6 +2415,7 @@ message UpdateCredentialScopeReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "更新规则" }];
   repeated uint32 del_id = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "删除规则" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateCredentialScopeResp {}
@@ -2413,6 +2427,8 @@ message CredentialScopePreviewReq {
   string search_value = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
   uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
   uint32 limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message CredentialScopePreviewResp {
@@ -2428,6 +2444,7 @@ message ListCredentialScopesReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 credential_id = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端密钥ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListCredentialScopesResp {
@@ -2446,6 +2463,7 @@ message EnableCredentialsResp {}
 message DeleteCredentialsReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端密钥ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message DeleteCredentialsResp {}
@@ -2456,6 +2474,7 @@ message UpdateCredentialsReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否启用：是=true,否=false" }];
   string memo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "密钥描述" }];
   string name = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "密钥名称" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message UpdateCredentialsResp {}
@@ -2464,6 +2483,7 @@ message CheckCredentialNameReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string credential_name = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "密钥名称" }];
+  uint32 project_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message CheckCredentialNameResp {
@@ -2481,6 +2501,7 @@ message ListCredentialsReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   optional bool enable = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否启用：是=true,否=false" }];
+  uint32 project_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListCredentialsResp {
@@ -2496,6 +2517,7 @@ message CreateCredentialReq {
   string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "密钥名称" }];
   uint32 biz_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated string scope = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "暂未用到" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message CreateCredentialResp {

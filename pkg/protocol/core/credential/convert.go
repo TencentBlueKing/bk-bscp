@@ -41,7 +41,8 @@ func (m *CredentialAttachment) CredentialAttachment() *table.CredentialAttachmen
 	}
 
 	return &table.CredentialAttachment{
-		BizID: m.BizId,
+		BizID:     m.BizId,
+		ProjectID: m.ProjectId,
 	}
 }
 
@@ -96,6 +97,7 @@ func PbCredentialAttachment(at *table.CredentialAttachment) *CredentialAttachmen
 	}
 
 	return &CredentialAttachment{
-		BizId: at.BizID,
+		BizId:     at.BizID,
+		ProjectId: at.ProjectID,
 	}
 }

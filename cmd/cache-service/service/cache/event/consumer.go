@@ -576,9 +576,10 @@ func (c *consumer) refreshCredentialCache(kt *kit.Kit, events []*table.Event) er
 		return nil
 	}
 
+	// TODO: 待处理
 	for _, event := range events {
 		bizKit := c.ensureTenantID(kt, event.Attachment.BizID, event.Attachment.TenantID)
-		cred, err := c.op.Credential().GetByCredentialString(bizKit, event.Attachment.BizID, event.Spec.ResourceUid)
+		cred, err := c.op.Credential().GetByCredentialString(bizKit, event.Attachment.BizID, 0, event.Spec.ResourceUid)
 		if err != nil {
 			// 已经删除的忽略
 			if errors.Is(err, dao.ErrRecordNotFound) {

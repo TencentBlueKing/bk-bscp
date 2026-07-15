@@ -856,7 +856,7 @@ func (s *Service) checkAppHaveCredentials(grpcKit *kit.Kit, bizID, projectID, en
 			matchedCredentials = append(matchedCredentials, scope.Attachment.CredentialId)
 		}
 	}
-	credentials, e := s.dao.Credential().BatchListByIDs(grpcKit, bizID, matchedCredentials)
+	credentials, e := s.dao.Credential().BatchListByIDs(grpcKit, bizID, projectID, matchedCredentials)
 	if e != nil {
 		return false, e
 	}

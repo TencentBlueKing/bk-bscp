@@ -416,6 +416,7 @@ message UpdateCredentialScopesReq {
   repeated pbcrs.CredentialScopeSpec created = 3;
   repeated pbcrs.UpdateScopeSpec updated = 4;
   repeated uint32 deleted = 5;
+  uint32 project_id = 6;
 }
 message UpdateCredentialScopesResp {}
 
@@ -426,6 +427,8 @@ message CredentialScopePreviewReq {
   string search_value = 4;
   uint32 start = 5;
   uint32 limit = 6;
+  uint32 project_id = 7;
+  uint32 env_id = 8;
 }
 
 message CredentialScopePreviewResp {
@@ -447,6 +450,7 @@ message DeleteCredentialScopesResp {}
 message ListCredentialScopesReq {
   uint32 biz_id = 1;
   uint32 credential_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListCredentialScopesResp {
@@ -473,6 +477,7 @@ message ListCredentialReq {
   bool all = 6;
   string enc_credential = 7;
   optional bool enable = 8;
+  uint32 project_id = 9;
 }
 
 message ListCredentialResp {
@@ -489,6 +494,7 @@ message UpdateCredentialReq {
 message CheckCredentialNameReq {
   uint32 biz_id = 1;
   string credential_name = 2;
+  uint32 project_id = 3;
 }
 
 message CheckCredentialNameResp {
