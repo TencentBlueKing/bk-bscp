@@ -498,7 +498,7 @@ func (s *Service) ListGroupSelector(ctx context.Context, req *pbds.ListGroupSele
 	*pbds.ListGroupSelectorResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	clients, err := s.dao.Client().GetClientsLables(kit, req.GetBizId(), req.GetLabelName())
+	clients, err := s.dao.Client().GetClientsLables(kit, req.GetBizId(), req.GetProjectId(), req.GetLabelName())
 	if err != nil {
 		return nil, err
 	}

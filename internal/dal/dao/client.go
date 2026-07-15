@@ -43,7 +43,7 @@ type Client interface {
 	// BatchUpdateWithTx batch update client instances with transaction.
 	BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*table.Client) error
 	// ListClientByTuple Query the client list according to multiple fields in
-	ListClientByTuple(kit *kit.Kit, data [][]interface{}) ([]*table.Client, error)
+	ListClientByTuple(kit *kit.Kit, data [][]any) ([]*table.Client, error)
 	// ListByHeartbeatTimeOnlineState obtain data based on the last heartbeat time and online status
 	ListByHeartbeatTimeOnlineState(kit *kit.Kit, heartbeatTime time.Time, onlineState string,
 		limit int, id uint32) ([]*table.Client, error)
@@ -52,22 +52,22 @@ type Client interface {
 	// GetClientCountByCondition Get the total according to the condition
 	GetClientCountByCondition(kit *kit.Kit, heartbeatTime time.Time, onlineState string) (int64, error)
 	// List Obtain client data according to conditions
-	List(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64, search *pbclient.ClientQueryCondition,
+	List(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64, search *pbclient.ClientQueryCondition,
 		order *pbds.ListClientsReq_Order, opt *types.BasePage) ([]*table.Client, int64, error)
 	// ListClientGroupByCurrentReleaseID 按当前版本 ID 列出客户端组
-	ListClientGroupByCurrentReleaseID(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	ListClientGroupByCurrentReleaseID(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) ([]types.CurrentConfigVersionChart, error)
 	// ListClientGroupByChangeStatus 按更改状态列出客户端组
-	ListClientGroupByChangeStatus(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	ListClientGroupByChangeStatus(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) ([]types.ChangeStatusChart, error)
 	// ListClientGroupByFailedReason 按失败原因列出客户端组
-	ListClientGroupByFailedReason(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	ListClientGroupByFailedReason(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) ([]types.FailedReasonChart, error)
 	// GetResourceUsage 获取资源使用率
-	GetResourceUsage(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	GetResourceUsage(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) (types.ResourceUsage, error)
 	// ListClientByIDs 按多个 ID 列出客户端
-	ListClientByIDs(kit *kit.Kit, bizID, appID uint32, ids []uint32) ([]*table.Client, error)
+	ListClientByIDs(kit *kit.Kit, bizID, projectID, envID, appID uint32, ids []uint32) ([]*table.Client, error)
 	// UpsertHeartbeat 更新插入心跳
 	UpsertHeartbeat(kit *kit.Kit, tx *gen.QueryTx, data []*table.Client) error
 	// UpsertVersionChange 更新插入版本更改
@@ -76,15 +76,15 @@ type Client interface {
 	// processing status instances with transaction.
 	UpdateRetriedClientsStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, ids []uint32, all bool) error
 	// FetchIDsExcluding 获取排除指定ID后的ID
-	FetchIDsExcluding(kit *kit.Kit, bizID uint32, appID uint32, ids []uint32) ([]uint32, error)
+	FetchIDsExcluding(kit *kit.Kit, bizID, projectID, envID, appID uint32, ids []uint32) ([]uint32, error)
 	// ListClientGroupByTargetReleaseID 按目标版本 ID 列出客户端组
-	ListClientGroupByTargetReleaseID(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	ListClientGroupByTargetReleaseID(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) ([]types.TargetConfigVersionChart, error)
 	// CountNumberOlineClients 统计客户端在线数量
-	CountNumberOlineClients(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+	CountNumberOlineClients(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 		search *pbclient.ClientQueryCondition) (int64, error)
 	// GetClientsField 获取客户端某个字段
-	GetClientsLables(kit *kit.Kit, bizID uint32, lableName string) ([]*table.Client, error)
+	GetClientsLables(kit *kit.Kit, bizID, projectID uint32, lableName string) ([]*table.Client, error)
 }
 
 var _ Client = new(clientDao)
@@ -96,22 +96,23 @@ type clientDao struct {
 }
 
 // GetClientsField implements Client.
-func (dao *clientDao) GetClientsLables(kit *kit.Kit, bizID uint32, lableName string) ([]*table.Client, error) {
+func (dao *clientDao) GetClientsLables(kit *kit.Kit, bizID, projectID uint32, lableName string) ([]*table.Client, error) {
 	m := dao.genQ.Client
 
 	return dao.genQ.Client.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.OnlineStatus.Eq("online")).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.OnlineStatus.Eq("online")).
 		Select(m.Labels).
 		Find()
 }
 
 // CountNumberOlineClients 统计客户端在线数量
-func (dao *clientDao) CountNumberOlineClients(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) CountNumberOlineClients(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) (int64, error) {
 
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID),
-		m.AppID.Eq(appID), m.OnlineStatus.Eq("online"))
+	q := dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID),
+			m.AppID.Eq(appID), m.OnlineStatus.Eq("online"))
 
 	var err error
 	var conds []rawgen.Condition
@@ -131,10 +132,11 @@ func (dao *clientDao) CountNumberOlineClients(kit *kit.Kit, bizID uint32, appID 
 }
 
 // ListClientGroupByTargetReleaseID 按目标版本 ID 列出客户端组
-func (dao *clientDao) ListClientGroupByTargetReleaseID(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) ListClientGroupByTargetReleaseID(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) ([]types.TargetConfigVersionChart, error) {
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.TargetReleaseID.Neq(0))
+	q := dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.AppID.Eq(appID), m.TargetReleaseID.Neq(0))
 	var err error
 	var conds []rawgen.Condition
 
@@ -161,14 +163,14 @@ func (dao *clientDao) ListClientGroupByTargetReleaseID(kit *kit.Kit, bizID uint3
 }
 
 // FetchIDsExcluding 获取指定ID后排除的ID
-func (dao *clientDao) FetchIDsExcluding(kit *kit.Kit, bizID uint32, appID uint32, ids []uint32) ([]uint32, error) {
+func (dao *clientDao) FetchIDsExcluding(kit *kit.Kit, bizID, projectID, envID, appID uint32, ids []uint32) ([]uint32, error) {
 
 	m := dao.genQ.Client
 	q := dao.genQ.Client.WithContext(kit.Ctx)
 
 	var result []uint32
 	if err := q.Select(m.ID).
-		Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.ID.NotIn(ids...)).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.AppID.Eq(appID), m.ID.NotIn(ids...)).
 		Pluck(m.ID, &result); err != nil {
 		return nil, err
 	}
@@ -237,11 +239,11 @@ func (dao *clientDao) UpdateRetriedClientsStatusWithTx(kit *kit.Kit, tx *gen.Que
 }
 
 // GetResourceUsage 获取资源使用率
-func (dao *clientDao) GetResourceUsage(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) GetResourceUsage(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) (types.ResourceUsage, error) {
 
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID),
+	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID),
 		m.AppID.Eq(appID))
 
 	var err error
@@ -273,22 +275,22 @@ func (dao *clientDao) GetResourceUsage(kit *kit.Kit, bizID uint32, appID uint32,
 }
 
 // ListClientByIDs 按多个 ID 列出客户端
-func (dao *clientDao) ListClientByIDs(kit *kit.Kit, bizID uint32, appID uint32, ids []uint32) ([]*table.Client, error) {
+func (dao *clientDao) ListClientByIDs(kit *kit.Kit, bizID, projectID, envID, appID uint32, ids []uint32) ([]*table.Client, error) {
 	m := dao.genQ.Client
 
 	result, err := dao.genQ.Client.WithContext(kit.Ctx).
-		Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.ID.In(ids...)).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.AppID.Eq(appID), m.ID.In(ids...)).
 		Find()
 
 	return result, err
 }
 
 // ListClientGroupByFailedReason 按照失败原因列出客户端组
-func (dao *clientDao) ListClientGroupByFailedReason(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) ListClientGroupByFailedReason(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) ([]types.FailedReasonChart, error) {
 
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID),
+	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID),
 		m.AppID.Eq(appID), m.ReleaseChangeFailedReason.Neq(""))
 
 	var err error
@@ -320,11 +322,11 @@ func (dao *clientDao) ListClientGroupByFailedReason(kit *kit.Kit, bizID uint32, 
 }
 
 // ListClientGroupByChangeStatus 按更改状态列出客户端组
-func (dao *clientDao) ListClientGroupByChangeStatus(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) ListClientGroupByChangeStatus(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) ([]types.ChangeStatusChart, error) {
 
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID),
+	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID),
 		m.AppID.Eq(appID))
 
 	var err error
@@ -357,10 +359,11 @@ func (dao *clientDao) ListClientGroupByChangeStatus(kit *kit.Kit, bizID uint32, 
 }
 
 // ListClientGroupByCurrentReleaseID 通过当前版本ID统计数量
-func (dao *clientDao) ListClientGroupByCurrentReleaseID(kit *kit.Kit, bizID uint32, appID uint32, heartbeatTime int64,
+func (dao *clientDao) ListClientGroupByCurrentReleaseID(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition) ([]types.CurrentConfigVersionChart, error) {
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.CurrentReleaseID.Neq(0))
+	q := dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.AppID.Eq(appID), m.CurrentReleaseID.Neq(0))
 	var err error
 	var conds []rawgen.Condition
 
@@ -387,12 +390,13 @@ func (dao *clientDao) ListClientGroupByCurrentReleaseID(kit *kit.Kit, bizID uint
 }
 
 // List Obtain client data according to conditions
-func (dao *clientDao) List(kit *kit.Kit, bizID, appID uint32, heartbeatTime int64,
+func (dao *clientDao) List(kit *kit.Kit, bizID, projectID, envID, appID uint32, heartbeatTime int64,
 	search *pbclient.ClientQueryCondition, order *pbds.ListClientsReq_Order,
 	opt *types.BasePage) ([]*table.Client, int64, error) {
 
 	m := dao.genQ.Client
-	q := dao.genQ.Client.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID))
+	q := dao.genQ.Client.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.EnvID.Eq(envID), m.AppID.Eq(appID))
 
 	var err error
 	var conds []rawgen.Condition

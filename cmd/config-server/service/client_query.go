@@ -39,6 +39,8 @@ func (s *Service) CreateClientQuery(ctx context.Context, req *pbcs.CreateClientQ
 	search, err := s.client.DS.CreateClientQuery(kt.RpcCtx(), &pbds.CreateClientQueryReq{
 		BizId:           req.BizId,
 		AppId:           req.AppId,
+		ProjectId:       kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:           kt.ResolvedEnvID(req.GetEnvId()),
 		SearchType:      req.SearchType,
 		SearchName:      req.SearchName,
 		SearchCondition: req.SearchCondition,
@@ -70,6 +72,8 @@ func (s *Service) ListClientQuerys(ctx context.Context, req *pbcs.ListClientQuer
 	items, err := s.client.DS.ListClientQuerys(kt.RpcCtx(), &pbds.ListClientQuerysReq{
 		BizId:      req.BizId,
 		AppId:      req.AppId,
+		ProjectId:  kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:      kt.ResolvedEnvID(req.GetEnvId()),
 		SearchType: req.SearchType,
 		Start:      req.Start,
 		Limit:      req.Limit,
@@ -105,6 +109,8 @@ func (s *Service) UpdateClientQuery(ctx context.Context, req *pbcs.UpdateClientQ
 		Id:              req.Id,
 		BizId:           req.BizId,
 		AppId:           req.AppId,
+		ProjectId:       kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:           kt.ResolvedEnvID(req.GetEnvId()),
 		SearchName:      req.SearchName,
 		SearchCondition: req.SearchCondition,
 	})
@@ -131,9 +137,11 @@ func (s *Service) DeleteClientQuery(ctx context.Context, req *pbcs.DeleteClientQ
 	}
 
 	_, err = s.client.DS.DeleteClientQuery(kt.RpcCtx(), &pbds.DeleteClientQueryReq{
-		Id:    req.Id,
-		BizId: req.BizId,
-		AppId: req.AppId,
+		Id:        req.Id,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	})
 	if err != nil {
 		return nil, err
@@ -157,9 +165,11 @@ func (s *Service) CheckClientQueryName(ctx context.Context, req *pbcs.CheckClien
 	}
 
 	resp, err := s.client.DS.CheckClientQueryName(kt.RpcCtx(), &pbds.CheckClientQueryNameReq{
-		Name:  req.GetName(),
-		BizId: req.GetBizId(),
-		AppId: req.GetAppId(),
+		Name:      req.GetName(),
+		BizId:     req.GetBizId(),
+		AppId:     req.GetAppId(),
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	})
 	if err != nil {
 		return nil, err

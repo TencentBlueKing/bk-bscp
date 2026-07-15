@@ -1859,6 +1859,20 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients"
+        body: "*"
+      }
+    };
+  };
+  // 获取客户端详情
+  rpc GetClient(GetClientReq) returns (GetClientResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.http) = {
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/{client_id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/{client_id}"
+      }
     };
   };
   // 获取客户端拉取记录列表
@@ -1868,6 +1882,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_events/"
             "{client_id}"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_events/"
+              "{client_id}"
+        body: "*"
+      }
     };
   };
   // 重试客户端拉取
@@ -1876,6 +1895,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/retry"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/retry"
+        body: "*"
+      }
     };
   };
   // 获取客户端查询条件列表
@@ -1883,6 +1906,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_querys"
+      }
     };
   };
   // 创建客户端查询条件
@@ -1891,6 +1917,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_querys"
+        body: "*"
+      }
     };
   };
   // 更新客户端查询条件
@@ -1899,6 +1929,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/{id}"
       body: "*"
+      additional_bindings {
+        put: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_querys/{id}"
+        body: "*"
+      }
     };
   };
   // 删除客户端查询条件
@@ -1906,6 +1940,9 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/{id}"
+      additional_bindings {
+        delete: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_querys/{id}"
+      }
     };
   };
   // 检测客户端查询条件名
@@ -1914,6 +1951,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/client_querys/"
            "check_exists"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/client_querys/"
+             "check_exists"
+      }
     };
   };
   // 客户端配置版本统计
@@ -1923,6 +1964,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "config_version_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "config_version_statistics"
+        body: "*"
+      }
     };
   };
   // 客户端拉取趋势统计
@@ -1932,6 +1978,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "pull_trend_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "pull_trend_statistics"
+        body: "*"
+      }
     };
   };
   // 客户端拉取状态统计
@@ -1940,6 +1991,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/pull_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/pull_statistics"
+        body: "*"
+      }
     };
   };
   // 客户端标签统计
@@ -1949,6 +2004,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "label_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "label_statistics"
+        body: "*"
+      }
     };
   };
   // 客户端附加信息统计
@@ -1958,6 +2018,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "annotation_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "annotation_statistics"
+        body: "*"
+      }
     };
   };
   // 客户端组件版本统计
@@ -1967,6 +2032,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "version_statistics"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "version_statistics"
+        body: "*"
+      }
     };
   };
   // 获取客户端标签和附加信息列表
@@ -1976,6 +2046,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "labels_and_annotations"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "labels_and_annotations"
+        body: "*"
+      }
     };
   };
   // 获取客户端失败原因
@@ -1985,6 +2060,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/clients/"
             "specific_failed_reason"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/clients/"
+              "specific_failed_reason"
+        body: "*"
+      }
     };
   }
   // 文件服务以及和其他服务版本之间对比
@@ -5215,6 +5295,8 @@ message ListClientsReq {
   }
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   bool all = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
@@ -5264,6 +5346,18 @@ message ListClientsResp {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "排除离线的数量" }];
 }
 
+message GetClientReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 client_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+}
+
+message GetClientResp {
+  pbclient.Client data = 1;
+}
+
 message ListClientEventsReq {
   message Order {
     string desc = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
@@ -5278,6 +5372,8 @@ message ListClientEventsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
   uint32 client_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
+  uint32 project_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   bool all = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
   uint32 start = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
@@ -5296,6 +5392,8 @@ message ListClientEventsResp {
 message RetryClientsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   repeated uint32 client_ids = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端ID" }];
   bool all = 4
@@ -5311,6 +5409,8 @@ message RetryClientsResp {}
 message ListClientQuerysReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   string search_type = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索类型：recent、common" }];
   uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
@@ -5327,6 +5427,8 @@ message ListClientQuerysResp {
 message CreateClientQueryReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   string search_type = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索类型：recent、common" }];
   string search_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
@@ -5342,6 +5444,8 @@ message UpdateClientQueryReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端查询条件ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   string search_name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
   google.protobuf.Struct search_condition = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索的值" }];
@@ -5353,6 +5457,8 @@ message DeleteClientQueryReq {
   uint32 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "客户端查询条件ID" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message DeleteClientQueryResp {}
@@ -5361,6 +5467,8 @@ message CheckClientQueryNameReq {
   string name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件名" }];
   uint32 biz_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message CheckClientQueryNameResp {
@@ -5371,6 +5479,8 @@ message CheckClientQueryNameResp {
 message ListClientLabelAndAnnotationReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   uint32 app_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务ID" }];
+  uint32 project_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   int64 last_heartbeat_time = 3
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "最后心跳时间" }];
 }

@@ -29,15 +29,15 @@ type ClientQuery interface {
 	// Update one client query
 	Update(kit *kit.Kit, data *table.ClientQuery) error
 	// List client query with options.
-	List(kit *kit.Kit, bizID, appID uint32, creator, search_type string, opt *types.BasePage) (
+	List(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator, search_type string, opt *types.BasePage) (
 		[]*table.ClientQuery, int64, error)
 	// Delete ..
 	Delete(kit *kit.Kit, data *table.ClientQuery) error
 	// ListBySearchCondition Get by search criteria
-	ListBySearchCondition(kit *kit.Kit, bizID, appID uint32, creator, searchType,
+	ListBySearchCondition(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator, searchType,
 		searchCondition string) ([]*table.ClientQuery, error)
 	// GetBySearchName Get by search name
-	GetBySearchName(kit *kit.Kit, bizID, appID uint32, creator, searchName string) (
+	GetBySearchName(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator, searchName string) (
 		*table.ClientQuery, error)
 }
 
@@ -50,22 +50,24 @@ type clientQueryDao struct {
 }
 
 // GetBySearchName Get by search name
-func (dao *clientQueryDao) GetBySearchName(kit *kit.Kit, bizID uint32, appID uint32, creator string,
+func (dao *clientQueryDao) GetBySearchName(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator string,
 	searchName string) (*table.ClientQuery, error) {
 	m := dao.genQ.ClientQuery
 
-	return dao.genQ.ClientQuery.WithContext(kit.Ctx).Where(m.BizID.In(bizID, 0), m.AppID.In(appID, 0)).
+	return dao.genQ.ClientQuery.WithContext(kit.Ctx).
+		Where(m.BizID.In(bizID, 0), m.ProjectID.In(projetcID, 0), m.EnvID.In(envID, 0), m.AppID.In(appID, 0)).
 		Where(m.Creator.In(creator, table.System)).
 		Where(m.SearchName.IsNotNull()).
 		Where(m.SearchName.Eq(searchName)).Take()
 }
 
 // ListBySearchCondition Get by search criteria
-func (dao *clientQueryDao) ListBySearchCondition(kit *kit.Kit, bizID, appID uint32, creator, searchType,
+func (dao *clientQueryDao) ListBySearchCondition(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator, searchType,
 	searchCondition string) ([]*table.ClientQuery, error) {
 	m := dao.genQ.ClientQuery
 
-	return dao.genQ.ClientQuery.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID)).
+	return dao.genQ.ClientQuery.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projetcID), m.EnvID.Eq(envID), m.AppID.Eq(appID)).
 		Where(m.Creator.Eq(creator), m.SearchType.Eq(searchType)).
 		Where(utils.RawCond("JSON_CONTAINS(?,?)", utils.Field{
 			Field: m.SearchCondition,
@@ -90,7 +92,8 @@ func (dao *clientQueryDao) Delete(kit *kit.Kit, data *table.ClientQuery) error {
 	// 多个使用事务处理
 	deleteTx := func(tx *gen.Query) error {
 		q = tx.ClientQuery.WithContext(kit.Ctx)
-		if _, e := q.Where(m.BizID.Eq(data.Attachment.BizID), m.ID.Eq(data.ID)).Delete(data); e != nil {
+		if _, e := q.Where(m.BizID.Eq(data.Attachment.BizID), m.ProjectID.Eq(data.Attachment.ProjectID),
+			m.EnvID.Eq(data.Attachment.EnvID), m.ID.Eq(data.ID)).Delete(data); e != nil {
 			return e
 		}
 
@@ -135,11 +138,12 @@ func (dao *clientQueryDao) Create(kit *kit.Kit, data *table.ClientQuery) (uint32
 }
 
 // List client query with options.
-func (dao *clientQueryDao) List(kit *kit.Kit, bizID uint32, appID uint32, creator, search_type string,
+func (dao *clientQueryDao) List(kit *kit.Kit, bizID, projetcID, envID, appID uint32, creator, search_type string,
 	opt *types.BasePage) ([]*table.ClientQuery, int64, error) {
 
 	m := dao.genQ.ClientQuery
-	q := dao.genQ.ClientQuery.WithContext(kit.Ctx).Where(m.BizID.Eq(bizID), m.AppID.Eq(appID), m.Creator.Eq(creator))
+	q := dao.genQ.ClientQuery.WithContext(kit.Ctx).
+		Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projetcID), m.EnvID.Eq(envID), m.AppID.Eq(appID), m.Creator.Eq(creator))
 
 	if len(search_type) != 0 {
 		q = q.Where(m.SearchType.Eq(search_type))

@@ -39,6 +39,8 @@ func (s *Service) ListClientEvents(ctx context.Context, req *pbcs.ListClientEven
 	items, err := s.client.DS.ListClientEvents(kt.RpcCtx(), &pbds.ListClientEventsReq{
 		BizId:       req.GetBizId(),
 		AppId:       req.GetAppId(),
+		ProjectId:   kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:       kt.ResolvedEnvID(req.GetEnvId()),
 		ClientId:    req.GetClientId(),
 		All:         req.GetAll(),
 		Limit:       req.GetLimit(),

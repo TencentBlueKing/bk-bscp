@@ -281,8 +281,10 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbcs.List
 	}
 
 	resp, err := s.client.DS.ListAllReleasedConfigItems(kt.RpcCtx(), &pbds.ListAllReleasedConfigItemsReq{
-		BizId: req.BizId,
-		AppId: req.AppId,
+		BizId:     req.BizId,
+		AppId:     req.AppId,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
+		EnvId:     kt.ResolvedEnvID(req.EnvId),
 	})
 	if err != nil {
 		return nil, err
