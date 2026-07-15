@@ -1229,6 +1229,7 @@ message DeleteTmplsFromTmplSetsReq {
   repeated uint32 template_ids = 4;
   bool exclusion_operation = 5;
   bool no_set_specified = 6;  // 是否未指定套餐, 区分全部套餐和未指定套餐
+  uint32 project_id = 7;
 }
 
 message ListTemplatesByIDsReq {
@@ -1423,6 +1424,7 @@ message ListTemplateSetsReq {
   uint32 start = 5;
   uint32 limit = 6;
   bool all = 7;
+  uint32 project_id = 8;
 }
 
 message ListTemplateSetsResp {
@@ -1456,6 +1458,8 @@ message ListAppTemplateSetsResp {
 
 message ListTemplateSetsByIDsReq {
   repeated uint32 ids = 1;
+  uint32 biz_id = 2;
+  uint32 project_id = 3;
 }
 
 message ListTemplateSetsByIDsResp {
@@ -1557,6 +1561,8 @@ message GetReleasedAppBoundTmplRevisionReq {
   uint32 app_id = 2;
   uint32 release_id = 3;
   uint32 template_revision_id = 4;
+  uint32 project_id = 5;
+  uint32 env_id = 6;
 }
 
 message GetReleasedAppBoundTmplRevisionResp {
@@ -1964,7 +1970,6 @@ message ListAllGroupsReq {
 
 message ListAllGroupsResp {
   repeated pbgroup.Group details = 1;
-  uint32 env_id = 2;
 }
 
 message ListAppGroupsReq {

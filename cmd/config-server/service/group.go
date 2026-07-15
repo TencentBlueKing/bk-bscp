@@ -30,6 +30,7 @@ import (
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
 	pbgroup "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/group"
+	pbtset "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/template-set"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/runtime/selector"
 )
@@ -287,14 +288,13 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 	respData := make([]*pbcs.ListAllGroupsResp_ListAllGroupsData, 0, len(lgResp.Details))
 	for _, group := range lgResp.Details {
 		apps := make([]*pbcs.ListAllGroupsResp_ListAllGroupsData_BindApp, 0, len(group.Spec.BindApps))
-		var envID uint32
+
 		for _, appID := range group.Spec.BindApps {
 			if app, ok := appMap[appID]; ok && app != nil {
 				apps = append(apps, &pbcs.ListAllGroupsResp_ListAllGroupsData_BindApp{
 					Id:   app.Id,
 					Name: app.Spec.Name,
 				})
-				envID = app.EnvId
 			}
 		}
 		data := &pbcs.ListAllGroupsResp_ListAllGroupsData{
@@ -303,7 +303,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 			Public:   group.Spec.Public,
 			BindApps: apps,
 			Selector: group.Spec.Selector,
-			EnvId:    envID,
+			EnvApps:  buildGroupEnvApps(group.Spec.BindApps, appMap),
 		}
 		for _, d := range countResp.Data {
 			if d.GroupId == group.Id {
@@ -540,4 +540,15 @@ func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 
 	// 验证范围：1-99
 	return percent >= 1.0 && percent <= 99.0
+}
+
+// buildGroupEnvApps 将分组绑定的服务按环境ID分组，委托给 pbtset.GroupAppsByEnv
+func buildGroupEnvApps(bindApps []uint32, appMap map[uint32]*pbapp.App) []*pbtset.EnvApps {
+	appEnvMap := make(map[uint32]uint32, len(bindApps))
+	for _, appID := range bindApps {
+		if app, ok := appMap[appID]; ok && app != nil {
+			appEnvMap[appID] = app.EnvId
+		}
+	}
+	return pbtset.GroupAppsByEnv(bindApps, appEnvMap)
 }

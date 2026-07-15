@@ -228,6 +228,8 @@ func (s *Service) DeleteRelease(ctx context.Context, req *pbcs.DeleteReleaseReq)
 		BizId:     req.BizId,
 		AppId:     req.AppId,
 		ReleaseId: req.ReleaseId,
+		ProjectId: kt.ResolvedProjectID(req.ProjectId),
+		EnvId:     kt.ResolvedEnvID(req.EnvId),
 	}
 	_, err = s.client.DS.DeleteRelease(kt.RpcCtx(), r)
 	if err != nil {

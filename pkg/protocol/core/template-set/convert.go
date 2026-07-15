@@ -85,18 +85,42 @@ func PbTemplateSetAttachment(at *table.TemplateSetAttachment) *TemplateSetAttach
 	}
 }
 
-// PbTemplateSets convert table TemplateSet to pb TemplateSet
-func PbTemplateSets(s []*table.TemplateSet) []*TemplateSet {
+// PbTemplateSets convert table TemplateSet to pb TemplateSet，按环境分组绑定服务
+func PbTemplateSets(s []*table.TemplateSet, appEnvMap map[uint32]uint32) []*TemplateSet {
 	if s == nil {
 		return make([]*TemplateSet, 0)
 	}
 
-	result := make([]*TemplateSet, 0)
+	result := make([]*TemplateSet, 0, len(s))
 	for _, one := range s {
-		result = append(result, PbTemplateSet(one))
+		pb := PbTemplateSet(one)
+		pb.EnvApps = GroupAppsByEnv(one.Spec.BoundApps, appEnvMap)
+		result = append(result, pb)
 	}
 
 	return result
+}
+
+// GroupAppsByEnv 将服务列表按环境ID分组，返回 EnvApps 列表
+func GroupAppsByEnv(boundApps []uint32, appEnvMap map[uint32]uint32) []*EnvApps {
+	envAppMap := make(map[uint32][]uint32)
+	for _, appID := range boundApps {
+		envID, ok := appEnvMap[appID]
+		if !ok {
+			continue
+		}
+		envAppMap[envID] = append(envAppMap[envID], appID)
+	}
+
+	envApps := make([]*EnvApps, 0, len(envAppMap))
+	for envID, appIDs := range envAppMap {
+		envApps = append(envApps, &EnvApps{
+			EnvId:  envID,
+			AppIds: appIDs,
+		})
+	}
+
+	return envApps
 }
 
 // PbTemplateSet convert table TemplateSet to pb TemplateSet

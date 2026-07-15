@@ -155,6 +155,7 @@ func (s *Service) ListTemplateSets(ctx context.Context, req *pbcs.ListTemplateSe
 		Start:           req.Start,
 		Limit:           req.Limit,
 		All:             req.All,
+		ProjectId:       grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTemplateSets(grpcKit.RpcCtx(), r)
@@ -184,8 +185,9 @@ func (s *Service) ListAppTemplateSets(ctx context.Context, req *pbcs.ListAppTemp
 	}
 
 	r := &pbds.ListAppTemplateSetsReq{
-		BizId: grpcKit.BizID,
-		AppId: req.AppId,
+		BizId:     grpcKit.BizID,
+		AppId:     req.AppId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListAppTemplateSets(grpcKit.RpcCtx(), r)
@@ -224,7 +226,9 @@ func (s *Service) ListTemplateSetsByIDs(ctx context.Context, req *pbcs.ListTempl
 	}
 
 	r := &pbds.ListTemplateSetsByIDsReq{
-		Ids: req.Ids,
+		Ids:       req.Ids,
+		BizId:     req.BizId,
+		ProjectId: grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 
 	rp, err := s.client.DS.ListTemplateSetsByIDs(grpcKit.RpcCtx(), r)

@@ -90,11 +90,11 @@ service Config {
     };
   }
   // 获取用户有权限的 spaces 所有的 apps
-  // TODO: 暂未用到
   rpc ListAppsRest(ListAppsRestReq) returns (ListAppsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/api/v1/config/biz/{biz_id}/apps"
+      additional_bindings { get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/apps" }
     };
   }
   // 按 space 查询 app 信息
@@ -770,6 +770,10 @@ service Config {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/delete_from_template_sets"
       body: "*"
+      additional_bindings {
+        post: "/api/v1/config/biz/{biz_id}/projects/{project_id}/template_spaces/{template_space_id}/templates/delete_from_template_sets"
+        body: "*"
+      }
     };
   }
   // 按模板ID获取模板列表
@@ -1080,8 +1084,10 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       returns (GetReleasedAppBoundTmplRevisionResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
-           "template_revisions/{template_revision_id}"
+      get: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/template_revisions/{template_revision_id}"
+      additional_bindings {
+        get: "/api/v1/config/biz/{biz_id}/projects/{project_id}/envs/{env_id}/apps/{app_id}/releases/{release_id}/template_revisions/{template_revision_id}"
+      }
     };
   }
   // 替换服务引用后的模板版本
@@ -2693,7 +2699,8 @@ message ListAppsRestReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索条件" }];
   string operator = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
   uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
-  uint32 env_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+  bool all = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
 }
 
 message ListAppsBySpaceRestReq {
@@ -3730,6 +3737,7 @@ message DeleteTmplsFromTmplSetsReq {
   bool no_set_specified = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "是否未指定套餐：是=true，否=false, 区分全部套餐和未指定套餐"
   }];
+  uint32 project_id = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
 }
 
 message ListTemplatesByIDsReq {
@@ -4218,6 +4226,8 @@ message GetReleasedAppBoundTmplRevisionReq {
   uint32 release_id = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本ID" }];
   uint32 template_revision_id = 4
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模板文件版本ID" }];
+  uint32 project_id = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
+  uint32 env_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message GetReleasedAppBoundTmplRevisionResp {
@@ -4812,7 +4822,7 @@ message ListAllGroupsResp {
     bool edited = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "分组是否编辑过（old_selector和new_selector不一致"
     }];
-    uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
+    repeated pbtset.EnvApps env_apps = 8;
   }
   repeated ListAllGroupsData details = 1;
 }

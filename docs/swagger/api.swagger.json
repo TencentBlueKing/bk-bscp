@@ -620,7 +620,7 @@
     },
     "/api/v1/config/biz/{bizId}/apps": {
       "get": {
-        "summary": "获取用户有权限的 spaces 所有的 apps\r\nTODO: 暂未用到",
+        "summary": "获取用户有权限的 spaces 所有的 apps",
         "operationId": "Config_ListAppsRest",
         "responses": {
           "200": {
@@ -684,12 +684,91 @@
             "format": "int64"
           },
           {
-            "name": "envId",
-            "description": "环境ID",
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/apps": {
+      "get": {
+        "summary": "获取用户有权限的 spaces 所有的 apps",
+        "operationId": "Config_ListAppsRest2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "start",
+            "description": "当前页码",
             "in": "query",
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "limit",
+            "description": "每页条数",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "search",
+            "description": "搜索条件",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "operator",
+            "description": "操作人",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "all",
+            "description": "是否获取所有",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "default": false
           }
         ],
         "tags": [
@@ -8266,6 +8345,63 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/delete_from_template_sets": {
+      "post": {
+        "summary": "从模板套餐中移出",
+        "operationId": "Config_DeleteTmplsFromTmplSets2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchDeleteResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigDeleteTmplsFromTmplSetsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/templates/list_by_ids": {
       "post": {
         "summary": "按模板ID获取模板列表",
@@ -11118,6 +11254,95 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateRevisionId",
+            "description": "模板文件版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions/{templateRevisionId}": {
+      "get": {
+        "summary": "查看已发布版本服务的模板版本详情",
+        "operationId": "Config_GetReleasedAppBoundTmplRevision2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetReleasedAppBoundTmplRevisionResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -28321,10 +28546,12 @@
           "type": "boolean",
           "description": "分组是否编辑过（old_selector和new_selector不一致"
         },
-        "envId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "环境ID"
+        "envApps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtsetEnvApps"
+          }
         }
       }
     },
@@ -35835,6 +36062,11 @@
         "envDisplay": {
           "type": "string",
           "description": "环境"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       },
       "description": "TemplateBoundUnnamedAppDetail is template bound unnamed app detail."
@@ -35967,6 +36199,11 @@
         "envDisplay": {
           "type": "string",
           "description": "环境"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       },
       "description": "TemplateSetBoundUnnamedAppDetail is template set bound unnamed app detail."
@@ -36202,6 +36439,24 @@
       },
       "title": "TemplateSpaceSpec source resource reference: pkg/dal/table/template_space.go"
     },
+    "pbtsetEnvApps": {
+      "type": "object",
+      "properties": {
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
+        },
+        "appIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "服务ID列表"
+        }
+      }
+    },
     "pbtsetTemplateSet": {
       "type": "object",
       "properties": {
@@ -36218,6 +36473,14 @@
         },
         "revision": {
           "$ref": "#/definitions/pbbaseRevision"
+        },
+        "envApps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtsetEnvApps"
+          },
+          "description": "按环境分组的绑定服务"
         }
       },
       "title": "TemplateSet source resource reference: pkg/dal/table/template_set.go"

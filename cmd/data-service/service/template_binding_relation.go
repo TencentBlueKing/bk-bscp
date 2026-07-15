@@ -283,6 +283,7 @@ func (s *Service) ListTmplBoundUnnamedApps(ctx context.Context, req *pbds.ListTm
 				AppId:                r.AppID,
 				AppName:              appMap[r.AppID].Spec.Name,
 				EnvDisplay:           appMap[r.AppID].Spec.EnvDisplay,
+				EnvId:                appMap[r.AppID].EnvID,
 			})
 
 		}
@@ -885,6 +886,7 @@ func (s *Service) ListTmplSetBoundUnnamedApps(ctx context.Context, req *pbds.Lis
 			AppId:      id,
 			AppName:    appMap[id].Spec.Name,
 			EnvDisplay: appMap[id].Spec.EnvDisplay,
+			EnvId:      appMap[id].EnvID,
 		})
 	}
 

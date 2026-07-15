@@ -239,10 +239,12 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 	}
 
 	r := &pbds.ListAppsRestReq{
-		// BizId:  strings.Join(spaceIdList, ","),
-		Start:  req.Start,
-		Limit:  req.Limit,
-		Search: req.Search,
+		BizId:     req.BizId,
+		Start:     req.Start,
+		Limit:     req.Limit,
+		Search:    req.Search,
+		All:       req.All,
+		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -275,8 +277,7 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 }
 
 // ListAppsBySpaceRest list apps with rest filter
-func (s *Service) ListAppsBySpaceRest(ctx context.Context,
-	req *pbcs.ListAppsBySpaceRestReq) (*pbcs.ListAppsResp, error) {
+func (s *Service) ListAppsBySpaceRest(ctx context.Context, req *pbcs.ListAppsBySpaceRestReq) (*pbcs.ListAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
 	res := []*meta.ResourceAttribute{

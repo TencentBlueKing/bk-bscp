@@ -511,6 +511,8 @@ func (s *Service) GetReleasedAppBoundTmplRevision(ctx context.Context,
 		AppId:              req.AppId,
 		ReleaseId:          req.ReleaseId,
 		TemplateRevisionId: req.TemplateRevisionId,
+		ProjectId:          grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:              grpcKit.ResolvedEnvID(req.EnvId),
 	}
 
 	rp, err := s.client.DS.GetReleasedAppBoundTmplRevision(grpcKit.RpcCtx(), r)
