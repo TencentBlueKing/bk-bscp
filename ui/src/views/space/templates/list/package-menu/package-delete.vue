@@ -39,7 +39,7 @@
   import LinkToApp from '../components/link-to-app.vue';
   import DeleteConfirmDialog from '../../../../../components/delete-confirm-dialog.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace } = storeToRefs(useTemplateStore());
   const { t } = useI18n();
 
@@ -88,14 +88,15 @@
       start: 0,
       all: true,
     };
-    const res = await getUnNamedVersionAppsBoundByPackage(spaceId.value, props.templateSpaceId, props.pkg.id, params);
+    const res = await getUnNamedVersionAppsBoundByPackage(
+      spaceId.value, projectId.value, props.templateSpaceId, props.pkg.id, params);
     appList.value = res.details;
     appsLoading.value = false;
   };
 
   const handleDelete = async () => {
     pending.value = true;
-    await deleteTemplatePackage(spaceId.value, props.templateSpaceId, props.pkg.id);
+    await deleteTemplatePackage(spaceId.value, projectId.value, props.templateSpaceId, props.pkg.id);
     close();
     emits('deleted', props.pkg.id);
     Message({

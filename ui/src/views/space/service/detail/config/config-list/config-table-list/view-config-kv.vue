@@ -51,7 +51,8 @@
                   :content="props.config.spec.value"
                   :editable="false"
                   :height="editorHeight"
-                  :languages="props.config.spec.kv_type" />
+                  :languages="props.config.spec.kv_type"
+                  :env-id="envId" />
               </div>
             </bk-form-item>
           </bk-form>
@@ -62,7 +63,8 @@
               language="json"
               :content="JSON.stringify(metaData, null, 2)"
               :editable="false"
-              :show-tips="false" />
+              :show-tips="false"
+              :env-id="envId" />
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -90,6 +92,7 @@
     config: IConfigKvType;
     show: boolean;
     showEditBtn?: boolean;
+    envId: string;
   }>();
 
   const emits = defineEmits(['update:show', 'confirm', 'openEdit']);

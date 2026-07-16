@@ -6,7 +6,7 @@
     :before-close="handleBeforeClose"
     @closed="close">
     <div class="package-form">
-      <PackageForm ref="formRef" :space-id="spaceId" :data="data" @change="handleChange" />
+      <PackageForm ref="formRef" :space-id="spaceId" :project-id="projectId" :data="data" @change="handleChange" />
     </div>
     <div class="action-btns">
       <bk-button theme="primary" :loading="pending" @click="handleSave">{{ t('创建') }}</bk-button>
@@ -25,7 +25,7 @@
   import useModalCloseConfirmation from '../../../../../utils/hooks/use-modal-close-confirmation';
   import PackageForm from './package-form.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -43,6 +43,7 @@
     memo: '',
     public: true,
     template_ids: [],
+    env_id: '',
     bound_apps: [],
   });
   const isFormChange = ref(false);
@@ -53,8 +54,8 @@
     (val) => {
       isShow.value = val;
       isFormChange.value = false;
-      const { name, memo, public: isPublic, bound_apps, template_ids } = props.pkg.spec;
-      data.value = { name, memo, public: isPublic, bound_apps, template_ids };
+      const { name, memo, public: isPublic, env_id, bound_apps, template_ids } = props.pkg.spec;
+      data.value = { name, memo, public: isPublic, env_id, bound_apps, template_ids };
     },
   );
 
@@ -67,7 +68,7 @@
     formRef.value.validate().then(async () => {
       try {
         pending.value = true;
-        await createTemplatePackage(spaceId.value, props.templateSpaceId, data.value);
+        await createTemplatePackage(spaceId.value, projectId.value, props.templateSpaceId, data.value);
         close();
         emits('created');
         Message({

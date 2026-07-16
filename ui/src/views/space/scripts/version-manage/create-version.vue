@@ -62,7 +62,7 @@
   import { IScriptVersionListItem, IScriptMapItem } from '../../../../../types/script';
   import { getScriptVersionList } from '../../../../api/script';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = withDefaults(
@@ -89,7 +89,7 @@
     if (val) {
       selectedScript.value = '';
       listLoading.value = true;
-      const res = await getScriptVersionList(spaceId.value, props.scriptId, { start: 0, all: true });
+      const res = await getScriptVersionList(spaceId.value, projectId.value, props.scriptId, { start: 0, all: true });
       list.value = res.details.map((item: IScriptVersionListItem) => {
         const { id, spec } = item.hook_revision;
         const name = spec.memo ? `${spec.name}(${spec.memo})` : spec.name;

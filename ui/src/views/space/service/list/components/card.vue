@@ -62,6 +62,7 @@
 
   const props = defineProps<{
     service: IAppItem;
+    envId: string;
   }>();
 
   const emits = defineEmits(['edit', 'update', 'delete']);
@@ -113,7 +114,7 @@
   };
 
   const goToDetail = () => {
-    router.push({ name: 'service-config', params: { spaceId: route.params.spaceId, appId: props.service.id } });
+    router.push({ name: 'service-config', params: { spaceId: route.params.spaceId, envId: props.envId, appId: props.service.id } });
   };
 </script>
 <style lang="scss" scoped>

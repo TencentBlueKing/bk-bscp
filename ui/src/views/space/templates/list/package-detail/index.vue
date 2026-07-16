@@ -90,7 +90,7 @@
     height: 100%;
     &.with-apps-panel {
       .detail-container {
-        width: calc(100% - 240px);
+        width: calc(100% - 280px);
       }
       .use-package-apps {
         display: block;

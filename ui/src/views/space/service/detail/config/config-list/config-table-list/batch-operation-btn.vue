@@ -98,6 +98,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     selectedIds: number[];
     selectedKeys: string[];
@@ -122,9 +124,22 @@
     loading.value = true;
     try {
       if (props.isFileType) {
-        await batchDeleteServiceConfigs(props.bkBizId, props.appId, props.selectedIds);
+        await batchDeleteServiceConfigs(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          props.selectedIds,
+        );
       } else {
-        await batchDeleteKv(props.bkBizId, props.appId, props.selectedIds, props.isAcrossChecked);
+        await batchDeleteKv(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          props.selectedIds,
+          props.isAcrossChecked,
+        );
       }
       Message({
         theme: 'success',
@@ -145,9 +160,22 @@
     loading.value = true;
     try {
       if (props.isFileType) {
-        await batchUndeleteFile(props.bkBizId, props.appId, props.selectedIds);
+        await batchUndeleteFile(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          props.selectedIds,
+        );
       } else {
-        await batchUndeleteKv(props.bkBizId, props.appId, props.selectedKeys, props.isAcrossChecked);
+        await batchUndeleteKv(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          props.selectedKeys,
+          props.isAcrossChecked,
+        );
       }
       Message({
         theme: 'success',
@@ -194,7 +222,7 @@
           sign: commit_spec.content.signature,
         };
       });
-      await batchAddConfigList(props.bkBizId, props.appId, { items: editConfigList });
+      await batchAddConfigList(props.bkBizId, props.appId, props.projectId, props.envId, { items: editConfigList });
       Message({
         theme: 'success',
         message: t('配置文件权限批量修改成功'),

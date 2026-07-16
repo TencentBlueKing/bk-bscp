@@ -59,6 +59,7 @@
 
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
+  import { storeToRefs } from 'pinia';
   import type { IAppItem } from '../../../../../../../types/app';
   import type { IConfigVersion, IConfigImportItem, IConfigKvItem } from '../../../../../../../types/config';
   import {
@@ -68,6 +69,7 @@
   } from '../../../../../../api/config';
   import type { ImportTemplateConfigItem } from '../../../../../../../types/template';
   import ConfigSelector from '../../../../../../components/config-selector.vue';
+  import useGlobalStore from '../../../../../../store/global';
   import ConfigTable from '../../../../templates/list/package-detail/operations/add-configs/import-configs/config-table.vue';
   import TemplateConfigTable from '../../../detail/config/config-list/config-table-list/create-config/import-file/template-config-table.vue';
   import KvConfigTable from '../../../detail/config/config-list/config-table-list/create-config/import-kv/kv-config-table.vue';
@@ -76,6 +78,8 @@
     service: IAppItem;
     bkBizId: string;
   }>();
+
+  const { projectId, envId } = storeToRefs(useGlobalStore());
 
   const emits = defineEmits(['select']);
 
@@ -112,7 +116,7 @@
         start: 0,
         all: true,
       };
-      const res = await getConfigVersionList(props.bkBizId, props.service.id!, params);
+      const res = await getConfigVersionList(props.bkBizId, props.service.id!, projectId.value, envId.value, params);
       versionList.value = res.data.details;
     } catch (e) {
       console.error(e);
@@ -140,7 +144,12 @@
         release_id: id,
       };
       if (isFileType.value) {
-        const res = await importFromHistoryVersion(props.bkBizId, props.service.id!, params);
+        const res = await importFromHistoryVersion(
+          props.bkBizId,
+          props.service.id!,
+          projectId.value,
+          envId.value,
+          params);
         res.data.non_template_configs.forEach((item: any) => {
           const config = {
             ...item,
@@ -162,7 +171,12 @@
           importTemplateConfigList.value.push(item);
         });
       } else {
-        const res = await importKvFromHistoryVersion(props.bkBizId, props.service.id!, params);
+        const res = await importKvFromHistoryVersion(
+          props.bkBizId,
+          props.service.id!,
+          projectId.value,
+          envId.value,
+          params);
         res.data.exist.forEach((item: IConfigKvItem) => {
           kvConfigList.value.push(item);
           importKvConfigList.value.push(item);

@@ -84,7 +84,7 @@
   import { getCheckTemplateSetReferencesApps } from '../../../../../../../../api/template';
   import LinkToApp from '../../../../components/link-to-app.vue';
 
-  const { spaceId, spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { spaceId, spaceFeatureFlags, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace, currentPkg, packageList } = storeToRefs(useTemplateStore());
   const { t } = useI18n();
 
@@ -146,6 +146,7 @@
     loading.value = true;
     const res = await getCheckTemplateSetReferencesApps(
       spaceId.value,
+      projectId.value,
       currentTemplateSpace.value,
       selectedPkgs.value,
       props.configIdList,

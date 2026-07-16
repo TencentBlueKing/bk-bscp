@@ -41,11 +41,13 @@ export const getSpaceFeatureFlag = (biz: string) =>
 /**
  * 获取服务列表
  * @param biz_id 业务ID
- * @param params 查询过滤条件
+ * @param projectId 项目ID
+ * @param envId 环境ID
+ * @param query 查询过滤条件
  * @returns
  */
-export const getAppList = (biz_id: string, query: IAppListQuery = {}) =>
-  http.post(`config/list/app/app/biz_id/${biz_id}`, query).then((resp) => {
+export const getAppList = (biz_id: string, projectId: string, envId: string, query: IAppListQuery = {}) =>
+  http.post(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps:list`, query).then((resp) => {
     resp.data.details.forEach((item: IAppItem) => {
       // @ts-ignore
       item.permissions = resp.web_annotations.perms[item.id] || {};
@@ -53,56 +55,70 @@ export const getAppList = (biz_id: string, query: IAppListQuery = {}) =>
     return resp.data;
   });
 
-/**
+  /**
  * 获取服务下配置文件数量、更新时间等信息
+ * @param biz_id 业务ID
+ * @param projectId 项目ID
+ * @param envId 环境ID
+ * @param app_id 服务ID数组
+ * @returns
  */
-export const getAppsConfigData = (biz_id: string, app_id: number[]) =>
-  http.post(`/config/config_item_count/biz_id/${biz_id}`, { biz_id, app_id }).then((resp) => resp.data);
+export const getAppsConfigData = (biz_id: string, projectId: string, envId: string, app_id: number[]) =>
+  http.post(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/config_items/count`, { biz_id, app_id }).then((resp) => resp.data);
 
 /**
  * 获取服务详情
  * @param biz_id 业务ID
+ * @param projectId 项目ID
+ * @param envId 环境ID
  * @param app_id 服务ID
  * @returns
  */
-export const getAppDetail = (biz_id: string, app_id: number) =>
-  http.get(`config/biz/${biz_id}/apps/${app_id}`).then((resp) => resp.data);
+export const getAppDetail = (biz_id: string, projectId: string, envId: string, app_id: number) =>
+  http.get(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}`).then((resp) => resp.data);
 
 /**
  * 删除服务
- * @param id 服务ID
  * @param biz_id 业务ID
+ * @param projectId 项目ID
+ * @param envId 环境ID
+ * @param id 服务ID
  * @returns
  */
-export const deleteApp = (id: number, biz_id: number) =>
-  http.delete(`config/delete/app/app/app_id/${id}/biz_id/${biz_id}`);
+export const deleteApp = (biz_id: string, projectId: string, envId: string, id: number) =>
+  http.delete(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${id}`);
 
 /**
  * 创建服务
  * @param biz_id 业务ID
- * @param params
+ * @param projectId 项目ID
+ * @param envId 环境ID
+ * @param params 服务参数
  * @returns
  */
-export const createApp = (biz_id: string, params: any) =>
-  http.post(`config/create/app/app/biz_id/${biz_id}`, { biz_id, ...params }).then((resp) => resp.data);
+export const createApp = (biz_id: string, projectId: string, envId: string, params: any) =>
+  http.post(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps`, { ...params, biz_id }).then((resp) => resp.data);
 
 /**
  * 更新服务
- * @param params { id, biz_id, name?, memo?, reload_type?, reload_file_path? }
+ * @param params { id, biz_id, projectId, envId, name?, memo?, reload_type?, reload_file_path? }
  * @returns
  */
 export const updateApp = (params: any) => {
-  const { id, biz_id, data } = params;
-  return http.put(`config/update/app/app/app_id/${id}/biz_id/${biz_id}`, data).then((resp) => resp.data);
+  const { biz_id, projectId, envId, id, data } = params;
+  return http.put(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${id}`, data).then((resp) => resp.data);
 };
 
 /**
  * 克隆服务
+ * @param biz_id 业务ID
+ * @param projectId 项目ID
+ * @param envId 环境ID
  * @param params { id, biz_id, name?, memo?, reload_type?, reload_file_path? }
  * @returns
  */
-export const cloneApp = (biz_id: string, params: any) => {
-  return http.post(`config/biz/${biz_id}/clone_app`, { biz_id, ...params }).then((resp) => resp.data);
+export const cloneApp = (biz_id: string, projectId: string, envId: string, params: any) => {
+  return http.post(`config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps:clone`, { ...params, biz_id }).then((resp) => resp.data);
 };
 
 /**

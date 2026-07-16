@@ -34,6 +34,7 @@
   const props = withDefaults(
     defineProps<{
       bkBizId: string;
+      envId: string;
       appId: number;
       isShow: boolean;
       serviceData: IServiceEditForm;
@@ -55,6 +56,7 @@
         params: {
           spaceId: props.bkBizId,
           appId: props.appId,
+          envId: props.envId,
         },
       });
     }, 300);

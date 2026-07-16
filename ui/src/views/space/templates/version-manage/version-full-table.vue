@@ -63,11 +63,13 @@
   <VersionBoundByAppsDetail
     v-model:show="boundDetailSliderData.open"
     :space-id="spaceId"
+    :project-id="projectId"
     :current-template-space="templateSpaceId"
     :config="boundDetailSliderData.data" />
   <TemplateVersionDiff
     v-model:show="diffSliderData.open"
     :space-id="spaceId"
+    :project-id="projectId"
     :template-space-id="templateSpaceId"
     :crt-version="diffSliderData.data" />
 </template>
@@ -91,6 +93,7 @@
   const { t } = useI18n();
   const props = defineProps<{
     spaceId: string;
+    projectId: string;
     templateSpaceId: number;
     templateId: number;
     list: ITemplateVersionItem[];

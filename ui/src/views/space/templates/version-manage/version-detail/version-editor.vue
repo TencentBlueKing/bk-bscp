@@ -68,6 +68,7 @@
   <CreateVersionConfirmDialog
     v-model:show="isConfirmDialogShow"
     :space-id="props.spaceId"
+    :project-id="props.projectId"
     :template-space-id="props.templateSpaceId"
     :template-id="props.templateId"
     :version-id="props.versionId"
@@ -99,6 +100,7 @@
   const { t } = useI18n();
   const props = defineProps<{
     spaceId: string;
+    projectId: string;
     templateSpaceId: number;
     templateId: number;
     versionId: number;
@@ -216,9 +218,12 @@
 
   const getBoundCount = async () => {
     boundCountLoading.value = true;
-    const res = await getCountsByTemplateVersionIds(props.spaceId, props.templateSpaceId, props.templateId, [
-      props.versionId,
-    ]);
+    const res = await getCountsByTemplateVersionIds(
+      props.spaceId,
+      props.projectId,
+      props.templateSpaceId,
+      props.templateId,
+      [props.versionId,]);
     boundCount.value = res.details[0].bound_unnamed_app_count;
     boundCountLoading.value = false;
   };
@@ -313,7 +318,12 @@
       if (formData.value.file_type !== 'binary') {
         await uploadContent();
       }
-      const res = await createTemplateVersion(props.spaceId, props.templateSpaceId, props.templateId, formData.value);
+      const res = await createTemplateVersion(
+        props.spaceId,
+        props.projectId,
+        props.templateSpaceId,
+        props.templateId,
+        formData.value);
       isConfirmDialogShow.value = false;
       emits('created', res.id);
       Message({

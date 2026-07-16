@@ -18,6 +18,8 @@
     v-model:show="isVersionSliderShow"
     ref="createSliderRef"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :is-diff-slider-show="isDiffSliderShow"
     @created="handleCreated" />
@@ -40,6 +42,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     permCheckLoading: boolean;
     hasPerm: boolean;
@@ -122,7 +126,7 @@
     try {
       const { bkBizId, appId } = props;
       const queryParams = { days: 30, all: true };
-      const res = await getUnExpiredCertList(bkBizId, appId, queryParams);
+      const res = await getUnExpiredCertList(bkBizId, appId, props.projectId, props.envId, queryParams);
       unExpiredCertList.value = res.data.details.map((item: IConfigKvType) => {
         const {
           spec: { key: name, certificate_expiration_date },

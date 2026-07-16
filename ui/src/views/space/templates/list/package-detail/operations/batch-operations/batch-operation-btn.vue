@@ -87,6 +87,7 @@
 
   const props = defineProps<{
     spaceId: string;
+    projectId: string;
     currentTemplateSpace: number;
     configs: ITemplateConfigItem[];
     pkgType: string;
@@ -152,7 +153,7 @@
         template_set_id: props.currentPkg !== undefined ? props.currentPkg : 0,
         no_set_specified: props.pkgType === 'without',
       };
-      await batchEditTemplatePermission(bkBizId.value, query);
+      await batchEditTemplatePermission(bkBizId.value, props.projectId, query);
       Message({
         theme: 'success',
         message: t('配置文件权限批量修改成功'),

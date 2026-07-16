@@ -20,7 +20,7 @@
         </bk-radio-group>
       </div>
       <div v-if="importType === 'text'">
-        <TextImport ref="textImport" :bk-biz-id="bkBizId" :app-id="appId" />
+        <TextImport ref="textImport" :bk-biz-id="bkBizId" :env-id="envId" :app-id="appId" />
       </div>
       <div v-else-if="importType === 'historyVersion'">
         <div class="wrap">
@@ -40,6 +40,8 @@
       <div v-else>
         <ImportFormOtherService
           :bk-biz-id="bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="appId"
           @select-version="handleSelectVersion"
           @clear="handleClearTable" />
@@ -123,6 +125,8 @@
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
   const emits = defineEmits(['update:show', 'confirm']);
@@ -186,7 +190,7 @@
         start: 0,
         all: true,
       };
-      const res = await getConfigVersionList(props.bkBizId, props.appId, params);
+      const res = await getConfigVersionList(props.bkBizId, props.appId, props.projectId, props.envId, params);
       versionList.value = res.data.details;
     } catch (e) {
       console.error(e);
@@ -200,7 +204,7 @@
     tableLoading.value = true;
     try {
       const params = { other_app_id, release_id };
-      const res = await importKvFromHistoryVersion(props.bkBizId, props.appId, params);
+      const res = await importKvFromHistoryVersion(props.bkBizId, props.appId, props.projectId, props.envId, params);
       existConfigList.value = res.data.exist;
       nonExistConfigList.value = res.data.non_exist;
       existConfigList.value = existConfigList.value.map((item) => ({ ...item, is_exist: true }));
@@ -232,7 +236,13 @@
       if (importType.value === 'text') {
         await textImport.value.handleImport();
       } else {
-        const res = await importKvFormText(props.bkBizId, props.appId, importConfigList.value, isClearDraft.value);
+        const res = await importKvFormText(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          importConfigList.value,
+          isClearDraft.value);
         serviceStore.$patch((state) => {
           state.topIds = res.data.ids;
         });

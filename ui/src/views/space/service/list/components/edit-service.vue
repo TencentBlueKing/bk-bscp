@@ -112,6 +112,8 @@
     is_approve: true,
     approver: '',
     approve_type: 'or_sign',
+    projectId: '',
+    envId: '',
   });
   const serviceData = ref<IAppItem>();
   const pending = ref(false);
@@ -134,7 +136,7 @@
       if (val) {
         isFormChange.value = false;
         isViewMode.value = true;
-        const { spec } = props.service;
+        const { spec, project_id, env_id } = props.service;
         const { name, memo, config_type, data_type, alias, is_approve, approver, approve_type } = spec;
         serviceEditForm.value = {
           name,
@@ -145,6 +147,8 @@
           is_approve,
           approver,
           approve_type,
+          projectId: String(project_id),
+          envId: String(env_id),
         };
         if (approver) {
           selectionsApprover.value = approver.split(',');
@@ -181,11 +185,16 @@
       return;
     }
     await formCompRef.value.validate();
-    const { id, biz_id } = props.service;
+    const { id, biz_id, project_id, env_id } = props.service;
     const dataType = serviceEditForm.value.data_type;
     const configType = serviceEditForm.value.config_type;
     if (configType === 'kv' && dataType !== 'any') {
-      const configList = await getKvList(String(biz_id), id as number, { all: true, start: 0 });
+      const configList = await getKvList(
+        String(biz_id),
+        id as number,
+        String(project_id),
+        String(env_id),
+        { all: true, start: 0 });
       const res = configList.details.some((config: IConfigKvType) => config.spec.kv_type !== dataType);
       if (res) {
         InfoBox({
@@ -210,7 +219,7 @@
       ...serviceEditForm.value,
     };
 
-    const res = await updateApp({ id, biz_id, data });
+    const res = await updateApp({ biz_id, projectId: String(project_id), envId: String(env_id), id, data });
     serviceData.value = res;
     Message({
       theme: 'success',

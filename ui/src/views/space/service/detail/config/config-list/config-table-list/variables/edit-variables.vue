@@ -22,6 +22,7 @@
         <ResetDefaultValue
           class="reset-default"
           :bk-biz-id="bkBizId"
+          :project-id="projectId"
           :list="initialVariables"
           @reset="handleResetDefault" />
       </div>
@@ -65,6 +66,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -83,9 +86,10 @@
 
   const getVariableList = async () => {
     loading.value = true;
+    const { bkBizId, projectId, envId, appId } = props;
     const [variableListRes, citedListRes] = await Promise.all([
-      getUnReleasedAppVariables(props.bkBizId, props.appId),
-      getUnReleasedAppVariablesCitedDetail(props.bkBizId, props.appId),
+      getUnReleasedAppVariables(bkBizId, projectId, envId, appId),
+      getUnReleasedAppVariablesCitedDetail(bkBizId, projectId, envId, appId),
     ]);
     initialVariables.value = variableListRes.details.slice();
     variableList.value = variableListRes.details.slice();
@@ -108,7 +112,8 @@
 
   // 导出变量
   const handleExport = async (type: string) => {
-    const res = await exportUnReleasedVariables(props.bkBizId, props.appId, type);
+    const { bkBizId, projectId, envId, appId } = props;
+    const res = await exportUnReleasedVariables(bkBizId, projectId, envId, appId, type);
     let content: any;
     let mimeType: string;
     let extension: string;
@@ -121,7 +126,7 @@
       mimeType = 'text/yaml';
       extension = 'yaml';
     }
-    downloadFile(content, mimeType, `bscp_variables_${props.bkBizId}.${extension}`);
+    downloadFile(content, mimeType, `bscp_variables_${bkBizId}.${extension}`);
   };
 
   const handleResetDefault = (list: IVariableEditParams[]) => {
@@ -134,7 +139,8 @@
     }
     try {
       pending.value = true;
-      await updateUnReleasedAppVariables(props.bkBizId, props.appId, variableList.value);
+      const { bkBizId, projectId, envId, appId } = props;
+      await updateUnReleasedAppVariables(bkBizId, projectId, envId, appId, variableList.value);
       close();
       Message({
         theme: 'success',

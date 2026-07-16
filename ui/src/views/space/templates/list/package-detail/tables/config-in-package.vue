@@ -24,6 +24,7 @@
         :is-file-type="false" />
       <BatchOperationButton
         :space-id="spaceId"
+        :project-id="projectId"
         :configs="selectedConfigs"
         :current-template-space="currentTemplateSpace"
         pkg-type="pkg"
@@ -55,7 +56,7 @@
   import BatchOperationButton from '../operations/batch-operations/batch-operation-btn.vue';
   import CountTips from '../../../../service/detail/config/components/count-tips.vue';
 
-  const { spaceId, spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { spaceId, spaceFeatureFlags, projectId } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
   const { currentTemplateSpace, currentPkg, currentPkgName, countOfTemplatesForCurrentPackage } =
     storeToRefs(templateStore);
@@ -70,7 +71,8 @@
 
   const getConfigList = (params: ICommonQuery) => {
     console.log('Package Config List Loading', currentTemplateSpace.value);
-    return getTemplatesByPackageId(spaceId.value, currentTemplateSpace.value, currentPkg.value as number, params);
+    return getTemplatesByPackageId(
+      spaceId.value, projectId.value, currentTemplateSpace.value, currentPkg.value as number, params);
   };
 
   const handleMovedOut = () => {
@@ -97,7 +99,11 @@
   const handleExportPakage = async () => {
     try {
       exportLoading.value = true;
-      const res = await exportTemplatePackage(spaceId.value, currentTemplateSpace.value, currentPkg.value as number);
+      const res = await exportTemplatePackage(
+        spaceId.value,
+        projectId.value,
+        currentTemplateSpace.value,
+        currentPkg.value as number);
       downloadFile(res, 'application/zip', `${currentPkgName.value}.zip`);
     } catch (error) {
       console.error(error);

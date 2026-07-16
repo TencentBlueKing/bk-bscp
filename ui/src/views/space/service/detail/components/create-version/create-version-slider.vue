@@ -38,6 +38,7 @@
           <ResetDefaultValue
             class="reset-default-btn"
             :bk-biz-id="bkBizId"
+            :project-id="projectId"
             :list="initialVariables"
             @reset="handleResetDefault" />
           <VariablesTable ref="tableRef" :list="variableList" :editable="true" @change="handleVariablesChange" />
@@ -67,6 +68,8 @@
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     isDiffSliderShow: boolean;
   }>();
@@ -103,7 +106,7 @@
       {
         validator: async (value: string) => {
           if (value.length > 0) {
-            const res = await createVersionNameCheck(props.bkBizId, props.appId, value);
+            const res = await createVersionNameCheck(props.bkBizId, props.appId, props.projectId, props.envId, value);
             return !res.data.exist;
           }
           return true;
@@ -135,7 +138,8 @@
 
   const getVariableList = async () => {
     loading.value = true;
-    const res = await getUnReleasedAppVariables(props.bkBizId, props.appId);
+    const { bkBizId, appId, projectId, envId} = props;
+    const res = await getUnReleasedAppVariables(bkBizId, projectId, envId, appId);
     initialVariables.value = res.details.slice();
     variableList.value = res.details.slice();
     loading.value = false;

@@ -18,6 +18,7 @@
     <template #tableOperations>
       <BatchOperationButton
         :space-id="spaceId"
+        :project-id="projectId"
         :configs="selectedConfigs"
         :current-template-space="currentTemplateSpace"
         pkg-type="without"
@@ -39,7 +40,7 @@
   import CommonConfigTable from './common-config-table.vue';
   import BatchOperationButton from '../operations/batch-operations/batch-operation-btn.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
   const { currentTemplateSpace } = storeToRefs(templateStore);
 
@@ -51,7 +52,7 @@
   });
 
   const getConfigList = (params: ICommonQuery) => {
-    const res = getTemplatesWithNoSpecifiedPackage(spaceId.value, currentTemplateSpace.value, params);
+    const res = getTemplatesWithNoSpecifiedPackage(spaceId.value, projectId.value, currentTemplateSpace.value, params);
     return res;
   };
 

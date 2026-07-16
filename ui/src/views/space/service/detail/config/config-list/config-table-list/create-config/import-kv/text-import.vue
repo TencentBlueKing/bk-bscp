@@ -13,6 +13,7 @@
       ref="editorRef"
       v-model="isShowFormateExample"
       :bk-biz-id="props.bkBizId"
+      :env-id="envId"
       :app-id="props.appId"
       :format="selectFormat"
       @has-error="hasTextImportError = $event">
@@ -33,6 +34,7 @@
 
   const props = defineProps<{
     bkBizId: string;
+    envId: string;
     appId: number;
   }>();
 

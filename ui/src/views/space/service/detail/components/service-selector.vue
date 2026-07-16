@@ -62,9 +62,11 @@
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
 
   const bizId = route.params.spaceId as string;
+  const projectId = route.params.projectId as string;
 
   const props = defineProps<{
     value: number;
+    envId: string;
   }>();
 
   const emits = defineEmits(['change']);
@@ -103,7 +105,7 @@
         start: 0,
         all: true,
       };
-      const resp = await getAppList(bizId, query);
+      const resp = await getAppList(bizId, projectId, props.envId, query);
       serviceList.value = resp.details;
     } catch (e) {
       console.error(e);
@@ -147,7 +149,7 @@
         name = 'service-config';
       }
 
-      router.push({ name, params: { spaceId: service.space_id, appId: id } });
+      router.push({ name, params: { spaceId: service.space_id, envId: props.envId, appId: id } });
       emits('change', service);
     }
   };

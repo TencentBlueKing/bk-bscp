@@ -260,14 +260,11 @@
       if (lastAccessedServiceDetail) {
         const detail = JSON.parse(lastAccessedServiceDetail);
         if (detail.spaceId === spaceId.value) {
-          const targetParams: any = { spaceId: detail.spaceId, appId: detail.appId };
-          // 如果目标路由有项目概念，添加 projectId
-          if (targetHasProjectConcept && params.projectId) {
-            targetParams.projectId = params.projectId;
-          }
+          const routeName = navId === 'service-all' && !showPermApplyPage.value ? 'service-config' : (navId as RouteRecordName);
+          const { envId, ...other } = detail;
           router.push({
-            name: navId === 'service-all' && !showPermApplyPage.value ? 'service-config' : (navId as RouteRecordName),
-            params: targetParams,
+            name: routeName,
+            params: routeName === 'service-config' ? { envId, ...other} : other,
           });
           return;
         }

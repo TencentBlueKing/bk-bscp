@@ -108,6 +108,7 @@
   const props = defineProps<{
     id: number;
     spaceId: string;
+    projectId: string;
     show: Boolean;
     memo: string;
   }>();
@@ -163,7 +164,7 @@
   const getTemplateDetail = async () => {
     try {
       detailLoading.value = true;
-      const res = await getTemplateConfigMeta(props.spaceId, props.id);
+      const res = await getTemplateConfigMeta(props.spaceId, props.projectId, props.id);
       configDetail.value = sortObjectKeysByAscii({
         ...res.data.detail,
         create_at: datetimeFormat(res.data.detail.create_at),

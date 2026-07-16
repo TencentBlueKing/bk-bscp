@@ -33,6 +33,7 @@
           :language="languages"
           :always-consume-mouse-wheel="false"
           :file-editor="false"
+          :env-id="envId"
           @update:model-value="emits('change', $event)" />
       </div>
     </div>
@@ -52,10 +53,12 @@
       languages: string;
       editable?: boolean;
       height?: number;
+      envId?: string;
     }>(),
     {
       editable: true,
       height: 640,
+      envId: '0',
     },
   );
 

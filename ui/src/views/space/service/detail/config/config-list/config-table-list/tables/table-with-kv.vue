@@ -167,6 +167,8 @@
     v-model:show="editPanelShow"
     :config="operationConfig.spec as IConfigKvItem"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :editable="true"
     @confirm="handleUpdateConfig" />
@@ -174,8 +176,14 @@
     v-model:show="viewPanelShow"
     :config="operationConfig"
     :show-edit-btn="isUnNamedVersion && operationConfig.kv_state !== 'DELETE'"
+    :env-id="envId"
     @open-edit="handleSwitchToEdit" />
-  <VersionDiff v-model:show="isDiffPanelShow" :current-version="versionData" :selected-kv-config-id="diffConfig" />
+  <VersionDiff
+    v-model:show="isDiffPanelShow"
+    :project-id="projectId"
+    :env-id="envId"
+    :current-version="versionData"
+    :selected-kv-config-id="diffConfig" />
   <DeleteConfirmDialog
     v-model:is-show="isDeleteConfigDialogShow"
     :title="t('确认删除该配置项？')"
@@ -234,6 +242,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     searchQuery: { [key: string]: string };
   }>();
@@ -389,9 +399,16 @@
         if (statusFilterChecked.value!.length > 0) {
           params.status = statusFilterChecked.value;
         }
-        res = await getKvList(props.bkBizId, props.appId, params);
+        res = await getKvList(props.bkBizId, props.appId, props.projectId, props.envId, params);
       } else {
-        res = await getReleaseKvList(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getReleaseKvList(
+          props.bkBizId,
+          props.appId,
+          props.projectId,
+          props.envId,
+          versionData.value.id,
+          params,
+        );
       }
       configList.value = res.details.sort((a: IConfigKvType, b: IConfigKvType) => {
         if (a.kv_state === 'DELETE' && b.kv_state !== 'DELETE') {
@@ -498,7 +515,7 @@
     if (permCheckLoading.value || !checkPermBeforeOperate('update')) {
       return;
     }
-    await unModifyKv(props.bkBizId, props.appId, config.spec.key);
+    await unModifyKv(props.bkBizId, props.appId, props.projectId, props.envId, config.spec.key);
     Message({ theme: 'success', message: t('撤销修改配置项成功') });
     operationConfig.value = config;
     operationConfigIndex.value = index;
@@ -515,7 +532,7 @@
 
   // 删除单个配置项
   const handleDeleteConfigConfirm = async () => {
-    await deleteKv(props.bkBizId, props.appId, operationConfig.value.id);
+    await deleteKv(props.bkBizId, props.appId, props.projectId, props.envId, operationConfig.value.id);
 
     // 删除的配置项如果在多选列表里，需要去掉
     const index = selectedConfigIds.value.findIndex((id) => id === operationConfig.value?.id);
@@ -549,7 +566,7 @@
   };
 
   const handleRecoverConfigConfirm = async () => {
-    await undeleteKv(props.bkBizId, props.appId, operationConfig.value!.spec.key);
+    await undeleteKv(props.bkBizId, props.appId, props.projectId, props.envId, operationConfig.value!.spec.key);
     Message({ theme: 'success', message: t('恢复配置项成功') });
     isRecoverConfigDialogShow.value = false;
     handleUpdateConfig();
@@ -557,7 +574,7 @@
 
   // 操作配置文件后，更新配置文件内容，不刷新列表
   const handleUpdateConfig = async () => {
-    const res = await getKvList(props.bkBizId, props.appId, { start: 0, all: true });
+    const res = await getKvList(props.bkBizId, props.appId, props.projectId, props.envId, { start: 0, all: true });
     const replaceConfig = res.details.find((item: IConfigKvType) => item.spec.key === operationConfig.value?.spec.key);
     if (replaceConfig) {
       // 非删除操作

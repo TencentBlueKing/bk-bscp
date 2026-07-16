@@ -104,6 +104,7 @@
     rule: IGroupRuleItem;
     length: number;
     bkBizId: string;
+    projectId?: string;
   }>();
   const emits = defineEmits(['change', 'add', 'delete']);
   const showKeyError = ref(false);
@@ -144,7 +145,7 @@
 
   const getValueList = async () => {
     try {
-      const res = await getGroupSelector(props.bkBizId, rule.value.key);
+      const res = await getGroupSelector(props.bkBizId, rule.value.key, props.projectId);
       valueList.value = res.values;
     } catch (error) {
       console.error(error);

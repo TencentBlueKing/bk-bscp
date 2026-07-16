@@ -41,6 +41,7 @@
 
   const props = defineProps<{
     spaceId: string;
+    projectId: string;
     scriptId: number;
     type: string;
     show: boolean;
@@ -65,7 +66,7 @@
       start: 0,
       all: true,
     };
-    const res = await getScriptVersionList(props.spaceId, props.scriptId, params);
+    const res = await getScriptVersionList(props.spaceId, props.projectId, props.scriptId, params);
     versionList.value = (res.details as IScriptVersionListItem[])
       .filter((item) => item.hook_revision.id !== props.crtVersion.id)
       .map((item) => item.hook_revision);

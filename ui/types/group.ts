@@ -92,6 +92,7 @@ export interface IGroupEditing {
   name: string;
   public: boolean;
   bind_apps: number[];
+  env_id: string;
   rules: IGroupRuleItem[];
   rule_logic: string;
   uid?: string;
@@ -135,6 +136,7 @@ export interface IGroupBindService {
   release_id: number;
   release_name: string;
   edited: boolean;
+  env_display: string;
 }
 
 // 服务下的分组数据

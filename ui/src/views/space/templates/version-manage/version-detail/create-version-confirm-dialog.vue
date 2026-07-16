@@ -49,6 +49,7 @@
   const props = defineProps<{
     show: boolean;
     spaceId: string;
+    projectId: string;
     templateSpaceId: number;
     templateId: number;
     versionId: number;
@@ -93,6 +94,7 @@
     };
     const res = await getUnNamedVersionAppsBoundByLatestTemplateVersion(
       props.spaceId,
+      props.projectId,
       props.templateSpaceId,
       props.templateId,
       params,

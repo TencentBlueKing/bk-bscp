@@ -52,7 +52,7 @@
 
   const emits = defineEmits(['refresh']);
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { currentTemplateSpace, currentPkg } = storeToRefs(useTemplateStore());
   const packageGroups = ref<IPackageTableGroup[]>([]); // 所有套餐配置文件数据
   const buttonRef = ref();
@@ -78,8 +78,8 @@
       all: true,
     };
     const [packagesRes, configsRes] = await Promise.all([
-      getTemplatePackageList(spaceId.value, currentTemplateSpace.value, params),
-      getTemplatesBySpaceId(spaceId.value, currentTemplateSpace.value, params),
+      getTemplatePackageList(spaceId.value, projectId.value, currentTemplateSpace.value, params),
+      getTemplatesBySpaceId(spaceId.value, projectId.value, currentTemplateSpace.value, params),
     ]);
     // 第一个分组默认为“全部配置文件”
     const packages: IPackageTableGroup[] = [

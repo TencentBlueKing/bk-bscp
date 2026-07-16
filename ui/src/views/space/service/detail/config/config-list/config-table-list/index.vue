@@ -19,6 +19,8 @@
         <template v-if="versionData.status.publish_status === 'editing'">
           <CreateConfig
             :bk-biz-id="props.bkBizId"
+            :project-id="projectId"
+            :env-id="envId"
             :app-id="props.appId"
             @created="refreshConfigList(true)"
             @imported="handleImported" />
@@ -27,21 +29,32 @@
             :current="allExistConfigCount"
             :is-temp="false"
             :is-file-type="isFileType" />
-          <EditVariables v-if="isFileType" ref="editVariablesRef" :bk-biz-id="props.bkBizId" :app-id="props.appId" />
+          <EditVariables
+            v-if="isFileType"
+            ref="editVariablesRef"
+            :bk-biz-id="props.bkBizId"
+            :project-id="projectId"
+            :env-id="envId"
+            :app-id="props.appId" />
         </template>
         <ViewVariables
           v-else-if="isFileType"
           :bk-biz-id="props.bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="props.appId"
           :verision-id="versionData.id" />
         <ConfigExport
           :bk-biz-id="props.bkBizId"
+          :env-id="envId"
           :app-id="props.appId"
           :version-id="versionData.id"
           :version-name="versionData.spec.name" />
         <BatchOperationBtn
           v-if="versionData.status.publish_status === 'editing'"
           :bk-biz-id="props.bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="props.appId"
           :selected-ids="selectedIds"
           :is-file-type="isFileType"
@@ -66,6 +79,8 @@
         v-if="isFileType"
         ref="tableRef"
         :bk-biz-id="props.bkBizId"
+        :project-id="props.projectId"
+        :env-id="props.envId"
         :app-id="props.appId"
         :search-query="searchQuery"
         @clear-str="handleClearsearchQuery"
@@ -75,6 +90,8 @@
         v-else
         ref="tableRef"
         :bk-biz-id="props.bkBizId"
+        :project-id="props.projectId"
+        :env-id="props.envId"
         :app-id="props.appId"
         :search-query="searchQuery"
         @send-table-data-count="selecTableDataCount = $event"
@@ -117,6 +134,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 

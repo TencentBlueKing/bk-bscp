@@ -31,12 +31,16 @@
     <EditConfig
       v-model:show="editConfigSliderData.open"
       :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="props.appId"
       :config-id="editConfigSliderData.id" />
     <ViewConfig
       v-model:show="viewConfigSliderData.open"
       v-bind="viewConfigSliderData.data"
       :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="props.appId"
       :version-id="versionData.id"
       @open-edit="handleOpenEdit" />
@@ -101,6 +105,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -192,10 +198,17 @@
         params.search_value = searchStr.value;
       }
       let res;
+      const { bkBizId, appId, projectId, envId } = props;
       if (isUnNamedVersion.value) {
-        res = await getConfigList(props.bkBizId, props.appId, params);
+        res = await getConfigList(bkBizId, appId, projectId, envId, params);
       } else {
-        res = await getReleasedConfigList(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getReleasedConfigList(
+          bkBizId,
+          appId,
+          projectId,
+          envId,
+          versionData.value.id,
+          params);
       }
 
       configList.value = res.details;
@@ -220,10 +233,17 @@
       }
 
       let res;
+      const { bkBizId, appId, projectId, envId } = props;
       if (isUnNamedVersion.value) {
-        res = await getBoundTemplates(props.bkBizId, props.appId, params);
+        res = await getBoundTemplates(bkBizId, appId, projectId, envId, params);
       } else {
-        res = await getBoundTemplatesByAppVersion(props.bkBizId, props.appId, versionData.value.id, params);
+        res = await getBoundTemplatesByAppVersion(
+          bkBizId,
+          appId,
+          projectId,
+          envId,
+          versionData.value.id,
+          params);
       }
       templateGroupList.value = res.details;
     } catch (e) {

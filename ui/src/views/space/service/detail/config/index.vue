@@ -1,6 +1,11 @@
 <template>
   <section class="version-config-content">
-    <ConfigList :version-detail-view="versionDetailView" :bk-biz-id="props.bkBizId" :app-id="props.appId" />
+    <ConfigList
+      :version-detail-view="versionDetailView"
+      :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
+      :app-id="props.appId" />
   </section>
 </template>
 <script setup lang="ts">
@@ -12,6 +17,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 </script>

@@ -72,6 +72,7 @@
       alwaysConsumeMouseWheel?: boolean;
       contextmenu?: boolean;
       fileEditor?: boolean;
+      envId?: string
     }>(),
     {
       variables: () => [],
@@ -88,6 +89,7 @@
       alwaysConsumeMouseWheel: true,
       contextmenu: true,
       fileEditor: true,
+      envId: '0'
     },
   );
 
@@ -100,6 +102,7 @@
   const localVal = ref(props.modelValue);
   const route = useRoute();
   const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId || ''));
   const appId = ref(Number(route.params.appId));
   const variableNameList = ref<string[]>(['']);
   const privateVariableNameList = ref<string[]>(['']);
@@ -265,10 +268,14 @@
 
   // 获取全局变量和私有变量列表
   const handleVariableList = async () => {
-    const variableList = await getVariableList(bkBizId.value, { start: 0, limit: 1000 });
+    const variableList = await getVariableList(bkBizId.value, projectId.value, { start: 0, limit: 1000 });
     variableNameList.value = variableList.details.map((item: any) => ` .${item.spec.name} `);
     if (appId.value) {
-      const privateVariableList = await getUnReleasedAppVariables(bkBizId.value, appId.value);
+      const privateVariableList = await getUnReleasedAppVariables(
+        bkBizId.value,
+        projectId.value,
+        props.envId,
+        appId.value);
       privateVariableNameList.value = privateVariableList.details.map((item: any) => ` .${item.name} `);
       variableNameList.value!.filter((item) => !privateVariableNameList.value!.includes(item));
     }

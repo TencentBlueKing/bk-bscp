@@ -32,21 +32,27 @@
   <ManualCreate
     v-model:show="isManualCreateSliderOpen"
     :bk-biz-id="props.bkBizId"
+    :env-id="envId"
     :app-id="props.appId"
     @confirm="emits('created')" />
   <ManualCreateKv
     v-model:show="isManualCreateKvSliderOpen"
     :bk-biz-id="props.bkBizId"
+    :env-id="envId"
     :app-id="props.appId"
     @confirm="emits('created')" />
   <BatchImportKv
     v-model:show="isBatchImportKvDialogOpen"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     @confirm="emits('imported')" />
   <BatchImportFile
     v-model:show="isBatchImportDialogOpen"
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     @confirm="emits('imported')" />
 </template>
@@ -71,6 +77,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -80,13 +88,13 @@
   const isPopoverOpen = ref(false);
   const isManualCreateSliderOpen = ref(false);
   const isManualCreateKvSliderOpen = ref(false);
-  const isImportTemplatesDialogOpen = ref(false);
   const isBatchImportDialogOpen = ref(false);
   const isBatchImportKvDialogOpen = ref(false);
 
   onMounted(() => {
-    if (route.query.pkg_id) {
-      isImportTemplatesDialogOpen.value = true;
+    const {pkg_id, isOpenDialog} = route.query;
+    if (pkg_id && isOpenDialog === '1') {
+      isBatchImportDialogOpen.value = true;
     }
   });
 

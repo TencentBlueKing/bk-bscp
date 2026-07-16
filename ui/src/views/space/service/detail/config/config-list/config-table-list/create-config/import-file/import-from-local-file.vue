@@ -86,7 +86,7 @@
   }
 
   const { t } = useI18n();
-  const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { spaceFeatureFlags, projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     isTemplate: boolean; // 是否是配置模板导入
@@ -189,6 +189,7 @@
       if (props.isTemplate) {
         res = await importTemplateFile(
           props.spaceId!,
+          projectId.value,
           props.currentTemplateSpace!,
           option.file,
           isDecompression.value,

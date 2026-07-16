@@ -25,6 +25,7 @@
       <VersionFullTable
         v-if="!versionDetailModeData.open"
         :space-id="spaceId"
+        :project-id="projectId"
         :template-space-id="templateSpaceId"
         :template-id="templateId"
         :list="versionList"
@@ -38,6 +39,7 @@
       <VersionDetailTable
         v-else
         :space-id="spaceId"
+        :project-id="projectId"
         :template-space-id="templateSpaceId"
         :template-id="templateId"
         :list="versionList"
@@ -97,7 +99,7 @@
     return 0;
   };
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { versionListPageShouldOpenEdit, versionListPageShouldOpenView } = storeToRefs(useTemplateStore());
   const route = useRoute();
   const router = useRouter();
@@ -146,7 +148,7 @@
 
   const getTemplateDetail = async () => {
     templateDetailLoading.value = true;
-    const res = await getTemplatesDetailByIds(spaceId.value, [templateId.value]);
+    const res = await getTemplatesDetailByIds(spaceId.value, projectId.value, [templateId.value]);
     if (res.details.length > 0) {
       templateDetail.value = res.details[0];
     }
@@ -160,7 +162,11 @@
       limit: pagination.value.limit,
     };
     params.search = searchQuery.value;
-    const res = await getTemplateVersionList(spaceId.value, templateSpaceId.value, templateId.value, params);
+    const res = await getTemplateVersionList(
+      spaceId.value,
+      projectId.value,
+      templateSpaceId.value,
+      templateId.value, params);
     versionList.value = res.details;
     pagination.value.count = res.count;
     versionListLoading.value = false;
@@ -173,7 +179,7 @@
 
   const getAllVersionList = async () => {
     allVersionListLoading.value = true;
-    const res = await getTemplateVersionList(spaceId.value, templateSpaceId.value, templateId.value, {
+    const res = await getTemplateVersionList(spaceId.value, projectId.value, templateSpaceId.value, templateId.value, {
       start: 0,
       all: true,
     });
@@ -187,7 +193,11 @@
 
   const loadBoundByAppsList = async (ids: number[]) => {
     boundByAppsCountLoading.value = true;
-    const res = await getCountsByTemplateVersionIds(spaceId.value, templateSpaceId.value, templateId.value, ids);
+    const res = await getCountsByTemplateVersionIds(
+      spaceId.value,
+      projectId.value,
+      templateSpaceId.value,
+      templateId.value, ids);
     boundByAppsCountList.value = res.details;
     boundByAppsCountLoading.value = false;
   };

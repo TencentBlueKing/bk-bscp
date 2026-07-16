@@ -34,10 +34,12 @@ export const delCategory = (app_id: number, group_category_id: number) =>
  * 获取服务下分组列表
  * @param biz_id 空间ID
  * @param app_id 应用ID
+ * @param projectId 项目ID
+ * @param envId 环境ID
  * @returns
  */
-export const getServiceGroupList = (biz_id: string, app_id: number) =>
-  http.get(`/config/biz/${biz_id}/apps/${app_id}/groups`).then((res) => {
+export const getServiceGroupList = (biz_id: string, app_id: number, projectId: string, envId: string) =>
+  http.get(`/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/groups`).then((res) => {
     const defaultGroup = res.data.details.find((item: IGroupItemInService) => item.group_id === 0);
     if (defaultGroup) {
       defaultGroup.group_name = localT('全部实例');
@@ -48,63 +50,70 @@ export const getServiceGroupList = (biz_id: string, app_id: number) =>
 /**
  * 获取空间下分组
  * @param biz_id 空间ID
+ * @param projectId 项目ID
  * @returns
  */
-export const getSpaceGroupList = (biz_id: string, topId?: number) =>
-  http.get(`/config/biz/${biz_id}/groups`, { params: { top_ids: topId } }).then((res) => res.data);
+export const getSpaceGroupList = (biz_id: string, projectId?: string, topId?: number) =>
+  http.get(`/config/biz/${biz_id}/projects/${projectId}/groups`, { params: { top_ids: topId } }).then((res) => res.data);
 
 /**
  * 新增分组
- * @param app_id 应用ID
+ * @param biz_id 空间ID
+ * @param projectId 项目ID
  * @param params 分组编辑参数
  * @returns
  */
-export const createGroup = (biz_id: string, params: IGroupEditArg) =>
-  http.post(`/config/biz/${biz_id}/groups`, params).then((res) => res.data);
+export const createGroup = (biz_id: string, projectId?: string, params: IGroupEditArg) =>
+  http.post(`/config/biz/${biz_id}/projects/${projectId}/groups`, params).then((res) => res.data);
 
 /**
  * 编辑分组
  * @param biz_id 空间ID
  * @param group_id 分组ID
+ * @param projectId 项目ID
  * @param params 分组编辑参数
  * @returns
  */
-export const updateGroup = (biz_id: string, group_id: number, params: IGroupEditArg) =>
-  http.put(`/config/biz/${biz_id}/groups/${group_id}`, params).then((res) => res.data);
+export const updateGroup = (biz_id: string, group_id: number, projectId?: string, params: IGroupEditArg) =>
+  http.put(`/config/biz/${biz_id}/projects/${projectId}/groups/${group_id}`, params).then((res) => res.data);
 
 /**
  * 删除分组
  * @param biz_id 空间ID
  * @param group_id 分组ID
+ * @param projectId 项目ID
  * @returns
  */
-export const deleteGroup = (biz_id: string, group_id: number) =>
-  http.delete(`/config/biz/${biz_id}/groups/${group_id}`);
+export const deleteGroup = (biz_id: string, group_id: number, projectId?: string) =>
+  http.delete(`/config/biz/${biz_id}/projects/${projectId}/groups/${group_id}`);
 
 /**
  * 批量删除分组
  * @param biz_id 空间ID
+ * @param projectId 项目ID
  * @param ids 分组ID列表
  * @returns
  */
-export const batchDeleteGroup = (biz_id: string, ids: number[]) =>
-  http.post(`/config/biz/${biz_id}/groups/batch_delete`, { ids });
+export const batchDeleteGroup = (biz_id: string, projectId?: string, ids: number[]) =>
+  http.post(`/config/biz/${biz_id}/projects/${projectId}/groups:batch_delete`, { ids });
 
 /**
  * 获取分组已上线服务
  * @param biz_id 空间ID
  * @param group_id 分组ID
  * @param params 查询参数
+ * @param projectId 项目ID
  * @returns
  */
-export const getGroupReleasedApps = (biz_id: string, group_id: number, params: ICommonQuery) =>
-  http.get(`/config/biz/${biz_id}/groups/${group_id}/released_apps`, { params }).then((res) => res.data);
+export const getGroupReleasedApps = (biz_id: string, group_id: number, params: ICommonQuery, projectId?: string) =>
+  http.get(`/config/biz/${biz_id}/projects/${projectId}/groups/${group_id}/released_apps`, { params }).then((res) => res.data);
 
 /**
  * 获取分组选择器
  * @param biz_id 空间ID
  * @param label_name 标签名称
+ * @param projectId 项目ID
  * @returns
  */
-export const getGroupSelector = (biz_id: string, label_name: string) =>
-  http.get(`/config/biz/${biz_id}/groups/selector/${label_name}`).then((res) => res.data);
+export const getGroupSelector = (biz_id: string, label_name: string, projectId?: string) =>
+  http.get(`/config/biz/${biz_id}/projects/${projectId}/groups:selector/${label_name}`).then((res) => res.data);

@@ -74,7 +74,7 @@
   import InternalVariable from '../components/internal-variable.vue';
   import dayjs from 'dayjs';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const emits = defineEmits(['update:show', 'created']);
@@ -161,7 +161,7 @@
   // 获取标签列表
   const getTags = async () => {
     tagsLoading.value = true;
-    const res = await getScriptTagList(spaceId.value);
+    const res = await getScriptTagList(spaceId.value, projectId.value);
     tagsData.value = res.details;
     tagsLoading.value = false;
   };
@@ -175,7 +175,7 @@
       if (!formData.value.content.endsWith('\n')) {
         formData.value.content += '\n';
       }
-      const res = await createScript(spaceId.value, formData.value);
+      const res = await createScript(spaceId.value, projectId.value, formData.value);
       BkMessage({
         theme: 'success',
         message: t('脚本创建成功'),

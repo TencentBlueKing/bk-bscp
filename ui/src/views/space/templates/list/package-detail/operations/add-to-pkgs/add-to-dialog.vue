@@ -71,7 +71,7 @@
   import { addTemplateToPackage, getUnNamedVersionAppsBoundByPackages } from '../../../../../../../api/template';
   import LinkToApp from '../../../components/link-to-app.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { packageList, currentTemplateSpace, currentPkg } = storeToRefs(useTemplateStore());
   const { t } = useI18n();
 
@@ -149,6 +149,7 @@
     };
     const res = await getUnNamedVersionAppsBoundByPackages(
       spaceId.value,
+      projectId.value,
       currentTemplateSpace.value,
       selectedPkgs.value,
       params,
@@ -178,6 +179,7 @@
       const templateIds = props.value.map((item) => item.id);
       await addTemplateToPackage(
         spaceId.value,
+        projectId.value,
         currentTemplateSpace.value,
         templateIds,
         selectedPkgs.value,

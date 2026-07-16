@@ -1,8 +1,16 @@
 <template>
   <div class="service-detail-page">
+    <EnvAlertBar
+      :model-value="envId"
+      @change="handleEnvChange" />
     <div :class="['page-detail-content', { 'version-detail-view': versionDetailView }]">
       <div class="version-list-area">
-        <VersionListAside :version-detail-view="versionDetailView" :bk-biz-id="bkBizId" :app-id="appId" />
+        <VersionListAside
+          :version-detail-view="versionDetailView"
+          :bk-biz-id="bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
+          :app-id="appId" />
         <div :class="['view-change-trigger', { extend: versionDetailView }]" @click="handleToggleView">
           <AngleDoubleRight class="arrow-icon" />
           <span :class="['text', { 'en-text': locale === 'en' }]">{{ t('版本详情') }} </span>
@@ -12,17 +20,25 @@
         <detail-header
           :class="{ 'version-detail-header': versionDetailView }"
           :bk-biz-id="bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="appId"
           :version-detail-view="versionDetailView" />
         <div class="setting-content-container">
-          <router-view v-if="!appDataLoading" :bk-biz-id="bkBizId" :app-id="appId"></router-view>
+          <router-view
+            v-if="!appDataLoading"
+            :bk-biz-id="bkBizId"
+            :project-id="projectId"
+            :env-id="envId"
+            :app-id="appId">
+          </router-view>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-  import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
@@ -32,8 +48,10 @@
   import useConfigStore from '../../../../store/config';
   import { GET_UNNAMED_VERSION_DATA } from '../../../../constants/config';
   import { permissionCheck, getAppDetail } from '../../../../api';
+  import { IEnvItem } from '../../../../../types/env';
   import DetailHeader from './components/detail-header.vue';
   import VersionListAside from './config/version-list-aside/index.vue';
+  import EnvAlertBar from '../../../../components/env-alert-bar.vue';
   import { AxiosError } from 'axios';
 
   const route = useRoute();
@@ -46,8 +64,11 @@
   const { versionData, versionDetailView } = storeToRefs(configStore);
 
   const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
   const appId = ref(Number(route.params.appId));
   const appDataLoading = ref(true);
+  const env = ref<IEnvItem>();
+  const envId = computed(() => String(route.params.envId));
 
   watch(
     () => route.params.appId,
@@ -55,6 +76,7 @@
       if (val) {
         appId.value = Number(val);
         bkBizId.value = String(route.params.spaceId);
+        projectId.value = String(route.params.projectId);
         versionData.value = GET_UNNAMED_VERSION_DATA();
         getPermData();
         getAppData();
@@ -65,8 +87,6 @@
 
   onMounted(() => {
     getPermData();
-    getAppData();
-    setLastAccessedServiceDetail();
   });
 
   onBeforeUnmount(() => {
@@ -96,7 +116,7 @@
   const getAppData = async () => {
     appDataLoading.value = true;
     try {
-      const res = await getAppDetail(bkBizId.value, appId.value);
+      const res = await getAppDetail(bkBizId.value, projectId.value, envId.value, appId.value);
       serviceStore.$patch((state) => {
         state.appData = res;
       });
@@ -113,21 +133,42 @@
   };
 
   const setLastAccessedServiceDetail = () => {
-    localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: bkBizId.value, appId: appId.value }));
+    localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: bkBizId.value, projectId: projectId.value, envId: envId.value, appId: appId.value }));
   };
+
+  watch(
+    () => envId.value,
+    (val) => {
+      if (val) {
+        getAppData();
+        setLastAccessedServiceDetail();
+      }
+    },
+    {
+      immediate: true
+    }
+  );
 
   // 切换视图
   const handleToggleView = () => {
     // 非配置管理tab切换为版本详情视图
     if (!versionDetailView.value && route.name !== 'service-config') {
-      router.push({ name: 'service-config', params: { spaceId: bkBizId.value, appId: appId.value } });
+      router.push({ name: 'service-config', params: { spaceId: bkBizId.value, appId: appId.value, envId: envId.value } });
     }
 
     // 版本详情视图下，选中版本为废弃版本时，切换到配置详情视图，需要默认选中未命名版本
     if (versionDetailView.value && versionData.value.spec.deprecated) {
-      router.push({ name: 'service-config', params: { spaceId: bkBizId.value, appId: appId.value, versionId: 0 } });
+      router.push({ name: 'service-config', params: { spaceId: bkBizId.value, appId: appId.value, envId: envId.value, versionId: 0 } });
     }
     versionDetailView.value = !versionDetailView.value;
+  };
+
+  // 环境切换
+  const handleEnvChange = (envItem: IEnvItem, isManual?: boolean) => {
+    env.value = envItem;
+    if (isManual) {
+      router.push({ name: route.name, params: { ...route.params, envId: env.value.id } });
+    }
   };
 </script>
 <style lang="scss" scoped>
@@ -137,7 +178,7 @@
   .page-detail-content {
     display: flex;
     align-items: top;
-    height: 100%;
+    height: calc(100% - 36px);
     &.version-detail-view {
       .version-list-area {
         width: calc(100% - 366px);

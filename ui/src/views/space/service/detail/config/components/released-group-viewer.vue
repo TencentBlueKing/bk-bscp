@@ -45,6 +45,8 @@
   const props = withDefaults(
     defineProps<{
       bkBizId: string;
+      projectId: string;
+      envId: string;
       appId: number;
       disabled?: boolean;
       placement?: string;
@@ -80,13 +82,14 @@
   // 获取默认分组下的排除分组
   const getExcludeGroups = async () => {
     loading.value = true;
-    const res = await getServiceGroupList(props.bkBizId, props.appId);
+    const { bkBizId, appId, projectId, envId, groups } = props;
+    const res = await getServiceGroupList(bkBizId, appId, projectId, envId);
     groupList.value = res.details
       .filter((item: IGroupItemInService) => {
         return (
           item.group_id > 0 &&
           item.release_id > 0 &&
-          props.groups.findIndex((group) => group.id === item.group_id) === -1
+          groups.findIndex((group) => group.id === item.group_id) === -1
         );
       })
       .map((item: IGroupItemInService) => ({ ...item, name: item.group_name, id: item.group_id }));

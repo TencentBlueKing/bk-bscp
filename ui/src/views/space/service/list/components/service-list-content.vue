@@ -59,6 +59,7 @@
                 v-for="service in serviceList"
                 :key="service.id"
                 :service="service"
+                :env-id="envId"
                 @edit="handleEditService"
                 @delete="handleDeleteService"
                 @update="handleDeletedUpdate" />
@@ -79,6 +80,7 @@
       <ServiceTable
         v-else
         :space-id="props.spaceId"
+        :env-id="envId"
         :data="serviceList"
         :pagination="pagination"
         :loading="isLoading"
@@ -97,7 +99,7 @@
         </template>
       </ServiceTable>
     </div>
-    <CreateService v-model:show="isCreateServiceOpen" @reload="loadAppList" />
+    <CreateService v-model:show="isCreateServiceOpen" :env-id="envId" @reload="loadAppList" />
     <EditService v-model:show="isEditServiceOpen" :service="editingService" @reload="loadAppList" />
     <CloneService v-model:show="isCloneServiceOpen" :service="editingService" @reload="loadAppList" />
     <bk-dialog
@@ -142,7 +144,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { Plus } from 'bkui-vue/lib/icon';
@@ -160,12 +162,13 @@
   import SearchSelector from '../../../../../components/search-selector.vue';
   import CloneService from './clone-service/index.vue';
 
-  const { permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
+  const { permissionQuery, showApplyPermDialog, projectId } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
   const props = defineProps<{
     spaceId: string;
+    envId: string;
     permCheckLoading: boolean;
     hasCreateServicePerm: boolean;
   }>();
@@ -183,6 +186,8 @@
   const editingService = ref<IAppItem>({
     id: 0,
     biz_id: 0,
+    project_id: 0,
+    env_id: 0,
     space_id: '',
     spec: {
       name: '',
@@ -251,20 +256,17 @@
     },
   );
 
-  onMounted(() => {
-    loadAppList();
-  });
-
   // 加载服务列表
   const loadAppList = async () => {
     isLoading.value = true;
     try {
       const bizId = props.spaceId;
-      const resp = await getAppList(bizId, filters.value);
+      const envId = props.envId;
+      const resp = await getAppList(bizId, projectId.value, props.envId, filters.value);
       const { file_apps_count, kv_apps_count, details, count } = resp;
       if (details.length > 0) {
         const appIds = details.map((item: IAppItem) => item.id);
-        const appsConfigData = await getAppsConfigData(bizId, appIds);
+        const appsConfigData = await getAppsConfigData(bizId, projectId.value, envId, appIds);
         details.forEach((item: IAppItem, index: number) => {
           const { count, update_at } = appsConfigData.details[index];
           item.config = { count, update_at };
@@ -325,13 +327,26 @@
     loadAppList();
   };
 
+  // 监听环境变化，重新加载服务列表
+  watch(
+    () => props.envId,
+    (val) => {
+      if (val) {
+        refreshSeviceList();
+      }
+    },
+    {
+      immediate: true
+    }
+  );
+
   // 删除服务
   const handleDeleteService = (service: IAppItem) => {
     deleteService.value = service;
     isShowDeleteDialog.value = true;
   };
   const handleDeleteConfirm = async () => {
-    await deleteApp(deleteService.value!.id as number, deleteService.value!.biz_id);
+    await deleteApp(props.spaceId, projectId.value, props.envId, deleteService.value!.id as number);
     Message({
       message: t('删除服务成功'),
       theme: 'success',

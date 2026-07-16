@@ -2,6 +2,28 @@ import { getProjectList } from '../api/project';
 import type { ISpaceProject, IProjectItem } from '../../types/project';
 
 /**
+ * 模块级缓存：某空间的全部项目列表
+ */
+const projectListCache: Record<string, IProjectItem[]> = {};
+
+/**
+ * 共享数据入口：所有需要"某空间全部项目"的逻辑统一走这里
+ * 同一 spaceId 只发一次请求，后续直接复用缓存
+ * @param spaceId 空间ID
+ * @returns 项目列表
+ */
+export const getCachedProjectList = (spaceId: string): Promise<IProjectItem[]> => {
+  if (projectListCache[spaceId]?.length > 0) {
+    return Promise.resolve(projectListCache[spaceId]);
+  }
+  return getProjectList(spaceId, { all: true }).then((res) => {
+    const projects = res.data?.projects || [];
+    projectListCache[spaceId] = projects;
+    return projects;
+  });
+};
+
+/**
  * 无项目概念的模块列表
  * 这些模块不需要 projectId 参数
  */
@@ -64,9 +86,8 @@ export const getDefaultProjectId = async (spaceId: string): Promise<string> => {
   // 1. 先从 localStorage 获取上次使用的 projectId
   const lastProjectId = getSpaceToProjectId(spaceId);
 
-  // 2. 获取项目列表
-  const res = await getProjectList(spaceId, { all: true });
-  const projects = res.data?.projects || [];
+  // 2. 获取项目列表（走共享缓存入口）
+  const projects = await getCachedProjectList(spaceId);
 
   // 3. 如果 localStorage 中有值，且存在于项目列表中，则使用它
   if (lastProjectId) {

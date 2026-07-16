@@ -31,7 +31,7 @@
   import useGlobalStore from '../../../../../store/global';
   import { updateTemplateSpace } from '../../../../../api/template';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -60,7 +60,7 @@
     formRef.value.validate().then(async () => {
       try {
         pending.value = true;
-        await updateTemplateSpace(spaceId.value, props.data.id, { memo: memo.value });
+        await updateTemplateSpace(spaceId.value, projectId.value, props.data.id, { memo: memo.value });
         handleClose();
         emits('edited');
         Message({

@@ -10,6 +10,8 @@ export interface IServiceEditForm {
   is_approve: boolean;
   approver: string;
   approve_type: string;
+  projectId: string;
+  envId: string;
   // encryptionSwtich: boolean;
   // encryptionKey: string;
 }

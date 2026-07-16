@@ -13,6 +13,7 @@
       :content="content"
       :is-edit="false"
       :bk-biz-id="props.bkBizId"
+      :env-id="envId"
       :id="props.appId"
       :file-size-limit="spaceFeatureFlags.RESOURCE_LIMIT.maxFileSize"
       @change="handleFormChange" />
@@ -42,6 +43,7 @@
   const props = defineProps<{
     show: boolean;
     bkBizId: string;
+    envId: string;
     appId: number;
   }>();
 

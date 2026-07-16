@@ -29,6 +29,8 @@
   import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
+  import { storeToRefs } from 'pinia';
+  import useGlobalStore from '../../../store/global';
   import { IGroupEditing, ECategoryType } from '../../../../types/group';
   import { createGroup } from '../../../api/group';
   import groupEditForm from './components/group-edit-form.vue';
@@ -36,6 +38,7 @@
 
   const route = useRoute();
   const { t } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     show: boolean;
@@ -47,6 +50,7 @@
     name: '',
     public: true,
     bind_apps: [],
+    env_id: '',
     rule_logic: 'AND',
     rules: [{ key: '', op: 'eq', value: '' }],
   });
@@ -61,6 +65,7 @@
           name: '',
           public: true,
           bind_apps: [],
+          env_id: '',
           rule_logic: 'AND',
           rules: [{ key: '', op: 'eq', value: '' }],
         };
@@ -79,16 +84,16 @@
     }
     try {
       pending.value = true;
-      const { name, public: isPublic, bind_apps, rule_logic, rules } = groupData.value;
+      const { name, public: isPublic, bind_apps, env_id, rule_logic, rules } = groupData.value;
       const params = {
-        biz_id: route.params.spaceId,
         name,
         public: isPublic,
         bind_apps: isPublic ? [] : bind_apps,
+        env_id,
         mode: ECategoryType.Custom,
         selector: rule_logic === 'AND' ? { labels_and: rules } : { labels_or: rules },
       };
-      const res = await createGroup(route.params.spaceId as string, params);
+      const res = await createGroup(route.params.spaceId as string, projectId.value, params);
       Message({
         message: t('创建分组成功'),
         theme: 'success',

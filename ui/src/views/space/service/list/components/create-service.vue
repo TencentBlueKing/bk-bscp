@@ -21,6 +21,7 @@
   <CreateSuccessDialog
     v-model:is-show="isShowConfirmDialog"
     :bk-biz-id="spaceId"
+    :env-id="envId"
     :app-id="appId"
     :service-data="serviceData" />
 </template>
@@ -39,10 +40,11 @@
 
   const props = defineProps<{
     show: boolean;
+    envId: string;
   }>();
   const emits = defineEmits(['update:show', 'reload']);
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
 
   const serviceData = ref<IServiceEditForm>({
     name: '',
@@ -53,6 +55,8 @@
     is_approve: true,
     approver: '',
     approve_type: 'or_sign',
+    projectId: '',
+    envId: '',
     // encryptionSwtich: false,
     // encryptionKey: '',
   });
@@ -76,8 +80,8 @@
           is_approve: true,
           approver: '',
           approve_type: 'or_sign',
-          // encryptionSwtich: false,
-          // encryptionKey: '',
+          projectId: projectId.value,
+          envId: props.envId,
         };
       }
     },
@@ -93,7 +97,12 @@
     await formCompRef.value.validate();
     pending.value = false;
     try {
-      const resp = await createApp(spaceId.value, serviceData.value);
+      const { projectId, envId, ...other } = serviceData.value;
+      const resp = await createApp(
+        spaceId.value,
+        projectId,
+        envId,
+        other);
       appId.value = resp.id;
       emits('reload');
       isShowConfirmDialog.value = true;
@@ -119,7 +128,7 @@
 </script>
 <style lang="scss" scoped>
   .create-app-form {
-    padding: 20px 24px;
+    padding: 0 24px 20px;
     height: calc(100vh - 101px);
     overflow: auto;
   }

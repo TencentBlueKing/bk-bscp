@@ -55,11 +55,13 @@
   import { ref, computed, watch, onMounted, nextTick } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
+  import { storeToRefs } from 'pinia';
   import { Search, RightShape } from 'bkui-vue/lib/icon';
   import { IConfigKvType } from '../../../../../../../../../types/config';
   import { ISingleLineKVDIffItem } from '../../../../../../../../../types/service';
   import { getKvList, getReleaseKvList } from '../../../../../../../../api/config';
   import SearchInput from '../../../../../../../../components/search-input.vue';
+  import useGlobalStore from '../../../../../../../../store/global';
   import tableEmpty from '../../../../../../../../components/table/table-empty.vue';
 
   interface IConfigDiffItem {
@@ -94,6 +96,7 @@
 
   const { t } = useI18n();
   const route = useRoute();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const emits = defineEmits(['selected', 'render']);
 
@@ -101,6 +104,7 @@
 
   const bkBizId = ref(String(route.params.spaceId));
   const appId = ref(Number(route.params.appId));
+  const envId = ref(String(route.params.envId));
   const diffCount = ref(0);
   const selected = ref();
   const currentList = ref<IConfigKvType[]>([]);
@@ -167,12 +171,12 @@
     let res;
     if (releaseId === 0) {
       // 未命名版本
-      res = await getKvList(bkBizId.value, Number(currentAppId), {
+      res = await getKvList(bkBizId.value, Number(currentAppId), projectId.value, envId.value, {
         start: 0,
         all: true,
       });
     } else {
-      res = await getReleaseKvList(bkBizId.value, Number(currentAppId), releaseId, {
+      res = await getReleaseKvList(bkBizId.value, Number(currentAppId), projectId.value, envId.value, releaseId, {
         start: 0,
         all: true,
       });

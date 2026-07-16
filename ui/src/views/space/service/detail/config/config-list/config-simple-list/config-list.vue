@@ -13,7 +13,13 @@
       </div>
       <bk-exception v-else scene="part" type="empty" :description="t('暂无数据')"></bk-exception>
     </bk-loading>
-    <EditConfig v-model:show="editDialogShow" :bk-biz-id="props.bkBizId" :app-id="props.appId" :config-id="configId" />
+    <EditConfig
+      v-model:show="editDialogShow"
+      :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
+      :app-id="props.appId"
+      :config-id="configId" />
   </section>
 </template>
 <script setup lang="ts">
@@ -33,6 +39,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -64,11 +72,11 @@
         start: 0,
         all: true,
       };
-
+      const { bkBizId, appId, projectId, envId } = props;
       if (versionData.value.id === 0) {
-        await getConfigList(props.bkBizId, props.appId, params);
+        await getConfigList(bkBizId, appId, projectId, envId, params);
       } else {
-        await getReleasedConfigList(props.bkBizId, props.appId, versionData.value.id, params);
+        await getReleasedConfigList(bkBizId, appId, projectId, envId, versionData.value.id, params);
       }
     } catch (e) {
       console.error(e);

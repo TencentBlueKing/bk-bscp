@@ -18,6 +18,7 @@
         <ExportVariables :disabled="list.length === 0" @export="handleExport" />
         <BatchDeleteBtn
           :bk-biz-id="spaceId"
+          :project-id="projectId"
           :selected-ids="selectedIds"
           :is-across-checked="isAcrossChecked"
           :data-count="pagination.count"
@@ -127,7 +128,7 @@
   import ExportVariables from '../service/detail/config/config-list/config-table-list/variables/export-variables.vue';
   import VarValuePreview from '../service/detail/config/config-list/config-table-list/tables/kv-value-preview.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
   const { pagination, updatePagination } = useTablePagination('variableList');
 
@@ -208,7 +209,7 @@
       if (topIds.value.length > 0) {
         params.top_ids = topIds.value;
       }
-      const res = await getVariableList(spaceId.value, params);
+      const res = await getVariableList(spaceId.value, projectId.value, params);
       list.value = res.details;
       pagination.value.count = res.count;
     } catch (error) {
@@ -225,7 +226,7 @@
 
   // 导出变量
   const handleExport = async (type: string) => {
-    const res = await exportVariables(spaceId.value, type);
+    const res = await exportVariables(spaceId.value, projectId.value, type);
     let content: any;
     let mimeType: string;
     let extension: string;
@@ -274,7 +275,7 @@
   };
 
   const handleDeleteVarConfirm = async () => {
-    await deleteVariable(spaceId.value, deleteVariableItem.value!.id);
+    await deleteVariable(spaceId.value, projectId.value, deleteVariableItem.value!.id);
     BkMessage({
       message: t('删除变量成功'),
       theme: 'success',

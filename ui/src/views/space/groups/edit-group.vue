@@ -34,7 +34,7 @@
   import groupEditForm from './components/group-edit-form.vue';
   import Message from 'bkui-vue/lib/message';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -49,6 +49,7 @@
     name: '',
     public: true,
     bind_apps: [],
+    env_id: '',
     rule_logic: 'AND',
     rules: [{ key: '', op: '', value: '' }],
   });
@@ -65,6 +66,7 @@
           name,
           bind_apps: bind_apps.map((item) => item.id),
           public: isPublic,
+          env_id: String((props.group as any).env_id || ''),
           rule_logic: selector.labels_and ? 'AND' : 'OR',
           rules: (selector.labels_and || selector.labels_or) as IGroupRuleItem[],
         };
@@ -85,14 +87,15 @@
     }
     pending.value = true;
     try {
-      const { id, name, public: isPublic, bind_apps, rule_logic, rules } = groupData.value;
+      const { id, name, public: isPublic, bind_apps, env_id, rule_logic, rules } = groupData.value;
       const params = {
         name,
         public: isPublic,
         bind_apps: isPublic ? [] : bind_apps,
+        env_id,
         selector: rule_logic === 'AND' ? { labels_and: rules } : { labels_or: rules },
       };
-      await updateGroup(spaceId.value, id as number, params);
+      await updateGroup(spaceId.value, id as number, projectId.value, params);
       Message({
         message: t('编辑分组成功'),
         theme: 'success',

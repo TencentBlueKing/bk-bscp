@@ -14,6 +14,7 @@
     <div class="version-detail-content">
       <VersionEditor
         :space-id="props.spaceId"
+        :project-id="props.projectId"
         :template-space-id="props.templateSpaceId"
         :template-id="props.templateId"
         :version-id="props.versionId"
@@ -40,6 +41,7 @@
   const { t } = useI18n();
   const props = defineProps<{
     spaceId: string;
+    projectId: string;
     templateSpaceId: number;
     templateId: number;
     list: ITemplateVersionItem[];

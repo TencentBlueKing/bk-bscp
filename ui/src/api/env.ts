@@ -5,7 +5,7 @@ import type { IUpdateEnvItem, IEnvQuery } from '../../types/env';
  * 获取环境列表
  */
 export function getEnvList(biz_id: string, project_id: string, query: IEnvQuery) {
-  return http.post(`/config/biz/${biz_id}/projects/${project_id}/envs/list`, {
+  return http.post(`/config/biz/${biz_id}/projects/${project_id}/envs:list`, {
     ...query,
   });
 }

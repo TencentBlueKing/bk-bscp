@@ -35,7 +35,7 @@
   import useGlobalStore from '../../../../../store/global';
   import { createTemplateSpace } from '../../../../../api/template';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = defineProps<{
@@ -66,7 +66,7 @@
     formRef.value.validate().then(async () => {
       try {
         pending.value = true;
-        const res = await createTemplateSpace(spaceId.value, localVal.value);
+        const res = await createTemplateSpace(spaceId.value, projectId.value, localVal.value);
         handleClose();
         emits('created', res.id);
         Message({

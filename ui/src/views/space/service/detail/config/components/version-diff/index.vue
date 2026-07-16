@@ -105,6 +105,9 @@
 
   const { t, locale } = useI18n();
   const props = defineProps<{
+    bkBizId?: string;
+    projectId: string;
+    envId: string;
     appId?: number;
     show: boolean;
     showPublishBtn?: boolean; // 是否显示发布按钮
@@ -172,7 +175,13 @@
         versionList.value = props.versionDiffList;
         return;
       }
-      const res = await getConfigVersionList(bkBizId.value, Number(currentAppId), { start: 0, all: true });
+      const res = await getConfigVersionList(
+        bkBizId.value,
+        Number(currentAppId),
+        props.projectId,
+        props.envId,
+        { start: 0, all: true },
+      );
       versionList.value = res.data.details.filter((item: IConfigVersion) => item.id !== props.currentVersion.id);
     } catch (e) {
       console.error(e);

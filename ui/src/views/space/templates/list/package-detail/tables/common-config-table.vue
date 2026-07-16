@@ -118,6 +118,7 @@
                         theme=""
                         :text="$t('下载模板文件')"
                         :space-id="spaceId"
+                        :project-id="projectId"
                         :template-space-id="currentTemplateSpace"
                         :template-id="row.id" />
                       <div v-if="props.showDeleteAction" class="action-item" @click="handleDeleteClick(row)">
@@ -151,6 +152,7 @@
     <AppsBoundByTemplate
       v-model:show="appBoundByTemplateSliderData.open"
       :space-id="spaceId"
+      :project-id="projectId"
       :current-template-space="currentTemplateSpace"
       :config="appBoundByTemplateSliderData.data" />
     <DeleteConfigDialog
@@ -162,6 +164,7 @@
     <ViewConfig
       v-model:show="isViewConfigShow"
       :space-id="spaceId"
+      :project-id="projectId"
       :id="viewConfig?.id as number"
       :memo="selectConfigMemo"
       @open-edit="handleEditConfig(viewConfig as ITemplateConfigItem)" />
@@ -169,6 +172,7 @@
       v-model:show="isEditConfigShow"
       :memo="selectConfigMemo"
       :space-id="spaceId"
+      :project-id="projectId"
       :id="editConfigId"
       @edited="refreshList" />
   </div>
@@ -207,7 +211,7 @@
 
   const router = useRouter();
   const { t, locale } = useI18n();
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
   const { currentTemplateSpace, topIds } = storeToRefs(templateStore);
   const { pagination, updatePagination } = useTablePagination('commonConfigTable');
@@ -337,14 +341,14 @@
   // 配置项被套餐引用数据
   const loadCiteByPkgsCountList = async (ids: number[]) => {
     citedByPkgsLoading.value = true;
-    const res = await getPackagesByTemplateIds(spaceId.value, currentTemplateSpace.value, ids);
+    const res = await getPackagesByTemplateIds(spaceId.value, projectId.value, currentTemplateSpace.value, ids);
     citeByPkgsList.value = res.details;
     citedByPkgsLoading.value = false;
   };
 
   const loadBoundByAppsList = async (ids: number[]) => {
     boundByAppsCountLoading.value = true;
-    const res = await getCountsByTemplateIds(spaceId.value, currentTemplateSpace.value, ids);
+    const res = await getCountsByTemplateIds(spaceId.value, projectId.value, currentTemplateSpace.value, ids);
     boundByAppsCountList.value = res.details;
     boundByAppsCountLoading.value = false;
   };

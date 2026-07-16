@@ -57,6 +57,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
   const emits = defineEmits(['selectVersion', 'clear']);
@@ -84,7 +86,7 @@
         start: 0,
         all: true,
       };
-      const resp = await getAppList(props.bkBizId, query);
+      const resp = await getAppList(props.bkBizId, props.projectId, props.envId, query);
       serviceList.value = resp.details.filter((app: IAppItem) => {
         if (isFileType.value) {
           return app.spec.config_type === 'file' && app.id !== props.appId;
@@ -123,7 +125,7 @@
         start: 0,
         all: true,
       };
-      const res = await getConfigVersionList(props.bkBizId, selectAppId.value, params);
+      const res = await getConfigVersionList(props.bkBizId, selectAppId.value, props.projectId, props.envId, params);
       versionList.value = res.data.details;
     } catch (e) {
       console.error(e);

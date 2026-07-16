@@ -71,7 +71,7 @@
   import Edit from './edit.vue';
 
   const router = useRouter();
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const templateStore = useTemplateStore();
   const { currentTemplateSpace, templateSpaceList } = storeToRefs(templateStore);
   const { t } = useI18n();
@@ -131,7 +131,7 @@
       start: 0,
       all: true,
     };
-    const res = await getTemplateSpaceList(spaceId.value, params);
+    const res = await getTemplateSpaceList(spaceId.value, projectId.value, params);
     const index = (res.details as ITemplateSpaceItem[]).findIndex((item) =>
       ['默认空间', 'default_space'].includes(item.spec.name),
     );
@@ -184,8 +184,8 @@
       start: 0,
       all: true,
     };
-    const res = await getTemplatesBySpaceId(spaceId.value, space.id, params);
-    const packageRes = await getTemplatePackageList(spaceId.value, String(space.id), packageParams);
+    const res = await getTemplatesBySpaceId(spaceId.value, projectId.value, space.id, params);
+    const packageRes = await getTemplatePackageList(spaceId.value, projectId.value, String(space.id), packageParams);
     if (res.count > 0) {
       InfoBox({
         title: `${t('未能删除')}【${space.spec.name}】`,
@@ -210,7 +210,7 @@
   };
 
   const handleDeleteTemplateSpaceConfirm = async () => {
-    await deleteTemplateSpace(spaceId.value, deleteTemplateSpaceItem.value!.id);
+    await deleteTemplateSpace(spaceId.value, projectId.value, deleteTemplateSpaceItem.value!.id);
     if (deleteTemplateSpaceItem.value!.id === currentTemplateSpace.value) {
       templateStore.$patch((state) => {
         state.currentTemplateSpace = '';

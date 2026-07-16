@@ -11,6 +11,8 @@ export interface IAppListQuery {
 export interface IAppItem {
   id?: number;
   biz_id: number;
+  project_id: number;
+  env_id: number;
   space_id: string;
   spec: {
     name: string;

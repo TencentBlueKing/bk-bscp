@@ -56,10 +56,12 @@
   const { showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
 
   const bizId = route.params.spaceId as string;
+  const projectId = route.params.projectId as string;
 
   const props = withDefaults(
     defineProps<{
       value?: number;
+      envId: string;
       customTrigger?: boolean;
       isRecord?: boolean;
     }>(),
@@ -118,7 +120,7 @@
         start: 0,
         all: true,
       };
-      const resp = await getAppList(bizId, query);
+      const resp = await getAppList(bizId, projectId, props.envId, query);
       serviceList.value = resp.details;
     } catch (e) {
       console.error(e);
