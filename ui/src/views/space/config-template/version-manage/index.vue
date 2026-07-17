@@ -156,7 +156,7 @@
       limit: pagination.value.limit,
     };
     params.search = searchQuery.value;
-    const res = await getTemplateVersionList(spaceId.value, templateSpaceId.value, templateId.value, params);
+    const res = await getTemplateVersionList(spaceId.value, '', templateSpaceId.value, templateId.value, params);
     versionList.value = res.details;
     pagination.value.count = res.count;
     versionListLoading.value = false;
@@ -164,7 +164,7 @@
 
   const getAllVersionList = async () => {
     allVersionListLoading.value = true;
-    const res = await getTemplateVersionList(spaceId.value, templateSpaceId.value, templateId.value, {
+    const res = await getTemplateVersionList(spaceId.value, '', templateSpaceId.value, templateId.value, {
       start: 0,
       all: true,
     });

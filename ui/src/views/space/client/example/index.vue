@@ -1,8 +1,30 @@
 <template>
   <section class="configuration-example-page">
     <div class="example-aside">
+      <!-- 选择环境 -->
+      <EnvSelector v-model="localEnvId" class="sel-env">
+        <template #trigger="{ selectInfo, isOpen }">
+          <div
+            v-if="selectInfo"
+            class="env-selector-trigger"
+            :style="{
+              backgroundColor: ENV_TYPE_CONFIG[selectInfo.group.type]?.bgColor || '#F0F1F5',
+              color: ENV_TYPE_CONFIG[selectInfo.group.type]?.textColor || '#63656E' }">
+            <div class="env-val-cls">
+              <i
+                :class="`bk-bscp-icon ${ENV_TYPE_CONFIG[selectInfo.group.type]?.iconClass || ''} env-icon`"
+                :style="{ color: ENV_TYPE_CONFIG[selectInfo.group.type]?.iconColor || '#979BA5' }">
+              </i>
+              <span class="env-name">{{ selectInfo.env?.spec.name }}</span>
+            </div>
+            <AngleUpFill
+              :class="['env-arrow', { 'icon-rotate': isOpen }]"
+              :style="{ color: ENV_TYPE_CONFIG[selectInfo.group.type]?.iconColor || '#979BA5' }" />
+          </div>
+        </template>
+      </EnvSelector>
       <!-- 选择服务 -->
-      <ServiceSelector class="sel-service" @change="selectService">
+      <ServiceSelector class="sel-service" :env-id="localEnvId" @change="selectService">
         <template #trigger>
           <div class="selector-trigger">
             <bk-overflow-title v-if="serviceName" class="app-name" type="tips">
@@ -47,6 +69,7 @@
 <script lang="ts" setup>
   import { computed, ref, nextTick, provide } from 'vue';
   import ServiceSelector from '../../../../components/service-selector.vue';
+  import EnvSelector from '../../../../components/env-selector.vue';
   import { useI18n } from 'vue-i18n';
   import useGlobalStore from '../../../../store/global';
   import { storeToRefs } from 'pinia';
@@ -58,6 +81,7 @@
   import { IAppItem } from '../../../../../types/app';
   import { useRoute, useRouter } from 'vue-router';
   import { AngleUpFill } from 'bkui-vue/lib/icon';
+  import { ENV_TYPE_CONFIG } from '../../../../constants/env';
 
   const { t } = useI18n();
   const route = useRoute();
@@ -95,6 +119,8 @@
   const renderComponent = ref(''); // 渲染的示例组件
   const serviceName = ref('');
   const serviceType = ref('');
+  const projectId = ref(String(route.params.projectId));
+  const localEnvId = ref(String(route.params.envId));
   const topTip = ref('');
   const loading = ref(true);
   provide('basicInfo', { serviceName, serviceType });
@@ -138,8 +164,13 @@
     // 重置已选择的密钥信息
     selectedClientKey.value = null;
     if (service) {
-      await router.push({ name: route.name!, params: { spaceId: bizId.value, appId: service.id } });
-      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: bizId.value, appId: service.id }));
+      const routeParams = {
+        spaceId: bizId.value,
+        projectId: projectId.value,
+        envId: localEnvId.value,
+        appId: service.id };
+      await router.push({ name: route.name!, params: routeParams });
+      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify(routeParams));
     } else {
       loading.value = false;
     }
@@ -150,6 +181,7 @@
     }
     changeTypeItem(navList.value[0].val);
   };
+
   // 服务的子类型切换
   const changeTypeItem = (data: string) => {
     renderComponent.value = data;
@@ -200,9 +232,51 @@
       line-height: 20px;
     }
   }
+  .sel-env {
+    flex-shrink: 0;
+    padding: 10px 8px 0;
+    width: 239px;
+    :deep(.env-selector-trigger) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 32px;
+      cursor: pointer;
+      padding: 0 8px;
+      border-radius: 4px;
+      transition: all 0.3s;
+      .env-val-cls {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .env-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .env-name {
+        flex: 1;
+        font-size: 16px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .env-arrow {
+        margin-left: 8px;
+        font-size: 16px;
+        color: #F8B4B4;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+        &.icon-rotate {
+          transform: rotate(-180deg);
+        }
+      }
+    }
+  }
   .sel-service {
     flex-shrink: 0;
-    padding: 10px 8px;
+    padding: 4px 8px 10px;
     width: 239px;
     border-bottom: 1px solid #f0f1f5;
   }

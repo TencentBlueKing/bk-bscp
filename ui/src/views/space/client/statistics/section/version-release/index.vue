@@ -61,6 +61,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -103,7 +105,8 @@
     };
     try {
       loading.value = true;
-      const res = await getConfigVersionData(props.bkBizId, props.appId, params);
+      const { bkBizId, appId, projectId, envId } = props;
+      const res = await getConfigVersionData(bkBizId, appId, projectId, envId, params);
       data.value = res.client_config_version;
     } catch (error) {
       console.error(error);

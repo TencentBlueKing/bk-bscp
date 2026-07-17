@@ -68,6 +68,7 @@
           :model-value="editorContent"
           :error-line="errorLine"
           :language="format"
+          :project-id="projectId"
           @paste="handlePaste"
           @enter="separatorShow = true"
           @validate="handleValidateEditor"

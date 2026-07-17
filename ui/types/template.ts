@@ -19,12 +19,12 @@ export interface ITemplateSpaceItem {
 // 模板套餐列表单条数据
 export interface ITemplatePackageItem {
   id: number;
+  env_apps: EnvAppsItem[];
   spec: {
     name: string;
     memo: string;
     template_ids: number[];
     public: boolean;
-    env_id: string;
     bound_apps: number[];
   };
   attachment: {
@@ -45,7 +45,10 @@ export interface IPackageMenuItem {
   name: string;
   count: number;
 }
-
+export interface EnvAppsItem {
+  env_id: string;
+  app_ids: number[];
+}
 // 模板套餐编辑参数
 export interface ITemplatePackageEditParams {
   template_set_id?: number;
@@ -53,8 +56,7 @@ export interface ITemplatePackageEditParams {
   memo: string;
   template_ids?: number[];
   public: boolean;
-  env_id: string;
-  bound_apps: number[];
+  env_apps?: EnvAppsItem[];
   force?: boolean;
 }
 

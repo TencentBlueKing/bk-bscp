@@ -74,6 +74,7 @@
               <MoreAction
                 :app="row"
                 :space-id="props.spaceId"
+                :env-id="envId"
                 @edit="handleEdit(row)"
                 @delete="handleDelete(row)"
                 @clone="handleClone(row)" />
@@ -155,7 +156,7 @@
     } else {
       const routeData = router.resolve({
         name,
-        params: { spaceId: props.spaceId, appId: id },
+        params: { spaceId: props.spaceId, envId: props.envId, appId: id },
       });
       window.open(routeData.href, '_blank');
     }

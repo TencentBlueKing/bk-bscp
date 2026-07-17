@@ -4,13 +4,18 @@ import { IVariableEditParams, IVariableImportParams } from '../../types/variable
 
 /**
  * 查询变量列表
- * @param biz_id 业务ID
- * @param project_id 项目ID
+ * @param biz_id 业务 ID
+ * @param project_id 项目 ID（可选，无项目概念时传空字符串，自动使用无项目路径）
  * @param params
  * @returns
  */
-export const getVariableList = (biz_id: string, project_id: string, params: ICommonQuery) =>
-  http.post(`/config/biz/${biz_id}/projects/${project_id}/template_variables:list`, params).then((res) => res.data);
+export const getVariableList = (biz_id: string, project_id: string, params: ICommonQuery) => {
+  // 兼容处理：若 project_id 为空，使用无项目路径（配置模板等 space-level 场景）
+  const path = project_id
+    ? `/config/biz/${biz_id}/projects/${project_id}/template_variables:list`
+    : `/config/biz/${biz_id}/template_variables/list`;
+  return http.post(path, params).then((res) => res.data);
+};
 
 /**
  * 创建变量

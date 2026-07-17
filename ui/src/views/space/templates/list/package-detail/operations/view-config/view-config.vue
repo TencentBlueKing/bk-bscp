@@ -42,7 +42,8 @@
                 :editable="false"
                 :show-tips="false"
                 :height="editorHeight"
-                :variables="variables" />
+                :variables="variables"
+                :project-id="projectId" />
             </bk-form-item>
           </bk-form>
         </bk-tab-panel>
@@ -51,7 +52,8 @@
             language="json"
             :content="JSON.stringify(configDetail, null, 2)"
             :editable="false"
-            :show-tips="false" />
+            :show-tips="false"
+            :project-id="projectId" />
         </bk-tab-panel>
       </bk-tab>
     </bk-loading>

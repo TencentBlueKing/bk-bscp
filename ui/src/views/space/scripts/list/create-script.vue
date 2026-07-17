@@ -32,7 +32,11 @@
           </bk-form-item>
           <bk-form-item :label="t('脚本内容')" property="content" required>
             <div :class="['script-content-wrapper', { 'show-variable': isShowVariable }]">
-              <ScriptEditor v-model="showContent" :language="formData.type" v-model:is-show-variable="isShowVariable">
+              <ScriptEditor
+                v-model="showContent"
+                :language="formData.type"
+                v-model:is-show-variable="isShowVariable"
+                :project-id="projectId">
                 <template #header>
                   <div class="language-tabs">
                     <div

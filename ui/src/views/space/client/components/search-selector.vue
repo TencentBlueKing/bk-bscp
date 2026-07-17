@@ -163,6 +163,8 @@
     </div>
     <SetCommonlyDialog
       :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="props.appId"
       :is-show="isShowSetCommonlyDialog"
       :is-create="isCreateCommonlyUsed"
@@ -226,7 +228,9 @@
 
   const props = defineProps<{
     bkBizId: string;
-    appId: number;
+    projectId: string;
+    envId: string;
+    appId: number | undefined;
   }>();
 
   const isShowPopover = ref(false);
@@ -519,7 +523,8 @@
 
   // 获取最近搜索记录和常用搜索记录
   const handleGetSearchList = async (search_type: string) => {
-    if (!props.appId) return;
+    const { bkBizId, appId, projectId, envId } = props;
+    if (!appId) return;
     try {
       resentSearchListLoading.value = search_type === 'recent';
       const params: IClinetCommonQuery = {
@@ -532,7 +537,7 @@
       } else {
         isClientSearch.value ? (params.search_type = 'query') : (params.search_type = 'statistic');
       }
-      const res = await getClientSearchRecord(props.bkBizId, props.appId, params);
+      const res = await getClientSearchRecord(bkBizId, appId, projectId, envId, params);
       const searchList = res.data.details;
       searchList.forEach((item: ICommonlyUsedItem) => handleQueryChangeSearchCondition(item));
       if (search_type === 'recent') {
@@ -555,7 +560,9 @@
 
   // 添加最近查询
   const handleAddRecentSearch = async () => {
-    await createClientSearchRecord(props.bkBizId, props.appId, {
+    const { bkBizId, appId, projectId, envId } = props;
+    if (!appId) return;
+    await createClientSearchRecord(bkBizId, appId, projectId, envId, {
       search_type: isClientSearch.value ? 'query' : 'statistic',
       search_condition: searchQuery.value.search!,
     });
@@ -564,7 +571,9 @@
   // 设置常用查询
   const handleConfirmCreateCommonlyUsed = async (search_name: string) => {
     try {
-      await createClientSearchRecord(props.bkBizId, props.appId, {
+      const { bkBizId, appId, projectId, envId } = props;
+      if (!appId) return;
+      await createClientSearchRecord(bkBizId, appId, projectId, envId, {
         search_condition: searchQuery.value.search!,
         search_type: 'common',
         search_name,
@@ -583,7 +592,9 @@
   // 更新常用查询
   const handleConfirmUpdateCommonlyUsed = async (search_name: string) => {
     try {
-      await updateClientSearchRecord(props.bkBizId, props.appId, selectedCommomlyItem.value!.id, {
+      const { bkBizId, appId, projectId, envId } = props;
+      if (!appId) return;
+      await updateClientSearchRecord(bkBizId, appId, projectId, envId, selectedCommomlyItem.value!.id, {
         search_condition: selectedCommomlyItem.value!.spec.search_condition,
         search_type: 'common',
         search_name,
@@ -608,7 +619,9 @@
 
   const handleConfirmDeleteCommonlyUsed = async () => {
     try {
-      await deleteClientSearchRecord(props.bkBizId, props.appId, selectedDeleteCommonlyItem.value!.id);
+      const { bkBizId, appId, projectId, envId } = props;
+      if (!appId) return;
+      await deleteClientSearchRecord(bkBizId, appId, projectId, envId, selectedDeleteCommonlyItem.value!.id);
       isShowDeleteCommonlyDialog.value = false;
       handleGetSearchList('common');
       Message({

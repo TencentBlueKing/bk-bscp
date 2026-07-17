@@ -115,5 +115,5 @@ export const getGroupReleasedApps = (biz_id: string, group_id: number, params: I
  * @param projectId 项目ID
  * @returns
  */
-export const getGroupSelector = (biz_id: string, label_name: string, projectId?: string) =>
+export const getGroupSelector = (biz_id: string, label_name: string, projectId: string) =>
   http.get(`/config/biz/${biz_id}/projects/${projectId}/groups:selector/${label_name}`).then((res) => res.data);

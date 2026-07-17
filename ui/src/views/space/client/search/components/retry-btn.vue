@@ -4,6 +4,8 @@
   </bk-button>
   <RetryDialog
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :is-show="isRetryOpen"
     :is-batch="false"
@@ -32,6 +34,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     client: IClient;
   }>();

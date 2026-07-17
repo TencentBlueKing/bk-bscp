@@ -17,6 +17,7 @@
         :is-edit="true"
         :is-tpl="true"
         :bk-biz-id="spaceId"
+        :project-id="projectId"
         :id="currentTemplateSpace"
         :file-size-limit="spaceFeatureFlags.RESOURCE_LIMIT.maxFileSize"
         @change="handleFormChange" />

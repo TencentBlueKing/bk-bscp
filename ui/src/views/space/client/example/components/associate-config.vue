@@ -50,7 +50,7 @@
   const sideBarShow = ref(false);
   const permCheckLoading = ref(false);
   const hasManagePerm = ref(true); // 能访问到配置示例，表示用户已有服务查看权限
-  const ruleList = ref<{ app: string; scope: string; id: number }[]>([]);
+  const ruleList = ref<{ app: string; scope: string; id: number; env_id: string}[]>([]);
   const rules = ref<ICredentialRule[]>([]);
 
   // 获取筛选的规则
@@ -62,6 +62,7 @@
           app: item.app,
           scope: item.scope,
           id: Math.floor(Math.random() * 10000) + 1, // 配置示例没有规则id配置与返回
+          env_id: item.env_id,
         });
       });
     }
@@ -88,6 +89,7 @@
         spec: {
           scope: item.scope,
           app: item.app,
+          env_id: item.env_id,
         },
         attachment: {
           biz_id: spaceId.value,

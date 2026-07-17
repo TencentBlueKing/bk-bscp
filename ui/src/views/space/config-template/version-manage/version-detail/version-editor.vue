@@ -82,6 +82,7 @@
   <TemplateVersionDiff
     v-model:show="diffSliderData.open"
     :space-id="spaceId"
+    project-id=""
     :template-space-id="templateSpaceId"
     :crt-version="diffSliderData.data"
     :create-mode="!isViewMode" />

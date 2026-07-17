@@ -56,6 +56,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     isShow: boolean;
     isBatch: boolean;
@@ -74,8 +76,9 @@
   const handleRetry = async () => {
     pending.value = true;
     try {
-      const ids = props.selections.map((item) => item.id);
-      await retryClients(props.bkBizId, props.appId, ids, props.isAcrossChecked);
+      const { bkBizId, appId, projectId, envId, selections, isAcrossChecked } = props;
+      const ids = selections.map((item) => item.id);
+      await retryClients(bkBizId, appId, projectId, envId, ids, isAcrossChecked);
       close();
       BkMessage({
         theme: 'success',

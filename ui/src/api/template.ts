@@ -596,10 +596,10 @@ export const createTemplateVersion = (
 
 /**
  * 获取模板版本列表
- * @param biz_id 业务ID
- * @param projectId 项目ID
- * @param template_space_id 空间ID
- * @param template_id 模板ID
+ * @param biz_id 业务 ID
+ * @param projectId 项目 ID（可选，无项目概念时传空字符串，自动使用无项目路径）
+ * @param template_space_id 空间 ID
+ * @param template_id 模板 ID
  * @param params 查询参数
  * @returns
  */
@@ -609,13 +609,13 @@ export const getTemplateVersionList = (
   template_space_id: number,
   template_id: number,
   params: ICommonQuery,
-) =>
-  http
-    .post(
-      `/config/biz/${biz_id}/projects/${projectId}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/list`,
-      params,
-    )
-    .then((res) => res.data);
+) => {
+  // 兼容处理：若 projectId 为空，使用无项目路径（配置模板场景）
+  const path = projectId
+    ? `/config/biz/${biz_id}/projects/${projectId}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/list`
+    : `/config/biz/${biz_id}/template_spaces/${template_space_id}/templates/${template_id}/template_revisions/list`;
+  return http.post(path, params).then((res) => res.data);
+};
 
 /**
  * 根据模板版本id列表查询对应模板版本详情

@@ -10,6 +10,8 @@
         </bk-button>
         <BatchRetryBtn
           :bk-biz-id="bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
           :app-id="appId"
           :selections="selectedClient"
           :is-across-checked="isAcrossChecked"
@@ -256,6 +258,8 @@
   </section>
   <PullRecord
     :bk-biz-id="bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="appId"
     :id="viewPullRecordClientId"
     :uid="viewPullRecordClientUid"
@@ -301,6 +305,8 @@
   const { pagination, updatePagination } = useTablePagination('clientSearch');
 
   const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const envId = ref(String(route.params.envId));
   const appId = ref(Number(route.params.appId));
   const viewPullRecordClientId = ref(0);
   const viewPullRecordClientUid = ref('');
@@ -587,7 +593,12 @@
     }
     try {
       listLoading.value = true;
-      const res = await getClientQueryList(bkBizId.value, appId.value, params);
+      const res = await getClientQueryList(
+        bkBizId.value,
+        appId.value,
+        projectId.value,
+        envId.value,
+        params);
       tableData.value = res.data.details;
       tableData.value.forEach((item: any) => {
         const { client } = item;
@@ -707,7 +718,12 @@
       },
     };
     try {
-      const res = await getClientQueryList(bkBizId.value, appId.value, params);
+      const res = await getClientQueryList(
+        bkBizId.value,
+        appId.value,
+        projectId.value,
+        envId.value,
+        params);
       res.data.details.forEach((item: any) => {
         if (isRetry || item.client.spec.release_change_status !== 'Processing') {
           const pollClient = tableData.value.find((tableItem: any) => tableItem.client.id === item.client.id);

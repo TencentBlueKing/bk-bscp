@@ -57,7 +57,7 @@
             </template>
           </bk-upload>
         </div>
-        <CodeEditor v-else v-model="stringContent" :editable="!isViewMode" />
+        <CodeEditor v-else v-model="stringContent" :editable="!isViewMode" :project-id="projectId" />
       </div>
     </div>
     <div class="action-btns">

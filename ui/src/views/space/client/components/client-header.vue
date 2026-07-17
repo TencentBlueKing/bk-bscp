@@ -3,7 +3,28 @@
     <div class="head-left">
       <span class="title">{{ title }}</span>
       <div class="line"></div>
-      <ServiceSelector :value="appId" @change="handleAppChange">
+      <EnvSelector v-model="localEnvId" @change="handleEnvChange">
+        <template #trigger="{ selectInfo, isOpen }">
+          <div
+            class="env-selector-trigger"
+            :style="{
+              backgroundColor: getEnvBgColor(selectInfo?.group?.type),
+              color: getEnvTextColor(selectInfo?.group?.type) }">
+            <div v-if="selectInfo" class="env-val-cls">
+              <i
+                :class="`bk-bscp-icon ${getEnvIconClass(selectInfo.group.type)} env-icon`"
+                :style="{ color: getEnvIconColor(selectInfo.group.type) }">
+              </i>
+              <span class="env-name">{{ selectInfo.env?.spec?.name || '' }}</span>
+            </div>
+            <div v-else class="no-env">{{ $t('暂无环境') }}</div>
+            <AngleUpFill
+              :class="['env-arrow', { 'icon-rotate': isOpen }]"
+              :style="{ color: getEnvIconColor(selectInfo?.group?.type) }" />
+          </div>
+        </template>
+      </EnvSelector>
+      <ServiceSelector :value="appId" :env-id="localEnvId" @change="handleAppChange">
         <template #trigger>
           <div class="selector-trigger">
             <bk-overflow-title v-if="localApp.name" class="app-name" type="tips">
@@ -25,7 +46,7 @@
         @change="handleHeartbeatTimeChange">
         <bk-option v-for="item in heartbeatTimeList" :id="item.value" :key="item.value" :name="item.label" />
       </bk-select>
-      <SearchSelector :bk-biz-id="bizId" :app-id="localApp.id" />
+      <SearchSelector :bk-biz-id="bizId" :project-id="projectId" :env-id="localEnvId" :app-id="localApp.id" />
       <bk-button theme="primary" style="margin-left: 8px" :disabled="!localApp.name" @click="emits('search')">
         <Search class="search-icon" />
         {{ $t('查询') }}
@@ -35,15 +56,18 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted, watch } from 'vue';
+  import { ref, onMounted, watch, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { AngleUpFill, Search } from 'bkui-vue/lib/icon';
   import { CLIENT_HEARTBEAT_LIST } from '../../../../constants/client';
   import { IAppItem } from '../../../../../types/app';
+  import { IEnvItem, EnvType } from '../../../../../types/env';
+  import { ENV_TYPE_CONFIG } from '../../../../constants/env';
   import useClientStore from '../../../../store/client';
   import SearchSelector from './search-selector.vue';
   import { storeToRefs } from 'pinia';
   import ServiceSelector from '../../../../components/service-selector.vue';
+  import EnvSelector from '../../../../components/env-selector.vue';
 
   const clientStore = useClientStore();
   const { searchQuery } = storeToRefs(useClientStore());
@@ -57,7 +81,7 @@
   const route = useRoute();
   const router = useRouter();
 
-  const localApp = ref({
+  const localApp = ref<{ name: string; id: number | undefined}>({
     name: '',
     id: Number(route.params.appId),
   });
@@ -65,6 +89,15 @@
   const heartbeatTimeList = ref(CLIENT_HEARTBEAT_LIST);
 
   const bizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const localEnvId = ref(String(route.params.envId));
+
+  const routeParams = computed(() => ({
+    spaceId: bizId.value,
+    projectId: projectId.value,
+    envId: localEnvId.value,
+    appId: localApp.value.id,
+  }));
 
   watch(
     () => heartbeatTime.value,
@@ -87,13 +120,38 @@
 
   const handleAppChange = async (service: IAppItem) => {
     localApp.value = {
-      name: service.spec.name,
-      id: service.id!,
+      name: service?.spec?.name,
+      id: service?.id,
     };
-    setLastAccessedService(service.id!);
-    await router.push({ name: route.name!, params: { spaceId: bizId.value, appId: service.id } });
+    setLastAccessedService();
+    await router.push({ name: route.name!, params: routeParams.value });
     heartbeatTime.value = 1;
     handleHeartbeatTimeChange(1);
+  };
+
+  const handleEnvChange = (env: IEnvItem) => {
+    // TODO: 处理环境变更逻辑
+    console.log('环境变更:', env);
+  };
+
+  // 获取环境类型图标 class
+  const getEnvIconClass = (type: EnvType | undefined) => {
+    if (!type) return;
+    return ENV_TYPE_CONFIG[type]?.iconClass || '';
+  };
+  // 获取环境图标颜色
+  const getEnvIconColor = (type: EnvType | undefined) => {
+    if (!type) return;
+    return ENV_TYPE_CONFIG[type]?.iconColor || '#979ba5';
+  };
+  // 获取环境文字颜色
+  const getEnvTextColor = (type: EnvType | undefined) => {
+    if (!type) return;
+    return ENV_TYPE_CONFIG[type]?.textColor || '#63656E';
+  };
+  const getEnvBgColor = (type: EnvType | undefined) => {
+    if (!type) return;
+    return ENV_TYPE_CONFIG[type]?.bgColor || 'F0F1F5';
   };
 
   const handleHeartbeatTimeChange = (value: number) => {
@@ -104,8 +162,8 @@
     emits('search');
   };
 
-  const setLastAccessedService = (appId: number) => {
-    localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: bizId.value, appId }));
+  const setLastAccessedService = () => {
+    localStorage.setItem('lastAccessedServiceDetail', JSON.stringify(routeParams.value));
   };
 </script>
 
@@ -152,6 +210,52 @@
           color: #979ba5;
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+      }
+      .env-selector-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 140px;
+        height: 36px;
+        cursor: pointer;
+        padding: 0 8px;
+        border-radius: 4px;
+        transition: all 0.3s;
+        margin-right: 16px;
+        & > div {
+          height: 100%;
+          line-height: 36px;
+        }
+        .env-val-cls {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .env-type-icon {
+          font-size: 20px;
+          flex-shrink: 0;
+        }
+        .env-name {
+          flex: 1;
+          font-size: 16px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .env-arrow {
+          margin-left: 8px;
+          font-size: 16px;
+          color: #F8B4B4;
+          transition: transform 0.2s;
+          &.icon-rotate {
+            transform: rotate(-180deg);
+          }
+        }
+      }
+      .no-env {
+        font-size: 16px;
+        color: #c4c6cc;
       }
     }
     .head-right {

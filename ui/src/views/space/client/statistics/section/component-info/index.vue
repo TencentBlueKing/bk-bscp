@@ -87,6 +87,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -174,7 +176,8 @@
     };
     try {
       loading.value = true;
-      const res = await getClientComponentInfoData(props.bkBizId, props.appId, params);
+      const { bkBizId, appId, projectId, envId } = props;
+      const res = await getClientComponentInfoData(bkBizId, appId, projectId, envId, params);
       data.value = res.version_distribution.map((item: IVersionDistributionItem) => {
         const { client_type } = item;
         let name = '';

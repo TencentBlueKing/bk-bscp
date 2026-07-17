@@ -176,6 +176,7 @@
     v-model:show="viewPanelShow"
     :config="operationConfig"
     :show-edit-btn="isUnNamedVersion && operationConfig.kv_state !== 'DELETE'"
+    :project-id="projectId"
     :env-id="envId"
     @open-edit="handleSwitchToEdit" />
   <VersionDiff

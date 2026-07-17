@@ -63,7 +63,8 @@
         :editable="false"
         :upload-icon="false"
         :language="previewConfig.type"
-        :is-preview="true">
+        :is-preview="true"
+        :project-id="projectId">
         <template #header>
           <div class="script-preview-title">
             <div class="close-area" @click="previewConfig.open = false">

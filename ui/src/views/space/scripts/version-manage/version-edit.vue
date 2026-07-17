@@ -5,7 +5,8 @@
       v-model:is-show-variable="isShowVariable"
       :language="props.type"
       :editable="props.editable"
-      :upload-icon="props.editable">
+      :upload-icon="props.editable"
+      :project-id="projectId">
       <template #header>
         <div class="editor-header">
           <span class="title">{{ title }}</span>

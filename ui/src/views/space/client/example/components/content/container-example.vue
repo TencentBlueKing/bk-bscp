@@ -16,6 +16,8 @@
         :code-val="replaceVal"
         :variables="variables"
         language="yaml"
+        :project-id="projectId"
+        :env-id="localEnvId"
         @change="(val: string) => (copyReplaceVal = val)" />
     </div>
   </section>
@@ -52,6 +54,8 @@
     rules: [],
   });
   const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const localEnvId = ref(String(route.params.envId));
   const replaceVal = ref('');
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据
   const basicInfo = inject<{ serviceName: Ref<string>; serviceType: Ref<string> }>('basicInfo');

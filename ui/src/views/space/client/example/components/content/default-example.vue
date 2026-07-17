@@ -43,6 +43,8 @@
         :code-val="replaceVal"
         :variables="variables"
         :language="codeLanguage"
+        :project-id="projectId"
+        :env-id="localEnvId"
         @change="(val: string) => (copyReplaceVal = val)" />
       <div v-if="templateName === 'trpc'">
         <bk-alert class="alert-tips-wrap" theme="info">
@@ -60,6 +62,8 @@
           :code-val="replaceConfigVal"
           :variables="variables"
           language="yaml"
+          :project-id="projectId"
+          :env-id="localEnvId"
           @change="(val: string) => (copyReplaceConfigVal = val)" />
       </div>
     </div>
@@ -88,7 +92,7 @@
   const emits = defineEmits(['selected-key-data']);
 
   const globalStore = useGlobalStore();
-  const { spaceFeatureFlags } = storeToRefs(globalStore);
+  const { spaceFeatureFlags, projectId } = storeToRefs(globalStore);
 
   const basicInfo = inject<{ serviceName: Ref<string>; serviceType: Ref<string> }>('basicInfo');
   const { t } = useI18n();
@@ -97,6 +101,7 @@
   const tabArr = ref([t('Get方法'), t('Watch方法')]);
   const fileOptionRef = ref();
   const bkBizId = ref(String(route.params.spaceId));
+  const localEnvId = ref(String(route.params.envId));
   const codeVal = ref(''); // 存储yaml字符原始值
   const replaceVal = ref(''); // 替换后的值
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据

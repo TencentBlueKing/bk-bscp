@@ -38,6 +38,7 @@
         :content="localVal.default_val"
         :editable="true"
         :show-tips="false"
+        :project-id="projectId"
         @change="handleDefaultValChange" />
       <bk-input v-else v-model="localVal.default_val" :placeholder="t('请输入')" @input="change" />
     </bk-form-item>
@@ -48,8 +49,12 @@
   import { useI18n } from 'vue-i18n';
   import { IVariableEditParams } from '../../../../types/variable';
   import varContentEditor from '../../space/service/detail/config/components/config-content-editor.vue';
+  import { storeToRefs } from 'pinia';
+  import useGlobalStore from '../../../store/global';
 
   const { t } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
+
   const props = defineProps<{
     type: string;
     prefix: string;

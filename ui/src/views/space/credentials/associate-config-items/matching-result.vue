@@ -35,14 +35,17 @@
 </template>
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
+  import { storeToRefs } from 'pinia';
   import { IPreviewRule } from '../../../../../types/credential';
   import { getCredentialPreview } from '../../../../api/credentials';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
   import SearchInput from '../../../../components/search-input.vue';
   import TableEmpty from '../../../../components/table/table-empty.vue';
   import { useI18n } from 'vue-i18n';
+  import useGlobalStore from '../../../../store/global';
 
   const { t } = useI18n();
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const { pagination } = useTablePagination('clientPullRecord', {
     small: true,
@@ -105,9 +108,10 @@
       app_name: props.rule!.appName,
       scope: props.rule!.scopeContent,
       search_value: searchStr.value,
+      env_id: props.rule!.envId,
     };
     try {
-      const res = await getCredentialPreview(props.bkBizId, params);
+      const res = await getCredentialPreview(props.bkBizId, projectId.value, params);
       pagination.value.count = res.data.count;
       tableData.value = res.data.details;
       isFileType.value = !!tableData.value[0]?.path;

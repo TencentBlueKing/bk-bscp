@@ -23,6 +23,7 @@
       @confirm="getListData" />
     <ViewConfig
       v-model:show="isShowView"
+      :project-id="projectId"
       :env-id="envId"
       :config="selectedConfig" />
   </section>

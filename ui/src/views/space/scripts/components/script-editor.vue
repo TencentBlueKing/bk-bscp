@@ -60,6 +60,7 @@
           :lf-eol="true"
           :editable="props.editable"
           :language="props.language"
+          :project-id="projectId"
           @change="emits('update:modelValue', $event)" />
         <slot name="sufContent" :fullscreen="isOpenFullScreen" :is-show-variable="isShowVariable"></slot>
       </div>
@@ -85,6 +86,7 @@
       editable?: boolean;
       uploadIcon?: boolean;
       isPreview?: boolean; // 是否是脚本预览
+      projectId: string;
     }>(),
     {
       editable: true,

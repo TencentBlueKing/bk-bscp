@@ -1,7 +1,11 @@
 <template>
   <bk-dialog :is-show="isShow" :title="$t('变量值')" :width="768">
     <div class="editor">
-      <CodeEditor :model-value="value" @update:model-value="localVal = $event"></CodeEditor>
+      <CodeEditor
+        :model-value="value"
+        @update:model-value="localVal = $event"
+        :project-id="projectId"
+        :env-id="envId"></CodeEditor>
     </div>
     <template #footer>
       <bk-button v-if="props.isSet" theme="primary" style="margin-right: 8px" @click="handleConfirm">
@@ -19,6 +23,8 @@
     value: string;
     isSet: boolean;
     isShow: boolean;
+    projectId: string;
+    envId: string;
   }>();
 
   const localVal = ref(props.value);
