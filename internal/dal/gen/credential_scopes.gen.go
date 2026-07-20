@@ -32,8 +32,9 @@ func newCredentialScope(db *gorm.DB, opts ...gen.DOOption) credentialScope {
 	_credentialScope.ExpiredAt = field.NewTime(tableName, "expired_at")
 	_credentialScope.BizID = field.NewUint32(tableName, "biz_id")
 	_credentialScope.CredentialId = field.NewUint32(tableName, "credential_id")
-	_credentialScope.ProjectID = field.NewUint32(tableName, "project_id")
 	_credentialScope.TenantID = field.NewString(tableName, "tenant_id")
+	_credentialScope.ProjectID = field.NewUint32(tableName, "project_id")
+	_credentialScope.EnvID = field.NewUint32(tableName, "environment_id")
 	_credentialScope.Creator = field.NewString(tableName, "creator")
 	_credentialScope.Reviser = field.NewString(tableName, "reviser")
 	_credentialScope.CreatedAt = field.NewTime(tableName, "created_at")
@@ -53,8 +54,9 @@ type credentialScope struct {
 	ExpiredAt       field.Time
 	BizID           field.Uint32
 	CredentialId    field.Uint32
-	ProjectID       field.Uint32
 	TenantID        field.String
+	ProjectID       field.Uint32
+	EnvID           field.Uint32
 	Creator         field.String
 	Reviser         field.String
 	CreatedAt       field.Time
@@ -80,8 +82,9 @@ func (c *credentialScope) updateTableName(table string) *credentialScope {
 	c.ExpiredAt = field.NewTime(table, "expired_at")
 	c.BizID = field.NewUint32(table, "biz_id")
 	c.CredentialId = field.NewUint32(table, "credential_id")
-	c.ProjectID = field.NewUint32(table, "project_id")
 	c.TenantID = field.NewString(table, "tenant_id")
+	c.ProjectID = field.NewUint32(table, "project_id")
+	c.EnvID = field.NewUint32(table, "environment_id")
 	c.Creator = field.NewString(table, "creator")
 	c.Reviser = field.NewString(table, "reviser")
 	c.CreatedAt = field.NewTime(table, "created_at")
@@ -114,14 +117,15 @@ func (c *credentialScope) GetFieldByName(fieldName string) (field.OrderExpr, boo
 }
 
 func (c *credentialScope) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 11)
+	c.fieldMap = make(map[string]field.Expr, 12)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["credential_scope"] = c.CredentialScope
 	c.fieldMap["expired_at"] = c.ExpiredAt
 	c.fieldMap["biz_id"] = c.BizID
 	c.fieldMap["credential_id"] = c.CredentialId
-	c.fieldMap["project_id"] = c.ProjectID
 	c.fieldMap["tenant_id"] = c.TenantID
+	c.fieldMap["project_id"] = c.ProjectID
+	c.fieldMap["environment_id"] = c.EnvID
 	c.fieldMap["creator"] = c.Creator
 	c.fieldMap["reviser"] = c.Reviser
 	c.fieldMap["created_at"] = c.CreatedAt

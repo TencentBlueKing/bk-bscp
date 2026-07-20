@@ -132,7 +132,7 @@ func (s *Service) DeleteCredential(ctx context.Context, req *pbds.DeleteCredenti
 	}()
 
 	// 查看credential_scopes表中的数据
-	if err := s.dao.CredentialScope().DeleteByCredentialIDWithTx(kt, tx, req.Attachment.BizId, req.Id); err != nil {
+	if err := s.dao.CredentialScope().DeleteByCredentialIDWithTx(kt, tx, req.Attachment.BizId, req.Attachment.ProjectId, req.Id); err != nil {
 		logs.Errorf("delete credential scope by credential id failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}

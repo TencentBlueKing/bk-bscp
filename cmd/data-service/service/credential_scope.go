@@ -42,7 +42,27 @@ func (s *Service) ListCredentialScopes(ctx context.Context, req *pbds.ListCreden
 		logs.Errorf("list credential scope failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
-	credentialScopes, err := pbcrs.PbCredentialScopes(details)
+
+	envIDs := make([]uint32, 0)
+	for _, one := range details {
+		if one != nil && one.Attachment != nil && one.Attachment.EnvID != 0 {
+			envIDs = append(envIDs, one.Attachment.EnvID)
+		}
+	}
+
+	// 返回一个 map[uint32]*table.EnvironmentSpec Type 和 Name
+	envMap := make(map[uint32]*table.EnvironmentSpec)
+	if len(envIDs) > 0 {
+		envs, errE := s.dao.Environment().ListByEnvIDs(kt, req.BizId, req.ProjectId, envIDs)
+		if errE != nil {
+			return nil, errE
+		}
+		for _, v := range envs {
+			envMap[v.ID] = v.Spec
+		}
+	}
+
+	credentialScopes, err := pbcrs.PbCredentialScopes(details, envMap)
 	if err != nil {
 		logs.Errorf("get pb credential scope failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -91,6 +111,8 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context, req *pbds.UpdateCr
 			Attachment: &table.CredentialScopeAttachment{
 				BizID:        req.BizId,
 				CredentialId: req.CredentialId,
+				ProjectID:    req.ProjectId,
+				EnvID:        updated.EnvId,
 			},
 			Revision: &table.Revision{
 				Reviser: kt.User,
@@ -122,6 +144,8 @@ func (s *Service) UpdateCredentialScopes(ctx context.Context, req *pbds.UpdateCr
 			Attachment: &table.CredentialScopeAttachment{
 				BizID:        req.BizId,
 				CredentialId: req.CredentialId,
+				ProjectID:    req.ProjectId,
+				EnvID:        created.EnvId,
 			},
 			Revision: &table.Revision{
 				Creator: kt.User,

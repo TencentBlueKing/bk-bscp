@@ -27,18 +27,20 @@ func (m *CredentialScopeAttachment) CredentialAttachment() *table.CredentialScop
 	return &table.CredentialScopeAttachment{
 		BizID:        m.BizId,
 		CredentialId: m.CredentialId,
+		ProjectID:    m.ProjectId,
+		EnvID:        m.EnvId,
 	}
 }
 
 // PbCredentialScopes convert pb CredentialScope to table CredentialScope
-func PbCredentialScopes(s []*table.CredentialScope) ([]*CredentialScopeList, error) {
+func PbCredentialScopes(s []*table.CredentialScope, envMap map[uint32]*table.EnvironmentSpec) ([]*CredentialScopeList, error) {
 	if s == nil {
 		return make([]*CredentialScopeList, 0), nil
 	}
 
 	result := make([]*CredentialScopeList, 0)
 	for _, one := range s {
-		credentialScope, err := PbCredentialScope(one)
+		credentialScope, err := PbCredentialScope(one, envMap)
 		if err != nil {
 			return nil, err
 		}
@@ -49,12 +51,12 @@ func PbCredentialScopes(s []*table.CredentialScope) ([]*CredentialScopeList, err
 }
 
 // PbCredentialScope convert table CredentialScope to pb PbCredentialScope
-func PbCredentialScope(s *table.CredentialScope) (*CredentialScopeList, error) {
+func PbCredentialScope(s *table.CredentialScope, envMap map[uint32]*table.EnvironmentSpec) (*CredentialScopeList, error) {
 	if s == nil {
 		return nil, nil
 	}
 
-	spec, err := PbCredentialScopeSpec(s.Spec)
+	spec, err := PbCredentialScopeSpec(s, envMap)
 	if err != nil {
 		return nil, err
 	}
@@ -68,19 +70,35 @@ func PbCredentialScope(s *table.CredentialScope) (*CredentialScopeList, error) {
 }
 
 // PbCredentialScopeSpec convert table CredentialScopeSpec to pb CredentialScopeSpec
-func PbCredentialScopeSpec(spec *table.CredentialScopeSpec) (*CredentialScopeSpec, error) {
-	if spec == nil {
+func PbCredentialScopeSpec(s *table.CredentialScope, envMap map[uint32]*table.EnvironmentSpec) (*CredentialScopeSpec, error) {
+	if s == nil || s.Spec == nil {
 		return nil, nil
 	}
 
-	app, scope, err := spec.CredentialScope.Split()
+	app, scope, err := s.Spec.CredentialScope.Split()
 	if err != nil {
 		return nil, err
 	}
 
+	// 提取 EnvID
+	var envID uint32
+	var envType, envName string
+
+	if s.Attachment != nil {
+		envID = s.Attachment.EnvID
+		// 从映射中匹配环境的 Type 和 Name
+		if detail, exists := envMap[envID]; exists && detail != nil {
+			envType = detail.Type.String()
+			envName = detail.Name
+		}
+	}
+
 	return &CredentialScopeSpec{
-		App:   app,
-		Scope: scope,
+		App:     app,
+		Scope:   scope,
+		EnvId:   envID,
+		EnvType: envType,
+		EnvName: envName,
 	}, nil
 }
 
@@ -93,5 +111,7 @@ func PbCredentialScopeAttachment(at *table.CredentialScopeAttachment) *Credentia
 	return &CredentialScopeAttachment{
 		BizId:        at.BizID,
 		CredentialId: at.CredentialId,
+		ProjectId:    at.ProjectID,
+		EnvId:        at.EnvID,
 	}
 }

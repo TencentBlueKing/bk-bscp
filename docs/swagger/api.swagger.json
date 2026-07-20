@@ -30544,6 +30544,11 @@
           "type": "integer",
           "format": "int64",
           "description": "项目ID"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       }
     },
@@ -30576,6 +30581,19 @@
         "scope": {
           "type": "string",
           "description": "关联规则"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
+        },
+        "envName": {
+          "type": "string",
+          "description": "环境名称"
+        },
+        "envType": {
+          "type": "string",
+          "description": "环境类型"
         }
       }
     },
@@ -30594,6 +30612,11 @@
         "scope": {
           "type": "string",
           "description": "关联规则"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       }
     },

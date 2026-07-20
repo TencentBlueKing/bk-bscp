@@ -27,6 +27,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbbase "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/base"
+	pbenvironment "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/environment"
 	pbproject "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/project"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -158,6 +159,29 @@ func (s *Service) EnsureDefaultProjectEnv(ctx context.Context, req *pbds.EnsureD
 	}, nil
 }
 
+// GetDefaultEnvironment 根据业务和项目查询默认环境完整信息。
+func (s *Service) GetDefaultEnvironment(ctx context.Context, req *pbds.GetDefaultEnvironmentReq) (
+	*pbds.GetDefaultEnvironmentResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+	bizID := req.GetBizId()
+	projectID := req.GetProjectId()
+
+	env, err := s.dao.Environment().GetDefaultEnvironment(kt, bizID, projectID)
+	if err != nil {
+		logs.Errorf("get default environment failed, bizId=%d projectId=%d err=%v rid:%s", bizID, projectID, err, kt.Rid)
+		return nil, err
+	}
+	if env == nil {
+		return &pbds.GetDefaultEnvironmentResp{}, nil
+	}
+
+	return &pbds.GetDefaultEnvironmentResp{
+		Id:         env.ID,
+		Spec:       pbenvironment.PbEnvironmentSpec(env.Spec, 0),
+		Attachment: pbenvironment.PbEnvironmentAttachment(env.Attachment),
+	}, nil
+}
+
 // CreateProject implements [pbds.DataServer].
 func (s *Service) CreateProject(ctx context.Context, req *pbds.CreateProjectReq) (*pbds.CreateResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -205,7 +229,7 @@ func (s *Service) CreateProject(ctx context.Context, req *pbds.CreateProjectReq)
 			ProjectID: projectID,
 		},
 		Revision: &table.Revision{
-			Creator:   kt.User,
+			Creator:   table.System, // 系统自动创建，不记录创建人
 			CreatedAt: time.Now().UTC(),
 		},
 	})

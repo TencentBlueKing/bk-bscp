@@ -35,6 +35,8 @@ func newEvent(db *gorm.DB, opts ...gen.DOOption) event {
 	_event.BizID = field.NewUint32(tableName, "biz_id")
 	_event.AppID = field.NewUint32(tableName, "app_id")
 	_event.TenantID = field.NewString(tableName, "tenant_id")
+	_event.ProjectID = field.NewUint32(tableName, "project_id")
+	_event.EnvID = field.NewUint32(tableName, "environment_id")
 	_event.FinalStatus = field.NewUint(tableName, "final_status")
 	_event.Creator = field.NewString(tableName, "creator")
 	_event.CreatedAt = field.NewTime(tableName, "created_at")
@@ -56,6 +58,8 @@ type event struct {
 	BizID       field.Uint32
 	AppID       field.Uint32
 	TenantID    field.String
+	ProjectID   field.Uint32
+	EnvID       field.Uint32
 	FinalStatus field.Uint
 	Creator     field.String
 	CreatedAt   field.Time
@@ -83,6 +87,8 @@ func (e *event) updateTableName(table string) *event {
 	e.BizID = field.NewUint32(table, "biz_id")
 	e.AppID = field.NewUint32(table, "app_id")
 	e.TenantID = field.NewString(table, "tenant_id")
+	e.ProjectID = field.NewUint32(table, "project_id")
+	e.EnvID = field.NewUint32(table, "environment_id")
 	e.FinalStatus = field.NewUint(table, "final_status")
 	e.Creator = field.NewString(table, "creator")
 	e.CreatedAt = field.NewTime(table, "created_at")
@@ -110,7 +116,7 @@ func (e *event) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (e *event) fillFieldMap() {
-	e.fieldMap = make(map[string]field.Expr, 11)
+	e.fieldMap = make(map[string]field.Expr, 13)
 	e.fieldMap["id"] = e.ID
 	e.fieldMap["resource"] = e.Resource
 	e.fieldMap["resource_id"] = e.ResourceID
@@ -119,6 +125,8 @@ func (e *event) fillFieldMap() {
 	e.fieldMap["biz_id"] = e.BizID
 	e.fieldMap["app_id"] = e.AppID
 	e.fieldMap["tenant_id"] = e.TenantID
+	e.fieldMap["project_id"] = e.ProjectID
+	e.fieldMap["environment_id"] = e.EnvID
 	e.fieldMap["final_status"] = e.FinalStatus
 	e.fieldMap["creator"] = e.Creator
 	e.fieldMap["created_at"] = e.CreatedAt
