@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 
+	bscp "github.com/TencentBlueKing/bk-bscp"
 	"github.com/TencentBlueKing/bk-bscp/cmd/ui/service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
@@ -39,10 +40,11 @@ const (
 
 var (
 	// Used for flags.
-	cfgFile     string
-	bindAddr    string
-	port        int
-	outConfInfo bool
+	cfgFile      string
+	bindAddr     string
+	port         int
+	outConfInfo  bool
+	frontendFlag string
 
 	rootCmd = &cobra.Command{
 		Use:   appName,
@@ -77,6 +79,12 @@ func RunCmd() error {
 		klog.InfoS("Failed to set GOMAXPROCS automatically", "err", err)
 	}
 
+	// 解析前端变体启动参数，非法值直接失败并给出明确提示
+	variant, err := bscp.ParseFrontendVariant(frontendFlag)
+	if err != nil {
+		return err
+	}
+
 	var g run.Group
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -101,7 +109,7 @@ func RunCmd() error {
 		httpAddresses = append(httpAddresses, tools.GetListenAddr(exposeIP, port))
 	}
 	httpAddress := tools.GetListenAddr(bindAddr, port)
-	svr, err := service.NewWebServer(ctx, httpAddress, httpAddresses)
+	svr, err := service.NewWebServer(ctx, httpAddress, httpAddresses, variant)
 	if err != nil {
 		klog.Errorf("init web server err: %s, exited", err)
 		os.Exit(1) //nolint:gocritic
@@ -127,6 +135,8 @@ func init() {
 	rootCmd.Flags().StringVarP(&bindAddr, "bind-address", "b", "0.0.0.0", "the IP address on which to listen")
 	rootCmd.Flags().IntVar(&port, "port", 8080, "http/metrics port")
 	rootCmd.Flags().BoolVarP(&outConfInfo, "confinfo", "o", false, "print init confinfo to stdout")
+	rootCmd.Flags().StringVar(&frontendFlag, "frontend", "",
+		"frontend variant to serve: new (default) or old")
 
 	// 添加版本
 	rootCmd.SetVersionTemplate(`{{println .Version}}`)

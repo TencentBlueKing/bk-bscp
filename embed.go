@@ -32,9 +32,31 @@ import (
 //go:embed ui/dist
 var frontendAssets embed.FS
 
+//go:embed ui_old/dist
+var frontendAssetsOld embed.FS
+
+// FrontendVariant 前端变体，标识使用新 UI 还是旧 UI 的静态资源
+type FrontendVariant string
+
 const (
-	confFilePath = "ui/dist/config.json"
+	// FrontendNew 新 UI（含项目/环境能力），对应 ui/dist
+	FrontendNew FrontendVariant = "new"
+	// FrontendOld 旧 UI（不含项目/环境能力），对应 ui_old/dist
+	FrontendOld FrontendVariant = "old"
 )
+
+// ParseFrontendVariant 解析前端变体启动参数。空字符串默认新 UI（向后兼容），非法值返回错误。
+func ParseFrontendVariant(s string) (FrontendVariant, error) {
+	switch s {
+	case "", string(FrontendNew):
+		return FrontendNew, nil
+	case string(FrontendOld):
+		return FrontendOld, nil
+	default:
+		return "", fmt.Errorf("invalid frontend variant %q, expected %q or %q",
+			s, FrontendNew, FrontendOld)
+	}
+}
 
 var (
 	allowCompressExtentions = map[string]bool{
@@ -79,26 +101,42 @@ type gzipFileInfo struct {
 
 // EmbedWeb ..
 type EmbedWeb struct {
+	assets   embed.FS
+	baseDir  string
 	dist     fs.FS
 	tpl      *template.Template
 	root     http.FileSystem
 	fsServer http.Handler
 }
 
-// NewEmbedWeb 初始化模版和fs
+// NewEmbedWeb 初始化模版和fs，默认使用新 UI（向后兼容）
 func NewEmbedWeb() *EmbedWeb {
+	return NewEmbedWebWithVariant(FrontendNew)
+}
+
+// NewEmbedWebWithVariant 按前端变体初始化模版和 fs，选择对应的静态资源
+func NewEmbedWebWithVariant(variant FrontendVariant) *EmbedWeb {
+	assets := frontendAssets
+	baseDir := "ui/dist"
+	if variant == FrontendOld {
+		assets = frontendAssetsOld
+		baseDir = "ui_old/dist"
+	}
+
 	// dist 路径
-	dist, err := fs.Sub(frontendAssets, "ui/dist")
+	dist, err := fs.Sub(assets, baseDir)
 	if err != nil {
 		panic(err)
 	}
 
 	// 模版路径
-	tpl := template.Must(template.New("").ParseFS(frontendAssets, "ui/dist/*.html"))
+	tpl := template.Must(template.New("").ParseFS(assets, baseDir+"/*.html"))
 
 	root := http.FS(dist)
 
 	w := &EmbedWeb{
+		assets:   assets,
+		baseDir:  baseDir,
 		dist:     dist,
 		tpl:      tpl,
 		root:     root,
@@ -120,8 +158,8 @@ func (e *EmbedWeb) FaviconHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // readConfigFile 读取前端配置文件
-func readConfigFile() (map[string]string, error) {
-	data, err := frontendAssets.ReadFile(confFilePath)
+func (e *EmbedWeb) readConfigFile() (map[string]string, error) {
+	data, err := e.assets.ReadFile(e.baseDir + "/config.json")
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +173,8 @@ func readConfigFile() (map[string]string, error) {
 }
 
 // mergeConfig 合并默认和自定义配置
-func mergeConfig() ([]byte, error) {
-	c, err := readConfigFile()
+func (e *EmbedWeb) mergeConfig() ([]byte, error) {
+	c, err := e.readConfigFile()
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +191,7 @@ func mergeConfig() ([]byte, error) {
 
 // RenderIndexHandler vue html 模板渲染
 func (e *EmbedWeb) RenderIndexHandler(conf *IndexConfig) http.Handler {
-	configBytes, err := mergeConfig()
+	configBytes, err := e.mergeConfig()
 	if err != nil {
 		panic(fmt.Errorf("init bscp config err, %s", err))
 	}
