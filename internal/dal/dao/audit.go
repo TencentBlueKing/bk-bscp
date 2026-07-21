@@ -38,8 +38,7 @@ type AuditDao interface {
 	// One insert one resource's audit.
 	One(kit *kit.Kit, audit *table.Audit, opt *AuditOption) error
 	// ListAuditsAppStrategy List audit apo strategy.
-	ListAuditsAppStrategy(
-		kit *kit.Kit, req *pbds.ListAuditsReq) ([]*types.ListAuditsAppStrategy, int64, error)
+	ListAuditsAppStrategy(kit *kit.Kit, req *pbds.ListAuditsReq) ([]*types.ListAuditsAppStrategy, int64, error)
 	// UpdateByStrategyID update audit kv by strategyID.
 	UpdateByStrategyID(kit *kit.Kit, tx *gen.QueryTx, strategyID uint32, m map[string]interface{}) error
 	// UpdateByStrategyIDs update audit kv by strategyIDs.
@@ -117,8 +116,7 @@ func (au *audit) One(kit *kit.Kit, audit *table.Audit, opt *AuditOption) error {
 }
 
 // ListAuditsAppStrategy List audit apo strategy.
-func (au *audit) ListAuditsAppStrategy(
-	kit *kit.Kit, req *pbds.ListAuditsReq) ([]*types.ListAuditsAppStrategy, int64, error) {
+func (au *audit) ListAuditsAppStrategy(kit *kit.Kit, req *pbds.ListAuditsReq) ([]*types.ListAuditsAppStrategy, int64, error) {
 	var publishs []*types.ListAuditsAppStrategy
 	var noPublishs []*types.ListAuditsAppStrategy
 
@@ -130,8 +128,7 @@ func (au *audit) ListAuditsAppStrategy(
 	}
 
 	// priority display publish version config
-	publishCount, err := query.Where(
-		audit.Status.In(string(enumor.PendingApproval), string(enumor.PendingPublish))).
+	publishCount, err := query.Where(audit.Status.In(string(enumor.PendingApproval), string(enumor.PendingPublish))).
 		Order(audit.CreatedAt.Desc()).
 		ScanByPage(&publishs, int(req.Start), int(req.Limit))
 	if err != nil {
@@ -169,7 +166,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 
 	// 后续改造中去掉audit.ResourceType.In，现在加上为了适配原来的数据
 	result := audit.WithContext(kit.Ctx).Select(audit.ID, audit.ResourceType, audit.ResourceID, audit.Action,
-		audit.BizID, audit.AppID, audit.Operator, audit.CreatedAt, audit.ResInstance, audit.OperateWay, audit.Status,
+		audit.BizID, audit.ProjectID, audit.AppID, audit.Operator, audit.CreatedAt, audit.ResInstance, audit.OperateWay, audit.Status,
 		audit.IsCompare, audit.Detail,
 		app.Name, app.Creator, client.ReleaseChangeStatus, client.FailedDetailReason,
 		strategy.PublishType, strategy.PublishTime, strategy.PublishTime, strategy.FinalApprovalTime,
@@ -180,7 +177,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 		LeftJoin(app, app.ID.EqCol(audit.AppID)).
 		LeftJoin(strategy, strategy.ID.EqCol(audit.StrategyId)).
 		LeftJoin(client, audit.ResourceID.EqCol(client.ID), audit.ResourceType.Eq(string(enumor.Instance))).
-		Where(audit.BizID.Eq(req.BizId), audit.ResourceType.In(string(enumor.App), string(enumor.Config),
+		Where(audit.BizID.Eq(req.BizId), audit.ProjectID.Eq(req.ProjectId), audit.ResourceType.In(string(enumor.App), string(enumor.Config),
 			string(enumor.Hook), string(enumor.Release), string(enumor.Group),
 			string(enumor.Template), string(enumor.Credential), string(enumor.Instance), string(enumor.Variable)))
 
