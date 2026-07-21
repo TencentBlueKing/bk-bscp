@@ -50,6 +50,10 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		All:   req.GetAll(),
 	})
 	if err != nil {
+		// 表达式非法等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, ef
+		}
 		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list processes failed, err: %v", err))
 	}
 
@@ -110,6 +114,56 @@ func (s *Service) ListProcess(ctx context.Context, req *pbds.ListProcessReq) (*p
 		FilterOptions:        filterOptions,
 		CmdbProcessConfigUrl: url,
 	}, nil
+}
+
+// ListProcessInnerIPs implements pbds.DataServer.
+// 按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status，全量返回不分页）。
+func (s *Service) ListProcessInnerIPs(ctx context.Context, req *pbds.ListProcessInnerIPsReq) (
+	*pbds.ListProcessInnerIPsResp, error) {
+	kt := kit.FromGrpcContext(ctx)
+
+	search := req.GetSearch()
+	// 表达式范围模式下环境类型必填
+	if err := validateExpressionEnv(search); err != nil {
+		return nil, err
+	}
+
+	res, _, err := s.dao.Process().List(kt, req.GetBizId(), search, &types.BasePage{All: true})
+	if err != nil {
+		// 表达式非法等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, ef
+		}
+		return nil, errf.Errorf(errf.DBOpFailed, "%s", i18n.T(kt, "list processes failed, err: %v", err))
+	}
+
+	return &pbds.ListProcessInnerIPsResp{Ips: dedupInnerIPs(res)}, nil
+}
+
+// validateExpressionEnv 校验表达式范围模式下环境类型必填。
+func validateExpressionEnv(search *pbproc.ProcessSearchCondition) error {
+	if search.GetExpressionScope() != nil && search.GetEnvironment() == "" {
+		return errf.Errorf(errf.InvalidParameter, "%s", "environment is required for expression scope")
+	}
+	return nil
+}
+
+// dedupInnerIPs 从命中进程集合中提取内网 IP，保序去重并跳过空值。
+func dedupInnerIPs(processes []*table.Process) []string {
+	ips := make([]string, 0, len(processes))
+	seen := make(map[string]struct{}, len(processes))
+	for _, p := range processes {
+		ip := p.Spec.InnerIP
+		if ip == "" {
+			continue
+		}
+		if _, ok := seen[ip]; ok {
+			continue
+		}
+		seen[ip] = struct{}{}
+		ips = append(ips, ip)
+	}
+	return ips
 }
 
 // OperateProcess implements pbds.DataServer.
@@ -259,6 +313,10 @@ func getByOperateRanges(kt *kit.Kit, dao dao.Set, bizID uint32, operateRange *pb
 	)
 	if err != nil {
 		logs.Errorf("get processes by operate range failed, err: %v, rid: %s", err, kt.Rid)
+		// 表达式非法 / env 缺失等入参错误由 DAO 归类为 InvalidParameter，此处透传保留其错误码。
+		if ef, ok := err.(*errf.ErrorF); ok {
+			return nil, nil, ef
+		}
 		return nil, nil, errf.Errorf(errf.DBOpFailed, "%s",
 			i18n.T(kt, "get processes by operate range failed, err: %v", err))
 	}

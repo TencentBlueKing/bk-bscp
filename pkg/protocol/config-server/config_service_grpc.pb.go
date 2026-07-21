@@ -212,6 +212,7 @@ const (
 	Config_CompareKvConflicts_FullMethodName                 = "/pbcs.Config/CompareKvConflicts"
 	Config_GetTemplateAndNonTemplateCICount_FullMethodName   = "/pbcs.Config/GetTemplateAndNonTemplateCICount"
 	Config_ListProcess_FullMethodName                        = "/pbcs.Config/ListProcess"
+	Config_ListProcessInnerIPs_FullMethodName                = "/pbcs.Config/ListProcessInnerIPs"
 	Config_OperateProcess_FullMethodName                     = "/pbcs.Config/OperateProcess"
 	Config_ProcessFilterOptions_FullMethodName               = "/pbcs.Config/ProcessFilterOptions"
 	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
@@ -626,6 +627,8 @@ type ConfigClient interface {
 	// 进程管理
 	// 进程列表
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
+	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）
+	ListProcessInnerIPs(ctx context.Context, in *ListProcessInnerIPsReq, opts ...grpc.CallOption) (*ListProcessInnerIPsResp, error)
 	// 进程操作
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
 	// 进程过滤条件
@@ -2391,6 +2394,15 @@ func (c *configClient) ListProcess(ctx context.Context, in *ListProcessReq, opts
 	return out, nil
 }
 
+func (c *configClient) ListProcessInnerIPs(ctx context.Context, in *ListProcessInnerIPsReq, opts ...grpc.CallOption) (*ListProcessInnerIPsResp, error) {
+	out := new(ListProcessInnerIPsResp)
+	err := c.cc.Invoke(ctx, Config_ListProcessInnerIPs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error) {
 	out := new(OperateProcessResp)
 	err := c.cc.Invoke(ctx, Config_OperateProcess_FullMethodName, in, out, opts...)
@@ -3163,6 +3175,8 @@ type ConfigServer interface {
 	// 进程管理
 	// 进程列表
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
+	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）
+	ListProcessInnerIPs(context.Context, *ListProcessInnerIPsReq) (*ListProcessInnerIPsResp, error)
 	// 进程操作
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
 	// 进程过滤条件
@@ -3813,6 +3827,9 @@ func (UnimplementedConfigServer) GetTemplateAndNonTemplateCICount(context.Contex
 }
 func (UnimplementedConfigServer) ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProcess not implemented")
+}
+func (UnimplementedConfigServer) ListProcessInnerIPs(context.Context, *ListProcessInnerIPsReq) (*ListProcessInnerIPsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProcessInnerIPs not implemented")
 }
 func (UnimplementedConfigServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
@@ -7291,6 +7308,24 @@ func _Config_ListProcess_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListProcessInnerIPs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProcessInnerIPsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListProcessInnerIPs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListProcessInnerIPs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListProcessInnerIPs(ctx, req.(*ListProcessInnerIPsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OperateProcessReq)
 	if err := dec(in); err != nil {
@@ -8847,6 +8882,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProcess",
 			Handler:    _Config_ListProcess_Handler,
+		},
+		{
+			MethodName: "ListProcessInnerIPs",
+			Handler:    _Config_ListProcessInnerIPs_Handler,
 		},
 		{
 			MethodName: "OperateProcess",

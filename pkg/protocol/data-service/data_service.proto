@@ -317,6 +317,8 @@ service Data {
 
   // 进程管理列表
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
+  // 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
+  rpc ListProcessInnerIPs(ListProcessInnerIPsReq) returns (ListProcessInnerIPsResp) {}
   // 进程操作
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
   // 进程过滤条件
@@ -2627,6 +2629,15 @@ message ListProcessResp {
   repeated pbproc.Process process = 2;
   pbproc.FilterOptions filter_options = 3;
   string cmdb_process_config_url = 4;
+}
+
+message ListProcessInnerIPsReq {
+  uint32 biz_id = 1;
+  pbproc.ProcessSearchCondition search = 2;
+}
+
+message ListProcessInnerIPsResp {
+  repeated string ips = 1;
 }
 
 message OperateProcessReq {

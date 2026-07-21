@@ -41,6 +41,7 @@
 | DELETE | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_DeleteConfigTemplate](#config-delete-config-template) | 删除配置模板 |
 | DELETE | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_DeleteEnvironment](#config-delete-environment) | 删除环境 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
+| DELETE | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} | [Config_DeleteKv2](#config-delete-kv2) | 删除键值配置项 |
 | DELETE | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_DeleteProject](#config-delete-project) | 删除项目 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig](#config-generate-config) | 配置生成 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig2](#config-generate-config2) | 配置生成 |
@@ -83,6 +84,8 @@
 进程列表 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/list | [Config_ListProcess2](#config-list-process2) | 进程管理
 进程列表 |
+| POST | /api/v1/config/biz_id/{bizId}/process/inner_ips | [Config_ListProcessInnerIPs](#config-list-process-inner-i-ps) | 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） |
+| POST | /api/v1/inner/config/biz_id/{bizId}/process/inner_ips | [Config_ListProcessInnerIPs2](#config-list-process-inner-i-ps2) | 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） |
 | POST | /api/v1/config/biz/{bizId}/projects:list | [Config_ListProjects](#config-list-projects) | 项目管理 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems](#config-list-released-config-items) | 获取已发布文件配置项列表 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ListReleasedConfigItems2](#config-list-released-config-items2) | 获取已发布文件配置项列表 |
@@ -916,6 +919,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -974,6 +984,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -1555,6 +1572,8 @@ DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}
 | appId | int64 (formatted integer) | ✓ | 服务ID |
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | id | int64 (formatted integer) | ✓ | 键值配置项ID |
+| envId | int64 (formatted integer) |  | 环境ID |
+| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -1565,6 +1584,42 @@ DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id}
 
 ```bash
 DELETE /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-delete-kv2"></span> 删除键值配置项 (*Config_DeleteKv2*)
+
+```
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| id | int64 (formatted integer) | ✓ | 键值配置项ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} HTTP/1.1
 Content-Type: application/json
 
 
@@ -1653,6 +1708,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -1711,6 +1773,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -3328,6 +3397,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "innerIps": [
       {}
     ],
@@ -3401,6 +3477,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "innerIps": [
       {}
     ],
@@ -3427,6 +3510,154 @@ Content-Type: application/json
     ]
   },
   "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-process-inner-i-ps"></span> 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） (*Config_ListProcessInnerIPs*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/process/inner_ips
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/process/inner_ips HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {
+    "ccProcessIds": [
+      {}
+    ],
+    "ccSyncStatuses": [
+      {}
+    ],
+    "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
+    "innerIps": [
+      {}
+    ],
+    "managedStatuses": [
+      {}
+    ],
+    "modules": [
+      {}
+    ],
+    "processAliases": [
+      {}
+    ],
+    "processStatuses": [
+      {}
+    ],
+    "processTemplateIds": [
+      {}
+    ],
+    "serviceInstances": [
+      {}
+    ],
+    "sets": [
+      {}
+    ]
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-process-inner-i-ps2"></span> 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status） (*Config_ListProcessInnerIPs2*)
+
+```
+POST /api/v1/inner/config/biz_id/{bizId}/process/inner_ips
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz_id/{bizId}/process/inner_ips HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {
+    "ccProcessIds": [
+      {}
+    ],
+    "ccSyncStatuses": [
+      {}
+    ],
+    "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
+    "innerIps": [
+      {}
+    ],
+    "managedStatuses": [
+      {}
+    ],
+    "modules": [
+      {}
+    ],
+    "processAliases": [
+      {}
+    ],
+    "processStatuses": [
+      {}
+    ],
+    "processTemplateIds": [
+      {}
+    ],
+    "serviceInstances": [
+      {}
+    ],
+    "sets": [
+      {}
+    ]
+  }
 }
 ```
 
@@ -3864,6 +4095,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -3924,6 +4162,13 @@ Content-Type: application/json
       {}
     ],
     "environment": "",
+    "expressionScope": {
+      "moduleName": "",
+      "processAlias": "",
+      "processId": "",
+      "serviceName": "",
+      "setName": ""
+    },
     "moduleName": "",
     "processAlias": "",
     "serviceName": "",
@@ -4846,9 +5091,9 @@ GET /api/v1/inner/feature_flags
 | data.BIZ_VIEW | boolean | BizView 是否开启业务体验 |
 | data.ENABLE_TENANT_MODE | boolean | EnableTenantMode 是否开启租户模式 |
 | data.PROCESS_CONFIG_VIEW | boolean | ProcessConfigView 进程与配置管理是否可见 |
-| data.RESOURCE_LIMIT | [ServiceFeatureFlags](#service-feature-flags) | ResourceLimit 业务资源限制 |
+| data.RESOURCE_LIMIT | [CmdAPIServerServiceFeatureFlags](#cmd-api-server-service-feature-flags) | ResourceLimit 业务资源限制 |
 | data.TENANT_MODE | string | TenantMode 租户模式 |
-| data.TRPC_GO_PLUGIN | [ServiceFeatureFlags](#service-feature-flags) | TrpcGoPlugin trpc go plugin |
+| data.TRPC_GO_PLUGIN | [CmdAPIServerServiceFeatureFlags](#cmd-api-server-service-feature-flags) | TrpcGoPlugin trpc go plugin |
 
 
 
@@ -5285,6 +5530,21 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-process-inner-i-ps-body"></span> ConfigListProcessInnerIPsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| search | [PbprocProcessSearchCondition](#pbproc-process-search-condition)| `PbprocProcessSearchCondition` |  | |  |  |
+
+
+
 ### <span id="config-list-projects-body"></span> ConfigListProjectsBody
 
 
@@ -5520,7 +5780,77 @@ Content-Type: application/json
 
 
 
-### <span id="cc-resource-limit"></span> cc.ResourceLimit
+### <span id="cmd-api-server-service-download-url-response"></span> cmd_api-server_service.DownloadURLResponse
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| download_url | string| `string` |  | |  |  |
+| expire_seconds | integer| `int64` |  | |  |  |
+
+
+
+### <span id="cmd-api-server-service-feature-flags"></span> cmd_api-server_service.FeatureFlags
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| BIZ_VIEW | boolean| `bool` |  | | BizView 是否开启业务体验 |  |
+| ENABLE_TENANT_MODE | boolean| `bool` |  | | EnableTenantMode 是否开启租户模式 |  |
+| PROCESS_CONFIG_VIEW | boolean| `bool` |  | | ProcessConfigView 进程与配置管理是否可见 |  |
+| RESOURCE_LIMIT | [CmdAPIServerServiceFeatureFlags](#cmd-api-server-service-feature-flags)| `CmdAPIServerServiceFeatureFlags` |  | | ResourceLimit 业务资源限制 |  |
+| TENANT_MODE | string| `string` |  | | TenantMode 租户模式 |  |
+| TRPC_GO_PLUGIN | [CmdAPIServerServiceFeatureFlags](#cmd-api-server-service-feature-flags)| `CmdAPIServerServiceFeatureFlags` |  | | TrpcGoPlugin trpc go plugin |  |
+
+
+
+### <span id="cmd-api-server-service-trpc-go-plugin"></span> cmd_api-server_service.TrpcGoPlugin
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bscp_module_domain | string| `string` |  | |  |  |
+| enable | boolean| `bool` |  | |  |  |
+| module_domain | string| `string` |  | |  |  |
+
+
+
+### <span id="github-com-tencent-blue-king-bk-bscp-internal-dal-repository-object-metadata"></span> github_com_TencentBlueKing_bk-bscp_internal_dal_repository.ObjectMetadata
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| byte_size | integer| `int64` |  | |  |  |
+| md5 | string| `string` |  | |  |  |
+| sha256 | string| `string` |  | |  |  |
+
+
+
+### <span id="github-com-tencent-blue-king-bk-bscp-pkg-cc-resource-limit"></span> github_com_TencentBlueKing_bk-bscp_pkg_cc.ResourceLimit
 
 
   
@@ -5535,6 +5865,21 @@ Content-Type: application/json
 | maxFileSize | integer| `int64` |  | | MaxFileSize 配置文件大小上限，单位 MB，默认为200MB |  |
 | maxUploadContentLength | integer| `int64` |  | | MaxUploadContentLength 最大内容长度 |  |
 | tmplSetTmplCnt | integer| `int64` |  | | TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000 |  |
+
+
+
+### <span id="github-com-tencent-blue-king-bk-bscp-pkg-rest-o-k-response"></span> github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| data | [interface{}](#interface)| `interface{}` |  | |  |  |
 
 
 
@@ -6369,6 +6714,21 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-list-process-inner-i-ps-resp"></span> pbcsListProcessInnerIPsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| ips | []string| `[]string` |  | | 去重后的内网IP列表 |  |
+
+
+
 ### <span id="pbcs-list-process-resp"></span> pbcsListProcessResp
 
 
@@ -7124,6 +7484,25 @@ Content-Type: application/json
 
 
 
+### <span id="pbproc-expression-scope"></span> pbprocExpressionScope
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| moduleName | string| `string` |  | | 模块名称表达式 |  |
+| processAlias | string| `string` |  | | 进程别名表达式 |  |
+| processId | string| `string` |  | | CC进程ID表达式(支持切片) |  |
+| serviceName | string| `string` |  | | 服务实例名称表达式 |  |
+| setName | string| `string` |  | | 集群名称表达式 |  |
+
+
+
 ### <span id="pbproc-filter-options"></span> pbprocFilterOptions
 
 
@@ -7157,6 +7536,7 @@ Content-Type: application/json
 | configTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 配置模版ID列表 |  |
 | configTemplateNames | []string| `[]string` |  | | 配置模版名称列表 |  |
 | environment | string| `string` |  | | 环境类型(1:测试 2: 体验 3: 正式) |  |
+| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围(与单值字段互斥) |  |
 | moduleName | string| `string` |  | | 模块名称 |  |
 | processAlias | string| `string` |  | | 进程别名 |  |
 | serviceName | string| `string` |  | | 服务实例名称 |  |
@@ -7221,6 +7601,7 @@ Content-Type: application/json
 | ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | 进程ID |  |
 | ccSyncStatuses | []string| `[]string` |  | | cc同步状态 |  |
 | environment | string| `string` |  | | 环境 |  |
+| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围(附加过滤) |  |
 | innerIps | []string| `[]string` |  | | 内网IP |  |
 | managedStatuses | []string| `[]string` |  | | 托管状态 |  |
 | modules | []string| `[]string` |  | | 模块名称 |  |
@@ -7749,38 +8130,6 @@ any
 
 
 
-### <span id="repository-object-metadata"></span> repository.ObjectMetadata
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| byte_size | integer| `int64` |  | |  |  |
-| md5 | string| `string` |  | |  |  |
-| sha256 | string| `string` |  | |  |  |
-
-
-
-### <span id="rest-o-k-response"></span> rest.OKResponse
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| data | [interface{}](#interface)| `interface{}` |  | |  |  |
-
-
-
 ### <span id="rpc-status"></span> rpcStatus
 
 
@@ -7795,58 +8144,5 @@ any
 | code | int32 (formatted integer)| `int32` |  | |  |  |
 | details | \[\][ProtobufAny](#protobuf-any)| `[]*ProtobufAny` |  | |  |  |
 | message | string| `string` |  | |  |  |
-
-
-
-### <span id="service-download-url-response"></span> service.DownloadURLResponse
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| download_url | string| `string` |  | |  |  |
-| expire_seconds | integer| `int64` |  | |  |  |
-
-
-
-### <span id="service-feature-flags"></span> service.FeatureFlags
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| BIZ_VIEW | boolean| `bool` |  | | BizView 是否开启业务体验 |  |
-| ENABLE_TENANT_MODE | boolean| `bool` |  | | EnableTenantMode 是否开启租户模式 |  |
-| PROCESS_CONFIG_VIEW | boolean| `bool` |  | | ProcessConfigView 进程与配置管理是否可见 |  |
-| RESOURCE_LIMIT | [ServiceFeatureFlags](#service-feature-flags)| `ServiceFeatureFlags` |  | | ResourceLimit 业务资源限制 |  |
-| TENANT_MODE | string| `string` |  | | TenantMode 租户模式 |  |
-| TRPC_GO_PLUGIN | [ServiceFeatureFlags](#service-feature-flags)| `ServiceFeatureFlags` |  | | TrpcGoPlugin trpc go plugin |  |
-
-
-
-### <span id="service-trpc-go-plugin"></span> service.TrpcGoPlugin
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| bscp_module_domain | string| `string` |  | |  |  |
-| enable | boolean| `bool` |  | |  |  |
-| module_domain | string| `string` |  | |  |  |
 
 

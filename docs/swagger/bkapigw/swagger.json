@@ -59,13 +59,13 @@
             "schema": {
               "allOf": [
                 {
-                  "$ref": "#/definitions/rest.OKResponse"
+                  "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse"
                 },
                 {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/repository.ObjectMetadata"
+                      "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_internal_dal_repository.ObjectMetadata"
                     }
                   }
                 }
@@ -131,13 +131,13 @@
             "schema": {
               "allOf": [
                 {
-                  "$ref": "#/definitions/rest.OKResponse"
+                  "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse"
                 },
                 {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/service.DownloadURLResponse"
+                      "$ref": "#/definitions/cmd_api-server_service.DownloadURLResponse"
                     }
                   }
                 }
@@ -198,13 +198,13 @@
             "schema": {
               "allOf": [
                 {
-                  "$ref": "#/definitions/rest.OKResponse"
+                  "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse"
                 },
                 {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/repository.ObjectMetadata"
+                      "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_internal_dal_repository.ObjectMetadata"
                     }
                   }
                 }
@@ -270,13 +270,13 @@
             "schema": {
               "allOf": [
                 {
-                  "$ref": "#/definitions/rest.OKResponse"
+                  "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse"
                 },
                 {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/repository.ObjectMetadata"
+                      "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_internal_dal_repository.ObjectMetadata"
                     }
                   }
                 }
@@ -747,6 +747,20 @@
             "name": "id",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "环境ID",
+            "name": "envId",
+            "in": "query"
           }
         ],
         "responses": {
@@ -2193,6 +2207,80 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/pbcsListKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": true,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id}": {
+      "delete": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "删除键值配置项",
+        "operationId": "Config_DeleteKv2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "项目ID",
+            "name": "projectId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "环境ID",
+            "name": "envId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "服务ID",
+            "name": "appId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "键值配置项ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsDeleteKvResp"
             }
           },
           "default": {
@@ -3970,6 +4058,56 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/pbcsPreviewBindProcessInstanceResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": true,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
             }
           },
           "default": {
@@ -5898,6 +6036,65 @@
         }
       }
     },
+    "/api/v1/inner/config/biz_id/{bizId}/process/inner_ips": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表（对齐 gsekit process_status）",
+        "operationId": "Config_ListProcessInnerIPs2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListProcessInnerIPsBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListProcessInnerIPsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "backend": {
+            "type": "HTTP",
+            "method": "post",
+            "path": "/api/v1/config/biz_id/{bizId}/process/inner_ips",
+            "matchSubpath": false,
+            "timeout": 0,
+            "upstreams": {},
+            "transformHeaders": {}
+          },
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/inner/config/biz_id/{bizId}/process/list": {
       "post": {
         "tags": [
@@ -6413,13 +6610,13 @@
             "schema": {
               "allOf": [
                 {
-                  "$ref": "#/definitions/rest.OKResponse"
+                  "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse"
                 },
                 {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/service.FeatureFlags"
+                      "$ref": "#/definitions/cmd_api-server_service.FeatureFlags"
                     }
                   }
                 }
@@ -7072,6 +7269,14 @@
         }
       }
     },
+    "ConfigListProcessInnerIPsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "$ref": "#/definitions/pbprocProcessSearchCondition"
+        }
+      }
+    },
     "ConfigListProjectsBody": {
       "type": "object",
       "properties": {
@@ -7400,7 +7605,83 @@
         }
       }
     },
-    "cc.ResourceLimit": {
+    "cmd_api-server_service.DownloadURLResponse": {
+      "type": "object",
+      "properties": {
+        "download_url": {
+          "type": "string"
+        },
+        "expire_seconds": {
+          "type": "integer"
+        }
+      }
+    },
+    "cmd_api-server_service.FeatureFlags": {
+      "type": "object",
+      "properties": {
+        "BIZ_VIEW": {
+          "description": "BizView 是否开启业务体验",
+          "type": "boolean"
+        },
+        "ENABLE_TENANT_MODE": {
+          "description": "EnableTenantMode 是否开启租户模式",
+          "type": "boolean"
+        },
+        "PROCESS_CONFIG_VIEW": {
+          "description": "ProcessConfigView 进程与配置管理是否可见",
+          "type": "boolean"
+        },
+        "RESOURCE_LIMIT": {
+          "description": "ResourceLimit 业务资源限制",
+          "allOf": [
+            {
+              "$ref": "#/definitions/github_com_TencentBlueKing_bk-bscp_pkg_cc.ResourceLimit"
+            }
+          ]
+        },
+        "TENANT_MODE": {
+          "description": "TenantMode 租户模式",
+          "type": "string"
+        },
+        "TRPC_GO_PLUGIN": {
+          "description": "TrpcGoPlugin trpc go plugin",
+          "allOf": [
+            {
+              "$ref": "#/definitions/cmd_api-server_service.TrpcGoPlugin"
+            }
+          ]
+        }
+      }
+    },
+    "cmd_api-server_service.TrpcGoPlugin": {
+      "type": "object",
+      "properties": {
+        "bscp_module_domain": {
+          "type": "string"
+        },
+        "enable": {
+          "type": "boolean"
+        },
+        "module_domain": {
+          "type": "string"
+        }
+      }
+    },
+    "github_com_TencentBlueKing_bk-bscp_internal_dal_repository.ObjectMetadata": {
+      "type": "object",
+      "properties": {
+        "byte_size": {
+          "type": "integer"
+        },
+        "md5": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "github_com_TencentBlueKing_bk-bscp_pkg_cc.ResourceLimit": {
       "type": "object",
       "properties": {
         "appConfigCnt": {
@@ -7419,6 +7700,12 @@
           "description": "TmplSetTmplCnt 单个模版套餐下允许创建的模版数，默认为2000",
           "type": "integer"
         }
+      }
+    },
+    "github_com_TencentBlueKing_bk-bscp_pkg_rest.OKResponse": {
+      "type": "object",
+      "properties": {
+        "data": {}
       }
     },
     "pbappApp": {
@@ -8345,6 +8632,18 @@
         "isCertExpired": {
           "description": "是否有证书过期：是=true，否=false",
           "type": "boolean"
+        }
+      }
+    },
+    "pbcsListProcessInnerIPsResp": {
+      "type": "object",
+      "properties": {
+        "ips": {
+          "description": "去重后的内网IP列表",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -9277,6 +9576,32 @@
         }
       }
     },
+    "pbprocExpressionScope": {
+      "type": "object",
+      "title": "ExpressionScope 表达式范围，五段与进程 expression 一一对应，缺省均为 `*`（匹配任意）。\n语义与 gsekit expression_scope 对齐：支持通配符、枚举、数字/字母范围、排除、切片。",
+      "properties": {
+        "moduleName": {
+          "description": "模块名称表达式",
+          "type": "string"
+        },
+        "processAlias": {
+          "description": "进程别名表达式",
+          "type": "string"
+        },
+        "processId": {
+          "description": "CC进程ID表达式(支持切片)",
+          "type": "string"
+        },
+        "serviceName": {
+          "description": "服务实例名称表达式",
+          "type": "string"
+        },
+        "setName": {
+          "description": "集群名称表达式",
+          "type": "string"
+        }
+      }
+    },
     "pbprocFilterOptions": {
       "type": "object",
       "title": "FilterOptions 查询过滤选项",
@@ -9342,6 +9667,11 @@
         "environment": {
           "description": "环境类型(1:测试 2: 体验 3: 正式)",
           "type": "string"
+        },
+        "expressionScope": {
+          "description": "表达式范围(与单值字段互斥)",
+          "title": "表达式范围，与上面的单值等值字段互斥分流；非空时按 gsekit 等价的表达式匹配进程。\n环境类型复用本消息的 environment 字段。",
+          "$ref": "#/definitions/pbprocExpressionScope"
         },
         "moduleName": {
           "description": "模块名称",
@@ -9464,6 +9794,11 @@
         "environment": {
           "description": "环境",
           "type": "string"
+        },
+        "expressionScope": {
+          "description": "表达式范围(附加过滤)",
+          "title": "表达式范围，作为附加过滤条件与上面的多选列表 AND 叠加；命中为空即空结果集。",
+          "$ref": "#/definitions/pbprocExpressionScope"
         },
         "innerIps": {
           "description": "内网IP",
@@ -10278,26 +10613,6 @@
         "NULL_VALUE"
       ]
     },
-    "repository.ObjectMetadata": {
-      "type": "object",
-      "properties": {
-        "byte_size": {
-          "type": "integer"
-        },
-        "md5": {
-          "type": "string"
-        },
-        "sha256": {
-          "type": "string"
-        }
-      }
-    },
-    "rest.OKResponse": {
-      "type": "object",
-      "properties": {
-        "data": {}
-      }
-    },
     "rpcStatus": {
       "type": "object",
       "properties": {
@@ -10313,68 +10628,6 @@
           }
         },
         "message": {
-          "type": "string"
-        }
-      }
-    },
-    "service.DownloadURLResponse": {
-      "type": "object",
-      "properties": {
-        "download_url": {
-          "type": "string"
-        },
-        "expire_seconds": {
-          "type": "integer"
-        }
-      }
-    },
-    "service.FeatureFlags": {
-      "type": "object",
-      "properties": {
-        "BIZ_VIEW": {
-          "description": "BizView 是否开启业务体验",
-          "type": "boolean"
-        },
-        "ENABLE_TENANT_MODE": {
-          "description": "EnableTenantMode 是否开启租户模式",
-          "type": "boolean"
-        },
-        "PROCESS_CONFIG_VIEW": {
-          "description": "ProcessConfigView 进程与配置管理是否可见",
-          "type": "boolean"
-        },
-        "RESOURCE_LIMIT": {
-          "description": "ResourceLimit 业务资源限制",
-          "allOf": [
-            {
-              "$ref": "#/definitions/cc.ResourceLimit"
-            }
-          ]
-        },
-        "TENANT_MODE": {
-          "description": "TenantMode 租户模式",
-          "type": "string"
-        },
-        "TRPC_GO_PLUGIN": {
-          "description": "TrpcGoPlugin trpc go plugin",
-          "allOf": [
-            {
-              "$ref": "#/definitions/service.TrpcGoPlugin"
-            }
-          ]
-        }
-      }
-    },
-    "service.TrpcGoPlugin": {
-      "type": "object",
-      "properties": {
-        "bscp_module_domain": {
-          "type": "string"
-        },
-        "enable": {
-          "type": "boolean"
-        },
-        "module_domain": {
           "type": "string"
         }
       }
