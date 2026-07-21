@@ -169,20 +169,22 @@ build_feed:
 build_vault:
 	@cd ${PRO_DIR}/cmd && make vault
 
-.PHONY: build_frontend
-build_frontend:
+# 新 UI（ui）产出 ui/dist，供 embed.go 编译期嵌入
+.PHONY: build_frontend_new
+build_frontend_new:
 	@echo "tips: ensure you have installed node and npm"
 	cd ui; npm install --legacy-peer-deps; npm run build
 
-# 旧 UI（ui_old）接入构建链，产出 ui_old/dist，供 embed.go 编译期嵌入
+# 旧 UI（ui_old）产出 ui_old/dist，供 embed.go 编译期嵌入
 .PHONY: build_frontend_old
 build_frontend_old:
 	@echo "tips: ensure you have installed node and npm"
 	cd ui_old; npm install --legacy-peer-deps; npm run build
 
-# 同时构建新旧两套前端，产出双前端静态资源
-.PHONY: build_frontend_all
-build_frontend_all: build_frontend build_frontend_old
+# embed.go 编译期同时嵌入 ui/dist 与 ui_old/dist，故默认前端构建必须产出新旧两套，
+# 避免调用方漏构建其一导致 build_bscp 报 go:embed 找不到文件
+.PHONY: build_frontend
+build_frontend: build_frontend_new build_frontend_old
 
 .PHONY: build_ui
 build_ui: 
@@ -241,7 +243,7 @@ docs: api_docs bkapigw_docs markdown_docs
 push-image: 
 	@if [ "${SKIP_FRONTEND_BUILD}" != "true" ]; then \
 		echo -e "\e[34;1mBuilding frontend (new + old)...\033[0m"; \
-		$(MAKE) build_frontend_all; \
+		$(MAKE) build_frontend; \
 	else \
 		echo -e "\e[33;1mSkipping frontend build as SKIP_FRONTEND_BUILD=true\033[0m"; \
 	fi
