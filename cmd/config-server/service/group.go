@@ -398,6 +398,7 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbcs.ListGroup
 			Edited:      detail.Edited,
 			EnvDisplay:  detail.EnvDisplay,
 			ReleaseTime: detail.ReleaseTime,
+			EnvId:       detail.EnvId,
 		}
 	}
 	resp.Details = data

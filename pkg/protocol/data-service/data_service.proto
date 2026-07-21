@@ -2074,6 +2074,7 @@ message ListGroupReleasedAppsResp {
     bool edited = 5;
     string env_display = 6;
     google.protobuf.Timestamp release_time = 7;
+    uint32 env_id = 8;
   }
   uint32 count = 1;
   repeated ListGroupReleasedAppsData details = 2;
