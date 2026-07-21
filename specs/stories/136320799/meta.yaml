@@ -1,0 +1,99 @@
+# specs/stories/136320799/meta.yaml
+# 字段说明详见 .claude/skills/tapd-story-pipeline/references/state-mutation-guide.md
+
+# ===== 需求标识 =====
+id: "1020451610136320799"
+workspace_id: "20451610"
+agent_tool: agent
+owner: "xiaolnwang"
+
+# ===== 状态游标 =====
+phase: committed
+attempts: 1
+round: 1
+context_revision: 4
+
+# ===== 基线 =====
+implement_baseline_commit: "788381c9a29883ed92b321b987abbf4cb3f2e619"
+
+# ===== 卡点信号 =====
+last_failure: null
+pending_review: null
+
+# ===== 代码统计（commit 阶段写入；基线 788381c → HEAD 9194a67c）=====
+stats:
+  total: 1950
+  add_code: 1949
+  delete_code: 1
+  logic_code: 14        # internal/processor/cmdb/sync_cmdb.go（生产代码）
+  test_code: 196        # internal/processor/cmdb/sync_cmdb_topo_test.go
+  docs: 1404            # docs/ + specs/ 文档与流水线产物
+  files: 22
+  cost:
+    total_duration_sec: 0.0
+    total_cost_usd: 0.0
+    total_credit: 0.0
+    total_input_tokens: 0
+    total_output_tokens: 0
+    total_cache_tokens: 0
+    total_cached_write_tokens: 0
+    total_cached_miss_tokens: 0
+    subagent_calls: 0
+    per_call: []
+
+# ===== 累计历史 =====
+history:
+  - at: "2026-07-21T21:12:00+08:00"
+    kind: phase_advance
+    phase: tech-clarified
+    attempt: 1
+    round: 1
+    note: "技术澄清 + spec.md 生成完成，质量验证通过"
+  - at: "2026-07-21T21:18:00+08:00"
+    kind: phase_advance
+    phase: researched
+    attempt: 1
+    round: 1
+    note: "plan.md/research.md/data-model.md 生成，plan-report verdict=pass"
+  - at: "2026-07-21T21:24:00+08:00"
+    kind: phase_advance
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "tasks.md 生成，tasks-report verdict=pass，进入 confirm 卡点"
+  - at: "2026-07-21T21:30:00+08:00"
+    kind: note
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "用户要求先出 F-002 对比清单再开发。已核实 gsekit sync_biz_process 通过 bulk_update expression 刷新集群/模块/服务实例名称、bk_set_env 刷新集群环境类型（源码 process.py:507-533 / models.py:45-52）。对比清单产出到 docs/cmdb-sync-capability-gsekit-vs-bscp.md。"
+  - at: "2026-07-21T21:40:00+08:00"
+    kind: scope_change
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "用户确认范围收缩：本期只同步 environment + service_name 两个字段；set_name/module_name 不做 diff、不更新。已同步更新 spec.md/plan.md/tasks.md/research.md/req.md 及 F-002 清单（新增 FR-001a，T3 改为'变化不触发更新'，topoChanged 仅两字段）。"
+  - at: "2026-07-21T21:44:00+08:00"
+    kind: phase_advance
+    phase: confirmed
+    attempt: 1
+    round: 1
+    note: "用户 approve（开发），记录 implement_baseline_commit=788381c，进入 implement"
+  - at: "2026-07-21T21:48:00+08:00"
+    kind: phase_advance
+    phase: implemented
+    attempt: 1
+    round: 1
+    note: "TDD 实现完成：BuildProcessChanges 新增 topoChanged(仅两字段)+早退守卫+写回+reusable回填；新增 sync_cmdb_topo_test.go(T1~T6)；go test ./internal/processor/cmdb/ 全绿，gofmt 干净"
+  - at: "2026-07-21T21:52:00+08:00"
+    kind: phase_advance
+    phase: validated
+    attempt: 1
+    round: 1
+    note: "validate 三段全 LGTM（arch/security/codereview 均无 CRITICAL/HIGH，CodeReview 仅 2 条 LOW 建议），跳过修复推进 validated"
+  - at: "2026-07-21T21:56:00+08:00"
+    kind: phase_advance
+    phase: committed
+    attempt: 1
+    round: 1
+    note: "代码由用户手动提交并推送到 origin/feat/update-set-serviceinstance（commit 9194a67c 支持集群环境类型、服务实例名更新）。commit 阶段收尾：写入 stats、生成 commit.md。TAPD 状态更新留待用户按需处理。"

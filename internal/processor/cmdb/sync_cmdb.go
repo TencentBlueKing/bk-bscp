@@ -1629,13 +1629,22 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
 	agentStatusChanged := newP.Spec.AgentStatus != "" && newP.Spec.AgentStatus != oldP.Spec.AgentStatus
 	osTypeChanged := newP.Spec.OsType != "" && newP.Spec.OsType != oldP.Spec.OsType
+	// 仅同步服务实例名称与集群环境类型两个拓扑字段；集群名称/模块名称本期不做 diff（范围决策 2026-07-21）
+	topoChanged := newP.Spec.ServiceName != oldP.Spec.ServiceName ||
+		newP.Spec.Environment != oldP.Spec.Environment
 
-	if !nameChanged && !infoChanged && !numChanged && !osTypeChanged && !agentStatusChanged {
+	if !nameChanged && !infoChanged && !numChanged && !osTypeChanged && !agentStatusChanged && !topoChanged {
 		return result, nil
 	}
 
 	if osTypeChanged {
 		oldP.Spec.OsType = newP.Spec.OsType
+	}
+
+	// 直接以 CMDB 值覆盖（含覆盖为空）
+	if topoChanged {
+		oldP.Spec.ServiceName = newP.Spec.ServiceName
+		oldP.Spec.Environment = newP.Spec.Environment
 	}
 
 	if agentStatusChanged {
@@ -1672,6 +1681,9 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			// 新值非空时采用 CMDB 最新 os_type，否则沿用旧进程值，
 			// 避免恢复 deleted 记录时保留其陈旧/空的 os_type
 			reusableProc.Spec.OsType = resolveOsType(newP.Spec.OsType, oldP.Spec.OsType)
+			// 恢复 deleted 记录时同步刷新拓扑字段，避免残留旧值
+			reusableProc.Spec.ServiceName = newP.Spec.ServiceName
+			reusableProc.Spec.Environment = newP.Spec.Environment
 			reusableProc.Attachment = newP.Attachment
 			reusableProc.Revision = &table.Revision{UpdatedAt: ctx.Now}
 
