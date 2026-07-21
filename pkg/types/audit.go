@@ -100,6 +100,7 @@ type AuditPart struct {
 	Status       string    `db:"status" json:"status" gorm:"column:status"`
 	Detail       string    `db:"detail" json:"detail" gorm:"column:detail"`
 	IsCompare    bool      `db:"is_compare" json:"is_compare" gorm:"column:is_compare"`
+	ProjectID    uint32    `db:"project_id" json:"project_id" gorm:"column:project_id"`
 }
 
 // StrategyPart defines strategy fields

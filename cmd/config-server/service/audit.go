@@ -52,6 +52,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 		ResInstance: req.ResInstance,
 		Operator:    req.Operator,
 		Id:          req.Id,
+		ProjectId:   grpcKit.ResolvedProjectID(req.ProjectId),
 	}
 	// 前端组件以逗号分开
 	if req.Action != "" {

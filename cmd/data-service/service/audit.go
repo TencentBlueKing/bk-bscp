@@ -76,9 +76,10 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 					IsCompare:   value.Audit.IsCompare,
 				},
 				Attachment: &pbaudit.AuditAttachment{
-					BizId: value.Audit.BizID,
-					AppId: value.Audit.AppID,
-					ResId: value.Audit.ResourceID,
+					BizId:     value.Audit.BizID,
+					AppId:     value.Audit.AppID,
+					ResId:     value.Audit.ResourceID,
+					ProjectId: value.Audit.ProjectID,
 				},
 				Revision: &pbaudit.Revision{
 					CreatedAt: value.Audit.CreatedAt.Format(time.DateTime),

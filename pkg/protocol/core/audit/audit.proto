@@ -34,6 +34,7 @@ message AuditAttachment {
   uint32 biz_id = 1;
   uint32 app_id = 2;
   uint32 res_id = 3;
+  uint32 project_id = 4;
 }
 
 // Revision defines the strategy's revision
