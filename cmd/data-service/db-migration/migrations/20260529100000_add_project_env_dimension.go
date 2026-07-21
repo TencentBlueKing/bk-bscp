@@ -291,23 +291,44 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 		nextProjID++
 		defaultProjectKey := table.GenerateProjectKey(uint32(projID))
 
-		if errI := tx.Exec(
-			"INSERT INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected,is_default, creator, reviser, created_at, updated_at)\n"+
+		// 使用 INSERT IGNORE 实现幂等：若 (tenant_id, biz_id, is_default) 已存在则跳过
+		resultP := tx.Exec(
+			"INSERT IGNORE INTO projects (id, tenant_id, biz_id, `key`, name, memo, protected, is_default, creator, reviser, created_at, updated_at)\n"+
 				"VALUES (?, ?, ?, ?, ?, '', true, 1, ?, ?, ?, ?)",
 			projID, tenantID, bizID, defaultProjectKey, table.DefaultProjectName, systemUser, systemUser, now, now,
-		).Error; errI != nil {
-			return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, errI)
+		)
+		if resultP.Error != nil {
+			return fmt.Errorf("insert default project for biz %d tenant %s: %w", bizID, tenantID, resultP.Error)
 		}
 
+		// 确定实际使用的 project ID：新插入时用分配的 ID；已存在则查询已有记录
+		actualProjID := projID
+		if resultP.RowsAffected == 0 {
+			var existingID uint64
+			if errQ := tx.Raw(
+				"SELECT id FROM projects WHERE tenant_id = ? AND biz_id = ? AND is_default = 1 LIMIT 1",
+				tenantID, bizID,
+			).Scan(&existingID).Error; errQ != nil {
+				return fmt.Errorf("query existing default project for biz %d tenant %s: %w", bizID, tenantID, errQ)
+			}
+			if existingID != 0 {
+				actualProjID = existingID
+			}
+		}
+
+		// 确保 default environment 存在：INSERT IGNORE 幂等，无论项目是否新建都需校验
 		envID := nextEnvID
 		nextEnvID++
 
-		if err := tx.Exec(
-			`INSERT INTO environments (id, tenant_id, biz_id, project_id, name, `+"`type`"+`, memo, display_order, protected, creator, reviser, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'prod', '', 0, true, ?, ?, ?, ?)`,
-			envID, tenantID, bizID, projID, table.DefaultEnvName, systemUser, systemUser, now, now,
-		).Error; err != nil {
-			return fmt.Errorf("insert default environment for biz %d tenant %s: %w", bizID, tenantID, err)
+		resultE := tx.Exec(
+			`INSERT IGNORE INTO environments `+
+				`(id, tenant_id, biz_id, project_id, name, type, memo, display_order, `+
+				`protected, creator, reviser, created_at, updated_at) `+
+				`VALUES (?, ?, ?, ?, ?, 'prod', '', 0, true, ?, ?, ?, ?)`,
+			envID, tenantID, bizID, actualProjID, table.DefaultEnvName, systemUser, systemUser, now, now,
+		)
+		if resultE.Error != nil {
+			return fmt.Errorf("insert default environment for biz %d tenant %s: %w", bizID, tenantID, resultE.Error)
 		}
 	}
 
@@ -514,6 +535,9 @@ func replaceIndex(tx *gorm.DB, adj indexAdjustment) error {
 
 const backfillBatchSize = 1000
 
+// audits 表数据量大，使用更小的批次以减少单次执行时间和锁持有时间
+const backfillBatchSizeForAudits = 200
+
 func quoteTable(name string) string {
 	return "`" + name + "`"
 }
@@ -612,11 +636,17 @@ func backfillProjectScopeTable(db *gorm.DB, tableName string) error {
 		return err
 	}
 
+	// audits 表数据量大，使用更小的批次以减少单次执行时间和锁持有时间
+	batchSize := backfillBatchSize
+	if tableName == "audits" {
+		batchSize = backfillBatchSizeForAudits
+	}
+
 	for {
 		var ids []batchIDs
 		// 1. 单纯通过 ID 分批，确保能扫完整个表，防止因为某批次未更新而中断
 		if err := db.Raw(fmt.Sprintf(`SELECT id FROM %s WHERE id > ? ORDER BY id LIMIT %d`,
-			quoteTable(tableName), backfillBatchSize), task.LastID).Scan(&ids).Error; err != nil {
+			quoteTable(tableName), batchSize), task.LastID).Scan(&ids).Error; err != nil {
 			return fmt.Errorf("query batch ids for %s: %w", tableName, err)
 		}
 

@@ -96,6 +96,7 @@ type ListGroupReleasedAppsData struct {
 	Edited      bool      `gorm:"column:edited" json:"edited"`
 	EnvDisplay  string    `gorm:"column:env_display" json:"env_display"`
 	ReleaseTime time.Time `gorm:"column:release_time" json:"release_time"`
+	EnvID       uint32    `gorm:"column:env_id" json:"env_id"`
 }
 
 // ListGroupReleasedAppsDetails defines the response details of requested ListGroupReleasedAppsOption.

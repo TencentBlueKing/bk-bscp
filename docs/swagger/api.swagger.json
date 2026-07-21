@@ -28846,6 +28846,11 @@
           "type": "string",
           "format": "date-time",
           "description": "服务版本上线时间"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       }
     },

@@ -4883,6 +4883,7 @@ message ListGroupReleasedAppsResp {
     string env_display = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境名称" }];
     google.protobuf.Timestamp release_time = 7
         [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务版本上线时间" }];
+    uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
   }
   uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
   repeated ListGroupReleasedAppsData details = 2;

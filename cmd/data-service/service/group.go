@@ -460,6 +460,7 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbds.ListGroup
 			Edited:      detail.Edited,
 			EnvDisplay:  detail.EnvDisplay,
 			ReleaseTime: timestamppb.New(detail.ReleaseTime.UTC()),
+			EnvId:       detail.EnvID,
 		}
 	}
 
