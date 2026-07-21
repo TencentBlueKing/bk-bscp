@@ -45,6 +45,8 @@ type Environment interface {
 	GetByName(kit *kit.Kit, bizID, projectID uint32, name string) (*table.Environment, error)
 	// List environments with options.
 	List(kit *kit.Kit, bizID, projectID uint32, opt *types.BasePage) ([]*table.Environment, int64, error)
+	// ListByEnvIDs 通过业务、项目和多个环境ID获取环境列表
+	ListByEnvIDs(kit *kit.Kit, bizID, projectID uint32, envIDs []uint32) ([]*table.Environment, error)
 	// CountByProjectID 统计单个项目下的环境数量
 	CountByProjectID(kit *kit.Kit, projectID uint32) (int64, error)
 	// CountByProjectIDs 批量统计项目下的服务数量
@@ -418,4 +420,23 @@ func (dao *environmentDao) GetByName(kit *kit.Kit, bizID, projectID uint32, name
 	q := dao.genQ.Environment.WithContext(kit.Ctx)
 
 	return q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.Name.Eq(name)).Take()
+}
+
+// ListByEnvIDs 通过业务、项目和多个环境ID获取环境列表
+func (dao *environmentDao) ListByEnvIDs(kit *kit.Kit, bizID, projectID uint32, envIDs []uint32) (
+	[]*table.Environment, error) {
+
+	if len(envIDs) == 0 {
+		return []*table.Environment{}, nil
+	}
+
+	m := dao.genQ.Environment
+	q := dao.genQ.Environment.WithContext(kit.Ctx)
+
+	result, err := q.Where(m.BizID.Eq(bizID), m.ProjectID.Eq(projectID), m.ID.In(envIDs...)).Find()
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s: %v", i18n.T(kit, "environment list failed"), err)
+	}
+
+	return result, nil
 }

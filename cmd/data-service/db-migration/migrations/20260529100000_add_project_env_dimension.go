@@ -338,9 +338,9 @@ func stepInsertDefaultProjectsAndEnvs(tx *gorm.DB) error {
 // 对应生成的 ALTER TABLE 示例 (以 groups 表为例)：
 //
 //	ALTER TABLE `groups`
-//	  ADD COLUMN `project_id` bigint(20) unsigned NOT NULL DEFAULT 0;
+//	  ADD COLUMN `project_id` bigint(20) unsigned DEFAULT NULL;
 type projectScopeModel struct {
-	ProjectID uint32 `gorm:"column:project_id;type:bigint(20) unsigned;not null;default:0"`
+	ProjectID *uint32 `gorm:"column:project_id;type:bigint(20) unsigned"`
 }
 
 func newProjectScopeModel() *projectScopeModel {
@@ -353,13 +353,13 @@ func newProjectScopeModel() *projectScopeModel {
 // 冗余 environments.name + '-' + environments.type
 //
 //	ALTER TABLE `applications`
-//	  ADD COLUMN `project_id`     bigint(20) unsigned NOT NULL DEFAULT 0,
-//	  ADD COLUMN `environment_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+//	  ADD COLUMN `project_id`     bigint(20) unsigned DEFAULT NULL,
+//	  ADD COLUMN `environment_id` bigint(20) unsigned DEFAULT NULL,
 //	  ADD COLUMN `env_display`    varchar(280)        NOT NULL DEFAULT '';
 type envScopeModel struct {
-	ProjectID     uint32 `gorm:"column:project_id;type:bigint(20) unsigned;not null;default:0"`
-	EnvironmentID uint32 `gorm:"column:environment_id;type:bigint(20) unsigned;not null;default:0"`
-	EnvDisplay    string `gorm:"column:env_display;type:varchar(280);not null;default:''"`
+	ProjectID     *uint32 `gorm:"column:project_id;type:bigint(20) unsigned"`
+	EnvironmentID *uint32 `gorm:"column:environment_id;type:bigint(20) unsigned"`
+	EnvDisplay    string  `gorm:"column:env_display;type:varchar(280);not null;default:''"`
 }
 
 func newEnvScopeModel() *envScopeModel {
@@ -367,13 +367,15 @@ func newEnvScopeModel() *envScopeModel {
 }
 
 // EnvScope: 添加 project_id + environment_id（applications 额外加 env_display）的表
+// credential_scopes表也需要环境ID，因为该表没有存appID只通过名称不能确认属于哪个环境
+// events表也需要环境ID，目前事件缓存用的上
 var envScopeTables = []string{
-	"applications", "client_querys", "clients",
+	"applications", "client_querys", "clients", "credential_scopes", "events",
 }
 
 // ProjectScope: 仅添加/回填 project_id 的表
 var projectScopeTables = []string{
-	"audits", "credentials", "events", "groups", "hooks", "template_spaces", "template_variables",
+	"audits", "credentials", "groups", "hooks", "template_spaces", "template_variables",
 }
 
 func stepAddColumns(tx *gorm.DB) error {
@@ -454,9 +456,8 @@ var projectScopeIndexAdjustments = []indexAdjustment{
 		"biz_id, project_id, environment_id, app_id, uid", true},
 	{"client_querys", "idx_tenantID_bizID_appID_creator", "idx_tenantID_bizID_projectID_envID_appID_creator",
 		"tenant_id, biz_id, project_id, environment_id, app_id, creator", false},
-}
-
-var envScopeIndexAdjustments = []indexAdjustment{
+	{"events", "idx_tenantID_resource_bizID", "idx_tenantID_resource_bizID_projectID_envID",
+		"tenant_id,resource, biz_id, project_id, environment_id", false},
 	{"applications", "idx_tenantID_bizID_name", "idx_tenantID_bizID_projectID_envID_name",
 		"tenant_id, biz_id, project_id, environment_id, name", true},
 }
@@ -466,39 +467,6 @@ func stepAdjustIndexes(tx *gorm.DB) error {
 	for _, adj := range projectScopeIndexAdjustments {
 		if err := replaceIndex(tx, adj); err != nil {
 			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
-		}
-	}
-
-	// 4b. EnvScope 表：删旧索引 → 新建索引（含 project_id + environment_id）
-	for _, adj := range envScopeIndexAdjustments {
-		if err := replaceIndex(tx, adj); err != nil {
-			return fmt.Errorf("adjust index on %s: %w", adj.table, err)
-		}
-	}
-
-	// 4c. 为所有 ProjectScope 表添加 project_id 二级索引
-	for _, table := range projectScopeTables {
-		idxName := "idx_project_id"
-		if !tx.Migrator().HasIndex(table, idxName) {
-			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (project_id)", idxName, quoteTable(table))).Error; err != nil {
-				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
-			}
-		}
-	}
-
-	// 4d. 为 EnvScope 表添加 project_id + environment_id 二级索引
-	for _, table := range envScopeTables {
-		idxName := "idx_project_id"
-		if !tx.Migrator().HasIndex(table, idxName) {
-			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (project_id)", idxName, quoteTable(table))).Error; err != nil {
-				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
-			}
-		}
-		idxName = "idx_environment_id"
-		if !tx.Migrator().HasIndex(table, idxName) {
-			if err := tx.Exec(fmt.Sprintf("CREATE INDEX %s ON %s (environment_id)", idxName, quoteTable(table))).Error; err != nil {
-				return fmt.Errorf("create index %s on %s: %w", idxName, table, err)
-			}
 		}
 	}
 
@@ -662,15 +630,29 @@ func backfillProjectScopeTable(db *gorm.DB, tableName string) error {
 		}
 		maxIDInBatch := idList[len(idList)-1]
 
-		// 2. 使用 CASE WHEN 将 NULL 和空字符串 '' 统一收拢为 'default'
-		sql := fmt.Sprintf(`
-			UPDATE %s t
-			INNER JOIN projects p ON p.biz_id = t.biz_id 
-				AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
-				  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
-				AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
-			SET t.project_id = p.id
-			WHERE t.id IN (?) AND (t.project_id = 0 OR t.project_id IS NULL)`, quoteTable(tableName))
+		// 根据目标表选择不同的回填 SQL
+		var sql string
+		if tableName == "template_spaces" {
+			// template_spaces 表特殊处理：name 为 'config_delivery' 时 project_id 设为 0
+			sql = fmt.Sprintf(`
+				UPDATE %s t
+				LEFT JOIN projects p ON p.biz_id = t.biz_id 
+					AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
+					  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
+					AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
+				SET t.project_id = CASE WHEN t.name = 'config_delivery' THEN NULL ELSE p.id END
+				WHERE t.id IN (?) AND t.project_id IS NULL`, quoteTable(tableName))
+		} else {
+			// 2. 使用 CASE WHEN 将 NULL 和空字符串 '' 统一收拢为 'default'
+			sql = fmt.Sprintf(`
+				UPDATE %s t
+				INNER JOIN projects p ON p.biz_id = t.biz_id 
+					AND CASE WHEN p.tenant_id IS NULL OR p.tenant_id = '' THEN 'default' ELSE p.tenant_id END 
+					  = CASE WHEN t.tenant_id IS NULL OR t.tenant_id = '' THEN 'default' ELSE t.tenant_id END
+					AND p.key = CONCAT('BK-BSCP-', LPAD(p.id, 5, '0'))
+				SET t.project_id = p.id
+				WHERE t.id IN (?) AND t.project_id IS NULL`, quoteTable(tableName))
+		}
 
 		result := db.Exec(sql, idList)
 		if result.Error != nil {
@@ -739,7 +721,7 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 					AND e.name = 'default'
 				SET t.project_id = p.id, t.environment_id = e.id, t.env_display = CONCAT(e.name, '-', e.type)
 				WHERE t.id IN (?) 
-				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
+				  AND (t.project_id IS NULL OR t.environment_id IS NULL)`, quoteTable(tableName))
 		} else {
 			// 3. 其他 EnvScope 表：同样做 CASE WHEN 兼容
 			sql = fmt.Sprintf(`
@@ -755,7 +737,7 @@ func backfillEnvScopeTable(db *gorm.DB, tableName string) error {
 					AND e.name = 'default'
 				SET t.project_id = p.id, t.environment_id = e.id
 				WHERE t.id IN (?) 
-				  AND ((t.project_id = 0 OR t.project_id IS NULL) OR (t.environment_id = 0 OR t.environment_id IS NULL))`, quoteTable(tableName))
+				  AND (t.project_id IS NULL OR t.environment_id IS NULL)`, quoteTable(tableName))
 		}
 
 		result := db.Exec(sql, idList)
@@ -803,20 +785,14 @@ var projectScopeIndexRestores = []indexRestoreDef{
 		"biz_id, app_id, uid", true},
 	{"client_querys", "idx_tenantID_bizID_projectID_envID_appID_creator", "idx_tenantID_bizID_appID_creator",
 		"tenant_id, biz_id, app_id, creator", false},
-}
-
-var envScopeIndexRestores = []indexRestoreDef{
+	{"events", "idx_tenantID_resource_bizID_projectID_envID", "idx_tenantID_resource_bizID",
+		"tenant_id,resource, biz_id", false},
 	{"applications", "idx_tenantID_bizID_projectID_envID_name", "idx_tenantID_bizID_name",
 		"tenant_id, biz_id, name", true},
 }
 
 func stepRestoreIndexes(tx *gorm.DB) error {
 	for _, r := range projectScopeIndexRestores {
-		if err := restoreIndex(tx, r); err != nil {
-			return fmt.Errorf("restore index on %s: %w", r.table, err)
-		}
-	}
-	for _, r := range envScopeIndexRestores {
 		if err := restoreIndex(tx, r); err != nil {
 			return fmt.Errorf("restore index on %s: %w", r.table, err)
 		}
