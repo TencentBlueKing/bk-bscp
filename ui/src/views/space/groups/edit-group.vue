@@ -48,8 +48,7 @@
     id: 0,
     name: '',
     public: true,
-    bind_apps: [],
-    env_id: '',
+    env_apps: [],
     rule_logic: 'AND',
     rules: [{ key: '', op: '', value: '' }],
   });
@@ -60,13 +59,12 @@
     () => props.show,
     (val) => {
       if (val) {
-        const { id, name, public: isPublic, bind_apps, selector } = props.group;
+        const { id, name, public: isPublic, env_apps, selector } = props.group;
         groupData.value = {
           id,
           name,
-          bind_apps: bind_apps.map((item) => item.id),
           public: isPublic,
-          env_id: String((props.group as any).env_id || ''),
+          env_apps,
           rule_logic: selector.labels_and ? 'AND' : 'OR',
           rules: (selector.labels_and || selector.labels_or) as IGroupRuleItem[],
         };
@@ -87,12 +85,11 @@
     }
     pending.value = true;
     try {
-      const { id, name, public: isPublic, bind_apps, env_id, rule_logic, rules } = groupData.value;
+      const { id, name, public: isPublic, env_apps, rule_logic, rules } = groupData.value;
       const params = {
         name,
         public: isPublic,
-        bind_apps: isPublic ? [] : bind_apps,
-        env_id,
+        bind_apps: isPublic ? [] : env_apps.map((item) => item.app_ids).flat(),
         selector: rule_logic === 'AND' ? { labels_and: rules } : { labels_or: rules },
       };
       await updateGroup(spaceId.value, id as number, projectId.value, params);
