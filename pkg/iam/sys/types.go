@@ -104,8 +104,6 @@ const (
 	ConfigTemplateDelete client.ActionID = "config_template_delete"
 	ConfigGenerate       client.ActionID = "config_generate"
 	ConfigRelease        client.ActionID = "config_release"
-	// ManageGlobalConfigKV 全局配置管理
-	ManageGlobalConfigKV client.ActionID = "manage_global_config_kv"
 )
 
 // ActionIDNameMap is action id type map.
@@ -145,7 +143,6 @@ var ActionIDNameMap = map[client.ActionID]string{
 	ConfigTemplateDelete: "配置模板删除",
 	ConfigGenerate:       "配置生成",
 	ConfigRelease:        "配置下发",
-	ManageGlobalConfigKV: "全局配置 KV 管理操作",
 }
 
 // InstanceSelectionID selection id to register iam.

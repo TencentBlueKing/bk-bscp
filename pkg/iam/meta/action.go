@@ -56,6 +56,4 @@ const (
 	GenerateConfig Action = "generate_config"
 	// ReleaseConfig 发布配置
 	ReleaseConfig Action = "release_config"
-	// ManageGlobalConfigKV 对应“全局配置 KV 管理”操作
-	ManageGlobalConfigKV Action = "global_config_kv_manage"
 )

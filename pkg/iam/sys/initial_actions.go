@@ -39,7 +39,6 @@ func GenerateStaticActions() []client.ResourceAction {
 	resourceActionList = append(resourceActionList, genCredentialActions()...)
 	resourceActionList = append(resourceActionList, genAuditActions()...)
 	resourceActionList = append(resourceActionList, genProcConfigMgmtActions()...)
-	resourceActionList = append(resourceActionList, genGlobalConfigKVActions()...)
 
 	return resourceActionList
 }
@@ -365,22 +364,6 @@ func genProcConfigMgmtActions() []client.ResourceAction {
 		Type:                 Edit,
 		RelatedResourceTypes: businessResource,
 		RelatedActions:       []client.ActionID{BusinessViewResource, ProcConfigMgmtView},
-		Version:              1,
-	})
-
-	return actions
-}
-
-// genGlobalConfigKVActions 生成全局配置管理按钮
-func genGlobalConfigKVActions() []client.ResourceAction {
-	actions := make([]client.ResourceAction, 0)
-
-	actions = append(actions, client.ResourceAction{
-		ID:                   ManageGlobalConfigKV,
-		Name:                 ActionIDNameMap[ManageGlobalConfigKV],
-		NameEn:               "Global Config KV Management",
-		RelatedResourceTypes: businessResource,
-		RelatedActions:       []client.ActionID{BusinessViewResource, ManageGlobalConfigKV},
 		Version:              1,
 	})
 

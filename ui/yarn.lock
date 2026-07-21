@@ -497,6 +497,13 @@
   resolved "https://registry.npmjs.org/@blueking/login-modal/-/login-modal-1.0.6.tgz"
   integrity sha512-zjDHiCNY2Aydo9BcFiGiiw8uodPkCSK+SthXQZQQ/8Bq4nHnz+Hkuo8rnPrwuDIgB2E2C6X+T5+6jDXqTwrZyg==
 
+"@blueking/login-userinfo@^0.0.13":
+  version "0.0.13"
+  resolved "https://registry.npmjs.org/@blueking/login-userinfo/-/login-userinfo-0.0.13.tgz"
+  integrity sha512-DHVIN/IGhZCiXalhy8YSMSikg4qMEe1WirqPwJrRCFcwk7fItKjQkrrXCam4JX66MCwSXFTAZ67ci2vsmfKRpw==
+  dependencies:
+    js-cookie "^3.0.5"
+
 "@blueking/notice-component@^2.0.1":
   version "2.0.7"
   resolved "https://registry.npmjs.org/@blueking/notice-component/-/notice-component-2.0.7.tgz"

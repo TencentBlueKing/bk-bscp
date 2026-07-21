@@ -57,8 +57,10 @@ type Authorizer interface {
 	Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute) error
 	// UnifiedAuthentication API 鉴权中间件
 	UnifiedAuthentication(next http.Handler) http.Handler
-	// UploadAppKeyAuthentication 上传类接口的 app 凭证认证中间件(叠加 Cookie/JWT, 供绕网关直连使用)
-	UploadAppKeyAuthentication(next http.Handler) http.Handler
+	// AppKeyAuthentication app 凭证认证中间件(回退式, 无凭证回退 Cookie/JWT, 供上传等有下游权限校验的路由使用)
+	AppKeyAuthentication(next http.Handler) http.Handler
+	// PlatformAppKeyAuthentication 平台级 app 凭证认证中间件(严格式, 仅 app 凭证放行, 无凭证拒绝, 不回退)
+	PlatformAppKeyAuthentication(next http.Handler) http.Handler
 	// GrantResourceCreatorAction grant a user's resource creator action.
 	GrantResourceCreatorAction(kt *kit.Kit, opts *client.GrantResourceCreatorActionOption) error
 	// WebAuthentication 网页鉴权中间件

@@ -87,12 +87,5 @@ func genBusinessManagementActionGroups() []client.ActionGroup {
 				{ID: ConfigTemplateDelete},
 			},
 		},
-		{
-			Name:   "全局配置 KV 管理",
-			NameEn: "GlobalConfigKV",
-			Actions: []client.ActionWithID{
-				{ID: ManageGlobalConfigKV},
-			},
-		},
 	}
 }
