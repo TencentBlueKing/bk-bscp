@@ -349,9 +349,9 @@
 
   // 确定上线按钮
   const handleSecondConfirm = async () => {
-    const { bkBizId: biz_id, appId: app_id } = props;
+    const { bkBizId: biz_id, appId: app_id, projectId, envId } = props;
     // 上线后查询当前版本状态
-    const resp = await approve(biz_id, app_id, versionData.value.id, {
+    const resp = await approve(biz_id, projectId, envId, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
     });
     // 这里有两种情况且不会同时出现：

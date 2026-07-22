@@ -3,37 +3,13 @@
     <bk-form-item :label="t('分组名称')" required property="name">
       <bk-input v-model="formData.name" :placeholder="t('请输入分组名称')" @blur="change"></bk-input>
     </bk-form-item>
-    <bk-form-item class="radio-group-form" :label="t('服务可见范围')" required property="public">
-      <bk-radio-group v-model="formData.public" @change="change">
-        <bk-radio :label="true">{{ t('公开') }}</bk-radio>
-        <bk-radio :label="false">{{ t('指定服务') }}</bk-radio>
-      </bk-radio-group>
-      <div v-if="!formData.public" class="env-service-row">
-        <bk-form-item :label="t('环境')" required property="env_id" class="env-selector">
-          <env-selector
-            v-model="formData.env_id"
-            :placeholder="t('请选择环境')"
-            :use-default-trigger="true"
-            @change="handleEnvInfoChange" />
-        </bk-form-item>
-        <bk-form-item :label="t('绑定服务')" required property="bind_apps" class="service-selector">
-          <bk-select
-            v-model="formData.bind_apps"
-            multiple
-            filterable
-            :placeholder="t('请选择服务')"
-            :input-search="false"
-            :loading="serviceLoading"
-            @change="change">
-            <bk-option
-              v-for="service in serviceList"
-              :key="service.id"
-              :label="service.spec.name"
-              :value="service.id"></bk-option>
-          </bk-select>
-        </bk-form-item>
-      </div>
-    </bk-form-item>
+    <service-scope-selector
+      ref="envAppRef"
+      :form-data="formData"
+      :space-id="(route.params.spaceId as string)"
+      :project-id="(route.params.projectId as string)"
+      @update:formData="(val) => (formData = val)"
+      @change="change" />
     <bk-form-item class="radio-group-form" :label="t('标签选择器')" required property="rules">
       <template #label>
         <span class="label-text">{{ t('标签选择器') }}</span>
@@ -68,12 +44,9 @@
   import { useRoute } from 'vue-router';
   import { cloneDeep } from 'lodash';
   import { IGroupEditing, IGroupRuleItem } from '../../../../../types/group';
-  import { getAppList } from '../../../../api/index';
-  import { IAppItem } from '../../../../../types/app';
   import { Info } from 'bkui-vue/lib/icon';
   import TagSelector from './tag-selector.vue';
-  import EnvSelector from '../../../../components/env-selector.vue';
-  import { IEnvItem } from '../../../../../types/env';
+  import ServiceScopeSelector from '../../../../components/service-scope-selector.vue';
 
   const getDefaultRuleConfig = (): IGroupRuleItem => ({ key: '', op: 'eq', value: '' });
 
@@ -86,11 +59,10 @@
 
   const emits = defineEmits(['change']);
 
-  const serviceLoading = ref(false);
-  const serviceList = ref<IAppItem[]>([]);
   const formData = ref(cloneDeep(props.group));
   const formRef = ref();
   const tagSelectorRef = ref();
+  const envAppRef = ref();
 
   const rules = {
     name: [
@@ -108,43 +80,6 @@
         message: t('仅允许使用中文、英文、数字、下划线、中划线，且必须以中文、英文、数字开头和结尾'),
       },
     ],
-    bind_apps: [
-      {
-        validator: (val: number[]) => {
-          if (!formData.value.public && val.length === 0) {
-            return false;
-          }
-          return true;
-        },
-        message: t('绑定服务不能为空'),
-        trigger: 'blur',
-      },
-    ],
-  };
-
-  const getServiceList = async () => {
-    serviceLoading.value = true;
-    try {
-      const bizId = route.params.spaceId as string;
-      const projectId = route.params.projectId as string;
-      const query = {
-        all: true,
-      };
-      const resp = await getAppList(bizId, projectId, formData.value.env_id, query);
-      serviceList.value = resp.details;
-    } catch (e) {
-      console.error(e);
-    } finally {
-      serviceLoading.value = false;
-    }
-  };
-
-  // 环境选择变化（带环境信息）
-  const handleEnvInfoChange = (_env: IEnvItem, isManual?: boolean) => {
-    if (isManual) {
-      formData.value.bind_apps = [];
-    };
-    getServiceList();
   };
 
   // 增加规则
@@ -173,7 +108,7 @@
 
   const validate = async () => {
     const validate = tagSelectorRef.value.every((item: any) => item.validate());
-    return await formRef.value.validate() && validate;
+    return await formRef.value.validate() && envAppRef.value.validate() && validate;
   };
 
   defineExpose({
@@ -187,24 +122,6 @@
     }
     :deep(.radio-group-form .bk-form-content) {
       line-height: 1;
-    }
-  }
-  .env-service-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 8px;
-    padding: 16px 16px 24px;
-    border-radius: 2px;
-    background-color: #F5F7FA;
-    :deep(.bk-form-item) {
-      margin-bottom: 0;
-    }
-    .env-selector {
-      flex: 1;
-    }
-    .service-selector {
-      width: 392px;
     }
   }
 

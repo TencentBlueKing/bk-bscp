@@ -41,7 +41,7 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onBeforeMount, computed } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../store/global';
@@ -60,7 +60,7 @@
 
   const props = withDefaults(
     defineProps<{
-      value?: number;
+      value?: number | undefined;
       envId: string;
       customTrigger?: boolean;
       isRecord?: boolean;
@@ -94,7 +94,7 @@
     },
   );
 
-  onBeforeMount(async () => {
+  const initService = async () => {
     await loadServiceList();
     let service;
     if (props.value) {
@@ -111,7 +111,7 @@
       localVal.value = service ? service.id : undefined;
     }
     emits('change', service);
-  });
+  };
 
   const loadServiceList = async () => {
     loading.value = true;
@@ -128,6 +128,14 @@
       loading.value = false;
     }
   };
+
+  watch(() => props.envId, (val) => {
+    if (val) {
+      initService();
+    }
+  }, {
+    immediate: true
+  });
 
   // 点击无查看权限的选项，弹出申请权限弹窗
   const handleOptionClick = (service: IAppItem, event: Event) => {

@@ -56,6 +56,8 @@
   const isError = ref(false);
   const configName = ref<string | string[]>();
   const bizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const envId = ref(String(route.params.envId));
   const appId = ref(route.params.appId);
   const configList = ref<{ name: string; sign: string }[]>([]);
 
@@ -83,7 +85,7 @@
   const loadConfigList = async () => {
     loading.value = true;
     try {
-      const res = await getAllReleasedConfigList(bizId.value, Number(appId.value));
+      const res = await getAllReleasedConfigList(bizId.value, Number(appId.value), projectId.value, envId.value);
       //  过滤掉重复的配置项
       const map = new Map();
       res.data.items.forEach((item: { name: string; sign: string }) => map.set(item.name, item));

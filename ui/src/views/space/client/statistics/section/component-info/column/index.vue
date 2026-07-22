@@ -30,6 +30,7 @@
   const drillDownData = ref('');
 
   const bizId = ref(String(route.params.spaceId));
+  const envId = ref(String(route.params.envId));
   const appId = ref(Number(route.params.appId));
 
   watch(
@@ -50,7 +51,7 @@
   const jumpToSearch = (query: { [key: string]: string }) => {
     const routeData = router.resolve({
       name: 'client-search',
-      params: { appId: appId.value, bizId: bizId.value },
+      params: { appId: appId.value, envId: envId.value, bizId: bizId.value },
       query: { ...query, heartTime: searchQuery.value.last_heartbeat_time },
     });
     window.open(routeData.href, '_blank');

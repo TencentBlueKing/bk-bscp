@@ -104,7 +104,7 @@
     rule: IGroupRuleItem;
     length: number;
     bkBizId: string;
-    projectId?: string;
+    projectId: string;
   }>();
   const emits = defineEmits(['change', 'add', 'delete']);
   const showKeyError = ref(false);

@@ -52,6 +52,7 @@
                   :editable="false"
                   :height="editorHeight"
                   :languages="props.config.spec.kv_type"
+                  :project-id="projectId"
                   :env-id="envId" />
               </div>
             </bk-form-item>
@@ -64,6 +65,7 @@
               :content="JSON.stringify(metaData, null, 2)"
               :editable="false"
               :show-tips="false"
+              :project-id="projectId"
               :env-id="envId" />
           </div>
         </bk-tab-panel>
@@ -92,6 +94,7 @@
     config: IConfigKvType;
     show: boolean;
     showEditBtn?: boolean;
+    projectId: string;
     envId: string;
   }>();
 

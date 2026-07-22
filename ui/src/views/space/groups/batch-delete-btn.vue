@@ -27,7 +27,7 @@
   const props = defineProps<{
     bkBizId: string;
     selectedIds: number[];
-    projectId?: string;
+    projectId: string;
   }>();
 
   const emits = defineEmits(['deleted']);

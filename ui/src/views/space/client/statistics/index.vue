@@ -4,10 +4,10 @@
       <ClientHeader :app-id="appId" :title="$t('客户端统计')" />
     </div>
     <div v-if="appId" class="management-data-container">
-      <VersionRelease :bk-biz-id="bkBizId" :app-id="appId" />
-      <PullMass :bk-biz-id="bkBizId" :app-id="appId" />
-      <LabelAndAnnotations :bk-biz-id="bkBizId" :app-id="appId" />
-      <ComponentInfo :bk-biz-id="bkBizId" :app-id="appId" />
+      <VersionRelease :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
+      <PullMass :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
+      <LabelAndAnnotations :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
+      <ComponentInfo :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
     </div>
     <Exception v-else />
   </section>
@@ -26,12 +26,16 @@
   const route = useRoute();
   const bkBizId = ref(String(route.params.spaceId));
   const appId = ref(Number(route.params.appId));
+  const projectId = ref(String(route.params.projectId));
+  const envId = ref(String(route.params.envId));
   watch(
     () => route.params.appId,
     (val) => {
       if (val) {
         appId.value = Number(val);
         bkBizId.value = String(route.params.spaceId);
+        projectId.value = String(route.params.projectId);
+        envId.value = String(route.params.envId);
       }
     },
   );

@@ -287,7 +287,7 @@
   import UserName from '../../../components/user-name.vue';
   import { debounce } from 'lodash';
 
-  const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
   const { t, locale } = useI18n();
   const { pagination, updatePagination } = useTablePagination('credentialList');
 
@@ -391,7 +391,7 @@
     if (statusFilterChecked.value && statusFilterChecked.value.length === 1) {
       query.enable = statusFilterChecked.value[0] === 'enable';
     }
-    const res = await getCredentialList(spaceId.value, query);
+    const res = await getCredentialList(spaceId.value, projectId.value, query);
     res.details.forEach((item: ICredentialItem) => (item.visible = false));
     credentialList.value = res.details;
     tableData.value = res.details;
@@ -462,7 +462,7 @@
     try {
       createPending.value = true;
       const params = { memo: createCredentialMemo.value, name: createCredentialName.value };
-      const res = await createCredential(spaceId.value, params);
+      const res = await createCredential(spaceId.value, projectId.value, params);
       BkMessage({
         theme: 'success',
         message: t('新建服务密钥成功'),
@@ -539,7 +539,7 @@
         return;
       }
     }
-    await updateCredential(spaceId.value, params);
+    await updateCredential(spaceId.value, projectId.value, params);
     credential.spec.memo = params.memo;
     credential.spec.name = params.name;
     BkMessage({
@@ -567,7 +567,7 @@
             enable: false,
             name: credential.spec.name,
           };
-          await updateCredential(spaceId.value, params);
+          await updateCredential(spaceId.value, projectId.value, params);
           BkMessage({
             theme: 'success',
             message: t('禁用成功'),
@@ -582,7 +582,7 @@
         enable: true,
         name: credential.spec.name,
       };
-      await updateCredential(spaceId.value, params);
+      await updateCredential(spaceId.value, projectId.value, params);
       credential.spec.enable = true;
       BkMessage({
         theme: 'success',
@@ -613,7 +613,7 @@
     if (!checkPermBeforeOperate()) {
       return;
     }
-    await deleteCredential(spaceId.value, deleteCredentialInfo.value?.id as number);
+    await deleteCredential(spaceId.value, projectId.value, deleteCredentialInfo.value?.id as number);
     BkMessage({
       theme: 'success',
       message: t('删除服务密钥成功'),
@@ -668,7 +668,7 @@
 
   // 校验密钥名称是否已存在
   const testCredentialNameExist = async () => {
-    const res = await getCredentialExist(spaceId.value, createCredentialName.value);
+    const res = await getCredentialExist(spaceId.value, projectId.value, createCredentialName.value);
     isCreateCredentialNameExist.value = res.data.exist;
   };
 

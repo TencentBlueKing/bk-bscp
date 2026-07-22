@@ -116,9 +116,16 @@
   };
 
   const getHref = (service: IGroupBindService) => {
+    const routeParmas = {
+      spaceId: spaceId.value,
+      projectId: projectId.value,
+      envId: service.env_id,
+      appId: service.app_id,
+      versionId: service.release_id
+    };
     const { href } = router.resolve({
       name: 'service-config',
-      params: { spaceId: spaceId.value, appId: service.app_id, versionId: service.release_id },
+      params: routeParmas,
     });
     return href;
   };

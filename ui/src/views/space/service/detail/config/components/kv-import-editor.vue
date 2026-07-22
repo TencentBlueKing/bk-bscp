@@ -71,6 +71,7 @@
           :error-line="errorLine"
           :language="format"
           :file-editor="false"
+          :project-id="projectId"
           :env-id="envId"
           @enter="separatorShow = true"
           @paste="handlePaste"

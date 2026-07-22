@@ -5,6 +5,8 @@
       :btn-loading="btnLoading"
       :is-approval-mode="true"
       :bk-biz-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="props.appId"
       :show="show"
       :current-version="versionData"
@@ -18,6 +20,8 @@
   <DialogReject
     v-model:show="RejectDialogShow"
     :space-id="spaceId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :release-id="versionData.id"
     :release-name="versionData.spec.name"
@@ -43,6 +47,8 @@
   const props = defineProps<{
     show: boolean;
     spaceId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     releaseId: number;
     releasedGroups: number[];
@@ -82,13 +88,13 @@
   );
 
   const init = async () => {
-    const { spaceId, appId, releaseId } = props;
+    const { spaceId, projectId, envId, appId, releaseId } = props;
     try {
       loading.value = true;
       const [versionRes, groupRes, appDetailRes] = await Promise.all([
-        getConfigVersionList(spaceId, appId, { start: 0, all: true }), // 所有版本
-        getServiceGroupList(spaceId, appId), // 所有分组
-        getAppDetail(spaceId, appId), // 服务详情数据
+        getConfigVersionList(spaceId, appId, projectId, envId, { start: 0, all: true }), // 所有版本
+        getServiceGroupList(spaceId, appId, projectId, envId,), // 所有分组
+        getAppDetail(spaceId, projectId, envId, appId), // 服务详情数据
       ]);
       // 已上线版本列表
       versionList.value = versionRes.data.details.filter((item: IConfigVersion) => {
@@ -179,7 +185,8 @@
   const handleConfirm = async () => {
     btnLoading.value = true;
     try {
-      const resp = await approve(props.spaceId, props.appId, props.releaseId, {
+      const { spaceId, projectId, envId, appId, releaseId } = props;
+      const resp = await approve(spaceId, projectId, envId, appId, releaseId, {
         publish_status: APPROVE_STATUS.pending_publish,
       });
       // 这里有两种情况且不会同时出现：

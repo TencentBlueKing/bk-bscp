@@ -43,6 +43,7 @@
                 :show-tips="false"
                 :height="editorHeight"
                 :variables="variables"
+                :project-id="projectId"
                 :env-id="envId" />
             </bk-form-item>
           </bk-form>
@@ -53,6 +54,7 @@
             :content="JSON.stringify(configDetail, null, 2)"
             :editable="false"
             :show-tips="false"
+            :project-id="projectId"
             :env-id="envId" />
         </bk-tab-panel>
       </bk-tab>

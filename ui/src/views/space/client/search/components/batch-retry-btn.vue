@@ -4,6 +4,8 @@
   </bk-button>
   <RetryDialog
     :bk-biz-id="props.bkBizId"
+    :project-id="projectId"
+    :env-id="envId"
     :app-id="props.appId"
     :is-show="isRetryOpen"
     :is-batch="true"
@@ -21,6 +23,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     selections: { id: number; uid: string; current_release_name: string; target_release_name: string }[];
     isAcrossChecked: boolean;

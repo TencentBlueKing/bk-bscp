@@ -15,6 +15,8 @@
         :content="content"
         :is-edit="true"
         :bk-biz-id="props.bkBizId"
+        :project-id="projectId"
+        :env-id="envId"
         :id="props.appId"
         :file-size-limit="spaceFeatureFlags.RESOURCE_LIMIT.maxFileSize"
         @change="handleChange" />

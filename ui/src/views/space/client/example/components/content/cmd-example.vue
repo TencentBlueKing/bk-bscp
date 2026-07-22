@@ -33,6 +33,8 @@
               :code-val="replaceVal"
               :variables="variables"
               :language="props.templateName"
+              :project-id="projectId"
+              :env-id="localEnvId"
               @change="(val: string) => (copyReplaceVal = val)" />
           </template>
           <template v-if="item.tips">
@@ -75,6 +77,8 @@
 
   const fileOptionRef = ref();
   const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const localEnvId = ref(String(route.params.envId));
   const codeVal = ref(''); // 存储yaml字符原始值
   const replaceVal = ref('');
   const copyReplaceVal = ref(''); // 渲染的值，用于复制未脱敏密钥的yaml数据

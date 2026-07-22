@@ -25,7 +25,7 @@ export default defineStore('user', () => {
     userInfo.value = {
       ...res.data,
       // 用户时区，兜底使用 Asia/Shanghai
-      time_zone: res.data.time_zone || 'Asia/Shanghai'
+      time_zone: res.data.time_zone || 'Asia/Shanghai',
     };
     return userInfo.value;
   };

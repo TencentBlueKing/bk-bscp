@@ -33,6 +33,7 @@
           :language="languages"
           :always-consume-mouse-wheel="false"
           :file-editor="false"
+          :project-id="projectId"
           :env-id="envId"
           @update:model-value="emits('change', $event)" />
       </div>
@@ -53,12 +54,12 @@
       languages: string;
       editable?: boolean;
       height?: number;
-      envId?: string;
+      projectId: string;
+      envId: string;
     }>(),
     {
       editable: true,
       height: 640,
-      envId: '0',
     },
   );
 

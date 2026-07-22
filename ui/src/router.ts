@@ -137,7 +137,7 @@ const routes = [
         ],
       },
       {
-        path: 'client_statistics/:appId?',
+        path: 'client_statistics/:envId?/:appId?',
         name: 'client-statistics',
         meta: {
           navModule: 'client-statistics',
@@ -145,7 +145,7 @@ const routes = [
         component: () => import('./views/space/client/statistics/index.vue'),
       },
       {
-        path: 'client_search/:appId?',
+        path: 'client_search/:envId?/:appId?',
         name: 'client-search',
         meta: {
           navModule: 'client-search',
@@ -161,7 +161,7 @@ const routes = [
         component: () => import('./views/space/credentials/index.vue'),
       },
       {
-        path: 'configuration_example/:appId?',
+        path: 'configuration_example/:envId?/:appId?',
         name: 'configuration-example',
         meta: {
           navModule: 'example',
@@ -169,7 +169,7 @@ const routes = [
         component: () => import('./views/space/client/example/index.vue'),
       },
       {
-        path: 'records',
+        path: 'records/:envId?',
         children: [
           {
             path: 'all',

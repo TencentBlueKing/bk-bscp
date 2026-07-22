@@ -3,27 +3,35 @@ import { IRecordQuery } from '../../types/record';
 
 /**
  * 获取操作记录列表
- * @param biz_id 空间ID
+ * @param bizId 空间 ID
+ * @param projectId 项目 ID
  * @param params 查询参数
  * @returns
  */
-export const getRecordList = (biz_id: string, params: IRecordQuery) =>
-  http.get(`/config/biz_id/${biz_id}/audits`, { params }).then((res) => res.data);
+export const getRecordList = (bizId: string, projectId: string, params: IRecordQuery) =>
+  http.get(`/config/biz/${bizId}/projects/${projectId}/audits`, { params }).then((res) => res.data);
 
 /**
  * 审批操作：撤销/驳回/通过/手动上线
- * @param biz_id 空间ID
- * @param app_id 服务ID
- * @param release_id 版本ID
+ * @param bizId 空间 ID
+ * @param projectId 项目 ID
+ * @param envId 环境 ID
+ * @param appId 服务 ID
+ * @param releaseId 版本 ID
  * @param params 参数
  * @returns
  */
 export const approve = (
   biz_id: string,
+  projectId: string,
+  envId: string,
   app_id: number,
   release_id: number,
   params: { publish_status: string; reason?: string },
 ) =>
   http
-    .post(`/config/biz_id/${biz_id}/app_id/${app_id}/release_id/${release_id}/approve`, { ...params })
+    .post(
+      `/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/releases/${release_id}/approve`,
+      { ...params },
+    )
     .then((res) => res.data);

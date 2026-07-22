@@ -15,6 +15,8 @@
       :folding="false"
       :always-consume-mouse-wheel="false"
       :contextmenu="false"
+      :project-id="projectId"
+      :env-id="envId"
       @update:model-value="emits('change', $event)" />
   </div>
 </template>
@@ -27,6 +29,8 @@
     language: string;
     codeVal: string;
     variables?: IVariableEditParams[];
+    projectId: string
+    envId: string;
   }>();
 
   const emits = defineEmits(['change']);

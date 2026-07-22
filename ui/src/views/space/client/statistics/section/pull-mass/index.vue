@@ -1,12 +1,32 @@
 <template>
   <div>
     <SectionTitle :title="$t('客户端配置拉取质量')" />
-    <PullCount :bk-biz-id="bkBizId" :app-id="appId" :title="$t('客户端拉取配置文件次数统计')" :is-duplicates="false" />
-    <PullCount :bk-biz-id="bkBizId" :app-id="appId" :title="$t('已拉取配置文件的客户端数量统计')" :is-duplicates="true" />
+    <PullCount
+      :bk-biz-id="bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
+      :app-id="appId"
+      :title="$t('客户端拉取配置文件次数统计')"
+      :is-duplicates="false" />
+    <PullCount
+      :bk-biz-id="bkBizId"
+      :project-id="projectId"
+      :env-id="envId"
+      :app-id="appId"
+      :title="$t('已拉取配置文件的客户端数量统计')"
+      :is-duplicates="true" />
     <section class="pull-wrap">
-      <PullSuccess :bk-biz-id="bkBizId" :app-id="appId" />
+      <PullSuccess
+        :bk-biz-id="bkBizId"
+        :project-id="projectId"
+        :env-id="envId"
+        :app-id="appId" />
       <div class="pull-error">
-        <PullError :bk-biz-id="bkBizId" :app-id="appId" />
+        <PullError
+          :bk-biz-id="bkBizId"
+          :project-id="projectId"
+          :env-id="envId"
+          :app-id="appId" />
       </div>
     </section>
   </div>
@@ -20,6 +40,8 @@
 
   defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 </script>

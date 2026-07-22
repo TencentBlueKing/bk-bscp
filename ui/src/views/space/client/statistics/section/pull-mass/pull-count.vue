@@ -76,6 +76,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     title: string;
     isDuplicates: boolean;
@@ -163,7 +165,8 @@
     };
     try {
       loading.value = true;
-      const res = await getClientPullCountData(props.bkBizId, props.appId, params);
+      const { bkBizId, appId, projectId, envId } = props;
+      const res = await getClientPullCountData(bkBizId, appId, projectId, envId, params);
       data.value.time = res.time || [];
       data.value.time_and_type =
         res.time_and_type?.map((item: any) => {
@@ -272,7 +275,7 @@
   const jumpToSearch = () => {
     const routeData = router.resolve({
       name: 'client-search',
-      params: { appId: props.appId, bizId: props.bkBizId },
+      params: { appId: props.appId, envId: props.envId, bizId: props.bkBizId },
       query: {
         pull_time: `${jumpSearchTime.value} 00:00:00 - ${jumpSearchTime.value} 23:59:59`,
         heartTime: searchQuery.value.last_heartbeat_time,
@@ -285,7 +288,7 @@
     if (item.name === '总量') return;
     const routeData = router.resolve({
       name: 'client-search',
-      params: { appId: props.appId, bizId: props.bkBizId },
+      params: { appId: props.appId, envId: props.envId, bizId: props.bkBizId },
       query: {
         pull_time: `${jumpSearchTime.value} 00:00:00 - ${jumpSearchTime.value} 23:59:59`,
         heartTime: searchQuery.value.last_heartbeat_time,

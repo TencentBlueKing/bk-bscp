@@ -13,6 +13,7 @@
       :content="content"
       :is-edit="false"
       :bk-biz-id="props.bkBizId"
+      :project-id="projectId"
       :env-id="envId"
       :id="props.appId"
       :file-size-limit="spaceFeatureFlags.RESOURCE_LIMIT.maxFileSize"
@@ -38,7 +39,7 @@
   import useServiceStore from '../../../../../../../../store/service';
   import useGlobalStore from '../../../../../../../../store/global';
 
-  const { spaceFeatureFlags } = storeToRefs(useGlobalStore());
+  const { spaceFeatureFlags, projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     show: boolean;

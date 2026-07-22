@@ -10,25 +10,31 @@
     :popover-min-width="240"
     @change="(value: string) => handleChange(value)"
     @toggle="handleToggle">
+    <template #prefix>
+      <slot name="prefix"></slot>
+    </template>
     <!-- 自定义触发器：useDefaultTrigger 为 true 或传入了 #trigger 插槽时使用 -->
     <template v-if="useDefaultTrigger || hasTriggerSlot" #trigger>
       <slot
         name="trigger"
         :select-info="selectedEnvInfo"
         :is-open="isOpen">
-        <!-- 默认触发器样式 -->
-        <div class="env-select-trigger">
-          <div v-if="selectedEnvInfo" class="env-display">
-            <i
-              :class="`
-                bk-bscp-icon ${ENV_TYPE_CONFIG[selectedEnvInfo.group.type].iconClass} env-icon
-              `"
-              :style="{ color: ENV_TYPE_CONFIG[selectedEnvInfo.group.type]?.iconColor || '#979BA5' }">
-            </i>
-            <span>{{ selectedEnvInfo.env?.spec?.name || '' }}</span>
+        <div class="env-select-trigger-wapper">
+          <slot name="trigger-prefix"></slot>
+          <!-- 默认触发器样式 -->
+          <div class="env-select-trigger">
+            <div v-if="selectedEnvInfo" class="env-display">
+              <i
+                :class="`
+                  bk-bscp-icon ${ENV_TYPE_CONFIG[selectedEnvInfo.group.type].iconClass} env-icon
+                `"
+                :style="{ color: ENV_TYPE_CONFIG[selectedEnvInfo.group.type]?.iconColor || '#979BA5' }">
+              </i>
+              <span>{{ selectedEnvInfo.env?.spec?.name || '' }}</span>
+            </div>
+            <div v-else class="placeholder-cls">{{ props.placeholder }}</div>
+            <AngleDown :class="['angle-down-icon', { 'icon-rotate': isOpen }]" />
           </div>
-          <div v-else class="placeholder-cls">{{ props.placeholder }}</div>
-          <AngleDown :class="['angle-down-icon', { 'icon-rotate': isOpen }]" />
         </div>
       </slot>
     </template>
@@ -54,13 +60,15 @@
           </div>
         </div>
       </template>
-      <bk-option
-        v-for="env in group.envs"
-        v-if="!collapsedGroups[group.type]"
-        :key="env.id"
-        :id="String(env.id)"
-        :name="env.spec?.name || ''">
-      </bk-option>
+      <template v-if="!collapsedGroups[group.type]">
+        <bk-option
+          v-for="env in group.envs"
+          :key="env.id"
+          :id="String(env.id)"
+          :name="env.spec?.name || ''"
+          :disabled="props.disabledEnvIds?.includes(String(env.id))">
+        </bk-option>
+      </template>
     </bk-option-group>
     <!-- 底部操作 -->
     <template #extension>
@@ -98,6 +106,8 @@
       disabled?: boolean;
       offset?: number;
       useDefaultTrigger?: boolean; // 是否使用默认触发器样式
+      disabledEnvIds?: string[]; // 需要禁用的环境 ID 列表
+      isUseFirstEnv?: boolean;
     }>(),
     {
       modelValue: '',
@@ -105,6 +115,7 @@
       disabled: false,
       offset: 6,
       useDefaultTrigger: false, // 默认 false，保持现有逻辑（使用 bk-select 原生触发器）
+      isUseFirstEnv: true,
     },
   );
 
@@ -178,11 +189,20 @@
 
       envGroups.value = groups;
 
+      // 智能选择第一个未被禁用的环境
       const firstGroup = groups.find((g) => g.envs.length > 0);
-      if (firstGroup && !selectedEnvId.value) {
-        selectedEnvId.value = String(firstGroup.envs[0].id);
+      if (firstGroup && props.isUseFirstEnv && !selectedEnvId.value) {
+        // 跳过已禁用的环境
+        const firstAvailableEnv = firstGroup.envs.find(
+          (env) => !props.disabledEnvIds?.includes(String(env.id)),
+        );
+        if (firstAvailableEnv) {
+          selectedEnvId.value = String(firstAvailableEnv.id);
+        }
       }
-      handleChange(selectedEnvId.value, false);
+      if (selectedEnvId.value) {
+        handleChange(selectedEnvId.value, false);
+      }
     } catch (e) {
       console.error('获取环境列表失败', e);
       envGroups.value = [];
@@ -243,16 +263,22 @@
 
 <style lang="scss" scoped>
   // 默认触发器样式
+  .env-select-trigger-wapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #c4c6cc;
+    border-radius: 2px;
+    background: #fff;
+    white-space: nowrap;
+  }
   .env-select-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 0 4px 0 12px;
+    padding: 0 4px 0 8px;
     height: 32px;
-    border: 1px solid #c4c6cc;
-    border-radius: 2px;
-    background: #fff;
     cursor: pointer;
     transition: border-color 0.2s;
     box-sizing: border-box;
@@ -297,15 +323,15 @@
       }
     }
   }
-  .bk-select.is-focus .bk-select-trigger .env-select-trigger {
+  .bk-select.is-focus .bk-select-trigger .env-select-trigger-wapper {
     border-color: #3A84FF;
     box-shadow: 0 0 3px #a3c5fd;
   }
-  .bk-form-item.is-error .env-select-trigger {
+  .bk-form-item.is-error .env-select-trigger-wapper {
     border-color: #ea3636;
     transition: all .15s;
   }
-  .bk-select.is-disabled .bk-select-trigger .env-select-trigger {
+  .bk-select.is-disabled .bk-select-trigger .env-select-trigger-wapper {
     cursor: not-allowed;
     background-color: #fafbfd;
     border-color: #dcdee5;

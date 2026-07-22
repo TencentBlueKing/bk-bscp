@@ -6,6 +6,13 @@
     <div class="rules-edit-area">
       <div v-for="(rule, index) in localRules" class="rule-list" :key="index">
         <div :class="['rule-item', { 'rule-error': !rule.isRight }, { 'service-error': !rule.isSelectService }]">
+          <env-selector
+            v-model="rule.envId"
+            :placeholder="t('请选择环境')"
+            :use-default-trigger="true"
+            :disabled="rule.type === 'del' || isExampleMode"
+            class="env-select"
+            @change="() => handleEnvChange(rule.envId, index)" />
           <bk-select
             v-model="rule.app"
             class="service-select"
@@ -15,7 +22,7 @@
             :placeholder="t('请选择服务')"
             :search-placeholder="$t('请输入')"
             @change="handleSelectApp(index)">
-            <bk-option v-for="app in appList" :id="app" :key="app.id" :name="app.spec.name" />
+            <bk-option v-for="app in appMap[rule.envId]" :id="app" :key="app.id" :name="app.spec.name" />
           </bk-select>
           /<bk-input
             v-model="rule.content"
@@ -66,19 +73,23 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, watch, computed } from 'vue';
+  import { ref, watch, computed, reactive } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute } from 'vue-router';
   import { ICredentialRule, IRuleEditing, IRuleUpdateParams, IPreviewRule } from '../../../../../types/credential';
   import { IAppItem } from '../../../../../types/app';
   import { ArrowsRight } from 'bkui-vue/lib/icon';
+  import EnvSelector from '../../../../components/env-selector.vue';
+  import { getAppList } from '../../../../api/index';
+  import { storeToRefs } from 'pinia';
+  import useGlobalStore from '../../../../store/global';
 
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = withDefaults(
     defineProps<{
       rules: ICredentialRule[];
-      appList: IAppItem[];
       previewRule: IPreviewRule | null;
       isExampleMode?: boolean;
     }>(),
@@ -98,12 +109,13 @@
   };
 
   const localRules = ref<IRuleEditing[]>([]);
+  const appMap = reactive<Record<string, IAppItem[]>>({});
 
   // 配置示例会传当前选择的服务，不提供选择服务
   const localApp = computed(() => {
     if (props.isExampleMode) {
       return (
-        props.appList.find((appItem) => {
+        appMap[String(route.params.envId)]?.find?.((appItem) => {
           return appItem.id === Number(route.params.appId);
         }) || null
       );
@@ -126,9 +138,12 @@
     rules.forEach((item) => {
       const {
         id,
-        spec: { app, scope },
+        spec: { app, scope, env_id },
       } = item;
-      const selectApp = props.appList.find((appItem) => appItem.spec.name === app);
+      const envApps = appMap[String(env_id)] || [];
+      const selectApp = envApps.find(
+        (appItem) => appItem.spec.name === app,
+      );
       rulesEditing.push({
         id,
         type: '',
@@ -139,6 +154,7 @@
         originalApp: app,
         isSelectService: true,
         needPreview: false,
+        envId: String(env_id || ''),
       });
     });
     return rulesEditing;
@@ -148,6 +164,7 @@
     () => props.rules,
     (val) => {
       if (val.length === 0) {
+        const appVal = props.isExampleMode ? localApp.value : null;
         localRules.value = [
           {
             id: 0,
@@ -155,10 +172,11 @@
             content: '',
             original: '',
             isRight: true,
-            app: props.isExampleMode ? localApp.value : null,
+            app: appVal,
             originalApp: '',
             isSelectService: true,
             needPreview: false,
+            envId: String(route.params.envId),
           },
         ];
       } else {
@@ -176,16 +194,18 @@
   );
 
   const handleAddRule = (index: number) => {
+    const appVal = props.isExampleMode ? localApp.value : null;
     localRules.value.splice(index + 1, 0, {
       id: 0,
       type: 'new',
       content: '',
       original: '',
       isRight: true,
-      app: props.isExampleMode ? localApp.value : null,
+      app: appVal,
       originalApp: '',
       isSelectService: true,
       needPreview: false,
+      envId: String(appVal?.env_id || ''),
     });
   };
 
@@ -243,6 +263,30 @@
     emits('formChange');
   };
 
+  const fetchAppMapsList = async (envId: string) => {
+    if (appMap[envId]) {
+      return;
+    }
+    const resp = await getAppList(spaceId.value, projectId.value, envId, { start: 0, all: true });
+    appMap[envId] = resp.details;
+  };
+
+  // 环境选择变更（带环境信息）
+  const handleEnvChange = async (envId: string | undefined, index: number) => {
+    if (envId) {
+      await fetchAppMapsList(envId);
+      // 更新环境对应得服务字段信息
+      if (props.isExampleMode) {
+        localRules.value[index].app = localApp.value;
+      } else {
+        localRules.value[index].app = appMap[envId].find(
+          (appItem) => appItem.spec.name === props.rules?.[index]?.spec?.app,
+        ) || null;
+      }
+    }
+    updateRuleParams();
+  };
+
   const updateRuleParams = () => {
     const params: IRuleUpdateParams = {
       add_scope: [],
@@ -250,18 +294,23 @@
       alter_scope: [],
     };
     localRules.value.forEach((item) => {
-      const { id, type, content, app } = item;
+      const { id, type, content, app, envId } = item;
+      const commonRuleParams = {
+        env_id: envId,
+        app: app?.spec?.name || '',
+        scope: content[0] === '/' ? content : `/${content}`,
+      };
       switch (type) {
         case 'new':
           if (content) {
-            params.add_scope.push({ app: app!.spec.name, scope: content[0] === '/' ? content : `/${content}` });
+            params.add_scope.push({ ...commonRuleParams});
           }
           break;
         case 'del':
           params.del_id.push(id);
           break;
         case 'modify':
-          params.alter_scope.push({ id, scope: content[0] === '/' ? content : `/${content}`, app: app!.spec.name });
+          params.alter_scope.push({ id, ...commonRuleParams });
           break;
       }
     });
@@ -293,6 +342,7 @@
         appName: rule.app!.spec.name,
         scopeContent: `/${rule.content}`,
         index,
+        envId: rule.envId,
       };
       rule.needPreview = false;
     }
@@ -327,6 +377,11 @@
   .rule-item {
     display: flex;
     align-items: center;
+    .env-select {
+      width: 120px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
     .service-select {
       width: 180px;
       margin-right: 8px;
@@ -381,6 +436,7 @@
       color: #979ba5;
       font-size: 12px;
       cursor: pointer;
+      white-space: nowrap;
       .arrow-icon {
         font-size: 16px;
       }

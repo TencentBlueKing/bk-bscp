@@ -60,6 +60,7 @@ export interface IGroupItem {
     labels_and?: IGroupRuleItem[];
     labels_or?: IGroupRuleItem[];
   };
+  env_apps: EnvAppsItem[];
 }
 
 // 分组按规则key分类数据
@@ -86,13 +87,17 @@ export interface IGroupCategoryItem {
   };
 }
 
+export interface EnvAppsItem {
+  env_id: string;
+  app_ids: number[];
+}
+
 // 分组编辑数据
 export interface IGroupEditing {
   id?: number;
   name: string;
   public: boolean;
-  bind_apps: number[];
-  env_id: string;
+  env_apps: EnvAppsItem[];
   rules: IGroupRuleItem[];
   rule_logic: string;
   uid?: string;
@@ -136,6 +141,7 @@ export interface IGroupBindService {
   release_id: number;
   release_name: string;
   edited: boolean;
+  env_id: string;
   env_display: string;
 }
 

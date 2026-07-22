@@ -141,6 +141,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     show: boolean;
     id: number;
@@ -214,7 +216,8 @@
           desc: 'start_time',
         },
       };
-      const resp = await getClientPullRecord(props.bkBizId, props.appId, props.id, params);
+      const { bkBizId, appId, projectId, envId, id } = props;
+      const resp = await getClientPullRecord(bkBizId, appId, projectId, envId, id, params);
       updatePagination('count', resp.data.count);
       tableData.value = resp.data.details;
     } catch (error) {
@@ -231,9 +234,16 @@
 
   const linkToApp = (versionId: number) => {
     emits('close');
+    const routeParams = {
+      spaceId: props.bkBizId,
+      projectId: props.projectId,
+      envId: props.envId,
+      appId: props.appId,
+      versionId
+    };
     const routeData = router.resolve({
       name: 'service-config',
-      params: { spaceId: props.bkBizId, appId: props.appId, versionId },
+      params: routeParams,
     });
     window.open(routeData.href, '_blank');
   };

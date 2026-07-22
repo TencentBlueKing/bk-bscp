@@ -1,4 +1,5 @@
 import { IAppItem } from './app';
+import { EnvType } from './env';
 export interface ICredentialItem {
   id: number;
   attachment: {
@@ -28,6 +29,9 @@ export interface ICredentialRule {
   spec: {
     scope: string;
     app: string;
+    env_id: string;
+    env_type: EnvType;
+    env_name: string;
   };
   attachment: {
     biz_id: number;
@@ -53,6 +57,7 @@ export interface IRuleEditing {
   isRight: boolean;
   isSelectService: boolean;
   needPreview: boolean;
+  envId: string; // 选中的环境ID
 }
 
 // 调用关联规则更新接口参数
@@ -60,6 +65,7 @@ interface IRuleUpdateItem {
   app: string;
   scope: string;
   id?: number;
+  env_id: string;
 }
 export interface IRuleUpdateParams {
   add_scope: IRuleUpdateItem[];
@@ -73,6 +79,7 @@ export interface IPreviewRule {
   scopeContent: string; // 规则内容
   appName: string; // 服务名称
   index: number ; // 规则索引
+  envId: string; // 环境id
 }
 
 export interface IPreviewRuleParams {
@@ -81,4 +88,5 @@ export interface IPreviewRuleParams {
   app_name: string;
   scope: string;
   search_value: string;
+  env_id: string;
 }

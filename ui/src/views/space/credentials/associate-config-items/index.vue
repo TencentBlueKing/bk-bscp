@@ -24,7 +24,6 @@
           ref="ruleEdit"
           :id="props.id"
           :rules="rules"
-          :app-list="appList"
           :is-example-mode="props.isExampleMode"
           @change="handleRuleChange"
           @form-change="isFormChange = true"
@@ -70,15 +69,13 @@
   import { getCredentialScopes, updateCredentialScopes } from '../../../../api/credentials';
   import { ICredentialRule, IRuleUpdateParams, IPreviewRule } from '../../../../../types/credential';
   import useModalCloseConfirmation from '../../../../utils/hooks/use-modal-close-confirmation';
-  import { getAppList } from '../../../../api/index';
-  import { IAppItem } from '../../../../../types/app';
   import MatchingResult from './matching-result.vue';
   import RuleView from './rule-view.vue';
   import RuleEdit from './rule-edit.vue';
   import { Message } from 'bkui-vue';
   import ViewRuleExample from './view-rule-example.vue';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
   const { t } = useI18n();
 
   const props = withDefaults(
@@ -109,13 +106,10 @@
   const isFormChange = ref(false);
   const pending = ref(false);
   const ruleEdit = ref();
-  const appList = ref<IAppItem[]>([]);
   const previewRule = ref<IPreviewRule | null>(null);
   const saveBtnDisabled = ref(false);
 
   onMounted(async () => {
-    const resp = await getAppList(spaceId.value, { start: 0, all: true });
-    appList.value = resp.details;
     if (props.isExampleMode) {
       handleOpenEdit();
     }
@@ -145,7 +139,7 @@
 
   const loadRules = async () => {
     loading.value = true;
-    const res = await getCredentialScopes(spaceId.value, props.id);
+    const res = await getCredentialScopes(spaceId.value, projectId.value, props.id);
     rules.value = res.details;
     loading.value = false;
   };
@@ -176,7 +170,7 @@
     } else {
       try {
         pending.value = true;
-        await updateCredentialScopes(spaceId.value, props.id, ruleChangeParams.value);
+        await updateCredentialScopes(spaceId.value, projectId.value, props.id, ruleChangeParams.value);
         ruleChangeParams.value = {
           add_scope: [],
           del_id: [],

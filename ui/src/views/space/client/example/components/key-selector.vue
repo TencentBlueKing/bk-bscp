@@ -50,11 +50,15 @@
 
 <script lang="ts" setup>
   import { ref, Ref, onMounted, inject } from 'vue';
+  import { storeToRefs } from 'pinia';
   import { useRoute, useRouter } from 'vue-router';
   import { newICredentialItem } from '../../../../../../types/client';
   import { getCredentialList } from '../../../../../api/credentials';
+  import useGlobalStore from '../../../../../store/global';
   import { AngleUpFill, RightTurnLine } from 'bkui-vue/lib/icon';
   import { debounce } from 'lodash';
+
+  const { projectId } = storeToRefs(useGlobalStore());
 
   const props = defineProps<{
     selectedKeyData: newICredentialItem['spec'] | null;
@@ -97,7 +101,7 @@
         start: 0,
         all: true,
       };
-      const res = await getCredentialList(bizId.value, query);
+      const res = await getCredentialList(bizId.value, projectId.value, query);
       const filterCurServiceData = filterCurService(res.details);
       credentialList.value = dataMasking(filterCurServiceData);
     } catch (e) {

@@ -81,6 +81,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
   }>();
 
@@ -188,7 +190,8 @@
     };
     try {
       loading.value = true;
-      const res = await getClientPullStatusData(props.bkBizId, props.appId, params);
+      const { bkBizId, appId, projectId, envId } = props;
+      const res = await getClientPullStatusData(bkBizId, appId, projectId, envId, params);
       data.value = res.failed_reason?.map((item: IPullErrorReason) => {
         const mapName = CLIENT_ERROR_CATEGORY_MAP.find(
           (errorItem) => errorItem.value === item.release_change_failed_reason,
@@ -226,7 +229,8 @@
     };
     try {
       loading.value = true;
-      const res = await getClientPullFailedReason(props.bkBizId, props.appId, params);
+      const { bkBizId, appId, projectId, envId } = props;
+      const res = await getClientPullFailedReason(bkBizId, appId, projectId, envId, params);
       specificReason.value = res.data.failed_reason?.map((item: IPullErrorReason) => {
         const mapName = CLIENT_ERROR_SUBCLASSES_MAP.find(
           (errorItem) => errorItem.value === item.release_change_failed_reason,
@@ -340,7 +344,7 @@
   const jumpToSearch = () => {
     const routeData = router.resolve({
       name: 'client-search',
-      params: { appId: props.appId, bizId: props.bkBizId },
+      params: { appId: props.appId, envId: props.envId, bizId: props.bkBizId },
       query: { failed_reason: jumpError.value, heartTime: searchQuery.value.last_heartbeat_time },
     });
     window.open(routeData.href, '_blank');
