@@ -49,8 +49,6 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return genSkipResource(a)
 	case meta.ProcConfigMgmt:
 		return genProcConfigMgmtResource(a)
-	case meta.GlobalConfigKV:
-		return genGlobalConfigKVResource(a)
 	// case meta.Commit:
 	//	return genCommitResource(a)
 	// case meta.ConfigItem:
@@ -96,8 +94,6 @@ func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) 
 		return genCredIAMResource(a)
 	case meta.ProcConfigMgmt:
 		return genProcConfigMgmtRes(a)
-	case meta.GlobalConfigKV:
-		return genGlobalConfigKVRes(a)
 	default:
 		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
 	}
@@ -137,12 +133,6 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 			actions = append(actions, action)
 		case meta.ProcConfigMgmt:
 			action, err := genProcConfigMgmtApplication(a)
-			if err != nil {
-				return nil, err
-			}
-			actions = append(actions, action)
-		case meta.GlobalConfigKV:
-			action, err := genGlobalConfigKVApplication(a)
 			if err != nil {
 				return nil, err
 			}

@@ -94,9 +94,9 @@ func (p *proxy) routers() http.Handler {
 		r.Mount("/", p.cfgSvrMux)
 	})
 
-	// configs 表 KV 管理接口
+	// configs 表 KV 管理接口, 仅平台 app 凭证放行(无下游权限校验, 用严格式避免登录态绕过)
 	r.Route("/api/v1/config/manage_config_kv", func(r chi.Router) {
-		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.authorizer.PlatformAppKeyAuthentication)
 		r.Mount("/", p.cfgSvrMux)
 	})
 
@@ -144,7 +144,7 @@ func (p *proxy) routers() http.Handler {
 		// 超时中间件必须排在认证之前, 使 deadline 透传到 kt.Ctx 再传到 bkrepo 请求。
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Timeout(uploadTimeout))
-			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.AppKeyAuthentication)
 			r.Use(p.authorizer.BizVerified)
 			r.Use(p.authorizer.ContentVerified)
 			// 内容上传API
@@ -156,7 +156,7 @@ func (p *proxy) routers() http.Handler {
 		// 分块内容上传API: 同样叠加 app 凭证认证 + 超时
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Timeout(multipartTimeout))
-			r.Use(p.authorizer.UploadAppKeyAuthentication)
+			r.Use(p.authorizer.AppKeyAuthentication)
 			r.Use(p.authorizer.BizVerified)
 			r.Use(p.authorizer.ContentVerified)
 			r.Route("/multipart", func(r chi.Router) {

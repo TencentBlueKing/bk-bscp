@@ -165,54 +165,94 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// uploadAppKeyAuthHeader app 凭证认证请求头, 复用蓝鲸网关鉴权头格式
-const uploadAppKeyAuthHeader = "X-Bkapi-Authorization"
+// appKeyAuthHeader app 凭证认证请求头, 复用蓝鲸网关鉴权头格式
+const appKeyAuthHeader = "X-Bkapi-Authorization"
 
-// UploadAppKeyAuthentication 上传类接口的 app 凭证认证中间件。
+// appKeyOutcome app 凭证校验结果
+type appKeyOutcome int
+
+const (
+	// appKeyNoCred 未携带 app 凭证、本服务未配置凭证或头非 app 凭证格式, 据此无法判定身份
+	appKeyNoCred appKeyOutcome = iota
+	// appKeyMatched app 凭证与本服务配置一致
+	appKeyMatched
+	// appKeyMismatch 携带了 app 凭证但与本服务配置不一致
+	appKeyMismatch
+)
+
+// verifyAppKey 校验请求头 X-Bkapi-Authorization 中的 app 凭证是否与本服务 cc.G().BaseConf 一致。
+// 校验通过(appKeyMatched)时返回填充好的 kit, 其余情况返回 nil。
+func (a authorizer) verifyAppKey(r *http.Request) (*kit.Kit, appKeyOutcome) {
+	rawAuth := r.Header.Get(appKeyAuthHeader)
+	expectCode := cc.G().BaseConf.AppCode
+	expectSecret := cc.G().BaseConf.AppSecret
+	if rawAuth == "" || expectCode == "" || expectSecret == "" {
+		return nil, appKeyNoCred
+	}
+
+	auth := new(components.BKAPIGWAuth)
+	if err := json.Unmarshal([]byte(rawAuth), auth); err != nil || auth.AppCode == "" || auth.AppSecret == "" {
+		return nil, appKeyNoCred
+	}
+
+	// 常量时间比较, 防时序攻击
+	codeMatch := subtle.ConstantTimeCompare([]byte(auth.AppCode), []byte(expectCode)) == 1
+	secretMatch := subtle.ConstantTimeCompare([]byte(auth.AppSecret), []byte(expectSecret)) == 1
+	if !codeMatch || !secretMatch {
+		return nil, appKeyMismatch
+	}
+
+	k := &kit.Kit{
+		Ctx:      r.Context(),
+		Rid:      components.RequestIDValue(r.Context()),
+		AppCode:  auth.AppCode,
+		User:     "bk_app:" + auth.AppCode, // 无用户态, 给审计保留可识别来源
+		TenantID: r.Header.Get(constant.BkTenantID),
+	}
+	k.Lang = tools.GetLangFromReq(r)
+	return k, appKeyMatched
+}
+
+// serveWithAppKit 将校验通过的 kit 注入请求上下文与转发头后进入下游。
+func serveWithAppKit(w http.ResponseWriter, r *http.Request, next http.Handler, k *kit.Kit) {
+	ctx := kit.WithKit(r.Context(), k)
+	r.Header.Set(constant.AppCodeKey, k.AppCode)
+	r.Header.Set(constant.RidKey, k.Rid)
+	r.Header.Set(constant.UserKey, k.User)
+	next.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AppKeyAuthentication app 凭证认证中间件(回退式)。
 // 第三方携带 X-Bkapi-Authorization: {"bk_app_code":"..","bk_app_secret":".."} 绕开网关直连,
 // 与本服务 cc.G().BaseConf(配置 baseConf.app_code/app_secret)一致即放行。
 // 未携带凭证或本服务未配置 app 凭证时, 回退到 UnifiedAuthentication, 保证 Cookie/JWT 仍可用。
-func (a authorizer) UploadAppKeyAuthentication(next http.Handler) http.Handler {
+// 仅适用于下游仍有权限校验(如 BizVerified/ContentVerified)的路由。
+func (a authorizer) AppKeyAuthentication(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		rawAuth := r.Header.Get(uploadAppKeyAuthHeader)
-		expectCode := cc.G().BaseConf.AppCode
-		expectSecret := cc.G().BaseConf.AppSecret
-
-		// 未携带凭证 / 本服务未配置 app 凭证 → 回退统一认证(Cookie/JWT)
-		if rawAuth == "" || expectCode == "" || expectSecret == "" {
-			a.UnifiedAuthentication(next).ServeHTTP(w, r)
-			return
-		}
-
-		auth := new(components.BKAPIGWAuth)
-		if err := json.Unmarshal([]byte(rawAuth), auth); err != nil || auth.AppCode == "" || auth.AppSecret == "" {
-			// 头存在但不是 app 凭证格式 → 回退, 兼容其它鉴权来源
-			a.UnifiedAuthentication(next).ServeHTTP(w, r)
-			return
-		}
-
-		// 常量时间比较, 防时序攻击
-		codeMatch := subtle.ConstantTimeCompare([]byte(auth.AppCode), []byte(expectCode)) == 1
-		secretMatch := subtle.ConstantTimeCompare([]byte(auth.AppSecret), []byte(expectSecret)) == 1
-		if !codeMatch || !secretMatch {
+		k, outcome := a.verifyAppKey(r)
+		switch outcome {
+		case appKeyMatched:
+			serveWithAppKit(w, r, next, k)
+		case appKeyMismatch:
 			render.Render(w, r, rest.Unauthorized(errors.New("invalid app code or app secret")))
+		default:
+			a.UnifiedAuthentication(next).ServeHTTP(w, r)
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+
+// PlatformAppKeyAuthentication 平台级 app 凭证认证中间件(严格式)。
+// 仅接受与本服务 cc.G().BaseConf 一致的 app 凭证, 无有效凭证一律拒绝, 不回退 Cookie/JWT。
+// 用于无下游权限校验、仅面向平台运维直连的管理接口, 避免登录态用户绕过。
+func (a authorizer) PlatformAppKeyAuthentication(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		k, outcome := a.verifyAppKey(r)
+		if outcome != appKeyMatched {
+			render.Render(w, r, rest.Unauthorized(errors.New("invalid or missing app credential")))
 			return
 		}
-
-		k := &kit.Kit{
-			Ctx:      r.Context(),
-			Rid:      components.RequestIDValue(r.Context()),
-			AppCode:  auth.AppCode,
-			User:     "bk_app:" + auth.AppCode, // 无用户态, 给审计保留可识别来源
-			TenantID: r.Header.Get(constant.BkTenantID),
-		}
-		k.Lang = tools.GetLangFromReq(r)
-
-		ctx := kit.WithKit(r.Context(), k)
-		r.Header.Set(constant.AppCodeKey, k.AppCode)
-		r.Header.Set(constant.RidKey, k.Rid)
-		r.Header.Set(constant.UserKey, k.User)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		serveWithAppKit(w, r, next, k)
 	}
 	return http.HandlerFunc(fn)
 }
