@@ -276,6 +276,8 @@
     <RepealDialog
       v-model:show="repealDialogShow"
       :space-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
       :data="confirmData"
@@ -283,6 +285,8 @@
     <PublishDialog
       v-model:show="publishDialogShow"
       :bk-biz-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="confirmData.serviceId"
       :group-list="groupList"
       :groups="groups"
@@ -295,6 +299,8 @@
     <VersionDiff
       :show="approvalShow"
       :space-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
       :released-groups="rowReleaseGroups"
@@ -303,6 +309,8 @@
     <VersionInfo
       :show="firstApprovalShow"
       :space-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
       :app-id="rowAppId"
       :release-id="rowReleaseId"
       :released-groups="rowReleaseGroups"
@@ -338,6 +346,8 @@
   const props = withDefaults(
     defineProps<{
       spaceId: string;
+      projectId: string;
+      envId: string;
       searchParams: IRecordQuery;
     }>(),
     {
@@ -441,7 +451,7 @@
         start_time: start_time ? convertTime(start_time!, 'utc', false) : '',
         end_time: end_time ? convertTime(end_time!, 'utc', false) : '',
       };
-      const res = await getRecordList(props.spaceId, params);
+      const res = await getRecordList(props.spaceId, props.projectId, params);
       tableDataSort(res.details);
       pagination.value.count = res.count;
       // 是否打开审批抽屉
@@ -576,9 +586,13 @@
   };
 
   const handleConfirmPublish = async () => {
-    const resp = await approve(props.spaceId, confirmData.value.serviceId, confirmData.value.releaseId, {
-      publish_status: APPROVE_STATUS.already_publish,
-    });
+    const resp = await approve(
+      props.spaceId,
+      props.projectId,
+      props.envId,
+      confirmData.value.serviceId,
+      confirmData.value.releaseId,
+      { publish_status: APPROVE_STATUS.already_publish,});
     loadRecordList();
     // 这里有两种情况且不会同时出现：
     // 1. itsm已经审批了，但我们产品页面还没有刷新
@@ -641,7 +655,7 @@
 
   // 获取所有上线服务内的分组列表，并组装tree组件节点需要的数据
   const getAllGroupData = async (appId: number) => {
-    const res = await getServiceGroupList(props.spaceId, appId);
+    const res = await getServiceGroupList(props.spaceId, appId, props.projectId, props.envId);
     groupList.value = res.details.map((group: IGroupItemInService) => {
       const { group_id, group_name, release_id, release_name } = group;
       const selector = group.new_selector;
@@ -655,6 +669,7 @@
     const url = router.resolve({
       name: 'service-config',
       params: {
+        envId: props.envId,
         appId: row.audit.attachment.app_id,
         versionId: row.strategy.release_id,
       },

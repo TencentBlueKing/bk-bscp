@@ -50,6 +50,8 @@
   const props = defineProps<{
     show: boolean;
     spaceId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     releaseId: number;
     releaseName: string;
@@ -76,7 +78,8 @@
     }
     btnLoading.value = true;
     try {
-      const resp = await approve(props.spaceId, props.appId, props.releaseId, {
+      const { spaceId, projectId, envId, appId, releaseId } = props;
+      const resp = await approve(spaceId, projectId, envId, appId, releaseId, {
         publish_status: APPROVE_STATUS.rejected_approval,
         reason: reason.value,
       });

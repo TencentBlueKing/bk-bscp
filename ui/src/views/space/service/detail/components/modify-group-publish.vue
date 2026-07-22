@@ -400,8 +400,8 @@
   };
 
   const handleSecondConfirm = async () => {
-    const { bkBizId: biz_id, appId: app_id } = props;
-    const resp = await approve(biz_id, app_id, versionData.value.id, {
+    const { bkBizId: biz_id, appId: app_id, projectId, envId } = props;
+    const resp = await approve(biz_id, projectId, envId, app_id, versionData.value.id, {
       publish_status: APPROVE_STATUS.already_publish,
     });
     // 这里有两种情况且不会同时出现：

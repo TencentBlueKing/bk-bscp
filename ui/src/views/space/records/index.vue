@@ -1,6 +1,12 @@
 <template>
   <section class="record-management-page">
     <div class="operate-area">
+      <env-selector
+        class="env-selector"
+        v-model="envId"
+        :placeholder="$t('请选择环境')"
+        :use-default-trigger="true"
+        @change="handleEnvChange" />
       <ServiceSelector
         ref="serviceSelectorRef"
         class="service-selector-record"
@@ -8,16 +14,19 @@
         :placeholder="$t('全部')"
         :clearable="true"
         :is-record="true"
+        :project-id="projectId"
+        :env-id="envId"
         @change="handleAppChange"
-        @clear="handleAppChange">
-        <template #prefix>
-          <span class="prefix-content">{{ $t('服务') }}</span>
-        </template>
-      </ServiceSelector>
+        @clear="handleAppChange" />
       <date-picker class="date-picker" @change-time="updateParams" />
       <search-option ref="searchOptionRef" @send-search-data="updateParams" />
     </div>
-    <record-table :space-id="spaceId" :search-params="searchParams" @handle-table-filter="optionParams = $event" />
+    <record-table
+      :space-id="spaceId"
+      :project-id="projectId"
+      :env-id="envId"
+      :search-params="searchParams"
+      @handle-table-filter="optionParams = $event" />
   </section>
 </template>
 <script setup lang="ts">
@@ -29,11 +38,14 @@
   import recordTable from './components/record-table.vue';
   import { IRecordQuery } from '../../../../types/record';
   import { IAppItem } from '../../../../types/app';
+  import EnvSelector from '../../../components/env-selector.vue';
 
   const route = useRoute();
   const router = useRouter();
 
   const spaceId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const envId = ref(String(route.params.envId || ''));
   const searchParams = ref<IRecordQuery>({}); // 外部搜索数据参数汇总
   const dateTimeParams = ref<{ start_time?: string; end_time?: string }>({}); // 日期组件参数
   const optionParams = ref<IRecordQuery>(); // 搜索组件参数
@@ -78,12 +90,27 @@
     const query = route.query;
     delete query.id;
     delete query.limit;
+    const routeParams = {
+      spaceId: spaceId.value,
+      projectId: projectId.value,
+      envId: envId.value,
+    };
     if (service) {
-      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ spaceId: spaceId.value, appId: service.id }));
-      await router.push({ name: 'records-app', params: { spaceId: spaceId.value, appId: service.id }, query });
+      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify({ ...routeParams, appId: service.id }));
+      await router.push({ name: 'records-app', params: { ...routeParams, appId: service.id }, query });
     } else {
-      await router.push({ name: 'records-all', params: { spaceId: spaceId.value }, query });
+      await router.push({ name: 'records-all', params: routeParams, query });
     }
+  };
+
+  const handleEnvChange = async () => {
+    if (route.params.appId) return;
+    const routeParams = {
+      spaceId: spaceId.value,
+      projectId: projectId.value,
+      envId: envId.value,
+    };
+    await router.push({ name: route.name, params: routeParams, query: route.query });
   };
 </script>
 <style lang="scss" scoped>
@@ -102,17 +129,15 @@
     justify-content: flex-start;
     margin-bottom: 16px;
   }
-  .prefix-content {
-    padding: 0 12px;
-    line-height: 32px;
-    border-right: 1px solid #c4c6cc;
-    background-color: #fafcfe;
+  .env-selector {
+    width: 120px;
   }
 </style>
 
 <style lang="scss">
   .service-selector-record {
     width: 280px;
+    margin-left: 8px;
     .bk-select-trigger .bk-select-tag:not(.is-disabled):hover {
       border-color: #c4c6cc;
     }

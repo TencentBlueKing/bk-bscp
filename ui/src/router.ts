@@ -169,7 +169,7 @@ const routes = [
         component: () => import('./views/space/client/example/index.vue'),
       },
       {
-        path: 'records',
+        path: 'records/:envId?',
         children: [
           {
             path: 'all',

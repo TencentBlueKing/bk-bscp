@@ -141,6 +141,7 @@ export interface IGroupBindService {
   release_id: number;
   release_name: string;
   edited: boolean;
+  env_id: string;
   env_display: string;
 }
 

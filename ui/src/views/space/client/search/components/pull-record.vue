@@ -234,9 +234,16 @@
 
   const linkToApp = (versionId: number) => {
     emits('close');
+    const routeParams = {
+      spaceId: props.bkBizId,
+      projectId: props.projectId,
+      envId: props.envId,
+      appId: props.appId,
+      versionId
+    };
     const routeData = router.resolve({
       name: 'service-config',
-      params: { spaceId: props.bkBizId, appId: props.appId, versionId },
+      params: routeParams,
     });
     window.open(routeData.href, '_blank');
   };
