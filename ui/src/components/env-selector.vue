@@ -107,6 +107,7 @@
       offset?: number;
       useDefaultTrigger?: boolean; // 是否使用默认触发器样式
       disabledEnvIds?: string[]; // 需要禁用的环境 ID 列表
+      isUseFirstEnv?: boolean;
     }>(),
     {
       modelValue: '',
@@ -114,6 +115,7 @@
       disabled: false,
       offset: 6,
       useDefaultTrigger: false, // 默认 false，保持现有逻辑（使用 bk-select 原生触发器）
+      isUseFirstEnv: true,
     },
   );
 
@@ -189,7 +191,7 @@
 
       // 智能选择第一个未被禁用的环境
       const firstGroup = groups.find((g) => g.envs.length > 0);
-      if (firstGroup && !selectedEnvId.value) {
+      if (firstGroup && props.isUseFirstEnv && !selectedEnvId.value) {
         // 跳过已禁用的环境
         const firstAvailableEnv = firstGroup.envs.find(
           (env) => !props.disabledEnvIds?.includes(String(env.id)),

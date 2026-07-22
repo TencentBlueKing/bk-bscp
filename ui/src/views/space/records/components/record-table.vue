@@ -450,6 +450,7 @@
         ...searchParams.value,
         start_time: start_time ? convertTime(start_time!, 'utc', false) : '',
         end_time: end_time ? convertTime(end_time!, 'utc', false) : '',
+        env_id: props.envId || '0',
       };
       const res = await getRecordList(props.spaceId, props.projectId, params);
       tableDataSort(res.details);

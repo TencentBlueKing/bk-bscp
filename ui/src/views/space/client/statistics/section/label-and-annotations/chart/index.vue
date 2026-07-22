@@ -91,6 +91,8 @@
 
   const props = defineProps<{
     bkBizId: string;
+    projectId: string;
+    envId: string;
     appId: number;
     primaryDimension: string;
     allLabel: string[];
@@ -158,15 +160,16 @@
   );
 
   const loadChartData = async (drillDownData?: any) => {
+    const { bkBizId, appId, projectId, envId, primaryDimension } = props;
     const allDimension: { [key: string]: string } = {};
     selectedDimension.value.forEach((item: string) => {
-      if (item === props.primaryDimension) return;
+      if (item === primaryDimension) return;
       allDimension[item] = '';
     });
     const params = {
       last_heartbeat_time: searchQuery.value.last_heartbeat_time,
       search: searchQuery.value.search,
-      primary_key: props.primaryDimension,
+      primary_key: primaryDimension,
       foreign_keys: allDimension,
     };
     if (drillDownData) {
@@ -175,7 +178,7 @@
     }
     try {
       loading.value = true;
-      const res = await getClientLabelData(props.bkBizId, props.appId, params);
+      const res = await getClientLabelData(bkBizId, appId, projectId, envId, params);
       if (drillDownData) {
         // 下钻后的数据组合为普通柱状图
         const drillDownData: IClientLabelItem[] = [];
@@ -190,7 +193,7 @@
         });
         data.value = drillDownData;
       } else {
-        data.value = res[props.primaryDimension];
+        data.value = res[primaryDimension];
       }
       if (selectedDimension.value.length > 1 && !isDrillDown.value) {
         data.value.forEach((item: IClientLabelItem) => {
@@ -221,7 +224,7 @@
     }
     const routeData = router.resolve({
       name: 'client-search',
-      params: { appId: props.appId, bizId: props.bkBizId },
+      params: { appId: props.appId, envId: props.envId, bizId: props.bkBizId },
       query: {
         label: JSON.stringify(labels),
         heartTime: searchQuery.value.last_heartbeat_time,

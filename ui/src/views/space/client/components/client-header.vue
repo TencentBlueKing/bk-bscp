@@ -90,7 +90,7 @@
 
   const bizId = ref(String(route.params.spaceId));
   const projectId = ref(String(route.params.projectId));
-  const localEnvId = ref(String(route.params.envId));
+  const localEnvId = ref(String(route.params.envId || ''));
 
   const routeParams = computed(() => ({
     spaceId: bizId.value,

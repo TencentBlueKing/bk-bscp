@@ -287,6 +287,7 @@
       name: 'client-search',
       params: {
         spaceId: route.params.spaceId,
+        envId: props.envId,
         appId: props.appId,
       },
       query,

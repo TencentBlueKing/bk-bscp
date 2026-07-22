@@ -30,7 +30,7 @@ export const getDefaultConfigScriptData = () => ({
  */
 export const getConfigList = (biz_id: string, app_id: number, projectId: string, envId: string, query: ICommonQuery) =>
   http
-    .post(`/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/config_items`, { ...query, with_status: true })
+    .post(`/config/biz/${biz_id}/projects/${projectId}/envs/${envId}/apps/${app_id}/config_items/list`, { ...query, with_status: true })
     .then((res) => res.data);
 
 /**

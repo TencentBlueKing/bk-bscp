@@ -280,7 +280,7 @@
         localRules.value[index].app = localApp.value;
       } else {
         localRules.value[index].app = appMap[envId].find(
-          (appItem) => appItem.spec.name === props.rules[index].spec.app,
+          (appItem) => appItem.spec.name === props.rules?.[index]?.spec?.app,
         ) || null;
       }
     }
