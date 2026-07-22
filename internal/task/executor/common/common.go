@@ -26,6 +26,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/expression"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -589,16 +590,14 @@ func buildScopeText(scopeJSON string) string {
 		return scopeJSON
 	}
 
-	if len(or.CCProcessID) == 0 {
-		return "*.*.*.*"
-	}
-
-	ids := make([]string, 0, len(or.CCProcessID))
-	for _, id := range or.CCProcessID {
-		ids = append(ids, strconv.FormatUint(uint64(id), 10))
-	}
-
-	return "*.*.*.*." + strings.Join(ids, ",")
+	// 五段表达式拼成点分展示串，缺省段补 "*"（对齐前端 mergeOpRange / 任务详情展示）。
+	return expression.GenDisplayExpression(expression.Scope{
+		SetName:      or.SetName,
+		ModuleName:   or.ModuleName,
+		ServiceName:  or.ServiceName,
+		ProcessAlias: or.ProcessAlias,
+		ProcessID:    or.ProcessID,
+	})
 }
 
 func buildExecuteResultText(success, failed, completed uint32) string {

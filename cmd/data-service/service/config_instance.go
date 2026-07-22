@@ -29,6 +29,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/expression"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
@@ -206,7 +207,8 @@ func (s *Service) GenerateConfig(ctx context.Context, req *pbds.GenerateConfigRe
 	}
 
 	// 执行配置生成任务
-	batchID, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskGenerate, pluginMode)
+	batchID, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskGenerate, pluginMode,
+		req.GetOperateRange())
 	if err != nil {
 		logs.Errorf("run config task failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
@@ -1531,7 +1533,8 @@ func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*p
 		configTemplateGroups = req.GetConfigTemplateGroups()
 	}
 
-	id, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskCheck, pluginMode)
+	id, err := s.runConfigTask(kt, req.GetBizId(), configTemplateGroups, ConfigTaskCheck, pluginMode,
+		req.GetOperateRange())
 	if err != nil {
 		return nil, err
 	}
@@ -1542,7 +1545,7 @@ func (s *Service) CheckConfig(ctx context.Context, req *pbds.CheckConfigReq) (*p
 // runConfigTask 运行配置生成或校验任务
 // nolint:funlen
 func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigTemplateGroup,
-	mode ConfigTaskMode, pluginMode bool) (uint32, error) {
+	mode ConfigTaskMode, pluginMode bool, reqOperateRange *pbproc.OperateRange) (uint32, error) {
 	if err := validateRequest(kt, bizID, ctgs); err != nil {
 		return 0, err
 	}
@@ -1659,7 +1662,7 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 	}
 
 	// 构建操作范围
-	operateRange := s.buildOperateRange(processesForRange, pluginMode)
+	operateRange := s.buildOperateRange(processesForRange, pluginMode, reqOperateRange)
 
 	batch.Spec.SetTaskData(&table.TaskExecutionData{
 		Environment:  environment,
@@ -1743,78 +1746,39 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 	return batchID, nil
 }
 
-// buildOperateRange 根据插件模式构建操作范围
-func (s *Service) buildOperateRange(processes []*table.Process, pluginMode bool) table.OperateRange {
-	// 收集 CC 进程 ID（去重）
-	ccProcessIDSet := make(map[uint32]struct{})
-	for _, p := range processes {
-		ccProcessIDSet[p.Attachment.CcProcessID] = struct{}{}
-	}
-
-	// 非插件模式：仅返回 CC 进程 ID
-	if !pluginMode {
-		ccProcessIDs := make([]uint32, 0, len(ccProcessIDSet))
-		for id := range ccProcessIDSet {
-			ccProcessIDs = append(ccProcessIDs, id)
-		}
+// buildOperateRange 构建操作范围（gsekit 风格五段表达式，缺省段为 "*"）。
+// 插件模式：原样记录请求 expression_scope 五段（对齐 gsekit API 路径，不解析）；
+// 非插件模式：把命中进程 CC 进程 ID 拼成压缩表达式记入 process_id，其余段 "*"（对齐 gsekit 页面路径）。
+func (s *Service) buildOperateRange(processes []*table.Process, pluginMode bool,
+	reqOperateRange *pbproc.OperateRange) table.OperateRange {
+	if pluginMode {
+		es := reqOperateRange.GetExpressionScope()
 		return table.OperateRange{
-			CCProcessID: ccProcessIDs,
+			SetName:      orWildcard(es.GetSetName()),
+			ModuleName:   orWildcard(es.GetModuleName()),
+			ServiceName:  orWildcard(es.GetServiceName()),
+			ProcessAlias: orWildcard(es.GetProcessAlias()),
+			ProcessID:    orWildcard(es.GetProcessId()),
 		}
 	}
 
-	// 插件模式：构建完整的操作范围（去重）
-	setNameSet := make(map[string]struct{})
-	moduleNameSet := make(map[string]struct{})
-	serviceNameSet := make(map[string]struct{})
-	processAliasSet := make(map[string]struct{})
-
+	// 非插件模式：收集命中进程 CC 进程 ID（去重后拼压缩表达式）
+	ccProcessIDs := make([]uint32, 0, len(processes))
+	seen := make(map[uint32]struct{}, len(processes))
 	for _, p := range processes {
-		if p.Spec != nil && p.Spec.SetName != "" {
-			setNameSet[p.Spec.SetName] = struct{}{}
+		id := p.Attachment.CcProcessID
+		if _, ok := seen[id]; ok {
+			continue
 		}
-		if p.Spec != nil && p.Spec.ModuleName != "" {
-			moduleNameSet[p.Spec.ModuleName] = struct{}{}
-		}
-		if p.Spec != nil && p.Spec.ServiceName != "" {
-			serviceNameSet[p.Spec.ServiceName] = struct{}{}
-		}
-		if p.Spec != nil && p.Spec.Alias != "" {
-			processAliasSet[p.Spec.Alias] = struct{}{}
-		}
-	}
-
-	// 转换为切片
-	setNames := make([]string, 0, len(setNameSet))
-	for name := range setNameSet {
-		setNames = append(setNames, name)
-	}
-
-	moduleNames := make([]string, 0, len(moduleNameSet))
-	for name := range moduleNameSet {
-		moduleNames = append(moduleNames, name)
-	}
-
-	serviceNames := make([]string, 0, len(serviceNameSet))
-	for name := range serviceNameSet {
-		serviceNames = append(serviceNames, name)
-	}
-
-	processAliases := make([]string, 0, len(processAliasSet))
-	for alias := range processAliasSet {
-		processAliases = append(processAliases, alias)
-	}
-
-	ccProcessIDs := make([]uint32, 0, len(ccProcessIDSet))
-	for id := range ccProcessIDSet {
+		seen[id] = struct{}{}
 		ccProcessIDs = append(ccProcessIDs, id)
 	}
-
 	return table.OperateRange{
-		SetNames:     setNames,
-		ModuleNames:  moduleNames,
-		ServiceNames: serviceNames,
-		ProcessAlias: processAliases,
-		CCProcessID:  ccProcessIDs,
+		SetName:      "*",
+		ModuleName:   "*",
+		ServiceName:  "*",
+		ProcessAlias: "*",
+		ProcessID:    expression.IDsToExpr(ccProcessIDs),
 	}
 }
 

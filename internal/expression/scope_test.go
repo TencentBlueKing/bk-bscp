@@ -44,6 +44,23 @@ func TestGenExpressionDefaults(t *testing.T) {
 	}
 }
 
+// 展示串用点分分隔、缺省补 "*"，且不得混入内部匹配锚点 ExpressionSplitter。
+func TestGenDisplayExpression(t *testing.T) {
+	s := Scope{
+		Environment: "3",
+		SetName:     "[管控平台,PaaS平台]",
+		ServiceName: "127.0.0.1_svc",
+		ProcessID:   "4[6,8,9]",
+	}
+	want := "[管控平台,PaaS平台].*.127.0.0.1_svc.*.4[6,8,9]"
+	if got := GenDisplayExpression(s); got != want {
+		t.Errorf("GenDisplayExpression = %q, want %q", got, want)
+	}
+	if got := GenDisplayExpression(Scope{Environment: "3"}); got != "*.*.*.*.*" {
+		t.Errorf("GenDisplayExpression defaults = %q, want %q", got, "*.*.*.*.*")
+	}
+}
+
 // 端到端：表达式范围 → 命中 CC 进程 ID（对齐 expression_scope_to_scope 6 步）。
 func TestScopeToCcIDs(t *testing.T) {
 	candidates := []Candidate{

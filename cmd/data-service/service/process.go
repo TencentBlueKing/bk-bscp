@@ -24,6 +24,7 @@ import (
 	"gorm.io/gen/field"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
+	"github.com/TencentBlueKing/bk-bscp/internal/expression"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -457,40 +458,40 @@ func filterInstancesForStart(processes []*table.Process, processInstances []*tab
 	return filteredProcesses, filteredInstances
 }
 
-// buildOperateRange 从进程列表构建操作范围
+// buildOperateRange 从请求 / 进程列表构建操作范围（gsekit 风格五段表达式，缺省段为 "*"）。
+// 插件路径：原样记录请求 expression_scope 五段（对齐 gsekit API 路径，不解析）；
+// 非插件路径：把命中进程 CC 进程 ID 拼成压缩表达式记入 process_id，其余段 "*"（对齐 gsekit 页面路径）。
 func buildOperateRange(processes []*table.Process, req *pbds.OperateProcessReq) table.OperateRange {
-	operateRange := table.OperateRange{
-		SetNames:     make([]string, 0, len(processes)),
-		ModuleNames:  make([]string, 0, len(processes)),
-		ServiceNames: make([]string, 0, len(processes)),
-		ProcessAlias: make([]string, 0, len(processes)),
-		CCProcessID:  make([]uint32, 0, len(processes)),
-	}
-
-	// 仅插件操作需要构建完整操作范围
 	if req.OperateRange != nil {
-		if setName := req.OperateRange.GetSetName(); setName != "" {
-			operateRange.SetNames = []string{setName}
-		}
-		if moduleName := req.OperateRange.GetModuleName(); moduleName != "" {
-			operateRange.ModuleNames = []string{moduleName}
-		}
-		if serviceName := req.OperateRange.GetServiceName(); serviceName != "" {
-			operateRange.ServiceNames = []string{serviceName}
-		}
-		if processAlias := req.OperateRange.GetProcessAlias(); processAlias != "" {
-			operateRange.ProcessAlias = []string{processAlias}
-		}
-		if ccProcessID := req.OperateRange.GetCcProcessId(); ccProcessID != 0 {
-			operateRange.CCProcessID = []uint32{ccProcessID}
-		}
-	} else {
-		for _, process := range processes {
-			operateRange.CCProcessID = append(operateRange.CCProcessID, process.Attachment.CcProcessID)
+		es := req.OperateRange.GetExpressionScope()
+		return table.OperateRange{
+			SetName:      orWildcard(es.GetSetName()),
+			ModuleName:   orWildcard(es.GetModuleName()),
+			ServiceName:  orWildcard(es.GetServiceName()),
+			ProcessAlias: orWildcard(es.GetProcessAlias()),
+			ProcessID:    orWildcard(es.GetProcessId()),
 		}
 	}
 
-	return operateRange
+	ccProcessIDs := make([]uint32, 0, len(processes))
+	for _, process := range processes {
+		ccProcessIDs = append(ccProcessIDs, process.Attachment.CcProcessID)
+	}
+	return table.OperateRange{
+		SetName:      "*",
+		ModuleName:   "*",
+		ServiceName:  "*",
+		ProcessAlias: "*",
+		ProcessID:    expression.IDsToExpr(ccProcessIDs),
+	}
+}
+
+// orWildcard 空表达式段回退为 "*"（对齐 gsekit expression_scope 缺省语义）。
+func orWildcard(seg string) string {
+	if seg == "" {
+		return "*"
+	}
+	return seg
 }
 
 // createTaskBatch 创建任务批次

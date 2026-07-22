@@ -21277,27 +21277,6 @@
           "type": "string",
           "description": "环境类型(1:测试 2: 体验 3: 正式)"
         },
-        "setName": {
-          "type": "string",
-          "description": "集群名称"
-        },
-        "moduleName": {
-          "type": "string",
-          "description": "模块名称"
-        },
-        "serviceName": {
-          "type": "string",
-          "description": "服务实例名称"
-        },
-        "processAlias": {
-          "type": "string",
-          "description": "进程别名"
-        },
-        "ccProcessId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "CC进程ID"
-        },
         "configTemplateIds": {
           "type": "array",
           "items": {
@@ -21315,8 +21294,8 @@
         },
         "expressionScope": {
           "$ref": "#/definitions/pbprocExpressionScope",
-          "description": "表达式范围(与单值字段互斥)",
-          "title": "表达式范围，与上面的单值等值字段互斥分流；非空时按 gsekit 等价的表达式匹配进程。\n环境类型复用本消息的 environment 字段。"
+          "description": "表达式范围",
+          "title": "表达式范围：按 gsekit 等价的表达式匹配进程。环境类型复用本消息的 environment 字段。"
         }
       },
       "title": "操作范围，适配进程配置管理插件"
@@ -22138,44 +22117,28 @@
     "pbtbOperateRange": {
       "type": "object",
       "properties": {
-        "setNames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "集群名称列表"
+        "setName": {
+          "type": "string",
+          "description": "集群名称表达式"
         },
-        "moduleNames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "模块名称列表"
+        "moduleName": {
+          "type": "string",
+          "description": "模块名称表达式"
         },
-        "serviceNames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "服务实例名称列表"
+        "serviceName": {
+          "type": "string",
+          "description": "服务实例名称表达式"
         },
-        "ccProcessNames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "CC进程名称列表"
+        "processAlias": {
+          "type": "string",
+          "description": "进程别名表达式"
         },
-        "ccProcessIds": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "description": "CC进程ID列表"
+        "processId": {
+          "type": "string",
+          "description": "CC进程ID表达式"
         }
       },
-      "title": "OperateRange 操作范围"
+      "title": "OperateRange 操作范围（gsekit 风格五段表达式，缺省段为 \"*\"）"
     },
     "pbtbProcessTaskData": {
       "type": "object",

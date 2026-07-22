@@ -616,7 +616,6 @@ Content-Type: application/json
     }
   ],
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -630,11 +629,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   }
 }
 ```
@@ -681,7 +676,6 @@ Content-Type: application/json
     }
   ],
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -695,11 +689,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   }
 }
 ```
@@ -1112,7 +1102,6 @@ Content-Type: application/json
     }
   ],
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -1126,11 +1115,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   }
 }
 ```
@@ -1177,7 +1162,6 @@ Content-Type: application/json
     }
   ],
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -1191,11 +1175,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   }
 }
 ```
@@ -2802,7 +2782,6 @@ Content-Type: application/json
 {
   "enableProcessRestart": false,
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -2816,11 +2795,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   },
   "operateType": "",
   "processIds": [
@@ -2869,7 +2844,6 @@ Content-Type: application/json
 {
   "enableProcessRestart": false,
   "operateRange": {
-    "ccProcessId": 0,
     "configTemplateIds": [
       {}
     ],
@@ -2883,11 +2857,7 @@ Content-Type: application/json
       "processId": "",
       "serviceName": "",
       "setName": ""
-    },
-    "moduleName": "",
-    "processAlias": "",
-    "serviceName": "",
-    "setName": ""
+    }
   },
   "operateType": "",
   "processIds": [
@@ -5676,15 +5646,10 @@ Content-Type: application/json
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| ccProcessId | int64 (formatted integer)| `int64` |  | | CC进程ID |  |
 | configTemplateIds | []int64 (formatted integer)| `[]int64` |  | | 配置模版ID列表 |  |
 | configTemplateNames | []string| `[]string` |  | | 配置模版名称列表 |  |
 | environment | string| `string` |  | | 环境类型(1:测试 2: 体验 3: 正式) |  |
-| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围(与单值字段互斥) |  |
-| moduleName | string| `string` |  | | 模块名称 |  |
-| processAlias | string| `string` |  | | 进程别名 |  |
-| serviceName | string| `string` |  | | 服务实例名称 |  |
-| setName | string| `string` |  | | 集群名称 |  |
+| expressionScope | [PbprocExpressionScope](#pbproc-expression-scope)| `PbprocExpressionScope` |  | | 表达式范围 |  |
 
 
 
@@ -5981,11 +5946,11 @@ Content-Type: application/json
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| ccProcessIds | []int64 (formatted integer)| `[]int64` |  | | CC进程ID列表 |  |
-| ccProcessNames | []string| `[]string` |  | | CC进程名称列表 |  |
-| moduleNames | []string| `[]string` |  | | 模块名称列表 |  |
-| serviceNames | []string| `[]string` |  | | 服务实例名称列表 |  |
-| setNames | []string| `[]string` |  | | 集群名称列表 |  |
+| moduleName | string| `string` |  | | 模块名称表达式 |  |
+| processAlias | string| `string` |  | | 进程别名表达式 |  |
+| processId | string| `string` |  | | CC进程ID表达式 |  |
+| serviceName | string| `string` |  | | 服务实例名称表达式 |  |
+| setName | string| `string` |  | | 集群名称表达式 |  |
 
 
 

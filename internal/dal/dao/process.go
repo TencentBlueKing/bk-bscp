@@ -536,48 +536,13 @@ func (dao *processDao) handleManagedStatus(kit *kit.Kit, q gen.IProcessDo, statu
 	return []rawgen.Condition{q.Where(m.ID.In(pid...))}, nil
 }
 
-// GetByOperateRange 根据操作范围查询进程
+// GetByOperateRange 根据操作范围查询进程。
 func (dao *processDao) GetByOperateRange(kit *kit.Kit, bizID uint32, operateRange *pbproc.OperateRange) ([]*table.Process, error) {
-	m := dao.genQ.Process
-	q := dao.genQ.Process.WithContext(kit.Ctx)
-
-	// 表达式范围与单值等值字段互斥分流：非空时走 gsekit 等价的表达式匹配路径。
-	if es := operateRange.GetExpressionScope(); es != nil {
-		return dao.getByExpressionScope(kit, bizID, operateRange.GetEnvironment(), es)
+	es := operateRange.GetExpressionScope()
+	if es == nil {
+		return nil, errf.Errorf(errf.InvalidParameter, "%s", "expression scope is required")
 	}
-
-	// 构建查询条件
-	var conds []rawgen.Condition
-	conds = append(conds, m.BizID.Eq(bizID))
-
-	if operateRange.GetEnvironment() != "" {
-		conds = append(conds, m.Environment.Eq(operateRange.GetEnvironment()))
-	}
-
-	if operateRange.GetSetName() != "" {
-		conds = append(conds, m.SetName.Eq(operateRange.GetSetName()))
-	}
-
-	if operateRange.GetModuleName() != "" {
-		conds = append(conds, m.ModuleName.Eq(operateRange.GetModuleName()))
-	}
-
-	if operateRange.GetServiceName() != "" {
-		conds = append(conds, m.ServiceName.Eq(operateRange.GetServiceName()))
-	}
-
-	if operateRange.GetProcessAlias() != "" {
-		conds = append(conds, m.Alias_.Eq(operateRange.GetProcessAlias()))
-	}
-
-	if operateRange.GetCcProcessId() != 0 {
-		conds = append(conds, m.CcProcessID.Eq(operateRange.GetCcProcessId()))
-	}
-
-	// 只查询未删除的进程
-	conds = append(conds, m.CcSyncStatus.Neq(table.Deleted.String()))
-
-	return q.Where(conds...).Find()
+	return dao.getByExpressionScope(kit, bizID, operateRange.GetEnvironment(), es)
 }
 
 // getByExpressionScope 表达式范围路径：先按业务+环境（不含已删除）加载候选进程，

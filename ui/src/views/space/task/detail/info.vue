@@ -72,18 +72,16 @@
   ];
 
   const OP_RANGE_ORDER: (keyof IOperateRange)[] = [
-    'set_names',
-    'module_names',
-    'service_names',
-    'cc_process_names',
-    'cc_process_ids',
+    'set_name',
+    'module_name',
+    'service_name',
+    'process_alias',
+    'process_id',
   ];
 
+  // 五段表达式以 gsekit 风格拼成点分串，缺省段展示为 "*"（后端已保证缺省段为 "*"，此处兜底）。
   const mergeOpRange = (operateRange: IOperateRange) => {
-    return OP_RANGE_ORDER.map((key) => {
-      const arr = operateRange[key];
-      return arr.length ? `[${arr.join(',')}]` : '*';
-    }).join('.');
+    return OP_RANGE_ORDER.map((key) => operateRange[key] || '*').join('.');
   };
 
   const handleGoProcess = (value: string) => {

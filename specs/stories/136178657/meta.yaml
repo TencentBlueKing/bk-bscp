@@ -1,0 +1,77 @@
+# specs/stories/136178657/meta.yaml
+# 字段说明详见 .claude/skills/tapd-story-pipeline/references/state-mutation-guide.md
+
+# ===== 需求标识 =====
+id: "1020451610136178657"
+workspace_id: "20451610"
+agent_tool: agent
+owner: "xiaolnwang"
+
+# ===== 状态游标 =====
+phase: tasks-generated
+attempts: 1
+round: 1
+context_revision: 4
+
+# ===== 基线 =====
+implement_baseline_commit: ""
+
+# ===== 卡点信号 =====
+last_failure: null
+pending_review:
+  artifacts: ["spec.md", "plan.md", "tasks.md"]
+  ready_at: "2026-07-22T11:40:00+08:00"
+
+# ===== 代码统计（commit 阶段写入）=====
+stats:
+  total: 0
+  add_code: 0
+  delete_code: 0
+  logic_code: 0
+  test_code: 0
+  docs: 0
+  files: 0
+  cost:
+    total_duration_sec: 0.0
+    total_cost_usd: 0.0
+    total_credit: 0.0
+    total_input_tokens: 0
+    total_output_tokens: 0
+    total_cache_tokens: 0
+    total_cached_write_tokens: 0
+    total_cached_miss_tokens: 0
+    subagent_calls: 0
+    per_call: []
+
+# ===== 累计历史 =====
+history:
+  - at: "2026-07-22T10:45:00+08:00"
+    kind: phase_advance
+    phase: tech-clarified
+    attempt: 1
+    round: 1
+    note: "技术澄清完成（Q-001→TD-001：TaskExecutionData 新增五段表达式载体字段，不复用单值数组）；speckit-specify 生成 spec.md，覆盖 FR-001~FR-007 + AC-001~AC-005 + AC-T01/AC-T02，质量验证通过"
+  - at: "2026-07-22T10:55:00+08:00"
+    kind: phase_advance
+    phase: researched
+    attempt: 1
+    round: 1
+    note: "speckit-plan 生成 plan.md/research.md/data-model.md，plan-report verdict=pass；计划覆盖全部 FR/AC，无 DDL、复用 internal/expression（135740005），改动横跨 table/protocol/convert/service/ui"
+  - at: "2026-07-22T11:08:00+08:00"
+    kind: phase_advance
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "speckit-tasks 生成 tasks.md（US1 记录+展示 MVP / US2 跳转过滤，TDD），tasks-report verdict=pass（100% 覆盖，仅 1 条 MEDIUM 已更正）；写入 pending_review，进入 confirm 卡点"
+  - at: "2026-07-22T11:20:00+08:00"
+    kind: scope_change
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "用户澄清 FR-006 兼容策略：操作范围统一为表达式表示（对齐 gsekit 只用 expression_scope）。由前端「优先表达式、回退旧数组」双分支，收敛为「后端 convert.go 转换层将历史旧数组无损归一为等价表达式（[a,b]/空段 *），前端仅表达式单一路径展示与跳转过滤」。已同步更新 req.md(TD-004/F-005/AC-T02)/spec.md(FR-006/AC-005/AC-T02)/plan.md(P4/P5/映射)/data-model.md(convert/前端类型)/tasks.md(T005/T006/T011/T012)。confirm 卡点保持，等待用户 approve。"
+  - at: "2026-07-22T11:40:00+08:00"
+    kind: scope_change
+    phase: tasks-generated
+    attempt: 1
+    round: 1
+    note: "用户核对 gsekit 存储（Job.expression_scope 为单字符串、parse_list2expr 单/多/压缩规则、create_job API 原样存 vs 页面派生）后，将方案收敛为 Scheme C：彻底重构 OperateRange 五段 数组→表达式字符串（缺省 *），task_batch.proto repeated→string 键名对齐；新增 internal/expression.List2Expr/IDsToExpr（对齐 parse_list2expr+压缩）；插件路径原样存请求 expression_scope、非插件路径拼命中进程压缩表达式；convert.go 透传、common.go buildScopeText 改读五段；新增一次性幂等数据迁移刷存量 task_data；前端 IOperateRange/store 字符串化、mergeOpRange 单一路径、filter-process 跳转切表达式模式过滤。已全量改写 spec/plan/tasks/data-model/research + 更新 req.md(F-005/TD-001/TD-004/新增 TD-005/AC-T02/新增 AC-T03/边界/架构)/context.md(Code scope 增迁移·common·config·store·filter-process·expression)。context_revision→4。confirm 卡点保持，进入实现。"

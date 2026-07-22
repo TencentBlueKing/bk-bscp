@@ -43,11 +43,11 @@ func PbTaskBatch(tb *table.TaskBatch) *TaskBatch {
 			result.TaskData = &ProcessTaskData{
 				Environment: taskData.Environment,
 				OperateRange: &OperateRange{
-					SetNames:       taskData.OperateRange.SetNames,
-					ModuleNames:    taskData.OperateRange.ModuleNames,
-					ServiceNames:   taskData.OperateRange.ServiceNames,
-					CcProcessNames: taskData.OperateRange.ProcessAlias,
-					CcProcessIds:   taskData.OperateRange.CCProcessID,
+					SetName:      taskData.OperateRange.SetName,
+					ModuleName:   taskData.OperateRange.ModuleName,
+					ServiceName:  taskData.OperateRange.ServiceName,
+					ProcessAlias: taskData.OperateRange.ProcessAlias,
+					ProcessId:    taskData.OperateRange.ProcessID,
 				},
 			}
 		}
