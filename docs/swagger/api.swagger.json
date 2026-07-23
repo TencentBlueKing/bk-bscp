@@ -29073,6 +29073,11 @@
         "approveType": {
           "type": "string",
           "description": "审批类型：会签=count_sign、或签=or_sign"
+        },
+        "envId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "环境ID"
         }
       },
       "title": "AuditApp audit and app"

@@ -494,7 +494,7 @@ func (dao *appDao) Create(kit *kit.Kit, g *table.App) (uint32, error) {
 				ResourceID: g.ID,
 				OpType:     table.InsertOp,
 			},
-			Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID},
+			Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID, ProjectID: g.ProjID, EnvID: g.EnvID},
 			Revision:   &table.CreatedRevision{Creator: kit.User},
 		}
 		if err = eDecorator.Fire(one); err != nil {
@@ -562,7 +562,7 @@ func (dao *appDao) Update(kit *kit.Kit, g *table.App) error {
 				ResourceID: g.ID,
 				OpType:     table.UpdateOp,
 			},
-			Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID},
+			Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID, ProjectID: g.ProjID, EnvID: g.EnvID},
 			Revision:   &table.CreatedRevision{Creator: kit.User},
 		}
 		if err = eDecorator.Fire(one); err != nil {
@@ -626,7 +626,7 @@ func (dao *appDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.App) err
 			ResourceUid: oldOne.Spec.Name,
 			OpType:      table.DeleteOp,
 		},
-		Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID},
+		Attachment: &table.EventAttachment{BizID: g.BizID, AppID: g.ID, ProjectID: g.ProjID, EnvID: g.EnvID},
 		Revision:   &table.CreatedRevision{Creator: kit.User},
 	}
 	eDecorator := dao.event.Eventf(kit)

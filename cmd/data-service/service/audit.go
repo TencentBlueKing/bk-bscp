@@ -109,6 +109,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbds.ListAuditsReq) (*pbd
 				Name:        value.App.Name,
 				Creator:     value.App.Creator,
 				ApproveType: value.Strategy.ApproveType,
+				EnvId:       value.App.EnvID,
 			},
 		})
 	}

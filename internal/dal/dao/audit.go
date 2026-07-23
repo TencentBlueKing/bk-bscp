@@ -168,7 +168,7 @@ func (au *audit) createQuery(kit *kit.Kit, req *pbds.ListAuditsReq) (gen.IAuditD
 	result := audit.WithContext(kit.Ctx).Select(audit.ID, audit.ResourceType, audit.ResourceID, audit.Action,
 		audit.BizID, audit.ProjectID, audit.AppID, audit.Operator, audit.CreatedAt, audit.ResInstance, audit.OperateWay, audit.Status,
 		audit.IsCompare, audit.Detail,
-		app.Name, app.Creator, client.ReleaseChangeStatus, client.FailedDetailReason,
+		app.Name, app.Creator, app.EnvID, client.ReleaseChangeStatus, client.FailedDetailReason,
 		strategy.PublishType, strategy.PublishTime, strategy.PublishTime, strategy.FinalApprovalTime,
 		strategy.PublishStatus, strategy.RejectReason, strategy.Approver, strategy.ApproverProgress,
 		strategy.UpdatedAt, strategy.Reviser, strategy.Creator, strategy.ReleaseID, strategy.Scope,

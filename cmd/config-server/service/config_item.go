@@ -150,6 +150,8 @@ func (s *Service) BatchUpsertConfigItems(ctx context.Context, req *pbcs.BatchUps
 		ReplaceAll: req.ReplaceAll,
 		Variables:  req.GetVariables(),
 		Bindings:   bindings,
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	batchUpsertConfigResp, e := s.client.DS.BatchUpsertConfigItems(grpcKit.RpcCtx(), buReq)
 	if e != nil {
@@ -484,6 +486,8 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbcs.ListConfigItems
 		Ids:        req.Ids,
 		WithStatus: req.WithStatus,
 		Status:     req.Status,
+		ProjectId:  grpcKit.ResolvedProjectID(req.ProjectId),
+		EnvId:      grpcKit.ResolvedEnvID(req.EnvId),
 	}
 	rp, err := s.client.DS.ListConfigItems(grpcKit.RpcCtx(), r)
 	if err != nil {
