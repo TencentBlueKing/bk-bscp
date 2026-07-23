@@ -293,7 +293,7 @@ func (dao *credentialDao) DeleteWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, pro
 			ResourceUid: encrypted,
 			OpType:      table.DeleteOp,
 		},
-		Attachment: &table.EventAttachment{BizID: bizID},
+		Attachment: &table.EventAttachment{BizID: bizID, ProjectID: projectId},
 		Revision:   &table.CreatedRevision{Creator: kit.User},
 	}
 	eDecorator := dao.event.Eventf(kit)
@@ -334,7 +334,7 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 			ResourceUid: encrypted,
 			OpType:      table.UpdateOp,
 		},
-		Attachment: &table.EventAttachment{BizID: g.Attachment.BizID},
+		Attachment: &table.EventAttachment{BizID: g.Attachment.BizID, ProjectID: g.Attachment.ProjectID},
 		Revision:   &table.CreatedRevision{Creator: kit.User},
 	}
 	eDecorator := dao.event.Eventf(kit)
@@ -409,7 +409,7 @@ func (dao *credentialDao) UpdateRevisionWithTx(kit *kit.Kit, tx *gen.QueryTx, bi
 			ResourceUid: encrypted,
 			OpType:      table.UpdateOp,
 		},
-		Attachment: &table.EventAttachment{BizID: bizID},
+		Attachment: &table.EventAttachment{BizID: bizID, ProjectID: projectId},
 		Revision:   &table.CreatedRevision{Creator: kit.User},
 	}
 	eDecorator := dao.event.Eventf(kit)

@@ -191,8 +191,8 @@ type EventAttachment struct {
 	BizID     uint32 `json:"biz_id" gorm:"column:biz_id"`
 	AppID     uint32 `json:"app_id" gorm:"column:app_id"`
 	TenantID  string `json:"tenant_id" gorm:"column:tenant_id"`
-	ProjectID uint32 `gorm:"column:project_id" json:"project_id"`
-	EnvID     uint32 `gorm:"column:environment_id" json:"environment_id"`
+	ProjectID uint32 `json:"project_id" gorm:"column:project_id"`
+	EnvID     uint32 `json:"environment_id" gorm:"column:environment_id"`
 }
 
 // Validate the event attachment is valid or not.

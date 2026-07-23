@@ -978,7 +978,7 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 				ResourceID: req.AppId,
 				OpType:     table.InsertOp,
 			},
-			Attachment: &table.EventAttachment{BizID: req.BizId, AppID: req.AppId},
+			Attachment: &table.EventAttachment{BizID: req.BizId, AppID: req.AppId, ProjectID: req.ProjectId, EnvID: req.EnvId},
 			Revision:   &table.CreatedRevision{Creator: kit.User},
 		}
 		if err := s.dao.Client().UpdateRetriedClientsStatusWithTx(kit, tx, []uint32{}, req.All); err != nil {
@@ -1016,7 +1016,7 @@ func (s *Service) RetryClients(ctx context.Context, req *pbds.RetryClientsReq) (
 				ResourceUid: clientUIDMap[id],
 				OpType:      table.InsertOp,
 			},
-			Attachment: &table.EventAttachment{BizID: req.BizId, AppID: req.AppId},
+			Attachment: &table.EventAttachment{BizID: req.BizId, AppID: req.AppId, ProjectID: req.ProjectId, EnvID: req.EnvId},
 			Revision:   &table.CreatedRevision{Creator: kit.User},
 		})
 	}

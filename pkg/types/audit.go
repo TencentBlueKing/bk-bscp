@@ -82,6 +82,7 @@ type ClientPart struct {
 type AppPart struct {
 	Name    string `json:"name" gorm:"column:name"`
 	Creator string `json:"creator" gorm:"column:creator"`
+	EnvID   uint32 `json:"environment_id" gorm:"column:environment_id"`
 }
 
 // AuditPart audit field

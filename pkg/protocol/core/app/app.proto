@@ -54,4 +54,5 @@ message AuditApp {
   string approve_type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "审批类型：会签=count_sign、或签=or_sign"
   }];
+  uint32 env_id = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
