@@ -294,9 +294,9 @@
             "fuzzy": true
         },
         {
-            "id": "gray_percent value must be a valid percentage (1-99)",
-            "message": "gray_percent value must be a valid percentage (1-99)",
-            "translation": "gray_percent value must be a valid percentage (1-99)",
+            "id": "gray_percent value must be a valid percentage (1-100)",
+            "message": "gray_percent value must be a valid percentage (1-100)",
+            "translation": "gray_percent value must be a valid percentage (1-100)",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },

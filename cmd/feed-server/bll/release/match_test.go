@@ -668,3 +668,181 @@ func TestGrayScalingConsistency(t *testing.T) {
 
 	t.Log("✅ 灰度扩展一致性测试完成")
 }
+
+// findGrayBucketUID 找一个会落入指定灰度组桶的 UID，找不到返回空串。
+func findGrayBucketUID(rs *ReleasedService, grayGroup *ptypes.ReleasedGroupCache,
+	labels map[string]string) string {
+	for i := 0; i < 2000; i++ {
+		uid := fmt.Sprintf("graylock-uid-%04d", i)
+		meta := &types.AppInstanceMeta{Uid: uid, Labels: labels}
+		matched, err := rs.matchReleasedGrayClients(grayGroup, meta)
+		if err == nil && matched {
+			return uid
+		}
+	}
+	return ""
+}
+
+// TestGrayLock_FullShouldCoverGrayResidual 复现「灰度锁死」缺陷
+// 场景：一个实例同时命中【非灰度全量组 -> 新版本】与【残留灰度组 -> 旧版本】，且落入灰度桶。
+// 期望（修复后）：全量组优先，最终生效新版本；
+// 现状（缺陷）：matchReleasedGroupWithLabels 选择灰度比例最大的组，非灰度组按 0 处理，
+//
+//	被残留灰度组压制，实例被钉死在旧版本 -> 本用例当前会失败（红灯），即复现成功。
+func TestGrayLock_FullShouldCoverGrayResidual(t *testing.T) {
+	rs := &ReleasedService{}
+
+	const (
+		releaseOld = uint32(33) // 旧版本，走灰度
+		releaseNew = uint32(35) // 新版本，走全量
+		grayPct    = "40%"
+	)
+	labels := map[string]string{"app": "nginx"}
+
+	// 非灰度全量组：selector app=nginx，无 gray_percent
+	fullGroup := &ptypes.ReleasedGroupCache{
+		GroupID:    100,
+		ReleaseID:  releaseNew,
+		StrategyID: 1100,
+		Mode:       table.GroupModeCustom,
+		UpdatedAt:  time.Now(), // 更晚发布（全量）
+		Selector: &selector.Selector{
+			LabelsAnd: []selector.Element{
+				{Key: "app", Op: &selector.EqualOperator, Value: "nginx"},
+			},
+		},
+	}
+
+	// 残留灰度组：selector app=nginx & gray_percent=40，指向旧版本
+	grayGroup := &ptypes.ReleasedGroupCache{
+		GroupID:    101,
+		ReleaseID:  releaseOld,
+		StrategyID: 1101,
+		Mode:       table.GroupModeCustom,
+		UpdatedAt:  time.Now().Add(-time.Hour), // 更早发布
+		Selector: &selector.Selector{
+			LabelsAnd: []selector.Element{
+				{Key: "app", Op: &selector.EqualOperator, Value: "nginx"},
+				{Key: table.GrayPercentKey, Op: &selector.EqualOperator, Value: grayPct},
+			},
+		},
+	}
+
+	lockedUID := findGrayBucketUID(rs, grayGroup, labels)
+	if lockedUID == "" {
+		t.Fatal("未找到落入灰度桶的 UID，无法复现")
+	}
+
+	meta := &types.AppInstanceMeta{Uid: lockedUID, Labels: labels}
+	matched, err := rs.matchReleasedGroupWithLabels(nil,
+		[]*ptypes.ReleasedGroupCache{fullGroup, grayGroup}, meta)
+	if err != nil {
+		t.Fatalf("matchReleasedGroupWithLabels failed: %v", err)
+	}
+
+	t.Logf("落桶 UID=%s 最终匹配 ReleaseID=%d，全量组=%d，残留灰度组=%d",
+		lockedUID, matched.ReleaseID, releaseNew, releaseOld)
+
+	if matched.ReleaseID != releaseNew {
+		t.Errorf("❌ 灰度锁死复现：全量组(R=%d)被残留灰度组(R=%d)压制，实例被钉死在旧版本；"+
+			"期望全量覆盖生效 R=%d，实际 R=%d", releaseNew, releaseOld, releaseNew, matched.ReleaseID)
+	}
+}
+
+// TestGrayLock_OnlyGrayUnchanged 仅命中灰度组时行为不变（AC-002）。
+func TestGrayLock_OnlyGrayUnchanged(t *testing.T) {
+	rs := &ReleasedService{}
+	labels := map[string]string{"app": "nginx"}
+
+	grayGroup := &ptypes.ReleasedGroupCache{
+		GroupID:    201,
+		ReleaseID:  33,
+		StrategyID: 1201,
+		Mode:       table.GroupModeCustom,
+		UpdatedAt:  time.Now(),
+		Selector: &selector.Selector{
+			LabelsAnd: []selector.Element{
+				{Key: "app", Op: &selector.EqualOperator, Value: "nginx"},
+				{Key: table.GrayPercentKey, Op: &selector.EqualOperator, Value: "40%"},
+			},
+		},
+	}
+
+	uid := findGrayBucketUID(rs, grayGroup, labels)
+	if uid == "" {
+		t.Fatal("未找到落入灰度桶的 UID")
+	}
+	meta := &types.AppInstanceMeta{Uid: uid, Labels: labels}
+	matched, err := rs.matchReleasedGroupWithLabels(nil,
+		[]*ptypes.ReleasedGroupCache{grayGroup}, meta)
+	if err != nil {
+		t.Fatalf("match failed: %v", err)
+	}
+	if matched == nil || matched.ReleaseID != 33 {
+		t.Errorf("仅命中灰度组应生效其版本 R=33，实际 %+v", matched)
+	}
+}
+
+// TestGrayLock_OnlyFullUnchanged 仅命中非灰度全量组时行为不变（AC-003）。
+func TestGrayLock_OnlyFullUnchanged(t *testing.T) {
+	rs := &ReleasedService{}
+	labels := map[string]string{"app": "nginx"}
+
+	fullGroup := &ptypes.ReleasedGroupCache{
+		GroupID:    301,
+		ReleaseID:  35,
+		StrategyID: 1301,
+		Mode:       table.GroupModeCustom,
+		UpdatedAt:  time.Now(),
+		Selector: &selector.Selector{
+			LabelsAnd: []selector.Element{
+				{Key: "app", Op: &selector.EqualOperator, Value: "nginx"},
+			},
+		},
+	}
+
+	meta := &types.AppInstanceMeta{Uid: "any-uid-full-only", Labels: labels}
+	matched, err := rs.matchReleasedGroupWithLabels(nil,
+		[]*ptypes.ReleasedGroupCache{fullGroup}, meta)
+	if err != nil {
+		t.Fatalf("match failed: %v", err)
+	}
+	if matched == nil || matched.ReleaseID != 35 {
+		t.Errorf("仅命中非灰度全量组应生效其版本 R=35，实际 %+v", matched)
+	}
+}
+
+// TestGrayLock_MultipleFullPickLatest 多个非灰度全量组并列命中时（均视为 100%），
+// 沿用「并列按最近更新」兜底规则，选中 UpdatedAt 最新的组（对应 F-001 边界条件）。
+func TestGrayLock_MultipleFullPickLatest(t *testing.T) {
+	rs := &ReleasedService{}
+	labels := map[string]string{"app": "nginx"}
+
+	newFullGroup := func(groupID, releaseID uint32, updatedAt time.Time) *ptypes.ReleasedGroupCache {
+		return &ptypes.ReleasedGroupCache{
+			GroupID:    groupID,
+			ReleaseID:  releaseID,
+			StrategyID: groupID + 1000,
+			Mode:       table.GroupModeCustom,
+			UpdatedAt:  updatedAt,
+			Selector: &selector.Selector{
+				LabelsAnd: []selector.Element{
+					{Key: "app", Op: &selector.EqualOperator, Value: "nginx"},
+				},
+			},
+		}
+	}
+
+	older := newFullGroup(401, 41, time.Now().Add(-time.Hour))
+	latest := newFullGroup(402, 42, time.Now())
+
+	meta := &types.AppInstanceMeta{Uid: "any-uid-multi-full", Labels: labels}
+	matched, err := rs.matchReleasedGroupWithLabels(nil,
+		[]*ptypes.ReleasedGroupCache{older, latest}, meta)
+	if err != nil {
+		t.Fatalf("match failed: %v", err)
+	}
+	if matched == nil || matched.ReleaseID != 42 {
+		t.Errorf("多个非灰度组并列命中应按最近更新选中 R=42，实际 %+v", matched)
+	}
+}

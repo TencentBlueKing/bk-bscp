@@ -243,6 +243,7 @@ var messageKeyToIndex = map[string]int{
 	"get the published config failed, err: %v":                                                        158,
 	"gray_percent key must be equal":                                                                  21,
 	"gray_percent value must be a valid percentage (1-99)":                                            22,
+	"gray_percent value must be a valid percentage (1-100)":                                           453,
 	"grpc status with details failed, err: %v":                                                        367,
 	"hook is nil":                 341,
 	"hook name %s already exists": 212,
@@ -494,7 +495,7 @@ var messageKeyToIndex = map[string]int{
 	"yaml format error, err: %v":                                         28,
 }
 
-var enIndex = []uint32{ // 454 elements
+var enIndex = []uint32{ // 455 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000000f, 0x00000021, 0x0000003e,
 	0x00000062, 0x00000090, 0x000000df, 0x00000100,
@@ -623,7 +624,7 @@ var enIndex = []uint32{ // 454 elements
 	0x000049ac, 0x000049c3, 0x000049fd, 0x00004a3b,
 	// Entry 1C0 - 1DF
 	0x00004a7f, 0x00004a91, 0x00004ac8, 0x00004af4,
-	0x00004b1f, 0x00004b42,
+	0x00004b1f, 0x00004b42, 0x00004b78,
 } // Size: 1840 bytes
 
 const enData string = "" + // Size: 19266 bytes
@@ -914,9 +915,10 @@ const enData string = "" + // Size: 19266 bytes
 	" path failed, base: %[1]s, dst: %[2]s, err: %[3]v\x02invalid file path" +
 	"\x02create parent directory failed, dir: %[1]s, err: %[2]v\x02create fil" +
 	"e failed, path: %[1]s, err: %[2]v\x02write file failed, path: %[1]s, err" +
-	": %[2]v\x02%[1]s and %[2]s path file conflict"
+	": %[2]v\x02%[1]s and %[2]s path file conflict" +
+	"\x02gray_percent value must be a valid percentage (1-100)"
 
-var zhIndex = []uint32{ // 454 elements
+var zhIndex = []uint32{ // 455 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000000f, 0x00000022, 0x00000041,
 	0x00000060, 0x00000085, 0x000000d1, 0x000000ea,
@@ -1045,7 +1047,7 @@ var zhIndex = []uint32{ // 454 elements
 	0x000040b3, 0x000040c6, 0x00004101, 0x00004139,
 	// Entry 1C0 - 1DF
 	0x00004177, 0x0000418d, 0x000041bb, 0x000041e7,
-	0x00004213, 0x00004236,
+	0x00004213, 0x00004236, 0x00004270,
 } // Size: 1840 bytes
 
 const zhData string = "" + // Size: 16950 bytes
@@ -1189,6 +1191,7 @@ const zhData string = "" + // Size: 16950 bytes
 	"]s, err: %[2]v\x02获取绝对目标路径失败, path: %[1]s, err: %[2]v\x02计算相对路径失败, base:" +
 	" %[1]s, dst: %[2]s, err: %[3]v\x02无效的文件路径\x02创建父目录失败, dir: %[1]s, err: %" +
 	"[2]v\x02创建文件失败, path: %[1]s, err: %[2]v\x02文件写入失败, path: %[1]s, err: %[2" +
-	"]v\x02%[1]s 与 %[2]s 路径文件冲突"
+	"]v\x02%[1]s 与 %[2]s 路径文件冲突" +
+	"\x02灰度百分比 value 必须是有效的百分比 (1-100)"
 
 	// Total table size 39896 bytes (38KiB); checksum: 8A0D023E

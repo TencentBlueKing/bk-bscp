@@ -460,16 +460,16 @@ func (s *Service) validateGrayPercentKey(grpcKit *kit.Kit, pbSelector *structpb.
 
 		// 验证灰度百分比值的格式和范围
 		if !s.isValidGrayPercentValue(v.Value) {
-			logs.Errorf("gray_percent value must be a valid percentage (1-99), got: %v, type: %T, rid: %s",
+			logs.Errorf("gray_percent value must be a valid percentage (1-100), got: %v, type: %T, rid: %s",
 				v.Value, v.Value, grpcKit.Rid)
-			return errors.New(i18n.T(grpcKit, "gray_percent value must be a valid percentage (1-99)"))
+			return errors.New(i18n.T(grpcKit, "gray_percent value must be a valid percentage (1-100)"))
 		}
 	}
 	return nil
 }
 
 // isValidGrayPercentValue 验证灰度百分比值是否有效
-// 支持的格式：整数(1-99)、浮点数(20.0)
+// 支持的格式：整数(1-100)、浮点数(20.0)；灰度比例 100 语义为对命中标签的全部实例下发
 func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 	var percent float64
 	var err error
@@ -495,6 +495,6 @@ func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 		return false
 	}
 
-	// 验证范围：1-99
-	return percent >= 1.0 && percent <= 99.0
+	// 验证范围：1-100（含 100，等价于对命中标签的全部实例下发）
+	return percent >= 1.0 && percent <= 100.0
 }

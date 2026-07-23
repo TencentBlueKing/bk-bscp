@@ -192,6 +192,11 @@ func (rs *ReleasedService) matchCustomGroupWithGrayStrategy(
 		if err != nil {
 			return false, 0, err
 		}
+		// 非灰度分组等价于灰度 100%：在多分组版本选择中优先级最高
+		// 使全量发布能够覆盖残留灰度分组命中的实例
+		if matched {
+			grayPercent = 1.0
+		}
 	}
 
 	return matched, grayPercent, nil
