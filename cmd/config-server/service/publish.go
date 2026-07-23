@@ -157,14 +157,14 @@ func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, groups []uint32) e
 		groupDetails = append(groupDetails, tableGroup)
 	}
 
-	// 检查是否存在gray_percent分组
+	// 收集含灰度比例的分组。
+	// 说明：允许同一次发布同时绑定含灰度比例与不含灰度比例的分组
+	// 非灰度分组等价于灰度 100%（对命中标签的全部实例下发），可与灰度分组混绑，因此不再收集非灰度分组做阻断。
 	var hasGrayPercentGroup bool
 	var grayPercentGroups []*table.Group
-	var nonGrayPercentGroups []*table.Group
 
 	for _, group := range groupDetails {
 		if group.Spec == nil || group.Spec.Selector == nil {
-			nonGrayPercentGroups = append(nonGrayPercentGroups, group)
 			continue
 		}
 
@@ -190,14 +190,7 @@ func (s *Service) validateGrayPercentGroups(grpcKit *kit.Kit, groups []uint32) e
 		if hasGrayPercent {
 			hasGrayPercentGroup = true
 			grayPercentGroups = append(grayPercentGroups, group)
-		} else {
-			nonGrayPercentGroups = append(nonGrayPercentGroups, group)
 		}
-	}
-
-	// 如果存在gray_percent分组，则所有分组都必须包含gray_percent
-	if hasGrayPercentGroup && len(nonGrayPercentGroups) > 0 {
-		return errors.New(i18n.T(grpcKit, "if gray_percent groups exist, all groups must contain gray_percent label"))
 	}
 
 	// 如果存在gray_percent分组，验证非gray_percent标签的一致性

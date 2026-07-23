@@ -250,9 +250,9 @@
             "translation": "灰度百分比 key 必须是等于"
         },
         {
-            "id": "gray_percent value must be a valid percentage (1-99)",
-            "message": "gray_percent value must be a valid percentage (1-99)",
-            "translation": "灰度百分比 value 必须是有效的百分比 (1-99)"
+            "id": "gray_percent value must be a valid percentage (1-100)",
+            "message": "gray_percent value must be a valid percentage (1-100)",
+            "translation": "灰度百分比 value 必须是有效的百分比 (1-100)"
         },
         {
             "id": "the length of hook ids is {IdsLen}, it must be within the range of [1,{ArrayInputLenLimit}]",
