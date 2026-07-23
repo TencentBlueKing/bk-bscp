@@ -42,6 +42,8 @@ func orDefault(seg string) string {
 }
 
 // GenExpression 将五段拼接为一条完整表达式（对齐 gsekit serializers.gen_expression）。
+// 分隔符为内部匹配锚点 ExpressionSplitter（不可读、不落库），仅供 ListMatch/ScopeToCcIDs 使用。
+// 用于「给人看」的展示场景请改用 GenDisplayExpression。
 func GenExpression(s Scope) string {
 	return strings.Join([]string{
 		orDefault(s.SetName),
@@ -50,6 +52,21 @@ func GenExpression(s Scope) string {
 		orDefault(s.ProcessAlias),
 		orDefault(s.ProcessID),
 	}, ExpressionSplitter)
+}
+
+// DisplaySplitter 是五段表达式的展示分隔符，与前端 mergeOpRange / 任务详情点分格式一致。
+const DisplaySplitter = "."
+
+// GenDisplayExpression 将五段拼接为「点分」展示串（缺省段补 "*"），供通知/日志等给人看的场景使用。
+// 与 GenExpression 的区别：后者用内部匹配锚点仅供匹配算法消费，不可用于展示。
+func GenDisplayExpression(s Scope) string {
+	return strings.Join([]string{
+		orDefault(s.SetName),
+		orDefault(s.ModuleName),
+		orDefault(s.ServiceName),
+		orDefault(s.ProcessAlias),
+		orDefault(s.ProcessID),
+	}, DisplaySplitter)
 }
 
 // JoinProcessExpression 将进程的五个字段拼接为 expression 串（字段顺序与 GenExpression 一致）。

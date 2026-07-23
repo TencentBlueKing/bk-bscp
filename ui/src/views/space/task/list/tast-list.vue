@@ -34,12 +34,12 @@
         </TableColumn>
         <TableColumn col-key="task_data.environment" :title="t('环境类型')">
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            {{ ENV_TYPE_MAP[Number(row.task_data.environment) as keyof typeof ENV_TYPE_MAP] }}
+            {{ ENV_TYPE_MAP[Number(row.task_data?.environment) as keyof typeof ENV_TYPE_MAP] }}
           </template>
         </TableColumn>
         <TableColumn col-key="task_data.operate_range" :title="t('操作范围')" width="180" ellipsis>
           <template #default="{ row }: { row: ITaskHistoryItem }">
-            {{ mergeOpRange(row.task_data.operate_range) }}
+            {{ mergeOpRange(row.task_data?.operate_range) }}
           </template>
         </TableColumn>
         <TableColumn col-key="id" :title="t('执行账户')">
@@ -276,10 +276,18 @@
     loadTaskList();
   };
 
-  const mergeOpRange = (operateRange: IOperateRange) => {
-    return Object.values(operateRange)
-      .map((arr) => (arr.length ? `[${arr.join(',')}]` : '*'))
-      .join('.');
+  const OP_RANGE_ORDER: (keyof IOperateRange)[] = [
+    'set_name',
+    'module_name',
+    'service_name',
+    'process_alias',
+    'process_id',
+  ];
+
+  // 五段表达式以 gsekit 风格拼成点分串，缺省段展示为 "*"（后端已保证缺省段为 "*"，此处兜底）。
+  const mergeOpRange = (operateRange?: IOperateRange | null) => {
+    if (!operateRange) return '*.*.*.*.*';
+    return OP_RANGE_ORDER.map((key) => operateRange[key] || '*').join('.');
   };
 
   const handleJump = (id: number) => {

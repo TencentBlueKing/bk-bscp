@@ -175,13 +175,14 @@ func (t *TaskBatch) ValidateCreate() error {
 	return nil
 }
 
-// OperateRange 操作范围
+// OperateRange 操作范围（gsekit 风格五段表达式，缺省段为 "*"）。
+// 五段与 internal/expression.Scope 一一对应，记录/展示用字符串，匹配时互转。
 type OperateRange struct {
-	SetNames     []string `json:"set_names"`      // 集群名称列表
-	ModuleNames  []string `json:"module_names"`   // 模块名称列表
-	ServiceNames []string `json:"service_names"`  // 服务实例名称列表
-	ProcessAlias []string `json:"process_alias"`  // 进程别名列表
-	CCProcessID  []uint32 `json:"cc_process_ids"` // cc进程ID列表
+	SetName      string `json:"set_name"`      // 集群名称表达式
+	ModuleName   string `json:"module_name"`   // 模块名称表达式
+	ServiceName  string `json:"service_name"`  // 服务实例名称表达式
+	ProcessAlias string `json:"process_alias"` // 进程别名表达式
+	ProcessID    string `json:"process_id"`    // CC 进程 ID 表达式（支持切片）
 }
 
 // TaskData 任务数据接口

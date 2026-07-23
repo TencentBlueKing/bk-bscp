@@ -226,13 +226,15 @@
       triggerSearch();
     }
     if (filterFlag.value) {
-      const {operate_range} = taskDetail.value;
-      filterValues.value = {
-        sets: operate_range.set_names,
-        modules: operate_range.module_names,
-        service_instances: operate_range.service_names,
-        process_aliases: operate_range.cc_process_names,
-        cc_process_ids: operate_range.cc_process_ids,
+      // 任务详情跳转：操作范围为五段表达式字符串，切到表达式模式按 expression_scope 过滤。
+      const { operate_range } = taskDetail.value;
+      filterType.value = 'expression';
+      expressionValues.value = {
+        sets: operate_range.set_name || '',
+        modules: operate_range.module_name || '',
+        service_instances: operate_range.service_name || '',
+        process_aliases: operate_range.process_alias || '',
+        cc_process_ids: operate_range.process_id || '',
       };
       taskStore.$patch({ filterFlag: false });
       triggerSearch();

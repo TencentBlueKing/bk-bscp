@@ -14,12 +14,13 @@ export interface ITaskHistoryItem {
   };
 }
 
+// 操作范围（gsekit 风格五段表达式，缺省段为 "*"）
 export interface IOperateRange {
-  set_names: string[];
-  cc_process_names: string[];
-  module_names: string[];
-  service_names: string[];
-  cc_process_ids: string[];
+  set_name: string;
+  module_name: string;
+  service_name: string;
+  process_alias: string;
+  process_id: string;
 }
 
 // 任务详情列表

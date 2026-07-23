@@ -7,18 +7,17 @@ package pbtb;
 
 option go_package = "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch;pbtb";
 
-// OperateRange 操作范围
+// OperateRange 操作范围（gsekit 风格五段表达式，缺省段为 "*"）
 message OperateRange {
-  repeated string set_names = 1
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称列表" }];
-  repeated string module_names = 2
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称列表" }];
-  repeated string service_names = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称列表" }];
-  repeated string cc_process_names = 4
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程名称列表" }];
-  repeated uint32 cc_process_ids = 5
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID列表" }];
+  string set_name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "集群名称表达式" }];
+  string module_name = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "模块名称表达式" }];
+  string service_name = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "服务实例名称表达式" }];
+  string process_alias = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名表达式" }];
+  string process_id = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID表达式" }];
 }
 
 // ProcessTaskData 进程任务数据
