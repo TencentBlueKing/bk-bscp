@@ -621,13 +621,6 @@
             "fuzzy": true
         },
         {
-            "id": "undefined task action",
-            "message": "undefined task action",
-            "translation": "undefined task action",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
             "id": "delete template from template sets failed",
             "message": "delete template from template sets failed",
             "translation": "delete template from template sets failed",
@@ -1664,6 +1657,13 @@
             "fuzzy": true
         },
         {
+            "id": "biz_id or tenant_id mismatch",
+            "message": "biz_id or tenant_id mismatch",
+            "translation": "biz_id or tenant_id mismatch",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "biz_id is required",
             "message": "biz_id is required",
             "translation": "biz_id is required",
@@ -2021,6 +2021,23 @@
             "fuzzy": true
         },
         {
+            "id": "base payload is nil for task {TaskID}",
+            "message": "base payload is nil for task {TaskID}",
+            "translation": "base payload is nil for task {TaskID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "t.GetTaskID()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "config template id is not valid for task {TaskID}",
             "message": "config template id is not valid for task {TaskID}",
             "translation": "config template id is not valid for task {TaskID}",
@@ -2311,21 +2328,21 @@
             "fuzzy": true
         },
         {
-            "id": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "message": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
-            "translation": "template not match template revision, template_id={ConfigTemplateId}, template_revision_id={TemplateID}",
+            "id": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "message": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
+            "translation": "template not match template revision, template_id={TemplateID}, template_revision_id={TemplateID_1}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "ConfigTemplateId",
+                    "id": "TemplateID",
                     "string": "%[1]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
                     "argNum": 1,
-                    "expr": "req.GetConfigTemplateId()"
+                    "expr": "ct.Attachment.TemplateID"
                 },
                 {
-                    "id": "TemplateID",
+                    "id": "TemplateID_1",
                     "string": "%[2]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
