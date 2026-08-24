@@ -21,6 +21,7 @@
     </div>
     <Scripts
       v-if="isFileType"
+      :env-id="envId"
       :current-version-id="props.currentVersionId"
       :actived="selectedType === 'script'"
       @selected="handleSelect($event, 'script')" />

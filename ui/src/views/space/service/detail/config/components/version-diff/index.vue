@@ -8,6 +8,7 @@
     <bk-loading class="loading-wrapper" :loading="loading">
       <div v-if="!loading" class="version-diff-content">
         <AsideMenu
+          :env-id="envId"
           :app-id="props.appId"
           :base-version-id="selectedBaseVersion"
           :current-version-id="currentVersion.id"

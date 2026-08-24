@@ -18,20 +18,21 @@
   import { getDiffType } from '../../../../../../../../utils/index';
   import MenuList from './menu-list.vue';
 
-  const { t } = useI18n();
-  const route = useRoute();
-  const bkBizId = ref(String(route.params.spaceId));
-  const projectId = ref(String(route.params.projectId));
-  const envId = ref(String(route.params.envId));
-  const { appData } = storeToRefs(useServiceStore());
-
   const props = defineProps<{
     currentVersionId: number;
     baseVersionId: number;
     actived: boolean;
+    envId?: string;
   }>();
 
   const emits = defineEmits(['selected']);
+
+  const { t } = useI18n();
+  const route = useRoute();
+  const bkBizId = ref(String(route.params.spaceId));
+  const projectId = ref(String(route.params.projectId));
+  const envId = ref(String(route.params.envId || props.envId));
+  const { appData } = storeToRefs(useServiceStore());
 
   const scriptDetailList = ref([
     {

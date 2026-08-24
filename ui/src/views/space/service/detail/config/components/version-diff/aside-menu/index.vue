@@ -3,6 +3,7 @@
     <div class="config-list-apart" :class="{ 'config-list-kv': !isFileType }">
       <Configs
         v-if="isFileType"
+        :env-id="envId"
         :base-version-id="props.baseVersionId"
         :current-version-id="props.currentVersionId"
         :un-named-version-variables="props.unNamedVersionVariables"
@@ -13,6 +14,7 @@
         @render="emits('render', $event)" />
       <ConfigsKv
         v-else
+        :env-id="envId"
         :app-id="props.appId"
         :base-version-id="props.baseVersionId"
         :current-version-id="props.currentVersionId"
@@ -24,6 +26,7 @@
     </div>
     <Scripts
       v-if="isFileType"
+      :env-id="envId"
       :base-version-id="props.baseVersionId"
       :current-version-id="props.currentVersionId"
       :actived="selectedType === 'script'"
@@ -46,6 +49,7 @@
   const { isFileType } = serviceStore;
 
   const props = defineProps<{
+    envId?: string;
     appId?: number;
     baseVersionId: number;
     currentVersionId: number;

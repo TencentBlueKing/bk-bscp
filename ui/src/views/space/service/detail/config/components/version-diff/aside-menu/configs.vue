@@ -141,6 +141,7 @@
       selectedConfig: IConfigDiffSelected;
       actived: boolean;
       isPublish: boolean;
+      envId?: string;
     }>(),
     {
       unNamedVersionVariables: () => [],
@@ -153,7 +154,7 @@
   const route = useRoute();
   const bkBizId = ref(String(route.params.spaceId));
   const projectId = ref(String(route.params.projectId));
-  const envId = ref(String(route.params.envId));
+  const envId = ref(String(route.params.envId || props.envId));
   const { appData } = storeToRefs(useServiceStore());
 
   const diffCount = ref(0);

@@ -83,6 +83,7 @@
 
   const props = withDefaults(
     defineProps<{
+      envId?: string;
       appId?: number;
       currentVersionId: number;
       baseVersionId: number | undefined;
@@ -104,7 +105,7 @@
 
   const bkBizId = ref(String(route.params.spaceId));
   const appId = ref(Number(route.params.appId));
-  const envId = ref(String(route.params.envId));
+  const envId = ref(String(route.params.envId || props.envId));
   const diffCount = ref(0);
   const selected = ref();
   const currentList = ref<IConfigKvType[]>([]);
