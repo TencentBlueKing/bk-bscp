@@ -2614,6 +2614,48 @@
         }
       }
     },
+    "/api/v1/config/manage_config_kv": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "configs 表 KV 管理",
+        "operationId": "Config_ManageConfigKV",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVReq"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": false,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
       "post": {
         "tags": [
@@ -4283,6 +4325,57 @@
         }
       }
     },
+    "/api/v1/inner/config/manage_config_kv": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "configs 表 KV 管理",
+        "operationId": "Config_ManageConfigKV2",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVReq"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "backend": {
+            "type": "HTTP",
+            "method": "post",
+            "path": "/api/v1/config/manage_config_kv",
+            "matchSubpath": false,
+            "timeout": 0,
+            "upstreams": {},
+            "transformHeaders": {}
+          },
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId}": {
       "post": {
         "tags": [
@@ -5820,6 +5913,18 @@
         }
       }
     },
+    "pbcsConfigKVItem": {
+      "type": "object",
+      "title": "ConfigKVItem configs 表的 KV 条目",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "pbcsConfigTemplateVariableResp": {
       "type": "object",
       "properties": {
@@ -6129,6 +6234,45 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/pbtemplateTemplate"
+          }
+        }
+      }
+    },
+    "pbcsManageConfigKVReq": {
+      "type": "object",
+      "title": "ManageConfigKVReq 通用 configs 表管理请求",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "action 操作类型: \"upsert\", \"delete\", \"get\", \"list\", \"append\", \"remove\"\r\n  upsert  — 整体写入 KV（覆盖），kvs 必填\r\n  delete  — 删除指定 key，key 必填\r\n  get     — 精确获取单条，key 必填\r\n  list    — 按前缀批量查询，key_prefix 必填\r\n  append  — 向逗号分隔列表追加元素（自动去重），kvs 必填\r\n  remove  — 从逗号分隔列表移除元素，kvs 必填"
+        },
+        "key": {
+          "type": "string",
+          "title": "key 用于 delete / get"
+        },
+        "keyPrefix": {
+          "type": "string",
+          "title": "key_prefix 用于 list 按前缀查询"
+        },
+        "kvs": {
+          "type": "array",
+          "title": "kvs 用于 upsert / append / remove 操作",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
+          }
+        }
+      }
+    },
+    "pbcsManageConfigKVResp": {
+      "type": "object",
+      "title": "ManageConfigKVResp 通用 configs 表管理响应",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbcsConfigKVItem"
           }
         }
       }

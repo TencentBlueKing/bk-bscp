@@ -59,7 +59,7 @@ type Authorizer interface {
 	UnifiedAuthentication(next http.Handler) http.Handler
 	// AppKeyAuthentication app 凭证认证中间件(回退式, 无凭证回退 Cookie/JWT, 供上传等有下游权限校验的路由使用)
 	AppKeyAuthentication(next http.Handler) http.Handler
-	// PlatformAppKeyAuthentication 平台级 app 凭证认证中间件(严格式, 仅 app 凭证放行, 无凭证拒绝, 不回退)
+	// PlatformAppKeyAuthentication 平台级应用身份认证中间件(严格式, 仅放行 app_code 为本服务自身的网关 JWT, 不回退)
 	PlatformAppKeyAuthentication(next http.Handler) http.Handler
 	// GrantResourceCreatorAction grant a user's resource creator action.
 	GrantResourceCreatorAction(kt *kit.Kit, opts *client.GrantResourceCreatorActionOption) error

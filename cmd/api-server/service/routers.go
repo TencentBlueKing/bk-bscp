@@ -94,7 +94,7 @@ func (p *proxy) routers() http.Handler {
 		r.Mount("/", p.cfgSvrMux)
 	})
 
-	// configs 表 KV 管理接口, 仅平台 app 凭证放行(无下游权限校验, 用严格式避免登录态绕过)
+	// configs 表 KV 管理接口, 无下游权限校验, 仅放行 app_code 为本服务自身的网关 JWT
 	r.Route("/api/v1/config/manage_config_kv", func(r chi.Router) {
 		r.Use(p.authorizer.PlatformAppKeyAuthentication)
 		r.Mount("/", p.cfgSvrMux)

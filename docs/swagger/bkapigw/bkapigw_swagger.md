@@ -69,6 +69,8 @@
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases](#config-list-releases) | 获取服务版本列表 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases2](#config-list-releases2) | 获取服务版本列表 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
+| POST | /api/v1/config/manage_config_kv | [Config_ManageConfigKV](#config-manage-config-k-v) | configs 表 KV 管理 |
+| POST | /api/v1/inner/config/manage_config_kv | [Config_ManageConfigKV2](#config-manage-config-k-v2) | configs 表 KV 管理 |
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_OperateProcess2](#config-operate-process2) | 进程操作 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
@@ -2739,6 +2741,96 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-manage-config-k-v"></span> configs 表 KV 管理 (*Config_ManageConfigKV*)
+
+```
+POST /api/v1/config/manage_config_kv
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| action | string |  |  |
+| key | string |  |  |
+| keyPrefix | string |  |  |
+| kvs | \[\][PbcsConfigKVItem](#pbcs-config-k-v-item) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/manage_config_kv HTTP/1.1
+Content-Type: application/json
+
+{
+  "action": "",
+  "key": "",
+  "keyPrefix": "",
+  "kvs": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-manage-config-k-v2"></span> configs 表 KV 管理 (*Config_ManageConfigKV2*)
+
+```
+POST /api/v1/inner/config/manage_config_kv
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| action | string |  |  |
+| key | string |  |  |
+| keyPrefix | string |  |  |
+| kvs | \[\][PbcsConfigKVItem](#pbcs-config-k-v-item) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/manage_config_kv HTTP/1.1
+Content-Type: application/json
+
+{
+  "action": "",
+  "key": "",
+  "keyPrefix": "",
+  "kvs": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-operate-process"></span> 进程操作 (*Config_OperateProcess*)
 
 ```
@@ -4642,6 +4734,22 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-config-k-v-item"></span> pbcsConfigKVItem
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | |  |  |
+| value | string| `string` |  | |  |  |
+
+
+
 ### <span id="pbcs-config-template-variable-resp"></span> pbcsConfigTemplateVariableResp
 
 
@@ -4974,6 +5082,39 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | count | int64 (formatted integer)| `int64` |  | | 总数 |  |
 | details | \[\][PbtemplateTemplate](#pbtemplate-template)| `[]*PbtemplateTemplate` |  | |  |  |
+
+
+
+### <span id="pbcs-manage-config-k-v-req"></span> pbcsManageConfigKVReq
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| action | string| `string` |  | |  |  |
+| key | string| `string` |  | |  |  |
+| keyPrefix | string| `string` |  | |  |  |
+| kvs | \[\][PbcsConfigKVItem](#pbcs-config-k-v-item)| `[]*PbcsConfigKVItem` |  | |  |  |
+
+
+
+### <span id="pbcs-manage-config-k-v-resp"></span> pbcsManageConfigKVResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| items | \[\][PbcsConfigKVItem](#pbcs-config-k-v-item)| `[]*PbcsConfigKVItem` |  | |  |  |
 
 
 

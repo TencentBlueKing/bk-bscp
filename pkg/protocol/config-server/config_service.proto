@@ -1804,10 +1804,11 @@ option (google.api.method_visibility).restriction = "INTERNAL";
 
   // configs 表 KV 管理
   rpc ManageConfigKV(ManageConfigKVReq) returns (ManageConfigKVResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/manage_config_kv"
       body: "*"
+      additional_bindings { post: "/api/v1/inner/config/manage_config_kv" body: "*" }
     };
   }
 

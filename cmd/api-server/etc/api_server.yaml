@@ -28,6 +28,8 @@ network:
 # 与下面 app_code/app_secret 一致即放行(常量时间比较)。
 # 留空则该直连认证不启用，上传接口仍走 Cookie/JWT。
 # 注意：下载接口(/content/download)含 IAM 用户级鉴权，未放开 app 凭证直连，仍走 Cookie/JWT。
+# 平台级接口(manage_config_kv)也只认这份凭证，但仅经网关调用：请求
+# /api/v1/inner/config/manage_config_kv，后端比对网关 JWT 中的 app_code 是否为下面的值。
 # 安全须知：该凭证即 bscp 自身身份，外发给第三方存在泄露放大风险，需评估；仅经 HTTPS 暴露。
 # 多租户模式下第三方直连仍须带 X-Bk-Tenant-Id 请求头。
 # baseConf:

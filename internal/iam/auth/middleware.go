@@ -242,14 +242,36 @@ func (a authorizer) AppKeyAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// PlatformAppKeyAuthentication 平台级 app 凭证认证中间件(严格式)。
-// 仅接受与本服务 cc.G().BaseConf 一致的 app 凭证, 无有效凭证一律拒绝, 不回退 Cookie/JWT。
-// 用于无下游权限校验、仅面向平台运维直连的管理接口, 避免登录态用户绕过。
+// verifyPlatformJWT 判定请求是否由本服务自身的应用身份经网关发起, 供平台级管理接口鉴权使用。
+func (a authorizer) verifyPlatformJWT(r *http.Request) (*kit.Kit, bool) {
+	expectCode := cc.G().BaseConf.AppCode
+	if a.gwParser == nil || expectCode == "" {
+		return nil, false
+	}
+
+	kt, err := a.gwParser.Parse(r.Context(), r.Header, false)
+	if err != nil || kt.AppCode != expectCode {
+		return nil, false
+	}
+
+	return &kit.Kit{
+		Ctx:      r.Context(),
+		Rid:      components.RequestIDValue(r.Context()),
+		AppCode:  kt.AppCode,
+		User:     kt.User,
+		TenantID: r.Header.Get(constant.BkTenantID),
+		Lang:     tools.GetLangFromReq(r),
+	}, true
+}
+
+// PlatformAppKeyAuthentication 平台级应用身份认证中间件(严格式)。
+// 仅放行 app_code 为本服务自身的网关 JWT, 不回退 Cookie 与直连 app 凭证。
+// 用于无下游权限校验、仅面向平台运维的管理接口, 避免登录态用户绕过。
 func (a authorizer) PlatformAppKeyAuthentication(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		k, outcome := a.verifyAppKey(r)
-		if outcome != appKeyMatched {
-			render.Render(w, r, rest.Unauthorized(errors.New("invalid or missing app credential")))
+		k, ok := a.verifyPlatformJWT(r)
+		if !ok {
+			render.Render(w, r, rest.Unauthorized(errors.New("invalid or missing platform app credential")))
 			return
 		}
 		serveWithAppKit(w, r, next, k)

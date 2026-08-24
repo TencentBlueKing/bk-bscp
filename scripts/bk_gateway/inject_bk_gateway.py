@@ -15,6 +15,24 @@ DEFAULT_EXTENSIONS = {
     }
 }
 
+# 平台级运维接口，业务方不应在权限中心看到或申请；实际调用走对应的 /inner/ 资源。
+PLATFORM_ONLY_PATHS = {
+    "/api/v1/config/manage_config_kv",
+}
+
+
+def build_platform_only_extensions():
+    """平台级运维接口公开路径的网关配置：隐藏文档并禁止申请权限。"""
+    return {
+        "isPublic": False,
+        "allowApplyPermission": False,
+        "authConfig": {
+            "appVerifiedRequired": True,
+            "userVerifiedRequired": False,
+            "resourcePermissionRequired": True
+        }
+    }
+
 
 def build_inner_extensions(method, path):
     """为 /inner/ 接口动态构建蓝鲸网关扩展配置，通过 backend.path 将网关路径映射到实际后端路径。"""
@@ -50,25 +68,31 @@ def inject_bk_gateway_config(file_path):
     paths = swagger_data.get("paths", {})
     inner_count = 0
     default_count = 0
+    platform_only_count = 0
 
     for path, path_item in paths.items():
         is_inner = "/inner/" in path
+        is_platform_only = path in PLATFORM_ONLY_PATHS
         for method, method_config in path_item.items():
             if not isinstance(method_config, dict):
                 continue
             if is_inner:
                 method_config["x-bk-apigateway-resource"] = build_inner_extensions(method, path)
                 inner_count += 1
+            elif is_platform_only:
+                method_config["x-bk-apigateway-resource"] = build_platform_only_extensions()
+                platform_only_count += 1
             else:
                 method_config.setdefault("x-bk-apigateway-resource", DEFAULT_EXTENSIONS)
                 default_count += 1
 
-    inject_count = inner_count + default_count
+    inject_count = inner_count + default_count + platform_only_count
     if inject_count > 0:
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(swagger_data, f, indent=2, ensure_ascii=False)
-            print(f"成功, 已为 {file_path} 注入蓝鲸网关配置: inner={inner_count}, default={default_count}。")
+            print(f"成功, 已为 {file_path} 注入蓝鲸网关配置: "
+                  f"inner={inner_count}, default={default_count}, platform_only={platform_only_count}。")
         except Exception as e:
             print(f"写入文件失败 [{file_path}]: {e}")
     else:

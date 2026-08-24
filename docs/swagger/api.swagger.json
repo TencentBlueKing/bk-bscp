@@ -12077,6 +12077,39 @@
         ]
       }
     },
+    "/api/v1/inner/config/manage_config_kv": {
+      "post": {
+        "summary": "configs 表 KV 管理",
+        "operationId": "Config_ManageConfigKV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsManageConfigKVReq"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/process_config_view": {
       "get": {
         "summary": "查询指定业务是否开启进程与配置管理可见性",
