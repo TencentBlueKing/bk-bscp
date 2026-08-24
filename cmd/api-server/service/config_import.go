@@ -882,7 +882,7 @@ func getDirSize(path string) (int64, error) {
 
 // 上传文件夹时暴露 metrics
 func (c *configImport) uploadFileMetrics(bizID uint32, resourceID string, directorySize int64) {
-	c.mc.currentUploadedFolderSize.WithLabelValues(strconv.Itoa(int(bizID)),
+	c.mc.currentUploadedFolderSize.WithLabelValues(strconv.FormatUint(uint64(bizID), 10),
 		resourceID).Set(float64(directorySize))
 }
 
@@ -914,7 +914,8 @@ func getAppConfigCnt(bizID uint32) int {
 }
 
 func (c *configImport) reporMetrics(bizID uint32, folder float64, totalSize int64, start time.Time) {
-	c.mc.uploadDuration.WithLabelValues(strconv.Itoa(int(bizID))).Observe(time.Since(start).Seconds())
-	c.mc.uploadTotalSize.WithLabelValues(strconv.Itoa(int(bizID))).Add(float64(totalSize))
-	c.mc.uploadFileCount.WithLabelValues(strconv.Itoa(int(bizID))).Add(folder)
+	bizIDLabel := strconv.FormatUint(uint64(bizID), 10)
+	c.mc.uploadDuration.WithLabelValues(bizIDLabel).Observe(time.Since(start).Seconds())
+	c.mc.uploadTotalSize.WithLabelValues(bizIDLabel).Add(float64(totalSize))
+	c.mc.uploadFileCount.WithLabelValues(bizIDLabel).Add(folder)
 }

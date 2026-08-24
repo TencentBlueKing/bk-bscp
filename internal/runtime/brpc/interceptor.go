@@ -77,7 +77,7 @@ func GrpcServerHandledTotalInterceptor() grpc.UnaryServerInterceptor {
 		resp, err = handler(ctx, req)
 		st, _ := status.FromError(err)
 		metrics.BSCPServerHandledTotal.
-			WithLabelValues(serviceName, methodName, st.Code().String(), strconv.Itoa(int(kt.BizID)), kt.User).
+			WithLabelValues(serviceName, methodName, st.Code().String(), strconv.FormatUint(uint64(kt.BizID), 10), kt.User).
 			Inc()
 		return resp, err
 	}

@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -144,8 +143,6 @@ func (a authorizer) UnifiedAuthentication(next http.Handler) http.Handler {
 		}
 		k.Lang = tools.GetLangFromReq(r)
 		multiErr := &multierror.Error{}
-		// log 打印，将header 信息打印出来
-		slog.Info("request header", "header", r.Header, "path", path.Base(r.URL.Path))
 		switch {
 		case a.initKitWithBKJWT(r, k, multiErr):
 		case a.initKitWithCookie(r, k, multiErr):
@@ -361,18 +358,19 @@ func (a authorizer) AppVerified(next http.Handler) http.Handler {
 			return
 		}
 
-		appID, err := strconv.Atoi(appIDStr)
+		appIDVal, err := strconv.ParseUint(appIDStr, 10, 32)
 		if err != nil {
 			render.Render(w, r, rest.BadRequest(err))
 			return
 		}
-		space, err := a.authClient.QuerySpaceByAppID(kt.RpcCtx(), &pbas.QuerySpaceByAppIDReq{AppId: uint32(appID)})
+		appID := uint32(appIDVal)
+		space, err := a.authClient.QuerySpaceByAppID(kt.RpcCtx(), &pbas.QuerySpaceByAppIDReq{AppId: appID})
 		if err != nil {
 			render.Render(w, r, rest.GRPCErr(err))
 			return
 		}
 
-		kt.AppID = uint32(appID)
+		kt.AppID = appID
 		kt.SpaceID = space.SpaceId
 		kt.SpaceTypeID = space.SpaceTypeId
 		ctx := kit.WithKit(r.Context(), kt)

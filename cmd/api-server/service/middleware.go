@@ -68,7 +68,7 @@ func (p *proxy) HttpServerHandledTotal(serviceName, handler string) func(next ht
 			var bizID string
 			bizID, _ = extractBizAndAppID(r)
 			if len(bizID) == 0 {
-				bizID = strconv.Itoa(int(kt.BizID))
+				bizID = strconv.FormatUint(uint64(kt.BizID), 10)
 			}
 
 			var status string

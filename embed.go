@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"mime"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -268,7 +269,12 @@ func (e *EmbedWeb) shouldCompress(r *http.Request) (bool, *gzipFileInfo) {
 		return false, nil
 	}
 
-	upath := r.URL.Path
+	// 请求路径来自客户端，需归一化并拒绝路径穿越，避免读取 embed 根目录之外的文件
+	upath := path.Clean("/" + r.URL.Path)
+	if strings.Contains(upath, "..") {
+		return false, nil
+	}
+
 	fileExt := filepath.Ext(upath)
 	if ok, exist := allowCompressExtentions[fileExt]; !exist || !ok {
 		return false, nil
