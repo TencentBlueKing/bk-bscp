@@ -576,6 +576,23 @@
             "fuzzy": true
         },
         {
+            "id": "the password of configuration item {Key} is not complex enough, it must contain at least 3 types of the following: uppercase letters, lowercase letters, numbers and special characters",
+            "message": "the password of configuration item {Key} is not complex enough, it must contain at least 3 types of the following: uppercase letters, lowercase letters, numbers and special characters",
+            "translation": "the password of configuration item {Key} is not complex enough, it must contain at least 3 types of the following: uppercase letters, lowercase letters, numbers and special characters",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
             "message": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
             "translation": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
@@ -3338,6 +3355,65 @@
             "fuzzy": true
         },
         {
+            "id": "get environment by name failed",
+            "message": "get environment by name failed",
+            "translation": "get environment by name failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment name {Name} already exists",
+            "message": "environment name {Name} already exists",
+            "translation": "environment name {Name} already exists",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.GetName()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "environment is protected, cannot be deleted",
+            "message": "environment is protected, cannot be deleted",
+            "translation": "environment is protected, cannot be deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "the default environment under the production space cannot be deleted",
+            "message": "the default environment under the production space cannot be deleted",
+            "translation": "the default environment under the production space cannot be deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "there are still app under the environments, please delete the app first",
+            "message": "there are still app under the environments, please delete the app first",
+            "translation": "there are still app under the environments, please delete the app first",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment list failed",
+            "message": "environment list failed",
+            "translation": "environment list failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment does not exist",
+            "message": "environment does not exist",
+            "translation": "environment does not exist",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "hook name {Name} already exists",
             "message": "hook name {Name} already exists",
             "translation": "hook name {Name} already exists",
@@ -4246,6 +4322,48 @@
             "fuzzy": true
         },
         {
+            "id": "invalid biz_id",
+            "message": "invalid biz_id",
+            "translation": "invalid biz_id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project is protected, cannot be deleted",
+            "message": "project is protected, cannot be deleted",
+            "translation": "project is protected, cannot be deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "there are still active resources in the environments under this project, cannot be deleted",
+            "message": "there are still active resources in the environments under this project, cannot be deleted",
+            "translation": "there are still active resources in the environments under this project, cannot be deleted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project list failed",
+            "message": "project list failed",
+            "translation": "project list failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "app does not exist",
+            "message": "app does not exist",
+            "translation": "app does not exist",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "app query failed",
+            "message": "app query failed",
+            "translation": "app query failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "release {Name} is deprecated, can not be submited",
             "message": "release {Name} is deprecated, can not be submited",
             "translation": "release {Name} is deprecated, can not be submited",
@@ -4942,6 +5060,40 @@
             "fuzzy": true
         },
         {
+            "id": "lists the latest version by template ids failed, err: {Error}",
+            "message": "lists the latest version by template ids failed, err: {Error}",
+            "translation": "lists the latest version by template ids failed, err: {Error}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "err.Error()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "batch update of template permissions failed, err: {Error}",
+            "message": "batch update of template permissions failed, err: {Error}",
+            "translation": "batch update of template permissions failed, err: {Error}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "err.Error()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "list app template bindings by app ids failed, err: {Err}",
             "message": "list app template bindings by app ids failed, err: {Err}",
             "translation": "list app template bindings by app ids failed, err: {Err}",
@@ -5083,6 +5235,34 @@
             "fuzzy": true
         },
         {
+            "id": "environment application count failed",
+            "message": "environment application count failed",
+            "translation": "environment application count failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "count applications by environment failed",
+            "message": "count applications by environment failed",
+            "translation": "count applications by environment failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "count applications under projects failed",
+            "message": "count applications under projects failed",
+            "translation": "count applications under projects failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "list applications by environment ids failed",
+            "message": "list applications by environment ids failed",
+            "translation": "list applications by environment ids failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "app is nil",
             "message": "app is nil",
             "translation": "app is nil",
@@ -5216,6 +5396,48 @@
             "fuzzy": true
         },
         {
+            "id": "environment count failed",
+            "message": "environment count failed",
+            "translation": "environment count failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment is nil",
+            "message": "environment is nil",
+            "translation": "environment is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment deletion failed",
+            "message": "environment deletion failed",
+            "translation": "environment deletion failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment creation failed",
+            "message": "environment creation failed",
+            "translation": "environment creation failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment update failed",
+            "message": "environment update failed",
+            "translation": "environment update failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "environment query failed",
+            "message": "environment query failed",
+            "translation": "environment query failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "hook is nil",
             "message": "hook is nil",
             "translation": "hook is nil",
@@ -5240,6 +5462,41 @@
             "id": "bizID can not be 0",
             "message": "bizID can not be 0",
             "translation": "bizID can not be 0",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project does not exist",
+            "message": "project does not exist",
+            "translation": "project does not exist",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project query failed",
+            "message": "project query failed",
+            "translation": "project query failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project is nil",
+            "message": "project is nil",
+            "translation": "project is nil",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project creation failed",
+            "message": "project creation failed",
+            "translation": "project creation failed",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "project update failed",
+            "message": "project update failed",
+            "translation": "project update failed",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -5970,6 +6227,27 @@
             "fuzzy": true
         },
         {
+            "id": "invalid environment name, length should be greater than 0",
+            "message": "invalid environment name, length should be greater than 0",
+            "translation": "invalid environment name, length should be greater than 0",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid environment name, length should be less than or equal to 255",
+            "message": "invalid environment name, length should be less than or equal to 255",
+            "translation": "invalid environment name, length should be less than or equal to 255",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number",
+            "message": "invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number",
+            "translation": "invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "id can not be set",
             "message": "id can not be set",
             "translation": "id can not be set",
@@ -6258,6 +6536,48 @@
             "fuzzy": true
         },
         {
+            "id": "invalid environment type",
+            "message": "invalid environment type",
+            "translation": "invalid environment type",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "name should be set",
+            "message": "name should be set",
+            "translation": "name should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid attachment biz id",
+            "message": "invalid attachment biz id",
+            "translation": "invalid attachment biz id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "invalid attachment project id",
+            "message": "invalid attachment project id",
+            "translation": "invalid attachment project id",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "id should be set",
+            "message": "id should be set",
+            "translation": "id should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "key should be set",
+            "message": "key should be set",
+            "translation": "key should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "ConfigFile",
             "message": "ConfigFile",
             "translation": "ConfigFile",
@@ -6366,6 +6686,27 @@
             "id": "PartialFailure",
             "message": "PartialFailure",
             "translation": "PartialFailure",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "attachment should be set",
+            "message": "attachment should be set",
+            "translation": "attachment should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "revision should be set",
+            "message": "revision should be set",
+            "translation": "revision should be set",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "template space id should be set",
+            "message": "template space id should be set",
+            "translation": "template space id should be set",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },

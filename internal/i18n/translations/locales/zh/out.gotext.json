@@ -496,6 +496,21 @@
             ]
         },
         {
+            "id": "the password of configuration item {Key} is not complex enough, it must contain at least 3 types of the following: uppercase letters, lowercase letters, numbers and special characters",
+            "message": "the password of configuration item {Key} is not complex enough, it must contain at least 3 types of the following: uppercase letters, lowercase letters, numbers and special characters",
+            "translation": "配置项{Key}的密码复杂度不足，必须至少包含大写字母、小写字母、数字和特殊字符中的3种",
+            "placeholders": [
+                {
+                    "id": "Key",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "key"
+                }
+            ]
+        },
+        {
             "id": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
             "message": "the certificate format is incorrect, only X.509 format is supported, err: {Err}",
             "translation": "证书格式不正确，仅支持X.509格式, err: {Err}",
@@ -2918,6 +2933,51 @@
             ]
         },
         {
+            "id": "get environment by name failed",
+            "message": "get environment by name failed",
+            "translation": "按名称获取环境失败"
+        },
+        {
+            "id": "environment name {Name} already exists",
+            "message": "environment name {Name} already exists",
+            "translation": "环境名称{Name}已存在",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "req.GetName()"
+                }
+            ]
+        },
+        {
+            "id": "environment is protected, cannot be deleted",
+            "message": "environment is protected, cannot be deleted",
+            "translation": "环境受保护，无法删除"
+        },
+        {
+            "id": "the default environment under the production space cannot be deleted",
+            "message": "the default environment under the production space cannot be deleted",
+            "translation": "生产空间下的默认环境无法删除"
+        },
+        {
+            "id": "there are still app under the environments, please delete the app first",
+            "message": "there are still app under the environments, please delete the app first",
+            "translation": "环境下仍存在服务，请先删除服务"
+        },
+        {
+            "id": "environment list failed",
+            "message": "environment list failed",
+            "translation": "环境列表获取失败"
+        },
+        {
+            "id": "environment does not exist",
+            "message": "environment does not exist",
+            "translation": "环境不存在"
+        },
+        {
             "id": "hook name {Name} already exists",
             "message": "hook name {Name} already exists",
             "translation": "脚本名称 {Name} 已存在",
@@ -3698,6 +3758,36 @@
             "translation": "异常"
         },
         {
+            "id": "invalid biz_id",
+            "message": "invalid biz_id",
+            "translation": "bizID无效"
+        },
+        {
+            "id": "project is protected, cannot be deleted",
+            "message": "project is protected, cannot be deleted",
+            "translation": "项目受保护，无法删除"
+        },
+        {
+            "id": "there are still active resources in the environments under this project, cannot be deleted",
+            "message": "there are still active resources in the environments under this project, cannot be deleted",
+            "translation": "该项目下的环境中仍存在活跃资源，无法删除"
+        },
+        {
+            "id": "project list failed",
+            "message": "project list failed",
+            "translation": "项目列表获取失败"
+        },
+        {
+            "id": "app does not exist",
+            "message": "app does not exist",
+            "translation": "服务不存在"
+        },
+        {
+            "id": "app query failed",
+            "message": "app query failed",
+            "translation": "服务查询失败"
+        },
+        {
             "id": "release {Name} is deprecated, can not be submited",
             "message": "release {Name} is deprecated, can not be submited",
             "translation": "版本{Name}已弃用，无法提交",
@@ -4302,6 +4392,36 @@
             ]
         },
         {
+            "id": "lists the latest version by template ids failed, err: {Error}",
+            "message": "lists the latest version by template ids failed, err: {Error}",
+            "translation": "按模板ID列表获取最新版本失败，错误：{Error}",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "err.Error()"
+                }
+            ]
+        },
+        {
+            "id": "batch update of template permissions failed, err: {Error}",
+            "message": "batch update of template permissions failed, err: {Error}",
+            "translation": "批量更新模板权限失败，错误：{Error}",
+            "placeholders": [
+                {
+                    "id": "Error",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "err.Error()"
+                }
+            ]
+        },
+        {
             "id": "list app template bindings by app ids failed, err: {Err}",
             "message": "list app template bindings by app ids failed, err: {Err}",
             "translation": "按服务ID列出应用模板绑定失败, err: {Err}",
@@ -4425,6 +4545,26 @@
             ]
         },
         {
+            "id": "environment application count failed",
+            "message": "environment application count failed",
+            "translation": "环境应用数量统计失败"
+        },
+        {
+            "id": "count applications by environment failed",
+            "message": "count applications by environment failed",
+            "translation": "按环境统计应用数量失败"
+        },
+        {
+            "id": "count applications under projects failed",
+            "message": "count applications under projects failed",
+            "translation": "按项目统计应用数量失败"
+        },
+        {
+            "id": "list applications by environment ids failed",
+            "message": "list applications by environment ids failed",
+            "translation": "按环境ID列表获取应用失败"
+        },
+        {
             "id": "app is nil",
             "message": "app is nil",
             "translation": "服务为空"
@@ -4544,6 +4684,36 @@
             ]
         },
         {
+            "id": "environment count failed",
+            "message": "environment count failed",
+            "translation": "环境数量统计失败"
+        },
+        {
+            "id": "environment is nil",
+            "message": "environment is nil",
+            "translation": "环境为空"
+        },
+        {
+            "id": "environment deletion failed",
+            "message": "environment deletion failed",
+            "translation": "环境删除失败"
+        },
+        {
+            "id": "environment creation failed",
+            "message": "environment creation failed",
+            "translation": "环境创建失败"
+        },
+        {
+            "id": "environment update failed",
+            "message": "environment update failed",
+            "translation": "环境更新失败"
+        },
+        {
+            "id": "environment query failed",
+            "message": "environment query failed",
+            "translation": "环境查询失败"
+        },
+        {
             "id": "hook is nil",
             "message": "hook is nil",
             "translation": "脚本不存在"
@@ -4562,6 +4732,31 @@
             "id": "bizID can not be 0",
             "message": "bizID can not be 0",
             "translation": "bizID不能为0"
+        },
+        {
+            "id": "project does not exist",
+            "message": "project does not exist",
+            "translation": "项目不存在"
+        },
+        {
+            "id": "project query failed",
+            "message": "project query failed",
+            "translation": "项目查询失败"
+        },
+        {
+            "id": "project is nil",
+            "message": "project is nil",
+            "translation": "项目为空"
+        },
+        {
+            "id": "project creation failed",
+            "message": "project creation failed",
+            "translation": "项目创建失败"
+        },
+        {
+            "id": "project update failed",
+            "message": "project update failed",
+            "translation": "项目更新失败"
         },
         {
             "id": "the total number of template set {TmplSetID}'s templates exceeded the limit {TmplSetTmplCnt}",
@@ -5178,6 +5373,21 @@
             "translation": "用户名无效, 长度应为 \u003c= 32"
         },
         {
+            "id": "invalid environment name, length should be greater than 0",
+            "message": "invalid environment name, length should be greater than 0",
+            "translation": "环境名称无效，长度应大于0"
+        },
+        {
+            "id": "invalid environment name, length should be less than or equal to 255",
+            "message": "invalid environment name, length should be less than or equal to 255",
+            "translation": "环境名称无效，长度应小于等于255"
+        },
+        {
+            "id": "invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number",
+            "message": "invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number",
+            "translation": "环境名称无效，仅允许字母、数字、下划线和连字符，且必须以字母或数字开头和结尾"
+        },
+        {
             "id": "id can not be set",
             "message": "id can not be set",
             "translation": "ID 不能为空"
@@ -5414,6 +5624,36 @@
             "translation": "无效的配置项ID"
         },
         {
+            "id": "invalid environment type",
+            "message": "invalid environment type",
+            "translation": "环境类型无效"
+        },
+        {
+            "id": "name should be set",
+            "message": "name should be set",
+            "translation": "名称必须设置"
+        },
+        {
+            "id": "invalid attachment biz id",
+            "message": "invalid attachment biz id",
+            "translation": "附件bizID无效"
+        },
+        {
+            "id": "invalid attachment project id",
+            "message": "invalid attachment project id",
+            "translation": "附件项目ID无效"
+        },
+        {
+            "id": "id should be set",
+            "message": "id should be set",
+            "translation": "ID必须设置"
+        },
+        {
+            "id": "key should be set",
+            "message": "key should be set",
+            "translation": "键必须设置"
+        },
+        {
             "id": "ConfigFile",
             "message": "ConfigFile",
             "translation": "配置文件"
@@ -5492,6 +5732,21 @@
             "id": "PartialFailure",
             "message": "PartialFailure",
             "translation": "部分失败"
+        },
+        {
+            "id": "attachment should be set",
+            "message": "attachment should be set",
+            "translation": "附件必须设置"
+        },
+        {
+            "id": "revision should be set",
+            "message": "revision should be set",
+            "translation": "修订版本必须设置"
+        },
+        {
+            "id": "template space id should be set",
+            "message": "template space id should be set",
+            "translation": "模板空间ID必须设置"
         },
         {
             "id": "default_val {DefaultVal} is not a number type",
