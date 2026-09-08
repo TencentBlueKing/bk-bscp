@@ -618,6 +618,62 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps": {
+      "get": {
+        "summary": "按服务名称获取",
+        "operationId": "Config_GetAppByName4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbappApp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appName",
+            "description": "服务名称",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps": {
       "get": {
         "summary": "获取用户有权限的 spaces 所有的 apps",
@@ -4096,6 +4152,70 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}": {
+      "get": {
+        "summary": "按服务版本名",
+        "operationId": "Config_GetReleaseByName4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbreleaseRelease"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseName",
+            "description": "服务版本名",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -16541,6 +16661,54 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName}": {
+      "get": {
+        "summary": "按名称获取分组",
+        "operationId": "Config_GetGroupByName4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbgroupGroup"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "groupName",
+            "description": "分组名",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/groups/selector/{labelName}": {
       "get": {
         "summary": "分组选择器",
@@ -16824,6 +16992,79 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish": {
+      "post": {
+        "summary": "发布指定版本",
+        "operationId": "Config_Publish4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigPublishBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/apps/{appId}/publish": {
       "post": {
         "summary": "生成版本并发布",
@@ -16960,6 +17201,71 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigGenerateReleaseAndPublishBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish": {
+      "post": {
+        "summary": "生成版本并发布",
+        "operationId": "Config_GenerateReleaseAndPublish4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsPublishResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -19720,6 +20026,71 @@
           {
             "name": "bizId",
             "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchUpsertKvsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs": {
+      "put": {
+        "summary": "批量创建或更新键值配置项",
+        "operationId": "Config_BatchUpsertKvs4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchUpsertKvsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
             "in": "path",
             "required": true,
             "type": "integer",
@@ -25331,10 +25702,98 @@
         ]
       }
     },
+    "/api/v1/inner/config/biz/{bizId}/projects/query/by_key": {
+      "get": {
+        "summary": "根据项目key获取项目",
+        "operationId": "Config_GetProjectByKey2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetProjectResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectKey",
+            "description": "项目key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/query/by_name": {
       "get": {
         "summary": "根据环境名称获取环境",
         "operationId": "Config_GetEnvironmentByName",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsGetEnvironmentResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envName",
+            "description": "环境名称",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/query/by_name": {
+      "get": {
+        "summary": "根据环境名称获取环境",
+        "operationId": "Config_GetEnvironmentByName2",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -26981,16 +27440,6 @@
         "groupName": {
           "type": "string",
           "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
-        },
-        "projectId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "项目ID"
-        },
-        "envId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "环境ID"
         }
       }
     },
@@ -28064,16 +28513,6 @@
         "groupName": {
           "type": "string",
           "description": "在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组"
-        },
-        "projectId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "项目ID"
-        },
-        "envId": {
-          "type": "integer",
-          "format": "int64",
-          "description": "环境ID"
         }
       }
     },

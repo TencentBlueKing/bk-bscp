@@ -23,6 +23,7 @@
 | PUT | /api/v1/config/biz/{bizId}/apps/{appId}/kvs | [Config_BatchUpsertKvs](#config-batch-upsert-kvs) | 批量创建或更新键值配置项 |
 | PUT | /api/v1/inner/config/biz/{bizId}/apps/{appId}/kvs | [Config_BatchUpsertKvs2](#config-batch-upsert-kvs2) | 批量创建或更新键值配置项 |
 | PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_BatchUpsertKvs3](#config-batch-upsert-kvs3) | 批量创建或更新键值配置项 |
+| PUT | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_BatchUpsertKvs4](#config-batch-upsert-kvs4) | 批量创建或更新键值配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/bind_process_instance | [Config_BindProcessInstance](#config-bind-process-instance) | 绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/topo | [Config_BizTopo](#config-biz-topo) | 根据业务查询拓扑 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/check | [Config_CheckConfig](#config-check-config) | 配置检查 |
@@ -56,18 +57,22 @@
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish2](#config-generate-release-and-publish2) | 生成版本并发布 |
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish3](#config-generate-release-and-publish3) | 生成版本并发布 |
+| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish4](#config-generate-release-and-publish4) | 生成版本并发布 |
 | GET | /api/v1/config/biz/{bizId}/apps/query/name/{appName} | [Config_GetAppByName](#config-get-app-by-name) | 按服务名称获取 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_GetAppByName2](#config-get-app-by-name2) | 按服务名称获取 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName} | [Config_GetAppByName3](#config-get-app-by-name3) | 按服务名称获取 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_GetAppByName4](#config-get-app-by-name4) | 按服务名称获取 |
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/config_items/{id} | [Config_GetConfigItem](#config-get-config-item) | 获取文件配置项 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id} | [Config_GetConfigItem2](#config-get-config-item2) | 获取文件配置项 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/config_items/{id} | [Config_GetConfigItem3](#config-get-config-item3) | 获取文件配置项 |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId} | [Config_GetConfigTemplate](#config-get-config-template) | 获取配置模板 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId} | [Config_GetEnvironment](#config-get-environment) | 获取环境详情 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/query/by_name | [Config_GetEnvironmentByName](#config-get-environment-by-name) | 根据环境名称获取环境 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/query/by_name | [Config_GetEnvironmentByName2](#config-get-environment-by-name2) | 根据环境名称获取环境 |
 | GET | /api/v1/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName](#config-get-group-by-name) | 按名称获取分组 |
 | GET | /api/v1/inner/config/biz/{bizId}/groups/query/name/{groupName} | [Config_GetGroupByName2](#config-get-group-by-name2) | 按名称获取分组 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName} | [Config_GetGroupByName3](#config-get-group-by-name3) | 按名称获取分组 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName} | [Config_GetGroupByName4](#config-get-group-by-name4) | 按名称获取分组 |
 | GET | /api/v1/config/biz/{bizId}/hooks/{hookId} | [Config_GetHook](#config-get-hook) | 获取脚本 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/hooks/{hookId} | [Config_GetHook2](#config-get-hook2) | 获取脚本 |
 | GET | /api/v1/config/biz_id/{bizId}/process_config_view | [Config_GetProcessConfigView](#config-get-process-config-view) | 查询指定业务是否开启进程与配置管理可见性 |
@@ -75,9 +80,11 @@
 | GET | /api/v1/config/biz_id/{bizId}/process_instance_topo | [Config_GetProcessInstanceTopo](#config-get-process-instance-topo) | 进程实例拓扑 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_GetProject](#config-get-project) | 获取项目详情 |
 | GET | /api/v1/config/biz/{bizId}/projects/query/by_key | [Config_GetProjectByKey](#config-get-project-by-key) | 根据项目key获取项目 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/query/by_key | [Config_GetProjectByKey2](#config-get-project-by-key2) | 根据项目key获取项目 |
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName](#config-get-release-by-name) | 按服务版本名 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName2](#config-get-release-by-name2) | 按服务版本名 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName3](#config-get-release-by-name3) | 按服务版本名 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_GetReleaseByName4](#config-get-release-by-name4) | 按服务版本名 |
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/hooks | [Config_GetReleaseHook](#config-get-release-hook) |  |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks | [Config_GetReleaseHook2](#config-get-release-hook2) |  |
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/config_items/{id} | [Config_GetReleasedConfigItem](#config-get-released-config-item) | 获取已发布文件配置项 |
@@ -129,6 +136,7 @@
 | POST | /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish](#config-publish) | 发布指定版本 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_Publish2](#config-publish2) | 发布指定版本 |
 | POST | /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Publish3](#config-publish3) | 发布指定版本 |
+| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_Publish4](#config-publish4) | 发布指定版本 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig](#config-push-config) | 配置下发 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/push | [Config_PushConfig2](#config-push-config2) | 配置下发 |
 | GET | /api/v1/config/biz_id/{bizId}/service_instance/{moduleId} | [Config_ServiceInstance](#config-service-instance) | 根据模块获取服务实例列表 |
@@ -811,6 +819,56 @@ PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kv
 
 ```bash
 PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "kvs": [
+    {
+      "certificateExpirationDate": "",
+      "key": "",
+      "kvType": "",
+      "memo": "",
+      "secretHidden": false,
+      "secretType": "",
+      "value": ""
+    }
+  ],
+  "replaceAll": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-batch-upsert-kvs4"></span> 批量创建或更新键值配置项 (*Config_BatchUpsertKvs4*)
+
+```
+PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
+| replaceAll | boolean |  | 是否清空：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
 Content-Type: application/json
 
 {
@@ -2125,12 +2183,10 @@ POST /api/v1/config/biz/{bizId}/apps/{appId}/publish
 | appId | int64 (formatted integer) | ✓ | 服务ID |
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 | releaseMemo | string |  | 版本描述 |
 | releaseName | string |  | 服务版本名 |
 | variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
@@ -2148,7 +2204,6 @@ Content-Type: application/json
 
 {
   "all": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -2157,7 +2212,6 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "projectId": 0,
   "releaseMemo": "",
   "releaseName": "",
   "variables": [
@@ -2192,12 +2246,10 @@ POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/p
 | envId | int64 (formatted integer) | ✓ | 环境ID |
 | projectId | int64 (formatted integer) | ✓ | 项目ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 | releaseMemo | string |  | 版本描述 |
 | releaseName | string |  | 服务版本名 |
 | variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
@@ -2215,7 +2267,6 @@ Content-Type: application/json
 
 {
   "all": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -2224,7 +2275,6 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "projectId": 0,
   "releaseMemo": "",
   "releaseName": "",
   "variables": [
@@ -2257,12 +2307,10 @@ POST /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish
 | appId | int64 (formatted integer) | ✓ | 服务ID |
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 | releaseMemo | string |  | 版本描述 |
 | releaseName | string |  | 服务版本名 |
 | variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
@@ -2280,7 +2328,6 @@ Content-Type: application/json
 
 {
   "all": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -2289,7 +2336,69 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "projectId": 0,
+  "releaseMemo": "",
+  "releaseName": "",
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-generate-release-and-publish4"></span> 生成版本并发布 (*Config_GenerateReleaseAndPublish4*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| releaseMemo | string |  | 版本描述 |
+| releaseName | string |  | 服务版本名 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
   "releaseMemo": "",
   "releaseName": "",
   "variables": [
@@ -2403,6 +2512,41 @@ GET /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName}
 
 ```bash
 GET /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-app-by-name4"></span> 按服务名称获取 (*Config_GetAppByName4*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| appName | string |  | 服务名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps HTTP/1.1
 Content-Type: application/json
 
 
@@ -2623,6 +2767,40 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-get-environment-by-name2"></span> 根据环境名称获取环境 (*Config_GetEnvironmentByName2*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/query/by_name
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| envName | string |  | 环境名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/query/by_name HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-get-group-by-name"></span> 按名称获取分组 (*Config_GetGroupByName*)
 
 ```
@@ -2714,6 +2892,40 @@ GET /api/v1/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName
 
 ```bash
 GET /api/v1/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-group-by-name4"></span> 按名称获取分组 (*Config_GetGroupByName4*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| groupName | string | ✓ | 分组名 |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName} HTTP/1.1
 Content-Type: application/json
 
 
@@ -2955,6 +3167,39 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-get-project-by-key2"></span> 根据项目key获取项目 (*Config_GetProjectByKey2*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/query/by_key
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectKey | string |  | 项目key |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/query/by_key HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-get-release-by-name"></span> 按服务版本名 (*Config_GetReleaseByName*)
 
 ```
@@ -3052,6 +3297,42 @@ GET /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseNa
 
 ```bash
 GET /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-get-release-by-name4"></span> 按服务版本名 (*Config_GetReleaseByName4*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseName | string | ✓ | 服务版本名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
 Content-Type: application/json
 
 
@@ -5324,13 +5605,11 @@ POST /api/v1/config/update/strategy/publish/publish/release_id/{releaseId}/app_i
 | releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
 | default | boolean |  |  |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
 | memo | string |  | 上线说明 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -5346,7 +5625,6 @@ Content-Type: application/json
 {
   "all": false,
   "default": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -5355,8 +5633,7 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "memo": "",
-  "projectId": 0
+  "memo": ""
 }
 ```
 
@@ -5383,13 +5660,11 @@ POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/r
 | releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
 | default | boolean |  |  |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
 | memo | string |  | 上线说明 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -5405,7 +5680,6 @@ Content-Type: application/json
 {
   "all": false,
   "default": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -5414,8 +5688,7 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "memo": "",
-  "projectId": 0
+  "memo": ""
 }
 ```
 
@@ -5440,13 +5713,11 @@ POST /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}
 | releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
 | all | boolean |  | 全部实例上线：是=true，否=false |
 | default | boolean |  |  |
-| envId | int64 (formatted integer) |  | 环境ID |
 | grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
 | groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
 | groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
 | labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
 | memo | string |  | 上线说明 |
-| projectId | int64 (formatted integer) |  | 项目ID |
 
 #### 输出参数
 
@@ -5462,7 +5733,6 @@ Content-Type: application/json
 {
   "all": false,
   "default": false,
-  "envId": 0,
   "grayPublishMode": "",
   "groupName": "",
   "groups": [
@@ -5471,8 +5741,62 @@ Content-Type: application/json
   "labels": [
     {}
   ],
-  "memo": "",
-  "projectId": 0
+  "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-publish4"></span> 发布指定版本 (*Config_Publish4*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| default | boolean |  |  |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| memo | string |  | 上线说明 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "default": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "memo": ""
 }
 ```
 
@@ -6801,12 +7125,10 @@ Content-Type: application/json
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | all | boolean| `bool` |  | | 全部实例上线：是=true，否=false |  |
-| envId | int64 (formatted integer)| `int64` |  | | 环境ID |  |
 | grayPublishMode | string| `string` |  | | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |  |
 | groupName | string| `string` |  | | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |  |
 | groups | []string| `[]string` |  | | 分组上线：分组ID，如果有值那么all必须是false |  |
 | labels | \[\][interface{}](#interface)| `[]interface{}` |  | | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |  |
-| projectId | int64 (formatted integer)| `int64` |  | | 项目ID |  |
 | releaseMemo | string| `string` |  | | 版本描述 |  |
 | releaseName | string| `string` |  | | 服务版本名 |  |
 | variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec)| `[]*PbtvTemplateVariableSpec` |  | |  |  |
@@ -7099,13 +7421,11 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | all | boolean| `bool` |  | | 全部实例上线：是=true，否=false |  |
 | default | boolean| `bool` |  | |  |  |
-| envId | int64 (formatted integer)| `int64` |  | | 环境ID |  |
 | grayPublishMode | string| `string` |  | | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |  |
 | groupName | string| `string` |  | | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |  |
 | groups | []int64 (formatted integer)| `[]int64` |  | | 分组上线：分组ID，如果有值那么all必须是false |  |
 | labels | \[\][interface{}](#interface)| `[]interface{}` |  | | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |  |
 | memo | string| `string` |  | | 上线说明 |  |
-| projectId | int64 (formatted integer)| `int64` |  | | 项目ID |  |
 
 
 
