@@ -45,7 +45,7 @@
         <template v-else>
           <bk-button @click="stepsStatus.curStep = 1">{{ t('上一步') }}</bk-button>
           <bk-button
-            :disabled="pending"
+            :disabled="pending || !allGenerated"
             :loading="pending"
             theme="primary"
             @click="handleIssue">
@@ -99,6 +99,7 @@
   const needGenerate = ref(true);
   const permCheckLoading = ref(false);
   const issuedPerm = ref(false);
+  const allGenerated = ref(false);
 
   onMounted(() => {
     getIssuedPerm();
@@ -144,6 +145,7 @@
   const handleSelectVersion = (template: ITemplateProcess, revisionId: number[]) => {
     loadTemplateInstanceList(template.id, revisionId);
     needGenerate.value = true;
+    allGenerated.value = false;
   };
 
   // 配置生成(全部)
@@ -152,6 +154,7 @@
       stepsStatus.value.curStep = 2;
       if (!needGenerate.value && !isRetry) return;
       pending.value = true;
+      allGenerated.value = false;
       const data = {
         configTemplateGroups: templateProcessList.value!.map((templateProcess) => {
           return {
@@ -176,6 +179,7 @@
   const handleConfigRegenerateOrRetry = async (templateProcess: ITemplateProcessItem, type: string) => {
     try {
       pending.value = true;
+      allGenerated.value = false;
       const data = {
         batch_id: batchId.value,
         task_id: templateProcess.task_id,
@@ -193,6 +197,7 @@
   const handleRetryAll = async () => {
     try {
       pending.value = true;
+      allGenerated.value = false;
       const data = {
         batch_id: batchId.value,
         operation_type: 'retry',
@@ -230,6 +235,8 @@
           });
         });
       });
+      allGenerated.value =
+        allStatus.length > 0 && allStatus.every((item: IGenerateConfigStatus) => item.status === 'SUCCESS');
       if (
         allStatus.some((item: IGenerateConfigStatus) => item.status === 'INITIALIZING' || item.status === 'RUNNING')
       ) {
