@@ -393,7 +393,7 @@ CanProcessOperate 判断某个操作是否允许执行
 
 整体判定流程如下：
 
-1. 状态未知校验
+1. 状态未知校验(刚从cc同步过来、agent状态异常)
   - 进程状态或托管状态为空，视为未知状态
   - 所有操作一律禁止
 
@@ -624,6 +624,187 @@ func CanProcessOperate(op table.ProcessOperateType, info table.ProcessInfo, proc
 		return false,
 			"process cannot operate",
 			DisableReasonUnknownProcessState
+	}
+}
+
+/*
+CanProcessOperateByAttrs 进程操作属性矩阵 + 状态类校验（属性矩阵对齐 gsekit OP_TYPE_PROCESS_ATTR_MAP），
+供任务执行侧（ValidateOperate / ValidateOperateStep）使用。
+
+在 gsekit 属性矩阵（必备命令 + 通用 3 项 work_path/pid_file/user）基础上，叠加 CanProcessOperate 中
+影响执行安全的状态类校验，状态参数（processState / managedState / syncStatus）以执行时刻 DB 最新值为准：
+
+1. 状态未知校验：进程状态或托管状态为空 → 一律禁止
+2. 必备命令 / 通用 3 项校验：gsekit 属性矩阵
+3. ing（中间态）校验：进程状态或托管状态处于 starting / stopping 等中间态 → 一律禁止
+4. 进程异常（syncStatus = Abnormal）状态的特殊规则：
+  - 停止 / 强停操作：运行中或部分运行 → 允许；已停止 → 禁止（无需操作）
+  - 取消托管操作：已托管或部分托管 → 允许；未托管 → 禁止（无需操作）
+  - 其他操作：一律禁止
+
+5. 更新托管信息操作的特殊规则：syncStatus = Updated 仅允许 update_register / pull，其余操作一律禁止
+
+不含 CanProcessOperate 的「已删除（Deleted）」规则：已删除进程由下发侧标记剔除兜底；
+重复操作 / 状态漂移由 Operate 阶段的 GSE 幂等语义兜底（828 重复启动 / 829 无需停止视为幂等成功）。
+
+与前端按钮使用的 CanProcessOperate（状态 + 属性综合校验）相互独立：
+按钮可用性维持原有状态判断不变，执行结果以 GSE 为准。
+
+gsekit 矩阵映射到 BSCP 操作（必备命令 + 通用 3 项 work_path/pid_file/user）：
+
+| BSCP 操作                     | 必备命令       | 通用 3 项 |
+|-------------------------------|---------------|-----------|
+| start                         | start_cmd     | ✓         |
+| stop                          | stop_cmd      | ✓         |
+| kill                          | face_stop_cmd | ✓         |
+| restart                       | restart_cmd   | ✓         |
+| reload                        | reload_cmd    | ✓         |
+| register（托管）              | start_cmd     | ✓（对齐 gsekit SET_AUTO）|
+| unregister（取消托管）        | 无            | ✗（零属性要求，对齐 gsekit UNSET_AUTO）|
+| update_register（BSCP 特有）  | 无            | ✓         |
+| pull / query_status / delete  | 无            | ✗         |
+*/
+func CanProcessOperateByAttrs(op table.ProcessOperateType, info table.ProcessInfo,
+	processState, managedState, syncStatus string) (bool, string, string) {
+	// 1. 状态未知校验
+	if processState == "" || managedState == "" {
+		return false,
+			"original process status or managed status is empty, cannot operate",
+			DisableReasonUnknownProcessState
+	}
+
+	// 2 / 3. gsekit 属性矩阵校验（必备命令 + 通用 3 项）
+	if canOperate, message, reason := validateAttrsMatrix(op, info); !canOperate {
+		return canOperate, message, reason
+	}
+
+	// 4. ing（中间态）校验：进程状态或托管状态处于中间态时禁止所有操作
+	if isProcessInProgress(processState) || isManagedInProgress(managedState) {
+		return false,
+			"process is in intermediate state, cannot operate",
+			DisableReasonTaskRunning
+	}
+
+	// 5. 进程异常（syncStatus = Abnormal）状态的特殊规则
+	if syncStatus == table.Abnormal.String() {
+		return checkAbnormalStateOperate(op, processState, managedState)
+	}
+
+	// 6. 更新托管信息操作的特殊规则
+	// 仅 syncStatus = Updated 的进程允许更新托管信息，且仅允许更新托管信息和配置下发的操作
+	// 其他操作（如 start / stop / restart 等）一律禁止，返回无更新的提示
+	if syncStatus == table.Updated.String() {
+		if op == table.UpdateRegisterProcessOperate ||
+			op == table.PullProcessOperate {
+			return true, "", DisableReasonNone
+		}
+
+		return false,
+			"process has updated register info, only update register or pull operation is allowed",
+			DisableReasonNoRegisterUpdate
+	}
+
+	return true, "", DisableReasonNone
+}
+
+// validateAttrsMatrix gsekit 属性矩阵校验：必备命令 + 通用 3 项（work_path / pid_file / user）
+func validateAttrsMatrix(op table.ProcessOperateType, info table.ProcessInfo) (bool, string, string) {
+	// 必备命令校验
+	switch op {
+
+	case table.StartProcessOperate:
+		if info.StartCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+
+	case table.StopProcessOperate:
+		if info.StopCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+
+	case table.RestartProcessOperate:
+		if info.RestartCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+
+	case table.ReloadProcessOperate:
+		if info.ReloadCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+
+	case table.KillProcessOperate:
+		if info.FaceStopCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+
+	case table.RegisterProcessOperate:
+		// 对齐 gsekit SET_AUTO：托管依赖 start_cmd
+		if info.StartCmd == "" {
+			return false,
+				fmt.Sprintf("the %s command does not exist", op),
+				DisableReasonCmdNotConfigured
+		}
+	}
+
+	// 通用运行信息校验（仅依赖通用 3 项的操作）
+	switch op {
+	case table.UnregisterProcessOperate,
+		table.PullProcessOperate,
+		table.QueryStatusProcessOperate,
+		table.DeleteProcessOperate:
+		// 零属性要求，跳过
+	default:
+		if info.WorkPath == "" || info.PidFile == "" || info.User == "" {
+			return false,
+				"workPath, PidFile, and User cannot be empty, cannot operate",
+				DisableReasonCmdNotConfigured
+		}
+	}
+
+	return true, "", DisableReasonNone
+}
+
+// checkAbnormalStateOperate 进程异常（syncStatus = Abnormal）状态下的操作规则：
+// 仅允许停止运行中 / 部分运行的进程，以及取消托管已托管 / 部分托管的进程
+func checkAbnormalStateOperate(op table.ProcessOperateType, processState, managedState string) (
+	bool, string, string) {
+	// 状态归一化
+	isRunning := processState == table.ProcessStatusRunning.String()
+	isPartlyRunning := processState == table.ProcessStatusPartlyRunning.String()
+	isManaged := managedState == table.ProcessManagedStatusManaged.String()
+	isPartlyManaged := managedState == table.ProcessManagedStatusPartlyManaged.String()
+
+	switch op {
+	case table.StopProcessOperate, table.KillProcessOperate:
+		if isRunning || isPartlyRunning {
+			return true, "", DisableReasonNone
+		}
+		return false,
+			"process is already stopped, no need to stop",
+			DisableReasonNoNeedOperate
+
+	case table.UnregisterProcessOperate:
+		if isManaged || isPartlyManaged {
+			return true, "", DisableReasonNone
+		}
+		return false,
+			"process is already unmanaged, no need to unregister",
+			DisableReasonNoNeedOperate
+
+	default:
+		return false,
+			"process is abnormal, only stop or unregister is allowed",
+			DisableReasonProcessAbnormal
 	}
 }
 

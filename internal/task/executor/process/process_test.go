@@ -17,124 +17,76 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
-	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
 )
 
-func statusContent(pid int, isAuto bool) *gse.ProcessStatusContent {
-	return &gse.ProcessStatusContent{
-		Process: []gse.ProcessDetail{
-			{Instance: []gse.ProcessInstance{{PID: pid, IsAuto: isAuto}}},
-		},
-	}
-}
-
-func TestIsOperationValid(t *testing.T) {
+// TestIsIdempotentOperateError Operate 幂等识别：828/829 视为幂等成功，其余错误码照旧失败
+func TestIsIdempotentOperateError(t *testing.T) {
 	cases := []struct {
-		name           string
-		operateType    table.ProcessOperateType
-		content        *gse.ProcessStatusContent
-		origStatus     table.ProcessStatus
-		origManaged    table.ProcessManagedStatus
-		wantValid      bool
-		wantIgnoreCode int
+		name       string
+		errorCode  int
+		wantIgnore bool
 	}{
-		{
-			name:           "start but gse running and bscp running -> already running 828",
-			operateType:    table.StartProcessOperate,
-			content:        statusContent(100, true),
-			origStatus:     table.ProcessStatusRunning,
-			origManaged:    table.ProcessManagedStatusManaged,
-			wantValid:      false,
-			wantIgnoreCode: gse.ErrCodeAlreadyRunning,
-		},
-		{
-			name:           "start but gse running while bscp stopped -> status mismatch but already running 828",
-			operateType:    table.StartProcessOperate,
-			content:        statusContent(100, true),
-			origStatus:     table.ProcessStatusStopped,
-			origManaged:    table.ProcessManagedStatusUnmanaged,
-			wantValid:      false,
-			wantIgnoreCode: gse.ErrCodeAlreadyRunning,
-		},
-		{
-			name:           "start and gse stopped -> valid",
-			operateType:    table.StartProcessOperate,
-			content:        statusContent(0, false),
-			origStatus:     table.ProcessStatusStopped,
-			origManaged:    table.ProcessManagedStatusUnmanaged,
-			wantValid:      true,
-			wantIgnoreCode: 0,
-		},
-		{
-			name:           "stop and gse stopped -> no need stop 829",
-			operateType:    table.StopProcessOperate,
-			content:        statusContent(0, false),
-			origStatus:     table.ProcessStatusStopped,
-			origManaged:    table.ProcessManagedStatusUnmanaged,
-			wantValid:      false,
-			wantIgnoreCode: gse.ErrCodeNoNeedStop,
-		},
-		{
-			name:           "kill and gse stopped -> no need stop 829",
-			operateType:    table.KillProcessOperate,
-			content:        statusContent(0, false),
-			origStatus:     table.ProcessStatusStopped,
-			origManaged:    table.ProcessManagedStatusUnmanaged,
-			wantValid:      false,
-			wantIgnoreCode: gse.ErrCodeNoNeedStop,
-		},
-		{
-			name:           "stop but gse stopped while bscp running -> status mismatch but no need stop 829",
-			operateType:    table.StopProcessOperate,
-			content:        statusContent(0, false),
-			origStatus:     table.ProcessStatusRunning,
-			origManaged:    table.ProcessManagedStatusManaged,
-			wantValid:      false,
-			wantIgnoreCode: gse.ErrCodeNoNeedStop,
-		},
-		{
-			name:           "stop and gse running -> valid",
-			operateType:    table.StopProcessOperate,
-			content:        statusContent(100, true),
-			origStatus:     table.ProcessStatusRunning,
-			origManaged:    table.ProcessManagedStatusManaged,
-			wantValid:      true,
-			wantIgnoreCode: 0,
-		},
+		{"重复启动 828 -> 幂等成功", gse.ErrCodeAlreadyRunning, true},
+		{"无需停止 829 -> 幂等成功", gse.ErrCodeNoNeedStop, true},
+		{"成功 0 -> 非幂等路径", 0, false},
+		{"仍在执行 115 -> 非幂等路径", 115, false},
+		{"其他失败码 1 -> 照旧失败", 1, false},
+		{"负数错误码 -> 照旧失败", -1, false},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			gotValid, gotIgnoreCode, _ := isOperationValid(c.operateType, c.content, c.origStatus, c.origManaged)
-			if gotValid != c.wantValid {
-				t.Fatalf("isValid = %v, want %v", gotValid, c.wantValid)
-			}
-			if gotIgnoreCode != c.wantIgnoreCode {
-				t.Fatalf("ignoreErrCode = %d, want %d", gotIgnoreCode, c.wantIgnoreCode)
+			if got := IsIdempotentOperateError(c.errorCode); got != c.wantIgnore {
+				t.Fatalf("IsIdempotentOperateError(%d) = %v, want %v", c.errorCode, got, c.wantIgnore)
 			}
 		})
 	}
 }
 
-func TestValidateOperateIgnoreErrCode(t *testing.T) {
+// TestCompareExecConfig CompareWithCMDBProcessInfo 对比决策：
+// 一致放行；不一致报错；停止操作且 CMDB 快照缺失回退 DB 配置放行；其他操作快照缺失报错
+func TestCompareExecConfig(t *testing.T) {
+	dbConfig := table.ProcessInfo{
+		StartCmd: "/usr/bin/start",
+		StopCmd:  "/usr/bin/stop",
+		User:     "root",
+	}
+	latestSame := table.ProcessInfo{
+		StartCmd: "/usr/bin/start",
+		StopCmd:  "/usr/bin/stop",
+		User:     "root",
+	}
+	latestDiff := table.ProcessInfo{
+		StartCmd: "/usr/bin/start-v2",
+		StopCmd:  "/usr/bin/stop-v2",
+		User:     "root",
+	}
+
 	cases := []struct {
 		name        string
-		reason      string
 		operateType table.ProcessOperateType
-		want        int
+		db          table.ProcessInfo
+		latest      table.ProcessInfo
+		hasLatest   bool
+		wantErr     bool
 	}{
-		{"no need operate + start -> 828", pbproc.DisableReasonNoNeedOperate, table.StartProcessOperate, gse.ErrCodeAlreadyRunning},
-		{"no need operate + stop -> 829", pbproc.DisableReasonNoNeedOperate, table.StopProcessOperate, gse.ErrCodeNoNeedStop},
-		{"no need operate + kill -> 829", pbproc.DisableReasonNoNeedOperate, table.KillProcessOperate, gse.ErrCodeNoNeedStop},
-		{"no need operate + register -> 0 (out of scope)", pbproc.DisableReasonNoNeedOperate, table.RegisterProcessOperate, 0},
-		{"no need operate + unregister -> 0 (out of scope)", pbproc.DisableReasonNoNeedOperate, table.UnregisterProcessOperate, 0},
-		{"other reason + start -> 0", pbproc.DisableReasonTaskRunning, table.StartProcessOperate, 0},
-		{"no reason + stop -> 0", pbproc.DisableReasonNone, table.StopProcessOperate, 0},
+		{"新旧一致 -> start 放行", table.StartProcessOperate, dbConfig, latestSame, true, false},
+		{"新旧一致 -> stop 放行", table.StopProcessOperate, dbConfig, latestSame, true, false},
+		{"新旧一致 -> kill 放行", table.KillProcessOperate, dbConfig, latestSame, true, false},
+		{"新旧不一致 -> start 报错", table.StartProcessOperate, dbConfig, latestDiff, true, true},
+		{"新旧不一致 -> stop 报错", table.StopProcessOperate, dbConfig, latestDiff, true, true},
+		{"新旧不一致 -> restart 报错", table.RestartProcessOperate, dbConfig, latestDiff, true, true},
+		{"快照缺失 + stop -> 回退 DB 配置放行", table.StopProcessOperate, dbConfig, table.ProcessInfo{}, false, false},
+		{"快照缺失 + start -> 报错", table.StartProcessOperate, dbConfig, table.ProcessInfo{}, false, true},
+		{"快照缺失 + kill -> 报错", table.KillProcessOperate, dbConfig, table.ProcessInfo{}, false, true},
+		{"快照缺失 + unregister -> 报错", table.UnregisterProcessOperate, dbConfig, table.ProcessInfo{}, false, true},
 	}
+
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := validateOperateIgnoreErrCode(c.reason, c.operateType); got != c.want {
-				t.Fatalf("validateOperateIgnoreErrCode(%q, %q) = %d, want %d", c.reason, c.operateType, got, c.want)
+			err := compareExecConfig(c.operateType, c.db, c.latest, c.hasLatest)
+			if (err != nil) != c.wantErr {
+				t.Fatalf("compareExecConfig(%s, ...) err = %v, wantErr %v", c.operateType, err, c.wantErr)
 			}
 		})
 	}

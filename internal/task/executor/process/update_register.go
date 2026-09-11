@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
@@ -25,7 +26,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
@@ -59,6 +59,12 @@ type UpdateRegisterExecutor struct {
 // ErrRegisterProcessStepFailed 注册进程步骤失败
 var ErrRegisterProcessStepFailed = errors.New("register process step failed")
 
+// ErrStartProcessStepFailed 启动进程步骤失败（此时托管信息已更新）
+var ErrStartProcessStepFailed = errors.New("start process step failed")
+
+// ErrOperationCompletedStepFailed 操作完成步骤失败（此时托管信息已更新）
+var ErrOperationCompletedStepFailed = errors.New("operation completed step failed")
+
 // NewUpdateRegisterExecutor new update register executor
 func NewUpdateRegisterExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, dao dao.Set,
 	redLock *lock.RedisLock) *UpdateRegisterExecutor {
@@ -86,10 +92,17 @@ type UpdateRegisterPayload struct {
 	OriginalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	OriginalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
 	EnableProcessRestart      bool
-	CCSyncStatus              table.CCSyncStatus
+	// CCSyncStatus 进程 CC 同步状态（下发时刻快照），供状态类校验使用
+	CCSyncStatus table.CCSyncStatus
 }
 
-// ValidateOperateStep 校验操作是否合法
+// ValidateOperateStep 校验操作是否合法（快照对比 + 校验合一，任务内零 CMDB 查询）
+// 对比随任务下发的 DB 配置（ConfigData，即 DB source_data）与下发时刻 CMDB 最新快照（LatestConfigData）：
+//   - 快照缺失（进程已在 CMDB 删除或下发时刷新降级）：无法比对直接报错，
+//     进程删除的落库标记由 CMDB 同步主路径兜底
+//   - 两者一致：无需执行任何 GSE 操作，后续 Stop / Register / Start 步骤自判断跳过，
+//     由 OperationCompletedStep 收敛实例状态
+//   - 两者不一致：Stop 用旧配置的命令停旧进程，Register / Start 用新配置托管并拉起
 func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 	logs.Infof("[ValidateOperateStep STEP]: starting validate operate")
 	payload := &UpdateRegisterPayload{}
@@ -106,66 +119,26 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 		return fmt.Errorf("[ValidateOperateStep STEP]: common process payload is nil")
 	}
 
-	// 获取cmdb侧最新进程详情
-	ktForCmdbCtx := kit.NewWithTenant(payload.TenantID).Ctx
-	processInfo, err := u.CMDBService.ListProcessDetailByIds(ktForCmdbCtx, bkcmdb.ProcessReq{
-		BkBizID:      int(payload.BizID),
-		BkProcessIDs: []int{int(commonPayload.ProcessPayload.CcProcessID)},
-	})
+	dbInfo, latestInfo, err := parseProcessConfigs(commonPayload)
 	if err != nil {
-		return fmt.Errorf("[ValidateOperateStep STEP]: failed to get process from CMDB, bizID: %d, "+
-			"ccProcessID: %d, err: %v", payload.BizID, commonPayload.ProcessPayload.CcProcessID, err)
+		return fmt.Errorf("[ValidateOperateStep STEP]: %w", err)
 	}
 
-	if len(processInfo) == 0 {
-		tx := u.Dao.GenQuery().Begin()
-		err = cmdb.MarkProcessDeletedAndCleanInstancesTx(kit.NewWithTenant(payload.TenantID), u.Dao, tx, payload.BizID, []uint32{payload.ProcessID})
-		if err != nil {
-			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
-				payload.BizID, payload.ProcessID, err)
-			if rbErr := tx.Rollback(); rbErr != nil {
-				logs.Errorf("[CompareWithCMDBProcessInfo STEP]: rollback failed for bizID=%d: %v", payload.BizID, rbErr)
-				return rbErr
-			}
-			return err
-		}
-		if errT := tx.Commit(); errT != nil {
-			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: commit failed for biz %d: %v", payload.BizID, errT)
-			return errT
-		}
-		return fmt.Errorf("process not found in CMDB, bizID: %d, ccProcessID: %d",
-			payload.BizID, commonPayload.ProcessPayload.CcProcessID)
-	}
-
-	cmdbProcessInfo := processInfo[0]
-	latestCMDBInfo := table.ProcessInfo{
-		BkStartParamRegex: cmdbProcessInfo.BkStartParamRegex,
-		WorkPath:          cmdbProcessInfo.WorkPath,
-		PidFile:           cmdbProcessInfo.PidFile,
-		User:              cmdbProcessInfo.User,
-		ReloadCmd:         cmdbProcessInfo.ReloadCmd,
-		RestartCmd:        cmdbProcessInfo.RestartCmd,
-		StartCmd:          cmdbProcessInfo.StartCmd,
-		StopCmd:           cmdbProcessInfo.StopCmd,
-		FaceStopCmd:       cmdbProcessInfo.FaceStopCmd,
-		Timeout:           cmdbProcessInfo.Timeout,
-		StartCheckSecs:    cmdbProcessInfo.BkStartCheckSecs,
-	}
-
-	// 检测是否拥有启停命令
+	// 检测是否拥有启停命令：停止旧进程依赖旧配置的 stop_cmd，启动新进程依赖新配置的 start_cmd
 	if payload.EnableProcessRestart {
-		if !pbproc.HasOperateCommand(table.StopProcessOperate, latestCMDBInfo) {
+		if !pbproc.HasOperateCommand(table.StopProcessOperate, dbInfo) {
 			return fmt.Errorf("the stop command does not exist")
 		}
-		if !pbproc.HasOperateCommand(table.StartProcessOperate, latestCMDBInfo) {
+		if !pbproc.HasOperateCommand(table.StartProcessOperate, latestInfo) {
 			return fmt.Errorf("the start command does not exist")
 		}
 	}
 
-	// 验证更新托管操作
-	canOperate, message, _ := pbproc.CanProcessOperate(
+	// 验证更新托管操作（属性矩阵 + 状态类校验，针对将注册进 GSE 的 CMDB 最新配置；
+	// 状态取下发时刻 payload 快照）
+	canOperate, message, _ := pbproc.CanProcessOperateByAttrs(
 		payload.OperateType,
-		latestCMDBInfo,
+		latestInfo,
 		string(payload.OriginalProcStatus),
 		string(payload.OriginalProcManagedStatus),
 		payload.CCSyncStatus.String(),
@@ -174,20 +147,35 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 		return fmt.Errorf("process cannot operate, reason: %s", message)
 	}
 
-	configData, err := json.Marshal(latestCMDBInfo)
-	if err != nil {
-		logs.Errorf("[ValidateOperateStep STEP]: json marshal prev_data and source_data failed to %s, processID=%s, err=%v",
-			payload.ProcessID, err)
-	}
-	commonPayload.ProcessPayload.ConfigData = string(configData)
-	if err = c.SetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[ValidateOperateStep STEP]: set common payload failed: %w", err)
-	}
+	logs.Infof("[ValidateOperateStep STEP]: validate done, bizID: %d, processID: %d, "+
+		"config changed: %t", payload.BizID, payload.ProcessID, processInfoChanged(dbInfo, latestInfo))
 
 	return nil
 }
 
-// StopProcessStep 停止旧的进程
+// parseProcessConfigs 解析随任务下发的 DB 配置（ConfigData）与下发时刻 CMDB 最新快照（LatestConfigData）。
+// LatestConfigData 为空表示进程已在 CMDB 删除或下发时快照刷新降级：更新托管无法与最新配置比对，
+// 直接报错（对齐普通进程操作「除停止外快照缺失即报错」的语义）
+func parseProcessConfigs(commonPayload *common.TaskPayload) (dbInfo, latestInfo table.ProcessInfo, err error) {
+	proc := commonPayload.ProcessPayload
+	if err = json.Unmarshal([]byte(proc.ConfigData), &dbInfo); err != nil {
+		return dbInfo, latestInfo, fmt.Errorf("failed to unmarshal db process info: %w", err)
+	}
+	if proc.LatestConfigData == "" {
+		return dbInfo, latestInfo, fmt.Errorf("process not found in cmdb, ccProcessID: %d", proc.CcProcessID)
+	}
+	if err = json.Unmarshal([]byte(proc.LatestConfigData), &latestInfo); err != nil {
+		return dbInfo, latestInfo, fmt.Errorf("failed to unmarshal cmdb process info: %w", err)
+	}
+	return dbInfo, latestInfo, nil
+}
+
+// processInfoChanged 对比 DB 配置与 CMDB 最新快照是否不一致（不一致才需要执行托管更新）
+func processInfoChanged(dbInfo, latestInfo table.ProcessInfo) bool {
+	return !reflect.DeepEqual(dbInfo, latestInfo)
+}
+
+// StopProcessStep 用旧配置的停止命令停止旧进程（仅在 DB 配置与 CMDB 快照不一致时执行）
 func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 	logs.Infof("[StopProcessStep STEP]: starting stop process")
 
@@ -201,16 +189,20 @@ func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 		return fmt.Errorf("[StopProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	// 解析进程配置信息
-	var processInfo table.ProcessInfo
-	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
+	dbInfo, latestInfo, err := parseProcessConfigs(commonPayload)
 	if err != nil {
-		return fmt.Errorf("[StopProcessStep STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf("[StopProcessStep STEP]: %w", err)
+	}
+
+	// 配置一致时无需更新托管，跳过停止（由 OperationCompletedStep 收敛实例状态）
+	if !processInfoChanged(dbInfo, latestInfo) {
+		logs.Infof("[StopProcessStep STEP]: process config not changed, skip stop")
+		return nil
 	}
 
 	// 1. 查询gse
 	kt := kit.NewWithTenant(payload.TenantID)
-	status, err := u.queryGSEProcessStatus(kt.Ctx, payload, commonPayload, processInfo)
+	status, err := u.queryGSEProcessStatus(kt.Ctx, payload, commonPayload, dbInfo)
 	if err != nil {
 		return err
 	}
@@ -220,7 +212,8 @@ func (u *UpdateRegisterExecutor) StopProcessStep(c *istep.Context) error {
 		return nil
 	}
 
-	if err = u.executeGSEOperate(kt.Ctx, payload, commonPayload, table.StopProcessOperate); err != nil {
+	// 2. 用旧配置的停止命令停止旧进程
+	if err = u.executeGSEOperate(kt.Ctx, payload, commonPayload, table.StopProcessOperate, dbInfo); err != nil {
 		return fmt.Errorf(
 			"[StopProcessStep STEP]: execute process operate %s failed: %w",
 			table.StopProcessOperate,
@@ -246,7 +239,7 @@ func needStopProcess(status *gse.ProcessStatusContent) bool {
 	return false
 }
 
-// RegisterProcessStep 托管进程
+// RegisterProcessStep 用 CMDB 最新配置重新托管进程（仅在配置不一致时执行）
 func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 	logs.Infof("[RegisterProcessStep STEP]: starting register process")
 
@@ -260,11 +253,24 @@ func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 		return fmt.Errorf("[RegisterProcessStep STEP]: get common payload failed: %w", err)
 	}
 
+	dbInfo, latestInfo, err := parseProcessConfigs(commonPayload)
+	if err != nil {
+		return fmt.Errorf("[RegisterProcessStep STEP]: %w", err)
+	}
+
+	// 配置一致时无需更新托管，跳过注册（由 OperationCompletedStep 收敛实例状态）
+	if !processInfoChanged(dbInfo, latestInfo) {
+		logs.Infof("[RegisterProcessStep STEP]: process config not changed, skip register")
+		return nil
+	}
+
+	// 用 CMDB 最新快照配置注册托管信息
 	if err := u.executeGSEOperate(
 		kit.NewWithTenant(payload.TenantID).Ctx,
 		payload,
 		commonPayload,
 		table.RegisterProcessOperate,
+		latestInfo,
 	); err != nil {
 		return fmt.Errorf("%w: %v", ErrRegisterProcessStepFailed, err)
 	}
@@ -272,7 +278,7 @@ func (u *UpdateRegisterExecutor) RegisterProcessStep(c *istep.Context) error {
 	return nil
 }
 
-// StartProcessStep 启动进程
+// StartProcessStep 用新配置的启动命令启动进程（仅在配置不一致时执行）
 func (u *UpdateRegisterExecutor) StartProcessStep(c *istep.Context) error {
 	logs.Infof("[StartProcessStep STEP]: starting start process")
 
@@ -286,18 +292,32 @@ func (u *UpdateRegisterExecutor) StartProcessStep(c *istep.Context) error {
 		return fmt.Errorf("[StartProcessStep STEP]: get common payload failed: %w", err)
 	}
 
-	if err := u.executeGSEOperate(kit.NewWithTenant(payload.TenantID).Ctx, payload, commonPayload, table.StartProcessOperate); err != nil {
-		return fmt.Errorf(
-			"[StartProcessStep STEP]: execute process operate %s failed: %w",
-			table.StartProcessOperate,
-			err,
-		)
+	dbInfo, latestInfo, err := parseProcessConfigs(commonPayload)
+	if err != nil {
+		return fmt.Errorf("[StartProcessStep STEP]: %w", err)
+	}
+
+	// 配置一致时无需更新托管，跳过启动（由 OperationCompletedStep 收敛实例状态）
+	if !processInfoChanged(dbInfo, latestInfo) {
+		logs.Infof("[StartProcessStep STEP]: process config not changed, skip start")
+		return nil
+	}
+
+	// 用 CMDB 最新快照配置启动新进程
+	if err := u.executeGSEOperate(
+		kit.NewWithTenant(payload.TenantID).Ctx,
+		payload,
+		commonPayload,
+		table.StartProcessOperate,
+		latestInfo,
+	); err != nil {
+		return fmt.Errorf("%w: %v", ErrStartProcessStepFailed, err)
 	}
 
 	return nil
 }
 
-// OperationCompletedStep 进程操作完成
+// OperationCompletedStep 进程操作完成，收敛进程实例状态
 func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error {
 	logs.Infof("[OperationCompletedStep STEP]: starting process operation completed")
 	payload := &UpdateRegisterPayload{}
@@ -310,17 +330,28 @@ func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error 
 		return fmt.Errorf("[OperationCompletedStep STEP]: get common payload failed: %w", err)
 	}
 
-	// 解析进程配置信息
-	var processInfo table.ProcessInfo
-	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
+	dbInfo, latestInfo, err := parseProcessConfigs(commonPayload)
 	if err != nil {
-		return fmt.Errorf("[OperationCompletedStep STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf("[OperationCompletedStep STEP]: %w", err)
 	}
 
-	// 获取gse侧进程状态
-	processStatus, managedStatus, err := u.getGSEProcessStatus(c, payload.BizID)
-	if err != nil {
-		return fmt.Errorf("[OperationCompletedStep STEP]: failed to get gse process status: %w", err)
+	var processStatus table.ProcessStatus
+	var managedStatus table.ProcessManagedStatus
+	if processInfoChanged(dbInfo, latestInfo) {
+		// 执行过托管更新，以 gse 侧真实状态为准
+		processStatus, managedStatus, err = u.getGSEProcessStatus(c, payload.BizID)
+		if err != nil {
+			// 走到这里说明注册步骤已成功执行、托管信息已在 gse 侧生效，
+			// 收尾失败也必须按「注册后失败」分类：registerProcessSuccessDelta
+			// 依赖该错误码计入成功数，触发回调收敛 prev_data / source_data / cc_sync_status，
+			// 否则进程会一直被 Updated 阻断正常操作，直到某次重试收尾成功
+			return fmt.Errorf("[OperationCompletedStep STEP]: %w: get gse process status failed: %v",
+				ErrOperationCompletedStepFailed, err)
+		}
+	} else {
+		// 配置一致未执行任何 GSE 操作，实例恢复为操作前状态即可（也规避未注册进程查 GSE 报错）
+		processStatus = payload.OriginalProcStatus
+		managedStatus = payload.OriginalProcManagedStatus
 	}
 
 	// 更新进程实例状态字段
@@ -330,7 +361,7 @@ func (u *UpdateRegisterExecutor) OperationCompletedStep(c *istep.Context) error 
 		"managed_status":    managedStatus,
 		"status_updated_at": time.Now(),
 	}, m.ID.Eq(payload.ProcessInstanceID)); err != nil {
-		return fmt.Errorf("[OperationCompletedStep STEP]: failed to update process instance: %w", err)
+		return fmt.Errorf("%w: %v", ErrOperationCompletedStepFailed, err)
 	}
 
 	return nil
@@ -465,10 +496,16 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 			// 是否更新进程配置：仅由数量一致性决定
 			allRegisterSucceeded := snapshot.RegisterProcessSuccessCount == snapshot.TotalCount
 			if allRegisterSucceeded {
+				// prev_data 保留操作前 DB 配置；source_data 收敛为 CMDB 最新快照
+				// （配置一致时两者本就相同，等价于刷新同步状态）
+				sourceData := commonPayload.ProcessPayload.LatestConfigData
+				if sourceData == "" {
+					sourceData = commonPayload.ProcessPayload.ConfigData
+				}
 				updateFields := map[string]any{
 					"cc_sync_status": table.Synced,
 					"prev_data":      commonPayload.ProcessPayload.ConfigData,
-					"source_data":    commonPayload.ProcessPayload.ConfigData,
+					"source_data":    sourceData,
 				}
 				if errU := u.Dao.Process().UpdateSelectedFields(
 					kit.NewWithTenant(payload.TenantID),
@@ -483,8 +520,10 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 					)
 				}
 
-				logs.Infof("[UpdateRegisterCallback CALLBACK]: successfully rolled back process instance status, "+
-					"bizID: %d, processInstanceID: %d", payload.BizID, payload.ProcessInstanceID)
+				logs.Infof("[UpdateRegisterCallback CALLBACK]: successfully synced process config, "+
+					"bizID: %d, processID: %d, prev_data: %s, source_data: %s",
+					payload.BizID, payload.ProcessID,
+					commonPayload.ProcessPayload.ConfigData, sourceData)
 			}
 		}
 
@@ -660,12 +699,7 @@ func (u *UpdateRegisterExecutor) queryGSEProcessStatus(ctx context.Context, payl
 
 // executeGSEOperate 执行gse操作
 func (u *UpdateRegisterExecutor) executeGSEOperate(ctx context.Context, payload *UpdateRegisterPayload,
-	commonPayload *common.TaskPayload, op table.ProcessOperateType) error {
-
-	var processInfo table.ProcessInfo
-	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo); err != nil {
-		return fmt.Errorf("unmarshal process info failed: %w", err)
-	}
+	commonPayload *common.TaskPayload, op table.ProcessOperateType, processInfo table.ProcessInfo) error {
 
 	gseOpType, err := gse.ConvertProcessOperateTypeToOpType(op)
 	if err != nil {
@@ -739,10 +773,16 @@ func RegisterUpdateRegisterExecutor(e *UpdateRegisterExecutor) {
 	istep.RegisterCallback(UpdateRegisterCallbackName, istep.CallbackExecutorFunc(e.Callback))
 }
 
-// registerProcessSuccessDelta 根据 RegisterProcessStep 的执行结果，返回成功数增量
-func registerProcessSuccessDelta(err error) uint32 {
-	if errors.Is(err, ErrRegisterProcessStepFailed) {
-		return 0
+// registerProcessSuccessDelta 根据任务失败发生的阶段，返回「托管信息是否已更新」的成功数增量：
+//   - 任务成功，或失败发生在托管注册之后（启动 / 收尾）：托管信息已按 CMDB 最新快照更新，增量 1
+//   - 失败发生在托管注册之前或注册本身（校验 / 停止 / 注册）：托管信息未更新，增量 0，
+//     避免批次收尾误把 prev_data / source_data / cc_sync_status 刷成已同步
+func registerProcessSuccessDelta(cbErr error) uint32 {
+	if cbErr == nil {
+		return 1
 	}
-	return 1
+	if errors.Is(cbErr, ErrStartProcessStepFailed) || errors.Is(cbErr, ErrOperationCompletedStepFailed) {
+		return 1
+	}
+	return 0
 }

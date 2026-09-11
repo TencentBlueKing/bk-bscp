@@ -73,7 +73,6 @@ func StopProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	sptf := cc.G().TaskFramework.ProcessUpdateRegister.StopProcess
@@ -91,7 +90,6 @@ func StopProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -106,7 +104,6 @@ func RegisterProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	rptf := cc.G().TaskFramework.ProcessUpdateRegister.RegisterProcess
@@ -124,7 +121,6 @@ func RegisterProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -139,7 +135,6 @@ func StartProcessStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	stptf := cc.G().TaskFramework.ProcessUpdateRegister.StartProcess
@@ -157,7 +152,6 @@ func StartProcessStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
@@ -172,7 +166,6 @@ func OperationCompletedStep(
 	processInstanceID uint32,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 
 	octf := cc.G().TaskFramework.ProcessUpdateRegister.OperationCompleted
@@ -190,7 +183,6 @@ func OperationCompletedStep(
 		ProcessInstanceID:         processInstanceID,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 
 	return setp
