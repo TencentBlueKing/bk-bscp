@@ -11436,7 +11436,7 @@
         },
         "status": {
           "type": "string",
-          "description": "任务状态"
+          "description": "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE。IGNORED 不入库，由 GSE 错误码 828（重复启动）/829（无需停止）转译得出，表示进程已处于目标态、操作被幂等忽略"
         },
         "message": {
           "type": "string",
@@ -11584,7 +11584,7 @@
       "properties": {
         "status": {
           "type": "string",
-          "description": "任务状态"
+          "description": "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE（五类，IGNORED 由 GSE 错误码转译得出）"
         },
         "count": {
           "type": "integer",

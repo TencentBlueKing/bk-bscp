@@ -25,7 +25,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	pushmanager "github.com/TencentBlueKing/bk-bscp/internal/components/push_manager"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
-	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	gesprocessor "github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -36,14 +35,12 @@ import (
 )
 
 const (
+	// CompareWithCMDBProcessInfoStepName 对比 DB 配置与 CMDB 最新配置步骤名
+	CompareWithCMDBProcessInfoStepName istep.StepName = "CompareWithCMDBProcessInfo"
+
 	// ValidateOperateProcessStepName validate operate process step name
 	ValidateOperateProcessStepName istep.StepName = "ValidateOperateProcess"
-	// CompareWithCMDBProcessInfoStepName compare with cmdb process info step name
-	CompareWithCMDBProcessInfoStepName istep.StepName = "CompareWithCMDBProcessInfo"
-	// CompareWithGSEProcessStatusStepName compare with gse process status step name
-	CompareWithGSEProcessStatusStepName istep.StepName = "CompareWithGSEProcessStatus"
-	// CompareWithGSEProcessConfigStepName compare with gse process config step name
-	CompareWithGSEProcessConfigStepName istep.StepName = "CompareWithGSEProcessConfig"
+
 	// OperateProcessStepName operate process step name
 	OperateProcessStepName istep.StepName = "OperateProcess"
 	// FinalizeOperateProcessStepName finalize operate process step name
@@ -76,20 +73,66 @@ func NewProcessExecutor(gseService *gse.Service, cmdbService bkcmdb.Service, pm 
 
 // OperatePayload 进程操作负载
 type OperatePayload struct {
-	TenantID                  string
-	BizID                     uint32
-	BatchID                   uint32 // 任务批次ID，用于 Callback 更新批次状态
-	OperateType               table.ProcessOperateType
-	OperateUser               string
-	ProcessID                 uint32
-	ProcessInstanceID         uint32
-	NeedCompareCMDB           bool                       // 是否需要对比CMDB配置，适配页面强制更新的场景
-	OriginalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
-	OriginalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
-	CCSyncStatus              table.CCSyncStatus
+	TenantID string
+	BizID    uint32
+	// 任务批次ID，用于 Callback 更新批次状态
+	BatchID           uint32
+	OperateType       table.ProcessOperateType
+	OperateUser       string
+	ProcessID         uint32
+	ProcessInstanceID uint32
+	// OriginalProcManagedStatus 原进程托管状态，用于后续状态回滚
+	OriginalProcManagedStatus table.ProcessManagedStatus
+	// OriginalProcStatus 原进程状态，用于后续状态回滚
+	OriginalProcStatus table.ProcessStatus
+	// CCSyncStatus 进程 CC 同步状态（下发时刻快照），供状态类校验使用
+	CCSyncStatus table.CCSyncStatus
+}
+
+// CompareWithCMDBProcessInfo 对比随任务下发的 DB 配置与 CMDB 最新配置快照
+// （等价原 CompareWithCMDBProcessInfo 步骤，但免 CMDB 查询——两个配置已由下发 / 重试侧批量拉取后随任务带入）。
+// 对比规则：
+//   - 两者一致：直接放行，以当前配置执行操作
+//   - 停止操作且 CMDB 最新快照缺失（进程已在 CMDB 删除或快照刷新降级）：忽略缺失，以 DB 配置执行停止操作
+//   - 其他操作快照缺失、或两者配置不一致：对比失败直接报错
+func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
+	logs.Infof("[CompareWithCMDBProcessInfo STEP]: starting compare")
+	payload := &OperatePayload{}
+	if err := c.GetPayload(payload); err != nil {
+		return fmt.Errorf("get payload failed: %w", err)
+	}
+
+	commonPayload := &common.TaskPayload{}
+	if err := c.GetCommonPayload(commonPayload); err != nil {
+		return err
+	}
+
+	if commonPayload.ProcessPayload == nil {
+		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: common process payload is nil")
+	}
+	proc := commonPayload.ProcessPayload
+
+	var dbInfo, latestInfo table.ProcessInfo
+	if err := json.Unmarshal([]byte(proc.ConfigData), &dbInfo); err != nil {
+		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to unmarshal db process info: %w", err)
+	}
+	hasLatest := proc.LatestConfigData != ""
+	if hasLatest {
+		if err := json.Unmarshal([]byte(proc.LatestConfigData), &latestInfo); err != nil {
+			return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to unmarshal cmdb process info: %w", err)
+		}
+	}
+
+	if err := compareExecConfig(payload.OperateType, dbInfo, latestInfo, hasLatest); err != nil {
+		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: %w", err)
+	}
+	return nil
 }
 
 // ValidateOperate 校验操作是否合法
+// 属性矩阵对齐 gsekit 校验矩阵（必备命令 + 通用 3 项），并叠加状态类校验（状态未知 / ing 中间态 /
+// syncStatus = Abnormal / Updated 特殊规则；状态取下发时刻 payload 快照）；
+// 重复操作 / 状态漂移仍由 Operate 阶段的 GSE 幂等语义兜底（828/829 视为幂等成功）。
 func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	logs.Infof("[ValidateOperate STEP]: starting validation")
 	payload := &OperatePayload{}
@@ -103,387 +146,45 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 	}
 
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: common process payload is nil")
+		return fmt.Errorf("[ValidateOperate STEP]: common process payload is nil")
 	}
 
-	// 获取进程配置信息
+	// 解析执行配置（Compare 步骤放行后的 DB 配置）
 	var processInfo table.ProcessInfo
-	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to marshal process info: %w", err)
+	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo); err != nil {
+		return fmt.Errorf("[ValidateOperate STEP]: failed to unmarshal process info: %w", err)
 	}
 
-	// 获取原进程状态和托管状态
-	originalProcStatus := payload.OriginalProcStatus
-	originalProcManagedStatus := payload.OriginalProcManagedStatus
-
-	// 校验操作是否合法
-	canOperate, message, reason := pbproc.CanProcessOperate(
-		payload.OperateType,
-		processInfo,
-		originalProcStatus.String(),
-		originalProcManagedStatus.String(),
+	// 校验操作是否合法（属性矩阵 + 状态类校验；状态取下发时刻 payload 快照，
+	// 重复操作 / 状态漂移由 Operate 阶段 GSE 幂等兜底）
+	if canOperate, message, _ := pbproc.CanProcessOperateByAttrs(
+		payload.OperateType, processInfo,
+		payload.OriginalProcStatus.String(),
+		payload.OriginalProcManagedStatus.String(),
 		payload.CCSyncStatus.String(),
-	)
-
-	if !canOperate {
-		// 重复启动已运行/重复停止已停止：记录可忽略错误码，供查询侧按错误码忽略，任务仍按失败返回
-		if ignoreErrCode := validateOperateIgnoreErrCode(reason, payload.OperateType); ignoreErrCode != 0 {
-			commonPayload.GsePayload = &common.GsePayload{ErrorCode: ignoreErrCode, ErrorMsg: message}
-			if err := c.SetCommonPayload(commonPayload); err != nil {
-				logs.Errorf("[ValidateOperate STEP]: failed to set common payload: %v", err)
-			}
-		}
+	); !canOperate {
 		return fmt.Errorf("process cannot operate, reason: %s", message)
 	}
 
 	return nil
 }
 
-// validateOperateIgnoreErrCode 在 ValidateOperate 校验失败时，返回可被查询侧忽略的错误码：
-// 仅当失败原因为“无需操作”（进程已处于目标态）且操作为启动/停止/强制停止时，
-// 返回 828/829，其余场景返回 0（保持真实失败）。
-func validateOperateIgnoreErrCode(reason string, operateType table.ProcessOperateType) int {
-	if reason != pbproc.DisableReasonNoNeedOperate {
-		return 0
-	}
-	return duplicateOperateIgnoreCode(operateType)
-}
+// compareExecConfig 对比 DB 配置与 CMDB 最新配置，判定能否执行操作：
+//   - 两者一致：放行（执行配置即 DB 配置）
+//   - 停止操作且 CMDB 最新快照缺失：忽略缺失放行，以 DB 配置直接强停
+//   - 其他操作快照缺失、或两者配置不一致：报错
+func compareExecConfig(operateType table.ProcessOperateType, dbInfo, latestInfo table.ProcessInfo,
+	hasLatest bool) error {
 
-// CompareWithCMDBProcessInfo 对比CMDB进程信息
-// 在进程操作前，对比数据库中存储的进程配置和 CMDB 最新的进程配置是否一致
-func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
-	logs.Infof("[CompareWithCMDBProcessInfo STEP]: starting comparison")
-
-	payload := &OperatePayload{}
-	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("get payload failed: %w", err)
-	}
-
-	// 判断是否需要对比CMDB，不需要则直接跳过
-	if !payload.NeedCompareCMDB {
-		logs.Infof("[CompareWithCMDBProcessInfo STEP]: skip comparison as needCompareCMDB=false, bizID: %d, "+
-			"processID: %d, processInstanceID: %d", payload.BizID, payload.ProcessID, payload.ProcessInstanceID)
-		return nil
-	}
-
-	// 获取bscp侧存储的进程配置
-	commonPayload := &common.TaskPayload{}
-	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: get common payload failed: %w", err)
-	}
-	var dbProcessInfo table.ProcessInfo
-	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &dbProcessInfo); err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: unmarshal database config data failed: %w", err)
-	}
-
-	// 获取cmdb侧最新进程详情
-	ktForCmdbCtx := kit.NewWithTenant(payload.TenantID).Ctx
-	processInfo, err := e.CMDBService.ListProcessDetailByIds(ktForCmdbCtx, bkcmdb.ProcessReq{
-		BkBizID:      int(payload.BizID),
-		BkProcessIDs: []int{int(commonPayload.ProcessPayload.CcProcessID)},
-	})
-	if err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to get process from CMDB, bizID: %d, "+
-			"ccProcessID: %d, err: %v", payload.BizID, commonPayload.ProcessPayload.CcProcessID, err)
-	}
-
-	// 表示cmdb删除了该进程，需要更新表数据
-	if len(processInfo) == 0 {
-		tx := e.Dao.GenQuery().Begin()
-
-		ktForCmdb := kit.NewWithTenant(payload.TenantID)
-		err = cmdb.MarkProcessDeletedAndCleanInstancesTx(ktForCmdb, e.Dao, tx, payload.BizID, []uint32{payload.ProcessID})
-		if err != nil {
-			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: delete stopped/unmanaged failed for bizID=%d, processIDs=%v: %v",
-				payload.BizID, payload.ProcessID, err)
-			if rbErr := tx.Rollback(); rbErr != nil {
-				logs.Errorf("[CompareWithCMDBProcessInfo STEP]: rollback failed for bizID=%d: %v", payload.BizID, rbErr)
-			}
+	if !hasLatest {
+		if operateType == table.StopProcessOperate {
+			return nil
 		}
-		if err := tx.Commit(); err != nil {
-			logs.Errorf("[CompareWithCMDBProcessInfo STEP]: commit failed for biz %d: %v", payload.BizID, err)
-		}
-		return fmt.Errorf("process not found in CMDB, bizID: %d, ccProcessID: %d",
-			payload.BizID, commonPayload.ProcessPayload.CcProcessID)
+		return fmt.Errorf("process not found in CMDB, operateType: %s", operateType)
 	}
-
-	cmdbProcessInfo := processInfo[0]
-
-	// 用cmdb的ProcessInfo构建bscp侧的ProcessInfo方便后续对比
-	latestCMDBInfo := table.ProcessInfo{
-		BkStartParamRegex: cmdbProcessInfo.BkStartParamRegex,
-		WorkPath:          cmdbProcessInfo.WorkPath,
-		PidFile:           cmdbProcessInfo.PidFile,
-		User:              cmdbProcessInfo.User,
-		ReloadCmd:         cmdbProcessInfo.ReloadCmd,
-		RestartCmd:        cmdbProcessInfo.RestartCmd,
-		StartCmd:          cmdbProcessInfo.StartCmd,
-		StopCmd:           cmdbProcessInfo.StopCmd,
-		FaceStopCmd:       cmdbProcessInfo.FaceStopCmd,
-		Timeout:           cmdbProcessInfo.Timeout,
-		StartCheckSecs:    cmdbProcessInfo.BkStartCheckSecs,
+	if !reflect.DeepEqual(dbInfo, latestInfo) {
+		return fmt.Errorf("process config differs between db and cmdb, operateType: %s", operateType)
 	}
-
-	// 对比数据库配置和 CMDB 最新配置
-	if !reflect.DeepEqual(dbProcessInfo, latestCMDBInfo) {
-		// 输出差异信息
-		diffs := buildProcessInfoDiff(&dbProcessInfo, &latestCMDBInfo)
-		logs.Errorf("CompareWithCMDBProcessInfo: process config mismatch, bizID: %d, processID: %d, "+
-			"processInstanceID: %d, differences: %v", payload.BizID, payload.ProcessID, payload.ProcessInstanceID, diffs)
-
-		return fmt.Errorf("process config mismatch with CMDB, please sync from CMDB first")
-	}
-
-	logs.Infof("CompareWithCMDBProcessInfo completed: bizID: %d, processID: %d, processInstanceID: %d, config matched",
-		payload.BizID, payload.ProcessID, payload.ProcessInstanceID)
-	return nil
-}
-
-// buildProcessInfoDiff 构建 ProcessInfo 差异详情
-func buildProcessInfoDiff(dbInfo, cmdbInfo *table.ProcessInfo) []string {
-	var diffs []string
-
-	if dbInfo.BkStartParamRegex != cmdbInfo.BkStartParamRegex {
-		diffs = append(diffs, fmt.Sprintf("BkStartParamRegex: db=%q, cmdb=%q",
-			dbInfo.BkStartParamRegex, cmdbInfo.BkStartParamRegex))
-	}
-	if dbInfo.WorkPath != cmdbInfo.WorkPath {
-		diffs = append(diffs, fmt.Sprintf("WorkPath: db=%q, cmdb=%q",
-			dbInfo.WorkPath, cmdbInfo.WorkPath))
-	}
-	if dbInfo.PidFile != cmdbInfo.PidFile {
-		diffs = append(diffs, fmt.Sprintf("PidFile: db=%q, cmdb=%q",
-			dbInfo.PidFile, cmdbInfo.PidFile))
-	}
-	if dbInfo.User != cmdbInfo.User {
-		diffs = append(diffs, fmt.Sprintf("User: db=%q, cmdb=%q",
-			dbInfo.User, cmdbInfo.User))
-	}
-	if dbInfo.ReloadCmd != cmdbInfo.ReloadCmd {
-		diffs = append(diffs, fmt.Sprintf("ReloadCmd: db=%q, cmdb=%q",
-			dbInfo.ReloadCmd, cmdbInfo.ReloadCmd))
-	}
-	if dbInfo.RestartCmd != cmdbInfo.RestartCmd {
-		diffs = append(diffs, fmt.Sprintf("RestartCmd: db=%q, cmdb=%q",
-			dbInfo.RestartCmd, cmdbInfo.RestartCmd))
-	}
-	if dbInfo.StartCmd != cmdbInfo.StartCmd {
-		diffs = append(diffs, fmt.Sprintf("StartCmd: db=%q, cmdb=%q",
-			dbInfo.StartCmd, cmdbInfo.StartCmd))
-	}
-	if dbInfo.StopCmd != cmdbInfo.StopCmd {
-		diffs = append(diffs, fmt.Sprintf("StopCmd: db=%q, cmdb=%q",
-			dbInfo.StopCmd, cmdbInfo.StopCmd))
-	}
-	if dbInfo.FaceStopCmd != cmdbInfo.FaceStopCmd {
-		diffs = append(diffs, fmt.Sprintf("FaceStopCmd: db=%q, cmdb=%q",
-			dbInfo.FaceStopCmd, cmdbInfo.FaceStopCmd))
-	}
-	if dbInfo.Timeout != cmdbInfo.Timeout {
-		diffs = append(diffs, fmt.Sprintf("Timeout: db=%d, cmdb=%d",
-			dbInfo.Timeout, cmdbInfo.Timeout))
-	}
-
-	return diffs
-}
-
-// CompareWithGSEProcessStatus 对比GSE进程状态
-func (e *ProcessExecutor) CompareWithGSEProcessStatus(c *istep.Context) error {
-	logs.Infof("[CompareWithGSEProcessStatus STEP]: starting comparison")
-	payload := &OperatePayload{}
-	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: get payload failed: %w", err)
-	}
-
-	commonPayload := &common.TaskPayload{}
-	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return err
-	}
-
-	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: common process payload is nil")
-	}
-
-	// 获取进程配置信息
-	var processInfo table.ProcessInfo
-	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to marshal process info: %w", err)
-	}
-
-	// 使用 OperateProcMulti 接口查询进程状态，操作码为 2（OpTypeQuery）
-	params := gesprocessor.BuildProcessOperateParams{
-		BizID:         payload.BizID,
-		Alias:         commonPayload.ProcessPayload.Alias,
-		FuncName:      commonPayload.ProcessPayload.FuncName,
-		AgentID:       []string{commonPayload.ProcessPayload.AgentID},
-		HostInstSeq:   commonPayload.ProcessPayload.HostInstSeq,
-		ModuleInstSeq: commonPayload.ProcessPayload.ModuleInstSeq,
-		SetName:       commonPayload.ProcessPayload.SetName,
-		ModuleName:    commonPayload.ProcessPayload.ModuleName,
-		GseOpType:     gse.OpTypeQuery,
-		ProcessInfo:   processInfo,
-	}
-
-	processOperate, err := gesprocessor.BuildProcessOperate(params)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to build process operate: %w", err)
-	}
-	req := &gse.MultiProcOperateReq{
-		ProcOperateReq: []gse.ProcessOperate{*processOperate},
-	}
-
-	kt := kit.NewWithTenant(payload.TenantID)
-	resp, err := e.GseService.OperateProcMulti(kt.Ctx, req)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
-	}
-	// 等待查询任务完成
-	result, err := e.WaitProcOperateTaskFinish(kt.Ctx,
-		resp.TaskID, payload.BizID,
-		commonPayload.ProcessPayload.HostInstSeq,
-		commonPayload.ProcessPayload.Alias,
-		commonPayload.ProcessPayload.AgentID)
-	if err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to wait for query task finish: %w", err)
-	}
-
-	// 构建 GSE 接口响应的 key
-	key := gse.BuildResultKey(commonPayload.ProcessPayload.AgentID,
-		payload.BizID,
-		commonPayload.ProcessPayload.Alias,
-		commonPayload.ProcessPayload.HostInstSeq)
-	logs.Infof("[CompareWithGSEProcessStatus STEP]: Finalize key: %s", key)
-	procResult, ok := result[key]
-	if !ok {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: process result not found for key: %s", key)
-	}
-
-	// 检查查询操作是否成功
-	if !gse.IsSuccess(procResult.ErrorCode) {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to query process status, errorCode=%d, errorMsg=%s",
-			procResult.ErrorCode, procResult.ErrorMsg)
-	}
-
-	// 解析 content 获取进程状态
-	var statusContent gse.ProcessStatusContent
-	if err = json.Unmarshal([]byte(procResult.Content), &statusContent); err != nil {
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: failed to unmarshal process status content: %w", err)
-	}
-
-	// 根据操作类型判断是否需要继续操作进程
-	isValid, ignoreErrCode, message := isOperationValid(payload.OperateType, &statusContent,
-		payload.OriginalProcStatus, payload.OriginalProcManagedStatus)
-	if !isValid {
-		// 重复启动已运行/重复停止已停止：记录 GSE 错误码，供查询侧按错误码忽略，任务仍按失败返回
-		if ignoreErrCode != 0 {
-			commonPayload.GsePayload = &common.GsePayload{ErrorCode: ignoreErrCode, ErrorMsg: message}
-			if err = c.SetCommonPayload(commonPayload); err != nil {
-				logs.Errorf("[CompareWithGSEProcessStatus STEP]: failed to set common payload: %v", err)
-			}
-		}
-		return fmt.Errorf("[CompareWithGSEProcessStatus STEP]: operation is not valid: %s", message)
-	}
-	return nil
-}
-
-// duplicateOperateIgnoreCode 返回“进程已处于目标态”导致的重复操作可被忽略的错误码：
-// 重复启动 -> 828（ErrCodeAlreadyRunning），重复停止/强制停止 -> 829（ErrCodeNoNeedStop），其余 -> 0。
-// 由调用方先确认“进程已处于目标态”后再调用，本函数只负责按操作类型映射错误码。
-func duplicateOperateIgnoreCode(operateType table.ProcessOperateType) int {
-	switch operateType {
-	case table.StartProcessOperate:
-		return gse.ErrCodeAlreadyRunning
-	case table.StopProcessOperate, table.KillProcessOperate:
-		return gse.ErrCodeNoNeedStop
-	}
-	return 0
-}
-
-// isOperationValid 判断操作是否合法
-// isValid: false表示操作不合法，true表示操作合法
-// ignoreErrCode: 进程已处于目标态导致的重复操作可忽略错误码（启动已运行->828，停止/强制停止已停止->829），其余为 0
-// message: 操作不合法的原因
-func isOperationValid(
-	operateType table.ProcessOperateType,
-	statusContent *gse.ProcessStatusContent,
-	originalProcStatus table.ProcessStatus,
-	originalProcManagedStatus table.ProcessManagedStatus,
-) (isValid bool, ignoreErrCode int, message string) {
-	// 只要操作成功，即使进程未托管及未启动也会返回查询的进程的信息
-	if len(statusContent.Process) == 0 {
-		return false, 0, "process not found in gse"
-	}
-	procDetail := statusContent.Process[0]
-	// 只要操作成功，即使进程未托管及未启动也会返回查询的进程实例的信息
-	if len(procDetail.Instance) == 0 {
-		return false, 0, "process instance not found in gse"
-	}
-	// 获取gse侧存储的进程实例信息
-	instance := procDetail.Instance[0]
-
-	gseStatus := table.ProcessStatusStopped
-	if instance.PID > 0 {
-		gseStatus = table.ProcessStatusRunning
-	}
-	gseManagedStatus := table.ProcessManagedStatusUnmanaged
-	if instance.IsAuto {
-		gseManagedStatus = table.ProcessManagedStatusManaged
-	}
-
-	// GSE 侧进程已处于目标态时的重复操作，记录可忽略错误码：启动已运行->828，停止/强制停止已停止->829
-	if (operateType == table.StartProcessOperate && gseStatus == table.ProcessStatusRunning) ||
-		((operateType == table.StopProcessOperate || operateType == table.KillProcessOperate) &&
-			gseStatus == table.ProcessStatusStopped) {
-		ignoreErrCode = duplicateOperateIgnoreCode(operateType)
-	}
-
-	if originalProcStatus != gseStatus {
-		return false, ignoreErrCode, fmt.Sprintf("process status is %s in bscp, but %s in gse", originalProcStatus, gseStatus)
-	}
-	if originalProcManagedStatus != gseManagedStatus {
-		return false, ignoreErrCode, fmt.Sprintf("process managed status is %s in bscp, but %s in gse",
-			originalProcManagedStatus, gseManagedStatus)
-	}
-
-	switch operateType {
-	case table.StartProcessOperate:
-		// 启动操作：如果进程已经在运行，跳过
-		if gseStatus == table.ProcessStatusRunning {
-			return false, ignoreErrCode, "process status is running in gse"
-		}
-
-	case table.StopProcessOperate, table.KillProcessOperate:
-		// 停止/杀死操作：如果进程已经停止，跳过
-		if gseStatus == table.ProcessStatusStopped {
-			return false, ignoreErrCode, "process already stopped in gse"
-		}
-
-	case table.RegisterProcessOperate:
-		// 托管操作：如果进程已经被托管
-		if gseManagedStatus == table.ProcessManagedStatusManaged {
-			return false, 0, "process already managed in gse"
-		}
-
-	case table.UnregisterProcessOperate:
-		// 取消托管操作：如果进程已经取消托管，跳过
-		if gseManagedStatus == table.ProcessManagedStatusUnmanaged {
-			return false, 0, "process already unmanaged in gse"
-		}
-
-	case table.RestartProcessOperate, table.ReloadProcessOperate:
-		// 重启操作/重载操作：总是执行，不跳过
-		return true, 0, ""
-	}
-
-	return true, 0, ""
-}
-
-// CompareWithGSEProcessConfig 对比GSE进程配置（TODO: 待实现）
-func (e *ProcessExecutor) CompareWithGSEProcessConfig(c *istep.Context) error {
-	// TODO: 通过gse进程配置文件获取接口获取gse托管的进程配置，与db中存储的配置进行对比
-	logs.Infof("[CompareWithGSEProcessConfig STEP]: skip for now (TODO)")
 	return nil
 }
 
@@ -562,8 +263,23 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	}
 
 	if !gse.IsSuccess(procResult.ErrorCode) {
-		// 记录 GSE 错误码，供查询侧按错误码忽略，任务仍按失败返回
+		// 记录 GSE 执行结果，供查询侧转译展示状态
 		commonPayload.GsePayload = &common.GsePayload{ErrorCode: procResult.ErrorCode, ErrorMsg: procResult.ErrorMsg}
+
+		// 重复操作幂等成功：重复启动（828）/ 无需停止（829）即目标态已达成，
+		// 任务按成功返回（跳过失败回滚），Finalize 正常把 GSE 真实状态写回实例，
+		// 查询侧按 GsePayload.ErrorCode 转译为 IGNORED
+		if IsIdempotentOperateError(procResult.ErrorCode) {
+			if err = c.SetCommonPayload(commonPayload); err != nil {
+				logs.Errorf("[Operate STEP]: failed to set common payload: %v", err)
+				return fmt.Errorf("[Operate STEP]: failed to set common payload: %w", err)
+			}
+			logs.Infof("[Operate STEP]: duplicate operate treated as idempotent success, "+
+				"errorCode=%d, errorMsg=%s", procResult.ErrorCode, procResult.ErrorMsg)
+			return nil
+		}
+
+		// 其余错误码照旧失败
 		if err = c.SetCommonPayload(commonPayload); err != nil {
 			logs.Errorf("[Operate STEP]: failed to set common payload: %v", err)
 		}
@@ -576,7 +292,6 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 }
 
 // Finalize 进程操作完成
-// nolint: funlen
 func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 	logs.Infof("Finalize: starting finalize")
 	payload := &OperatePayload{}
@@ -865,14 +580,18 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 	return processStatus, managedStatus, nil
 }
 
+// IsIdempotentOperateError 判断 GSE 错误码是否为「进程已处于目标态」的幂等错误：
+// 重复启动 -> 828（ErrCodeAlreadyRunning），无需停止 -> 829（ErrCodeNoNeedStop）
+func IsIdempotentOperateError(errorCode int) bool {
+	return gse.IsAlreadyRunning(errorCode) || gse.IsNoNeedStop(errorCode)
+}
+
 // RegisterExecutor register executor
 func RegisterExecutor(e *ProcessExecutor) {
-	// 先获取的命令
+	// 对比 DB 配置与 CMDB 最新配置，选定执行配置
 	istep.Register(CompareWithCMDBProcessInfoStepName, istep.StepExecutorFunc(e.CompareWithCMDBProcessInfo))
 	// 校验操作是否合法
 	istep.Register(ValidateOperateProcessStepName, istep.StepExecutorFunc(e.ValidateOperate))
-	istep.Register(CompareWithGSEProcessStatusStepName, istep.StepExecutorFunc(e.CompareWithGSEProcessStatus))
-	istep.Register(CompareWithGSEProcessConfigStepName, istep.StepExecutorFunc(e.CompareWithGSEProcessConfig))
 	// 注册主要执行步骤
 	istep.Register(OperateProcessStepName, istep.StepExecutorFunc(e.Operate))
 	// 注册进程操作完成后的状态更新步骤

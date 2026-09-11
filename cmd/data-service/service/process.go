@@ -14,6 +14,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -23,10 +24,12 @@ import (
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 	"gorm.io/gen/field"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/expression"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	processBuilder "github.com/TencentBlueKing/bk-bscp/internal/task/builder/process"
+	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	processExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/priority"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
@@ -215,6 +218,10 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		return &pbds.OperateProcessResp{}, nil
 	}
 
+	// 下发前批量拉取 CMDB 最新进程配置快照；不管进程是否已在 CMDB 删除都下发任务，
+	// 快照缺失由任务执行侧处理：停止操作回退 DB 配置强停，其余操作报错
+	configSnapshot := refreshOperateSnapshot(kt, s.cmdb, kt.BizID, toDispatch)
+
 	// 构建操作范围，totalCount 只计入真正需要下发任务的实例
 	totalCount := uint32(len(toDispatch))
 	operateRange := buildOperateRange(processes, req)
@@ -260,6 +267,7 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbds.OperateProcessRe
 		batchID,
 		req.OperateType,
 		toDispatch,
+		configSnapshot,
 		req.GetEnableProcessRestart(),
 	)
 	if err != nil {
@@ -609,12 +617,158 @@ func preResolveInstances(kt *kit.Kit, processInstances []*table.ProcessInstance,
 	return toDispatch, toDelete, nil
 }
 
+// refreshOperateSnapshot 下发前批量拉取 CMDB 最新进程配置快照（ccProcessID -> ConfigData JSON）。
+// 不管进程是否已在 CMDB 删除都下发任务：快照未命中的任务 LatestConfigData 为空，
+// 由任务执行侧 ValidateOperate 处理——停止操作回退 DB 配置强停，其余操作报错。
+func refreshOperateSnapshot(kt *kit.Kit, cmdbService bkcmdb.Service, bizID uint32,
+	toDispatch []resolvedInstance) map[uint32]string {
+
+	ccProcessIDs := make([]uint32, 0, len(toDispatch))
+	seen := make(map[uint32]struct{}, len(toDispatch))
+	for _, item := range toDispatch {
+		id := item.proc.Attachment.CcProcessID
+		if id == 0 {
+			// 无 CC 进程 ID 属异常数据，快照必不命中，记录后跳过，任务照常下发
+			logs.Warnf("process has no cc process id, skip pulling cmdb snapshot, bizID: %d, processID: %d, rid: %s",
+				bizID, item.proc.ID, kt.Rid)
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ccProcessIDs = append(ccProcessIDs, id)
+	}
+	return refreshConfigDataSnapshot(kt, cmdbService, bizID, ccProcessIDs)
+}
+
+// refreshConfigDataSnapshot 批量拉取 CMDB 最新进程配置快照（ccProcessID -> ConfigData JSON）。
+// 通过 process 下的 bk_process_id 匹配 ccProcessIDs；已在 CMDB 删除的进程不会出现在返回结果中，
+// 不做剔除与标记，由任务执行侧 CompareWithCMDBProcessInfo 步骤决定放行（停止）或报错。
+// 查询失败或无可查 ID 时返回空快照，任务执行降级使用 DB source_data，不阻断下发。
+func refreshConfigDataSnapshot(kt *kit.Kit, cmdbService bkcmdb.Service, bizID uint32,
+	ccProcessIDs []uint32) map[uint32]string {
+
+	if len(ccProcessIDs) == 0 {
+		return nil
+	}
+
+	fields := []string{"bk_process_id", "bk_start_param_regex", "work_path", "pid_file", "user", "priority", "proc_num",
+		"reload_cmd", "restart_cmd", "start_cmd", "stop_cmd", "face_stop_cmd", "timeout", "bk_start_check_secs"}
+
+	bkProcessIDs := make([]int64, 0, len(ccProcessIDs))
+	seen := make(map[uint32]struct{}, len(ccProcessIDs))
+	for _, id := range ccProcessIDs {
+		seen[id] = struct{}{}
+		bkProcessIDs = append(bkProcessIDs, int64(id))
+	}
+
+	infos, err := fetchAllProcessRelatedInfo(kt, cmdbService, int(bizID), bkProcessIDs, fields)
+	if err != nil {
+		logs.Errorf("batch list process related info from cmdb failed, bizID: %d, count: %d, err: %v, rid: %s",
+			bizID, len(bkProcessIDs), err, kt.Rid)
+		// 快照置空（查询失败不代表进程已删除）
+		return nil
+	}
+
+	snapshot := make(map[uint32]string, len(ccProcessIDs))
+	for _, item := range infos {
+		if item.Process == nil {
+			continue
+		}
+		info := item.Process
+		// process 下的 bk_process_id 匹配 ccProcessIDs，存在才纳入快照
+		if _, ok := seen[uint32(info.BkProcessID)]; !ok {
+			continue
+		}
+		tableInfo := table.ProcessInfo{
+			BkStartParamRegex: info.BkStartParamRegex,
+			WorkPath:          info.WorkPath,
+			PidFile:           info.PidFile,
+			User:              info.User,
+			ReloadCmd:         info.ReloadCmd,
+			RestartCmd:        info.RestartCmd,
+			StartCmd:          info.StartCmd,
+			StopCmd:           info.StopCmd,
+			FaceStopCmd:       info.FaceStopCmd,
+			Timeout:           info.Timeout,
+			StartCheckSecs:    info.BkStartCheckSecs,
+		}
+		configData, err := json.Marshal(tableInfo)
+		if err != nil {
+			logs.Errorf("marshal cmdb process info failed, ccProcessID: %d, err: %v, rid: %s",
+				info.BkProcessID, err, kt.Rid)
+			continue
+		}
+		snapshot[uint32(info.BkProcessID)] = string(configData)
+	}
+
+	// CMDB 未返回（已删除）的进程不做剔除与标记，由任务执行侧决定放行（停止）或报错
+	for _, id := range ccProcessIDs {
+		if _, ok := snapshot[id]; !ok {
+			logs.Warnf("process not found in cmdb, dispatch task anyway, bizID: %d, ccProcessID: %d, rid: %s",
+				bizID, id, kt.Rid)
+		}
+	}
+	return snapshot
+}
+
+// fetchAllProcessRelatedInfo 按 bk_process_id 批量拉取全量进程关联信息（对齐 gsekit batch_request 语义）。
+// CMDB 单次过滤与分页上限均为 500，超出自动分批、批内翻页拉全；已在 CMDB 删除的进程不会出现在
+// 返回结果中，由调用方处理。
+func fetchAllProcessRelatedInfo(kt *kit.Kit, cmdbService bkcmdb.Service, bizID int,
+	bkProcessIDs []int64, fields []string) ([]*bkcmdb.ProcessRelatedInfoItem, error) {
+
+	const cmdbBatchSize = 500
+
+	all := make([]*bkcmdb.ProcessRelatedInfoItem, 0, len(bkProcessIDs))
+	for start := 0; start < len(bkProcessIDs); start += cmdbBatchSize {
+		end := start + cmdbBatchSize
+		if end > len(bkProcessIDs) {
+			end = len(bkProcessIDs)
+		}
+		batchIDs := bkProcessIDs[start:end]
+
+		for pageStart := 0; ; pageStart += cmdbBatchSize {
+			req := &bkcmdb.ListProcessRelatedInfoReq{
+				BkBizID: bizID,
+				Page: &bkcmdb.PageParam{
+					Start: pageStart,
+					Limit: cmdbBatchSize,
+				},
+				ProcessPropertyFilter: &bkcmdb.ProcessPropertyFilter{
+					Condition: "AND",
+					Rules: []bkcmdb.ProcessFilterRule{{
+						Field:    "bk_process_id",
+						Operator: "in",
+						Value:    batchIDs,
+					}},
+				},
+				Fields: fields,
+			}
+
+			resp, err := cmdbService.ListProcessRelatedInfo(kt.Ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, resp.Info...)
+			if len(resp.Info) < cmdbBatchSize {
+				break
+			}
+		}
+	}
+	return all, nil
+}
+
 // dispatchProcessTasks 把一次进程操作的全部实例任务作为一个任务组下发，按启动优先级分阶段执行。
+// toDispatch 不管进程是否已在 CMDB 删除都会下发任务，CMDB 最新配置快照由调用方通过
+// refreshOperateSnapshot 批量拉取后写入各任务 LatestConfigData。
 //
 // 返回值是「会由回调推进的任务数」：任务组落库失败时不会有任何任务被创建，
 // 此时回滚已写入的实例中间态并返回 0，由调用方把整个批次计为失败。
-func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskManager, bizID, batchID uint32, taskType string,
-	toDispatch []resolvedInstance, enableProcessRestart bool) (uint32, error) {
+func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskManager,
+	bizID, batchID uint32, taskType string,
+	toDispatch []resolvedInstance, configSnapshot map[uint32]string, enableProcessRestart bool) (uint32, error) {
 
 	// 阶段一：全内存构建任务，此阶段失败不产生任何副作用
 	tasks := make([]*taskTypes.Task, 0, len(toDispatch))
@@ -625,21 +779,39 @@ func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskMan
 			daoSet,
 			kt.TenantID,
 			bizID,
-			batchID,
+			batchID, // 任务组都使用同一个批次 ID
 			item.instance.Attachment.ProcessID,
 			item.instance.ID,
 			item.finalOpType, // 直接使用预解析的类型
 			kt.User,
 			taskType, // 任务批次的操作类型保持不变，任务内使用 finalOpType 来区分实际操作
-			item.proc.Spec.CcSyncStatus,
 			item.originalManaged,
 			item.originalStatus,
+			item.proc.Spec.CcSyncStatus, // 下发时刻快照，供 Validate 状态类校验使用
 			enableProcessRestart,
 		)
 		if err != nil {
 			logs.Errorf("create process operate task failed, err: %v, rid: %s", err, kt.Rid)
 			return 0, errf.Errorf(errf.Internal, "%s",
 				i18n.T(kt, "build process operate task failed, err: %v", err))
+		}
+
+		// 记录 CMDB 最新配置快照（LatestConfigData），ConfigData 保留 DB source_data；
+		// 未命中（含 CMDB 降级）LatestConfigData 为空，由任务执行侧 ValidateOperate 决定
+		// 用 DB 配置放行（停止操作）或报错
+		if data, ok := configSnapshot[item.proc.Attachment.CcProcessID]; ok {
+			commonPayload := &common.TaskPayload{}
+			if err = taskObj.GetCommonPayload(commonPayload); err != nil {
+				return 0, errf.Errorf(errf.Internal, "%s",
+					i18n.T(kt, "get task common payload failed, err: %v", err))
+			}
+			if commonPayload.ProcessPayload != nil {
+				commonPayload.ProcessPayload.LatestConfigData = data
+				if err = taskObj.SetCommonPayload(commonPayload); err != nil {
+					return 0, errf.Errorf(errf.Internal, "%s",
+						i18n.T(kt, "set task common payload failed, err: %v", err))
+				}
+			}
 		}
 
 		prio := 0
@@ -789,8 +961,8 @@ func resolveOperateType(kt *kit.Kit, operateType table.ProcessOperateType, statu
 // buildProcessTask 构建进程操作任务
 func buildProcessTask(dao dao.Set, tenantID string, bizID, batchID, procID, instID uint32,
 	operateType table.ProcessOperateType,
-	user, taskType string, ccSyncStatus table.CCSyncStatus, originalManaged table.ProcessManagedStatus,
-	originalStatus table.ProcessStatus,
+	user, taskType string, originalManaged table.ProcessManagedStatus,
+	originalStatus table.ProcessStatus, syncStatus table.CCSyncStatus,
 	enableRestart bool) (*taskTypes.Task, error) {
 
 	if operateType == table.UpdateRegisterProcessOperate {
@@ -805,7 +977,7 @@ func buildProcessTask(dao dao.Set, tenantID string, bizID, batchID, procID, inst
 				user,
 				originalManaged,
 				originalStatus,
-				ccSyncStatus,
+				syncStatus,
 				enableRestart,
 			),
 		)
@@ -821,37 +993,12 @@ func buildProcessTask(dao dao.Set, tenantID string, bizID, batchID, procID, inst
 			instID,
 			operateType,
 			user,
-			needCMDBCompare(ccSyncStatus, operateType),
 			originalManaged,
 			originalStatus,
-			ccSyncStatus,
+			syncStatus,
 			taskType,
 		),
 	)
-}
-
-// needCMDBCompare 判断是否需要与 CMDB 进行配置对比
-// 规则：
-// 1. 未删除的进程，需要进行 CMDB 对比
-// 2. 已删除的进程，在 停止 / 强制停止 / 取消托管 操作时，跳过 CMDB 对比
-// 3. 已删除进程的其他操作，统一跳过（防御式处理）
-func needCMDBCompare(ccSyncStatus table.CCSyncStatus, op table.ProcessOperateType) bool {
-
-	// 1. 未删除的进程：需要对比
-	if ccSyncStatus != table.Deleted {
-		return true
-	}
-
-	// 2. 已删除进程：特定操作跳过
-	switch op {
-	case table.KillProcessOperate,
-		table.StopProcessOperate,
-		table.UnregisterProcessOperate:
-		return false
-	default:
-		// 3. 已删除进程的其他操作：防御式跳过
-		return false
-	}
 }
 
 // ProcessFilterOptions implements pbds.DataServer.

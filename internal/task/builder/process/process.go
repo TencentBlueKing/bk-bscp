@@ -36,8 +36,7 @@ type OperateTask struct {
 	operatorUser              string
 	originalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	originalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
-	needCompareCMDB           bool                       // 是否需要对比cmdb配置，适配页面强制更新的场景
-	ccSyncStatus              table.CCSyncStatus         // 进程的cc同步状态
+	ccSyncStatus              table.CCSyncStatus         // 进程 CC 同步状态（下发时刻快照），供状态类校验使用
 	taskType                  string                     // 任务批次的操作类型
 }
 
@@ -51,10 +50,9 @@ func NewOperateTask(
 	processInstanceID uint32,
 	operateType table.ProcessOperateType,
 	operatorUser string,
-	needCompareCMDB bool, // 是否需要对比cmdb配置，适配页面强制更新的场景
 	originalProcManagedStatus table.ProcessManagedStatus, // 原进程托管状态，用于后续状态回滚
 	originalProcStatus table.ProcessStatus, // 原进程状态，用于后续状态回滚
-	ccSyncStatus table.CCSyncStatus, // 进程的cc同步状态
+	ccSyncStatus table.CCSyncStatus, // 进程 CC 同步状态（下发时刻快照），供状态类校验使用
 	taskType string, // 任务批次的操作类型
 ) types.TaskBuilder {
 	return &OperateTask{
@@ -68,7 +66,6 @@ func NewOperateTask(
 		operatorUser:              operatorUser,
 		originalProcManagedStatus: originalProcManagedStatus,
 		originalProcStatus:        originalProcStatus,
-		needCompareCMDB:           needCompareCMDB,
 		ccSyncStatus:              ccSyncStatus,
 		taskType:                  taskType,
 	}
@@ -91,9 +88,8 @@ func (t *OperateTask) FinalizeTask(task *types.Task) error {
 func (t *OperateTask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
-		// TODO：这里可以增加时间间隔判断，比如cmdb这条数据更新时间再1min以内则不用判断
-		// 校验操作是否合法
-		processStep.ValidateOperateProcess(
+		// 对比 DB 配置与 CMDB 最新配置，选定执行配置（已删除进程的停止操作回退 DB 配置，其余报错）
+		processStep.CompareWithCMDBProcessInfo(
 			t.tenantID,
 			t.bizID,
 			t.batchID,
@@ -103,41 +99,17 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operatorUser,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
-			t.ccSyncStatus,
-		),
-		// 对比CMDB进程配置
-		processStep.CompareWithCMDBProcessInfo(
-			t.tenantID,
-			t.bizID,
-			t.batchID,
-			t.processID,
-			t.processInstanceID,
-			t.needCompareCMDB,
-			t.originalProcManagedStatus,
-			t.originalProcStatus,
-			t.ccSyncStatus,
 		),
 
-		// 对比GSE进程状态
-		processStep.CompareWithGSEProcessStatus(
+		// 校验操作是否合法（对 Compare 步骤选定的执行配置做属性矩阵 + 状态类校验）
+		processStep.ValidateOperateProcess(
 			t.tenantID,
 			t.bizID,
 			t.batchID,
 			t.processID,
 			t.processInstanceID,
 			t.operateType,
-			t.originalProcManagedStatus,
-			t.originalProcStatus,
-			t.ccSyncStatus,
-		),
-
-		// 对比GSE进程配置
-		processStep.CompareWithGSEProcessConfig(
-			t.tenantID,
-			t.bizID,
-			t.batchID,
-			t.processID,
-			t.processInstanceID,
+			t.operatorUser,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
 			t.ccSyncStatus,
@@ -153,7 +125,6 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operateType,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
-			t.ccSyncStatus,
 		),
 
 		// 进程操作完成，更新进程实例状态
@@ -166,7 +137,6 @@ func (t *OperateTask) Steps() ([]*types.Step, error) {
 			t.operateType,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
-			t.ccSyncStatus,
 		),
 	}, nil
 }

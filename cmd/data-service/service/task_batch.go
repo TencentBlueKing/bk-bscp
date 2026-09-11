@@ -35,6 +35,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
+// TaskStatusIgnored 任务展示状态：GSE 报「进程已处于目标态」（828 重复启动 / 829 无需停止），
+// 操作结果即目标态，视为幂等成功但不计入 SUCCESS，独立转译为 IGNORED 展示。
+// IGNORED 不入库，仅由 GsePayload.ErrorCode 转译得出。
+const TaskStatusIgnored = "IGNORED"
+
 // ListTaskBatch implements pbds.DataServer.
 func (s *Service) ListTaskBatch(ctx context.Context, req *pbds.ListTaskBatchReq) (*pbds.ListTaskBatchResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -196,59 +201,73 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 		return resp, nil
 	}
 
-	// 构建查询选项
-	listOpt := &istore.ListOption{
-		TaskIndex: fmt.Sprintf("%d", req.GetBatchId()),
-		TaskType:  string(taskBatch.Spec.TaskAction),
-		Limit:     limit,
-		Offset:    int64(req.GetStart()),
-	}
-
-	// 构建过滤条件
-	if req.GetStatus() != "" {
-		// 支持状态过滤
-		statusList := expandTaskStatusForQuery(req.GetStatus())
-		listOpt.StatusList = statusList
-	}
-
-	// TODO: 支持其他过滤条件
-	// - SetNames: 集群名称列表过滤
-	// - ModuleNames: 模块名称列表过滤
-	// - ServiceNames: 服务名称列表过滤
-	// - ProcessAliases: 进程别名列表过滤
-	// - CcProcessIds: CC进程ID列表过滤
-	// - InstIds: 实例ID列表过滤
-	// 这些过滤条件需要从 CommonPayload 中查询，等表设计支持后再实现
-
-	pagination, err := taskStorage.ListTask(ctx, listOpt)
-	if err != nil {
-		logs.Errorf("list tasks failed, err: %v, rid: %s", err, kt.Rid)
-		return nil, errf.Errorf(errf.Unknown, "%s",
-			i18n.T(kt, "list tasks from task storage failed, err: %v", err))
-	}
-	if pagination == nil {
-		logs.Errorf("list tasks returned nil pagination, rid: %s", kt.Rid)
-		return nil, errf.Errorf(errf.RecordNotFound, "%s",
-			i18n.T(kt, "list tasks returned nil pagination"))
-	}
 	// 需忽略的错误码集合，命中该错误码的失败任务只影响批次整体状态判定
 	ignoreSet := buildIgnoreErrorCodeSet(req.GetIgnoreErrorCodes())
 
-	// 解析每个 task 的 CommonPayload，构建 TaskDetail
-	taskDetails := make([]*pbtb.TaskDetail, 0, len(pagination.Items))
-	var detail *pbtb.TaskDetail
-	for _, task := range pagination.Items {
-		detail, err = convertTaskToDetail(kt, task)
+	taskIndex := fmt.Sprintf("%d", req.GetBatchId())
+	taskType := string(taskBatch.Spec.TaskAction)
+
+	// IGNORED 展示状态不入库（由 GSE 幂等错误码 828/829 转译），存储层无法按其过滤与分页，
+	// 须全量枚举候选任务内存过滤后再分页
+	isIgnoredQuery := req.GetStatus() == TaskStatusIgnored
+
+	var taskDetails []*pbtb.TaskDetail
+	var totalCount uint32
+	if isIgnoredQuery {
+		// 过滤后总数独立计算并按过滤结果分页，避免用页内命中数充当总数导致无法翻页
+		taskDetails, totalCount, err = listIgnoredTaskDetails(kt, taskStorage, taskIndex, taskType,
+			int64(req.GetStart()), limit)
 		if err != nil {
-			logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, err)
 			return nil, err
 		}
-		taskDetails = append(taskDetails, detail)
+	} else {
+		// 构建查询选项与过滤条件
+		listOpt := &istore.ListOption{
+			TaskIndex: taskIndex,
+			TaskType:  taskType,
+			Limit:     limit,
+			Offset:    int64(req.GetStart()),
+		}
+		if req.GetStatus() != "" {
+			// 支持状态过滤
+			listOpt.StatusList = expandTaskStatusForQuery(req.GetStatus())
+		}
+
+		// TODO: 支持其他过滤条件
+		// - SetNames: 集群名称列表过滤
+		// - ModuleNames: 模块名称列表过滤
+		// - ServiceNames: 服务名称列表过滤
+		// - ProcessAliases: 进程别名列表过滤
+		// - CcProcessIds: CC进程ID列表过滤
+		// - InstIds: 实例ID列表过滤
+		// 这些过滤条件需要从 CommonPayload 中查询，等表设计支持后再实现
+
+		pagination, listErr := taskStorage.ListTask(ctx, listOpt)
+		if listErr != nil {
+			logs.Errorf("list tasks failed, err: %v, rid: %s", listErr, kt.Rid)
+			return nil, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "list tasks from task storage failed, err: %v", listErr))
+		}
+		if pagination == nil {
+			logs.Errorf("list tasks returned nil pagination, rid: %s", kt.Rid)
+			return nil, errf.Errorf(errf.RecordNotFound, "%s",
+				i18n.T(kt, "list tasks returned nil pagination"))
+		}
+
+		// 解析每个 task 的 CommonPayload，构建 TaskDetail
+		taskDetails = make([]*pbtb.TaskDetail, 0, len(pagination.Items))
+		for _, task := range pagination.Items {
+			detail, convErr := convertTaskToDetail(kt, task)
+			if convErr != nil {
+				logs.Errorf("convert task to detail failed, taskID: %s, err: %v", task.TaskID, convErr)
+				return nil, convErr
+			}
+			taskDetails = append(taskDetails, detail)
+		}
+		totalCount = uint32(pagination.Count)
 	}
 
 	// 计算状态统计
-	taskIndex := fmt.Sprintf("%d", req.GetBatchId())
-	taskType := string(taskBatch.Spec.TaskAction)
 	statistics, err := getTaskStatusStatistics(kt, taskIndex, taskType)
 	if err != nil {
 		logs.Errorf("get task status statistics failed, err: %v, rid: %s", err, kt.Rid)
@@ -264,7 +283,7 @@ func (s *Service) GetTaskBatchDetail(ctx context.Context, req *pbds.GetTaskBatch
 		return nil, err
 	}
 	resp.Statistics = statistics
-	resp.Count = uint32(pagination.Count)
+	resp.Count = totalCount
 	resp.Tasks = taskDetails
 
 	return resp, nil
@@ -375,6 +394,13 @@ func convertTaskToDetail(kt *kit.Kit, task *taskTypes.Task) (*pbtb.TaskDetail, e
 		Creator:       task.Creator,
 		ExecutionTime: float32(task.ExecutionTime) / 1000.0,
 	}
+	// GSE 错误码 828/829（重复启动 / 无需停止）转译为 IGNORED 展示状态，
+	// message 复用写入时记录的 GSE 错误信息；转译只看 ErrorCode、不看框架状态，
+	// 运行中任务的负载尚无 GsePayload，天然不命中
+	if processPayload.GsePayload != nil && process.IsIdempotentOperateError(processPayload.GsePayload.ErrorCode) {
+		detail.Status = TaskStatusIgnored
+		detail.Message = processPayload.GsePayload.ErrorMsg
+	}
 	if processPayload.ProcessPayload != nil {
 		detail.TaskPayload = &pbtb.TaskPayload{
 			SetName:       processPayload.ProcessPayload.SetName,
@@ -403,7 +429,79 @@ func convertTaskToDetail(kt *kit.Kit, task *taskTypes.Task) (*pbtb.TaskDetail, e
 	return detail, nil
 }
 
-// getTaskStatusStatistics 获取任务状态统计信息
+// listIgnoredTaskDetails 列出 IGNORED 展示状态的任务：IGNORED 不入库（由 GSE 幂等错误码
+// 828/829 转译），存储层无法按其过滤与分页，须按框架状态（SUCCESS / 存量 FAILURE、TIMEOUT）
+// 全量流式枚举候选任务后内存过滤。
+// 返回过滤后的总数 total 与 [start, start+limit) 页内任务明细；仅页窗口内任务执行
+// convertTaskToDetail 全量转换，控制大批次下的解析开销。
+func listIgnoredTaskDetails(kt *kit.Kit, taskStorage istore.Store, taskIndex, taskType string,
+	start, limit int64) ([]*pbtb.TaskDetail, uint32, error) {
+
+	const pageSize = int64(1000)
+	pageEnd := start + limit
+
+	details := make([]*pbtb.TaskDetail, 0)
+	var filteredCnt int64
+
+	offset := int64(0)
+	for {
+		pagination, err := taskStorage.ListTask(kt.Ctx, &istore.ListOption{
+			TaskIndex: taskIndex,
+			TaskType:  taskType,
+			StatusList: []string{
+				taskTypes.TaskStatusSuccess,
+				taskTypes.TaskStatusFailure,
+				taskTypes.TaskStatusTimeout,
+			},
+			Offset: offset,
+			Limit:  pageSize,
+		})
+		if err != nil {
+			return nil, 0, errf.Errorf(errf.Unknown, "%s",
+				i18n.T(kt, "list tasks from task storage failed when paging ignored tasks, err: %v", err))
+		}
+		if len(pagination.Items) == 0 {
+			break
+		}
+
+		for _, task := range pagination.Items {
+			var payload commonExecutor.TaskPayload
+			if err = task.GetCommonPayload(&payload); err != nil {
+				// 单个任务 payload 解析失败不阻断查询，按未命中处理
+				logs.Warnf("get common payload failed when paging ignored tasks, taskID: %s, err: %v, rid: %s",
+					task.TaskID, err, kt.Rid)
+				continue
+			}
+			// 与 convertTaskToDetail 的 IGNORED 转译同一判定口径：GSE 幂等错误码（828/829）
+			if payload.GsePayload == nil || !process.IsIdempotentOperateError(payload.GsePayload.ErrorCode) {
+				continue
+			}
+
+			// 仅对请求页窗口内的命中任务做完整转换
+			if filteredCnt >= start && filteredCnt < pageEnd {
+				detail, convErr := convertTaskToDetail(kt, task)
+				if convErr != nil {
+					logs.Errorf("convert task to detail failed, taskID: %s, err: %v, rid: %s",
+						task.TaskID, convErr, kt.Rid)
+					return nil, 0, convErr
+				}
+				details = append(details, detail)
+			}
+			filteredCnt++
+		}
+
+		offset += int64(len(pagination.Items))
+		if offset >= pagination.Count {
+			break
+		}
+	}
+
+	return details, uint32(filteredCnt), nil
+}
+
+// getTaskStatusStatistics 获取任务状态统计信息（五类：INIT / RUNNING / SUCCESS / IGNORED / FAILURE）
+// IGNORED 不入库：从 SUCCESS 与存量 FAILURE/TIMEOUT 任务中解析 GsePayload.ErrorCode（828/829），
+// 命中的从原状态扣除并计入 IGNORED
 func getTaskStatusStatistics(kt *kit.Kit, taskIndex, taskType string) ([]*pbtb.TaskStatusStatItem, error) {
 	taskStorage := taskpkg.GetGlobalStorage()
 	if taskStorage == nil {
@@ -411,7 +509,7 @@ func getTaskStatusStatistics(kt *kit.Kit, taskIndex, taskType string) ([]*pbtb.T
 			i18n.T(kt, "task storage is not initialized"))
 	}
 
-	// 定义需要统计的四种状态及其对应的实际查询状态列表
+	// 定义需要统计的四种状态及其对应的实际查询状态列表（IGNORED 不入库，不参与计数查询）
 	statusQueries := map[string][]string{
 		taskTypes.TaskStatusInit:    {taskTypes.TaskStatusInit},
 		taskTypes.TaskStatusRunning: {taskTypes.TaskStatusRunning, taskTypes.TaskStatusRevoked, taskTypes.TaskStatusNotStarted},
@@ -438,6 +536,18 @@ func getTaskStatusStatistics(kt *kit.Kit, taskIndex, taskType string) ([]*pbtb.T
 		statusCounts[normalizedStatus] = uint32(pagination.Count)
 	}
 
+	// 统计 IGNORED：拉取 SUCCESS 与存量 FAILURE/TIMEOUT 任务，解析 GSE 幂等错误码（828/829）
+	successIgnored, failureIgnored, err := countIgnoredDisplayStatus(kt, taskStorage, taskIndex, taskType,
+		statusCounts[taskTypes.TaskStatusSuccess], statusCounts[taskTypes.TaskStatusFailure])
+	if err != nil {
+		return nil, err
+	}
+
+	// 成功数与失败数扣除命中的 IGNORED
+	successCount := statusCounts[taskTypes.TaskStatusSuccess] - successIgnored
+	failureCount := statusCounts[taskTypes.TaskStatusFailure] - failureIgnored
+	ignoredCount := successIgnored + failureIgnored
+
 	// 构建返回结果
 	statistics := []*pbtb.TaskStatusStatItem{
 		{
@@ -452,17 +562,83 @@ func getTaskStatusStatistics(kt *kit.Kit, taskIndex, taskType string) ([]*pbtb.T
 		},
 		{
 			Status:  taskTypes.TaskStatusSuccess,
-			Count:   statusCounts[taskTypes.TaskStatusSuccess],
+			Count:   successCount,
 			Message: "任务成功",
 		},
 		{
+			Status:  TaskStatusIgnored,
+			Count:   ignoredCount,
+			Message: "任务已忽略",
+		},
+		{
 			Status:  taskTypes.TaskStatusFailure,
-			Count:   statusCounts[taskTypes.TaskStatusFailure],
+			Count:   failureCount,
 			Message: "任务失败",
 		},
 	}
 
 	return statistics, nil
+}
+
+// countIgnoredDisplayStatus 统计任务中 GSE 错误码命中幂等忽略（828/829）的数量，
+// 分别返回 SUCCESS 类与 FAILURE 类（含存量 TIMEOUT）中命中的数量，用于从原状态扣除并计入 IGNORED。
+func countIgnoredDisplayStatus(kt *kit.Kit, taskStorage istore.Store, taskIndex, taskType string,
+	successCount, failureCount uint32) (successIgnored uint32, failureIgnored uint32, err error) {
+
+	countIgnored := func(statusList []string, total uint32) (uint32, error) {
+		if total == 0 {
+			return 0, nil
+		}
+
+		var ignored uint32
+		offset := int64(0)
+		limit := int64(1000)
+		for offset < int64(total) {
+			listOpt := &istore.ListOption{
+				TaskIndex:  taskIndex,
+				TaskType:   taskType,
+				StatusList: statusList,
+				Offset:     offset,
+				Limit:      limit,
+			}
+			pagination, listErr := taskStorage.ListTask(kt.Ctx, listOpt)
+			if listErr != nil {
+				return 0, errf.Errorf(errf.Unknown, "%s",
+					i18n.T(kt, "list tasks from task storage failed when counting ignored, err: %v", listErr))
+			}
+			if len(pagination.Items) == 0 {
+				break
+			}
+
+			for _, t := range pagination.Items {
+				var payload commonExecutor.TaskPayload
+				if err = t.GetCommonPayload(&payload); err != nil {
+					// 单个任务 payload 解析失败不阻断统计，按未命中处理
+					logs.Warnf("get common payload failed when counting ignored status, taskID: %s, err: %v, rid: %s",
+						t.TaskID, err, kt.Rid)
+					continue
+				}
+				if payload.GsePayload != nil && process.IsIdempotentOperateError(payload.GsePayload.ErrorCode) {
+					ignored++
+				}
+			}
+
+			offset += int64(len(pagination.Items))
+		}
+		return ignored, nil
+	}
+
+	successIgnored, err = countIgnored([]string{taskTypes.TaskStatusSuccess}, successCount)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	failureIgnored, err = countIgnored([]string{taskTypes.TaskStatusFailure, taskTypes.TaskStatusTimeout}, failureCount)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return successIgnored, failureIgnored, nil
 }
 
 // countIgnoredFailedTasks 统计该批次失败任务中 GSE 错误码命中忽略集合的数量
@@ -513,6 +689,15 @@ func expandTaskStatusForQuery(status string) []string {
 	case taskTypes.TaskStatusFailure:
 		// FAILURE 状态包含 FAILURE 和 TIMEOUT
 		return []string{
+			taskTypes.TaskStatusFailure,
+			taskTypes.TaskStatusTimeout,
+		}
+	case TaskStatusIgnored:
+		// IGNORED 不入库：新任务幂等成功（828/829）落在 SUCCESS，
+		// 存量失败任务（ValidateOperate / 旧 Compare 步骤记录）落在 FAILURE/TIMEOUT，
+		// 由 convertTaskToDetail 按 GsePayload.ErrorCode 转译过滤展示
+		return []string{
+			taskTypes.TaskStatusSuccess,
 			taskTypes.TaskStatusFailure,
 			taskTypes.TaskStatusTimeout,
 		}
@@ -643,7 +828,13 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 		return 0, nil
 	}
 
-	retryTasks := make([]*taskTypes.Task, 0, len(failedTasks))
+	// 先解析全部失败任务对应的实例（此时实例携带的还是操作前的真实状态）
+	type retryItem struct {
+		task   *taskTypes.Task
+		inst   *table.ProcessInstance
+		opType table.ProcessOperateType
+	}
+	items := make([]retryItem, 0, len(failedTasks))
 	for _, failedTask := range failedTasks {
 		inst, opType, skip := s.resolveRetryTask(kt, bizID, failedTask)
 		if skip {
@@ -651,16 +842,47 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 				failedTask.TaskID, taskBatch.ID, kt.Rid)
 			continue
 		}
-		if inst != nil {
+		items = append(items, retryItem{task: failedTask, inst: inst, opType: opType})
+	}
+
+	if len(items) == 0 {
+		logs.Infof("no valid failed tasks to retry, batchID: %d, rid: %s", taskBatch.ID, kt.Rid)
+		return 0, nil
+	}
+
+	// 批量拉取 CMDB 最新配置快照，重试前刷新失败任务的 LatestConfigData（避免配置已变更仍使用旧快照）；
+	// 不管进程是否已在 CMDB 删除都重跑任务，快照缺失由任务执行侧处理：
+	// 停止操作回退 DB 配置强停，其余操作报错
+	ccProcessIDs := make([]uint32, 0, len(items))
+	seen := make(map[uint32]struct{}, len(items))
+	for _, item := range items {
+		if item.inst == nil {
+			continue
+		}
+		id := item.inst.Attachment.CcProcessID
+		if id == 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ccProcessIDs = append(ccProcessIDs, id)
+	}
+	configSnapshot := refreshConfigDataSnapshot(kt, s.cmdb, bizID, ccProcessIDs)
+
+	retryTasks := make([]*taskTypes.Task, 0, len(items))
+	for _, item := range items {
+		if item.inst != nil {
 			// 必须在置中间态之前刷新 payload，此时 inst 携带的还是实例操作前的真实状态
-			if err = s.refreshRetryTaskPayload(kt, failedTask, inst); err != nil {
+			if err = s.refreshRetryTaskPayload(kt, item.task, item.inst, configSnapshot); err != nil {
 				return 0, err
 			}
-			if err = updateProcessInstanceStatus(kt, s.dao, opType, inst, true); err != nil {
+			if err = updateProcessInstanceStatus(kt, s.dao, item.opType, item.inst, true); err != nil {
 				return 0, err
 			}
 		}
-		retryTasks = append(retryTasks, failedTask)
+		retryTasks = append(retryTasks, item.task)
 	}
 
 	if len(retryTasks) == 0 {
@@ -691,19 +913,57 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 	return retryCount, nil
 }
 
-// refreshRetryTaskPayload 用实例当前状态改写任务各步骤 payload 里的原始状态字段。
+// refreshRetryTaskPayload 用实例当前状态改写任务各步骤 payload 里的原始状态字段，
+// 并同步刷新 CommonPayload 中的 CMDB 最新配置快照（LatestConfigData；ConfigData 保留 DB source_data）。
 //
 // payload 里的原始状态是首次下发时的快照，仅用于失败回滚与前置校验。任务失败后回滚、
 // CMDB/GSE 状态同步、其他批次操作都会让实例真实状态与该快照脱节，此时沿用旧值会让
 // 前置校验按过期状态判定操作非法（例如实例已回滚为运行中，快照仍是已停止，重试停止
 // 会被判为「已停止无需再停」而永久失败）。
 //
+// configSnapshot 为 nil（CMDB 查询失败或无可查 ID，刷新降级）时保留原 LatestConfigData；
+// 刷新成功但未命中说明进程已在 CMDB 删除，清空原 LatestConfigData，由执行侧决定放行
+// （停止操作回退 DB 配置）或报错。
+//
 // 必须在 updateProcessInstanceStatus 之前调用，否则读到的是操作中间态。
 func (s *Service) refreshRetryTaskPayload(kt *kit.Kit, task *taskTypes.Task,
-	inst *table.ProcessInstance) error {
+	inst *table.ProcessInstance, configSnapshot map[uint32]string) error {
 
 	refreshed := false
+	// 更新托管任务的步骤 payload 是 UpdateRegisterPayload，若按 OperatePayload 解析回写
+	// 会丢失 OperateType / EnableProcessRestart / CCSyncStatus 等字段，需按任务类型区分
+	isUpdateRegister := false
+	if _, ok := task.GetStep(process.OperationCompletedStepName.String()); ok {
+		isUpdateRegister = true
+	}
+
 	for _, step := range task.Steps {
+		if isUpdateRegister {
+			payload := &process.UpdateRegisterPayload{}
+			if err := step.GetPayload(payload); err != nil {
+				logs.Warnf("get step %s payload failed, taskID: %s, err: %v, rid: %s",
+					step.GetName(), task.TaskID, err, kt.Rid)
+				continue
+			}
+			if payload.ProcessInstanceID != inst.ID {
+				continue
+			}
+			if payload.OriginalProcStatus == inst.Spec.Status &&
+				payload.OriginalProcManagedStatus == inst.Spec.ManagedStatus {
+				continue
+			}
+			payload.OriginalProcStatus = inst.Spec.Status
+			payload.OriginalProcManagedStatus = inst.Spec.ManagedStatus
+			if err := step.SetPayload(payload); err != nil {
+				logs.Errorf("set step %s payload failed, taskID: %s, err: %v, rid: %s",
+					step.GetName(), task.TaskID, err, kt.Rid)
+				return errf.Errorf(errf.Internal, "%s", i18n.T(kt,
+					"refresh retry task %s payload failed, err: %v", task.TaskID, err))
+			}
+			refreshed = true
+			continue
+		}
+
 		payload := &process.OperatePayload{}
 		if err := step.GetPayload(payload); err != nil {
 			logs.Warnf("get step %s payload failed, taskID: %s, err: %v, rid: %s",
@@ -729,6 +989,26 @@ func (s *Service) refreshRetryTaskPayload(kt *kit.Kit, task *taskTypes.Task,
 		refreshed = true
 	}
 
+	// 刷新 CMDB 最新配置快照；刷新成功但未命中说明进程已在 CMDB 删除，需清空旧快照
+	commonPayload := &commonExecutor.TaskPayload{}
+	if err := task.GetCommonPayload(commonPayload); err != nil {
+		logs.Warnf("get common payload failed when refreshing retry task, taskID: %s, err: %v, rid: %s",
+			task.TaskID, err, kt.Rid)
+	} else if commonPayload.ProcessPayload != nil {
+		latest := retryLatestConfigData(configSnapshot, commonPayload.ProcessPayload.CcProcessID,
+			commonPayload.ProcessPayload.LatestConfigData)
+		if latest != commonPayload.ProcessPayload.LatestConfigData {
+			commonPayload.ProcessPayload.LatestConfigData = latest
+			if err := task.SetCommonPayload(commonPayload); err != nil {
+				logs.Errorf("set common payload failed, taskID: %s, err: %v, rid: %s",
+					task.TaskID, err, kt.Rid)
+				return errf.Errorf(errf.Internal, "%s", i18n.T(kt,
+					"refresh retry task %s payload failed, err: %v", task.TaskID, err))
+			}
+			refreshed = true
+		}
+	}
+
 	if !refreshed {
 		return nil
 	}
@@ -740,6 +1020,18 @@ func (s *Service) refreshRetryTaskPayload(kt *kit.Kit, task *taskTypes.Task,
 			"update retry task %s payload failed, err: %v", task.TaskID, err))
 	}
 	return nil
+}
+
+// retryLatestConfigData 依据重试前刷新的 CMDB 快照计算任务应携带的 LatestConfigData：
+//   - 快照命中：采用 CMDB 最新配置；
+//   - 刷新成功但未命中：进程已在 CMDB 删除，返回空串清空旧快照，避免执行侧把过期快照
+//     当作最新配置，对已删除进程误执行 start/register/restart；
+//   - 快照为 nil（CMDB 查询失败或无可查 ID，刷新降级）：保留原值。
+func retryLatestConfigData(configSnapshot map[uint32]string, ccProcessID uint32, original string) string {
+	if configSnapshot == nil {
+		return original
+	}
+	return configSnapshot[ccProcessID]
 }
 
 // taskGroupIDOf 取出批次关联的任务组 ID
@@ -760,21 +1052,37 @@ func taskGroupIDOf(taskBatch *table.TaskBatch) (string, error) {
 func (s *Service) resolveRetryTask(kt *kit.Kit, bizID uint32, failedTask *taskTypes.Task) (
 	*table.ProcessInstance, table.ProcessOperateType, bool) {
 
-	finalizeStep, ok := failedTask.GetStep(process.FinalizeOperateProcessStepName.String())
+	if finalizeStep, ok := failedTask.GetStep(process.FinalizeOperateProcessStepName.String()); ok {
+		var processPayload process.OperatePayload
+		if err := finalizeStep.GetPayload(&processPayload); err != nil {
+			logs.Warnf("get operate payload failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
+			return nil, "", false
+		}
+
+		processInstance, err := s.dao.ProcessInstance().GetByID(kt, bizID, processPayload.ProcessInstanceID)
+		if err != nil || processInstance == nil {
+			return nil, processPayload.OperateType, true
+		}
+		return processInstance, processPayload.OperateType, false
+	}
+
+	// 更新托管任务没有 Finalize 步骤，从 OperationCompleted 步骤解析实例与操作类型
+	operateCompletedStep, ok := failedTask.GetStep(process.OperationCompletedStepName.String())
 	if !ok {
 		return nil, "", false
 	}
-	var processPayload process.OperatePayload
-	if err := finalizeStep.GetPayload(&processPayload); err != nil {
-		logs.Warnf("get operate payload failed, taskID: %s, err: %v, rid: %s", failedTask.TaskID, err, kt.Rid)
+	var registerPayload process.UpdateRegisterPayload
+	if err := operateCompletedStep.GetPayload(&registerPayload); err != nil {
+		logs.Warnf("get update register payload failed, taskID: %s, err: %v, rid: %s",
+			failedTask.TaskID, err, kt.Rid)
 		return nil, "", false
 	}
 
-	processInstance, err := s.dao.ProcessInstance().GetByID(kt, bizID, processPayload.ProcessInstanceID)
+	processInstance, err := s.dao.ProcessInstance().GetByID(kt, bizID, registerPayload.ProcessInstanceID)
 	if err != nil || processInstance == nil {
-		return nil, processPayload.OperateType, true
+		return nil, table.UpdateRegisterProcessOperate, true
 	}
-	return processInstance, processPayload.OperateType, false
+	return processInstance, table.UpdateRegisterProcessOperate, false
 }
 
 // retryPushConfigTask 重试下发

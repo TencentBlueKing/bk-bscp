@@ -70,7 +70,10 @@ message TaskPayload {
 // TaskDetail 任务详情
 message TaskDetail {
   string task_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务详情ID" }];
-  string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
+  string status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE。IGNORED 不入库，"
+                 "由 GSE 错误码 828（重复启动）/829（无需停止）转译得出，表示进程已处于目标态、操作被幂等忽略"
+  }];
   string message = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务消息" }];
   string creator = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建者" }];
   float execution_time = 5
@@ -84,7 +87,9 @@ message TaskDetail {
 
 // TaskStatusStatItem 任务状态统计项
 message TaskStatusStatItem {
-  string status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务状态" }];
+  string status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE（五类，IGNORED 由 GSE 错误码转译得出）"
+  }];
   uint32 count = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数量" }];
   string message = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "状态描述" }];
 }

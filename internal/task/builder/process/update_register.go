@@ -36,8 +36,8 @@ type UpdateRegisterTask struct {
 	operatorUser              string
 	originalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	originalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
+	ccSyncStatus              table.CCSyncStatus         // 进程 CC 同步状态（下发时刻快照），供状态类校验使用
 	enableProcessRestart      bool                       // 是否启停进程
-	ccSyncStatus              table.CCSyncStatus         // 进程的cc同步状态
 }
 
 // NewUpdateRegisterTask 创建一个更新托管任务
@@ -51,7 +51,7 @@ func NewUpdateRegisterTask(
 	operatorUser string,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus, // 进程的cc同步状态
+	ccSyncStatus table.CCSyncStatus,
 	enableProcessRestart bool,
 ) types.TaskBuilder {
 	return &UpdateRegisterTask{
@@ -85,8 +85,8 @@ func (t *UpdateRegisterTask) FinalizeTask(task *types.Task) error {
 
 // Steps implements types.TaskBuilder.
 func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
-	steps := make([]*types.Step, 0, 4)
-	// 1. 校验操作（必选）
+	steps := make([]*types.Step, 0, 5)
+	// 1. 校验操作（必选）：对比 DB 配置与下发时刻 CMDB 最新快照，一致则后续 GSE 步骤自判断跳过
 	steps = append(steps,
 		processStep.ValidateOperateStep(
 			t.tenantID,
@@ -103,23 +103,8 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 		),
 	)
 
-	// 2. 更新托管信息（必选）
-	steps = append(steps,
-		processStep.RegisterProcessStep(
-			t.tenantID,
-			t.bizID,
-			t.batchID,
-			t.processID,
-			t.processInstanceID,
-			t.originalProcManagedStatus,
-			t.originalProcStatus,
-			t.ccSyncStatus,
-		),
-	)
-
-	// 3. 是否需要重启进程
+	// 2. 是否需要重启进程：先停止旧进程（用旧配置的停止命令）
 	if t.enableProcessRestart {
-		// Stop 旧进程
 		steps = append(steps,
 			processStep.StopProcessStep(
 				t.tenantID,
@@ -129,12 +114,24 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 				t.processInstanceID,
 				t.originalProcManagedStatus,
 				t.originalProcStatus,
-				t.ccSyncStatus,
 			),
 		)
 	}
 
-	// 4. 是否需要启动进程
+	// 3. 更新托管信息（必选）：用 CMDB 最新配置重新托管
+	steps = append(steps,
+		processStep.RegisterProcessStep(
+			t.tenantID,
+			t.bizID,
+			t.batchID,
+			t.processID,
+			t.processInstanceID,
+			t.originalProcManagedStatus,
+			t.originalProcStatus,
+		),
+	)
+
+	// 4. 是否需要重启进程：用新配置的启动命令拉起新进程
 	if t.enableProcessRestart {
 		steps = append(steps,
 			processStep.StartProcessStep(
@@ -145,12 +142,11 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 				t.processInstanceID,
 				t.originalProcManagedStatus,
 				t.originalProcStatus,
-				t.ccSyncStatus,
 			),
 		)
 	}
 
-	// 3. 进程操作完成（必选）
+	// 5. 进程操作完成（必选）：收敛进程实例状态
 	steps = append(steps,
 		processStep.OperationCompletedStep(
 			t.tenantID,
@@ -160,7 +156,6 @@ func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
 			t.processInstanceID,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
-			t.ccSyncStatus,
 		),
 	)
 

@@ -160,7 +160,12 @@ type ProcessPayload struct {
 	CcProcessID   uint32 // CC 进程ID
 	HostInstSeq   uint32 // HostInstSeq：主机级别的自增ID
 	ModuleInstSeq uint32 // ModuleInstSeq：模块级别的自增ID
-	ConfigData    string // 进程启动相关配置，比如启动脚本，优先级等
+	// ConfigData 进程启动相关配置（DB source_data），比如启动脚本，优先级等
+	ConfigData string
+	// LatestConfigData CMDB 最新进程配置快照（下发 / 重试时批量拉取）。
+	// 空值表示进程已在 CMDB 删除或快照刷新降级；执行侧 ValidateOperate 对比本字段与 ConfigData
+	// 后统一以 CMDB 最新配置执行，已删除进程的停止操作例外（回退 ConfigData 强停）
+	LatestConfigData string
 	// Priority 进程启动优先级，来源 CMDB。改造前的历史任务负载没有该字段，
 	// 用指针区分「优先级为 0」与「取不到优先级」，后者在任务详情中展示为 --
 	Priority *int

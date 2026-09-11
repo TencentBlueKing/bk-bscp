@@ -1046,8 +1046,26 @@ type ListProcessRelatedInfoReq struct {
 	Set             *SetFilter             `json:"set,omitempty"`              // 集群筛选
 	Module          *ModuleFilter          `json:"module,omitempty"`           // 模块筛选
 	ServiceInstance *ServiceInstanceFilter `json:"service_instance,omitempty"` // 服务实例筛选
-	ProcessFilter   *ProcessFilter         `json:"process,omitempty"`          // 进程属性过滤条件
-	Fields          []string               `json:"fields,omitempty"`           // 指定返回字段列表
+	// ProcessPropertyFilter 进程属性过滤条件，对齐 CMDB process_property_filter 格式
+	// （gsekit 同款用法：{"condition":"AND","rules":[{"field":"bk_process_id","operator":"in","value":[...]}]}）
+	ProcessPropertyFilter *ProcessPropertyFilter `json:"process_property_filter,omitempty"`
+	Fields                []string               `json:"fields,omitempty"` // 指定返回字段列表
+	// Deprecated: json tag 与 CMDB process_related_info 接口不匹配，过滤不会生效（CC 忽略未知字段），
+	// 保留仅为兼容存量调用方，新代码请使用 ProcessPropertyFilter
+	ProcessFilter *ProcessFilter `json:"process,omitempty"` // 进程属性过滤条件
+}
+
+// ProcessPropertyFilter 进程属性过滤条件（对齐 CMDB process_property_filter 格式）
+type ProcessPropertyFilter struct {
+	Condition string              `json:"condition"` // 条件组合方式: AND / OR
+	Rules     []ProcessFilterRule `json:"rules"`     // 过滤规则列表
+}
+
+// ProcessFilterRule 进程属性过滤规则
+type ProcessFilterRule struct {
+	Field    string `json:"field"`    // 过滤字段，如 bk_process_id / bk_process_name
+	Operator string `json:"operator"` // 操作符，如 in / equal
+	Value    any    `json:"value"`    // 过滤值
 }
 
 // SetFilter 集群筛选
