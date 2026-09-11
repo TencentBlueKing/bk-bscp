@@ -2,7 +2,7 @@
   <bk-dialog
     :is-show="isShow"
     :title="isCreate ? $t('设为常用') : $t('重命名')"
-    ext-cls="set-commonly-dialog"
+    class="set-commonly-dialog"
     theme="primary"
     :confirm-text="$t('保存')"
     @closed="handleClose"

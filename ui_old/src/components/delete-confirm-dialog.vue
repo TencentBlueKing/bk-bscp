@@ -4,7 +4,7 @@
     :title="title"
     :theme="'primary'"
     quick-close
-    ext-cls="delete-confirm-dialog"
+    class="delete-confirm-dialog"
     @closed="handleClose">
     <slot></slot>
     <template #footer>
@@ -48,6 +48,9 @@
     .bk-modal-body {
       .bk-dialog-header .bk-dialog-title {
         white-space: normal;
+      }
+      .bk-dialog-content {
+        line-height: 1.5;
       }
     }
   }

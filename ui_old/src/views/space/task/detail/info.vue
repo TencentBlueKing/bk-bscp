@@ -121,6 +121,9 @@
         min-width: 200px;
         max-width: calc(100vw - 800px);
         color: #313238;
+        :deep(.overflow-popover-reference) {
+          display: block !important;
+        }
       }
       .theme {
         color: #3a84ff;

@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    ext-cls="edit-group-dialog"
+    class="edit-group-dialog"
     :confirm-text="t('提交')"
     :cancel-text="t('取消')"
     :width="640"
@@ -132,12 +132,13 @@
   }
 </style>
 <style lang="scss">
-  .edit-group-dialog.bk-modal-wrapper {
+  .edit-group-dialog .bk-modal-wrapper {
     .bk-dialog-header {
       display: none;
     }
-    .bk-modal-content {
+    .bk-dialog-content {
       padding: 0;
+      margin: 0;
     }
   }
 </style>

@@ -10,7 +10,7 @@
           :data="tableData"
           @column-sort="handleSort"
           @column-filter="handleFilter">
-          <bk-table-column :label="t('操作时间')" width="155" :sort="true">
+          <bk-table-column :label="t('操作时间')" width="155" :sort="true" show-overflow-tooltip>
             <template #default="{ row }">
               {{ convertTime(row.audit?.revision.created_at, 'local') }}
             </template>
@@ -602,7 +602,7 @@
     if (havePull || (!havePull && isApprove)) {
       InfoBox({
         infoType: 'success',
-        'ext-cls': 'info-box-style',
+        class: 'info-box-style',
         title: publishTitle(isApprove, publishType, publishTime),
         dialogType: 'confirm',
       });
@@ -610,7 +610,7 @@
       InfoBox({
         infoType: 'success',
         title: publishTitle(isApprove, publishType, publishTime),
-        'ext-cls': 'info-box-style',
+        class: 'info-box-style',
         confirmText: t('配置客户端'),
         cancelText: t('稍后再说'),
         onConfirm: () => {
@@ -805,6 +805,13 @@
 
 <style lang="scss" scoped>
   .record-table-wrapper {
+    // 升级 bkui-vue 2.x 后，库对“未设置 width 的列”会强制计算列宽并写入 <col>，
+    // 在表格默认 fixed 布局下，超出列宽之和的剩余空间会被【按比例摊给所有列】，
+    // 导致带 :width 的固定列被等比放大、不按配置渲染。
+    // 将真正的弹性列（资源实例，第 5 列）恢复为 auto，使其吸收剩余空间，固定列即精确占配置宽。
+    :deep(colgroup col):nth-child(5) {
+      width: auto !important;
+    }
     :deep(.bk-table-body) {
       max-height: calc(100vh - 280px);
       overflow: auto;

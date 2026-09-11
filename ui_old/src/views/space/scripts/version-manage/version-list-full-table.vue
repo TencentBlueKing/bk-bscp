@@ -1,5 +1,6 @@
 <template>
   <bk-table
+    class="version-list-full-table"
     :border="['outer']"
     :data="props.list"
     :remote-pagination="true"
@@ -116,5 +117,8 @@
       border: 1px solid #ff9c01;
       background: #ffe8c3;
     }
+  }
+  .version-list-full-table :deep(colgroup col):is(:nth-child(1), :nth-child(2), :nth-child(4), :nth-child(6)) {
+    width: auto !important;
   }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <bk-dialog
     :title="t('新增分组')"
-    ext-cls="create-group-dialog"
+    class="create-group-dialog"
     :confirm-text="t('提交')"
     :cancel-text="t('取消')"
     :width="640"
@@ -109,13 +109,16 @@
   };
 </script>
 <style lang="scss">
-  .create-group-dialog.bk-modal-wrapper {
+  .create-group-dialog .bk-modal-wrapper {
     .bk-dialog-header {
-      padding-top: 16px;
+      line-height: 32px;
     }
     .bk-modal-content {
       max-height: 386px;
       overflow: auto;
+    }
+    .bk-dialog-content {
+      margin-top: 12px;
     }
   }
 </style>

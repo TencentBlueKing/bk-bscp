@@ -2,7 +2,7 @@
   <bk-dialog
     :is-show="show"
     ref="dialog"
-    ext-cls="confirm-dialog"
+    class="confirm-republish-dialog"
     footer-align="center"
     :cancel-text="$t('再想想')"
     :width="dialogType === 'confirm' ? '480' : '640'"
@@ -134,32 +134,12 @@
 </script>
 
 <style lang="scss" scoped>
-  :deep(.confirm-dialog) {
-    .bk-modal-body {
-      padding-bottom: 0;
-    }
-    .bk-modal-content {
-      padding: 0 32px;
-      height: auto;
-      max-height: none;
-      min-height: auto;
-      border-radius: 2px;
-    }
-    .bk-modal-footer {
-      position: relative;
-      padding: 24px 0;
-      height: auto;
-      border: none;
-    }
-    .bk-dialog-footer .bk-button {
-      min-width: 88px;
-    }
-  }
   .tip-icon__wrap {
     margin: 0 auto;
     width: 42px;
     height: 42px;
     position: relative;
+    isolation: isolate;
     &::after {
       content: '';
       position: absolute;
@@ -272,6 +252,30 @@
       &:last-child {
         padding-right: 16px;
       }
+    }
+  }
+</style>
+<style lang="scss">
+  .confirm-republish-dialog {
+    .bk-modal-body {
+      padding-bottom: 0;
+    }
+    .bk-dialog-content {
+      height: auto;
+      max-height: none;
+      min-height: auto;
+      border-radius: 2px;
+      margin-top: 12px;
+      margin-bottom: 0;
+    }
+    .bk-dialog-footer {
+      position: relative;
+      padding: 24px 0;
+      height: auto;
+      border: none;
+    }
+    .bk-dialog-footer .bk-button {
+      min-width: 88px;
     }
   }
 </style>

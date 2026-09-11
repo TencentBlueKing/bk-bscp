@@ -341,6 +341,9 @@
     .name-text {
       color: #3a84ff;
       cursor: pointer;
+      :deep(.overflow-popover-reference) {
+        display: block !important;
+      }
     }
     .copy-icon {
       position: absolute;
@@ -379,6 +382,10 @@
     }
   }
   .variable-table {
+    :deep(colgroup col):nth-child(4),
+    :deep(colgroup col):nth-child(5) {
+      width: auto !important;
+    }
     :deep(.bk-table-body) {
       max-height: calc(100vh - 300px);
       overflow: auto;

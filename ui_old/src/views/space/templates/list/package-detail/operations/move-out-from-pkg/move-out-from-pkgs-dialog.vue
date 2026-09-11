@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    ext-cls="move-out-from-pkgs-dialog"
+    class="move-out-from-pkgs-dialog"
     header-align="center"
     footer-align="center"
     :title="t('确认从配置套餐中移出该配置文件?')"
@@ -13,12 +13,13 @@
     <div style="margin-bottom: 8px">
       {{ t('配置文件') }}: <span style="color: #313238; font-weight: 600">{{ name }}</span>
     </div>
-    <div class="service-table">
+    <div
+      class="service-table"
+      :style="{ '--table-body-max-height': `${maxTableHeight}px` }">
       <bk-loading style="min-height: 100px" :loading="loading">
         <bk-table
           v-if="!loading"
           :data="citedList"
-          :max-height="maxTableHeight"
           :checked="checkedPkgs"
           :is-row-select-enable="isRowSelectEnable"
           show-overflow-tooltip
@@ -91,9 +92,15 @@
   const loading = ref(false);
   const pending = ref(false);
 
+  // 表格内部滚动（表头固定、body 滚动），且不外溢到对话框层级：必须保留 bk-table 的 max-height。
+  // 关键修正：bkui-vue 2.x 的 resolveContentAwareBodyHeight 把「表头高度」计入内容高
+  // （getScrollContentHeight = 数据行 + 表头），但可用高 = maxHeight − 边框（getBodyHeight 未减表头）。
+  // 因此当「数据行 + 表头」整体贴近 maxHeight 时，会被判定超出约「边框(≈4px)」而常驻纵向滚动条，
+  // 表现为「数据行没超也出滚动条」。故上限需在「内容自适应高度」基础上额外预留「表头 + 安全余量(≈50px)」，
+  // 使常规引用列表整体高度远低于上限、不误触滚动条；仅当列表真很长（接近视口）才在表格内部出现滚动条。
   const maxTableHeight = computed(() => {
     const windowHeight = window.innerHeight;
-    return windowHeight * 0.6 - 200;
+    return Math.max(windowHeight - 250, 200);
   });
 
   const checkedPkgs = computed(() => {
@@ -245,14 +252,13 @@
     }
   }
   .actions-wrapper {
-    padding-bottom: 20px;
     .bk-button:not(:last-of-type) {
       margin-right: 8px;
     }
   }
 </style>
 <style lang="scss">
-  .move-out-from-pkgs-dialog.bk-modal-wrapper {
+  .move-out-from-pkgs-dialog .bk-modal-wrapper {
     .bk-dialog-header {
       line-height: normal !important;
       .bk-dialog-title {
@@ -260,11 +266,29 @@
       }
     }
 
+    .bk-dialog-content {
+      margin-top: 12px;
+      margin-bottom: 0;
+
+      .bk-table {
+        .bk-table-body {
+          max-height: var(--table-body-max-height);
+          border-bottom: 1px solid var(--table-border-color);
+        }
+        .bk-table-head table th {
+          border-right-color: #f0f1f5;
+        }
+      }
+    }
+
     .bk-modal-footer {
-      background: #ffffff;
-      border-top: none;
-      .bk-button {
-        min-width: 88px;
+      .bk-dialog-footer {
+        height: 48px;
+        background: #ffffff;
+        border-top: none;
+        .bk-button {
+          min-width: 88px;
+        }
       }
     }
   }

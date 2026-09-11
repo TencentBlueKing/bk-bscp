@@ -5,7 +5,7 @@
     :theme="'primary'"
     width="400px"
     quick-close
-    ext-cls="delete-confirm-dialog"
+    class="delete-confirm-dialog"
     @closed="handleClose">
     <div class="dialog-header">{{ title }}</div>
     <slot></slot>
@@ -40,7 +40,7 @@
 
 <style lang="scss">
   .delete-confirm-dialog {
-    .bk-modal-content {
+    .bk-dialog-content {
       padding: 48px 40px 24px 40px !important;
       .dialog-header {
         margin-bottom: 16px;

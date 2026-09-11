@@ -1,48 +1,50 @@
 <template>
-  <bk-form ref="formRef" form-type="vertical" :model="localVal" :rules="rules">
-    <div class="form-row">
-      <bk-form-item :label="t('配置项名称')" property="key" :required="true">
+  <div ref="formContainerRef">
+    <bk-form ref="formRef" form-type="vertical" :model="localVal" :rules="rules">
+      <div class="form-row">
+        <bk-form-item :label="t('配置项名称')" property="key" :required="true">
+          <bk-input
+            class="name-input"
+            v-model="localVal.key"
+            :disabled="props.editMode"
+            @input="change"
+            :placeholder="t('请输入')" />
+        </bk-form-item>
+        <bk-form-item :label="t('数据类型')" property="kv_type" :required="true" :description="typeDescription">
+          <bk-select
+            v-model="localVal.kv_type"
+            class="type-select"
+            :popover-options="{ theme: 'light bk-select-popover type-selector-popover' }"
+            :disabled="selectDisabled">
+            <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
+          </bk-select>
+        </bk-form-item>
+      </div>
+      <bk-form-item :label="t('配置项描述')" property="memo">
+        <bk-input v-model="localVal.memo" type="textarea" :maxlength="200" :placeholder="t('请输入')" @input="change" />
+      </bk-form-item>
+      <SecretForm
+        v-if="localVal.kv_type === 'secret'"
+        ref="secretRef"
+        :config="props.config"
+        :is-edit="editMode"
+        @change="handleSecretChange" />
+      <bk-form-item v-else :label="t('配置项值')" property="value" :required="true">
         <bk-input
-          class="name-input"
-          v-model="localVal.key"
-          :disabled="props.editMode"
-          @input="change"
-          :placeholder="t('请输入')" />
+          v-if="localVal.kv_type === 'string' || localVal.kv_type === 'number'"
+          v-model.trim="localVal!.value"
+          class="value-input"
+          @input="change" />
+        <KvConfigContentEditor
+          v-else
+          ref="KvCodeEditorRef"
+          :languages="localVal.kv_type"
+          :content="localVal.value"
+          :height="editorHeight"
+          @change="handleStringContentChange" />
       </bk-form-item>
-      <bk-form-item :label="t('数据类型')" property="kv_type" :required="true" :description="typeDescription">
-        <bk-select
-          v-model="localVal.kv_type"
-          class="type-select"
-          :popover-options="{ theme: 'light bk-select-popover type-selector-popover' }"
-          :disabled="selectDisabled">
-          <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
-        </bk-select>
-      </bk-form-item>
-    </div>
-    <bk-form-item :label="t('配置项描述')" property="memo">
-      <bk-input v-model="localVal.memo" type="textarea" :maxlength="200" :placeholder="t('请输入')" @input="change" />
-    </bk-form-item>
-    <SecretForm
-      v-if="localVal.kv_type === 'secret'"
-      ref="secretRef"
-      :config="props.config"
-      :is-edit="editMode"
-      @change="handleSecretChange" />
-    <bk-form-item v-else :label="t('配置项值')" property="value" :required="true">
-      <bk-input
-        v-if="localVal.kv_type === 'string' || localVal.kv_type === 'number'"
-        v-model.trim="localVal!.value"
-        class="value-input"
-        @input="change" />
-      <KvConfigContentEditor
-        v-else
-        ref="KvCodeEditorRef"
-        :languages="localVal.kv_type"
-        :content="localVal.value"
-        :height="editorHeight"
-        @change="handleStringContentChange" />
-    </bk-form-item>
-  </bk-form>
+    </bk-form>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -78,6 +80,7 @@
     ...props.config,
   });
   const editorHeight = ref(0);
+  const formContainerRef = ref<HTMLElement>();
 
   const typeDescription = computed(() => {
     if (appData.value.spec.data_type !== 'any' && !props.editMode) {
@@ -142,9 +145,12 @@
       localVal.value.kv_type = appData.value.spec.data_type! === 'any' ? 'string' : appData.value.spec.data_type!;
     }
     nextTick(() => {
-      const editorMinHeight = 300; // 编辑器最小高度
-      const remainingHeight = formRef.value.$el.offsetHeight - 355; // 容器高度减去其他元素已占用高度
-      editorHeight.value = remainingHeight > editorMinHeight ? remainingHeight : editorMinHeight;
+      const el = formContainerRef.value;
+      if (el) {
+        const editorMinHeight = 300; // 编辑器最小高度
+        const remainingHeight = el.offsetHeight - 355; // 容器高度减去其他元素已占用高度
+        editorHeight.value = remainingHeight > editorMinHeight ? remainingHeight : editorMinHeight;
+      }
     });
   });
 

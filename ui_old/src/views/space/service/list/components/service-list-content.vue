@@ -102,7 +102,7 @@
     <CloneService v-model:show="isCloneServiceOpen" :service="editingService" @reload="loadAppList" />
     <bk-dialog
       v-model:is-show="isShowDeleteDialog"
-      ext-cls="delete-service-dialog"
+      class="delete-service-dialog"
       :theme="'primary'"
       :dialog-type="'operation'"
       header-align="center"
@@ -511,6 +511,7 @@
       text-align: start;
       padding: 20px;
       background-color: #f4f7fa;
+      line-height: 1.5;
       .dialog-info {
         margin-bottom: 16px;
         span {
@@ -534,18 +535,20 @@
 
 <style lang="scss">
   .delete-service-dialog {
-    top: 40% !important;
-    .bk-modal-body {
-      padding-bottom: 104px !important;
+    .bk-modal-wrapper {
+      top: 40% !important;
     }
     .bk-modal-header {
       display: none;
     }
     .bk-modal-footer {
       height: auto !important;
-      background-color: #fff !important;
-      border-top: none !important;
-      padding: 24px 24px 48px !important;
+      padding: 0 24px 48px !important;
+      .bk-dialog-footer {
+        padding: 0;
+        border-top: none;
+        background-color: #fff;
+      }
     }
   }
 </style>

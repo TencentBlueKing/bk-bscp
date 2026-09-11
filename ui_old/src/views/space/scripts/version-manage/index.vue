@@ -297,8 +297,9 @@
     InfoBox({
       title: t('确定上线此版本？'),
       subTitle: t('上线后，之前的线上版本将被置为「已下线」,若要使该版本在现网中生效，需要重新发布引用此脚本的服务'),
-      'ext-cls': 'info-box-style',
+      class: 'info-box-style',
       // infoType: 'warning',
+      width: 440,
       confirmText: t('确定'),
       cancelText: t('取消'),
       onConfirm: async () => {

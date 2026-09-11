@@ -13,7 +13,7 @@
   "dependencies": {
     "@antv/g2plot": "^2.4.31",
     "@blueking/bk-user-display-name": "^1.0.2",
-    "@blueking/bk-user-selector": "^0.0.28",
+    "@blueking/bk-user-selector": "^0.1.14",
     "@blueking/login-modal": "^1.0.1",
     "@blueking/login-userinfo": "^0.0.13",
     "@blueking/notice-component": "^2.0.1",
@@ -24,7 +24,7 @@
     "@types/lodash.clonedeep": "^4.5.7",
     "@vitejs/plugin-vue-jsx": "^4.0.1",
     "axios": "^1.16.1",
-    "bkui-vue": "1.0.3-beta.32",
+    "bkui-vue": "2.0.2-beta.112",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.9",
     "highlight.js": "~11.5.0",
@@ -37,7 +37,7 @@
     "pinia": "^2.0.33",
     "sass": "^1.54.8",
     "tippy.js": "^6.3.7",
-    "vue": "^3.4.21",
+    "vue": "3.5.27",
     "vue-i18n": "9",
     "vue-router": "^4.1.5",
     "vue-virtual-scroller": "^2.0.0-beta.8",
@@ -81,6 +81,14 @@
     "buffer": "^6.0.3",
     "picomatch": "^4.0.4",
     "minimatch": "^9.0.7",
-    "flatted": "^3.4.2"
+    "flatted": "^3.4.2",
+    "vue": "3.5.27",
+    "@vue/runtime-core": "3.5.27",
+    "@vue/runtime-dom": "3.5.27",
+    "@vue/reactivity": "3.5.27",
+    "@vue/shared": "3.5.27",
+    "@vue/compiler-core": "3.5.27",
+    "@vue/compiler-dom": "3.5.27",
+    "@vue/compiler-sfc": "3.5.27"
   }
 }

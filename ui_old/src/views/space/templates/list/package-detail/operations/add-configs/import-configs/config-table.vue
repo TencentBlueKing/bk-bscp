@@ -66,10 +66,13 @@
           <div class="td-cell-editable td-cell privilege" :class="{ change: isContentChange(item.id, 'privilege') }">
             <div class="perm-input">
               <bk-input v-model="item.privilege" @blur="handlePrivilegeInputBlur(item)" />
-              <bk-popover ext-cls="privilege-select-popover" theme="light" trigger="click" placement="bottom">
-                <div class="perm-panel-trigger">
-                  <i class="bk-bscp-icon icon-configuration-line"></i>
-                </div>
+              <bk-popover
+                ext-cls="privilege-select-popover"
+                theme="light"
+                trigger="click"
+                placement="bottom"
+                reference-cls="perm-panel-trigger">
+                <i class="bk-bscp-icon icon-configuration-line"></i>
                 <template #content>
                   <div class="privilege-select-panel">
                     <div v-for="(group, i) in PRIVILEGE_GROUPS" class="group-item" :key="i" :label="item">
@@ -481,13 +484,15 @@
         display: none;
       }
     }
-    .perm-panel-trigger {
+    :deep(.perm-panel-trigger) {
       position: absolute;
       right: 0;
+      top: 0;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
       width: 32px;
       height: 40px;
-      line-height: 42px;
-      text-align: center;
       color: #3a84ff;
       cursor: pointer;
     }

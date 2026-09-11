@@ -5,7 +5,7 @@
     :theme="'primary'"
     width="1200"
     height="720"
-    ext-cls="variable-import-dialog"
+    class="variable-import-dialog"
     :esc-close="false"
     @closed="handleClose">
     <div class="selector-wrap">

@@ -86,6 +86,7 @@
 
   .bk-table {
     :deep(.bk-table-body) {
+      border-bottom: 1px solid var(--table-border-color);
       tr {
         cursor: pointer;
         &.selected td {

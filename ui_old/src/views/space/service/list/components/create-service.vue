@@ -7,6 +7,7 @@
     @closed="close">
     <div class="create-app-form">
       <SearviceForm
+        v-if="show"
         ref="formCompRef"
         :form-data="serviceData"
         @change="handleChange" />

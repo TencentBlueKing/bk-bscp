@@ -349,6 +349,10 @@
     }
     .rules {
       overflow: hidden;
+      /* 组件库升级后 overflow-title 引用层为 inline-block，会多出下沉符高度使单元格偏高，改为 block 消除间隙 */
+      :deep(.overflow-popover-reference) {
+        display: block !important;
+      }
     }
   }
 </style>

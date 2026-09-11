@@ -55,7 +55,7 @@
           </bk-table-column>
         </template>
         <template v-if="showBoundByAppsCol">
-          <bk-table-column :label="t('被引用')">
+          <bk-table-column :label="t('被引用')" :min-width="80">
             <template #default="{ row, index }">
               <template v-if="boundByAppsCountLoading"><Spinner /></template>
               <template v-else-if="boundByAppsCountList[index]">
@@ -557,6 +557,9 @@
     }
   }
   .config-table {
+    :deep(colgroup col):is(:nth-child(2), :nth-child(3)) {
+      width: auto !important;
+    }
     :deep(.bk-table-body) {
       max-height: calc(100vh - 320px);
       overflow: auto;

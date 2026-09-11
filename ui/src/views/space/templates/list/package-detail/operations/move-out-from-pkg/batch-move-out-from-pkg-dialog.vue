@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    ext-cls="move-out-configs-dialog"
+    class="move-out-configs-dialog"
     :title="t('批量移出当前套餐')"
     :confirm-text="t('确定移出')"
     :cancel-text="t('取消')"
@@ -15,9 +15,9 @@
       {{ t('已选') }} <span class="num">{{ props.valueLength }}</span> {{ t('个配置文件') }}
     </div>
     <p class="tips">{{ t('以下服务配置的未命名版本中引用此套餐的内容也将更新') }}</p>
-    <div class="service-table">
+    <div class="service-table" :style="{ '--table-body-max-height': `${maxTableHeight}px` }">
       <bk-loading style="min-height: 100px" :loading="loading">
-        <bk-table :data="citedList" :max-height="maxTableHeight">
+        <bk-table :data="citedList">
           <bk-table-column :label="t('所在模板套餐')" prop="template_set_name"></bk-table-column>
           <bk-table-column :label="t('使用此套餐的服务')">
             <template #default="{ row }">
@@ -163,6 +163,13 @@
     .link-icon {
       flex-shrink: 0;
       margin-left: 10px;
+    }
+  }
+</style>
+<style lang="scss">
+  .move-out-configs-dialog .bk-modal-wrapper {
+    .bk-table-body {
+      max-height: var(--table-body-max-height);
     }
   }
 </style>

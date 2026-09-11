@@ -70,16 +70,20 @@
                 :handle-change="() => handleSelectionChange(row)" />
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('脚本名称')" :min-width="200">
+          <bk-table-column :label="t('脚本名称')" :min-width="200" show-overflow-tooltip>
             <template #default="{ row }">
               <div v-if="row.hook" class="hook-name" @click="handleViewVersionClick(row.hook.id)">
                 {{ row.hook.spec.name }}
               </div>
             </template>
           </bk-table-column>
-          <bk-table-column prop="hook.spec.type" :label="t('脚本语言')" :width="locale === 'zh-cn' ? '120' : '150'">
+          <bk-table-column
+            prop="hook.spec.type"
+            :label="t('脚本语言')"
+            :width="locale === 'zh-cn' ? '120' : '150'"
+            show-overflow-tooltip>
           </bk-table-column>
-          <bk-table-column :label="t('分类标签')" property="tag">
+          <bk-table-column :label="t('分类标签')" prop="tag">
             <template #default="{ row }">
               <div v-if="row.hook" class="script-tags">
                 <div v-if="tagEditHookId !== row.hook.id" class="tags-display">
@@ -113,7 +117,7 @@
               </div>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('脚本描述')" property="memo">
+          <bk-table-column :label="t('脚本描述')" prop="memo">
             <template #default="{ row }">
               <div v-if="row.hook" class="script-memo">
                 <div v-if="memoEditHookId !== row.hook.id" class="memo-display">
@@ -150,7 +154,7 @@
               <user-name v-if="row.hook" :name="row.hook.revision.reviser"/>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('更新时间')" width="180">
+          <bk-table-column :label="t('更新时间')" width="180" show-overflow-tooltip>
             <template #default="{ row }">
               <span v-if="row.hook">{{ datetimeFormat(row.hook.revision.update_at) }}</span>
             </template>
@@ -189,8 +193,11 @@
     v-model:is-show="isDeleteScriptDialogShow"
     :title="t('确认删除该脚本？')"
     @confirm="handleDeleteScriptConfirm">
-    <div style="margin-bottom: 8px">
-      {{ t('脚本') }}: <span style="color: #313238; font-weight: 600">{{ deleteScriptItem?.hook.spec.name }}</span>
+    <div style="margin-bottom: 8px" class="script-name">
+      {{ t('脚本') }}:
+      <ContentWidthOverflowTips :watch-key="deleteScriptItem?.hook.spec.name">
+        <span class="script-name-text">{{ deleteScriptItem?.hook.spec.name }}</span>
+      </ContentWidthOverflowTips>
     </div>
     <div style="margin-bottom: 8px">
       {{ t('一旦删除，该操作将无法撤销，以下服务配置的未命名版本中引用该脚本也将清除') }}
@@ -380,8 +387,8 @@
   };
 
   // 添加自定义单元格class
-  const getCellCls = ({ property }: { property: string }) => {
-    return ['tag', 'memo'].includes(property) ? 'memo-cell' : '';
+  const getCellCls = (column: { field?: string }) => {
+    return ['tag', 'memo'].includes(column.field ?? '') ? 'memo-cell' : '';
   };
 
   // 表格行选择事件
@@ -641,6 +648,14 @@
       tr.new-row-marked td {
         background: #f2fff4 !important;
       }
+      td.memo-cell {
+        .cell {
+          height: 100%;
+        }
+      }
+    }
+    :deep(colgroup col):is(:nth-child(2), :nth-child(4), :nth-child(5)) {
+      width: auto !important;
     }
   }
   .operate-area {
@@ -733,6 +748,11 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
+      // bk-overflow-title 升级后 reference 为 inline-block 且 baseline 对齐，
+      // 下方多出下行空白把整行撑高。覆盖为 block 去掉多余空白（同 info.vue 修法）。
+      :deep(.overflow-popover-reference) {
+        display: block !important;
+      }
     }
     .edit-icon {
       display: none;
@@ -752,6 +772,23 @@
 </style>
 
 <style lang="scss">
+  .script-name {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    .script-name-text {
+      color: #313238;
+      font-weight: 600;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    span.content-overflow-popover-reference {
+      flex: 1;
+      min-width: 0;
+    }
+  }
   .service-table {
     thead th[colspan] {
       background-color: #f0f1f5 !important;
