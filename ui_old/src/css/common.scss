@@ -1,11 +1,23 @@
 .bk-table {
+  // bordered-row 下 .bk-table-head 通过 border-bottom 绘制表头底部分隔线，
+  // 但库里 head 高度为 var(--row-height)（border-box），这 1px 边框正好落在
+  // 表头底边被裁剪掉，无法显示。给 head 增加 1px 高度，让出空间使表头底部边框可见。
+  &.bordered-row .bk-table-head {
+    height: calc(var(--row-height) + 1px);
+    min-height: calc(var(--row-height) + 1px);
+  }
   .bk-table-head table th {
     background: #fafbfd;
+    border-right-color: var(--background-color);
   }
-  .bk-table-footer .bk-pagination {
+  .bk-table-footer{
     padding: 0 16px;
     height: 100%;
     background: #ffffff;
+  }
+  .bk-table-body::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
   }
 }
 
@@ -32,9 +44,12 @@
 }
 
 .info-box-style .bk-modal-body {
-  .bk-dialog-header {
+  .bk-infobox-header {
     padding: 24px 24px 0;
-    .bk-dialog-title {
+    .bk-infobox-title {
+      padding: 0;
+      margin-top: 15px;
+      margin-bottom: 10px;
       min-height: 27px;
       height: auto !important;
       white-space: normal;
@@ -43,13 +58,21 @@
   .bk-modal-content {
     min-height: auto;
     padding: 0 50px 10px;
-    .bk-info-sub-title {
+    line-height: 1.5;
+    .bk-infobox-content {
+      padding: 0;
+      margin-top: 0;
+      margin-bottom: 10px;
       word-break: break-word !important;
     }
   }
+  .bk-modal-footer .bk-infobox-footer {
+    margin-top: 0;
+    padding-bottom: 16px;
+  }
 }
 
-.bk-dialog-wrapper .bk-modal-wrapper .bk-dialog-header {
+.bk-dialog .bk-modal-wrapper .bk-dialog-header {
   line-height: normal !important;
 }
 
@@ -59,7 +82,7 @@
 }
 
 // 笔记本dialog兼容
-.bk-dialog-wrapper .bk-modal-wrapper .bk-modal-content {
+.bk-dialog .bk-modal-wrapper .bk-modal-content {
   max-height: none !important;
 }
 

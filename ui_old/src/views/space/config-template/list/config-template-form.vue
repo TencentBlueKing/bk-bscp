@@ -11,7 +11,7 @@
           <bk-input v-model="localVal.template_name" @change="change" />
         </bk-form-item>
         <bk-form-item :label="$t('配置文件名')" property="full_path" required>
-          <bk-input v-model="localVal.full_path" @change="change" />
+          <bk-input v-model="localVal.full_path" :placeholder="$t('请输入绝对路径')" @change="change" />
         </bk-form-item>
         <bk-form-item :label="$t('配置文件描述')" property="template_memo">
           <bk-input

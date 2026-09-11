@@ -190,7 +190,7 @@
       if (res) {
         InfoBox({
           infoType: 'danger',
-          'ext-cls': 'info-box-style',
+          class: 'info-box-style',
           title: t('调整服务数据格式{n}失败', { n: dataType }),
           subTitle: t('该服务下存在非{n}类型的配置项，如需修改，请先调整该服务下的所有配置项数据格式为{n}', {
             n: dataType,

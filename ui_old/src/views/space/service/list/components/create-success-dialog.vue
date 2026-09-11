@@ -1,6 +1,6 @@
 <template>
   <bk-dialog
-    ext-cls="confirm-dialog"
+    class="confirm-create-dialog"
     :is-show="isShow"
     :show-mask="true"
     :quick-close="false"
@@ -61,48 +61,50 @@
   };
 </script>
 
-<style scoped lang="scss">
-  :deep(.confirm-dialog) {
-    .bk-modal-body {
-      width: 400px;
-      padding: 0;
-      .bk-modal-header {
-        display: none;
+<style lang="scss">
+.confirm-create-dialog {
+  .bk-modal-wrapper {
+    width: 400px !important;
+    padding: 0;
+    .bk-modal-header {
+      display: none;
+    }
+    .bk-modal-footer {
+      display: none;
+    }
+    .bk-dialog-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 0;
+      margin-bottom: 0;
+      .title-icon {
+        margin: 27px 0 19px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        font-size: 42px;
+        line-height: 42px;
+        background-color: #e5f6e8;
       }
-      .bk-modal-footer {
-        display: none;
+      .title-info {
+        height: 32px;
+        font-size: 20px;
+        color: #313238;
+        text-align: center;
+        line-height: 32px;
       }
-      .bk-modal-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        .title-icon {
-          margin: 27px 0 19px;
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          font-size: 42px;
-          line-height: 42px;
-          background-color: #e5f6e8;
-        }
-        .title-info {
-          height: 32px;
-          font-size: 20px;
-          color: #313238;
-          text-align: center;
-          line-height: 32px;
-        }
-        .content-info {
-          margin-top: 8px;
-          height: 22px;
-          font-size: 14px;
-          color: #63656e;
-          line-height: 22px;
-        }
-        .footer-btn {
-          margin: 24px 0;
-        }
+      .content-info {
+        margin-top: 8px;
+        height: 22px;
+        font-size: 14px;
+        color: #63656e;
+        line-height: 22px;
+      }
+      .footer-btn {
+        margin: 24px 0;
       }
     }
   }
+}
 </style>

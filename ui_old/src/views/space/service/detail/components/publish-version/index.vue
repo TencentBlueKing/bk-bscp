@@ -397,7 +397,7 @@
     if (havePull || (!havePull && isApprove)) {
       InfoBox({
         infoType: 'success',
-        'ext-cls': 'info-box-style',
+        class: 'info-box-style',
         title: publishTitle(isApprove, publishType, publishTime),
         dialogType: 'confirm',
       });
@@ -405,7 +405,7 @@
       InfoBox({
         infoType: 'success',
         title: publishTitle(isApprove, publishType, publishTime),
-        'ext-cls': 'info-box-style',
+        class: 'info-box-style',
         confirmText: t('配置客户端'),
         cancelText: t('稍后再说'),
         onConfirm: () => {

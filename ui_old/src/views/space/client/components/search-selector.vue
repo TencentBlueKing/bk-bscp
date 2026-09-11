@@ -172,7 +172,7 @@
       @close="isShowSetCommonlyDialog = false" />
     <bk-dialog
       :is-show="isShowDeleteCommonlyDialog"
-      :ext-cls="'delete-commonly-dialog'"
+      class="delete-commonly-dialog"
       :width="400"
       @closed="isShowDeleteCommonlyDialog = false">
       <div class="head">{{ t('确认删除该常用查询?') }}</div>
@@ -1063,7 +1063,7 @@
     .bk-modal-footer {
       display: none;
     }
-    .bk-modal-content {
+    .bk-dialog-content {
       padding: 48px 24px 0 24px;
       .head {
         font-size: 20px;

@@ -76,7 +76,7 @@
     };
     try {
       pending.value = true;
-      const {env_apps, ...other } = data.value;
+      const { env_apps, ...other } = data.value;
       const submitData = {
         ...other,
         bound_apps: data.value.public ? [] : env_apps?.map?.((item) => item.app_ids)?.flat?.() || [],

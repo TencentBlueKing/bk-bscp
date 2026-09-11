@@ -2,6 +2,7 @@
   <bk-loading :loading="loading">
     <bk-table
       class="config-table"
+      :key="isUnNamedVersion"
       :border="['outer']"
       :data="configList"
       :remote-pagination="true"
@@ -660,6 +661,10 @@
     }
   }
   .config-table {
+    :deep(colgroup col):nth-child(2),
+    :deep(colgroup col):nth-child(3) {
+      width: auto !important;
+    }
     .config-name {
       display: flex;
       align-items: center;
@@ -668,6 +673,10 @@
         color: #3a84ff;
         max-width: calc(100% - 20px);
         cursor: pointer;
+        /* 组件库升级后 overflow-title 引用层为 inline-block，会多出下沉符高度使单元格偏高，改为 block 消除间隙 */
+        :deep(.overflow-popover-reference) {
+          display: block !important;
+        }
       }
       .warn-icon {
         font-size: 14px;

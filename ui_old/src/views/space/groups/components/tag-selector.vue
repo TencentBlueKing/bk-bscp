@@ -258,6 +258,11 @@
     }
     .value-input {
       width: 280px;
+      // bk-popover 渲染为 Fragment 多根，scoped 的 data-v 不会落到其包裹 span 上，需用 :deep 穿透；
+      // 同时用 > 限定为直接子，避免误伤 bk-tag-input/bk-input 内部 span。
+      > :deep(span:first-child) {
+        width: 100%;
+      }
     }
   }
   .action-btns {

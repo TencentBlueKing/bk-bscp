@@ -41,9 +41,11 @@
       <p class="tips">
         {{ t('以下服务配置的未命名版本中将添加已选配置文件的') }} <span class="notice">latest {{ t('版本') }}</span>
       </p>
-      <div class="service-table">
+      <div
+        class="service-table"
+        :style="{ '--table-body-max-height': `${maxTableHeight}px` }">
         <bk-loading style="min-height: 100px" :loading="loading">
-          <bk-table :data="citedList" :max-height="maxTableHeight">
+          <bk-table :data="citedList">
             <bk-table-column :label="t('目标模板套餐')" prop="template_set_name"></bk-table-column>
             <bk-table-column :label="t('使用此套餐的服务')">
               <template #default="{ row }">
@@ -256,6 +258,13 @@
     .link-icon {
       flex-shrink: 0;
       margin-left: 10px;
+    }
+  }
+</style>
+<style lang="scss">
+  .add-configs-to-pkg-dialog .service-table {
+    .bk-table-body {
+      max-height: var(--table-body-max-height);
     }
   }
 </style>

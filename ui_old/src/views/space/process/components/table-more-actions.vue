@@ -96,7 +96,7 @@
   };
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
   .more-actions {
     display: flex;
     align-items: center;
@@ -120,6 +120,9 @@
   .dropdown-ul {
     margin: -12px;
     font-size: 12px;
+    & > span {
+      display: block !important;
+    }
     .dropdown-li {
       padding: 0 12px;
       min-width: 68px;

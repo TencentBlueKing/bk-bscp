@@ -1,7 +1,7 @@
 <template>
   <bk-dialog
     :title="t('创建至套餐')"
-    ext-cls="create-to-pkg-dialog"
+    class="create-to-pkg-dialog"
     :confirm-text="$t('创建')"
     :width="640"
     :is-show="props.show"
@@ -32,10 +32,10 @@
         </bk-select>
       </bk-form-item>
     </bk-form>
-    <div v-if="citedList.length">
+    <div v-if="citedList.length" :style="{ '--table-body-max-height': `${maxTableHeight}px` }">
       <p class="tips">{{ tips }}</p>
       <bk-loading style="min-height: 100px" :loading="loading">
-        <bk-table v-if="!selectedPkgs.includes(0)" :data="citedList" :max-height="maxTableHeight">
+        <bk-table v-if="!selectedPkgs.includes(0)" :data="citedList">
           <bk-table-column :label="t('模板套餐')" prop="template_set_name"></bk-table-column>
           <bk-table-column :label="t('使用此套餐的服务')">
             <template #default="{ row }">
@@ -241,6 +241,13 @@
     .link-icon {
       flex-shrink: 0;
       margin-left: 10px;
+    }
+  }
+</style>
+<style lang="scss">
+  .create-to-pkg-dialog .bk-modal-wrapper {
+    .bk-table-body {
+      max-height: var(--table-body-max-height);
     }
   }
 </style>

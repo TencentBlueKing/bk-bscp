@@ -2,7 +2,7 @@
   <bk-dialog
     :is-show="isShow"
     :title="$t('确认{n}进程?', { n: info.label })"
-    ext-cls="op-process-dialog"
+    class="op-process-dialog"
     :theme="'primary'"
     :dialog-type="'operation'"
     header-align="center"
@@ -94,10 +94,10 @@
     .bk-dialog-header {
       padding-top: 48px !important;
     }
-    .bk-modal-content {
+    .bk-dialog-content {
       padding: 0 32px !important;
     }
-    .bk-modal-footer {
+    .bk-dialog-footer {
       height: auto !important;
       background-color: #fff !important;
       border-top: none !important;

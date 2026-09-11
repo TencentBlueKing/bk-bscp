@@ -4,8 +4,9 @@
     :title="$t('批量修改权限')"
     :theme="'primary'"
     quick-close
-    ext-cls="batch-edit-perm-dialog"
-    :width="640">
+    class="batch-edit-perm-dialog"
+    :width="640"
+    @click="emits('update:show', false)">
     <div class="selected-tag">
       {{ `${t('已选')} ` }} <span class="count">{{ props.configsLength }}</span> {{ `${t('个配置项')}` }}
     </div>
@@ -66,9 +67,9 @@
     </bk-form>
     <template v-if="currentPkg && currentPkg !== 'no_specified'">
       <p class="tips">{{ t('以下服务配置的未命名版本中引用此套餐的内容也将更新') }}</p>
-      <div class="service-table">
+      <div class="service-table" :style="{ '--table-body-max-height': `${maxTableHeight}px` }">
         <bk-loading style="min-height: 100px" :loading="loading">
-          <bk-table :data="citedList" :max-height="maxTableHeight">
+          <bk-table :data="citedList">
             <bk-table-column :label="t('所在模板套餐')" prop="template_set_name"></bk-table-column>
             <bk-table-column :label="t('使用此套餐的服务')">
               <template #default="{ row }">
@@ -343,6 +344,11 @@
 </style>
 
 <style lang="scss">
+  .batch-edit-perm-dialog .bk-modal-wrapper {
+    .bk-table-body {
+      max-height: var(--table-body-max-height);
+    }
+  }
   .batch-operation-button-popover.bk-popover.bk-pop2-content {
     padding: 4px 0;
     border: 1px solid #dcdee5;

@@ -2,7 +2,7 @@
   <bk-dialog
     :is-show="show"
     ref="dialog"
-    ext-cls="confirm-dialog"
+    class="confirm-dialog"
     footer-align="center"
     :cancel-text="$t('再想想')"
     :confirm-text="$t('继续生成版本')"
@@ -91,6 +91,7 @@
     width: 42px;
     height: 42px;
     position: relative;
+    isolation: isolate;
     &::after {
       content: '';
       position: absolute;

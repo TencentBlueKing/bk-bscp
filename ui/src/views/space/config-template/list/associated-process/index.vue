@@ -7,6 +7,7 @@
     @closed="handleClose"
     @confirm="handleConfirm">
     <SelectProcess
+      v-if="isShow"
       :bk-biz-id="bkBizId"
       :template-name="templateName"
       :template-id="templateId"
@@ -59,8 +60,9 @@
     .bk-dialog-header {
       display: none;
     }
-    .bk-modal-wrapper .bk-modal-content {
+    .bk-modal-wrapper .bk-dialog-content {
       padding: 0;
+      margin: 0;
     }
   }
 </style>

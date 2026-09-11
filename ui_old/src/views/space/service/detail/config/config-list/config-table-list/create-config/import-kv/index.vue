@@ -4,8 +4,7 @@
     :title="t('批量导入')"
     :theme="'primary'"
     width="1200"
-    height="720"
-    ext-cls="import-kv-dialog"
+    class="import-kv-dialog"
     :before-close="handleBeforeClose"
     :quick-close="false"
     :esc-close="false"
@@ -410,9 +409,18 @@
 
 <style lang="scss">
   .import-kv-dialog {
+    .bk-dialog-header {
+      padding-bottom: 12px;
+    }
+    .bk-modal-wrapper {
+      height: 720px;
+    }
     .bk-modal-content {
-      height: calc(100% - 50px) !important;
+      height: calc(100% - 108px) !important;
       overflow: hidden !important;
+    }
+    .bk-dialog-content {
+      margin-top: 0;
     }
   }
   .config-selector-popover {

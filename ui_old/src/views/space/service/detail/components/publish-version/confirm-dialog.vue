@@ -1,7 +1,7 @@
 <template>
   <bk-dialog
     :title="`${t('上线版本')}-${props.version ? props.version : versionData.spec.name}`"
-    ext-cls="release-version-dialog"
+    class="release-version-dialog"
     :is-show="props.show"
     :esc-close="false"
     :quick-close="false"
@@ -395,7 +395,6 @@
 </script>
 <style lang="scss" scoped>
   .form-wrapper {
-    padding-bottom: 24px;
     :deep(.bk-form-label) {
       font-size: 12px;
     }
@@ -502,8 +501,8 @@
   }
 </style>
 <style lang="scss">
-  .release-version-dialog.bk-modal-wrapper .bk-dialog-header {
-    padding-bottom: 20px;
+  .release-version-dialog .bk-modal-wrapper .bk-dialog-content {
+    margin-top: 20px;
   }
   .date-picker-popover {
     .bk-date-picker-top-wrapper {

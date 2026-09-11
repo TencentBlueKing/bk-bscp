@@ -5,7 +5,7 @@
     :theme="'primary'"
     width="960"
     height="720"
-    ext-cls="import-file-dialog"
+    class="import-file-dialog"
     :before-close="handleBeforeClose"
     :quick-close="false"
     @closed="handleClose">

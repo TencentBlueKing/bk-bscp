@@ -19,7 +19,7 @@
               <bk-input v-model="formData.template_name" />
             </bk-form-item>
             <bk-form-item :label="t('配置文件名')" property="full_path">
-              <bk-input v-model="formData.full_path" />
+              <bk-input v-model="formData.full_path" :placeholder="t('请输入绝对路径')" />
             </bk-form-item>
             <bk-form-item :label="t('版本号')" property="revision_name">
               <bk-input v-model="formData.revision_name" />

@@ -224,10 +224,12 @@
         background: #e1ecff;
         &:hover {
           color: #3a84ff;
+          background: #e1ecff;
         }
       }
       &:hover {
         color: #63656e;
+        background-color: #fff;
       }
     }
   }

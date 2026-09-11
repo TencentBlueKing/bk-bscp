@@ -9,6 +9,7 @@
     <div class="slider-content-container">
       <ConfigForm
         ref="formRef"
+        v-if="props.show"
         v-model:file-uploading="fileUploading"
         :config="configForm"
         :content="content"

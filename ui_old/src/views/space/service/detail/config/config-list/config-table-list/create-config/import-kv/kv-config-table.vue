@@ -13,18 +13,17 @@
       :data="data"
       :border="['outer', 'row', 'col']"
       class="kv-config-table"
-      :cell-class="getCellCls"
-      show-overflow-tooltip>
-      <bk-table-column :label="$t('配置项名称')" prop="key" width="320" property="key"></bk-table-column>
-      <bk-table-column :label="$t('数据类型')" prop="kv_type" width="200" property="type"></bk-table-column>
-      <bk-table-column :label="$t('配置项值预览')" prop="value" max-width="280">
+      :cell-class="getCellCls">
+      <bk-table-column :label="$t('配置项名称')" prop="key" width="320" show-overflow-tooltip></bk-table-column>
+      <bk-table-column :label="$t('数据类型')" prop="kv_type" width="200" show-overflow-tooltip></bk-table-column>
+      <bk-table-column :label="$t('配置项值预览')" prop="value" max-width="280" show-overflow-tooltip>
         <template #default="{ row }">
           <div v-if="row.key" :class="{ hidden: isSecretHidden(row) }" type="tips">
             {{ isSecretHidden(row) ? $t('敏感数据不可见，无法查看实际内容') : row.value }}
           </div>
         </template>
       </bk-table-column>
-      <bk-table-column :label="$t('配置项描述')" prop="memo" property="memo">
+      <bk-table-column :label="$t('配置项描述')" prop="memo" show-overflow-tooltip>
         <template #default="{ row }">
           <div v-if="row.key" class="memo">
             <div v-if="memoEditKey !== row.key" class="memo-display" @click="handleOpenMemoEdit(row.key)">
@@ -116,9 +115,9 @@
   };
 
   // 添加自定义单元格class
-  const getCellCls = ({ property }: { property: string }) => {
-    if (property === 'memo') return 'memo-cell';
-    return ['key', 'type', 'value'].includes(property) ? 'disabled-cell' : '';
+  const getCellCls = (column: { field: string }) => {
+    if (column.field === 'memo') return 'memo-cell';
+    return ['key', 'kv_type'].includes(column.field) ? 'disabled-cell' : '';
   };
 
   const handleOpenMemoEdit = (key: string) => {
@@ -171,7 +170,13 @@
     :deep(col) {
       min-width: 50px !important;
     }
-    :deep(.bk-table-body-content) {
+    // bkui-vue 2.x 使用 table-layout: fixed，会给未指定宽度的列也分配固定宽度，
+    // 导致剩余空间被「操作/删除」等实际固定列吸收、约定宽度失效。将弹性列重置为 auto，
+    // 使其吸收剩余空间，固定列即可保持约定宽度（值预览列仍受 max-width=280 限制）。
+    :deep(colgroup col):is(:nth-child(3), :nth-child(4)) {
+      width: auto !important;
+    }
+    :deep(.bk-table-body) {
       .disabled-cell {
         background-color: #f5f7fa;
       }

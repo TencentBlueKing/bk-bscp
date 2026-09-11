@@ -6,6 +6,7 @@
     :before-close="handleBeforeClose"
     @closed="close">
     <ConfigForm
+      v-if="show"
       ref="formRef"
       class="config-form-wrapper"
       v-model:file-uploading="fileUploading"

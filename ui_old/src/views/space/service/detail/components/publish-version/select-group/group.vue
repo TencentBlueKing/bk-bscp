@@ -86,6 +86,7 @@
     margin: 0 0 12px;
     &:last-of-type {
       margin-bottom: 0;
+      margin-left: 0;
     }
     :deep(.bk-radio-label) {
       font-size: 12px;

@@ -1,7 +1,7 @@
 <template>
   <bk-dialog
     ref="dialog"
-    ext-cls="confirm-dialog"
+    class="confirm-cancel-publish-dialog"
     footer-align="center"
     dialog-type="operation"
     :is-loading="btnLoading"
@@ -102,27 +102,6 @@
 </script>
 
 <style lang="scss" scoped>
-  :deep(.confirm-dialog) {
-    .bk-modal-body {
-      padding-bottom: 0;
-    }
-    .bk-modal-content {
-      padding: 0 32px;
-      height: auto;
-      max-height: none;
-      min-height: auto;
-      border-radius: 2px;
-    }
-    .bk-modal-footer {
-      position: relative;
-      padding: 24px 0;
-      height: auto;
-      border: none;
-    }
-    .bk-dialog-footer .bk-button {
-      min-width: 88px;
-    }
-  }
   .headline {
     margin-top: 16px;
     text-align: center;
@@ -164,5 +143,30 @@
   }
   .textarea-content {
     margin-top: 7px;
+  }
+</style>
+<style lang="scss">
+  .confirm-cancel-publish-dialog {
+    .bk-modal-body {
+      padding-bottom: 0;
+    }
+    .bk-dialog-content {
+      padding: 0 32px;
+      height: auto;
+      max-height: none;
+      min-height: auto;
+      border-radius: 2px;
+      margin-top: 14px;
+      margin-bottom: 0;
+    }
+    .bk-dialog-footer {
+      position: relative;
+      padding: 24px 0;
+      height: auto;
+      border: none;
+    }
+    .bk-dialog-footer .bk-button {
+      min-width: 88px;
+    }
   }
 </style>

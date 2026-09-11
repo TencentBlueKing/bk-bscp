@@ -516,6 +516,13 @@
     background: #ffffff;
   }
   .group-table-wrapper {
+    // 升级 bkui-vue 2.x 后，库对“未设置 width 的列”会强制写入 min-width（默认 80px）作为显式列宽，
+    // 在表格默认 fixed 布局下，超出列宽之和的剩余空间会被【按比例摊给所有列】，
+    // 导致带 :width 的固定列被等比放大、不按配置渲染（如选择列 100px 实际变 ~120px）。
+    // 将真正的弹性列（标签选择器，第 3 列）恢复为 auto，使其吸收剩余空间，固定列即精确占配置宽。
+    :deep(colgroup col):nth-child(3) {
+      width: auto !important;
+    }
     :deep(.bk-table-body) {
       max-height: calc(100vh - 280px);
       overflow: auto;

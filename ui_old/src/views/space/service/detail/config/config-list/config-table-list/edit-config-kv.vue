@@ -7,6 +7,7 @@
     @closed="close">
     <div class="config-container">
       <ConfigForm
+        v-if="show"
         ref="formRef"
         class="config-form-wrapper"
         :config="configForm as IConfigKvItem"
