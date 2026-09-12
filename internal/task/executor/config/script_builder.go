@@ -34,6 +34,12 @@ const (
 	// windowsExecutionUser 只能是 system。bkop 环境 window 类型机器需要传入密码。
 	// gse 建议使用 system 账号执行
 	windowsExecutionUser = "system"
+	// windowsAdminGroup 是 Windows 侧配置目录与文件授权使用的属组，固定为内置管理员组：
+	// 部分账号（域账号、服务账号等）通过 WMI 查不到关联组，动态查询还容易受 WMI 服务
+	// 状态影响。用 SID 而非组名授权（icacls 的 * 前缀表示按 SID 解析）：内置管理员组的
+	// 名字随区域设置本地化（如德语 Administratoren）且可被重命名，按名字解析不到时
+	// icacls 会失败并导致下发任务报错；S-1-5-32-544 在任何机器上都稳定存在。
+	windowsAdminGroup = "*S-1-5-32-544"
 )
 
 // ScriptBuilder 根据 FileMode (OS 类型) 构建不同平台的脚本
@@ -53,9 +59,9 @@ func (b *ScriptBuilder) BuildConfigPushScript(base64Content, absPath, fileMode, 
 		b.MaxBackups = defaultMaxBackups
 	}
 	if b.IsWindows() {
-		return b.buildWindowsPushScript(base64Content, absPath, owner, group, b.MaxBackups)
+		return b.buildWindowsPushScript(base64Content, absPath, owner, b.MaxBackups)
 	}
-	return buildLinuxPushScript(base64Content, absPath, fileMode, owner, group, b.MaxBackups)
+	return buildLinuxPushScript(base64Content, absPath, fileMode, owner, b.MaxBackups)
 }
 
 // BuildFileMD5Script 构建计算文件 MD5 的脚本
@@ -82,9 +88,13 @@ func shellQuote(s string) string {
 
 var fileModeRe = regexp.MustCompile(`^[0-7]{3,4}$`)
 
+// windowsAbsPathRe 匹配 Windows 绝对路径：盘符路径（D:\conf、D:/conf）或 UNC 路径（\\host\share）。
+// 相对路径与驱动器相对路径（C:app.conf，盘符后没有分隔符）都不算绝对路径。
+var windowsAbsPathRe = regexp.MustCompile(`^[A-Za-z]:[\\/]|^\\\\`)
+
 // buildLinuxPushScript 构建 Linux 配置下发脚本
 // nolint:funlen
-func buildLinuxPushScript(base64Content, absPath, fileMode, owner, group string, maxBackups int) (string, error) {
+func buildLinuxPushScript(base64Content, absPath, fileMode, owner string, maxBackups int) (string, error) {
 	if !strings.HasPrefix(absPath, "/") {
 		return "", fmt.Errorf("absPath must be absolute")
 	}
@@ -99,28 +109,28 @@ set -euo pipefail
 TARGET_PATH=%s
 MAX_BACKUPS=%d
 OWNER=%s
-GROUP=%s
 
-# 1. 写盘之前先确认属主与属组能解析。同目录并发时三个任务都会在这里失败，
-#    不会 mkdir，已存在的配置目录也不会被改属主。纯数字 uid/gid 交给 chown 自己处理。
-case "$OWNER" in
-    ''|*[!0-9]*)
-        if ! id -u -- "$OWNER" >/dev/null 2>&1; then
-            echo "OWNER_NOT_FOUND: cannot resolve user $OWNER on this host"
-            exit 1
-        fi
-        ;;
-esac
-case "$GROUP" in
-    ''|*[!0-9]*)
-        if command -v getent >/dev/null 2>&1 && ! getent group -- "$GROUP" >/dev/null 2>&1; then
-            echo "GROUP_NOT_FOUND: cannot resolve group $GROUP on this host"
-            exit 1
-        fi
-        ;;
-esac
+# 1. 确认用户存在，并获取该用户的 UID 和主组 GID。
+#    后续所有目录、备份文件、临时文件以及目标文件，
+#    均使用该用户及其主组 GID。
+if [[ "$OWNER" =~ ^[0-9]+$ ]]; then
+    OWNER_UID="$OWNER"
+    GROUP_GID="$OWNER"
+else
+    if ! OWNER_UID="$(id -u -- "$OWNER")"; then
+        echo "OWNER_NOT_FOUND: cannot resolve user $OWNER on this host"
+        exit 1
+    fi
 
-# 2. 目标为软链接时先解析真实路径，保持跟随语义：备份、临时文件与替换都作用于真实路径
+    if ! GROUP_GID="$(id -g -- "$OWNER")"; then
+        echo "GROUP_NOT_FOUND: cannot resolve primary group for user $OWNER on this host"
+        exit 1
+    fi
+fi
+
+echo "Resolved owner: UID=$OWNER_UID GID=$GROUP_GID"
+
+# 2. 目标为软链接时先解析真实路径，保持跟随语义：备份、临时文件与替换都作用于真实路径。
 if [ -L "$TARGET_PATH" ]; then
     REAL_PATH="$(readlink -f -- "$TARGET_PATH")"
     echo "Resolved symlink: $TARGET_PATH -> $REAL_PATH"
@@ -130,11 +140,15 @@ fi
 TARGET_DIR="$(dirname "$TARGET_PATH")"
 TARGET_NAME="$(basename "$TARGET_PATH")"
 
-# 3. 创建目标目录，并把本次新建的层级归属到配置属主。
-#    先记下最深的已存在祖先：只有它以下的层级是本次建出来的。路径上已存在的目录可能是
-#    /data、/etc 这类与本次下发无关的共享目录，递归 chown 会改掉它们的属主。
-#    目录不做 chmod：模版权限位描述的是文件，缺少 x 位时套到目录上会让目录无法进入。
+# 3. 创建目标目录，并把本次新建的层级归属到目标用户及其主组 GID。
+#
+#    先记下最深的已存在祖先：只有它以下的层级是本次建出来的。
+#    路径上已存在的目录可能是 /data、/etc 等与本次下发无关的共享目录，
+#    不能递归 chown。
+#
+#    目录不做 chmod：文件权限模式不应直接套用到目录。
 #    目录权限沿用 mkdir 的默认结果。
+#
 #    chown 失败仍拆掉本次新建的空目录，作为预检之后的兜底。
 DIR_ANCESTOR="$TARGET_DIR"
 while [ ! -d "$DIR_ANCESTOR" ]; do
@@ -145,15 +159,18 @@ mkdir -p -- "$TARGET_DIR"
 
 CREATED_DIR="$TARGET_DIR"
 while [ "$CREATED_DIR" != "$DIR_ANCESTOR" ] && [ "$CREATED_DIR" != "/" ]; do
-    if ! chown "$OWNER:$GROUP" -- "$CREATED_DIR"; then
-        echo "CHOWN_DIR_FAILED: cannot chown $CREATED_DIR to $OWNER:$GROUP"
+    if ! chown "$OWNER_UID:$GROUP_GID" -- "$CREATED_DIR"; then
+        echo "CHOWN_DIR_FAILED: cannot chown $CREATED_DIR to $OWNER_UID:$GROUP_GID"
+
         CLEAN_DIR="$TARGET_DIR"
         while [ "$CLEAN_DIR" != "$DIR_ANCESTOR" ] && [ "$CLEAN_DIR" != "/" ]; do
             rmdir -- "$CLEAN_DIR" 2>/dev/null || true
             CLEAN_DIR="$(dirname "$CLEAN_DIR")"
         done
+
         exit 1
     fi
+
     CREATED_DIR="$(dirname "$CREATED_DIR")"
 done
 
@@ -162,23 +179,28 @@ done
 TMP_PATH="${TARGET_PATH}.tmp.$$.${RANDOM}"
 trap 'rm -f -- "$TMP_PATH"' EXIT
 
-# 5. 备份原文件（如果存在），并让备份归属与目标文件保持一致
+# 5. 备份原文件（如果存在），并让备份文件归属与目标文件保持一致。
 if [ -f "$TARGET_PATH" ]; then
     TIMESTAMP="$(date +%%s)"
     BACKUP_PATH="${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.bak"
+
     cp -- "$TARGET_PATH" "$BACKUP_PATH"
-    chown "$OWNER:$GROUP" -- "$BACKUP_PATH"
+    chown "$OWNER_UID:$GROUP_GID" -- "$BACKUP_PATH"
+
     echo "Backup created: $BACKUP_PATH"
 
-    # 6. 清理旧备份：超过 MAX_BACKUPS 份则删除最旧的
-    # 按修改时间从旧到新排列，找出需要删除的文件
+    # 6. 清理旧备份：超过 MAX_BACKUPS 份则删除最旧的。
+    #    按修改时间从旧到新排列，找出需要删除的文件。
     BACKUP_COUNT="$(ls -1 "${TARGET_DIR}/${TARGET_NAME}".*.bak 2>/dev/null | wc -l)"
+
     if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
         DELETE_COUNT=$(( BACKUP_COUNT - MAX_BACKUPS ))
-        # ls -1t 按时间降序（最新在前），tail 取最旧的
+
+        # ls -1t 按时间降序（最新在前），tail 取最旧的。
         ls -1t "${TARGET_DIR}/${TARGET_NAME}".*.bak 2>/dev/null \
             | tail -n "$DELETE_COUNT" \
             | xargs -r rm -f --
+
         echo "Cleaned $DELETE_COUNT old backup(s), kept latest $MAX_BACKUPS"
     fi
 fi
@@ -188,11 +210,15 @@ echo %s | base64 -d > "$TMP_PATH"
 
 # 8. 在临时文件上设置权限和属主：失败即终止，目标文件保持原状
 chmod %s -- "$TMP_PATH"
-chown "$OWNER:$GROUP" -- "$TMP_PATH"
+chown "$OWNER_UID:$GROUP_GID" -- "$TMP_PATH"
 
-# 9. 继承目标文件原有的 SELinux 标签。替换换了 inode，新文件默认只能拿到目录的默认标签，
-#    原文件若被 chcon 定制过就会退化，导致业务进程被拒绝读取（下发成功但配置加载失败）。
-#    SELinux 关闭或未装工具的机器上整段跳过，不影响下发。
+# 9. 继承目标文件原有的 SELinux 标签。
+#
+#    替换会产生新的 inode，新文件默认只能拿到目录的默认标签。
+#    原文件若被 chcon 定制过就会退化，导致业务进程被拒绝读取
+#    （下发成功但配置加载失败）。
+#
+#    SELinux 关闭或未安装 chcon 的机器上整段跳过，不影响下发。
 if [ -e "$TARGET_PATH" ] && command -v chcon >/dev/null 2>&1; then
     chcon --reference="$TARGET_PATH" -- "$TMP_PATH" 2>/dev/null || true
 fi
@@ -208,7 +234,6 @@ md5sum "$TARGET_PATH" || true
 		shellQuote(absPath),
 		maxBackups,
 		shellQuote(owner),
-		shellQuote(group),
 		shellQuote(base64Content),
 		fileMode,
 	), nil
@@ -261,13 +286,11 @@ func newTempToken() string {
 	return hex.EncodeToString(buf)
 }
 
-// windowsTranslateAccountCmd 用 NTAccount 把账号名解析成 SID。
+// windowsTranslateOwnerCmd 用 NTAccount 把属主解析成 SID，账号取自脚本里的 BSCP_OWNER 变量。
 // 与 icacls 走同一套 LookupAccountName；解析失败则脚本立刻退出，不会 mkdir。
-func windowsTranslateAccountCmd(account string) string {
-	return fmt.Sprintf("powershell -NoProfile -Command "+
-		`"try { [void]([System.Security.Principal.NTAccount]'%s')`+
-		`.Translate([System.Security.Principal.SecurityIdentifier]) } catch { exit 1 }"`,
-		account)
+func windowsTranslateOwnerCmd() string {
+	return `powershell -NoProfile -Command "try { [void]([System.Security.Principal.NTAccount]$env:BSCP_OWNER)` +
+		`.Translate([System.Security.Principal.SecurityIdentifier]) } catch { exit 1 }"`
 }
 
 // buildWindowsPushScript 构建 Windows 配置下发脚本
@@ -278,7 +301,11 @@ func windowsTranslateAccountCmd(account string) string {
 // 二是 %TEMP% 与目标常常不在同一个卷上，move 会退化成「拷贝 + 删除」，
 // 业务进程有机会读到只写了一半的配置，放同目录后才能走同卷内的原子 rename。
 // nolint:funlen
-func (b *ScriptBuilder) buildWindowsPushScript(base64Content, absPath, owner, group string, maxBackups int) (string, error) {
+func (b *ScriptBuilder) buildWindowsPushScript(base64Content, absPath, owner string, maxBackups int) (string, error) {
+	if !windowsAbsPathRe.MatchString(absPath) {
+		return "", fmt.Errorf("absPath must be absolute")
+	}
+
 	winPath := ToWindowsPath(absPath)
 	token := newTempToken()
 
@@ -287,19 +314,21 @@ setlocal enabledelayedexpansion
 
 set "TARGET_PATH=%s"
 set /a MAX_BACKUPS=%d
+set "BSCP_OWNER=%s"
 
-REM 0. 写盘之前先确认属主、属组能解析成 SID（与 icacls 同一套 LookupAccountName）。
-REM    同目录并发时三个任务都会在这里失败，不会 mkdir，已存在的 conf 也不会被改属主。
+REM 0. 写盘之前先确认属主能解析成 SID（与 icacls 同一套 LookupAccountName）。
+REM    同目录并发时多个任务都会在这里失败，不会 mkdir，已存在的 conf 也不会被改属主。
 %s
 if !ERRORLEVEL! neq 0 (
     echo OWNER_NOT_FOUND
     exit /b 1
 )
-%s
-if !ERRORLEVEL! neq 0 (
-    echo GROUP_NOT_FOUND
-    exit /b 1
-)
+
+REM   属组固定用内置管理员组，不再动态查询用户所属组：
+REM    部分账号（域账号、服务账号等）通过 WMI 查不到关联组，查询本身还容易受
+REM    WMI 服务状态影响。按 SID 而非组名授权：组名随区域设置本地化且可被重命名，
+REM    SID（icacls 的 * 前缀）在任何机器上都稳定存在。
+set "TARGET_GROUP=%s"
 
 REM 1. 解析目录和文件名
 for %%%%i in ("%%TARGET_PATH%%") do (
@@ -341,19 +370,19 @@ REM    任一 icacls 失败都必须终止并拆掉本次新建的空目录：�
 REM    NEW_DIR_COUNT=0，不会再修 ACL，任务却会一直报成功。
 for /l %%%%n in (1,1,!NEW_DIR_COUNT!) do (
     set "NEW_DIR=!NEW_DIR_%%%%n!"
-    icacls "!NEW_DIR!" /setowner "%s" >nul
+    icacls "!NEW_DIR!" /setowner "!BSCP_OWNER!" >nul
     if !ERRORLEVEL! neq 0 (
         echo ACL_FAILED
         echo [ERROR] icacls /setowner failed on !NEW_DIR!, errorlevel=!ERRORLEVEL!
         goto cleanup_new_dirs
     )
-    icacls "!NEW_DIR!" /grant:r "%s:(F)" >nul
+    icacls "!NEW_DIR!" /grant:r "!BSCP_OWNER!:(F)" >nul
     if !ERRORLEVEL! neq 0 (
         echo ACL_FAILED
         echo [ERROR] icacls grant owner failed on !NEW_DIR!, errorlevel=!ERRORLEVEL!
         goto cleanup_new_dirs
     )
-    icacls "!NEW_DIR!" /grant:r "%s:(RX)" >nul
+    icacls "!NEW_DIR!" /grant:r "!TARGET_GROUP!:(RX)" >nul
     if !ERRORLEVEL! neq 0 (
         echo ACL_FAILED
         echo [ERROR] icacls grant group failed on !NEW_DIR!, errorlevel=!ERRORLEVEL!
@@ -437,19 +466,19 @@ move /y "!BSCP_OUT!" "%%TARGET_PATH%%" >nul || (
 
 REM 6. 设置文件属主与权限。失败必须终止：目录已在时写文件已经发生，
 REM    若只打 WARN，坏属主仍会让任务报成功。
-icacls "%%TARGET_PATH%%" /setowner "%s" >nul
+icacls "%%TARGET_PATH%%" /setowner "!BSCP_OWNER!" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls /setowner failed, errorlevel=!ERRORLEVEL!
     exit /b 1
 )
-icacls "%%TARGET_PATH%%" /grant:r "%s:(F)" >nul
+icacls "%%TARGET_PATH%%" /grant:r "!BSCP_OWNER!:(F)" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls grant owner full control failed, errorlevel=!ERRORLEVEL!
     exit /b 1
 )
-icacls "%%TARGET_PATH%%" /grant:r "%s:(R)" >nul
+icacls "%%TARGET_PATH%%" /grant:r "!TARGET_GROUP!:(R)" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls grant group read failed, errorlevel=!ERRORLEVEL!
@@ -475,14 +504,11 @@ exit /b 1
 `,
 		winPath,
 		maxBackups,
-		windowsTranslateAccountCmd(owner),
-		windowsTranslateAccountCmd(group),
-		// 新建目录的属主与授权
-		owner, owner, group,
+		owner,
+		windowsTranslateOwnerCmd(),
+		windowsAdminGroup,
 		token, token,
 		buildWindowsB64WriteLines(base64Content),
-		// 目标文件的属主与授权
-		owner, owner, group,
 	), nil
 }
 
