@@ -3053,6 +3053,128 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list": {
+      "post": {
+        "summary": "获取模板版本列表",
+        "operationId": "Config_ListTemplateRevisions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list": {
+      "post": {
+        "summary": "获取模板版本列表",
+        "operationId": "Config_ListTemplateRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListTemplateRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateSpaceId",
+            "description": "模板空间ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "templateId",
+            "description": "模板文件ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListTemplateRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/groups/query/name/{groupName}": {
       "get": {
         "summary": "按名称获取分组",
@@ -7956,6 +8078,30 @@
         }
       }
     },
+    "ConfigListTemplateRevisionsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "object",
+          "description": "搜索"
+        },
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "当前页码"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页条数"
+        },
+        "all": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否获取所有"
+        }
+      }
+    },
     "ConfigListTemplatesNotBoundBody": {
       "type": "object",
       "properties": {
@@ -9725,6 +9871,23 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/pbreleaseRelease"
+          }
+        }
+      }
+    },
+    "pbcsListTemplateRevisionsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtrTemplateRevision"
           }
         }
       }
@@ -11651,6 +11814,93 @@
         }
       },
       "title": "TemplateSpec source resource reference: pkg/dal/table/template.go"
+    },
+    "pbtrTemplateRevision": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件版本ID"
+        },
+        "spec": {
+          "$ref": "#/definitions/pbtrTemplateRevisionSpec"
+        },
+        "attachment": {
+          "$ref": "#/definitions/pbtrTemplateRevisionAttachment"
+        },
+        "revision": {
+          "$ref": "#/definitions/pbbaseCreatedRevision"
+        },
+        "isProcBound": {
+          "type": "boolean"
+        }
+      },
+      "title": "Template source resource reference: pkg/dal/table/template_revision.go"
+    },
+    "pbtrTemplateRevisionAttachment": {
+      "type": "object",
+      "properties": {
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "templateSpaceId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板空间ID"
+        },
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件ID"
+        }
+      },
+      "title": "TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go"
+    },
+    "pbtrTemplateRevisionSpec": {
+      "type": "object",
+      "properties": {
+        "revisionName": {
+          "type": "string",
+          "description": "模板文件版本号"
+        },
+        "revisionMemo": {
+          "type": "string",
+          "description": "模板文件版本描述"
+        },
+        "name": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "文件路径"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary"
+        },
+        "fileMode": {
+          "type": "string",
+          "default": "unix",
+          "description": "文件模式"
+        },
+        "permission": {
+          "$ref": "#/definitions/pbciFilePermission"
+        },
+        "contentSpec": {
+          "$ref": "#/definitions/pbcontentContentSpec"
+        },
+        "charset": {
+          "type": "string"
+        },
+        "templateName": {
+          "type": "string"
+        }
+      },
+      "title": "TemplateRevisionSpec source resource reference: pkg/dal/table/template_revision.go"
     },
     "pbtvTemplateVariableSpec": {
       "type": "object",

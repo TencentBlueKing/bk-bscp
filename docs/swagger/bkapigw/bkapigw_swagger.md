@@ -119,6 +119,8 @@
 | GET | /api/v1/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases](#config-list-releases) | 获取服务版本列表 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_ListReleases2](#config-list-releases2) | 获取服务版本列表 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/{appId}/releases | [Config_ListReleases3](#config-list-releases3) | 获取服务版本列表 |
+| POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list | [Config_ListTemplateRevisions](#config-list-template-revisions) | 获取模板版本列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list | [Config_ListTemplateRevisions2](#config-list-template-revisions2) | 获取模板版本列表 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound2](#config-list-templates-not-bound2) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
@@ -5002,6 +5004,93 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-list-template-revisions"></span> 获取模板版本列表 (*Config_ListTemplateRevisions*)
+
+```
+POST /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| templateId | int64 (formatted integer) | ✓ | 模板文件ID |
+| templateSpaceId | int64 (formatted integer) | ✓ | 模板空间ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| search | [interface{}](#interface) |  | 搜索 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "search": {},
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-list-template-revisions2"></span> 获取模板版本列表 (*Config_ListTemplateRevisions2*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| templateId | int64 (formatted integer) | ✓ | 模板文件ID |
+| templateSpaceId | int64 (formatted integer) | ✓ | 模板空间ID |
+| all | boolean |  | 是否获取所有 |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| search | [interface{}](#interface) |  | 搜索 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "limit": 0,
+  "search": {},
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-list-templates-not-bound"></span> 获取未绑定的模板列表 (*Config_ListTemplatesNotBound*)
 
 ```
@@ -7034,6 +7123,24 @@ Content-Type: application/json
 
 
 
+### <span id="config-list-template-revisions-body"></span> ConfigListTemplateRevisionsBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| all | boolean| `bool` |  | | 是否获取所有 |  |
+| limit | int64 (formatted integer)| `int64` |  | | 每页条数 |  |
+| search | [interface{}](#interface)| `interface{}` |  | | 搜索 |  |
+| start | int64 (formatted integer)| `int64` |  | | 当前页码 |  |
+
+
+
 ### <span id="config-list-templates-not-bound-body"></span> ConfigListTemplatesNotBoundBody
 
 
@@ -8611,6 +8718,22 @@ Content-Type: application/json
 
 
 
+### <span id="pbcs-list-template-revisions-resp"></span> pbcsListTemplateRevisionsResp
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | int64 (formatted integer)| `int64` |  | | 总数 |  |
+| details | \[\][PbtrTemplateRevision](#pbtr-template-revision)| `[]*PbtrTemplateRevision` |  | |  |  |
+
+
+
 ### <span id="pbcs-list-templates-not-bound-resp"></span> pbcsListTemplatesNotBoundResp
 
 
@@ -9984,6 +10107,66 @@ Content-Type: application/json
 | memo | string| `string` |  | | 文件描述 |  |
 | name | string| `string` |  | | 文件名 |  |
 | path | string| `string` |  | | 文件路径 |  |
+
+
+
+### <span id="pbtr-template-revision"></span> pbtrTemplateRevision
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| attachment | [PbtrTemplateRevisionAttachment](#pbtr-template-revision-attachment)| `PbtrTemplateRevisionAttachment` |  | |  |  |
+| id | int64 (formatted integer)| `int64` |  | | 模板文件版本ID |  |
+| isProcBound | boolean| `bool` |  | |  |  |
+| revision | [PbbaseCreatedRevision](#pbbase-created-revision)| `PbbaseCreatedRevision` |  | |  |  |
+| spec | [PbtrTemplateRevisionSpec](#pbtr-template-revision-spec)| `PbtrTemplateRevisionSpec` |  | |  |  |
+
+
+
+### <span id="pbtr-template-revision-attachment"></span> pbtrTemplateRevisionAttachment
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bizId | int64 (formatted integer)| `int64` |  | | 业务ID |  |
+| templateId | int64 (formatted integer)| `int64` |  | | 模板文件ID |  |
+| templateSpaceId | int64 (formatted integer)| `int64` |  | | 模板空间ID |  |
+
+
+
+### <span id="pbtr-template-revision-spec"></span> pbtrTemplateRevisionSpec
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| charset | string| `string` |  | |  |  |
+| contentSpec | [PbcontentContentSpec](#pbcontent-content-spec)| `PbcontentContentSpec` |  | |  |  |
+| fileMode | string| `string` |  | `"unix"`| 文件模式 |  |
+| fileType | string| `string` |  | | 配置文件格式：文本文件=file, 二进制文件=binary |  |
+| name | string| `string` |  | | 文件名 |  |
+| path | string| `string` |  | | 文件路径 |  |
+| permission | [PbciFilePermission](#pbci-file-permission)| `PbciFilePermission` |  | |  |  |
+| revisionMemo | string| `string` |  | | 模板文件版本描述 |  |
+| revisionName | string| `string` |  | | 模板文件版本号 |  |
+| templateName | string| `string` |  | |  |  |
 
 
 

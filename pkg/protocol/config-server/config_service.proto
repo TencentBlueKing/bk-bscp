@@ -862,7 +862,7 @@ service Config {
   }
   // 获取模板版本列表
   rpc ListTemplateRevisions(ListTemplateRevisionsReq) returns (ListTemplateRevisionsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/template_spaces/{template_space_id}/"
             "templates/{template_id}/template_revisions/list"
