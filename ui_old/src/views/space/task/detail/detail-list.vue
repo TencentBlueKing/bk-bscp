@@ -197,6 +197,11 @@
       count: 0,
     },
     {
+      label: t('已忽略'),
+      status: 'IGNORED',
+      count: 0,
+    },
+    {
       label: t('正在执行'),
       status: 'RUNNING',
       count: 0,

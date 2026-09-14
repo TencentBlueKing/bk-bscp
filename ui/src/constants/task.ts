@@ -28,6 +28,7 @@ export const TASK_DETAIL_STATUS_MAP = {
   SUCCESS: localT('执行成功'),
   INITIALIZING: localT('等待执行'),
   RUNNING: localT('正在执行'),
+  IGNORED: localT('已忽略'),
 };
 
 export const TASK_DETAIL_COMPARE_STATUS_MAP = {

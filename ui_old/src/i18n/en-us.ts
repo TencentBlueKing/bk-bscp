@@ -1417,6 +1417,7 @@ export default {
   执行成功: 'Execution succeeded',
   执行失败: 'Execution failed',
   正在执行: 'Executing',
+  已忽略: 'Ignored',
   部分失败: 'Partially failed',
   执行账号: 'Execution account',
   执行时间: 'Execution time',
