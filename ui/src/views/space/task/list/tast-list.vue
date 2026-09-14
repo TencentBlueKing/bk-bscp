@@ -165,7 +165,8 @@
       if (action && !checkPerm(action)) {
         return;
       }
-      await retryTask(spaceId.value, row.id, row.task_action);
+      const retryAction = ['config_generate', 'config_publish'].includes(row.task_action) ? row.task_action : 'process_operations';
+      await retryTask(spaceId.value, row.id, retryAction);
       loadTaskList();
     } catch (error) {
       console.error(error);
