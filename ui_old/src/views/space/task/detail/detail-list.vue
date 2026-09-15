@@ -68,7 +68,7 @@
                 <span v-else :class="['dot', row.status]"></span>
                 <span>{{ TASK_DETAIL_STATUS_MAP[row.status as keyof typeof TASK_DETAIL_STATUS_MAP] }}</span>
                 <info-line
-                  v-if="row.status === 'FAILURE'"
+                  v-if="['FAILURE', 'IGNORED'].includes(row.status)"
                   class="info-icon"
                   v-bk-tooltips="{ content: row.message || '--' }" />
               </div>
