@@ -152,6 +152,8 @@
     },
   ]);
   const activeEnv = ref('3');
+  // 请求序号，用于丢弃过期环境的响应
+  let filterRequestId = 0;
   // 筛选模式各字段的缺省值，供初始化与清空复用
   const createEmptyFilterValues = () => ({
     sets: [] as string[],
@@ -240,10 +242,14 @@
   });
 
   const loadPerocessFilterList = async () => {
+    filterRequestId += 1;
+    const requestId = filterRequestId;
     try {
       const res = await getProcessFilter(props.bkBizId, {
         environment: activeEnv.value
       });
+      // 连续切换环境时请求会并发发出，响应可能乱序返回，只接受最后一次请求的结果
+      if (requestId !== filterRequestId) return;
       filterList.value.map((filter: IProcessFilterItem) => {
         filter.list = res[filter.value as keyof typeof res] as Array<{ name: string; id: number }>;
         return filter;
@@ -256,6 +262,8 @@
   const handleChangeEnv = (environment: string) => {
     activeEnv.value = environment;
     filterValues.value = createEmptyFilterValues();
+    // 先清空上一个环境的选项，避免新环境数据返回前仍展示旧数据
+    filterList.value = filterList.value.map((filter) => ({ ...filter, list: [] }));
     triggerSearch();
     loadPerocessFilterList();
   };
