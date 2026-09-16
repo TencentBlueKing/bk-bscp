@@ -253,7 +253,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	result, err := e.WaitProcOperateTaskFinish(kt.Ctx, resp.TaskID,
 		payload.BizID, proc.HostInstSeq, proc.Alias, proc.AgentID)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: wait task finish failed: %w", err)
+		return fmt.Errorf("[Operate STEP]: wait task finish failed, task_id=%s: %w", resp.TaskID, err)
 	}
 
 	// 构建 GSE 返回结果的 key
@@ -272,8 +272,10 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		// 任务终态由任务框架收敛为 IGNORED 并入库，查询侧直接按该状态过滤统计
 		if IsIdempotentOperateError(procResult.ErrorCode) {
 			if err = c.SetCommonPayload(commonPayload); err != nil {
-				logs.Errorf("[Operate STEP]: failed to set common payload: %v", err)
-				return fmt.Errorf("[Operate STEP]: failed to set common payload: %w", err)
+				logs.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %v",
+					resp.TaskID, err)
+				return fmt.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %w",
+					resp.TaskID, err)
 			}
 			// 忽略原因直接采用 GSE 返回的 errorMsg, 由框架透传为任务终态 message 入库,
 			// 错误码等细节仅保留在日志里
@@ -283,19 +285,20 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 			}
 			c.MarkIgnored(ignoreMsg)
 			logs.Infof("[Operate STEP]: duplicate operate marked as ignored, "+
-				"errorCode=%d, errorMsg=%s", procResult.ErrorCode, procResult.ErrorMsg)
+				"task_id=%s, errorCode=%d, errorMsg=%s",
+				resp.TaskID, procResult.ErrorCode, procResult.ErrorMsg)
 			return nil
 		}
 
 		// 其余错误码照旧失败
 		if err = c.SetCommonPayload(commonPayload); err != nil {
-			logs.Errorf("[Operate STEP]: failed to set common payload: %v", err)
+			logs.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %v", resp.TaskID, err)
 		}
-		return fmt.Errorf("[Operate STEP]: process operate failed, errorCode=%d, errorMsg=%s",
-			procResult.ErrorCode, procResult.ErrorMsg)
+		return fmt.Errorf("[Operate STEP]: process operate failed, task_id=%s, errorCode=%d, errorMsg=%s",
+			resp.TaskID, procResult.ErrorCode, procResult.ErrorMsg)
 	}
 
-	logs.Infof("[Operate STEP]: success")
+	logs.Infof("[Operate STEP]: success, task_id=%s", resp.TaskID)
 	return nil
 }
 
