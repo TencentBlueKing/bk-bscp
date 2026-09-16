@@ -11,7 +11,7 @@ replace (
 require (
 	github.com/RichardKnop/machinery/v2 v2.0.16
 	github.com/Tencent/bk-bcs/bcs-common v0.0.0-20250928112818-5b9818cc2e76
-	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20260907061430-5b6be2b562eb
+	github.com/Tencent/bk-bcs/bcs-common/common/task v0.0.0-20260915132709-99ba07d15999
 	github.com/TencentBlueKing/bk-bscp/pkg v0.0.0-20240418123107-72b120390195
 	github.com/TencentBlueKing/iam-go-sdk v1.0.1
 	github.com/alicebob/miniredis/v2 v2.37.0

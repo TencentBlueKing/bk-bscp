@@ -22,6 +22,40 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
+// CompareWithCMDBProcessInfo 对比 DB 配置与 CMDB 最新配置，选定执行配置
+func CompareWithCMDBProcessInfo(
+	tenantID string,
+	bizID uint32,
+	batchID uint32,
+	processID uint32,
+	processInstanceID uint32,
+	operateType table.ProcessOperateType,
+	operateUser string,
+	originalProcManagedStatus table.ProcessManagedStatus,
+	originalProcStatus table.ProcessStatus,
+) *types.Step {
+	logs.V(3).Infof("compare with cmdb process info: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
+		bizID, processID, processInstanceID, operateType)
+	ctf := cc.G().TaskFramework.ProcessOperate.CompareWithCMDBProcessInfo
+	compare := types.NewStep(process.CompareWithCMDBProcessInfoStepName.String(),
+		process.CompareWithCMDBProcessInfoStepName.String()).
+		SetAlias("compare_with_cmdb_process_info").
+		SetMaxExecution(ctf.MaxExecution).
+		SetMaxTries(ctf.MaxRetries)
+	lo.Must0(compare.SetPayload(process.OperatePayload{
+		TenantID:                  tenantID,
+		BizID:                     bizID,
+		BatchID:                   batchID,
+		ProcessID:                 processID,
+		ProcessInstanceID:         processInstanceID,
+		OperateType:               operateType,
+		OperateUser:               operateUser,
+		OriginalProcManagedStatus: originalProcManagedStatus,
+		OriginalProcStatus:        originalProcStatus,
+	}))
+	return compare
+}
+
 // ValidateOperateProcess 校验操作是否合法
 func ValidateOperateProcess(
 	tenantID string,
@@ -58,115 +92,6 @@ func ValidateOperateProcess(
 	return validate
 }
 
-// CompareWithCMDBProcessInfo 对比CMDB进程信息
-func CompareWithCMDBProcessInfo(
-	tenantID string,
-	bizID uint32,
-	batchID uint32,
-	processID uint32,
-	processInstanceID uint32,
-	needCompareCMDB bool,
-	originalProcManagedStatus table.ProcessManagedStatus,
-	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
-) *types.Step {
-	logs.V(3).Infof("compare with cmdb process info: bizID: %d, processID: %d, processInstanceID: %d, needCompareCMDB: %t",
-		bizID, processID, processInstanceID, needCompareCMDB)
-
-	ctf := cc.G().TaskFramework.ProcessOperate.CompareWithCMDBProcessInfo
-	compare := types.NewStep(process.CompareWithCMDBProcessInfoStepName.String(),
-		process.CompareWithCMDBProcessInfoStepName.String()).
-		SetAlias("compare_with_cmdb_process_info").
-		SetMaxExecution(ctf.MaxExecution).
-		SetMaxTries(ctf.MaxRetries)
-
-	lo.Must0(compare.SetPayload(process.OperatePayload{
-		TenantID:                  tenantID,
-		BizID:                     bizID,
-		BatchID:                   batchID,
-		ProcessID:                 processID,
-		ProcessInstanceID:         processInstanceID,
-		NeedCompareCMDB:           needCompareCMDB,
-		OriginalProcManagedStatus: originalProcManagedStatus,
-		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
-	}))
-
-	return compare
-}
-
-// CompareWithGSEProcessStatus 对比GSE进程状态
-func CompareWithGSEProcessStatus(
-	tenantID string,
-	bizID uint32,
-	batchID uint32,
-	processID uint32,
-	processInstanceID uint32,
-	operateType table.ProcessOperateType,
-	originalProcManagedStatus table.ProcessManagedStatus,
-	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
-) *types.Step {
-	logs.V(3).Infof("compare with gse process status: bizID: %d, processID: %d, processInstanceID: %d",
-		bizID, processID, processInstanceID)
-
-	stf := cc.G().TaskFramework.ProcessOperate.CompareWithGSEProcessStatus
-	compare := types.NewStep(process.CompareWithGSEProcessStatusStepName.String(),
-		process.CompareWithGSEProcessStatusStepName.String()).
-		SetAlias("compare_with_gse_process_status").
-		SetMaxExecution(stf.MaxExecution).
-		SetMaxTries(stf.MaxRetries)
-
-	lo.Must0(compare.SetPayload(process.OperatePayload{
-		TenantID:                  tenantID,
-		BizID:                     bizID,
-		BatchID:                   batchID,
-		ProcessID:                 processID,
-		ProcessInstanceID:         processInstanceID,
-		OperateType:               operateType,
-		OriginalProcManagedStatus: originalProcManagedStatus,
-		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
-	}))
-
-	return compare
-}
-
-// CompareWithGSEProcessConfig 对比GSE进程配置
-func CompareWithGSEProcessConfig(
-	tenantID string,
-	bizID uint32,
-	batchID uint32,
-	processID uint32,
-	processInstanceID uint32,
-	originalProcManagedStatus table.ProcessManagedStatus,
-	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
-) *types.Step {
-	logs.V(3).Infof("compare with gse process config: bizID: %d, processID: %d, processInstanceID: %d",
-		bizID, processID, processInstanceID)
-
-	gcf := cc.G().TaskFramework.ProcessOperate.CompareWithGSEProcessConfig
-	compare := types.NewStep(process.CompareWithGSEProcessConfigStepName.String(),
-		process.CompareWithGSEProcessConfigStepName.String()).
-		SetAlias("compare_with_gse_process_config").
-		SetMaxExecution(gcf.MaxExecution).
-		SetMaxTries(gcf.MaxRetries)
-
-	lo.Must0(compare.SetPayload(process.OperatePayload{
-		TenantID:                  tenantID,
-		BizID:                     bizID,
-		BatchID:                   batchID,
-		ProcessID:                 processID,
-		ProcessInstanceID:         processInstanceID,
-		OriginalProcManagedStatus: originalProcManagedStatus,
-		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
-	}))
-
-	return compare
-}
-
 // OperateProcess 进程操作
 func OperateProcess(
 	tenantID string,
@@ -177,7 +102,6 @@ func OperateProcess(
 	operateType table.ProcessOperateType,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("operate process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
@@ -197,7 +121,6 @@ func OperateProcess(
 		OperateType:               operateType,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 	return operate
 }
@@ -212,7 +135,6 @@ func FinalizeOperateProcess(
 	operateType table.ProcessOperateType,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
-	ccSyncStatus table.CCSyncStatus,
 ) *types.Step {
 	logs.V(3).Infof("finalize process: bizID: %d, processID: %d, processInstanceID: %d, opType: %s",
 		bizID, processID, processInstanceID, operateType)
@@ -232,7 +154,6 @@ func FinalizeOperateProcess(
 		OperateType:               operateType,
 		OriginalProcManagedStatus: originalProcManagedStatus,
 		OriginalProcStatus:        originalProcStatus,
-		CCSyncStatus:              ccSyncStatus,
 	}))
 	return finalize
 }

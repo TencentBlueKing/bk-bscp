@@ -93,7 +93,10 @@ func (g *GroupCallback) OnGroupComplete(c *istep.GroupContext) error {
 	group := c.GetGroup()
 	// 被跳过的任务同样属于未成功，与失败一并计入
 	failed := uint32(group.FailureCount + group.SkippedCount)
-	success := uint32(group.SuccessCount)
+	// 幂等忽略（IGNORED）在任务组中独立计数、不计入 SuccessCount，
+	// FinishBatch 会以这里的计数覆盖 task_batches，须把 IgnoredCount 视同成功并入，
+	// 否则 completed_count = success + failed 会少于 total_count 且 success_count 少计 IGNORED 任务
+	success := uint32(group.SuccessCount + group.IgnoredCount)
 
 	if err := g.Dao.TaskBatch().FinishBatch(kt, payload.BatchID, success, failed); err != nil {
 		logs.Errorf("[ProcessOperateGroupCallback]: finish task batch %d failed: %v", payload.BatchID, err)

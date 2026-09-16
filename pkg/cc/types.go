@@ -2043,19 +2043,15 @@ func (s *ConfigCheckSteps) trySetDefault() {
 
 // ProcessOperateSteps 进程操作步骤
 type ProcessOperateSteps struct {
-	ValidateOperateProcess      StepTiming `yaml:"validateOperateProcess"`
-	CompareWithCMDBProcessInfo  StepTiming `yaml:"compareWithCMDBProcessInfo"`
-	CompareWithGSEProcessStatus StepTiming `yaml:"compareWithGSEProcessStatus"`
-	CompareWithGSEProcessConfig StepTiming `yaml:"compareWithGSEProcessConfig"`
-	OperateProcess              StepTiming `yaml:"operateProcess"`
-	FinalizeOperateProcess      StepTiming `yaml:"finalizeOperateProcess"`
+	CompareWithCMDBProcessInfo StepTiming `yaml:"compareWithCMDBProcessInfo"`
+	ValidateOperateProcess     StepTiming `yaml:"validateOperateProcess"`
+	OperateProcess             StepTiming `yaml:"operateProcess"`
+	FinalizeOperateProcess     StepTiming `yaml:"finalizeOperateProcess"`
 }
 
 func (s *ProcessOperateSteps) trySetDefault() {
+	trySetStepDefault(&s.CompareWithCMDBProcessInfo, 3*time.Minute, 0)
 	trySetStepDefault(&s.ValidateOperateProcess, 3*time.Minute, 0)
-	trySetStepDefault(&s.CompareWithCMDBProcessInfo, 3*time.Minute, 3)
-	trySetStepDefault(&s.CompareWithGSEProcessStatus, 3*time.Minute, 3)
-	trySetStepDefault(&s.CompareWithGSEProcessConfig, 3*time.Minute, 3)
 	trySetStepDefault(&s.OperateProcess, 3*time.Minute, 0)
 	trySetStepDefault(&s.FinalizeOperateProcess, 3*time.Minute, 3)
 }
