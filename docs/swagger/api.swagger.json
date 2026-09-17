@@ -24701,6 +24701,104 @@
         ]
       }
     },
+    "/api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/revisions": {
+      "post": {
+        "summary": "配置模板版本列表",
+        "operationId": "Config_ListConfigTemplateRevisions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigTemplateRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configTemplateId",
+            "description": "配置模板ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigTemplateRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz_id/{bizId}/config_template/{configTemplateId}/revisions": {
+      "post": {
+        "summary": "配置模板版本列表",
+        "operationId": "Config_ListConfigTemplateRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListConfigTemplateRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "configTemplateId",
+            "description": "配置模板ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListConfigTemplateRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/config_template": {
       "post": {
         "summary": "创建配置模板",
@@ -27821,6 +27919,30 @@
         },
         "search": {
           "$ref": "#/definitions/pbctTemplateSearchCond"
+        }
+      }
+    },
+    "ConfigListConfigTemplateRevisionsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "object",
+          "description": "搜索"
+        },
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "当前页码"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页条数"
+        },
+        "all": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否获取所有"
         }
       }
     },
@@ -33379,6 +33501,23 @@
         },
         "name": {
           "type": "string"
+        }
+      }
+    },
+    "pbcsListConfigTemplateRevisionsResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtrTemplateRevision"
+          }
         }
       }
     },

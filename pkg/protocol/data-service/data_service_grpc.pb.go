@@ -238,6 +238,7 @@ const (
 	Data_ServiceInstance_FullMethodName                   = "/pbds.Data/ServiceInstance"
 	Data_ProcessInstance_FullMethodName                   = "/pbds.Data/ProcessInstance"
 	Data_ListConfigTemplate_FullMethodName                = "/pbds.Data/ListConfigTemplate"
+	Data_ListConfigTemplateRevisions_FullMethodName       = "/pbds.Data/ListConfigTemplateRevisions"
 	Data_CreateConfigTemplate_FullMethodName              = "/pbds.Data/CreateConfigTemplate"
 	Data_UpdateConfigTemplate_FullMethodName              = "/pbds.Data/UpdateConfigTemplate"
 	Data_GetConfigTemplate_FullMethodName                 = "/pbds.Data/GetConfigTemplate"
@@ -527,6 +528,8 @@ type DataClient interface {
 	ServiceInstance(ctx context.Context, in *ServiceInstanceReq, opts ...grpc.CallOption) (*ServiceInstanceResp, error)
 	ProcessInstance(ctx context.Context, in *ProcessInstanceReq, opts ...grpc.CallOption) (*ProcessInstanceResp, error)
 	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
+	// 配置模板版本列表
+	ListConfigTemplateRevisions(ctx context.Context, in *ListConfigTemplateRevisionsReq, opts ...grpc.CallOption) (*ListConfigTemplateRevisionsResp, error)
 	CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error)
 	UpdateConfigTemplate(ctx context.Context, in *UpdateConfigTemplateReq, opts ...grpc.CallOption) (*UpdateConfigTemplateResp, error)
 	GetConfigTemplate(ctx context.Context, in *GetConfigTemplateReq, opts ...grpc.CallOption) (*GetConfigTemplateResp, error)
@@ -2451,6 +2454,15 @@ func (c *dataClient) ListConfigTemplate(ctx context.Context, in *ListConfigTempl
 	return out, nil
 }
 
+func (c *dataClient) ListConfigTemplateRevisions(ctx context.Context, in *ListConfigTemplateRevisionsReq, opts ...grpc.CallOption) (*ListConfigTemplateRevisionsResp, error) {
+	out := new(ListConfigTemplateRevisionsResp)
+	err := c.cc.Invoke(ctx, Data_ListConfigTemplateRevisions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error) {
 	out := new(CreateConfigTemplateResp)
 	err := c.cc.Invoke(ctx, Data_CreateConfigTemplate_FullMethodName, in, out, opts...)
@@ -3010,6 +3022,8 @@ type DataServer interface {
 	ServiceInstance(context.Context, *ServiceInstanceReq) (*ServiceInstanceResp, error)
 	ProcessInstance(context.Context, *ProcessInstanceReq) (*ProcessInstanceResp, error)
 	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
+	// 配置模板版本列表
+	ListConfigTemplateRevisions(context.Context, *ListConfigTemplateRevisionsReq) (*ListConfigTemplateRevisionsResp, error)
 	CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error)
 	UpdateConfigTemplate(context.Context, *UpdateConfigTemplateReq) (*UpdateConfigTemplateResp, error)
 	GetConfigTemplate(context.Context, *GetConfigTemplateReq) (*GetConfigTemplateResp, error)
@@ -3693,6 +3707,9 @@ func (UnimplementedDataServer) ProcessInstance(context.Context, *ProcessInstance
 }
 func (UnimplementedDataServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
+}
+func (UnimplementedDataServer) ListConfigTemplateRevisions(context.Context, *ListConfigTemplateRevisionsReq) (*ListConfigTemplateRevisionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplateRevisions not implemented")
 }
 func (UnimplementedDataServer) CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigTemplate not implemented")
@@ -7516,6 +7533,24 @@ func _Data_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_ListConfigTemplateRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigTemplateRevisionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).ListConfigTemplateRevisions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_ListConfigTemplateRevisions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).ListConfigTemplateRevisions(ctx, req.(*ListConfigTemplateRevisionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_CreateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateConfigTemplateReq)
 	if err := dec(in); err != nil {
@@ -8958,6 +8993,10 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConfigTemplate",
 			Handler:    _Data_ListConfigTemplate_Handler,
+		},
+		{
+			MethodName: "ListConfigTemplateRevisions",
+			Handler:    _Data_ListConfigTemplateRevisions_Handler,
 		},
 		{
 			MethodName: "CreateConfigTemplate",

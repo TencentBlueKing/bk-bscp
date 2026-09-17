@@ -2333,6 +2333,18 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/config_template/list" body: "*" }
     };
   }
+  // 配置模板版本列表
+  rpc ListConfigTemplateRevisions(ListConfigTemplateRevisionsReq) returns (ListConfigTemplateRevisionsResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/config_template/{config_template_id}/revisions"
+      body: "*"
+      additional_bindings {
+        post: "/api/v1/inner/config/biz_id/{biz_id}/config_template/{config_template_id}/revisions"
+        body: "*"
+      }
+    };
+  }
   // 创建配置模板
   rpc CreateConfigTemplate(CreateConfigTemplateReq) returns (CreateConfigTemplateResp) {
     option (google.api.http) = {
@@ -6075,6 +6087,23 @@ message ListConfigTemplateResp {
   }
   Item template_space = 3;
   Item template_set = 4;
+}
+
+message ListConfigTemplateRevisionsReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 config_template_id = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "配置模板ID" }];
+  google.protobuf.Struct search = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "搜索" }];
+  uint32 start = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "当前页码" }];
+  uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
+  bool all = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+}
+
+message ListConfigTemplateRevisionsResp {
+  uint32 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "总数" }];
+  repeated pbtr.TemplateRevision details = 2;
 }
 
 message ConfigGenerateStatusReq {

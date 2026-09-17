@@ -58,6 +58,37 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbcs.ListConfigTe
 	}, nil
 }
 
+// ListConfigTemplateRevisions implements pbcs.ConfigServer.
+func (s *Service) ListConfigTemplateRevisions(ctx context.Context, req *pbcs.ListConfigTemplateRevisionsReq) (
+	*pbcs.ListConfigTemplateRevisionsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.View}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.ListConfigTemplateRevisions(grpcKit.RpcCtx(), &pbds.ListConfigTemplateRevisionsReq{
+		BizId:            req.GetBizId(),
+		ConfigTemplateId: req.GetConfigTemplateId(),
+		Search:           req.GetSearch(),
+		Start:            req.GetStart(),
+		Limit:            req.GetLimit(),
+		All:              req.GetAll(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.ListConfigTemplateRevisionsResp{
+		Count:   resp.GetCount(),
+		Details: resp.GetDetails(),
+	}, nil
+}
+
 // BizTopo implements pbcs.ConfigServer.
 func (s *Service) BizTopo(ctx context.Context, req *pbcs.BizTopoReq) (*pbcs.BizTopoResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)

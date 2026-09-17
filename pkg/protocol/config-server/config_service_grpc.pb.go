@@ -235,6 +235,7 @@ const (
 	Config_PushConfig_FullMethodName                         = "/pbcs.Config/PushConfig"
 	Config_GetConfigRenderResult_FullMethodName              = "/pbcs.Config/GetConfigRenderResult"
 	Config_ListConfigTemplate_FullMethodName                 = "/pbcs.Config/ListConfigTemplate"
+	Config_ListConfigTemplateRevisions_FullMethodName        = "/pbcs.Config/ListConfigTemplateRevisions"
 	Config_CreateConfigTemplate_FullMethodName               = "/pbcs.Config/CreateConfigTemplate"
 	Config_UpdateConfigTemplate_FullMethodName               = "/pbcs.Config/UpdateConfigTemplate"
 	Config_GetConfigTemplate_FullMethodName                  = "/pbcs.Config/GetConfigTemplate"
@@ -675,6 +676,8 @@ type ConfigClient interface {
 	GetConfigRenderResult(ctx context.Context, in *GetConfigRenderResultReq, opts ...grpc.CallOption) (*GetConfigRenderResultResp, error)
 	// 配置模板列表
 	ListConfigTemplate(ctx context.Context, in *ListConfigTemplateReq, opts ...grpc.CallOption) (*ListConfigTemplateResp, error)
+	// 配置模板版本列表
+	ListConfigTemplateRevisions(ctx context.Context, in *ListConfigTemplateRevisionsReq, opts ...grpc.CallOption) (*ListConfigTemplateRevisionsResp, error)
 	// 创建配置模板
 	CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error)
 	// 编辑配置模板
@@ -2607,6 +2610,15 @@ func (c *configClient) ListConfigTemplate(ctx context.Context, in *ListConfigTem
 	return out, nil
 }
 
+func (c *configClient) ListConfigTemplateRevisions(ctx context.Context, in *ListConfigTemplateRevisionsReq, opts ...grpc.CallOption) (*ListConfigTemplateRevisionsResp, error) {
+	out := new(ListConfigTemplateRevisionsResp)
+	err := c.cc.Invoke(ctx, Config_ListConfigTemplateRevisions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) CreateConfigTemplate(ctx context.Context, in *CreateConfigTemplateReq, opts ...grpc.CallOption) (*CreateConfigTemplateResp, error) {
 	out := new(CreateConfigTemplateResp)
 	err := c.cc.Invoke(ctx, Config_CreateConfigTemplate_FullMethodName, in, out, opts...)
@@ -3245,6 +3257,8 @@ type ConfigServer interface {
 	GetConfigRenderResult(context.Context, *GetConfigRenderResultReq) (*GetConfigRenderResultResp, error)
 	// 配置模板列表
 	ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error)
+	// 配置模板版本列表
+	ListConfigTemplateRevisions(context.Context, *ListConfigTemplateRevisionsReq) (*ListConfigTemplateRevisionsResp, error)
 	// 创建配置模板
 	CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error)
 	// 编辑配置模板
@@ -3924,6 +3938,9 @@ func (UnimplementedConfigServer) GetConfigRenderResult(context.Context, *GetConf
 }
 func (UnimplementedConfigServer) ListConfigTemplate(context.Context, *ListConfigTemplateReq) (*ListConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplate not implemented")
+}
+func (UnimplementedConfigServer) ListConfigTemplateRevisions(context.Context, *ListConfigTemplateRevisionsReq) (*ListConfigTemplateRevisionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigTemplateRevisions not implemented")
 }
 func (UnimplementedConfigServer) CreateConfigTemplate(context.Context, *CreateConfigTemplateReq) (*CreateConfigTemplateResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateConfigTemplate not implemented")
@@ -7756,6 +7773,24 @@ func _Config_ListConfigTemplate_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_ListConfigTemplateRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigTemplateRevisionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).ListConfigTemplateRevisions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_ListConfigTemplateRevisions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).ListConfigTemplateRevisions(ctx, req.(*ListConfigTemplateRevisionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_CreateConfigTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateConfigTemplateReq)
 	if err := dec(in); err != nil {
@@ -9044,6 +9079,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConfigTemplate",
 			Handler:    _Config_ListConfigTemplate_Handler,
+		},
+		{
+			MethodName: "ListConfigTemplateRevisions",
+			Handler:    _Config_ListConfigTemplateRevisions_Handler,
 		},
 		{
 			MethodName: "CreateConfigTemplate",

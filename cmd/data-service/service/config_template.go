@@ -132,6 +132,37 @@ func (s *Service) ListConfigTemplate(ctx context.Context, req *pbds.ListConfigTe
 	return resp, nil
 }
 
+// ListConfigTemplateRevisions implements pbds.DataServer.
+// 根据配置模板 ID 获取其版本列表，该接口不依赖模板空间信息
+func (s *Service) ListConfigTemplateRevisions(ctx context.Context,
+	req *pbds.ListConfigTemplateRevisionsReq) (*pbds.ListConfigTemplateRevisionsResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	// 配置模板关联模板文件，转换为已有的模板版本查询
+	configTemplate, err := s.dao.ConfigTemplate().GetByID(grpcKit, req.GetBizId(), req.GetConfigTemplateId())
+	if err != nil {
+		return nil, errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(grpcKit, "get config template by ID failed, err: %v", err))
+	}
+
+	r, err := s.ListTemplateRevisions(ctx, &pbds.ListTemplateRevisionsReq{
+		BizId:      req.GetBizId(),
+		TemplateId: configTemplate.Attachment.TemplateID,
+		Search:     req.GetSearch(),
+		Start:      req.GetStart(),
+		Limit:      req.GetLimit(),
+		All:        req.GetAll(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbds.ListConfigTemplateRevisionsResp{
+		Count:   r.GetCount(),
+		Details: r.GetDetails(),
+	}, nil
+}
+
 // BizTopo implements pbds.DataServer.
 func (s *Service) BizTopo(ctx context.Context, req *pbds.BizTopoReq) (*pbds.BizTopoResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
