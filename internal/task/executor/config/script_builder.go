@@ -300,6 +300,14 @@ func windowsTranslateOwnerCmd() string {
 // Web.config，只是目录不同）会撞进同一个命名空间；
 // 二是 %TEMP% 与目标常常不在同一个卷上，move 会退化成「拷贝 + 删除」，
 // 业务进程有机会读到只写了一半的配置，放同目录后才能走同卷内的原子 rename。
+// 中转文件、解码产物与备份文件名的唯一后缀由服务端生成（见 newTempToken），
+// 不依赖 cmd 的 %RANDOM%。
+//
+// 同一台主机的多个任务并发下发同一目标文件时，脚本以目标同目录下的
+// <目标名>.bscp.lock 目录锁串行执行：Windows 的 move 替换已存在的目标要求以 DELETE
+// 访问打开它，而备份 copy、icacls、certutil -hashfile 打开目标文件时都不带
+// FILE_SHARE_DELETE，任何一方在窗口期持有句柄，另一方的 move 就会拿到
+// Access is denied（MOVE_FAILED）。
 // nolint:funlen
 func (b *ScriptBuilder) buildWindowsPushScript(base64Content, absPath, owner string, maxBackups int) (string, error) {
 	if !windowsAbsPathRe.MatchString(absPath) {
@@ -324,7 +332,7 @@ if !ERRORLEVEL! neq 0 (
     exit /b 1
 )
 
-REM   属组固定用内置管理员组，不再动态查询用户所属组：
+REM    属组固定用内置管理员组，不再动态查询用户所属组：
 REM    部分账号（域账号、服务账号等）通过 WMI 查不到关联组，查询本身还容易受
 REM    WMI 服务状态影响。按 SID 而非组名授权：组名随区域设置本地化且可被重命名，
 REM    SID（icacls 的 * 前缀）在任何机器上都稳定存在。
@@ -338,10 +346,6 @@ for %%%%i in ("%%TARGET_PATH%%") do (
 
 REM 2. 创建目标目录。临时文件也落在这里，建不出来就必须立刻失败，
 REM    否则错误会一路滑到后面的 move，报成含义完全不同的「找不到文件」。
-REM
-REM    建之前先逐级上溯，记下哪些层级是本次才会被创建的：mkdir 是递归的，
-REM    建完就再也分不清哪几层是新建的、哪几层本来就有。已存在的目录一律不碰，
-REM    它们可能是与本次下发无关的共享目录，改属主会波及其它业务。
 set "DIR_CUR=!TARGET_DIR!"
 if "!DIR_CUR:~-1!"=="\" set "DIR_CUR=!DIR_CUR:~0,-1!"
 set /a NEW_DIR_COUNT=0
@@ -363,11 +367,7 @@ if not exist "!TARGET_DIR!" (
     exit /b 1
 )
 
-REM    把本次新建的层级归属到配置属主。Windows 下属主本身不带访问权（只隐含改权限的能力），
-REM    所以还要显式授权，否则该账号进不了自己的配置目录。
-REM    一律不带 (OI)(CI) 继承标记：权限只作用于目录本身，不影响目录内后续创建的文件。
-REM    任一 icacls 失败都必须终止并拆掉本次新建的空目录：目录已经在了，下次
-REM    NEW_DIR_COUNT=0，不会再修 ACL，任务却会一直报成功。
+REM 把本次新建的层级归属到配置属主。
 for /l %%%%n in (1,1,!NEW_DIR_COUNT!) do (
     set "NEW_DIR=!NEW_DIR_%%%%n!"
     icacls "!NEW_DIR!" /setowner "!BSCP_OWNER!" >nul
@@ -390,26 +390,53 @@ for /l %%%%n in (1,1,!NEW_DIR_COUNT!) do (
     )
 )
 
+REM ----------------- 临界区互斥锁（解决同一机器并发写入/覆盖冲突） -----------------
+REM 锁按目标文件名区分并落在目标同目录，不同文件的并发下发互不阻塞；
+REM 用 md 的原子性抢锁，抢不到就自旋等待。
+set "LOCK_DIR=!TARGET_DIR!!TARGET_NAME!.bscp.lock"
+set /a LOCK_WAIT_SEC=0
+set /a MAX_LOCK_WAIT=60
+
+:lock_acquire
+md "!LOCK_DIR!" >nul 2>&1
+if !ERRORLEVEL! equ 0 goto lock_acquired
+set /a LOCK_WAIT_SEC+=1
+if !LOCK_WAIT_SEC! gtr !MAX_LOCK_WAIT! (
+    echo [ERROR] 等待文件锁超时: !LOCK_DIR!
+    echo LOCK_TIMEOUT
+    exit /b 1
+)
+REM 用 ping 自己实现约 1 秒的睡眠（-n 2 即两次探测的默认间隔），
+REM 让出 CPU 后再重试。不能用 timeout：它在 stdin 被重定向的 GSE 环境
+REM 下会直接报 Input redirection is not supported。
+ping 127.0.0.1 -n 2 >nul
+goto lock_acquire
+
+:lock_acquired
+
+REM ----------------- 临界区开始 -----------------
+
+REM 3. 备份原文件
 if exist "!TARGET_PATH!" (
     echo [INFO] 发现原文件，准备备份...
 
-    REM 获取时间戳
+    REM 获取毫秒级时间戳，防止同秒并发覆盖
     for /f "delims=" %%%%i in (
-        'powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmss"'
+        'powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmssfff"'
     ) do set "STAMP=%%%%i"
 
     echo [INFO] 时间戳: !STAMP!
 
-    set "BACKUP_FILE=!TARGET_NAME!.!STAMP!.bak"
+    set "BACKUP_FILE=!TARGET_NAME!.!STAMP!.bscp.%s.bak"
     set "BACKUP_FULL_PATH=!TARGET_DIR!!BACKUP_FILE!"
 
     copy /y "!TARGET_PATH!" "!BACKUP_FULL_PATH!" >nul || (
         echo [ERROR] 备份失败
-        exit /b 1
+        goto :fail
     )
     echo [OK] 备份已生成: !BACKUP_FILE!
 
-    REM 3. 统计备份数量
+    REM 统计备份数量
     set /a COUNT=0
     for /f "delims=" %%%%f in (
         'dir /b /o:d "!TARGET_DIR!!TARGET_NAME!.*.bak" 2^>nul'
@@ -417,7 +444,7 @@ if exist "!TARGET_PATH!" (
 
     echo [INFO] 当前备份数: !COUNT! / 最大保留: %%MAX_BACKUPS%%
 
-    REM 4. 删除最旧备份（无临时文件版本）
+    REM 删除最旧备份
     if !COUNT! gtr %%MAX_BACKUPS%% (
         set /a DEL_COUNT=!COUNT!-%%MAX_BACKUPS%%
         echo [INFO] 需删除最旧备份数: !DEL_COUNT!
@@ -437,9 +464,7 @@ if exist "!TARGET_PATH!" (
     echo [INFO] 目标文件不存在，跳过备份。
 )
 
-REM 5. 写入配置文件（base64 解码）。临时文件与目标同目录，保证后续 move 在同卷内原子完成；
-REM    文件名后缀由服务端生成，全局唯一，避免同主机并发任务互相覆盖。
-REM    base64 由服务端切成多行追加写入，单行绝不能超过 cmd 的行长上限，详见 windowsB64ChunkSize。
+REM 4. 写入临时文件并解码
 set "BSCP_TMP=!TARGET_DIR!!TARGET_NAME!.bscp.%s.b64"
 set "BSCP_OUT=!TARGET_DIR!!TARGET_NAME!.bscp.%s.out"
 del /f /q "!BSCP_TMP!" >nul 2>&1
@@ -447,53 +472,75 @@ del /f /q "!BSCP_OUT!" >nul 2>&1
 %s
 if not exist "!BSCP_TMP!" (
     echo WRITE_TMP_FAILED
-    exit /b 1
+    goto :fail
 )
-REM certutil 默认拒绝覆盖已存在的输出文件，会报 0x80070050 ERROR_FILE_EXISTS，必须带 -f
-certutil -f -decode "!BSCP_TMP!" "!BSCP_OUT!"
+
+certutil -f -decode "!BSCP_TMP!" "!BSCP_OUT!" >nul
 if !ERRORLEVEL! neq 0 (
     echo DECODE_FAILED
     del /f /q "!BSCP_TMP!" >nul 2>&1
     del /f /q "!BSCP_OUT!" >nul 2>&1
-    exit /b 1
+    goto :fail
 )
 del /f /q "!BSCP_TMP!" >nul 2>&1
-move /y "!BSCP_OUT!" "%%TARGET_PATH%%" >nul || (
-    echo MOVE_FAILED
-    del /f /q "!BSCP_OUT!" >nul 2>&1
-    exit /b 1
-)
 
-REM 6. 设置文件属主与权限。失败必须终止：目录已在时写文件已经发生，
-REM    若只打 WARN，坏属主仍会让任务报成功。
+REM 5. 覆盖到目标文件（重试机制抵抗业务偶发轻微句柄占用）
+set /a MOVE_RETRY=0
+:try_move
+move /y "!BSCP_OUT!" "%%TARGET_PATH%%" >nul 2>&1
+if !ERRORLEVEL! equ 0 goto move_success
+set /a MOVE_RETRY+=1
+if !MOVE_RETRY! leq 10 (
+    REM 同样用 ping 睡约 1 秒再重试，给业务进程时间释放文件句柄
+    ping 127.0.0.1 -n 2 >nul
+    goto try_move
+)
+echo MOVE_FAILED
+del /f /q "!BSCP_OUT!" >nul 2>&1
+goto :fail
+
+:move_success
+
+REM 6. 设置文件属主与权限
 icacls "%%TARGET_PATH%%" /setowner "!BSCP_OWNER!" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls /setowner failed, errorlevel=!ERRORLEVEL!
-    exit /b 1
+    goto :fail
 )
 icacls "%%TARGET_PATH%%" /grant:r "!BSCP_OWNER!:(F)" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls grant owner full control failed, errorlevel=!ERRORLEVEL!
-    exit /b 1
+    goto :fail
 )
 icacls "%%TARGET_PATH%%" /grant:r "!TARGET_GROUP!:(R)" >nul
 if !ERRORLEVEL! neq 0 (
     echo ACL_FAILED
     echo [ERROR] icacls grant group read failed, errorlevel=!ERRORLEVEL!
-    exit /b 1
+    goto :fail
 )
 
 REM 7. 校验
 dir "%%TARGET_PATH%%"
 certutil -hashfile "%%TARGET_PATH%%" MD5
 
+REM 释放锁并正常结束
+call :release_lock
 endlocal
 goto :eof
 
-REM 从最深到最浅拆掉本次新建的空目录（NEW_DIR_1 是最深的那层），下次下发才能重新收集并授权。
-REM rmdir 不带 /s：目录里若已有无关内容就留着，避免误删。
+REM ----------------- 异常处理标签 -----------------
+REM 持锁后的失败路径统一走 :fail：先释放锁，再以非零码退出
+:fail
+call :release_lock
+endlocal
+exit /b 1
+
+:release_lock
+rmdir "!LOCK_DIR!" >nul 2>&1
+goto :eof
+
 :cleanup_new_dirs
 for /l %%%%n in (1,1,!NEW_DIR_COUNT!) do (
     set "NEW_DIR=!NEW_DIR_%%%%n!"
@@ -507,6 +554,7 @@ exit /b 1
 		owner,
 		windowsTranslateOwnerCmd(),
 		windowsAdminGroup,
+		token, // 用于备份文件名后缀防重叠
 		token, token,
 		buildWindowsB64WriteLines(base64Content),
 	), nil

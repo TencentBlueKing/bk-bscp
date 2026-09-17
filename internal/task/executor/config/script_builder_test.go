@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -718,6 +719,122 @@ func TestBuildWindowsPushScriptHandlesEmptyContent(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, script, `>>"!BSCP_TMP!" echo.`)
+}
+
+// TestBuildWindowsPushScriptSerializesSameTarget 并发下发同一目标文件时，Windows 的
+// move 替换已存在的目标必须以 DELETE 访问打开它，而备份 copy、icacls、certutil
+// -hashfile 打开目标文件时都不带 FILE_SHARE_DELETE：任何一方在窗口期持有句柄，
+// 另一方的 move 就会拿到 Access is denied（MOVE_FAILED）。脚本必须用目录锁把
+// 针对同一目标文件的并发任务串行化，且持锁后的失败路径必须先释放锁再退出。
+func TestBuildWindowsPushScriptSerializesSameTarget(t *testing.T) {
+	builder := &ScriptBuilder{FileMode: table.Windows, MaxBackups: 5}
+	script, err := builder.BuildConfigPushScript(
+		"Y29udGVudA==", `D:\app\conf\bkcc_info.json`, "", "appuser", "appgroup")
+	require.NoError(t, err)
+
+	// 锁目录按目标文件名区分，落在目标同目录：不同文件的并发下发互不阻塞
+	assert.Contains(t, script, `set "LOCK_DIR=!TARGET_DIR!!TARGET_NAME!.bscp.lock"`)
+	// 用 mkdir 的原子性抢锁，抢不到就自旋等待
+	assert.Contains(t, script, `:lock_acquire`)
+	assert.Contains(t, script, `md "!LOCK_DIR!" >nul 2>&1`)
+	assert.Contains(t, script, "goto lock_acquire")
+
+	orderOf := func(needle string) int {
+		idx := strings.Index(script, needle)
+		require.NotEqual(t, -1, idx, "script should contain %q", needle)
+		return idx
+	}
+
+	// 拿到锁之前不得触碰目标文件（备份起所有操作都在锁内）
+	assert.Less(t, orderOf(":lock_acquired"), orderOf("BACKUP_FULL_PATH="))
+	// 成功路径在结束前释放锁
+	assert.Less(t, orderOf("certutil -hashfile"), orderOf("call :release_lock"))
+	// 持锁后的失败路径统一走 :fail，先释放锁再 exit
+	assert.Contains(t, script, "\n:fail")
+	failAt := orderOf("\n:fail")
+	moveFailAt := orderOf("MOVE_FAILED")
+	assert.Less(t, moveFailAt, failAt, "move 失败必须先释放锁")
+	assert.Contains(t, script[moveFailAt:failAt], "goto :fail",
+		"MOVE_FAILED 路径必须跳转到 :fail 统一释放锁")
+	releaseSubAt := orderOf("\n:release_lock")
+	assert.Less(t, failAt, releaseSubAt, ":fail 必须在释放锁的子过程之前定义")
+	failBlock := script[failAt:releaseSubAt]
+	assert.Contains(t, failBlock, "call :release_lock")
+	assert.Contains(t, failBlock, "exit /b 1")
+}
+
+// TestBuildWindowsPushScriptUniqueBackupNames 备份文件名若只靠时间戳区分：时间戳来自
+// 一次 powershell 调用（失败时 STAMP 为空）且粒度有限，同主机连续/并发下发的备份可能
+// 取到同一个名字，copy /y 互相覆盖，多份备份折叠成一份，备份能力在并发下直接失效。
+// 备份名必须带上每次下发生成的唯一 token。
+func TestBuildWindowsPushScriptUniqueBackupNames(t *testing.T) {
+	builder := &ScriptBuilder{FileMode: table.Windows, MaxBackups: 5}
+	build := func() string {
+		script, err := builder.BuildConfigPushScript(
+			"Y29udGVudA==", `D:\app\conf\bkcc_info.json`, "", "appuser", "appgroup")
+		require.NoError(t, err)
+		return script
+	}
+
+	re := regexp.MustCompile(`set "BACKUP_FILE=!TARGET_NAME!\.!STAMP!\.bscp\.([0-9a-f]+)\.bak"`)
+	first := re.FindStringSubmatch(build())
+	second := re.FindStringSubmatch(build())
+	require.Len(t, first, 2, "备份名必须含服务端生成的唯一 token")
+	require.Len(t, second, 2)
+	assert.NotEqual(t, first[1], second[1], "同一秒并发下发的备份名不能相同")
+
+	// 旧备份清理的 glob 必须仍能匹配带 token 的新备份名
+	assert.Contains(t, build(), `dir /b /o:d "!TARGET_DIR!!TARGET_NAME!.*.bak"`)
+}
+
+// TestBuildWindowsPushScriptConcurrentBuildsSameHost 同一台主机并发下发时，
+// 互斥的粒度是目标文件：LOCK_DIR 只由目标路径决定，绝不能掺入 token，否则同一目标的
+// 并发任务拿不到同一把锁；而临时文件与备份名的 token 必须每次构建都不同，否则并发的
+// 中转文件会互相覆盖。并发构建下两点必须同时成立。
+func TestBuildWindowsPushScriptConcurrentBuildsSameHost(t *testing.T) {
+	builder := &ScriptBuilder{FileMode: table.Windows, MaxBackups: 5}
+	target := `D:\app\conf\bkcc_info.json`
+
+	const concurrency = 8
+	type buildResult struct {
+		script string
+		err    error
+	}
+	results := make(chan buildResult, concurrency)
+	var wg sync.WaitGroup
+	for range concurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			script, err := builder.BuildConfigPushScript(
+				"Y29udGVudA==", target, "", "appuser", "appgroup")
+			results <- buildResult{script, err}
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	lockRe := regexp.MustCompile(`(?m)^set "LOCK_DIR=!TARGET_DIR!!TARGET_NAME!\.bscp\.lock"$`)
+	tokenRe := regexp.MustCompile(`\.bscp\.([0-9a-f]{16})\.(?:bak|b64|out)`)
+
+	tokens := make(map[string]bool)
+	for r := range results {
+		require.NoError(t, r.err)
+
+		lockLines := lockRe.FindAllStringSubmatch(r.script, -1)
+		require.Len(t, lockLines, 1, "每个脚本必须恰好声明一把锁")
+
+		scriptTokens := make(map[string]bool)
+		for _, m := range tokenRe.FindAllStringSubmatch(r.script, -1) {
+			scriptTokens[m[1]] = true
+			assert.NotContains(t, lockLines[0][0], m[1],
+				"锁名不能掺入 token，否则同一目标的并发任务竞争不到同一把锁")
+			tokens[m[1]] = true
+		}
+		require.Len(t, scriptTokens, 1, "备份、中转文件、解码产物应共用同一次生成的 token")
+	}
+
+	assert.Len(t, tokens, concurrency, "并发构建的每次下发 token 都必须不同，中转文件才不会互相覆盖")
 }
 
 var windowsB64WriteRe = regexp.MustCompile(`(?m)^>>"!BSCP_TMP!" echo ([A-Za-z0-9+/=]+)$`)
