@@ -587,3 +587,71 @@ func TestCCTopoXMLService_GetBizObjectAttributesCoalescesConcurrentCacheMiss(t *
 		}
 	}
 }
+
+func TestRefreshBizRenderCacheInvalidatesAndRebuilds(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	cache := NewMemoryCMDBRenderCache()
+	cache.SetTopoXML(context.Background(), tenantID, bizID, "3", "stale-topo")
+	cache.SetBizObjectAttributes(context.Background(), tenantID, bizID, map[string][]ObjectAttribute{
+		BK_SET_OBJ_ID: {{BkPropertyID: "stale"}},
+	})
+
+	mockSvc := newCountingObjectAttrCMDB()
+	if err := RefreshBizRenderCache(context.Background(), tenantID, bizID, "", mockSvc, cache); err != nil {
+		t.Fatalf("RefreshBizRenderCache failed: %v", err)
+	}
+
+	// 旧 topo 缓存已被清除
+	if _, ok := cache.GetTopoXML(context.Background(), tenantID, bizID, "3"); ok {
+		t.Fatal("stale topo xml cache should be invalidated")
+	}
+
+	// 对象属性缓存已按最新 CMDB 数据重建并回填
+	attrs, ok := cache.GetBizObjectAttributes(context.Background(), tenantID, bizID)
+	if !ok {
+		t.Fatal("biz object attributes cache should be rebuilt")
+	}
+	if got := attrs[BK_SET_OBJ_ID][0].BkPropertyID; got != "set_custom" {
+		t.Fatalf("rebuilt set attr = %q, want set_custom", got)
+	}
+
+	// 二次刷新：RefreshBizRenderCache 每次都会先失效再重建，因此会重新调用 CMDB
+	if err := RefreshBizRenderCache(context.Background(), tenantID, bizID, "", mockSvc, cache); err != nil {
+		t.Fatalf("second RefreshBizRenderCache failed: %v", err)
+	}
+	for _, objID := range []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID} {
+		if got := mockSvc.callCount(objID); got != 2 {
+			t.Fatalf("SearchObjectAttr for %s called %d times, want 2 (refresh always rebuilds)", objID, got)
+		}
+	}
+}
+
+type failingObjectAttrCMDB struct {
+	bkcmdb.Service
+}
+
+func (m *failingObjectAttrCMDB) SearchObjectAttr(
+	_ context.Context, _ bkcmdb.SearchObjectAttrReq) ([]bkcmdb.ObjectAttrInfo, error) {
+	return nil, errors.New("cmdb unavailable")
+}
+
+func TestRefreshBizRenderCacheBlocksOnRebuildFailure(t *testing.T) {
+	cache := NewMemoryCMDBRenderCache()
+	cache.SetBizObjectAttributes(context.Background(), "tenant-a", 42, map[string][]ObjectAttribute{
+		BK_SET_OBJ_ID: {{BkPropertyID: "stale"}},
+	})
+
+	err := RefreshBizRenderCache(
+		context.Background(), "tenant-a", 42, "", &failingObjectAttrCMDB{}, cache)
+	if err == nil {
+		t.Fatal("RefreshBizRenderCache should fail when CMDB is unavailable")
+	}
+
+	// 属性缓存已失效（阻断方可以感知故障，不会使用陈旧数据）
+	if _, ok := cache.GetBizObjectAttributes(context.Background(), "tenant-a", 42); ok {
+		t.Fatal("stale biz object attributes cache should be invalidated even when rebuild fails")
+	}
+}
