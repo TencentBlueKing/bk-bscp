@@ -30,6 +30,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/expression"
+	"github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/task"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
@@ -1016,6 +1017,15 @@ func (s *Service) PreviewConfig(ctx context.Context, req *pbds.PreviewConfigReq)
 		}
 	}
 
+	// 预览前强制重建该业务的渲染缓存（对齐 gsekit），刷新失败直接阻断，避免用陈旧 CMDB 数据渲染预览结果
+	setEnv := ""
+	if process.Spec != nil {
+		setEnv = process.Spec.Environment
+	}
+	if errR := s.refreshCMDBRenderCache(grpcKit, req.GetBizId(), setEnv); errR != nil {
+		return nil, errR
+	}
+
 	// 4. 构建渲染上下文参数（使用公共函数，与 task 框架保持一致）
 	source := &previewRequestSource{
 		process:         process,
@@ -1068,6 +1078,20 @@ func (p *previewRequestSource) GetModuleInstSeq() uint32 {
 
 func (p *previewRequestSource) NeedHelp() bool {
 	return strings.Contains(p.req.GetTemplateContent(), "${HELP}")
+}
+
+// refreshCMDBRenderCache 强制重建业务渲染缓存（对齐 gsekit：配置生成/校验批次派发前、配置预览前刷新 CMDB 缓存）。
+// 刷新失败直接返回错误，由调用方阻断派发/预览，避免使用可能陈旧的 CMDB 缓存数据渲染配置。
+func (s *Service) refreshCMDBRenderCache(kt *kit.Kit, bizID uint32, setEnv string) error {
+	if s.cmdbRenderCache == nil {
+		return nil
+	}
+	if err := cmdb.RefreshBizRenderCache(kt.Ctx, kt.TenantID, int(bizID), setEnv, s.cmdb, s.cmdbRenderCache); err != nil {
+		logs.Errorf("refresh cmdb render cache failed, biz: %d, err: %v, rid: %s", bizID, err, kt.Rid)
+		return errf.Errorf(errf.ThirdPartyAPIError, "%s",
+			i18n.T(kt, "refresh cmdb render cache failed, biz_id: %d, err: %v", bizID, err))
+	}
+	return nil
 }
 
 // verifyBatch 验证批次类型
@@ -1562,6 +1586,11 @@ func (s *Service) OperateGenerateConfig(ctx context.Context, req *pbds.OperateGe
 			i18n.T(kt, "task batch %d does not exist", req.GetBatchId()))
 	}
 
+	// 重新生成/重试会重新渲染模板，派发前强制重建渲染缓存（对齐 gsekit），刷新失败直接阻断
+	if errR := s.refreshCMDBRenderCache(kt, req.GetBizId(), ""); errR != nil {
+		return nil, errR
+	}
+
 	// task_id如果有值表示重试单个否则全部
 	// operation_type：regenerate(重新生成)、retry(重试)
 	switch req.GetOperationType() {
@@ -1818,6 +1847,11 @@ func (s *Service) runConfigTask(kt *kit.Kit, bizID uint32, ctgs []*pbcin.ConfigT
 	if len(taskInfos) == 0 {
 		return 0, errf.Errorf(errf.RecordNotFound, "%s",
 			i18n.T(kt, "no tasks to create"))
+	}
+
+	// 派发前强制重建该业务的渲染缓存（对齐 gsekit），刷新失败直接阻断，避免用陈旧 CMDB 数据渲染配置
+	if err := s.refreshCMDBRenderCache(kt, bizID, environment); err != nil {
+		return 0, err
 	}
 
 	// 2. 创建 TaskBatch
